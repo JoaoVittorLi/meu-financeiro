@@ -1,8 +1,10 @@
 'use strict';
-const {app,BrowserWindow,session,ipcMain,dialog,shell}=require('electron');
+const {app,BrowserWindow,session,ipcMain,dialog,shell,safeStorage}=require('electron');
 const path=require('node:path');
 const {FinanceDB}=require('./db.cjs');
-let db=null, mainWindow=null;
+const {PluggyVault}=require('./pluggy-vault.cjs');
+const {PluggyClient}=require('./pluggy.cjs');
+let db=null, mainWindow=null, vault=null, syncing=false;
 if(!app.requestSingleInstanceLock())app.quit();
 else app.on('second-instance',()=>{if(mainWindow){if(mainWindow.isMinimized())mainWindow.restore();mainWindow.focus();}});
 function requireAppSender(event){
@@ -32,6 +34,7 @@ app.whenReady().then(()=>{
  app.setAppUserModelId('app.local.meufinanceiro');
  const filename=path.join(app.getPath('userData'),'meu-financeiro.sqlite');
  db=new FinanceDB(filename);
+ vault=new PluggyVault(app.getPath('userData'),safeStorage);
  session.defaultSession.setPermissionRequestHandler((_wc,_permission,callback)=>callback(false));
  ipcMain.handle('finance:load',(event,profile)=>{requireAppSender(event);return db.load(profile);});
  ipcMain.handle('finance:save',(event,profile,data)=>{requireAppSender(event);return db.save(profile,data);});
@@ -41,6 +44,40 @@ app.whenReady().then(()=>{
    const result=await dialog.showSaveDialog(mainWindow,{title:'Salvar cópia do banco de dados',defaultPath:'MeuFinanceiro-backup-'+new Date().toISOString().slice(0,10)+'.sqlite',filters:[{name:'Banco SQLite',extensions:['sqlite']}]});
    if(result.canceled||!result.filePath)return {cancelled:true};
    return db.backupTo(result.filePath);
+ });
+ ipcMain.handle('bank:status',async(event)=>{
+   requireAppSender(event);
+   return {config:await vault.status(),data:db.bankOverview()};
+ });
+ ipcMain.handle('bank:configure',async(event,config)=>{
+   requireAppSender(event);
+   if(syncing)throw new Error('Sincronização em andamento.');
+   const saved=await vault.put(config||{});
+   return {config:saved,data:db.bankOverview()};
+ });
+ ipcMain.handle('bank:forget',async(event)=>{
+   requireAppSender(event);
+   if(syncing)throw new Error('Sincronização em andamento.');
+   await vault.clear();
+   return {config:await vault.status(),data:db.bankOverview()};
+ });
+ ipcMain.handle('bank:sync',async(event)=>{
+   requireAppSender(event);
+   if(syncing)throw new Error('Uma sincronização já está em andamento.');
+   const config=await vault.get();
+   if(!config)throw new Error('Configure sua conexão Pluggy primeiro.');
+   syncing=true;
+   try{
+     const client=new PluggyClient();
+     await client.authenticate(config.clientId,config.clientSecret);
+     let newCount=0,totalCount=0;
+     for(const id of config.itemIds){
+       const payload=await client.syncItem(id);
+       const added=db.ingestBank(id,payload);
+       newCount+=added.newCount;totalCount+=added.totalCount;
+     }
+     return {newCount,totalCount,config:await vault.status(),data:db.bankOverview()};
+   }finally{syncing=false;}
  });
  ipcMain.handle('finance:open-data-folder',async(event)=>{
    requireAppSender(event);return shell.openPath(app.getPath('userData'));

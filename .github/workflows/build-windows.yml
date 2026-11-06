@@ -5,7 +5,7 @@ on:
     branches: [main]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   windows:
@@ -34,9 +34,24 @@ jobs:
       - name: Disponibilizar executáveis
         uses: actions/upload-artifact@v4
         with:
-          name: MeuFinanceiro-v0.4-Windows
+          name: MeuFinanceiro-v0.5-Windows
           path: |
             release/*.exe
             release/SHA256.txt
           if-no-files-found: error
           retention-days: 14
+
+      - name: Publicar pré-release no GitHub
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $tag = 'v0.5.0'
+          $assets = @(Get-ChildItem release -Filter '*.exe' -File | ForEach-Object { $_.FullName })
+          $assets += (Resolve-Path release/SHA256.txt).Path
+          gh release view $tag --repo $env:GITHUB_REPOSITORY *> $null
+          if ($LASTEXITCODE -eq 0) {
+            gh release upload $tag @assets --clobber --repo $env:GITHUB_REPOSITORY
+          } else {
+            gh release create $tag @assets --target $env:GITHUB_SHA --repo $env:GITHUB_REPOSITORY --title 'Meu Financeiro v0.5.0 — Open Finance (prévia)' --notes 'Integração pessoal com Meu Pluggy: credenciais protegidas pelo Windows, contas e extrato local em SQLite. Dados bancários ainda isolados dos lançamentos manuais; sem conciliação automática. Configure as credenciais somente no aplicativo. Esta é uma prévia que deve ser testada no Windows antes de uso financeiro regular.' --prerelease
+          }

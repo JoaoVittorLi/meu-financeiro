@@ -1,12 +1,12 @@
 {
   "name": "meu-financeiro-desktop",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "private": true,
-  "description": "Meu Financeiro — Electron com banco SQLite local e regras financeiras sem IA",
+  "description": "Meu Financeiro — Electron e SQLite com Open Finance Meu Pluggy para uso pessoal",
   "main": "electron/main.cjs",
   "scripts": {
     "compile": "tsc --project tsconfig.json",
-    "test:db": "node --test tests/sqlite.test.cjs",
+    "test:db": "node --test tests/*.test.cjs",
     "test:types": "tsc --project tsconfig.json --noEmit",
     "test": "npm run compile && npm run test:db",
     "start": "npm run compile && electron .",

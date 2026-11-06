@@ -66,6 +66,44 @@ class FinanceDB {
        PRIMARY KEY(profile,name)
      );
    `);
+   // v0.5: tabelas aditivas, preservando integralmente os dados da v0.4.
+   this.db.exec(`
+     CREATE TABLE IF NOT EXISTS bank_items (
+       item_id TEXT PRIMARY KEY,
+       institution TEXT NOT NULL DEFAULT 'Meu Pluggy',
+       status TEXT NOT NULL DEFAULT 'UNKNOWN',
+       consent_expires_at TEXT,
+       last_sync_at TEXT
+     );
+     CREATE TABLE IF NOT EXISTS bank_accounts (
+       account_id TEXT PRIMARY KEY,
+       item_id TEXT NOT NULL REFERENCES bank_items(item_id),
+       name TEXT NOT NULL,
+       subtype TEXT,
+       currency TEXT NOT NULL DEFAULT 'BRL',
+       balance_cents INTEGER,
+       updated_at TEXT NOT NULL
+     );
+     CREATE TABLE IF NOT EXISTS bank_transactions (
+       account_id TEXT NOT NULL REFERENCES bank_accounts(account_id),
+       external_id TEXT NOT NULL,
+       date TEXT NOT NULL,
+       description TEXT NOT NULL,
+       amount_cents INTEGER NOT NULL,
+       status TEXT NOT NULL,
+       category TEXT NOT NULL DEFAULT 'Outros',
+       updated_at TEXT NOT NULL,
+       PRIMARY KEY (account_id,external_id)
+     );
+     CREATE INDEX IF NOT EXISTS idx_bank_tx_date ON bank_transactions(date);
+     CREATE TABLE IF NOT EXISTS bank_sync_history (
+       id INTEGER PRIMARY KEY AUTOINCREMENT,
+       item_id TEXT NOT NULL,
+       completed_at TEXT NOT NULL,
+       new_count INTEGER NOT NULL,
+       total_count INTEGER NOT NULL
+     );
+   `);
    this.db.prepare('INSERT OR IGNORE INTO app_meta(key,value) VALUES (?,?)').run('schema_version','1');
  }
  load(profile){
@@ -95,6 +133,46 @@ class FinanceDB {
      this.db.exec('COMMIT');
      return {ok:true,txCount:value.transactions.length};
    }catch(err){this.db.exec('ROLLBACK');throw err;}
+ }
+ bankOverview(){
+   const accounts=this.db.prepare(`SELECT account_id AS id,item_id AS itemId,name,subtype,currency,balance_cents AS balance,updated_at AS updatedAt FROM bank_accounts ORDER BY name`).all().map(x=>({...x}));
+   const transactions=this.db.prepare(`SELECT b.external_id AS id,b.account_id AS accountId,a.name AS accountName,b.date,b.description,b.amount_cents AS amount,b.status,b.category FROM bank_transactions b JOIN bank_accounts a USING(account_id) ORDER BY date DESC,id DESC LIMIT 2500`).all().map(x=>({...x}));
+   const items=this.db.prepare(`SELECT item_id AS itemId,institution,status,consent_expires_at AS consentExpiresAt,last_sync_at AS lastSyncAt FROM bank_items ORDER BY last_sync_at DESC`).all().map(x=>({...x}));
+   const last=this.db.prepare(`SELECT completed_at AS completedAt,new_count AS newCount,total_count AS totalCount FROM bank_sync_history ORDER BY id DESC LIMIT 1`).get()||null;
+   return {accounts,transactions,items,last};
+ }
+ ingestBank(itemId,payload){
+   if(typeof itemId!=='string'||!itemId.trim()||!payload||!Array.isArray(payload.data))throw new Error('Lote bancário inválido.');
+   const item=payload.item||{},now=new Date().toISOString();
+   // Valida tudo antes de iniciar a transação: nenhuma importação parcial.
+   const entries=payload.data.map(({account,transactions})=>{
+     if(!account||typeof account.id!=='string'||typeof account.name!=='string'||!Array.isArray(transactions))throw new Error('Conta bancária inválida.');
+     const balance=account.balance==null?null:Math.round(Number(account.balance)*100);
+     if(balance!==null&&!Number.isSafeInteger(balance))throw new Error('Saldo inválido.');
+     const clean=transactions.map(t=>{
+       if(!t||typeof t.id!=='string'||!t.id||!Number.isFinite(Number(t.amount))||typeof t.description!=='string'||!/^\d{4}-\d{2}-\d{2}/.test(t.date||''))throw new Error('Transação bancária inválida.');
+       const amount=Math.round(Number(t.amount)*100);
+       if(!Number.isSafeInteger(amount))throw new Error('Valor bancário inválido.');
+       return {id:t.id,date:t.date.slice(0,10),description:t.description.slice(0,180),amount,status:String(t.status||'UNKNOWN').slice(0,30),category:String(t.category||'Outros').slice(0,70)};
+     });
+     return {account,balance,transactions:clean};
+   });
+   this.db.exec('BEGIN IMMEDIATE');
+   try{
+     this.db.prepare(`INSERT INTO bank_items(item_id,institution,status,consent_expires_at,last_sync_at) VALUES(?,?,?,?,?) ON CONFLICT(item_id) DO UPDATE SET institution=excluded.institution,status=excluded.status,consent_expires_at=excluded.consent_expires_at,last_sync_at=excluded.last_sync_at`).run(itemId,String(item.connector?.name||'Meu Pluggy').slice(0,100),String(item.status||'UPDATED').slice(0,40),item.consentExpiresAt||null,now);
+     const addAccount=this.db.prepare(`INSERT INTO bank_accounts(account_id,item_id,name,subtype,currency,balance_cents,updated_at) VALUES(?,?,?,?,?,?,?) ON CONFLICT(account_id) DO UPDATE SET name=excluded.name,subtype=excluded.subtype,balance_cents=excluded.balance_cents,updated_at=excluded.updated_at`);
+     const addTx=this.db.prepare(`INSERT INTO bank_transactions(account_id,external_id,date,description,amount_cents,status,category,updated_at) VALUES(?,?,?,?,?,?,?,?) ON CONFLICT(account_id,external_id) DO UPDATE SET date=excluded.date,description=excluded.description,amount_cents=excluded.amount_cents,status=excluded.status,updated_at=excluded.updated_at`);
+     let newCount=0,totalCount=0;
+     const exists=this.db.prepare('SELECT 1 FROM bank_transactions WHERE account_id=? AND external_id=?');
+     for(const e of entries){
+       addAccount.run(e.account.id,itemId,e.account.name.slice(0,140),String(e.account.subtype||'').slice(0,50),'BRL',e.balance,now);
+       for(const t of e.transactions){if(!exists.get(e.account.id,t.id))newCount++;
+         addTx.run(e.account.id,t.id,t.date,t.description,t.amount,t.status,t.category,now);totalCount++;
+       }
+     }
+     this.db.prepare('INSERT INTO bank_sync_history(item_id,completed_at,new_count,total_count) VALUES(?,?,?,?)').run(itemId,now,newCount,totalCount);
+     this.db.exec('COMMIT');return {newCount,totalCount};
+   }catch(e){this.db.exec('ROLLBACK');throw e;}
  }
  integrity(){return this.db.prepare('PRAGMA integrity_check').all().map(r=>r.integrity_check);}
  async backupTo(destination){

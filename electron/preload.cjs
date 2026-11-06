@@ -6,5 +6,9 @@ contextBridge.exposeInMainWorld('financeDesktop', Object.freeze({
   save: (profile,data) => ipcRenderer.invoke('finance:save',profile,data),
   info: () => ipcRenderer.invoke('finance:info'),
   backupSQLite: () => ipcRenderer.invoke('finance:backup'),
-  openDataFolder: () => ipcRenderer.invoke('finance:open-data-folder')
+  openDataFolder: () => ipcRenderer.invoke('finance:open-data-folder'),
+  bankStatus: () => ipcRenderer.invoke('bank:status'),
+  bankConfigure: (config) => ipcRenderer.invoke('bank:configure',config),
+  bankSync: () => ipcRenderer.invoke('bank:sync'),
+  bankForget: () => ipcRenderer.invoke('bank:forget')
 }));
