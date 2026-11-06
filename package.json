@@ -1,0 +1,59 @@
+{
+  "name": "meu-financeiro-desktop",
+  "version": "0.4.0",
+  "private": true,
+  "description": "Meu Financeiro — Electron com banco SQLite local e regras financeiras sem IA",
+  "main": "electron/main.cjs",
+  "scripts": {
+    "compile": "tsc --project tsconfig.json",
+    "test:db": "node --test tests/sqlite.test.cjs",
+    "test:types": "tsc --project tsconfig.json --noEmit",
+    "test": "npm run compile && npm run test:db",
+    "start": "npm run compile && electron .",
+    "dist:windows": "npm run test && electron-builder --win portable nsis --x64 --publish never"
+  },
+  "devDependencies": {
+    "electron": "45.2.3",
+    "electron-builder": "^26.0.0",
+    "typescript": "5.8.3"
+  },
+  "build": {
+    "appId": "app.local.meufinanceiro",
+    "productName": "Meu Financeiro",
+    "asar": true,
+    "files": [
+      "app/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "directories": {
+      "output": "release"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "artifactName": "MeuFinanceiro-Instalador-${version}-${arch}.${ext}"
+    },
+    "portable": {
+      "artifactName": "MeuFinanceiro-Portable-${version}-${arch}.${ext}"
+    }
+  }
+}

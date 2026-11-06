@@ -1,0 +1,17 @@
+# Dependências e artefatos do Electron/Node
+node_modules/
+release/
+dist/
+*.log
+.DS_Store
+Thumbs.db
+# Bancos locais e informações financeiras privadas
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+*.db
+*.db-wal
+*.db-shm
+*.csv
+.env
+.env.*

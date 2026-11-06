@@ -1,0 +1,42 @@
+name: Compilar Meu Financeiro Electron (Windows)
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Instalar dependências
+        shell: pwsh
+        run: npm install --no-audit --no-fund
+      - name: Testar banco SQLite e compilar executáveis
+        shell: pwsh
+        run: npm run dist:windows
+      - name: Conferir os dois EXEs e criar hashes SHA256
+        shell: pwsh
+        run: |
+          $executables = @(Get-ChildItem -Path release -Filter '*.exe' -File)
+          if ($executables.Count -ne 2) { throw "Esperados 2 EXEs (portátil e instalador); encontrados $($executables.Count)" }
+          $executables | Get-FileHash -Algorithm SHA256 |
+            ForEach-Object { "$($_.Hash)  $(Split-Path $_.Path -Leaf)" } |
+            Set-Content -Path release/SHA256.txt -Encoding utf8
+          Get-Content release/SHA256.txt
+      - name: Disponibilizar executáveis
+        uses: actions/upload-artifact@v4
+        with:
+          name: MeuFinanceiro-v0.4-Windows
+          path: |
+            release/*.exe
+            release/SHA256.txt
+          if-no-files-found: error
+          retention-days: 14
