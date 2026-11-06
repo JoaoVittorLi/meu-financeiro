@@ -15,7 +15,7 @@ type BankAccount = {id:string;itemId:string;name:string;subtype:string;currency:
 type BankTx = {id:string;accountId:string;accountName:string;date:string;description:string;amount:number;status:string;category:string};
 type BankState = {config:BankConfig;data:{accounts:BankAccount[];transactions:BankTx[];items:{itemId:string;institution:string;status:string;consentExpiresAt:string|null;lastSyncAt:string|null}[];last:{completedAt:string;newCount:number;totalCount:number}|null}};
 const EMPTY_BANK:BankState={config:{configured:false,clientId:'',itemIds:[],secure:false},data:{accounts:[],transactions:[],items:[],last:null}};
-type State = { fatal?:string; booting?:boolean; mode:'real'|'demo'; data:Data; page:string; month:string; showEntry:boolean; entry:{date:string;description:string;kind:Kind;category:string;value:string}; sim:Sim; outcome:any; query:string; toast:string; budgetEdit:string; busy:boolean; editModal:null|{type:'budget'|'setting';key:string;title:string;value:string};bank:BankState;bankForm:{clientId:string;clientSecret:string;itemIds:string};bankBusy:boolean;bankMessage:string;bankFilter:string };
+type State = { fatal?:string; booting?:boolean; mode:'real'|'demo'; data:Data; page:string; month:string; showEntry:boolean; entry:{date:string;description:string;kind:Kind;category:string;value:string}; sim:Sim; outcome:any; query:string; toast:string; budgetEdit:string; busy:boolean; editModal:null|{type:'budget'|'setting';key:string;title:string;value:string};bank:BankState;bankForm:{clientId:string;clientSecret:string;itemIds:string};bankBusy:boolean;bankMessage:string;bankFilter:string;txSource:'all'|'bank'|'manual' };
 // Bridge com o processo principal Electron. No preview web, mantém o armazenamento legado.
 interface DesktopBridge {load:(mode:'real'|'demo')=>Promise<Data|null>;save:(mode:'real'|'demo',data:Data)=>Promise<any>;info:()=>Promise<any>;backupSQLite:()=>Promise<{cancelled?:boolean;ok?:boolean}>;openDataFolder:()=>Promise<string>;bankStatus:()=>Promise<BankState>;bankConfigure:(c:any)=>Promise<BankState>;bankSync:()=>Promise<BankState & {newCount:number;totalCount:number}>;bankForget:()=>Promise<BankState>;}
 const desktop:DesktopBridge|null = (window as any).financeDesktop || null;
@@ -99,7 +99,7 @@ function Donut(p:any){const vals=p.items as {name:string;total:number}[];const t
 }
 class App extends React.Component<any,State>{
  private fileInput:any; private csvInput:any; private timeout:any;
- constructor(props:any){super(props);const mode:'real'|'demo'='real';this.state={mode,data:desktop?starter():load(mode),page:'overview',month:nowYM,showEntry:false,entry:{date:iso(new Date()),description:'',kind:'expense',category:'Alimentação',value:''},sim:{value:'',installments:'6',interest:'0'},outcome:null,query:'',toast:'',budgetEdit:'',busy:!!desktop,booting:!!desktop,editModal:null,bank:EMPTY_BANK,bankForm:{clientId:'',clientSecret:'',itemIds:''},bankBusy:false,bankMessage:'',bankFilter:''};}
+ constructor(props:any){super(props);const mode:'real'|'demo'='real';this.state={mode,data:desktop?starter():load(mode),page:'overview',month:nowYM,showEntry:false,entry:{date:iso(new Date()),description:'',kind:'expense',category:'Alimentação',value:''},sim:{value:'',installments:'6',interest:'0'},outcome:null,query:'',toast:'',budgetEdit:'',busy:!!desktop,booting:!!desktop,editModal:null,bank:EMPTY_BANK,bankForm:{clientId:'',clientSecret:'',itemIds:''},bankBusy:false,bankMessage:'',bankFilter:'',txSource:'all'};}
  async componentDidMount(){
    if(!desktop)return;
    try {
@@ -183,8 +183,73 @@ class App extends React.Component<any,State>{
  h('div',{className:'bottom-grid'},h(Card,{className:'recent-card'},h('div',{className:'card-heading'},h('div',{},h('h2',{},'Últimas movimentações'),h('p',{},'Histórico recente deste mês')),h('button',{className:'text-button',onClick:()=>this.navigate('transactions')},'Ver tudo ',h(Icon,{name:'arrow',size:16}))),recent.length?h('div',{className:'mini-table'},recent.map(t=>h('div',{className:'mini-row',key:t.id},h('div',{className:'mini-icon '+(t.kind==='income'?'good':'')},h(Icon,{name:t.kind==='income'?'trend':'cart'})),h('div',{className:'mini-copy'},h('b',{},t.description),h('small',{},t.category+' · '+t.date.split('-').reverse().join('/'))),h('strong',{className:t.kind==='income'?'good-text':'bad-text'},(t.kind==='income'?'+':'−')+fmt(t.amount))))):h('div',{className:'empty-mini'},h(Icon,{name:'wallet',size:29}),h('b',{},'Ainda sem movimentações'),h('span',{},'Cadastre sua primeira transação ou explore a demonstração.'),h('button',{className:'mini-primary',onClick:()=>this.setState({showEntry:true})},'Adicionar lançamento'))),
  h(Card,{className:'budget-card'},h('div',{className:'card-heading'},h('div',{},h('h2',{},'Seu orçamento'),h('p',{},'Acompanhamento mensal')),h('span',{className:'muted-label'},totalBudget?'Limite definido':'Sem limites')),h('div',{className:'budget-headline'},h('div',{},h('small',{},'Utilizado neste mês'),h('strong',{},fmt(spent))),h('div',{className:'budget-percent'},totalBudget?percent+'%':'—')),h('div',{className:'progress-track'},h('div',{className:'progress-bar',style:{width:Math.min(100,percent)+'%'}})),h('div',{className:'progress-foot'},h('span',{},totalBudget?fmt(Math.max(0,totalBudget-spent))+' restantes':'Defina limites nas categorias'),h('span',{},totalBudget?fmt(totalBudget)+' total':'')),h('button',{className:'outlined-action',onClick:()=>this.navigate('budgets')},'Gerenciar orçamento',h(Icon,{name:'arrow',size:16})))));
  }
- renderTransactions(){const d=this.state.data;const entries=d.transactions.filter(t=>(!this.state.month||t.date.slice(0,7)===this.state.month)&&[t.description,t.category].some(x=>x.toLowerCase().includes(this.state.query.toLowerCase()))).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,500);
- return h('div',{className:'section'},h('div',{className:'panel-toolbar'},h('div',{className:'search-box'},h(Icon,{name:'search',size:18}),h('input',{value:this.state.query,placeholder:'Buscar estabelecimento ou categoria...',onChange:(e:any)=>this.setState({query:e.target.value})})),h('div',{className:'toolbar-actions'},h('button',{className:'ghost-button',onClick:()=>this.csvInput?.click()},h(Icon,{name:'upload',size:17}),'Importar CSV'),h('button',{className:'ghost-button',onClick:()=>this.exportCSV()},h(Icon,{name:'download',size:17}),'Exportar'),h('button',{className:'primary-button',onClick:()=>this.setState({showEntry:true})},h(Icon,{name:'plus',size:18}),'Novo lançamento'))),h(Card,{className:'table-card'},h('div',{className:'list-intro'},h('div',{},h('h2',{},'Histórico de transações'),h('p',{},entries.length+' lançamento(s) no período selecionado')),h('span',{className:'caption-pill'},prettyMonth(this.state.month))),h('div',{className:'table-scroller'},h('table',{},h('thead',{},h('tr',{},['DATA','DESCRIÇÃO','CATEGORIA','TIPO','VALOR',''].map(n=>h('th',{key:n},n)))),h('tbody',{},entries.length?entries.map(t=>h('tr',{key:t.id},h('td',{className:'muted'},t.date.split('-').reverse().join('/')),h('td',{className:'desc-cell'},h('span',{className:'tx-tiny-icon '+(t.kind==='income'?'income':'')},h(Icon,{name:t.kind==='income'?'trend':'cart',size:15})),t.description),h('td',{},h('span',{className:'category-tag'},t.category)),h('td',{},h('span',{className:'kind-pill '+t.kind},t.kind==='income'?'Receita':'Despesa')),h('td',{className:t.kind==='income'?'good-text amount-cell':'amount-cell'},(t.kind==='income'?'+':'−')+fmt(t.amount)),h('td',{},h('button',{className:'trash-button',title:'Excluir',onClick:()=>this.removeEntry(t.id)},h(Icon,{name:'trash',size:16}))))):h('tr',{},h('td',{colSpan:6,className:'empty-table'},'Nenhuma transação neste período.')))))));}
+ renderTransactions(){
+   // Exibição unificada sem mesclar nem somar os registros bancários aos lançamentos manuais.
+   // Registros Open Finance são somente leitura; uma nova sincronização pode atualizá-los.
+   type Row = {key:string;id:string;date:string;description:string;category:string;kind:Kind;amount:number;origin:'manual'|'bank';originLabel:string;status:string};
+   const manual:Row[]=this.state.data.transactions.map(t=>({
+     key:'manual:'+t.id,id:t.id,date:t.date,description:t.description,category:t.category,
+     kind:t.kind,amount:t.amount,origin:'manual',originLabel:'Manual',status:'POSTED'
+   }));
+   const bank:Row[]=(this.state.mode==='demo'?[]:this.state.bank.data.transactions||[]).map(t=>({
+     key:'bank:'+t.accountId+':'+t.id,id:t.id,date:t.date,description:t.description,
+     category:t.category||'Outros',kind:t.amount>=0?'income':'expense',
+     amount:Math.abs(t.amount),origin:'bank',originLabel:t.accountName||'Conta bancária',status:t.status
+   }));
+   const term=this.state.query.trim().toLocaleLowerCase('pt-BR');
+   const selected=this.state.txSource;
+   const matching=manual.concat(bank).filter(t=> 
+     (selected==='all'||t.origin===selected) &&
+     (!this.state.month||t.date.slice(0,7)===this.state.month) &&
+     (!term||[t.description,t.category,t.originLabel].some(x=>String(x).toLocaleLowerCase('pt-BR').includes(term)))
+   ).sort((a,b)=>b.date.localeCompare(a.date)||a.key.localeCompare(b.key));
+   const entries=matching.slice(0,500);
+   const bankCount=matching.filter(t=>t.origin==='bank').length;
+   const manualCount=matching.length-bankCount;
+   return h('div',{className:'section'},
+     h('div',{className:'panel-toolbar'},
+       h('div',{className:'search-box'},h(Icon,{name:'search',size:18}),
+         h('input',{value:this.state.query,placeholder:'Buscar estabelecimento, conta ou categoria...',onChange:(e:any)=>this.setState({query:e.target.value})})),
+       h('div',{className:'toolbar-actions'},
+         h('select',{className:'form-control bank-filter',value:selected,'aria-label':'Filtrar origem das transações',
+            onChange:(e:any)=>this.setState({txSource:e.target.value})},
+           h('option',{value:'all'},'Todas as origens'),
+           h('option',{value:'bank'},'Open Finance'),
+           h('option',{value:'manual'},'Manuais')),
+         h('button',{className:'ghost-button',onClick:()=>this.csvInput?.click()},h(Icon,{name:'upload',size:17}),'Importar CSV'),
+         h('button',{className:'ghost-button',onClick:()=>this.exportCSV()},h(Icon,{name:'download',size:17}),'Exportar manuais'),
+         h('button',{className:'primary-button',onClick:()=>this.setState({showEntry:true})},h(Icon,{name:'plus',size:18}),'Novo lançamento'))),
+     h(Card,{className:'table-card'},
+       h('div',{className:'list-intro'},h('div',{},
+          h('h2',{},'Histórico de transações'),
+          h('p',{},matching.length+' transação(ões) no período · '+bankCount+' bancária(s) · '+manualCount+' manual(is)')),
+          h('span',{className:'caption-pill'},prettyMonth(this.state.month))),
+       bank.length?h('p',{className:'muted-desc',style:{padding:'0 20px 12px',margin:0}},
+          'Movimentações bancárias são somente leitura e ficam separadas dos lançamentos manuais nos cálculos, evitando duplicidade. O botão Exportar exporta apenas os lançamentos manuais.'):null,
+       h('div',{className:'table-scroller'},
+         h('table',{},h('thead',{},h('tr',{},['DATA','DESCRIÇÃO','CATEGORIA','ORIGEM','TIPO / STATUS','VALOR',''].map(n=>h('th',{key:n},n)))),
+           h('tbody',{},entries.length?entries.map(t=>
+             h('tr',{key:t.key},
+               h('td',{className:'muted'},t.date.split('-').reverse().join('/')),
+               h('td',{className:'desc-cell'},
+                 h('span',{className:'tx-tiny-icon '+(t.kind==='income'?'income':'')},h(Icon,{name:t.kind==='income'?'trend':'cart',size:15})),
+                 t.description),
+               h('td',{},h('span',{className:'category-tag'},t.category)),
+               h('td',{},h('span',{className:'category-tag'},t.origin==='bank'?'Banco · '+t.originLabel:'Manual')),
+               h('td',{},
+                 h('span',{className:'kind-pill '+t.kind},t.kind==='income'?'Entrada':'Saída'),
+                 t.origin==='bank'?h('small',{className:'muted',style:{display:'block',marginTop:4}},
+                   t.status==='POSTED'?'Confirmada':t.status==='PENDING'?'Pendente':'Status: '+t.status):null),
+               h('td',{className:t.kind==='income'?'good-text amount-cell':'amount-cell'},(t.kind==='income'?'+':'−')+fmt(t.amount)),
+               h('td',{},t.origin==='manual'
+                 ?h('button',{className:'trash-button',title:'Excluir lançamento manual',onClick:()=>this.removeEntry(t.id)},h(Icon,{name:'trash',size:16}))
+                 :h('span',{className:'muted',title:'Movimentação bancária somente leitura'},'—'))
+             )):h('tr',{},h('td',{colSpan:7,className:'empty-table'},
+               bank.length?'Nenhuma movimentação corresponde ao período ou aos filtros selecionados.':'Nenhuma transação neste período.')))
+         ))
+       )
+   );
+ }
  renderBudgets(){const s=this.monthData(),d=this.state.data;return h('div',{className:'section'},h('div',{className:'intro-banner'},h('div',{},h('span',{className:'micro-label'},'PLANEJAMENTO'),h('h2',{},'Cada categoria no seu controle.'),h('p',{},'Defina um limite por categoria. Esses valores não movimentam seu saldo; servem apenas para acompanhar gastos.')),h('div',{className:'banner-orb'},h(Icon,{name:'pie',size:46}))),h('div',{className:'budget-grid'},CATS.map((cat,i)=>{const spent=s.categories.find(x=>x.name===cat)?.total||0,limit=d.budgets[cat]||0,pct=limit?Math.round(spent/limit*100):0;return h(Card,{className:'budget-item',key:cat},h('div',{className:'budget-item-top'},h('span',{className:'cat-symbol',style:{background:COLORS[i]+'28',color:COLORS[i]}},h(Icon,{name:['home','cart','trend','shield','spark','layers','calendar','wallet','bank','pie'][i],size:20})),h('div',{},h('h3',{},cat),h('small',{},'Gasto atual: '+fmt(spent)))),h('div',{className:'budget-item-value'},h('strong',{},fmt(limit)),h('span',{},'limite mensal')),h('div',{className:'progress-track'},h('div',{className:'progress-bar',style:{background:COLORS[i],width:Math.min(pct,100)+'%'}})),h('div',{className:'budget-item-bottom'},h('span',{className:pct>100?'bad-text':''},limit?pct+'% utilizado':'Sem limite definido'),h('button',{className:'small-link',onClick:()=>this.setState({editModal:{type:'budget',key:cat,title:'Limite mensal · '+cat,value:moneyString(limit)}})},'Editar')));})));
  }
  renderAssistant(includeBanner:boolean=true){const d=this.state.data;const out=this.state.outcome;const examples=[{name:'Notebook',price:'3200',icon:'wallet'},{name:'Celular',price:'2400',icon:'cart'},{name:'Compra pequena',price:'350',icon:'spark'}];return h('div',{className:'section assistant-page'},includeBanner?h('div',{className:'intro-banner assistant-banner'},h('div',{},h('span',{className:'micro-label'},'DECISÕES MAIS CONSCIENTES'),h('h2',{},'Posso comprar isso agora?'),h('p',{},'Simule sem afetar seus lançamentos. O resultado considera renda, despesas, compromissos e reserva configurados.')),h('div',{className:'banner-orb'},h(Icon,{name:'cart',size:46}))):null,h('div',{className:'assistant-grid'},h(Card,{className:'sim-form-card'},h('div',{className:'card-heading'},h('div',{},h('h2',{},'Sua próxima compra'),h('p',{},'Preencha os dados para analisar')),h('span',{className:'round-purple'},h(Icon,{name:'spark',size:19}))),this.field('Valor do produto (R$)',h('input',{className:'form-control',type:'text',inputMode:'decimal',value:this.state.sim.value,placeholder:'Ex.: 1.499,90',onChange:(e:any)=>this.setState({sim:{...this.state.sim,value:e.target.value}})})),h('div',{className:'two-inputs'},this.field('Número de parcelas',h('select',{className:'form-control',value:this.state.sim.installments,onChange:(e:any)=>this.setState({sim:{...this.state.sim,installments:e.target.value}})},[1,2,3,4,5,6,8,10,12,18,24,36].map(n=>h('option',{value:String(n),key:n},n===1?'À vista':n+'x')))),this.field('Juros ao mês (%)',h('input',{className:'form-control',type:'text',inputMode:'decimal',value:this.state.sim.interest,onChange:(e:any)=>this.setState({sim:{...this.state.sim,interest:e.target.value}})}))),h('button',{className:'primary-button full action-large',onClick:()=>this.runSim()},h(Icon,{name:'spark',size:18}),'Analisar compra'),h('div',{className:'sim-example-title'},'Experimentar com um exemplo'),h('div',{className:'quick-examples'},examples.map(x=>h('button',{className:'quick-choice',onClick:()=>this.setState({sim:{...this.state.sim,value:x.price},outcome:null}),key:x.name},h(Icon,{name:x.icon,size:17}),x.name)))),
