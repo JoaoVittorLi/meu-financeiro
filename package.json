@@ -1,6 +1,6 @@
 {
   "name": "meu-financeiro-desktop",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "private": true,
   "description": "Meu Financeiro — Electron e SQLite com Open Finance Meu Pluggy para uso pessoal",
   "main": "electron/main.cjs",
