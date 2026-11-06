@@ -1,41 +1,36 @@
-# Meu Financeiro v0.5 — Electron + SQLite + Meu Pluggy
+# Meu Financeiro — v0.6.0 💜
 
-Aplicativo Windows pessoal com dashboard roxo/grafite e Open Finance via **Meu Pluggy**. A API Pluggy é consultada exclusivamente pelo processo principal do Electron. Seus dados manuais da versão 0.4 são preservados; os dados importados ficam em tabelas separadas.
+Desktop Windows 64 bits com Electron, React/TypeScript e SQLite local. Integração somente leitura com Meu Pluggy.
 
-## Obter o instalador
+## Novidades v0.6
 
-[Releases](https://github.com/JoaoVittorLi/meu-financeiro/releases) — escolha a versão 0.5.0 (prévia), baixe o `.exe` instalador ou portátil.
+- Criar categorias personalizadas (nome e cor), renomear categorias personalizadas não padrão, editar cores.
+- Regras automáticas por descrição: `contém`, `começa com` ou `exato`; prioridade numérica e escopo banco/manual/ambos.
+- Aplicação imediata das regras às movimentações bancárias já sincronizadas, sem alterar o extrato original.
+- Correção individual das categorias bancárias, preservada após nova sincronização, com opção de voltar ao automático.
+- Novos lançamentos manuais e CSV sem categoria aplicam as regras; lançamentos antigos mantêm a classificação até serem editados.
+- Na tela Transações, filtrar entre movimentações bancárias e manuais e corrigir categorias.
+- Dashboard e orçamentos consultam dados bancários confirmados **ou** manuais, nunca somam as fontes automaticamente.
+- Dados e credenciais bancárias permanecem locais. Regras não usam IA paga.
 
-## Primeira conexão
+## Instalação
 
-1. Abra a v0.5 → **Open Finance** (menu lateral).
-2. Informe `Client ID`, `Client Secret`, `itemId` (obtidos no Pluggy Dashboard). Não envie esses dados no chat/GitHub.
-3. Clique em **Salvar proteção**. A chave é criptografada no Windows e armazenada separada do SQLite.
-4. Clique em **Sincronizar agora**. O app lê as contas BANK em BRL, histórico paginado e status.
-5. Confira saldos, transações, vencimento de consentimento e horário da última consulta.
+Recomendado: baixar o instalador da [Release v0.6.0](https://github.com/JoaoVittorLi/meu-financeiro/releases/tag/v0.6.0) do repositório privado. Não precisa de Python nem Node instalado.
 
-A Pluggy disponibiliza informações já obtidas do banco, tipicamente atualizadas a cada 24 horas. O botão não força uma nova autorização nem uma atualização imediata da instituição. Para sincronizar novamente, basta clicar no botão.
+## Desenvolvimento
 
-## Segurança e limites importantes
-
-- A API é **somente de consulta** e opera em `https://api.pluggy.ai`.
-- `Client Secret` é criptografado com `safeStorage`/DPAPI e nunca é gravado no banco, nos backups ou no repositório.
-- Sem fallback para plaintext se a criptografia do sistema não estiver disponível.
-- Saldos e transações bancárias **não são automaticamente somados aos lançamentos manuais** para evitar duplicações. A conciliação contábil automática virá depois.
-- Contas de cartão e investimentos ainda não são importadas nesta versão; apenas contas bancárias (`BANK`) em BRL.
-- Transações são deduplicadas por `accountId+id`; IDs alterados pela instituição poderão exigir conciliação manual futura.
-- O histórico de Open Finance é armazenado localmente, mas **o banco SQLite não é criptografado**. Proteja seu acesso ao Windows e backups.
-- As credenciais criptografadas são vinculadas ao perfil Windows; se trocar de PC, precisará inserir novamente o segredo. Não é transferido em backups.
-- O modo demonstração nunca acessa o banco; nenhuma credencial real acompanha o instalador.
-
-## Desenvolvimento / testes
-
-```bash
+```powershell
 npm install
-npm test
-npm run dist:windows
+npm run test
+npm start
 ```
 
-O GitHub Actions usa `windows-latest` e disponibiliza a build em artefatos e em uma **pré-release**. Comportamento bancário real só poderá ser validado no computador autorizado pelo usuário.
+## Segurança e backups
 
-Documentação oficial: https://docs.pluggy.ai/en/docs/guides/meu-pluggy-personal-use
+1. Antes de atualizar, abra **Configurações → Backup completo SQLite** e guarde em uma pasta segura.
+2. Instale a v0.6 sem excluir a pasta de dados `%APPDATA%/Meu Financeiro`.
+3. Confirme as categorias/regras e o histórico após a instalação.
+4. **O backup SQLite contém as categorias e regras. O backup JSON exporta apenas lançamentos manuais/orçamentos, não regras.**
+5. `Client Secret` continua protegido pelo Windows fora do SQLite. Nunca compartilhe credenciais no GitHub ou no chat.
+
+Limitações: o motor financeiro ainda não concilia automaticamente transações manuais/bancárias; movimentações pendentes não entram nos indicadores bancários. A exclusão de uma categoria com registros/regras associados é bloqueada para evitar perda silenciosa. As categorias padrão podem mudar de cor, mas não de nome.

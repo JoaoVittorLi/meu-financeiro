@@ -34,7 +34,7 @@ jobs:
       - name: Disponibilizar executáveis
         uses: actions/upload-artifact@v4
         with:
-          name: MeuFinanceiro-v0.5.1-Windows
+          name: MeuFinanceiro-v0.6-Windows
           path: |
             release/*.exe
             release/SHA256.txt
@@ -46,12 +46,12 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          $tag = 'v0.5.1'
+          $tag = 'v0.6.0'
           $assets = @(Get-ChildItem release -Filter '*.exe' -File | ForEach-Object { $_.FullName })
           $assets += (Resolve-Path release/SHA256.txt).Path
           gh release view $tag --repo $env:GITHUB_REPOSITORY *> $null
           if ($LASTEXITCODE -eq 0) {
             gh release upload $tag @assets --clobber --repo $env:GITHUB_REPOSITORY
           } else {
-            gh release create $tag @assets --target $env:GITHUB_SHA --repo $env:GITHUB_REPOSITORY --title 'Meu Financeiro v0.5.1 — Open Finance (prévia)' --notes 'Open Finance Meu Pluggy com extrato bancário também na tela Transações, filtro por origem, status de confirmação e dados SQLite isolados dos lançamentos manuais. Sem conciliação automática. Configure as credenciais somente no aplicativo. Esta é uma prévia que deve ser testada no Windows antes de uso financeiro regular.' --prerelease
+            gh release create $tag @assets --target $env:GITHUB_SHA --repo $env:GITHUB_REPOSITORY --title 'Meu Financeiro v0.6.0 — Categorias e regras (prévia)' --notes 'Categorias personalizadas, regras automáticas por descrição, prioridades e correções por transação. Dashboard e orçamentos com opção de origem bancária ou manual, sem somar fontes. O extrato original permanece intacto e nenhuma credencial bancária é publicada. Faça um backup SQLite antes de atualizar.' --prerelease
           }

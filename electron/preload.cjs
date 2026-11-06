@@ -10,5 +10,11 @@ contextBridge.exposeInMainWorld('financeDesktop', Object.freeze({
   bankStatus: () => ipcRenderer.invoke('bank:status'),
   bankConfigure: (config) => ipcRenderer.invoke('bank:configure',config),
   bankSync: () => ipcRenderer.invoke('bank:sync'),
-  bankForget: () => ipcRenderer.invoke('bank:forget')
+  bankForget: () => ipcRenderer.invoke('bank:forget'),
+  categoriesStatus: () => ipcRenderer.invoke('categories:status'),
+  categorySave: (input) => ipcRenderer.invoke('categories:save',input),
+  categoryDelete: (name) => ipcRenderer.invoke('categories:delete',name),
+  ruleSave: (input) => ipcRenderer.invoke('rules:save',input),
+  ruleDelete: (id) => ipcRenderer.invoke('rules:delete',id),
+  bankCategorize: (input) => ipcRenderer.invoke('bank:categorize',input)
 }));

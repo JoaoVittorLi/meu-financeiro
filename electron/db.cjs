@@ -4,7 +4,37 @@
 const { DatabaseSync, backup } = require('node:sqlite');
 const fs = require('node:fs');
 const path = require('node:path');
-const CAT = ['Moradia','Alimentação','Transporte','Saúde','Lazer','Educação','Assinaturas','Compras','Contas','Outros'];
+const DEFAULT_CATEGORIES = [
+  ['Moradia','#884bff'],['Alimentação','#bc80ff'],['Transporte','#db6ff5'],
+  ['Saúde','#7549d8'],['Lazer','#a58cf4'],['Educação','#5b4da5'],
+  ['Assinaturas','#4a386f'],['Compras','#7555bd'],['Contas','#c090e5'],
+  ['Outros','#3f375a'],['Salário','#27c498']
+];
+const CAT = DEFAULT_CATEGORIES.map(([name])=>name);
+function normalizeLabel(value){
+  return String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleUpperCase('pt-BR').replace(/\s+/g,' ').trim();
+}
+function categoryName(name){
+  const value=String(name||'').trim();
+  if(!value||value.length>50||/[\x00-\x1f<>]/.test(value))throw new Error('Informe uma categoria de até 50 caracteres.');
+  return value;
+}
+function categoryColor(color){
+  if(typeof color!=='string'||!/^#[a-fA-F0-9]{6}$/.test(color))throw new Error('Cor da categoria inválida.');
+  return color.toLowerCase();
+}
+function matchRule(description,scope,rules){
+  const hay=normalizeLabel(description);
+  for(const rule of rules){
+    if(rule.scope!=='both'&&rule.scope!==scope)continue;
+    const needle=normalizeLabel(rule.pattern);
+    if(!needle)continue;
+    if((rule.matchMode==='exact'&&hay===needle)||
+      (rule.matchMode==='starts'&&hay.startsWith(needle))||
+      (rule.matchMode==='contains'&&hay.includes(needle))) return rule.category;
+  }
+  return null;
+}
 const KEYS = ['opening','income','fixed','existing','reserve'];
 function isCents(n, allowNegative = false) {
   return Number.isSafeInteger(n) && n <= 100_000_000_000 && (allowNegative ? n >= -100_000_000_000 : n >= 0);
@@ -23,7 +53,12 @@ function validate(payload) {
   });
   if (new Set(transactions.map(t=>t.id)).size !== transactions.length) throw new Error('Identificadores duplicados.');
   const budgets = {};
-  for (const cat of CAT) { const value=payload.budgets[cat] ?? 0; if(!isCents(value))throw new Error('Orçamento inválido: '+cat); budgets[cat]=value; }
+  if(Object.keys(payload.budgets).length>200) throw new Error('Muitas categorias no orçamento.');
+  for(const [raw,value] of Object.entries(payload.budgets)){
+    const cat=categoryName(raw);
+    if(!isCents(value))throw new Error('Orçamento inválido: '+cat);
+    budgets[cat]=value;
+  }
   const settings={};
   for(const k of KEYS){const value=payload.settings[k] ?? 0;if(!isCents(value,k==='opening'))throw new Error('Configuração inválida: '+k);settings[k]=value;}
   return {version:4, transactions, budgets, settings};
@@ -104,12 +139,46 @@ class FinanceDB {
        total_count INTEGER NOT NULL
      );
    `);
+   // v0.6: categorias/regras são aditivas. Os extratos originais da Pluggy nunca são editados.
+   this.db.exec(`
+     CREATE TABLE IF NOT EXISTS categories (
+       name TEXT PRIMARY KEY COLLATE NOCASE,
+       color TEXT NOT NULL,
+       built_in INTEGER NOT NULL DEFAULT 0,
+       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+     );
+     CREATE TABLE IF NOT EXISTS category_rules (
+       id INTEGER PRIMARY KEY AUTOINCREMENT,
+       pattern TEXT NOT NULL,
+       match_mode TEXT NOT NULL CHECK(match_mode IN ('contains','starts','exact')),
+       category TEXT NOT NULL REFERENCES categories(name) ON UPDATE CASCADE ON DELETE RESTRICT,
+       scope TEXT NOT NULL CHECK(scope IN ('both','bank','manual')),
+       priority INTEGER NOT NULL CHECK(priority BETWEEN 1 AND 999),
+       enabled INTEGER NOT NULL DEFAULT 1
+     );
+     CREATE TABLE IF NOT EXISTS bank_category_overrides (
+       account_id TEXT NOT NULL,
+       external_id TEXT NOT NULL,
+       category TEXT NOT NULL REFERENCES categories(name) ON UPDATE CASCADE ON DELETE RESTRICT,
+       PRIMARY KEY(account_id,external_id),
+       FOREIGN KEY(account_id,external_id) REFERENCES bank_transactions(account_id,external_id) ON DELETE CASCADE
+     );
+   `);
+   const seed=this.db.prepare('INSERT OR IGNORE INTO categories(name,color,built_in) VALUES (?,?,1)');
+   for(const [name,color] of DEFAULT_CATEGORIES)seed.run(name,color);
+   // Compatibilidade: categorias pré-existentes em lançamentos manuais e orçamentos.
+   const legacy=this.db.prepare(`SELECT category AS name FROM transactions UNION SELECT category AS name FROM budgets`);
+   for(const {name} of legacy.all()){
+     if(typeof name==='string'&&name.trim()&&name.length<=50)
+       this.db.prepare('INSERT OR IGNORE INTO categories(name,color,built_in) VALUES (?, ?,0)').run(name,'#884bff');
+   }
    this.db.prepare('INSERT OR IGNORE INTO app_meta(key,value) VALUES (?,?)').run('schema_version','1');
+   this.db.prepare('UPDATE app_meta SET value=? WHERE key=?').run('3','schema_version');
  }
  load(profile){
    checkProfile(profile);
    if(!this.db.prepare('SELECT 1 FROM profiles WHERE profile=?').get(profile))return null;
-   const budgets=Object.fromEntries(CAT.map(cat=>[cat,0]));
+   const budgets=Object.fromEntries(this.listCategories().categories.map(c=>[c.name,0]));
    for(const r of this.db.prepare('SELECT category, amount_cents FROM budgets WHERE profile=?').all(profile))budgets[r.category]=r.amount_cents;
    const settings={opening:0,income:0,fixed:0,existing:0,reserve:0};
    for(const r of this.db.prepare('SELECT name, value_cents FROM financial_settings WHERE profile=?').all(profile))if(KEYS.includes(r.name))settings[r.name]=r.value_cents;
@@ -124,19 +193,115 @@ class FinanceDB {
      this.db.prepare('DELETE FROM transactions WHERE profile=?').run(profile);
      this.db.prepare('DELETE FROM budgets WHERE profile=?').run(profile);
      this.db.prepare('DELETE FROM financial_settings WHERE profile=?').run(profile);
+     // Ao restaurar JSON legado, preserve categorias presentes mesmo sem cadastro prévio.
+     const existingCategories=new Set(this.listCategories().categories.map(x=>x.name));
+     for(const name of new Set([...value.transactions.map(t=>t.category),...Object.keys(value.budgets)])){
+       if(!existingCategories.has(name)){
+         this.db.prepare('INSERT OR IGNORE INTO categories(name,color,built_in) VALUES (?, ?,0)').run(categoryName(name),'#884bff');
+         existingCategories.add(name);
+       }
+     }
      const addTx=this.db.prepare('INSERT INTO transactions (profile,id,date,description,kind,amount_cents,category,origin) VALUES (?,?,?,?,?,?,?,?)');
      for(const t of value.transactions) addTx.run(profile,t.id,t.date,t.description,t.kind,t.amount,t.category,t.origin);
      const addBudget=this.db.prepare('INSERT INTO budgets(profile,category,amount_cents) VALUES(?,?,?)');
-     for(const [name,amount] of Object.entries(value.budgets))addBudget.run(profile,name,amount);
+     const allowed=new Set(this.listCategories().categories.map(x=>x.name));
+     for(const [name,amount] of Object.entries(value.budgets)){
+       if(!allowed.has(name))throw new Error('Categoria de orçamento desconhecida: '+name);
+       addBudget.run(profile,name,amount);
+     }
      const addSetting=this.db.prepare('INSERT INTO financial_settings(profile,name,value_cents) VALUES (?,?,?)');
      for(const [name,amount] of Object.entries(value.settings))addSetting.run(profile,name,amount);
      this.db.exec('COMMIT');
      return {ok:true,txCount:value.transactions.length};
    }catch(err){this.db.exec('ROLLBACK');throw err;}
  }
+ listCategories(){
+   const categories=this.db.prepare('SELECT name,color,built_in AS builtIn FROM categories ORDER BY built_in DESC,name COLLATE NOCASE').all().map(x=>({...x}));
+   const rules=this.db.prepare('SELECT id,pattern,match_mode AS matchMode,category,scope,priority,enabled FROM category_rules ORDER BY priority ASC,id ASC').all().map(x=>({...x}));
+   return {categories,rules};
+ }
+ upsertCategory({previousName,name,color}){
+   const label=categoryName(name), hex=categoryColor(color), previous=String(previousName||'').trim();
+   this.db.exec('BEGIN IMMEDIATE');
+   try{
+     if(previous){
+       const row=this.db.prepare('SELECT name,built_in FROM categories WHERE name=?').get(previous);
+       if(!row)throw new Error('Categoria não encontrada.');
+       if(row.built_in&&row.name!==label)throw new Error('Categorias padrão podem mudar de cor, mas não de nome.');
+       const clash=this.db.prepare('SELECT name FROM categories WHERE name=? COLLATE NOCASE').get(label);
+       if(clash&&clash.name.toLowerCase()!==row.name.toLowerCase())throw new Error('Já existe uma categoria com esse nome.');
+       if(row.name!==label){
+         this.db.prepare('UPDATE categories SET name=?,color=? WHERE name=?').run(label,hex,row.name);
+         this.db.prepare('UPDATE transactions SET category=? WHERE category=?').run(label,row.name);
+         this.db.prepare('UPDATE budgets SET category=? WHERE category=?').run(label,row.name);
+       }else this.db.prepare('UPDATE categories SET color=? WHERE name=?').run(hex,row.name);
+     }else{
+       if(this.db.prepare('SELECT 1 FROM categories WHERE name=? COLLATE NOCASE').get(label))throw new Error('Já existe uma categoria com esse nome.');
+       this.db.prepare('INSERT INTO categories(name,color,built_in) VALUES(?,?,0)').run(label,hex);
+     }
+     this.db.exec('COMMIT');return this.listCategories();
+   }catch(e){this.db.exec('ROLLBACK');throw e;}
+ }
+ deleteCategory(name){
+   const row=this.db.prepare('SELECT name,built_in FROM categories WHERE name=?').get(name);
+   if(!row)throw new Error('Categoria não encontrada.');
+   if(row.built_in)throw new Error('Categorias padrão não podem ser excluídas.');
+   const usages=[
+     this.db.prepare('SELECT 1 FROM transactions WHERE category=? LIMIT 1').get(row.name),
+     this.db.prepare('SELECT 1 FROM budgets WHERE category=? AND amount_cents>0 LIMIT 1').get(row.name),
+     this.db.prepare('SELECT 1 FROM category_rules WHERE category=? LIMIT 1').get(row.name),
+     this.db.prepare('SELECT 1 FROM bank_category_overrides WHERE category=? LIMIT 1').get(row.name)
+   ];
+   if(usages.some(Boolean))throw new Error('Categoria em uso. Reclassifique os lançamentos, ajuste o orçamento e remova as regras antes de excluir.');
+   this.db.exec('BEGIN IMMEDIATE');
+   try{this.db.prepare('DELETE FROM budgets WHERE category=?').run(row.name);this.db.prepare('DELETE FROM categories WHERE name=?').run(row.name);this.db.exec('COMMIT');return this.listCategories();}
+   catch(e){this.db.exec('ROLLBACK');throw e;}
+ }
+ upsertRule(input){
+   const pattern=String(input?.pattern||'').trim();
+   const category=String(input?.category||'').trim();
+   const matchMode=String(input?.matchMode||'contains');
+   const scope=String(input?.scope||'both');
+   const priority=Number(input?.priority ?? 100);
+   if(!pattern||pattern.length>120||/[\x00-\x1f]/.test(pattern))throw new Error('Informe um texto de identificação de até 120 caracteres.');
+   if(!['contains','starts','exact'].includes(matchMode)||!['both','bank','manual'].includes(scope))throw new Error('Tipo de regra inválido.');
+   if(!Number.isInteger(priority)||priority<1||priority>999)throw new Error('Prioridade deve estar entre 1 e 999.');
+   if(!this.db.prepare('SELECT 1 FROM categories WHERE name=?').get(category))throw new Error('Categoria da regra não existe.');
+   if(input?.id!=null){
+     const id=Number(input.id);
+     if(!Number.isInteger(id)||id<=0||!this.db.prepare('SELECT 1 FROM category_rules WHERE id=?').get(id))throw new Error('Regra não encontrada.');
+     this.db.prepare('UPDATE category_rules SET pattern=?,match_mode=?,category=?,scope=?,priority=? WHERE id=?').run(pattern,matchMode,category,scope,priority,id);
+   }else this.db.prepare('INSERT INTO category_rules(pattern,match_mode,category,scope,priority) VALUES(?,?,?,?,?)').run(pattern,matchMode,category,scope,priority);
+   return this.listCategories();
+ }
+ deleteRule(id){
+   const n=Number(id);if(!Number.isInteger(n)||n<=0)throw new Error('Regra inválida.');
+   this.db.prepare('DELETE FROM category_rules WHERE id=?').run(n);
+   return this.listCategories();
+ }
+ overrideBankCategory({accountId,externalId,category}){
+   if(typeof accountId!=='string'||typeof externalId!=='string'||!accountId||!externalId)throw new Error('Movimentação bancária inválida.');
+   if(!this.db.prepare('SELECT 1 FROM bank_transactions WHERE account_id=? AND external_id=?').get(accountId,externalId))throw new Error('Movimentação não encontrada.');
+   if(category===null){
+     this.db.prepare('DELETE FROM bank_category_overrides WHERE account_id=? AND external_id=?').run(accountId,externalId);
+   }else{
+     const name=categoryName(category);
+     if(!this.db.prepare('SELECT 1 FROM categories WHERE name=?').get(name))throw new Error('Categoria inexistente.');
+     this.db.prepare('INSERT INTO bank_category_overrides(account_id,external_id,category) VALUES(?,?,?) ON CONFLICT(account_id,external_id) DO UPDATE SET category=excluded.category').run(accountId,externalId,name);
+   }
+   return this.bankOverview();
+ }
  bankOverview(){
    const accounts=this.db.prepare(`SELECT account_id AS id,item_id AS itemId,name,subtype,currency,balance_cents AS balance,updated_at AS updatedAt FROM bank_accounts ORDER BY name`).all().map(x=>({...x}));
-   const transactions=this.db.prepare(`SELECT b.external_id AS id,b.account_id AS accountId,a.name AS accountName,b.date,b.description,b.amount_cents AS amount,b.status,b.category FROM bank_transactions b JOIN bank_accounts a USING(account_id) ORDER BY date DESC,id DESC LIMIT 2500`).all().map(x=>({...x}));
+   const rules=this.listCategories().rules.filter(x=>x.enabled);
+   const categories=new Set(this.listCategories().categories.map(x=>x.name));
+   const transactions=this.db.prepare(`SELECT b.external_id AS id,b.account_id AS accountId,a.name AS accountName,b.date,b.description,b.amount_cents AS amount,b.status,b.category AS bankCategory,o.category AS overrideCategory FROM bank_transactions b JOIN bank_accounts a USING(account_id) LEFT JOIN bank_category_overrides o ON o.account_id=b.account_id AND o.external_id=b.external_id ORDER BY date DESC,id DESC LIMIT 2500`).all().map(x=>{
+     const fromRule=matchRule(x.description,'bank',rules);
+     const category=x.overrideCategory||fromRule||(categories.has(x.bankCategory)?x.bankCategory:'Outros');
+     const categorySource=x.overrideCategory?'manual':fromRule?'rule':'bank';
+     const {overrideCategory,...safe}=x;
+     return {...safe,category,categorySource};
+   });
    const items=this.db.prepare(`SELECT item_id AS itemId,institution,status,consent_expires_at AS consentExpiresAt,last_sync_at AS lastSyncAt FROM bank_items ORDER BY last_sync_at DESC`).all().map(x=>({...x}));
    const last=this.db.prepare(`SELECT completed_at AS completedAt,new_count AS newCount,total_count AS totalCount FROM bank_sync_history ORDER BY id DESC LIMIT 1`).get()||null;
    return {accounts,transactions,items,last};
@@ -183,4 +348,4 @@ class FinanceDB {
  }
  close(){this.db.close();}
 }
-module.exports={FinanceDB, validate};
+module.exports={FinanceDB, validate,matchRule,normalizeLabel};

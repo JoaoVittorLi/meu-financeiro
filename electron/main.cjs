@@ -79,6 +79,13 @@ app.whenReady().then(()=>{
      return {newCount,totalCount,config:await vault.status(),data:db.bankOverview()};
    }finally{syncing=false;}
  });
+ // Categorização local: operações explícitas, sem expor SQL ao renderer.
+ ipcMain.handle('categories:status',(event)=>{requireAppSender(event);return db.listCategories();});
+ ipcMain.handle('categories:save',(event,input)=>{requireAppSender(event);return db.upsertCategory(input);});
+ ipcMain.handle('categories:delete',(event,name)=>{requireAppSender(event);return db.deleteCategory(name);});
+ ipcMain.handle('rules:save',(event,input)=>{requireAppSender(event);return db.upsertRule(input);});
+ ipcMain.handle('rules:delete',(event,id)=>{requireAppSender(event);return db.deleteRule(id);});
+ ipcMain.handle('bank:categorize',(event,input)=>{requireAppSender(event);return db.overrideBankCategory(input);});
  ipcMain.handle('finance:open-data-folder',async(event)=>{
    requireAppSender(event);return shell.openPath(app.getPath('userData'));
  });
