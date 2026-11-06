@@ -1,6 +1,6 @@
 {
   "name": "meu-financeiro-desktop",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "private": true,
   "description": "Meu Financeiro — Electron + SQLite + Open Finance Pluggy e categorias personalizadas com regras locais",
   "main": "electron/main.cjs",

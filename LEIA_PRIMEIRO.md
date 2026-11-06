@@ -1,4 +1,4 @@
-# Meu Financeiro v0.6.0 — Categorias e regras automáticas
+# Meu Financeiro v0.6.1.0 — Categorias e regras automáticas
 
 O objetivo desta versão é personalizar a classificação dos lançamentos importados pelo Meu Pluggy e dos lançamentos manuais, com regras determinísticas (sem IA).
 
@@ -25,3 +25,8 @@ O backup nativo `.sqlite` inclui transações, regras e categorias. O JSON manua
 ### Testes
 
 `npm run test`: testes Node/SQLite, regras, migração e validação TypeScript. Os executáveis são compilados no GitHub Actions em `windows-latest` com `npm run dist:windows`. A execução final deve ser verificada no seu Windows.
+
+
+## Data e sincronização na v0.6.1
+
+A nova Visão geral filtra receitas, despesas, gráficos, categorias e movimentações por período selecionado. O saldo bancário representa a posição mais recente informada, não o saldo histórico na data selecionada. O card de orçamento compara o mês correspondente ao fim do período escolhido com seu limite mensal. A atualização automática roda apenas quando o app está aberto, com intervalo mínimo de seis horas após a última sincronização bem-sucedida ou tentativa que falhou. O botão Atualizar pode ser usado manualmente a qualquer momento. Não confunda consulta Pluggy com atualização forçada dos dados pelo banco.
