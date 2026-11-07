@@ -4,11 +4,12 @@ const path=require('node:path');
 const fs=require('node:fs');
 const {FinanceDB}=require('./db.cjs');
 const {prepareCloudMigration,migrationLocalStatus}=require('./cloud-onboarding.cjs');
+const {PREVIEW_ORIGIN,allowedLoginNavigation,checkPreviewIdentity}=require('./cloud-preview-identity.cjs');
 const {PlanningStore}=require('./planning.cjs');
 const {automaticBackup,restoreBackup,listAutoBackups,validateBackupFile}=require('./recovery.cjs');
 const {PluggyVault}=require('./pluggy-vault.cjs');
 const {PluggyClient}=require('./pluggy.cjs');
-let planner=null, db=null, mainWindow=null, vault=null, syncing=false, restoring=false, autoBackupBusy=false, cloudPreparationBusy=false, backupTimer=null;
+let planner=null, db=null, mainWindow=null, vault=null, syncing=false, restoring=false, autoBackupBusy=false, cloudPreparationBusy=false, backupTimer=null, cloudAuthWindow=null, cloudAuthPromise=null;
 function backupsDirectory(){return path.join(app.getPath('userData'),'copias-de-seguranca');}
 async function ensureAutomaticBackup(){
   if(!db||restoring||syncing||autoBackupBusy)return;
@@ -27,6 +28,90 @@ function requireAppSender(event){
    !url.startsWith('file://') || !url.endsWith('/app/index.html') ||
    event.sender!==mainWindow?.webContents) throw new Error('Origem da requisição negada.');
 }
+// The browser-based Access login stays in an isolated Chromium partition.
+// Cookies remain there, not in the application's local file:// renderer.
+// This verifies only the preview health endpoint. No financial upload occurs.
+function cloudPreviewSession(){
+  const ses=session.fromPartition('persist:mf-cloud-preview');
+  ses.setPermissionRequestHandler((_wc,_permission,callback)=>callback(false));
+  ses.setPermissionCheckHandler(()=>false);
+  return ses;
+}
+async function previewIdentityStatus(){
+  const ses=cloudPreviewSession();
+  return checkPreviewIdentity((url,init)=>ses.fetch(url,init));
+}
+async function connectPreviewIdentity(){
+  const ses=cloudPreviewSession();
+  const existing=await checkPreviewIdentity((url,init)=>ses.fetch(url,init));
+  if(existing.connected)return existing;
+  if(cloudAuthPromise){
+    if(cloudAuthWindow&&!cloudAuthWindow.isDestroyed())cloudAuthWindow.focus();
+    return cloudAuthPromise;
+  }
+  const browser=new BrowserWindow({
+    parent:mainWindow||undefined,
+    width:690,height:790,minWidth:500,minHeight:530,
+    title:'Meu Financeiro — autenticação protegida',autoHideMenuBar:true,
+    backgroundColor:'#0b0a11',show:false,
+    webPreferences:{
+      partition:'persist:mf-cloud-preview',
+      sandbox:true,nodeIntegration:false,contextIsolation:true,
+      webSecurity:true,devTools:false,webviewTag:false
+    }
+  });
+  cloudAuthWindow=browser;
+  browser.webContents.setWindowOpenHandler(()=>({action:'deny'}));
+  // Restrict navigation to the known Preview and the single configured
+  // Cloudflare Access team. Never allow file:, data:, or arbitrary domains.
+  browser.webContents.on('will-navigate',(event,details)=>{
+    const url=typeof details==='string'?details:details.url;
+    if(!allowedLoginNavigation(url))event.preventDefault();
+  });
+  browser.webContents.on('will-redirect',(event,details)=>{
+    const url=typeof details==='string'?details:details.url;
+    if(!allowedLoginNavigation(url))event.preventDefault();
+  });
+  // No downloads from a remote authentication window.
+  const onDownload=(event,webContents)=>{
+    if(webContents===browser.webContents)event.preventDefault();
+  };
+  ses.on('will-download',onDownload);
+  cloudAuthPromise=new Promise(resolve=>{
+    let ended=false,checking=false;
+    let interval;
+    const settle=(result)=>{
+      if(ended)return;
+      ended=true;
+      if(interval)clearInterval(interval);
+      ses.removeListener('will-download',onDownload);
+      cloudAuthWindow=null;cloudAuthPromise=null;
+      if(!browser.isDestroyed())browser.close();
+      resolve(result);
+    };
+    const check=async()=>{
+      if(ended||checking||browser.isDestroyed())return;
+      checking=true;
+      try{
+        const result=await checkPreviewIdentity((url,init)=>ses.fetch(url,init));
+        if(result.connected)settle(result);
+      }finally{checking=false;}
+    };
+    browser.once('ready-to-show',()=>browser.show());
+    browser.on('closed',()=>settle({
+      connected:false,reason:'login_closed',
+      financialSyncEnabled:false,recordsTransferred:0
+    }));
+    browser.webContents.on('did-stop-loading',()=>void check());
+    interval=setInterval(()=>void check(),4000);
+    browser.loadURL(PREVIEW_ORIGIN+'/sync.html').catch(()=>settle({
+      connected:false,reason:'login_window_failed',
+      financialSyncEnabled:false,recordsTransferred:0
+    }));
+  });
+  return cloudAuthPromise;
+}
+
 function createWindow(){
  mainWindow=new BrowserWindow({
    width:1500,height:940,minWidth:1000,minHeight:680,
@@ -59,6 +144,16 @@ app.whenReady().then(()=>{
    const result=await dialog.showSaveDialog(mainWindow,{title:'Salvar cópia do banco de dados',defaultPath:'MeuFinanceiro-backup-'+new Date().toISOString().slice(0,10)+'.sqlite',filters:[{name:'Banco SQLite',extensions:['sqlite']}]});
    if(result.canceled||!result.filePath)return {cancelled:true};
    return db.backupTo(result.filePath);
+ });
+ ipcMain.handle('cloud:access-status',async(event)=>{
+   requireAppSender(event);
+   return previewIdentityStatus();
+ });
+ ipcMain.handle('cloud:access-connect',async(event)=>{
+   requireAppSender(event);
+   if(restoring||cloudPreparationBusy)
+     throw new Error('Conclua a operação local antes de entrar na nuvem.');
+   return connectPreviewIdentity();
  });
  ipcMain.handle('cloud:migration-status',(event)=>{
    requireAppSender(event);
@@ -198,4 +293,4 @@ app.whenReady().then(()=>{
  app.on('activate',()=>{if(BrowserWindow.getAllWindows().length===0)createWindow();});
 }).catch(error=>{dialog.showErrorBox('Erro ao iniciar Meu Financeiro','Não foi possível abrir o banco de dados: '+error.message);app.quit();});
 app.on('window-all-closed',()=>{if(process.platform!=='darwin')app.quit();});
-app.on('before-quit',()=>{if(backupTimer)clearInterval(backupTimer);if(db){db.close();db=null;}});
+app.on('before-quit',()=>{if(backupTimer)clearInterval(backupTimer);if(cloudAuthWindow&&!cloudAuthWindow.isDestroyed())cloudAuthWindow.close();if(db){db.close();db=null;}});
