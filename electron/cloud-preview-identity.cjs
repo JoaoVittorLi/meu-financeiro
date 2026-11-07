@@ -55,7 +55,46 @@ async function checkPreviewIdentity(fetchImpl){
     financialSyncEnabled:false,recordsTransferred:0};
 }
 
+// A session-bound synthetic POST that proves Windows can reach the SAME
+// protected quarantine endpoint. User data is never supplied by the caller.
+async function testPreviewQuarantine(fetchImpl){
+  if(typeof fetchImpl!=='function')throw new TypeError('Canal protegido indisponível.');
+  let response;
+  try{
+    response=await fetchImpl(PREVIEW_ORIGIN+'/api/migration/quarantine-demo',{
+      method:'POST',credentials:'include',redirect:'manual',
+      headers:{Origin:PREVIEW_ORIGIN,'Accept':'application/json',
+        'Content-Type':'application/json'},
+      body:'{}'
+    });
+  }catch{
+    return {ok:false,reason:'network_unavailable',realRecordsSent:0,
+      financialSyncEnabled:false};
+  }
+  if(response?.status!==200 ||
+     !response.headers?.get('content-type')?.toLowerCase().includes('application/json')){
+    return {ok:false,reason:response?.status===401?'private_login_required':
+      response?.status===403?'cloud_access_required':'unexpected_response',
+      realRecordsSent:0,financialSyncEnabled:false};
+  }
+  let result;
+  try{result=await response.json();}
+  catch{return {ok:false,reason:'invalid_json',realRecordsSent:0,
+    financialSyncEnabled:false};}
+  if(result?.ok!==true||result?.mode!=='synthetic_personal_quarantine'||
+     result?.personalTables!==17||!Number.isSafeInteger(result.fictionalRecords)||
+     result.fictionalRecords<0||result.payloadValidated!==true||
+     result.duplicateReplayPrevented!==true||result.rollbackVerified!==true||
+     result.realRecordsReceived!==0||result.financialMigrationActivated!==false||
+     result.syncedToDevices!==false)
+    return {ok:false,reason:'quarantine_validation_failed',
+      realRecordsSent:0,financialSyncEnabled:false};
+  return {ok:true,stage:'fictional_quarantine_verified',
+    personalTables:17,fictionalRecords:result.fictionalRecords,
+    realRecordsSent:0,financialSyncEnabled:false};
+}
+
 module.exports={
   PREVIEW_ORIGIN,ACCESS_TEAM_ORIGIN,allowedLoginNavigation,
-  previewHealthURL,checkPreviewIdentity
+  previewHealthURL,checkPreviewIdentity,testPreviewQuarantine
 };
