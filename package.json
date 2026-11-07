@@ -24,6 +24,7 @@
     "files": [
       "app/**/*",
       "electron/**/*",
+      "shared/**/*",
       "package.json"
     ],
     "directories": {
