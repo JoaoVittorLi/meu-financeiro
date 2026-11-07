@@ -180,3 +180,12 @@ sincronização posterior.
 - Concluídos os três ensaios do Preview: estrutura financeira fictícia (22 tabelas), importação fictícia com descarte (17 tabelas), transferência e retomada fictícia (207 registros).
 - Estes testes NÃO significam que o usuário aprovou importação de dados reais, nem que o Windows/Pluggy já sincronize automaticamente. Não solicitar repetir os ensaios fictícios sem necessidade.
 - Próximo trabalho prioritário: contrato de transporte autenticado e idempotente entre processo principal Electron e API de quarentena, com confirmação explícita do usuário antes de qualquer envio real. Em seguida reconciliar o extrato do Pluggy, preservar vínculos e ativar sincronização automática só após a equivalência dos registros.
+
+## Checkpoint — plano de transporte Windows pronto, envio real bloqueado
+
+- Usuário confirmou por captura de tela em 07/11/2026 o teste de **207 registros fictícios em 19 lotes, com reenvio de 80 sem duplicidade, retomada, integridade e descarte**, em Cloudflare Preview; nenhuma movimentação bancária real enviada.
+- `electron/cloud-transfer-plan.cjs` agora gera a programação de upload a partir do snapshot local: **até 80 linhas / 192 KiB por lote**, preservando a ordem das 17 tabelas; retorna somente contagens para o renderer.
+- `electron/cloud-onboarding.cjs` já integra essa programação ao botão de preparação, após backup automático e auditoria local. O SQLite continua fonte principal, sem transmissão de linhas.
+- Os testes `tests/cloud-transfer-plan.test.cjs` usam o mesmo validador e o receptor de lotes do Worker em memória para simular falha de resposta depois da gravação de 80 registros, seguida de reenvio seguro, verificação e rollback. Também rejeitam saída que anuncie corte financeiro prematuro.
+- Segurança: `FINANCIAL_TRANSFER_ACTIVE=false` no código, `sendPersonalTransferPlan()` sempre lança bloqueio, **nenhum endpoint que aceite dados financeiros reais** está publicado na Cloudflare. Não há instrução para o usuário enviar SQLite, relatório, tokens ou credenciais; não publicar versão financeira até testes de autenticação no Windows, importação real consentida, reconciliação Pluggy e rollback.
+- Próximo marco técnico: implementar o canal de produção com vínculo seguro à identidade e consentimento explícito na interface do desktop, importar em quarentena, reconciliar categorias/vínculos e histórico Pluggy, e apenas então ativar a nuvem como fonte de verdade. Não repetir testes fictícios já aprovados.
