@@ -52,6 +52,10 @@ async function showPersonalFinance(){
       p=>p.title,p=>p.dueDate+' · '+p.category+' · '+p.status,p=>money(p.amountCents));
     populateList(el('budgetList'),value.budgets,
       b=>b.category,()=> 'Orçamento cadastrado',b=>money(b.amountCents));
+    // The editable PWA subscribes to the same verified snapshot and
+    // rerenders actions with Cloudflare revision numbers. Legacy read-only
+    // fallback remains available if its script cannot load.
+    document.dispatchEvent(new CustomEvent('finance:personal-snapshot',{detail:value}));
     el('financeContent').classList.remove('finance-hidden');
   }catch(error){
     status.textContent='Não foi possível abrir a prévia: '+String(error.message||error);
@@ -122,6 +126,9 @@ async function refreshVisibleFinance(){
   await Promise.all([showPersonalFinance(),showBankServerStatus()]);
  }finally{refreshing=false;}
 }
+document.addEventListener('finance:personal-refresh-requested',()=>{
+  void showPersonalFinance();
+});
 document.addEventListener('visibilitychange',()=>{
  if(!document.hidden)void refreshVisibleFinance();
 });
