@@ -6,7 +6,7 @@ const pwaTitles={
   overview:'Visão geral',transactions:'Movimentações',planning:'Planejamento',
   budgets:'Orçamentos',simulate:'Simular compra',accounts:'Minhas contas'
 };
-const pwaState={active:'overview',busy:false,loaded:false,nextOffset:null,shown:0,total:0};
+const pwaState={active:'overview',busy:false,loaded:false,nextOffset:null,shown:0,total:0,manualBusy:false,manualLoaded:false,manualOffset:null,manualShown:0};
 function pwaMoney(value){
   if(!Number.isSafeInteger(value))return '—';
   return (value/100).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
@@ -38,6 +38,7 @@ function pwaSelectView(name){
   }
   if(location.hash!=='#'+name)history.replaceState(null,'','#'+name);
   if(name==='transactions'&&!pwaState.loaded)void pwaLoadTransactions(false);
+  if(name==='transactions'&&!pwaState.manualLoaded)void pwaLoadManual(false);
   if(name==='overview'||name==='accounts')void pwaLoadSummary();
 }
 function pwaBankRow(row){
@@ -125,6 +126,58 @@ async function pwaLoadSummary(){
     pwaEl('bankOverviewStatus').textContent='Não foi possível consultar o resumo bancário. Verifique sua sessão.';
   }
 }
+function pwaManualRow(row){
+  if(!row||typeof row.description!=='string'||typeof row.date!=='string'||
+     !/^\d{4}-\d{2}-\d{2}$/.test(row.date)||!Number.isSafeInteger(row.amountCents)||
+     !['income','expense'].includes(row.kind))return null;
+  const li=pwaText('li','','finance-item');
+  const left=pwaText('div','','finance-main-text');
+  left.append(pwaText('div',row.description,'finance-main-label'));
+  left.append(pwaText('div',[
+    row.date.slice(8,10)+'/'+row.date.slice(5,7)+'/'+row.date.slice(0,4),
+    row.category||'Sem categoria',
+    row.linkedToBank?'Vinculado ao banco · não somar em dobro':'Lançamento manual'
+  ].join(' · '),'finance-meta'));
+  const sign=row.kind==='expense'?-1:1;
+  li.append(left,pwaText('span',pwaMoney(sign*row.amountCents),
+    'finance-amount '+(sign<0?'out':'in')));
+  return li;
+}
+async function pwaLoadManual(append){
+  if(pwaState.manualBusy)return;
+  const offset=append?pwaState.manualOffset:0;
+  if(append&&offset===null)return;
+  pwaState.manualBusy=true;
+  const button=pwaEl('manualLoadMore'),status=pwaEl('manualListStatus');
+  button.disabled=true;
+  status.textContent='Consultando registros manuais protegidos...';
+  try{
+    const data=await pwaGet('/api/migration/manual-transactions?'+new URLSearchParams({
+      offset:String(offset),limit:'30'
+    }).toString());
+    if(data?.ok!==true||!['not_imported','quarantine_verified'].includes(data.stage)||
+       data.financialSyncEnabled!==false||data.cloudCutoverAllowed!==false||
+       !Array.isArray(data.rows)||!Number.isSafeInteger(data.total)||
+       !(data.nextOffset===null||Number.isSafeInteger(data.nextOffset)))
+      throw new Error('Resposta manual incompatível.');
+    const list=pwaEl('manualTransactions');
+    if(!append){list.replaceChildren();pwaState.manualShown=0;}
+    for(const row of data.rows){
+      const node=pwaManualRow(row);
+      if(!node)throw new Error('Lançamento manual inválido.');
+      list.append(node);pwaState.manualShown++;
+    }
+    if(!data.total&&!append)list.append(pwaText('li','Nenhum lançamento manual cadastrado.','finance-muted'));
+    pwaState.manualOffset=data.nextOffset;
+    pwaState.manualLoaded=true;
+    status.textContent='Exibindo '+pwaState.manualShown.toLocaleString('pt-BR')+
+      ' de '+data.total.toLocaleString('pt-BR')+' lançamentos pessoais preservados.';
+    button.hidden=data.nextOffset===null;
+  }catch{
+    status.textContent='Não foi possível consultar os lançamentos manuais. Verifique seu acesso.';
+    if(!append)pwaState.manualLoaded=false;
+  }finally{pwaState.manualBusy=false;button.disabled=false;}
+}
 document.querySelectorAll('[data-view]').forEach(button=>{
   button.addEventListener('click',()=>pwaSelectView(button.dataset.view));
 });
@@ -132,6 +185,7 @@ pwaEl('bankFilters').addEventListener('submit',event=>{
   event.preventDefault();void pwaLoadTransactions(false);
 });
 pwaEl('bankLoadMore').addEventListener('click',()=>void pwaLoadTransactions(true));
+pwaEl('manualLoadMore').addEventListener('click',()=>void pwaLoadManual(true));
 window.addEventListener('hashchange',()=>pwaSelectView(location.hash.slice(1)));
 document.addEventListener('finance:bank-updated',()=>{
   void pwaLoadSummary();
