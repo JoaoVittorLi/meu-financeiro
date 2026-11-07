@@ -12,7 +12,7 @@ function populateList(list,rows,getTitle,getSecondary,getValue){
   for(const item of rows){
     const li=document.createElement('li');li.className='finance-item';
     const left=document.createElement('div');
-    left.append(text('div',getTitle(item),'finance-main'));
+    left.append(text('div',getTitle(item),'finance-main-label'));
     left.append(text('div',getSecondary(item),'finance-meta'));
     li.append(left,text('div',getValue(item),'finance-amount'));
     list.append(li);
@@ -39,7 +39,7 @@ async function showPersonalFinance(){
        !Array.isArray(value.plans)||!Array.isArray(value.budgets)||
        !Array.isArray(value.categories))
       throw new Error('Conteúdo da prévia não corresponde ao esperado.');
-    status.textContent='Personalizações conferidas · extrato bancário pendente';
+    status.textContent='Personalizações conferidas · extrato bancário em conferência';
     el('planCount').textContent=value.plans.length.toLocaleString('pt-BR');
     el('categoryCount').textContent=value.categories.length.toLocaleString('pt-BR');
     const now=new Date();const today=[
@@ -155,6 +155,7 @@ if(activate)activate.addEventListener('click',async()=>{
   el('bankServerStatus').textContent='Extrato consultado pelo servidor: '+
     output.accounts+' conta(s) e '+output.fetched+
     ' movimentações obtidas. Ainda é necessário reconciliar o histórico antes de ativar a sincronização bancária.';
+  document.dispatchEvent(new Event('finance:bank-updated'));
  }catch(error){
   const raw=String(error?.message||'');
   if(raw.startsWith('CODE:')){
