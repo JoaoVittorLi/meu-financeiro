@@ -7,6 +7,11 @@
 <div class="mini"><div><span>Revisão central</span><strong id="revision">—</strong></div><div><span>Última alteração</span><strong id="changed">—</strong></div></div>
 <p class="hint">Se ambos editarem ao mesmo tempo, o aplicativo recusa sobrescrever silenciosamente os dados do outro. Neste piloto, alterações financeiras reais estão bloqueadas.</p>
 <a href="/">← Voltar para notificações</a></section>
+<section class="card" id="migration" hidden style="margin-top:14px"><div class="eyebrow">ETAPA DE MIGRAÇÃO — TESTE SEGURO</div>
+<h2 style="margin-top:9px">Conferir estrutura financeira na nuvem</h2>
+<p>O teste cria registros <strong>inteiramente fictícios</strong> numa área separada do banco Cloudflare. Confere 22 tabelas, centavos, pagamentos vinculados e divisões de despesas. Não acessa seu Itaú, não importa seu SQLite e não altera seu orçamento real.</p>
+<button class="primary" id="dryRun" type="button">Executar teste financeiro fictício</button>
+<p id="dryRunResult" role="status" aria-live="polite">Se passar, poderemos preparar uma migração controlada com backup e comparação do banco original.</p></section>
 <section class="card" id="login" hidden><h2>Entre no Meu Financeiro</h2><p>Utilize a mesma senha privada das notificações.</p><form id="loginForm"><label for="code">Código privado</label><input type="password" id="code" minlength="18" required autocomplete="off"><button class="primary" type="submit">Entrar</button></form></section>
 <footer>Piloto de sincronização · Dados de teste exclusivamente · Não importa dados financeiros</footer></main>
 <script type="module" src="/sync.js"></script></body></html>
