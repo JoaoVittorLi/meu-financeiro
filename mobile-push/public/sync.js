@@ -40,6 +40,28 @@ $('quarantineDemo').addEventListener('click',async()=>{
    output.style.color='#ffb9c4';
  }finally{button.disabled=false;}
 });
+$('batchDemo').addEventListener('click',async()=>{
+  const button=$('batchDemo'),output=$('batchResult');
+  button.disabled=true;output.textContent='Conferindo reenvio, retomada e descarte de registros fictícios...';
+  try{
+    const result=await api('migration/batch-demo','POST',{});
+    if(result.ok!==true||result.mode!=='synthetic_batched_quarantine'||
+       result.personalTables!==17||result.fictionalRecords!==207||
+       result.fictionalTransactions!==191||result.chunkCount<19||
+       result.replayedWithoutDuplicates!==80||result.interruptedTransferResumed!==true||
+       result.allTableHashesValidated!==true||result.rollbackVerified!==true||
+       result.quarantineRowsRemaining!==0||result.realRecordsReceived!==0||
+       result.financialMigrationActivated!==false||result.syncedToDevices!==false)
+      throw new Error('A conferência dos lotes não foi concluída.');
+    output.textContent='Teste aprovado: 207 registros fictícios em '+result.chunkCount+
+      ' lotes, reenvio de 80 registros sem duplicidade, retomada e integridade verificadas. '+
+      'Quarentena completamente descartada. Nenhum dado real transferido.';
+    output.style.color='#91e0c1';
+  }catch(error){
+    output.textContent='Teste não aprovado: '+(error?.message||'Verificação indisponível.');
+    output.style.color='#ffb9c4';
+  }finally{button.disabled=false;}
+});
 async function api(endpoint,method='GET',body){
  const response=await fetch('/api/'+endpoint,{method,credentials:'same-origin',cache:'no-store',
   headers:{'Content-Type':'application/json'},body:body===undefined?undefined:JSON.stringify(body)});
