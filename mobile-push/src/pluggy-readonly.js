@@ -3,6 +3,20 @@
 // any endpoint that can change a user's actual bank records.
 const BASE='https://api.pluggy.ai';
 const MAX_PAGES=100;
+const SAFE_HTTP_STATUS=new Set([400,401,403,404,408,409,422,429,500,502,503,504]);
+function providerError(stage,kind,status){
+ const httpStatus=SAFE_HTTP_STATUS.has(status)?status:'OTHER';
+ const error=new Error('Consulta Pluggy não concluída.');
+ // Short, static classifications only: no URL, request, provider body,
+ // credentials, account IDs, personal data or bank transaction values.
+ error.safeCode='PLUGGY_'+stage+'_'+kind+(kind==='HTTP'?'_'+httpStatus:'');
+ return error;
+}
+async function safeFetch(fetchImpl,url,options,stage){
+ try{return await fetchImpl(url,options);}
+ catch{throw providerError(stage,'NETWORK');}
+}
+
 function cleanId(value){
  if(typeof value!=='string'||value.length<1||value.length>180||
     /[\s\u0000-\u001f]/.test(value))
@@ -30,15 +44,15 @@ export class PluggyReadOnlyProvider{
  }
  async #auth(){
   if(this.#apiKey&&this.#clock()<this.#expires)return this.#apiKey;
-  const res=await this.#fetch(BASE+'/auth',{
+  const res=await safeFetch(this.#fetch,BASE+'/auth',{
    method:'POST',redirect:'manual',
    headers:{'Content-Type':'application/json',Accept:'application/json'},
    body:JSON.stringify({clientId:this.#clientId,clientSecret:this.#clientSecret})
-  });
-  if(res.status!==200)throw new Error('Autenticação bancária não concluída.');
+  },'AUTH');
+  if(res.status!==200)throw providerError('AUTH','HTTP',res.status);
   const data=await res.json().catch(()=>null);
   if(typeof data?.apiKey!=='string'||data.apiKey.length<16)
-   throw new Error('Resposta de autenticação bancária inválida.');
+   throw providerError('AUTH','SCHEMA');
   this.#apiKey=data.apiKey;this.#expires=this.#clock()+110*60*1000;
   return this.#apiKey;
  }
@@ -48,29 +62,29 @@ export class PluggyReadOnlyProvider{
   for(const [key,value] of params)url.searchParams.set(key,value);
   if(url.origin!==BASE||url.protocol!=='https:')
    throw new Error('Origem Pluggy inválida.');
-  const res=await this.#fetch(url.toString(),{
+  const stage=pathname==='/accounts'?'ACCOUNTS':'TRANSACTIONS';
+  const res=await safeFetch(this.#fetch,url.toString(),{
    method:'GET',redirect:'manual',
    headers:{'X-API-KEY':apiKey,Accept:'application/json'}
-  });
-  if(res.status!==200)
-   throw new Error('Consulta do Pluggy indisponível. Dados anteriores preservados.');
+  },stage);
+  if(res.status!==200)throw providerError(stage,'HTTP',res.status);
   const data=await res.json().catch(()=>null);
   if(!data||typeof data!=='object'||!Array.isArray(data.results))
-   throw new Error('Resposta do Pluggy incompleta.');
+   throw providerError(stage,'SCHEMA');
   return data;
  }
  async getItem(itemId){
   const id=cleanId(itemId);
   const apiKey=await this.#auth();
-  const res=await this.#fetch(BASE+'/items/'+encodeURIComponent(id),{
+  const res=await safeFetch(this.#fetch,BASE+'/items/'+encodeURIComponent(id),{
     method:'GET',redirect:'manual',
     headers:{'X-API-KEY':apiKey,Accept:'application/json'}
-  });
-  if(res.status!==200)throw new Error('Consentimento Pluggy indisponível.');
+  },'ITEM');
+  if(res.status!==200)throw providerError('ITEM','HTTP',res.status);
   const item=await res.json().catch(()=>null);
   if(!item||typeof item!=='object'||item.id!==id||
      typeof item.status!=='string')
-    throw new Error('Identidade do item Pluggy não confirmada.');
+    throw providerError('ITEM','SCHEMA');
   return item;
  }
  async listAccounts(itemId,{maxPages=MAX_PAGES}={}){
