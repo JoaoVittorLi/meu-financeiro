@@ -12,6 +12,13 @@ contextBridge.exposeInMainWorld('financeDesktop', Object.freeze({
   connectCloudAccess: () => ipcRenderer.invoke('cloud:access-connect'),
   previewQuarantineDemo: () => ipcRenderer.invoke('cloud:quarantine-demo'),
   transferPersonalCloud: () => ipcRenderer.invoke('cloud:transfer-personal'),
+  cloudPersonalSyncStatus: () => ipcRenderer.invoke('cloud:personal-sync-status'),
+  onCloudPersonalUpdated: (callback) => {
+    if(typeof callback!=='function')throw new TypeError('Callback inválido.');
+    const listener=(_event,data)=>callback({inbound:data?.inbound||0,conflicts:data?.conflicts||0});
+    ipcRenderer.on('cloud:personal-updated',listener);
+    return () => ipcRenderer.removeListener('cloud:personal-updated',listener);
+  },
   backupStatus: () => ipcRenderer.invoke('finance:backup-status'),
   restoreSQLite: () => ipcRenderer.invoke('finance:restore'),
   openBackupsFolder: () => ipcRenderer.invoke('finance:open-backups'),
