@@ -153,3 +153,21 @@ sincronização posterior.
 
 **Aguardando prova humana da nova rota:** o proprietário deve abrir o Preview já conhecido, autenticar e clicar uma vez em **“Testar importação protegida (fictícia)”**. O resultado esperado é 17 tabelas, 17 registros fictícios, validação/idempotência/descarte aprovados e zero registros reais.
 **Ainda falta:** autenticar e expor os endpoints reais de lotes com vinculação ao dispositivo, recuperação de erro, proteção de importações incompletas, recepção no Windows com confirmação explícita, Pluggy server-side ativo, reconciliação histórica dos IDs e ativação futura sob critério de equivalência/rollback.
+
+
+## Checkpoint — aprovado pelo proprietário: 17 tabelas na quarentena
+
+- O proprietário enviou captura de tela em 07/11/2026 mostrando a confirmação verde:
+  **"Teste aprovado: 17 tabelas pessoais e 17 registros fictícios. Validação, proteção contra duplicidade e descarte completo confirmados. Nenhum dado real transferido."**
+- Este resultado confirma a execução real no Preview Cloudflare do teste **fictício** com autenticação já configurada. Não equivale a uma migração financeira real ou à autorização de usá-la.
+- O usuário mantém o backup SQLite local e não precisou compartilhar dados ou credenciais.
+
+## Próximo ensaio implementado: retomada de transferência em lotes
+
+- Novo `mobile-push/src/finance-synthetic-batches.js` prepara **207 registros fictícios, incluindo 191 transações manuais**, mantendo as 17 tabelas pessoais e relações de exemplo.
+- Reutiliza os métodos reais de quarentena paginada: abrir importação, inserir até 80 registros por bloco, reenviar primeiro bloco propositalmente, retomar usando o mesmo identificador, comparar hashes e contagens, verificar a quarentena e cancelar.
+- Confere que **80 registros repetidos não viram transações duplicadas**, e apaga inclusive o identificador de sessão sintética após o descarte; nenhuma linha financeira real é tocada.
+- Novo `POST /api/migration/batch-demo` requer as mesmas duas autenticações (sessão privada + token Cloudflare Access assinado), valida a origem e **descarta o corpo fornecido pelo solicitante**. Os registros fictícios vêm unicamente de código.
+- Novo botão de Preview: **"Testar transferência em lotes (fictícia)"**, em `/sync.html`.
+- O backend de importação **de dados reais** continua inacessível (não foi criado endpoint público). `FINANCIAL_SCHEMA_ACTIVE=false` permanece desligado, sem cutover, e os dados do SQLite desktop/Pluggy seguem inalterados.
+- Próximo checkpoint humano: proprietário clicar no botão novo e conferir **207 fictícios, reenvio de 80 sem duplicidade, retomada, hashes e descarte**. Após a aprovação, a etapa de produção exigirá emparelhamento seguro Windows, importação real autorizada, reconciliação com Pluggy e testes de rollback ponta a ponta.
