@@ -228,6 +228,11 @@ class FinanceDB {
        display_name TEXT NOT NULL,
        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
      );
+      CREATE TABLE IF NOT EXISTS bank_duplicate_dismissals (
+        pair_key TEXT PRIMARY KEY, dismissed_at TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_bank_tx_amount_date ON bank_transactions(amount_cents,date);
+
    `);
    // Migração aditiva: preserva dados, regras e categorias já cadastradas.
    const columns=this.db.prepare('PRAGMA table_info(categories)').all().map(x=>x.name);
@@ -477,6 +482,30 @@ class FinanceDB {
        AND abs(julianday(t.date)-julianday(b.date))<=3
    )`);
  }
+ /** Non-destructive review suggestions: NEVER delete or merge a banking row automatically. */
+ suspectedDuplicates(){
+  const rows=this.db.prepare(`SELECT b1.account_id AS accountIdA,b1.external_id AS externalIdA,
+     b2.account_id AS accountIdB,b2.external_id AS externalIdB,
+     b1.description,b1.amount_cents AS amount,b1.date,a1.name AS accountName
+     FROM bank_transactions b1
+     JOIN bank_accounts a1 ON a1.account_id=b1.account_id
+     JOIN bank_transactions b2 ON b2.account_id>b1.account_id
+      AND b2.amount_cents=b1.amount_cents AND b2.status='POSTED'
+      AND b2.date BETWEEN date(b1.date,'-1 day') AND date(b1.date,'+1 day')
+      AND b2.description=b1.description COLLATE NOCASE
+     JOIN bank_accounts a2 ON a2.account_id=b2.account_id AND a2.name=a1.name
+     WHERE b1.status='POSTED' AND length(trim(b1.description))>=8 AND b1.amount_cents<>0
+     ORDER BY b1.date DESC LIMIT 80`).all();
+  const dismissed=new Set(this.db.prepare('SELECT pair_key FROM bank_duplicate_dismissals').all().map(r=>r.pair_key));
+  return rows.map(row=>({...row,pairKey:[row.accountIdA,row.externalIdA,row.accountIdB,row.externalIdB].join('|')}))
+    .filter(row=>!dismissed.has(row.pairKey)).slice(0,20);
+ }
+ dismissDuplicate(pairKey){
+  if(typeof pairKey!=='string'||pairKey.length<20||pairKey.length>650||pairKey.split('|').length!==4)throw new Error('Identificador de aviso inválido.');
+  if(!this.suspectedDuplicates().some(row=>row.pairKey===pairKey))throw new Error('Este aviso não está mais disponível.');
+  this.db.prepare('INSERT OR IGNORE INTO bank_duplicate_dismissals(pair_key,dismissed_at) VALUES(?,?)').run(pairKey,new Date().toISOString());
+  return this.bankOverview();
+ }
  bankOverview(){
    const accounts=this.db.prepare(`SELECT account_id AS id,item_id AS itemId,name,subtype,currency,balance_cents AS balance,updated_at AS updatedAt FROM bank_accounts ORDER BY name`).all().map(x=>({...x}));
    const rules=this.listCategories().rules.filter(x=>x.enabled);
@@ -501,10 +530,33 @@ class FinanceDB {
        return {...safe,category,categorySource,merchant,note:x.note||'',nature:x.nature||'auto',reviewed:!!x.reviewedAt,
          splits:splitOutdated?[]:savedSplits,splitOutdated};
    });
+   // Dashboard aggregates use the ENTIRE local bank history, never only the 2,500 visible rows.
+   const ledger=this.db.prepare(`SELECT b.account_id AS accountId,b.external_id AS externalId,b.date,b.description,
+     b.amount_cents AS amount,b.category AS bankCategory,o.category AS overrideCategory,n.nature
+     FROM bank_transactions b
+     LEFT JOIN bank_category_overrides o USING(account_id,external_id)
+     LEFT JOIN bank_transaction_notes n USING(account_id,external_id)
+     WHERE b.status='POSTED' ORDER BY b.date`).all();
+   const dayMap=new Map();
+   for(const x of ledger){
+     const nature=x.nature&&x.nature!=='auto'?x.nature:(x.amount>=0?'income':'expense');
+     if(nature==='transfer'||nature==='ignore')continue;
+     if(!dayMap.has(x.date))dayMap.set(x.date,{date:x.date,income:0,expense:0,categories:new Map()});
+     const day=dayMap.get(x.date),amount=Math.abs(x.amount);
+     if(nature==='income'){day.income+=amount;continue;}
+     if(nature!=='expense')continue;
+     day.expense+=amount;
+     const parts=splitMap.get(x.accountId+'|'+x.externalId)||[];
+     const ok=parts.length&&parts.reduce((sum,part)=>sum+part.amount,0)===amount;
+     const category=x.overrideCategory||matchRule(x.description,'bank',rules)||(categories.has(x.bankCategory)?x.bankCategory:'Outros');
+     for(const part of ok?parts:[{category,amount}])day.categories.set(part.category,(day.categories.get(part.category)||0)+part.amount);
+   }
+   const dailyTotals=[...dayMap.values()].map(x=>({date:x.date,income:x.income,expense:x.expense,
+     categories:[...x.categories].map(([name,total])=>({name,total}))}));
    const totalTransactions=this.db.prepare('SELECT COUNT(*) AS total FROM bank_transactions').get().total;
    const items=this.db.prepare(`SELECT item_id AS itemId,institution,status,consent_expires_at AS consentExpiresAt,last_sync_at AS lastSyncAt FROM bank_items ORDER BY last_sync_at DESC`).all().map(x=>({...x}));
    const last=this.db.prepare(`SELECT completed_at AS completedAt,new_count AS newCount,total_count AS totalCount FROM bank_sync_history ORDER BY id DESC LIMIT 1`).get()||null;
-   return {accounts,transactions,items,last,totalTransactions,truncated:totalTransactions>transactions.length,aliases};
+   return {accounts,transactions,items,last,totalTransactions,truncated:totalTransactions>transactions.length,aliases,dailyTotals,suspectedDuplicates:this.suspectedDuplicates()};
  }
  ingestBank(itemId,payload){
    if(typeof itemId!=='string'||!itemId.trim()||!payload||!Array.isArray(payload.data))throw new Error('Lote bancário inválido.');

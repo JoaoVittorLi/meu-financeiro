@@ -34,7 +34,7 @@ jobs:
       - name: Disponibilizar executáveis
         uses: actions/upload-artifact@v4
         with:
-          name: MeuFinanceiro-v0.8.0-Windows
+          name: MeuFinanceiro-v0.9.0-Windows
           path: |
             release/*.exe
             release/SHA256.txt
@@ -46,12 +46,12 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          $tag = 'v0.8.0'
+          $tag = 'v0.9.0'
           $assets = @(Get-ChildItem release -Filter '*.exe' -File | ForEach-Object { $_.FullName })
           $assets += (Resolve-Path release/SHA256.txt).Path
           gh release view $tag --repo $env:GITHUB_REPOSITORY *> $null
           if ($LASTEXITCODE -eq 0) {
             gh release upload $tag @assets --clobber --repo $env:GITHUB_REPOSITORY
           } else {
-            gh release create $tag @assets --target $env:GITHUB_SHA --repo $env:GITHUB_REPOSITORY --title 'Meu Financeiro v0.8.0 — Transações inteligentes (prévia)' --notes 'Nova Central de Planejamento: contas previstas, recorrências, parcelas, saldo projetado diário e vinculação confirmada de pagamentos reais. Mantém histórico bancário original, dados locais, categorias e funções da v0.7. Consulte as limitações de projeções e faça backup antes de instalar. Prévia: valide a instalação e as projeções no Windows.' --prerelease
+            gh release create $tag @assets --target $env:GITHUB_SHA --repo $env:GITHUB_REPOSITORY --title 'Meu Financeiro v0.9.0 — Transações inteligentes (prévia)' --notes 'Motor de simulação integrado ao planejamento, comparativos de saldo diário com/sem compra, consultas bancárias agregadas sobre todo o histórico local, alertas de dados desatualizados e possíveis duplicatas sem exclusão automática, navegação simplificada. Dados locais preservados; faça backup antes de instalar. Prévia: simulações são estimativas, não garantia financeira.' --prerelease
           }

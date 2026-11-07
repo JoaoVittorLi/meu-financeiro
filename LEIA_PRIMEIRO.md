@@ -1,22 +1,12 @@
-# Meu Financeiro v0.8.0 — Leia antes de instalar
+# Meu Financeiro v0.9.0 — orientações para atualização
 
-1. Abra a v0.7 e faça **Configurações → Salvar cópia completa**. Guarde o arquivo `.sqlite` em pasta segura.
-2. Feche o Meu Financeiro e instale a v0.8. A instalação não remove seus dados nem exige reconectar o banco.
-3. Abra **Planejamento**. Crie uma despesa ou receita futura e confira como ela altera o saldo de cada dia.
-4. Para contas recorrentes, selecione semanal, mensal ou anual e a quantidade de ocorrências (até 36). Para compras parceladas, informe **o valor total** e a quantidade de parcelas.
-5. Quando um pagamento aparecer entre as movimentações bancárias confirmadas, aceite uma sugestão de conciliação ou procure a movimentação no painel do compromisso. Nada é vinculado automaticamente.
-6. Caso confirme pagamento manual sem vínculo, certifique-se de que ele **já foi descontado/adicionado ao saldo atual**; do contrário sua projeção ficará imprecisa.
+1. **Faça backup completo SQLite** na versão instalada antes de atualizar.
+2. Feche completamente o aplicativo antigo.
+3. Instale o arquivo `MeuFinanceiro-Instalador-0.9.0-x64.exe` da Release privada no GitHub, ou use a versão portátil.
+4. Confira o histórico bancário, categorias, compromissos, vínculos e backup em Configurações.
+5. Abra **Movimentações** e veja as abas **Todas as movimentações** e **A revisar**.
+6. Abra **Simular compra**. O comparativo usa o planejamento realmente cadastrado, mas **não é garantia** de capacidade de pagamento.
 
-## Proteções e limites
+**O que não muda:** conexão pessoal com Meu Pluggy, dados do Itaú, extratos originais, categorias e planejamentos anteriores. O novo detector de duplicatas mostra alertas para sua conferência, mas não apaga dados.
 
-- Valores bancários originais permanecem imutáveis. Nomes personalizados são armazenados em outra tabela.
-- Um pagamento confirmado não pode ser associado simultaneamente a dois compromissos nem a um vínculo manual existente.
-- Pagamentos parciais deixam apenas o valor restante na projeção; pagamento completo elimina essa previsão.
-- Rejeitar uma sugestão impede que a mesma combinação seja oferecida novamente.
-- Se o banco voltar a marcar uma movimentação como pendente ou alterar seu valor, o compromisso volta a apresentar o valor não quitado.
-- Períodos futuros disponíveis: do dia atual até aproximadamente 12 meses à frente. Recorrências são geradas explicitamente até 36 ocorrências.
-- Não há operações bancárias, pagamentos nem transferências pelo aplicativo.
-- Projeções são estimativas sobre o último saldo informado; contas com saldo desatualizado podem produzir conclusões incorretas.
-- O histórico bancário bruto e as categorias da versão anterior permanecem intactos.
-
-Em caso de problema, mantenha o backup e não exclua a pasta de dados do aplicativo. Os testes automatizados são uma etapa de proteção, mas o comportamento do instalador precisa ser confirmado no seu Windows.
+**Limitações:** saldo bancário pode estar atrasado em relação ao banco; extrato em tela limitado às 2.500 linhas mais recentes; histórico completo armazenado continua consultado nos indicadores. Simulador não cria dívidas reais; recorrências cadastradas têm horizonte finito; não há criptografia adicional no arquivo SQLite. Se algum cálculo parecer estranho, confira a data de atualização do banco e os pagamentos planejados antes de tomar uma decisão.

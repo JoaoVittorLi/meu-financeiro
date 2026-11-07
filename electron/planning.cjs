@@ -205,12 +205,21 @@ class PlanningStore {
   requiredDate(today);requiredDate(start);requiredDate(end);
   if(start<today)start=today;if(end<start)throw new Error('Selecione datas futuras.');
   const days=Math.round((Date.parse(end+'T00:00:00Z')-Date.parse(start+'T00:00:00Z'))/86400000)+1;
-  if(days>400)throw new Error('Escolha um período de até 400 dias.');
-  const accounts=this.db.prepare('SELECT balance_cents AS balance FROM bank_accounts WHERE balance_cents IS NOT NULL').all();
-  const bankBalance=accounts.reduce((s,a)=>s+a.balance,0);
+  if(days>2000)throw new Error('Escolha um período de até 2.000 dias.');
+  const accounts=this.db.prepare('SELECT balance_cents AS balance,updated_at AS observedAt FROM bank_accounts').all();
+  const knownAccounts=accounts.filter(a=>Number.isSafeInteger(a.balance));
+  const bankBalance=knownAccounts.reduce((s,a)=>s+a.balance,0);
+  // updated_at means when we OBSERVED the amount, not the date of the bank ledger.
+  // The provider does not currently expose a trustworthy balance-as-of timestamp to this schema.
+  const observedAt=accounts.map(a=>a.observedAt).filter(Boolean).sort()[0]||null; // oldest contributing account
+  const missingBalances=accounts.filter(a=>!Number.isSafeInteger(a.balance)).length;
+  const observationAgeHours=observedAt?Math.max(0,(Date.now()-Date.parse(observedAt))/3600000):null;
+  const quality=knownAccounts.length===0?'manual':missingBalances?'incomplete':
+    observationAgeHours===null||!Number.isFinite(observationAgeHours)?'unknown':
+    observationAgeHours>=24?'stale':'unverified';
   const manual=this.fin.load('real');const manualBalance=(manual?.settings.opening||0)+(manual?.transactions||[]).filter(t=>t.date<=today).reduce((s,t)=>s+(t.kind==='income'?t.amount:-t.amount),0);
   // Não mesclar fontes: banco se presente; caso contrário, total estritamente manual.
-  const anchor=accounts.length?bankBalance:manualBalance,source=accounts.length?'bank':'manual';
+  const anchor=knownAccounts.length?bankBalance:manualBalance,source=knownAccounts.length?'bank':'manual';
   const all=this.list({today});
   const eligible=all.filter(i=>i.effectiveStatus!=='paid'&&i.status==='planned'&&i.remaining>0 && !(i.kind==='income'&&i.certainty==='estimated'&&!includeEstimatedIncome));
   const events=new Map();for(const item of eligible){const day=item.dueDate<today?today:item.dueDate;if(!events.has(day))events.set(day,[]);events.get(day).push(item);}
@@ -224,9 +233,51 @@ class PlanningStore {
    balance+=incoming-outgoing;
    rows.push({date:day,opening,incoming,outgoing,closing:balance,items:items.map(i=>({id:i.id,title:i.title,kind:i.kind,amount:i.remaining,overdue:i.dueDate<today}))});
   }
-  const min=rows.reduce((v,r)=>Math.min(v,r.closing),anchor),negative=rows.filter(r=>r.closing<0).map(r=>r.date);
+  const min=rows.reduce((v,r)=>Math.min(v,r.closing),rows[0]?.closing??anchor),negative=rows.filter(r=>r.closing<0).map(r=>r.date);
   return {anchor,source,anchorDate:today,asOf:this.db.prepare('SELECT MAX(last_sync_at) AS last FROM bank_items').get().last||null,
+    // Even a recent API read is not proof that the institution's balance is current.
+    reference:{quality,observedAt,missingBalances,totalAccounts:accounts.length,observationAgeHours:observationAgeHours===null?null:Math.round(observationAgeHours)},
     includeEstimatedIncome,rows,minimum:min,negativeDays:negative,uncertainIncomeExcluded:all.filter(i=>i.status==='planned'&&i.kind==='income'&&i.certainty==='estimated'&&i.remaining>0).length};
+ }
+ /** Read-only purchase scenario. The SAME daily projection used by Planning is the baseline. */
+ simulatePurchase({today=isoToday(),amount,installments=1,monthlyRate=0,firstDueDate=null,includeEstimatedIncome=false}={}){
+  requiredDate(today);money(amount);
+  if(!Number.isInteger(installments)||installments<1||installments>60)throw new Error('Escolha de 1 a 60 parcelas.');
+  if(typeof monthlyRate!=='number'||!Number.isFinite(monthlyRate)||monthlyRate<0||monthlyRate>30)throw new Error('Juros mensais inválidos.');
+  const due=requiredDate(firstDueDate|| (installments===1?today:nextOccurrence(today,1,'monthly')));
+  if(due<today||due>addDay(today,365))throw new Error('Primeiro vencimento fora do período permitido.');
+  const rate=monthlyRate/100;
+  // Equal installments when financed. At zero interest, distribute residual cents exactly.
+  const installmentAmount=rate===0?Math.floor(amount/installments):Math.round(amount*rate/(1-Math.pow(1+rate,-installments)));
+  if(installmentAmount<1)throw new Error('Valor insuficiente para distribuir as parcelas.');
+  const schedule=Array.from({length:installments},(_,index)=>({
+    date:nextOccurrence(due,index,'monthly'),
+    amount:rate===0?installmentAmount+(index<amount%installments?1:0):installmentAmount
+  }));
+  const total=schedule.reduce((n,p)=>n+p.amount,0);
+  if(!Number.isSafeInteger(total)||total>MAX)throw new Error('Valor total da compra excede o limite.');
+  const end=[addDay(schedule.at(-1).date,30),addDay(today,90)].sort().at(-1); // include near-term obligations beyond the last installment
+  const base=this.projection({today,start:today,end,includeEstimatedIncome});
+  const payments=new Map(schedule.map(x=>[x.date,x.amount]));
+  let cumul=0,minimum=Number.POSITIVE_INFINITY,worstDay=today,negativeDays=0,belowReserveDays=0;
+  const manual=this.fin.load('real');const reserve=manual?.settings?.reserve||0;
+  const monthly=new Map();
+  for(const day of base.rows){
+    cumul+=payments.get(day.date)||0;
+    const remaining=day.closing-cumul;
+    if(remaining<minimum){minimum=remaining;worstDay=day.date;}
+    if(remaining<0)negativeDays++;
+    if(remaining<reserve)belowReserveDays++;
+    monthly.set(day.date.slice(0,7),{month:day.date.slice(0,7),withoutPurchase:day.closing,withPurchase:remaining});
+  }
+  const noFunds=base.source==='manual'&&base.anchor===0&&(!manual?.transactions?.length);
+  const risk=minimum<0?'risk':minimum<reserve?'caution':
+    noFunds||base.reference.quality==='stale'||base.reference.quality==='incomplete'||base.reference.quality==='unknown'?'unknown':'estimate';
+  return {engine:'planning',principal:amount,monthly:installmentAmount,total,interest:total-amount,installments,
+   schedule,firstDueDate:due,reserve,baselineMinimum:base.minimum,minimumAfterPurchase:minimum,
+   worstDay,negativeDays,belowReserveDays,anchor:base.anchor,source:base.source,reference:base.reference,
+   risk,rows:[...monthly.values()],estimatedIncomeIncluded:includeEstimatedIncome,
+   warning:'Estimativa baseada em dados e compromissos cadastrados. Saldos bancários podem estar desatualizados; não representa garantia de capacidade de pagamento.'};
  }
  overview(opts={}){
   const today=opts.today||isoToday();const items=this.list({today});const suggestions=this.suggest(today);

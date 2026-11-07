@@ -1,42 +1,43 @@
-# Meu Financeiro v0.8.0 — Central de Planejamento 💜
+# Meu Financeiro v0.9.0 💜
 
-Aplicativo pessoal para Windows (Electron + React/TypeScript + SQLite), com sincronização somente leitura das contas autorizadas e planejamento financeiro local.
+Aplicativo financeiro pessoal **Windows x64**, com Electron, React/TypeScript e SQLite local. Integração bancária **somente leitura** via Meu Pluggy.
 
-## Novidades v0.8
+## Novidades v0.9.0
 
-- **Planejamento**: nova central que reúne compromissos futuros, movimentações bancárias confirmadas e lançamentos manuais existentes.
-- **Linha do tempo diária**: selecione um dia do mês corrente ou dos próximos 12 meses e acompanhe saldo inicial, entradas, saídas e saldo final estimado.
-- **Lançamentos planejados**: receitas, despesas, datas, valores, categorias, notas, conta associada e grau de certeza.
-- **Recorrências**: semanais, mensais ou anuais; cada ocorrência pode ser editada separadamente, preservando as demais.
-- **Parcelas**: valor total dividido exatamente em centavos, até 36 parcelas mensais.
-- **Conciliação**: sugestões por data, valor e descrição com confirmação manual; também é possível procurar e vincular um pagamento específico, ignorar sugestões e desfazer vínculos.
-- **Pagamentos parciais**: um compromisso aceita múltiplos pagamentos confirmados até atingir o valor planejado. Se o valor pago for diferente, ajuste explicitamente o valor do compromisso; não é modificado automaticamente.
-- **Nome personalizado**: título independente da descrição bancária original (que permanece inalterada).
-- **Alertas**: saldo projetado negativo, vencidos e dados bancários desatualizados.
-- **Cenários**: receitas estimadas ficam fora da projeção conservadora até o usuário optar por incluí-las.
-- **Histórico de mudanças**: registros de criação, edição, conciliação, cancelamento e reativação.
-- **Preservação**: migração aditiva, sem substituir tabelas de transações da v0.7.
+- **Simular compra** usa o **mesmo motor diário** da Central de Planejamento, sem gravar dívidas fictícias. Compara saldos com/sem compra, compromissos por vencimento, reserva configurada e até 60 parcelas com juros mensais.
+- A simulação examina pelo menos 90 dias seguintes, e continua até 30 dias após a última parcela. O teste inclui saldos negativos, períodos críticos e reservas comprometidas.
+- O aplicativo sinaliza **qualidade da referência bancária**: leitura antiga (24+ horas), saldo incompleto ou leitura recente mas sem data bancária efetiva comprovada. Uma consulta recente à API **não** significa que todas as operações já entraram no saldo.
+- Indicadores de receitas, despesas e categorias bancárias consultam **todo o histórico local** usando agregados por data. A lista navegável ainda mostra no máximo 2.500 operações mais recentes.
+- **Movimentações** reúne a antiga caixa de revisão como aba; a segunda página de simulação foi eliminada. Planejamento continua com sua linha do tempo.
+- Transações já vinculadas a um planejamento deixam de aparecer duplicadas na visão consolidada; a opção de ver extrato bancário mantém o lançamento original acessível.
+- Avisos **não destrutivos** de registros bancários potencialmente duplicados entre conexões diferentes (mesmo nome de conta, descrição, valor e data próxima), com opção de ignorar alerta. Não mescla nem exclui automaticamente.
+- Sugestões de conciliação deixam de utilizar percentuais de confiança não calibrados; usam qualificações descritivas. Confirmação manual continua obrigatória.
 
-## Regra de projeção
+## Como usar
 
-O saldo bancário mais recente recebido é a referência quando existe saldo disponível; caso contrário o saldo manual é usado separadamente. Movimentos bancários já refletidos no saldo não são somados novamente. Apenas o **valor restante de compromissos futuros ou vencidos** altera a projeção. Receitas incertas são excluídas por padrão; despesas previstas, inclusive estimadas, entram de forma conservadora.
+1. Faça backup completo na versão atual antes de instalar a v0.9.0.
+2. Abra **Planejamento** e confirme seus compromissos futuros, pagamentos e possíveis vínculos bancários.
+3. Entre em **Simular compra**, escolha valor, prazo, juros e primeira data de pagamento.
+4. Compare o menor saldo dos cenários e leia os avisos. Uma projeção **não confirma** capacidade de pagamento.
+5. Abra **Movimentações → A revisar** para conferir categorias e identificar possíveis registros repetidos.
 
-Um pagamento marcado manualmente como quitado **deve já estar refletido no saldo atual**, pois não pode ser confirmado tecnicamente sem vínculo bancário. Um pagamento bancário importado não é ligado automaticamente: sugestões exigem aprovação.
-
-**Importante:** esta é uma estimativa e não garante disponibilidade real, pois os bancos podem atualizar dados com atraso, e movimentações não importadas não são conhecidas. Projeções históricas anteriores à data atual não são calculadas. A lista visual do banco segue o limite de 2.500 movimentações da versão anterior; as sugestões de conciliação consultam o banco SQLite diretamente.
-
-## Instalação
-
-Baixe o instalador ou executável portátil na [Release v0.8.0](https://github.com/JoaoVittorLi/meu-financeiro/releases/tag/v0.8.0). Repositório privado: acesso com sua conta GitHub. Não exige instalar Python nem Node no computador.
-
-Faça uma **cópia completa** em Configurações na versão anterior antes de atualizar. As credenciais da conexão bancária continuam protegidas separadamente pelo Windows; não são publicadas nem entram no backup SQLite.
-
-## Desenvolvimento e testes
+## Execução para desenvolvedores
 
 ```powershell
 npm install
-npm run test
+npm test
 npm start
 ```
 
-O `npm run test` executa a compilação TypeScript e testes de SQLite, categorias, segurança, recuperação, conciliação e projeção diária. O GitHub Actions compila os executáveis em Windows x64. A instalação e persistência no Windows real ainda precisam ser conferidas após a distribuição.
+Para Windows, o GitHub Actions gera instalador NSIS e portátil. O app **não** usa servidor próprio nem necessita Python/Node instalado no PC do usuário.
+
+## Limitações e segurança
+
+- O SQLite e backups completos contêm dados financeiros pessoais **sem criptografia própria**. Guarde-os em local seguro. Segredos de integração bancária são mantidos no cofre do Windows, separados do banco.
+- A Pluggy nem sempre fornece uma data inequívoca de atualização efetiva do saldo. Os horários de sincronização refletem a consulta, não necessariamente todas as operações lançadas pelo banco.
+- Receitas incertas são excluídas da projeção conservadora. Compromissos futuros são **somente os cadastrados**, não detectamos automaticamente despesas esquecidas.
+- Recorrências ainda geram um número finito de ocorrências, até 36. Novas parcelas do simulador podem ser até 60, mas **não** são lançadas na contabilidade até o usuário confirmar manualmente um planejamento.
+- Em grandes históricos, a lista bancária mostra até 2.500 movimentações recentes; os indicadores por período usam agregados de **todos os registros salvos**. Não implica que o banco forneceu histórico completo.
+- O detector de possíveis duplicatas é conservador e pode ter falsos positivos/negativos; **não** remove registros.
+- Transferências e estornos precisam ser classificados corretamente; o app não pode deduzi-los de maneira infalível. O dashboard não soma indiscriminadamente o histórico manual ao bancário.
+- Todos os valores monetários e testes do motor são expressos em centavos inteiros. Não compartilhe credenciais bancárias ou dados pessoais no repositório.
