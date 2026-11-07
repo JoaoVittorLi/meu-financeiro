@@ -13,6 +13,7 @@
 <script src="/finance.js" defer></script>
 <script src="/finance-pwa.js" defer></script>
 <script src="/finance-analytics.js" defer></script>
+<script src="/finance-personal-edit.js" defer></script>
 </head>
 <body>
 <div class="finance-app">
@@ -119,9 +120,25 @@
     </section>
 
     <section id="view-planning" class="finance-view" hidden aria-label="Planejamento">
-      <div class="finance-intro"><h2>Planejamento</h2><p>Compromissos já trazidos do Windows. Pagamentos e vínculos não serão alterados nesta fase.</p></div>
-      <article class="finance-card"><h3>Próximos compromissos cadastrados</h3><ul class="finance-list" id="planList"><li class="finance-muted">Carregando...</li></ul></article>
-      <p class="finance-safe">Cadastro, recorrências, liquidação parcial e projeções ficarão editáveis após a validação do motor financeiro comum.</p>
+      <div class="finance-intro"><h2>Planejamento</h2><p>Compromissos sincronizáveis com o Windows: edite título, data, categoria, confiança e observações dos registros já migrados.</p></div>
+      <article class="finance-card">
+        <div class="finance-personal-toolbar">
+          <label for="planFilter">Exibir compromissos
+            <select id="planFilter">
+              <option value="all">Todos</option>
+              <option value="pending">Pendentes</option>
+              <option value="paid">Pagos</option>
+              <option value="cancelled">Cancelados</option>
+            </select>
+          </label>
+          <label for="planSearch">Pesquisar
+            <input id="planSearch" type="search" maxlength="100" placeholder="Título ou categoria" autocomplete="off">
+          </label>
+        </div>
+        <p id="planEditStatus" class="finance-muted" role="status" aria-live="polite">Carregando registros pessoais...</p>
+        <ul class="finance-list" id="planList"><li class="finance-muted">Carregando...</li></ul>
+      </article>
+      <p class="finance-safe">A edição utiliza revisão por registro. Pagamentos, valores, vínculos, cancelamentos, criação e recorrências ainda exigem a base financeira compartilhada. Não marque pagamentos por esta prévia.</p>
     </section>
 
     <section id="view-budgets" class="finance-view" hidden aria-label="Orçamentos">
@@ -131,6 +148,7 @@
         <div id="budgetProgressList" class="finance-budget-grid" aria-live="polite"></div>
       </article>
       <article class="finance-card finance-manual-card"><h3>Limites cadastrados no Windows</h3>
+        <p id="budgetEditStatus" class="finance-muted" role="status" aria-live="polite">Valores editáveis com revisão; consumo ainda provisório.</p>
         <ul class="finance-list" id="budgetList"><li class="finance-muted">Carregando...</li></ul>
       </article>
     </section>
@@ -152,6 +170,18 @@
       <p class="finance-safe">A data da consulta ao Pluggy não é necessariamente a data do saldo informado pelo Itaú. O saldo não será apresentado como disponível antes da conferência.</p>
     </section>
 
+    <dialog id="personalEditDialog" class="finance-edit-dialog" aria-labelledby="personalEditTitle">
+      <form id="personalEditForm">
+        <h2 id="personalEditTitle">Editar registro pessoal</h2>
+        <p id="personalEditHint" class="finance-muted"></p>
+        <div id="personalEditFields" class="finance-edit-fields"></div>
+        <p id="personalEditMessage" class="finance-muted" role="status" aria-live="polite"></p>
+        <div class="finance-edit-actions">
+          <button type="button" id="personalEditCancel" class="finance-secondary">Cancelar</button>
+          <button type="submit" id="personalEditSubmit" class="finance-bank-activate">Salvar na Cloudflare</button>
+        </div>
+      </form>
+    </dialog>
     <footer class="finance-footer">
       <span>Meu Financeiro · Preview protegido · Sem corte do SQLite</span>
       <a href="/">Configurar notificações</a>
