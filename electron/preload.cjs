@@ -6,7 +6,6 @@ contextBridge.exposeInMainWorld('financeDesktop', Object.freeze({
   save: (profile,data) => ipcRenderer.invoke('finance:save',profile,data),
   info: () => ipcRenderer.invoke('finance:info'),
   backupSQLite: () => ipcRenderer.invoke('finance:backup'),
-  auditMigrationBackup: () => ipcRenderer.invoke('finance:migration-audit'),
   cloudMigrationStatus: () => ipcRenderer.invoke('cloud:migration-status'),
   prepareCloudMigration: () => ipcRenderer.invoke('cloud:prepare-migration'),
   backupStatus: () => ipcRenderer.invoke('finance:backup-status'),
