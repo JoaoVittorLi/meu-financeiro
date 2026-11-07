@@ -46,3 +46,23 @@ Política final desejada: uma única tag e SHA de origem, mesmo contrato de API 
 **Pendente antes de Production:** tags semânticas compartilhadas, metadados de versão do backend, compatibilidade API N/N-1, migrações aditivas com dry-run, aprovação humana, publicação coordenada, monitoramento, backup/rollback real e método de atualização do instalador Windows. Não é correto afirmar que atualização Production simultânea já funciona.
 
 **Segurança:** o histórico local continua protegido; nunca expor segredos Pluggy, cookies, JWT, banco ou logs financeiros no GitHub. Garantir que PWA instalado não persista extrato em um segundo banco financeiro offline e que o Worker exija identidade e sessão do proprietário em todas as rotas financeiras.
+
+## Continuidade — indicadores financeiros e categorias (07/11/2026)
+
+Implementações adicionais na PR #1:
+- Shared: shared/finance-period-ledger.mjs agrega valores em centavos por data sem misturar banco com lançamentos manuais. Banco considera somente POSTED e exclui transferências próprias e itens ignorados quando a natureza foi explicitamente marcada. Splits validamente fechados são distribuídos por categoria.
+- GET /api/finance/period-summary (start/end/source=bank ou manual) exige sessão privada e Cloudflare Access, apenas no Preview, limita 730 dias, não transmite IDs, descrições ou saldo. Mostra receitas, despesas, resultado, categorias, gráfico e consumo mensal de limites, todos sinalizados como provisórios.
+- Visão geral do PWA: período, alternância banco/manual, cards, gráfico SVG de fluxo de caixa e categorias. Orçamentos: barras de consumo do mês. Nem orçamento nem resultado indicam dinheiro disponível enquanto a conciliação não estiver homologada.
+- Categoria original Pluggy armazenada numa tabela lateral aditiva mf_bank_staging_categories. Nenhuma alteração destrutiva na tabela de extrato, nas 630 transações, nos 93 registros pessoais ou no SQLite original. Os metadados originais só surgem após uma nova consulta que os receba.
+- Prioridade de classificação conforme o desktop: override manual > regra habilitada > categoria do provedor > pendência. Ainda é necessário validar a equivalência real.
+- Testes sintéticos de fonte separada, POSTED, transfer/ignore, splits, categorias, limites zero, intervalos, segurança da API, idempotência da categoria e golden test com FinanceDB.bankOverview() do Windows.
+
+Validação do proprietário (ordem):
+1. Confirmar deployment Preview como Ready e abrir PWA protegido.
+2. Testar Visão geral nas duas fontes; verificar gráfico e orçamento com a ressalva de conferência.
+3. Quando necessário, autorizar refresh do Pluggy para que categorias sejam capturadas na tabela lateral, sem repetir migração pessoal.
+4. Abrir o portátil Windows gerado na mesma revisão e usar Configurações → Comparar histórico Windows × Cloudflare. Checar hashes de identidade, datas/centavos e descrição/status, mas NÃO concluir cutover.
+5. Comparar categorias originais, naturezas, overrides, regras, splits, 17 tabelas, vínculos, saldos e período de cobertura com os dados locais antes de exibir valores como definitivos.
+6. Só depois implementar gradualmente as mutações seguras e a paridade de todas as funções, incluindo Planejamento, Simular compra, Configurações e alertas financeiros.
+
+Uma atualização para todos: o workflow de Preview já testa o Worker/PWA e constrói o portátil Windows do mesmo commit, mas não faz lançamento simultâneo em Production. Ainda são necessários versão única, API compatível N/N-1, testes e promoção controlada com backup/rollback antes da distribuição estável.
