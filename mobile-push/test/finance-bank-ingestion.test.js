@@ -77,10 +77,10 @@ test('partial Pluggy errors preserve the previously imported history and never l
   await ingestPluggyToStaging(s,env,{provider:provider()});
   const failed=await ingestPluggyToStaging(s,env,{provider:provider({fail:true})});
   assert.equal(failed.ok,false);
-  assert.equal(failed.code,'BANK_REFRESH_INCOMPLETE');
+  assert.equal(failed.code,'BANK_TRANSACTIONS_INCOMPLETE');
   assert.doesNotMatch(JSON.stringify(failed),/PRIVATE|API KEY|secret/);
   assert.equal(bankIngestionStatus(s).transactions,1);
-  assert.equal(bankIngestionStatus(s).issue,'BANK_REFRESH_INCOMPLETE');
+  assert.equal(bankIngestionStatus(s).issue,'BANK_TRANSACTIONS_INCOMPLETE');
   const partial=await ingestPluggyToStaging(s,env,{provider:provider({duplicate:true})});
   assert.equal(partial.ok,false);
   assert.equal(bankIngestionStatus(s).transactions,1);
@@ -124,6 +124,56 @@ test('invalid amount, institution, duplicate IDs or wrong account aborts full im
   for(const p of cases){
     const r=await ingestPluggyToStaging(s,env,{provider:p});
     assert.equal(r.ok,false);
+    assert.equal(bankIngestionStatus(s).transactions,0);
+  }
+ }finally{s.close();}
+});
+
+test('invalid itemId is classified before any bank data is touched',async()=>{
+ const s=memory();
+ try{
+  const result=await ingestPluggyToStaging(s,{
+   ...env,PLUGGY_ITEM_IDS:'NOT-A-REAL-ITEM-ID'
+  },{provider:provider()});
+  assert.equal(result.ok,false);
+  assert.equal(result.code,'BANK_ITEM_IDS_INVALID');
+  assert.equal(result.financialSyncEnabled,false);
+  assert.equal(bankIngestionStatus(s).transactions,0);
+ }finally{s.close();}
+});
+test('expired Meu Pluggy consent is a safe ITEM-stage failure preserving history',async()=>{
+ const s=memory();
+ try{
+  assert.equal((await ingestPluggyToStaging(s,env,{provider:provider()})).ok,true);
+  const result=await ingestPluggyToStaging(s,env,{provider:{
+   getItem:async()=>({status:'LOGIN_ERROR',error:{code:'USER_AUTHORIZATION_EXPIRED'}}),
+   listAccounts:async()=>{throw Error('Should never query accounts after expired consent');}
+  }});
+  assert.equal(result.ok,false);
+  assert.equal(result.code,'BANK_ITEM_INCOMPLETE');
+  assert.equal(bankIngestionStatus(s).issue,'BANK_ITEM_INCOMPLETE');
+  assert.equal(bankIngestionStatus(s).transactions,1);
+ }finally{s.close();}
+});
+test('safe Pluggy diagnostics describe HTTP failures without exposing provider secrets',async()=>{
+ const s=memory();
+ try{
+  for(const stage of ['AUTH','ITEM','ACCOUNTS','TRANSACTIONS']){
+    const e=new Error('CLIENT_SECRET_AND_BANK_ACCOUNT_MUST_NOT_LEAK');
+    e.safeCode='PLUGGY_'+stage+'_HTTP_401';
+    const failProvider={
+     getItem:async()=>{if(stage==='ITEM')throw e;return {status:'UPDATED'};},
+     listAccounts:async()=>{
+       if(stage==='AUTH'||stage==='ACCOUNTS')throw e;
+       return [{id:account,type:'BANK',currencyCode:'BRL',name:'Banco fictício',balance:1}];
+     },
+     listTransactions:async()=>{if(stage==='TRANSACTIONS')throw e;return [];},
+    };
+    const result=await ingestPluggyToStaging(s,env,{provider:failProvider});
+    assert.equal(result.ok,false);
+    const expected=stage==='AUTH'?'PLUGGY_AUTH_HTTP_401':'PLUGGY_'+stage+'_HTTP_401';
+    assert.equal(result.code,expected);
+    assert.doesNotMatch(JSON.stringify(result),/CLIENT_SECRET|BANK_ACCOUNT/);
     assert.equal(bankIngestionStatus(s).transactions,0);
   }
  }finally{s.close();}
