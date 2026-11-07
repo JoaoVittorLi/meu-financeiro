@@ -16,6 +16,7 @@
 <script src="/finance-personal-edit.js" defer></script>
 <script src="/finance-simulate.js" defer></script>
 <script src="/finance-reference-audit.js" defer></script>
+<script src="/finance-planning-calendar.js" defer></script>
 </head>
 <body>
 <div class="finance-app">
@@ -123,6 +124,19 @@
 
     <section id="view-planning" class="finance-view" hidden aria-label="Planejamento">
       <div class="finance-intro"><h2>Planejamento</h2><p>Compromissos sincronizáveis com o Windows: edite título, data, categoria, confiança e observações dos registros já migrados.</p></div>
+      <article class="finance-card finance-plan-calendar">
+        <div class="finance-plan-calendar-toolbar">
+          <button type="button" id="planCalendarPrev" class="finance-edit-trigger" aria-label="Mês anterior">Anterior</button>
+          <h3 id="planCalendarMonth" aria-live="polite">Calendário financeiro</h3>
+          <button type="button" id="planCalendarNext" class="finance-edit-trigger" aria-label="Próximo mês">Próximo</button>
+        </div>
+        <p class="finance-muted">Agenda mensal dos compromissos cadastrados no Windows. Valores previstos, sem confusão com saldo bancário ou pagamentos conciliados.</p>
+        <div id="planCalendarMetrics" class="finance-plan-calendar-metrics"></div>
+        <div id="planCalendarDays" class="finance-plan-calendar-grid" role="group" aria-label="Dias do planejamento"></div>
+        <div id="planCalendarSelection" class="finance-plan-calendar-selection" aria-live="polite">
+          Selecione um dia do calendário para consultar compromissos.
+        </div>
+      </article>
       <article class="finance-card">
         <div class="finance-personal-toolbar">
           <label for="planFilter">Exibir compromissos
