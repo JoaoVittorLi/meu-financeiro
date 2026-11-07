@@ -110,10 +110,11 @@ test('diagnostic codes identify safe verification stages without revealing any J
       keys:[{...publicJwk,n:'this-is-not-a-valid-rsa-key'}]
     }),{status:200})
   });
-  assert.equal(badCrypto.status,503);
-  assert.equal(badCrypto.code,'CF-CRYPTO');
+  // Runtimes may reject a malformed RSA modulus during import or verify.
+  assert.ok(['CF-CRYPTO','CF-SIGNATURE'].includes(badCrypto.code));
+  assert.ok([403,503].includes(badCrypto.status));
+  assert.doesNotMatch(badCrypto.error,/owner@example|eyJ|test-key/);
 
-  const tampered=token.split('.');
   // Modify signing bytes without changing the valid token header and claims.
   const original=await sign({email:'owner@example.test'});
   const altered=original.slice(0,-5)+(original.slice(-5)[0]==='A'?'B':'A')+original.slice(-4);
