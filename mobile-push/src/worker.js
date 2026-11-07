@@ -8,6 +8,7 @@ import {readVerifiedPersonalOverview} from './finance-personal-overview.js';
 import {bankServerEnabled,bankIngestionStatus,ingestPluggyToStaging} from './finance-bank-ingestion.js';
 import {readBankTransactionsPage} from './finance-bank-read.js';
 import {cloudBankParityManifest} from './finance-bank-parity.js';
+import {readManualTransactionsPage} from './finance-manual-read.js';
 import {applyPersonalEdit,personalEditChanges,personalEditBaseline} from './finance-personal-edits.js';
 // Meu Financeiro: private proof-of-concept for standards-based Web Push.
 // No bank data or credentials are handled by this Worker.
@@ -259,6 +260,13 @@ export class PushHome {
       await this.scheduleNextBankSync(result.ok);
       return json(result);
     }
+    if(u.pathname==='/migration/manual-transactions'&&request.method==='GET'){
+      try{return json(readManualTransactionsPage(this.state.storage,{
+        offset:u.searchParams.get('offset')??'0',
+        limit:u.searchParams.get('limit')??'30'
+      }));}
+      catch{return json({ok:false,error:'Consulta manual inválida.'},400);}
+    }
     if(u.pathname==='/migration/personal-overview'&&request.method==='GET'){
       return json(readVerifiedPersonalOverview(this.state.storage));
     }
@@ -485,6 +493,19 @@ export default {
       const stub=env.PUSH_HOME.get(env.PUSH_HOME.idFromName('one-private-user'));
       // No user-controlled Item IDs or secrets are accepted from HTTP.
       return stub.fetch(new Request('https://internal/bank/refresh',{method:'POST'}));
+    }
+    if(url.pathname==='/api/migration/manual-transactions'&&request.method==='GET'){
+      if(!personalQuarantineAllowed(env))
+        return json({error:'Lançamentos manuais indisponíveis fora do Preview.'},403);
+      const identity=await authorizeAccess(request,env);
+      if(!identity.ok)return json({error:identity.error},identity.status);
+      const allowed=new Set(['offset','limit']);
+      for(const key of url.searchParams.keys()){
+        if(!allowed.has(key)||url.searchParams.getAll(key).length!==1)
+          return json({error:'Filtro inválido.'},400);
+      }
+      const stub=env.PUSH_HOME.get(env.PUSH_HOME.idFromName('one-private-user'));
+      return stub.fetch(new Request('https://internal/migration/manual-transactions'+url.search));
     }
     if(url.pathname==='/api/migration/personal-overview'&&request.method==='GET'){
       if(!personalQuarantineAllowed(env))
