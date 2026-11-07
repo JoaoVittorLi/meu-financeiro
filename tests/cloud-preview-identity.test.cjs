@@ -2,7 +2,7 @@
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const {PREVIEW_ORIGIN,ACCESS_TEAM_ORIGIN,previewHealthURL,
- allowedLoginNavigation,checkPreviewIdentity}=require('../electron/cloud-preview-identity.cjs');
+ allowedLoginNavigation,checkPreviewIdentity,testPreviewQuarantine}=require('../electron/cloud-preview-identity.cjs');
 const health={ok:true,storage:'Cloudflare SQLite Durable Object',mode:'test_only',financialEnabled:false};
 const reply=(payload,status=200,contentType='application/json')=>new Response(JSON.stringify(payload),{
   status,headers:{'Content-Type':contentType}
@@ -56,4 +56,54 @@ test('identity probe rejects Access redirect, invalid password, html login page 
   const offline=await checkPreviewIdentity(async()=>{throw new Error('Private network error');});
   assert.equal(offline.reason,'network_unavailable');
   assert.doesNotMatch(JSON.stringify(offline),/Private network error/);
+});
+
+test('desktop quarantined fake import uses POST with fixed no-finance body, cookies confined to Electron',async()=>{
+ let count=0;
+ const result=await testPreviewQuarantine(async(url,options)=>{
+  count++;
+  assert.equal(url,PREVIEW_ORIGIN+'/api/migration/quarantine-demo');
+  assert.equal(options.method,'POST');
+  assert.equal(options.redirect,'manual');
+  assert.equal(options.credentials,'include');
+  assert.equal(options.headers.Origin,PREVIEW_ORIGIN);
+  assert.equal(options.headers['Content-Type'],'application/json');
+  assert.equal(options.body,'{}');
+  assert.equal(JSON.stringify(options).includes('amount_cents'),false);
+  return reply({
+    ok:true,mode:'synthetic_personal_quarantine',personalTables:17,
+    fictionalRecords:17,payloadValidated:true,duplicateReplayPrevented:true,
+    rollbackVerified:true,realRecordsReceived:0,financialMigrationActivated:false,
+    syncedToDevices:false
+  });
+ });
+ assert.equal(count,1);
+ assert.deepEqual(result,{ok:true,stage:'fictional_quarantine_verified',
+    personalTables:17,fictionalRecords:17,realRecordsSent:0,
+    financialSyncEnabled:false});
+ assert.doesNotMatch(JSON.stringify(result),/cookie|token|secret|account_id/i);
+});
+
+test('desktop quarantine probe refuses responses claiming real import or financial activation',async()=>{
+ for(const corrupted of [
+  {realRecordsReceived:7},
+  {rollbackVerified:false},
+  {financialMigrationActivated:true},
+  {syncedToDevices:true},
+  {personalTables:18},
+  {duplicateReplayPrevented:false}
+ ]){
+  const base={ok:true,mode:'synthetic_personal_quarantine',personalTables:17,
+    fictionalRecords:17,payloadValidated:true,duplicateReplayPrevented:true,
+    rollbackVerified:true,realRecordsReceived:0,financialMigrationActivated:false,
+    syncedToDevices:false};
+  const r=await testPreviewQuarantine(async()=>reply({...base,...corrupted}));
+  assert.equal(r.ok,false);
+  assert.equal(r.financialSyncEnabled,false);
+ }
+ const redirect=await testPreviewQuarantine(async()=>new Response(null,{status:302,headers:{Location:'https://evil.test'}}));
+ assert.equal(redirect.ok,false);
+ const fail=await testPreviewQuarantine(async()=>{throw new Error('Secret failure');});
+ assert.equal(fail.ok,false);
+ assert.doesNotMatch(JSON.stringify(fail),/Secret failure/);
 });
