@@ -1,0 +1,15 @@
+name = "meu-financeiro-push"
+main = "src/worker.js"
+compatibility_date = "2026-11-07"
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+
+[[durable_objects.bindings]]
+name = "PUSH_HOME"
+class_name = "PushHome"
+
+[[migrations]]
+tag = "push_v1"
+new_sqlite_classes = ["PushHome"]

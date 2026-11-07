@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<meta name="theme-color" content="#140e24"/><meta name="description" content="Teste privado de notificações do Meu Financeiro"/>
+<link rel="manifest" href="/manifest.webmanifest"/><link rel="icon" href="/icon-192.png"/><link rel="stylesheet" href="/style.css"/>
+<title>Meu Financeiro | Notificações</title></head><body>
+<main class="shell"><header class="brand"><img src="/icon-192.png" width="48" height="48" alt=""/><div><strong>Meu Financeiro</strong><span>Seu dinheiro. Mais inteligente.</span></div></header>
+<section class="hero"><div class="eyebrow">PRÉVIA PRIVADA • PUSH</div><h1>Avisos que chegam até você.</h1><p>Um primeiro teste para receber notificações com o aplicativo fechado, sem depender do WhatsApp ou do computador ligado.</p>
+<div id="state" class="state" role="status" aria-live="polite">Preparando...</div></section>
+<section id="login" class="card" hidden><h2>Seu espaço privado</h2><p>Digite o código que você configurou na Cloudflare. Ele não será salvo no aparelho.</p><form id="loginForm"><label for="code">Código de acesso</label><input id="code" name="code" type="password" autocomplete="off" minlength="18" required placeholder="Seu código privado"/><button class="primary" type="submit">Entrar</button></form></section>
+<section id="panel" class="card" hidden><div class="section-title"><div><h2>Notificações do aplicativo</h2><p>Uma verificação prática no seu celular.</p></div><span id="badge" class="pill">Verificando</span></div>
+<div class="steps"><div><b>01</b><span>Instale o aplicativo na tela inicial do celular.</span></div><div><b>02</b><span>Autorize as notificações do sistema.</span></div><div><b>03</b><span>Envie um aviso e faça outro chegar com o aplicativo fechado.</span></div></div>
+<button class="primary" id="enable">Ativar notificações neste aparelho</button>
+<div class="buttons"><button id="test" disabled>Enviar notificação agora</button><button id="testLater" disabled>Agendar teste em 2 minutos</button></div>
+<p class="hint">Para testar com o aplicativo fechado: agende o teste, feche o app e confira o aviso depois de dois minutos. Entre 22h e 8h ele será adiado para as 8h.</p>
+<div class="mini"><div><span>Aparelhos cadastrados</span><strong id="registered">—</strong></div><div><span>Último envio ao serviço</span><strong id="last">—</strong></div></div>
+<div class="footer-controls"><button class="text-btn" id="refresh">Atualizar estado</button><button class="text-btn" id="logout">Sair</button></div>
+</section>
+<footer>Meu Financeiro · Experimento privado · Nenhum dado bancário é enviado nesta etapa</footer>
+</main><script type="module" src="/app.js"></script></body></html>
