@@ -6,6 +6,30 @@ A autenticação Cloudflare Access e a sincronização da frase `test_notes` for
 
 Este ciclo acrescentou **um ensaio executável, não uma importação de dados reais**.
 
+### Checkpoint confirmado pelo proprietário — 07/11/2026
+
+- O login Cloudflare Access protegido foi confirmado no PC e no celular.
+- O mesmo conteúdo de `test_notes` apareceu nos dois dispositivos.
+- O AUD do token verificado no preview foi identificado corretamente e o identificador público `POLICY_AUD` do **preview** foi corrigido (commit `7a5e162`, sem alterar Production).
+- Em seguida, o proprietário confirmou que **ambos os testes passaram**: `Conectado à sua base central` e `Teste aprovado: 22 tabelas, 3 movimentações fictícias, valores e vínculos conferidos. Nenhum dado real importado.`
+- Portanto, o checkpoint **autenticação + sincronização fictícia + ensaio fictício** está APROVADO EM AMBIENTE PREVIEW.
+- **A migração financeira REAL, o backup local no computador do usuário e o novo build Windows ainda não foram confirmados.** Não inferir que esse checkpoint aprova importação, exclusão do SQLite ou mudança da fonte de verdade.
+
+### Próxima ação segura do usuário
+
+Na versão Windows v0.9.4 já instalada, abrir **Configurações → Seus dados e segurança → Salvar cópia completa**. Guardar o arquivo `.sqlite` em local privado e uma cópia redundante; **não enviar o backup ao chat nem ao GitHub**.
+
+A PR de desenvolvimento já contém a futura funcionalidade **Conferir cópia para migração (local)**, mas o instalador v0.9.4 publicado **ainda não possui** esse botão. Para utilizá-lo, primeiro serão necessários um build testado e uma distribuição Windows separados.
+
+### Implementações obrigatórias antes de migrar registros reais
+
+1. Validação completa dos 22 esquemas e relações na importação, sem confiar em valores enviados pelo cliente.
+2. Exportação local de backup com integridade, controle explícito de usuário e proteção do transporte.
+3. Importação remota autenticada, idempotente, reversível, com restauração testada.
+4. Reconciliação item a item e de totais, saldos, divisões, planejamento e conciliações sem dupla contagem.
+5. Migração somente após revisão do fluxo Windows/Android e decisão explícita sobre corte da fonte de verdade.
+
+
 ### O que o botão faz
 
 No ambiente Preview em `/sync.html`, o botão **Executar teste financeiro fictício** chama `POST /api/migration/dry-run`. A rota só permite acesso a usuários com:
@@ -49,4 +73,4 @@ Se qualquer verificação divergir, o teste falha e a transação do ensaio é r
 
 O Durable Object SQLite oferece transações síncronas e isolamento por Preview. Para versionar o esquema, usamos tabela de versão própria — não `PRAGMA user_version`, que não é suportado no Durable Objects SQLite. O ensaio só armazena dados fictícios e não é uma cópia do banco financeiro do usuário.
 
-**Checkpoint:** até o usuário observar o resultado do botão no Preview real, considerar a etapa `em validação`, nunca `migração concluída`.
+**Checkpoint atualizado:** o proprietário observou e confirmou o resultado do botão no Preview real. A etapa **somente fictícia** está aprovada. A migração financeira real permanece **não iniciada** e não pode ser considerada concluída.
