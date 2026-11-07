@@ -140,3 +140,16 @@ sincronização posterior.
 ### Segurança do checkpoint
 
 **Não dizer "migração concluída" e não pedir backup/relatórios/segredos.** Nenhum dado financeiro real foi enviado nesta etapa. Produção e aplicativo Windows instalado permanecem intactos.
+
+## Checkpoint adicional — 07/11/2026: teste real da rota protegida + envio em lotes preparado
+
+- **Rota Cloudflare:** `POST /api/migration/quarantine-demo` exige **ambos**: sessão privada do app + JWT Cloudflare Access verificado criptograficamente, com bloqueio de chamadas sem origem correta. Só opera no Preview onde Access está configurado. A Production, sem Access, retorna 403.
+- A rota **ignora todo corpo do usuário** e gera somente 17 linhas fictícias, uma em cada tabela pessoal, com hashes SHA-256.
+- `mobile-push/src/finance-synthetic-quarantine.js`: executa o validador rigoroso, grava atomicamente em `mf_import_*`, confere idempotência e **desfaz automaticamente** todos os dados. Não toca extratos reais nem `sync_documents`. O ensaio é invocado pelo segundo botão do `/sync.html`: **“Testar importação protegida (fictícia)”**.
+- **No Windows**, `electron/cloud-preview-identity.cjs` contém uma prova de POST autenticado via `session.fetch`, usando exclusivamente `{}` como corpo, URL fixa, Origin fixo e cookies isolados. `cloud:quarantine-demo` confirma o login antes de exercitar a rota; a tela Configurações pode fazê-lo automaticamente depois do backup. Os dois fluxos desktop ainda precisam de teste manual em ambiente Windows com login real.
+- **Importação em lotes**, sem rota HTTP pública neste momento: `mobile-push/src/finance-personal-batches.js` implementa `beginPersonalTransfer`, `applyPersonalChunk`, `verifyPersonalTransfer` e `cancelPersonalTransfer` no DO SQLite isolado `mf_transfer_*`. Cada lote recebe no máximo 80 linhas/192 KiB, com retomada idempotente, rejeição de repetição divergente, verificação da integridade original após reconstrução das 17 tabelas e cancelamento transacional. Limites totais: 100 mil linhas e 32 MiB.
+- Testado com banco SQLite **fictício** do Electron de 191 transações, múltiplos lotes, reenvio, dados alterados, registros faltantes e rollback. Não habilita migração real ou sincronização automática.
+- `FINANCIAL_SCHEMA_ACTIVE=false` permanece intocado; nenhuma linha é publicada na base financeira principal. PR em draft, Preview isolado, produção e Windows v0.9.4 intocados.
+
+**Aguardando prova humana da nova rota:** o proprietário deve abrir o Preview já conhecido, autenticar e clicar uma vez em **“Testar importação protegida (fictícia)”**. O resultado esperado é 17 tabelas, 17 registros fictícios, validação/idempotência/descarte aprovados e zero registros reais.
+**Ainda falta:** autenticar e expor os endpoints reais de lotes com vinculação ao dispositivo, recuperação de erro, proteção de importações incompletas, recepção no Windows com confirmação explícita, Pluggy server-side ativo, reconciliação histórica dos IDs e ativação futura sob critério de equivalência/rollback.
