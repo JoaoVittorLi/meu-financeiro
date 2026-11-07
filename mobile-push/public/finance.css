@@ -84,3 +84,24 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{ou
 .finance-category-list progress::-moz-progress-bar,.finance-budget-grid progress::-moz-progress-bar{background:#9b66e4;border-radius:99px}
 @media(max-width:900px){.finance-analytics-grid{grid-template-columns:1fr}}
 @media(max-width:660px){.finance-period-controls{grid-template-columns:1fr 1fr}.finance-period-controls button{grid-column:1/-1}.finance-analytics-metrics .finance-card:last-child{grid-column:1/-1}}
+
+/* Safe personal editing: server-side CAS, no inline banking controls. */
+.finance-personal-toolbar{display:grid;grid-template-columns:minmax(0,180px) minmax(0,1fr);gap:12px;align-items:end}
+.finance-personal-toolbar label,.finance-personal-field{display:grid;gap:7px;color:#cfbfe1;font-size:12px}
+.finance-personal-toolbar select,.finance-personal-toolbar input,.finance-personal-field input,.finance-personal-field select,.finance-personal-field textarea{
+  min-width:0;width:100%;height:43px;padding:10px 12px;border-radius:10px;border:1px solid #534367;
+  background:#120e1c;color:#f6efff;font:inherit
+}
+.finance-personal-field textarea{height:auto;min-height:90px;resize:vertical}
+.finance-edit-row-right{display:flex;align-items:flex-end;flex-direction:column;gap:9px;white-space:nowrap}
+.finance-edit-trigger{border:1px solid #745498;background:#292039;border-radius:9px;padding:7px 13px;font-size:11px;font-weight:750;color:#eedbff}
+.finance-edit-trigger:hover{background:#3c2854}
+.finance-edit-dialog{width:min(520px,calc(100vw - 28px));max-height:calc(100dvh - 36px);overflow-y:auto;
+  border:1px solid #6c4f8e;border-radius:19px;padding:24px;background:#1a1424;color:#f4ebff;box-shadow:0 25px 95px #0008}
+.finance-edit-dialog::backdrop{background:#07050acd}
+.finance-edit-dialog h2{margin:0 0 6px;font-size:23px}
+.finance-edit-fields{display:grid;gap:14px;margin:18px 0 12px}
+.finance-edit-actions{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:20px}
+.finance-edit-actions .finance-secondary,.finance-edit-actions .finance-bank-activate{margin:0}
+.finance-edit-dialog button:disabled{opacity:.5;cursor:default}
+@media(max-width:600px){.finance-personal-toolbar{grid-template-columns:1fr}.finance-edit-dialog{padding:17px}.finance-item{align-items:flex-start}}
