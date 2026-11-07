@@ -6,6 +6,7 @@ const {FinanceDB}=require('./db.cjs');
 const {prepareCloudMigration,migrationLocalStatus}=require('./cloud-onboarding.cjs');
 const {uploadPersonalQuarantine,CONSENT,loadMarker,markerFile}=require('./cloud-personal-uploader.cjs');
 const {syncPersonalSafeFields,summary:cloudSafeSyncSummary}=require('./cloud-personal-safe-sync.cjs');
+const {compareLocalBankWithPreview}=require('./cloud-bank-parity.cjs');
 const {PREVIEW_ORIGIN,checkPreviewIdentity,testPreviewQuarantine}=require('./cloud-preview-identity.cjs');
 const {pairViaSystemBrowser,cancelBrowserPairing}=require('./cloud-system-browser.cjs');
 const {PlanningStore}=require('./planning.cjs');
@@ -216,6 +217,16 @@ app.whenReady().then(()=>{
        )
      });
    }finally{cloudPreparationBusy=false;}
+ });
+ ipcMain.handle('cloud:bank-parity',async(event)=>{
+   requireAppSender(event);
+   if(restoring||syncing||cloudPreparationBusy||autoBackupBusy)
+     return {ok:false,reason:'local_operation_in_progress',financialSyncEnabled:false};
+   const ses=cloudPreviewSession();
+   const client=secureCloudFetch(ses);
+   const identity=await checkPreviewIdentity(client);
+   if(!identity.connected)return {ok:false,reason:'cloud_login_required',financialSyncEnabled:false};
+   return compareLocalBankWithPreview(db,client);
  });
  ipcMain.handle('cloud:personal-sync-status',(event)=>{
    requireAppSender(event);
