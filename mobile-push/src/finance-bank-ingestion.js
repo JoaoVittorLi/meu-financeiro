@@ -36,6 +36,7 @@ function normalize(account,transaction){
     description:trim(transaction.description||transaction.descriptionRaw||'',1000),
     amountCents:cents(transaction.amount),
     status:trim(transaction.status||'UNKNOWN',40),
+    originalCategory:typeof transaction.category==='string'&&transaction.category.trim()?trim(transaction.category,70):null,
     updatedAt:typeof transaction.updatedAt==='string'?transaction.updatedAt:now()};
 }
 export function bankServerEnabled(env){
@@ -56,6 +57,8 @@ export function ensureBankStaging(storage){
   const sql=storage.sql;
   sql.exec("CREATE TABLE IF NOT EXISTS mf_bank_staging_accounts(account_id TEXT PRIMARY KEY,item_id TEXT NOT NULL,name TEXT NOT NULL,currency TEXT NOT NULL,balance_cents INTEGER,updated_at TEXT NOT NULL)");
   sql.exec("CREATE TABLE IF NOT EXISTS mf_bank_staging_transactions(account_id TEXT NOT NULL,external_id TEXT NOT NULL,date TEXT NOT NULL,description TEXT NOT NULL,amount_cents INTEGER NOT NULL,status TEXT NOT NULL,source_updated_at TEXT NOT NULL,ingested_at TEXT NOT NULL,PRIMARY KEY(account_id,external_id))");
+  // Additive sidecar: no ALTER or rewrite of the 630 historical bank rows.
+  sql.exec("CREATE TABLE IF NOT EXISTS mf_bank_staging_categories(account_id TEXT NOT NULL,external_id TEXT NOT NULL,category_original TEXT,observed_at TEXT NOT NULL,PRIMARY KEY(account_id,external_id))");
   sql.exec("CREATE TABLE IF NOT EXISTS mf_bank_sync_state(id INTEGER PRIMARY KEY CHECK(id=1),running_until INTEGER NOT NULL DEFAULT 0,last_success TEXT,last_count INTEGER NOT NULL DEFAULT 0,last_error TEXT)");
 }
 export function bankIngestionStatus(storage){
@@ -145,6 +148,10 @@ export async function ingestPluggyToStaging(storage,env,{
       for(const t of transactions){
         storage.sql.exec("INSERT INTO mf_bank_staging_transactions(account_id,external_id,date,description,amount_cents,status,source_updated_at,ingested_at) VALUES(?,?,?,?,?,?,?,?) ON CONFLICT(account_id,external_id) DO UPDATE SET date=excluded.date,description=excluded.description,amount_cents=excluded.amount_cents,status=excluded.status,source_updated_at=excluded.source_updated_at,ingested_at=excluded.ingested_at",
           t.accountId,t.externalId,t.date,t.description,t.amountCents,t.status,t.updatedAt,at);
+      }
+      for(const t of transactions){
+        storage.sql.exec("INSERT INTO mf_bank_staging_categories(account_id,external_id,category_original,observed_at) VALUES(?,?,?,?) ON CONFLICT(account_id,external_id) DO UPDATE SET category_original=excluded.category_original,observed_at=excluded.observed_at",
+          t.accountId,t.externalId,t.originalCategory,at);
       }
       storage.sql.exec("UPDATE mf_bank_sync_state SET running_until=0,last_success=?,last_count=?,last_error=NULL WHERE id=1",
         at,transactions.length);
