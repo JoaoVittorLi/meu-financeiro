@@ -70,7 +70,11 @@ if(-not $PublishOnly){
   exit 0
 }
 
-if(Git @('status','--porcelain')){throw 'Diretório com alterações não commitadas: não publicar'}
+if(Git @('status','--porcelain','--','.',':(exclude)app/app.js')){
+  throw 'Existem alterações de código não commitadas. Faça commit antes de publicar.'
+}
+# app/app.js is a tracked generated output of tsc and may differ after compile.
+# Publication still requires the exact saved source SHA and matching EXE checksum.
 if(-not (Get-Command 'gh.exe' -ErrorAction SilentlyContinue)){
   throw 'Instale GitHub CLI e autentique via gh auth login antes de publicar'
 }
