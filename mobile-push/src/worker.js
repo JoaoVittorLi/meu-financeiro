@@ -6,7 +6,7 @@ import {runSyntheticBatchDemo} from './finance-synthetic-batches.js';
 import {beginPersonalTransfer,applyPersonalChunk,verifyPersonalTransfer,cancelPersonalTransfer,personalTransferStatus} from './finance-personal-batches.js';
 import {readVerifiedPersonalOverview} from './finance-personal-overview.js';
 import {bankServerEnabled,bankIngestionStatus,ingestPluggyToStaging} from './finance-bank-ingestion.js';
-import {applyPersonalEdit,personalEditChanges} from './finance-personal-edits.js';
+import {applyPersonalEdit,personalEditChanges,personalEditBaseline} from './finance-personal-edits.js';
 // Meu Financeiro: private proof-of-concept for standards-based Web Push.
 // No bank data or credentials are handled by this Worker.
 
@@ -215,6 +215,10 @@ export class PushHome {
         duplex:request.method==='POST'?'half':undefined
       }),this.env.FINANCE_SYNC_ENABLED==='true');
     }
+    if(u.pathname==='/personal/baseline'&&request.method==='GET'){
+      try{return json(personalEditBaseline(this.state.storage));}
+      catch{return json({error:'Dados importados ainda não verificados.'},409);}
+    }
     if(u.pathname==='/personal/changes'&&request.method==='GET'){
       try{
         return json(personalEditChanges(this.state.storage,{
@@ -394,12 +398,15 @@ export default {
         previewOnly:true,financialSyncEnabled:false});
     }
     if((url.pathname==='/api/personal/changes'&&request.method==='GET')||
+       (url.pathname==='/api/personal/baseline'&&request.method==='GET')||
        (url.pathname==='/api/personal/apply'&&request.method==='POST')){
       if(!personalQuarantineAllowed(env))
         return json({error:'Sincronização pessoal não habilitada neste ambiente.'},403);
       const identity=await authorizeAccess(request,env);
       if(!identity.ok)return json({error:identity.error},identity.status);
       const stub=env.PUSH_HOME.get(env.PUSH_HOME.idFromName('one-private-user'));
+      if(url.pathname==='/api/personal/baseline')
+        return stub.fetch(new Request('https://internal/personal/baseline'));
       if(request.method==='GET'){
         const since=Number(url.searchParams.get('since')||0),
           limit=Number(url.searchParams.get('limit')||100);
