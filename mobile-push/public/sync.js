@@ -1,6 +1,25 @@
 const $=(id)=>document.getElementById(id);
 const state=(text,kind='')=>{$('state').textContent=text;$('state').className='state '+kind;};
 let currentRevision=0,lastValue='',submitting=false;
+function setAuthenticated(yes){
+ $('main').hidden=!yes;$('migration').hidden=!yes;$('login').hidden=!!yes;
+}
+$('dryRun').addEventListener('click',async()=>{
+ const button=$('dryRun'),output=$('dryRunResult');
+ button.disabled=true;output.textContent='Conferindo dados fictícios na Cloudflare...';
+ try{
+   const result=await api('migration/dry-run','POST',{});
+   if(!result.ok||result.realFinancialDataAccepted!==false||
+      result.financialMigrationActivated!==false||result.tableCount!==22)
+      throw new Error('Resultado inesperado. Não envie dados financeiros.');
+   output.textContent='Teste aprovado: '+result.tableCount+' tabelas, '+result.bankRecordCount+
+    ' movimentações fictícias, valores e vínculos conferidos. Nenhum dado real importado.';
+   output.style.color='#91e0c1';
+ }catch(error){
+   output.textContent='Teste ainda não aprovado: '+(error?.message||'Falha na verificação.');
+   output.style.color='#ffb9c4';
+ }finally{button.disabled=false;}
+});
 async function api(endpoint,method='GET',body){
  const response=await fetch('/api/'+endpoint,{method,credentials:'same-origin',cache:'no-store',
   headers:{'Content-Type':'application/json'},body:body===undefined?undefined:JSON.stringify(body)});
@@ -40,13 +59,13 @@ $('save').addEventListener('click',async()=>{
 $('refresh').addEventListener('click',()=>refresh().catch(e=>state(e.message,'error')));
 $('loginForm').addEventListener('submit',async(event)=>{
  event.preventDefault();
- try{await api('login','POST',{code:$('code').value});$('code').value='';$('login').hidden=true;$('main').hidden=false;await refresh();state('Conectado à sua base central.','ok');}
+ try{await api('login','POST',{code:$('code').value});$('code').value='';setAuthenticated(true);await refresh();state('Conectado à sua base central.','ok');}
  catch(e){state(e.message,'error');}
 });
 (async()=>{
  try{
   const session=await api('session');
-  $('main').hidden=!session.authenticated;$('login').hidden=!!session.authenticated;
+  setAuthenticated(!!session.authenticated);
   if(session.authenticated){
    try{await refresh();state('Conectado à sua base central.','ok');}
    catch(e){state(e.message,'error');}
@@ -54,5 +73,5 @@ $('loginForm').addEventListener('submit',async(event)=>{
   else state('Faça login para testar a sincronização.');
   setInterval(()=>{if(!$('main').hidden&&document.visibilityState==='visible')refresh().catch(e=>state(e.message,'error'));},5000);
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&!$('main').hidden)refresh().catch(()=>{});});
- }catch(e){$('main').hidden=true;$('login').hidden=false;state(e.message,'error');}
+ }catch(e){setAuthenticated(false);state(e.message,'error');}
 })();
