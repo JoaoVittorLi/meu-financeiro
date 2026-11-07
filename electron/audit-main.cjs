@@ -11,7 +11,9 @@ const {inspectLocalBackupManifest}=require('./cloud-migration-manifest.cjs');
 app.disableHardwareAcceleration();
 app.commandLine.appendSwitch('disable-background-networking');
 // Avoid Electron accidentally using the installed finance app's userData.
-app.setPath('userData',path.join(app.getPath('appData'),'MeuFinanceiro-Auditoria-Isolada'));
+const isolatedData=path.join(app.getPath('appData'),'MeuFinanceiro-Auditoria-Isolada');
+fs.mkdirSync(isolatedData,{recursive:true,mode:0o700});
+app.setPath('userData',isolatedData);
 
 async function runAudit(){
   const chosen=await dialog.showOpenDialog({
