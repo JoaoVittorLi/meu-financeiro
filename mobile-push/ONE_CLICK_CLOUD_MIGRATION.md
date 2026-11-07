@@ -216,3 +216,13 @@ sincronização posterior.
 - Os testes `tests/cloud-transfer-plan.test.cjs` usam o mesmo validador e o receptor de lotes do Worker em memória para simular falha de resposta depois da gravação de 80 registros, seguida de reenvio seguro, verificação e rollback. Também rejeitam saída que anuncie corte financeiro prematuro.
 - Segurança: `FINANCIAL_TRANSFER_ACTIVE=false` no código, `sendPersonalTransferPlan()` sempre lança bloqueio, **nenhum endpoint que aceite dados financeiros reais** está publicado na Cloudflare. Não há instrução para o usuário enviar SQLite, relatório, tokens ou credenciais; não publicar versão financeira até testes de autenticação no Windows, importação real consentida, reconciliação Pluggy e rollback.
 - Próximo marco técnico: implementar o canal de produção com vínculo seguro à identidade e consentimento explícito na interface do desktop, importar em quarentena, reconciliar categorias/vínculos e histórico Pluggy, e apenas então ativar a nuvem como fonte de verdade. Não repetir testes fictícios já aprovados.
+
+
+## Checkpoint validado pelo proprietário — 93 registros reais em 17 tabelas
+
+- O proprietário enviou captura de tela do aplicativo Windows mostrando **“Personalizações copiadas e conferidas na área protegida da Cloudflare: 93 registros em 17 tabelas. Backup automático preservado. Sincronização financeira ainda não ativada; falta conciliar o histórico bancário com o Pluggy.”**
+- Confirmação de primeira migração pessoal real Windows → Cloudflare Preview em quarentena, com login Access concluído. Ainda NÃO comprova equivalência do extrato do Itaú nem ativação da nuvem como fonte principal.
+- A base SQLite original e o backup permanecem preservados; nenhum pagamento bancário deve ser considerado automaticamente liquidado.
+- O próximo marco é comparar os vínculos existentes `(account_id,external_id)` com o extrato Pluggy adquirido no servidor; caso o Pluggy não retorne dados históricos ou altere IDs, manter personalizações intactas e exigir revisão manual.
+- Criado `mobile-push/src/finance-bank-reconciliation.js` com função pura de conferência por chaves exatas e sugestões apenas para revisão (nunca vincula automaticamente), conferindo categorias, notas, títulos, splits, links manuais, vínculos e rejeições de planejamento, contas planejadas e dismissals opacos. Adicionados testes contra histórico incompleto, duplicidade e identidade alterada.
+- O projeto AINDA precisa do Pluggy server-side com credenciais protegidas, ingestão idempotente e paridade Windows/Android para ativar a sincronização completa; não atribuir a esta etapa um status de integração total.
