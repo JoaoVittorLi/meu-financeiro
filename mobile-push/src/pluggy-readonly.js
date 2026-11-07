@@ -59,6 +59,20 @@ export class PluggyReadOnlyProvider{
    throw new Error('Resposta do Pluggy incompleta.');
   return data;
  }
+ async getItem(itemId){
+  const id=cleanId(itemId);
+  const apiKey=await this.#auth();
+  const res=await this.#fetch(BASE+'/items/'+encodeURIComponent(id),{
+    method:'GET',redirect:'manual',
+    headers:{'X-API-KEY':apiKey,Accept:'application/json'}
+  });
+  if(res.status!==200)throw new Error('Consentimento Pluggy indisponível.');
+  const item=await res.json().catch(()=>null);
+  if(!item||typeof item!=='object'||item.id!==id||
+     typeof item.status!=='string')
+    throw new Error('Identidade do item Pluggy não confirmada.');
+  return item;
+ }
  async listAccounts(itemId,{maxPages=MAX_PAGES}={}){
   const id=cleanId(itemId);
   if(!Number.isInteger(maxPages)||maxPages<1||maxPages>MAX_PAGES)
