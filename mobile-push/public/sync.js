@@ -47,9 +47,12 @@ $('loginForm').addEventListener('submit',async(event)=>{
  try{
   const session=await api('session');
   $('main').hidden=!session.authenticated;$('login').hidden=!!session.authenticated;
-  if(session.authenticated){await refresh();state('Conectado à sua base central.','ok');}
+  if(session.authenticated){
+   try{await refresh();state('Conectado à sua base central.','ok');}
+   catch(e){state(e.message,'error');}
+  }
   else state('Faça login para testar a sincronização.');
   setInterval(()=>{if(!$('main').hidden&&document.visibilityState==='visible')refresh().catch(e=>state(e.message,'error'));},5000);
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&!$('main').hidden)refresh().catch(()=>{});});
- }catch(e){state(e.message,'error');$('login').hidden=false;}
+ }catch(e){$('main').hidden=true;$('login').hidden=false;state(e.message,'error');}
 })();
