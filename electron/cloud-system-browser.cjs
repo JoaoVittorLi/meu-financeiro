@@ -52,7 +52,10 @@ async function pairViaSystemBrowser({openBrowser,acceptSession,timeoutMs=TIMEOUT
      res.writeHead(403,{'Cache-Control':'no-store'});res.end();return;
    }
    if(req.method==='OPTIONS'){send(res,204,'preflight');return;}
-   if(req.method!=='POST'||!/^text\/plain(?:;|$)/i.test(req.headers['content-type']||'')){
+   const contentType=req.headers['content-type']||'';
+   const isJson=/^text\/plain(?:;|$)/i.test(contentType);
+   const isForm=/^application\/x-www-form-urlencoded(?:;|$)/i.test(contentType);
+   if(req.method!=='POST'||(!isJson&&!isForm)){
      send(res,405,'Método não permitido.');return;
    }
    let size=0,data='';
@@ -62,7 +65,7 @@ async function pairViaSystemBrowser({openBrowser,acceptSession,timeoutMs=TIMEOUT
        if(size>BODY_LIMIT)throw new Error('Request too large');
        data+=chunk.toString('utf8');
      }
-     const payload=JSON.parse(data);
+     const payload=isJson?JSON.parse(data):Object.fromEntries(new URLSearchParams(data));
      if(!isPairingSubmission(payload,nonce)){
        send(res,403,'Vínculo não autorizado.');return;
      }
@@ -73,7 +76,14 @@ async function pairViaSystemBrowser({openBrowser,acceptSession,timeoutMs=TIMEOUT
      if(!result?.connected){
        send(res,409,'A sessão não passou na validação.');return;
      }
-     send(res,200,'Computador conectado com segurança.');
+     if(isForm){
+       res.writeHead(200,{'Content-Type':'text/html; charset=utf-8',
+         'Cache-Control':'no-store','X-Content-Type-Options':'nosniff',
+         'Referrer-Policy':'no-referrer',
+         'Content-Security-Policy':"default-src 'none'; base-uri 'none'"});
+       res.end('<!doctype html><meta charset="utf-8"><title>Meu Financeiro conectado</title>'+
+         '<h2>Computador conectado com segurança.</h2><p>Volte ao Meu Financeiro. Esta aba pode ser fechada.</p>');
+     }else send(res,200,'Computador conectado com segurança.');
      finish(result);
    }catch{
      if(!res.headersSent)send(res,400,'Não foi possível confirmar este login.');
