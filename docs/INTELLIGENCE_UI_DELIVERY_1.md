@@ -1,8 +1,8 @@
 # Entrega IA-1 — interface da Inteligência
 
 **Data:** 07/11/2026  
-**Branch:** \`feat/inteligencia-interface-e1\`  
-**Base:** \`e0d5131\` (main, v0.9.4)  
+**Branch:** `feat/inteligencia-interface-e1`  
+**Base:** `e0d5131` (main, v0.9.4)  
 **Status:** protótipo navegável, exclusivamente frontend.
 
 ## Implementado
@@ -14,8 +14,8 @@
 - Três exemplos de planos de ação com detalhes expansíveis e link para preparar perguntas.
 - Painel contextual em seis áreas pelo cabeçalho; atalho adicional no detalhe das movimentações.
 - Área de configuração inicial em Configurações, sem solicitar credenciais.
-- Estilos isolados em \`app/intelligence.css\`, respeitando tema escuro, tipografia e adaptação responsiva.
-- Testes estáticos em \`tests/ai-ui.test.cjs\`.
+- Estilos isolados em `app/intelligence.css`, respeitando tema escuro, tipografia e adaptação responsiva.
+- Testes estáticos em `tests/ai-ui.test.cjs`.
 
 ## Fora do escopo (não implementado)
 
@@ -29,18 +29,18 @@
 
 A prévia opera sem requisições externas e não recebe credenciais. Os cartões usam apenas exemplos sem valores reais. Ao clicar em uma pergunta contextual, a string predefinida é copiada para o campo de rascunho da área Inteligência; referências completas a transações não são transferidas. As movimentações bancárias originais permanecem inalteradas.
 
-Nenhum segredo, token, esquema ou banco financeiro foi alterado. A chave \`FINANCE_SYNC_ENABLED\` não deve ser habilitada nesta fase.
+Nenhum segredo, token, esquema ou banco financeiro foi alterado. A chave `FINANCE_SYNC_ENABLED` não deve ser habilitada nesta fase.
 
 ## Testes e validação manual
 
 Na raiz do projeto:
 
-\`\`\`powershell
+```powershell
 npm install
 npm run compile
 npm run test:db
 npm start
-\`\`\`
+```
 
 Conferir manualmente:
 1. Navegação entre as seis áreas originais, Inteligência e Configurações.
@@ -50,9 +50,9 @@ Conferir manualmente:
 5. Atalho em um detalhe de movimentação: fecha o drawer anterior antes de abrir o contextual.
 6. Abertura e fechamento do assistente contextual pelo botão e pelo fundo.
 7. Comportamento visual no desktop e em larguras menores.
-8. Simular compra continua funcional; rota interna \`assistant\` preservada.
+8. Simular compra continua funcional; rota interna `assistant` preservada.
 
-**Atenção:** o GitHub Actions está com limite esgotado. Não executar workflow de release automaticamente nem mesclar na \`main\` antes dos testes. O instalador Windows deve ser gerado localmente após a validação.
+**Atenção:** o GitHub Actions está com limite esgotado. Não executar workflow de release automaticamente nem mesclar na `main` antes dos testes. O instalador Windows deve ser gerado localmente após a validação.
 
 ## Próxima entrega
 
