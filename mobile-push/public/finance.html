@@ -12,6 +12,7 @@
 <link rel="stylesheet" href="/finance.css">
 <script src="/finance.js" defer></script>
 <script src="/finance-pwa.js" defer></script>
+<script src="/finance-analytics.js" defer></script>
 </head>
 <body>
 <div class="finance-app">
@@ -45,6 +46,40 @@
     <section id="view-overview" class="finance-view" aria-label="Visão geral">
       <div class="finance-intro"><h2>Seus dados, em uma só nuvem.</h2>
         <p>O mesmo projeto para Windows e Android. As informações abaixo são prévias e ainda não representam dinheiro livre.</p></div>
+      <form class="finance-period-controls finance-card" id="analyticsFilters">
+        <label for="analyticsSource">Fonte dos indicadores
+          <select id="analyticsSource">
+            <option value="bank">Contas conectadas</option>
+            <option value="manual">Adicionado por você</option>
+          </select>
+        </label>
+        <label for="analyticsPeriod">Período
+          <select id="analyticsPeriod">
+            <option value="month">Mês atual</option>
+            <option value="lastmonth">Mês anterior</option>
+            <option value="week">Esta semana</option>
+            <option value="15d">Últimos 15 dias</option>
+            <option value="90d">Últimos 90 dias</option>
+          </select>
+        </label>
+        <button type="submit">Atualizar gráficos</button>
+      </form>
+      <p id="analyticsStatus" class="finance-muted" role="status" aria-live="polite">Preparando indicadores em modo somente leitura...</p>
+      <div class="finance-metrics finance-analytics-metrics">
+        <article class="finance-card"><div class="finance-muted">Receitas do período · prévia</div><strong class="finance-stat" id="cashIncome">—</strong><small>Sem somar fontes bancária e manual</small></article>
+        <article class="finance-card"><div class="finance-muted">Despesas do período · prévia</div><strong class="finance-stat" id="cashExpense">—</strong><small>Exclui transferências próprias identificadas</small></article>
+        <article class="finance-card"><div class="finance-muted">Resultado do período · prévia</div><strong class="finance-stat" id="cashNet">—</strong><small>Não equivale a saldo disponível</small></article>
+      </div>
+      <div class="finance-analytics-grid">
+        <article class="finance-card"><h2>Fluxo de caixa</h2>
+          <p class="finance-muted">Receitas e despesas por intervalo · resultado provisório</p>
+          <div id="financeFlow" class="finance-flow" role="img" aria-label="Gráfico de fluxo de caixa ainda não carregado"></div>
+        </article>
+        <article class="finance-card"><h2>Gastos por categoria</h2>
+          <p class="finance-muted">Categorias ainda não conciliadas aparecem como “A classificar”.</p>
+          <div id="financeCategoryList" class="finance-category-list"></div>
+        </article>
+      </div>
       <div class="finance-metrics">
         <article class="finance-card"><div class="finance-muted">Movimentações bancárias</div><strong class="finance-stat" id="overviewTransactions">—</strong><small>Extrato em conferência</small></article>
         <article class="finance-card"><div class="finance-muted">Contas encontradas</div><strong class="finance-stat" id="overviewAccounts">—</strong><small>Saldo ainda não homologado</small></article>
@@ -91,7 +126,13 @@
 
     <section id="view-budgets" class="finance-view" hidden aria-label="Orçamentos">
       <div class="finance-intro"><h2>Orçamentos</h2><p>Limites pessoais copiados do desktop. O consumo por categoria ainda não foi conciliado com o extrato.</p></div>
-      <article class="finance-card"><h3>Limites cadastrados</h3><ul class="finance-list" id="budgetList"><li class="finance-muted">Carregando...</li></ul></article>
+      <article class="finance-card"><h3>Consumo mensal por categoria · prévia</h3>
+        <p class="finance-muted" id="budgetPreviewStatus">Os gastos por categoria dependem de conciliação. Percentuais aqui são provisórios.</p>
+        <div id="budgetProgressList" class="finance-budget-grid" aria-live="polite"></div>
+      </article>
+      <article class="finance-card finance-manual-card"><h3>Limites cadastrados no Windows</h3>
+        <ul class="finance-list" id="budgetList"><li class="finance-muted">Carregando...</li></ul>
+      </article>
     </section>
 
     <section id="view-simulate" class="finance-view" hidden aria-label="Simular compra">
