@@ -1,6 +1,9 @@
-// Cloud synchronization foundation for a single personal finance account.
-// No data is cached on devices. Financial collections remain disabled until
-// the operator explicitly enables them after protecting the Worker with Access.
+// Cloud synchronization proof of concept for a single personal finance account.
+// No financial data is cached on devices or accepted by this pilot.
+// Do NOT set this to true until Access identity verification, per-collection
+// finance schemas, export/import validation and rollback have been implemented
+// and independently reviewed. Environment flags alone MUST NOT unlock finance.
+export const FINANCIAL_SCHEMA_ACTIVE = false;
 export const COLLECTIONS = Object.freeze([
   'test_notes','profiles','categories','rules','manual_transactions','budgets',
   'accounts','bank_transactions','bank_overrides','planning_items',
@@ -11,7 +14,7 @@ export function isFinancial(collection){ return collection !== 'test_notes'; }
 export function validateMutation(change,financialEnabled=false){
   if(!change || typeof change !== 'object' || Array.isArray(change)) throw new Error('Alteração inválida.');
   if(typeof change.collection!=='string' || !COLLECTIONS.includes(change.collection)) throw new Error('Coleção desconhecida.');
-  if(isFinancial(change.collection)&&!financialEnabled) throw new Error('Dados financeiros ainda não foram habilitados na nuvem.');
+  if(isFinancial(change.collection)&&(!financialEnabled || !FINANCIAL_SCHEMA_ACTIVE)) throw new Error('Dados financeiros ainda não foram habilitados na nuvem.');
   if(typeof change.id!=='string'||!/^[-_a-zA-Z0-9:.]{1,150}$/.test(change.id)) throw new Error('Identificador inválido.');
   if(!Number.isSafeInteger(change.baseRevision)||change.baseRevision<0) throw new Error('Informe a revisão anterior.');
   if(typeof change.deleted!=='boolean') throw new Error('O campo deleted precisa ser booleano.');
@@ -42,7 +45,7 @@ export class CloudSyncStore {
     sql.exec('CREATE TABLE IF NOT EXISTS sync_mutations (mutation_id TEXT PRIMARY KEY, response TEXT NOT NULL, created_at TEXT NOT NULL)');
   }
   changes(since,limit,financialEnabled=false) {
-    const allowed=financialEnabled?COLLECTIONS:['test_notes'];
+    const allowed=financialEnabled&&FINANCIAL_SCHEMA_ACTIVE?COLLECTIONS:['test_notes'];
     const rows=this.state.storage.sql.exec(
       'SELECT seq,collection,id,revision,payload,deleted,changed_at FROM sync_events WHERE seq>? AND collection IN ('+allowed.map(()=>'?').join(',')+') ORDER BY seq ASC LIMIT ?',
       since,...allowed,limit+1
@@ -51,7 +54,7 @@ export class CloudSyncStore {
     return {changes,hasMore:rows.length>limit,next:changes.length?changes.at(-1).sequence:since};
   }
   snapshot(financialEnabled=false) {
-    const allowed=financialEnabled?COLLECTIONS:['test_notes'];
+    const allowed=financialEnabled&&FINANCIAL_SCHEMA_ACTIVE?COLLECTIONS:['test_notes'];
     const rows=this.state.storage.sql.exec(
       'SELECT collection,id,revision,payload,deleted,changed_at FROM sync_documents WHERE collection IN ('+allowed.map(()=>'?').join(',')+') ORDER BY collection,id',
       ...allowed
@@ -90,6 +93,8 @@ export class CloudSyncStore {
     });
   }
   async fetch(request,financialEnabled=false){
+    // A deployment flag cannot bypass the source-reviewed finance safety gate.
+    financialEnabled=financialEnabled&&FINANCIAL_SCHEMA_ACTIVE;
     try{
       const url=new URL(request.url);
       if(url.pathname==='/health')return reply({ok:true,financialEnabled,storage:'Cloudflare SQLite Durable Object',mode:financialEnabled?'finance':'test_only'});
