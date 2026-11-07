@@ -17,6 +17,13 @@ new_sqlite_classes = ["PushHome"]
 # Isolated Cloudflare Preview (pull requests) namespace. Never bind a PR to
 # the production Durable Object holding PWA subscriptions or finance tests.
 # Preview secrets are separately configured in Cloudflare; none are committed.
+# Public identifiers for this isolated Preview, not credentials.
+# OWNER email and APP_ACCESS_TOKEN must be configured as Preview secrets,
+# never committed to the repository. Production receives neither variable.
+[previews.vars]
+TEAM_DOMAIN = "https://green-grass-c1e7.cloudflareaccess.com"
+POLICY_AUD = "24056c2869b6ad8e1e23394d3f7342fdeb321bfb7e7ff0fead0c4196e82587ee"
+
 [[previews.durable_objects.bindings]]
 name = "PUSH_HOME"
 class_name = "PushHome"
