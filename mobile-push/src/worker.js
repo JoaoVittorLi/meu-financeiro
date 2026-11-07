@@ -1,6 +1,7 @@
 import {CloudSyncStore} from './cloud-sync.js';
 import {authorizeAccess,accessConfigured,diagnoseAccessCerts} from './access-auth.js';
 import {runSyntheticMigrationDryRun} from './finance-staging.js';
+import {runSyntheticQuarantineDemo} from './finance-synthetic-quarantine.js';
 // Meu Financeiro: private proof-of-concept for standards-based Web Push.
 // No bank data or credentials are handled by this Worker.
 
@@ -156,6 +157,13 @@ export class PushHome {
         duplex:request.method==='POST'?'half':undefined
       }),this.env.FINANCE_SYNC_ENABLED==='true');
     }
+    if(u.pathname==='/migration/quarantine-demo'&&request.method==='POST'){
+      // Run the STRICT real 17-table import validator on a compiled-in fake
+      // package, then discard every imported row from quarantine. No client
+      // records, no live finance, no background import.
+      try{return json(await runSyntheticQuarantineDemo(this.state.storage));}
+      catch{return json({ok:false,error:'Quarentena fictícia não passou na conferência.'},500);}
+    }
     if(u.pathname==='/migration/dry-run'&&request.method==='POST'){
       // This route accepts NO client records. It writes only hardcoded fake
       // rows into separate mf_stage_* tables in this Durable Object.
@@ -224,6 +232,19 @@ export default {
       // same-origin POST and Preview-only Access edge policy.
       if(!accessConfigured(env))return json({error:'Diagnóstico indisponível fora do Preview protegido.'},404);
       return json(await diagnoseAccessCerts(env));
+    }
+    if(url.pathname==='/api/migration/quarantine-demo'&&request.method==='POST'){
+      // Must pass BOTH login layers. Missing Cloudflare Access preview config
+      // fails closed, even with a valid private pilot session.
+      if(!accessConfigured(env))
+        return json({error:'Teste de quarentena requer Cloudflare Access configurado.'},403);
+      const identity=await authorizeAccess(request,env);
+      if(!identity.ok)return json({error:identity.error},identity.status);
+      const stub=env.PUSH_HOME.get(env.PUSH_HOME.idFromName('one-private-user'));
+      // No user body crosses into the DO. Strictly fixed server-side fixture.
+      return stub.fetch(new Request('https://internal/migration/quarantine-demo',{
+        method:'POST',headers:{'Content-Type':'application/json'},body:'{}'
+      }));
     }
     if(url.pathname==='/api/migration/dry-run'&&request.method==='POST'){
       // Run only for an authenticated Access identity and pilot session.
