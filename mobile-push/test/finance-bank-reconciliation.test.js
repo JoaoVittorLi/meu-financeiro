@@ -15,7 +15,7 @@ const setup=async()=>({
 test('exact Pluggy keys preserve every customized bank reference and do not alter personal rows',async()=>{
  const input=await setup();
  const before=JSON.stringify(input);
- const result=reconcileBankReferences(input);
+ const result=reconcileBankReferences({...input,pluggyHistoryComplete:true});
  assert.equal(result.summary.referencedBankTransactions,2);
  assert.equal(result.summary.verifiedExact,2);
  assert.equal(result.summary.pendingReview,0);
@@ -23,12 +23,22 @@ test('exact Pluggy keys preserve every customized bank reference and do not alte
  assert.equal(result.summary.missingPlannedAccountRefs,0);
  assert.equal(result.summary.opaqueDismissalsPreserved,1);
  assert.equal(result.summary.safeToConsiderCutover,true);
+ assert.equal(result.summary.pluggyHistoryComplete,true);
  assert.equal(result.summary.bankDataPublished,false);
  assert.equal(result.summary.personalEditsApplied,false);
  assert.equal(result.summary.automaticSettlementEnabled,false);
  assert.equal(result.internal.pendingKeys.length,0);
  assert.equal(JSON.stringify(input),before,'no personal or bank source row mutation');
  assert.doesNotMatch(JSON.stringify(result.summary),/fictional-bank|account_id|original|ALUGUEL FICTÍCIO/);
+});
+
+test('even perfect identifier matches cannot authorize cutover without verified Pluggy history coverage',async()=>{
+ const input=await setup();
+ const result=reconcileBankReferences(input);
+ assert.equal(result.summary.verifiedExact,2);
+ assert.equal(result.summary.pendingReview,0);
+ assert.equal(result.summary.pluggyHistoryComplete,false);
+ assert.equal(result.summary.safeToConsiderCutover,false);
 });
 
 test('missing Pluggy history blocks cutover without deleting custom titles or marking plans paid',async()=>{
