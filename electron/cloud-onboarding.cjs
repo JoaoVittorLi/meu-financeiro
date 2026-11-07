@@ -14,6 +14,7 @@ const path=require('node:path');
 const {randomUUID}=require('node:crypto');
 const {inspectLocalBackupManifest}=require('./cloud-migration-manifest.cjs');
 const {createPersonalSnapshotFromBackup,personalSnapshotSummary}=require('./cloud-personal-snapshot.cjs');
+const {buildTransferPlan,publicTransferSummary}=require('./cloud-transfer-plan.cjs');
 
 const STAGE='prepared_locally';
 const FILE_PATTERN=/^antes-da-sincronizacao-\d{4}-\d{2}-\d{2}-[0-9a-f-]{36}\.sqlite$/;
@@ -60,15 +61,22 @@ async function prepareCloudMigration({finance,backupFolder,now=new Date(),id=ran
   // The 17 personal tables are now serialized and cross-checked IN MEMORY.
   // No data uploader, network request, renderer bridge or file picker exists.
   // This is preparation, not cloud activation.
-  const personal=personalSnapshotSummary(createPersonalSnapshotFromBackup(file));
+  const snapshot=createPersonalSnapshotFromBackup(file);
+  const personal=personalSnapshotSummary(snapshot);
+  // Build the exact future chunk schedule now, without making any request.
+  // Nothing from the schedule or the rows is returned through IPC.
+  const transfer=publicTransferSummary(buildTransferPlan(snapshot));
   if(!personal.packageVerified||personal.personalTables!==17||
-     personal.sentToCloud!==false||personal.financialSyncEnabled!==false)
+     personal.sentToCloud!==false||personal.financialSyncEnabled!==false||
+     transfer.realRecordsUploaded!==0||transfer.financialSyncEnabled!==false||
+     transfer.personalRecords!==personal.personalRecords)
     throw new Error('As personalizações não passaram na conferência. Nenhum dado enviado.');
   // Do not return paths, record digests, rows, amounts, or any secrets to UI.
   return {stage:STAGE,backupVerified:true,backupPresent:true,cloudConnected:false,
     financialSyncEnabled:false,recordsSent:0,
     checkedTables:verified.tableCount,checkedRecords:verified.totalRows,
     personalTablesReady:personal.personalTables,personalRecordsReady:personal.personalRecords,
+    personalChunksReady:transfer.chunks,
     backupCreatedAt:now.toISOString(),
     next:'secure_cloud_pairing_not_yet_available'};
 }
