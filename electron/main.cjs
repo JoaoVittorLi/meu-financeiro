@@ -3,10 +3,11 @@ const {app,BrowserWindow,session,ipcMain,dialog,shell,safeStorage}=require('elec
 const path=require('node:path');
 const fs=require('node:fs');
 const {FinanceDB}=require('./db.cjs');
+const {PlanningStore}=require('./planning.cjs');
 const {automaticBackup,restoreBackup,listAutoBackups,validateBackupFile}=require('./recovery.cjs');
 const {PluggyVault}=require('./pluggy-vault.cjs');
 const {PluggyClient}=require('./pluggy.cjs');
-let db=null, mainWindow=null, vault=null, syncing=false, restoring=false, autoBackupBusy=false, backupTimer=null;
+let planner=null, db=null, mainWindow=null, vault=null, syncing=false, restoring=false, autoBackupBusy=false, backupTimer=null;
 function backupsDirectory(){return path.join(app.getPath('userData'),'copias-de-seguranca');}
 async function ensureAutomaticBackup(){
   if(!db||restoring||syncing||autoBackupBusy)return;
@@ -46,6 +47,7 @@ app.whenReady().then(()=>{
  app.setAppUserModelId('app.local.meufinanceiro');
  const filename=path.join(app.getPath('userData'),'meu-financeiro.sqlite');
  db=new FinanceDB(filename);
+ planner=new PlanningStore(db);
  vault=new PluggyVault(app.getPath('userData'),safeStorage);
  session.defaultSession.setPermissionRequestHandler((_wc,_permission,callback)=>callback(false));
  ipcMain.handle('finance:load',(event,profile)=>{requireAppSender(event);return db.load(profile);});
@@ -80,29 +82,31 @@ app.whenReady().then(()=>{
    try{
      const result=await restoreBackup(db,picked.filePaths[0],filename,backupsDirectory());
      db=result.db;
+     planner=new PlanningStore(db);
      const state={ok:true};
      mainWindow.webContents.reload();
      return state;
    }catch(error){
-     if(error.recoveredDb)db=error.recoveredDb;
+     if(error.recoveredDb){db=error.recoveredDb;planner=new PlanningStore(db);}
      throw new Error('Não foi possível restaurar seus dados: '+error.message);
    }finally{restoring=false;}
  });
+ function titledBankData(){const data=db.bankOverview();const titles=new Map(planner.bankTitles().map(x=>[x.accountId+'|'+x.externalId,x.title]));return {...data,transactions:data.transactions.map(t=>({...t,customTitle:titles.get(t.accountId+'|'+t.id)||''}))};}
  ipcMain.handle('bank:status',async(event)=>{
    requireAppSender(event);
-   return {config:await vault.status(),data:db.bankOverview()};
+   return {config:await vault.status(),data:titledBankData()};
  });
  ipcMain.handle('bank:configure',async(event,config)=>{
    requireAppSender(event);
    if(syncing)throw new Error('Sincronização em andamento.');
    const saved=await vault.put(config||{});
-   return {config:saved,data:db.bankOverview()};
+   return {config:saved,data:titledBankData()};
  });
  ipcMain.handle('bank:forget',async(event)=>{
    requireAppSender(event);
    if(syncing)throw new Error('Sincronização em andamento.');
    await vault.clear();
-   return {config:await vault.status(),data:db.bankOverview()};
+   return {config:await vault.status(),data:titledBankData()};
  });
  ipcMain.handle('bank:sync',async(event)=>{
    requireAppSender(event);
@@ -119,7 +123,7 @@ app.whenReady().then(()=>{
        const added=db.ingestBank(id,payload);
        newCount+=added.newCount;totalCount+=added.totalCount;
      }
-     return {newCount,totalCount,config:await vault.status(),data:db.bankOverview()};
+     return {newCount,totalCount,config:await vault.status(),data:titledBankData()};
    }finally{syncing=false;}
  });
  // Categorização local: operações explícitas, sem expor SQL ao renderer.
@@ -136,6 +140,16 @@ app.whenReady().then(()=>{
  ipcMain.handle('bank:merchant-alias',(event,input)=>{requireAppSender(event);return db.saveMerchantAlias(input);});
  ipcMain.handle('bank:delete-alias',(event,id)=>{requireAppSender(event);return db.deleteMerchantAlias(id);});
 
+ // Planejamento financeiro: todas as alterações passam por operações validadas no processo principal.
+ ipcMain.handle('plan:overview',(event,options)=>{requireAppSender(event);return planner.overview(options||{});});
+ ipcMain.handle('plan:create',(event,payload)=>{requireAppSender(event);const out=planner.create(payload);return {...out,overview:planner.overview()};});
+ ipcMain.handle('plan:edit',(event,payload)=>{requireAppSender(event);planner.edit(payload);return planner.overview();});
+ ipcMain.handle('plan:status',(event,id,status)=>{requireAppSender(event);planner.setStatus(id,status);return planner.overview();});
+ ipcMain.handle('plan:link',(event,payload)=>{requireAppSender(event);planner.link(payload);return planner.overview();});
+ ipcMain.handle('plan:unlink',(event,payload)=>{requireAppSender(event);planner.unlink(payload);return planner.overview();});
+ ipcMain.handle('plan:reject',(event,payload)=>{requireAppSender(event);planner.reject(payload);return planner.overview();});
+ ipcMain.handle('plan:rename',(event,payload)=>{requireAppSender(event);planner.renameBank(payload);return {overview:planner.overview(),data:titledBankData()};});
+ ipcMain.handle('plan:history',(event,id)=>{requireAppSender(event);return planner.history(id);});
  ipcMain.handle('finance:open-data-folder',async(event)=>{
    requireAppSender(event);return shell.openPath(app.getPath('userData'));
  });

@@ -25,5 +25,14 @@ contextBridge.exposeInMainWorld('financeDesktop', Object.freeze({
   bankSplit: (input) => ipcRenderer.invoke('bank:split',input),
   bankLinkManual: (input) => ipcRenderer.invoke('bank:link-manual',input),
   bankMerchantAlias: (input) => ipcRenderer.invoke('bank:merchant-alias',input),
-  bankDeleteAlias: (id) => ipcRenderer.invoke('bank:delete-alias',id)
+  bankDeleteAlias: (id) => ipcRenderer.invoke('bank:delete-alias',id),
+  planOverview: (options) => ipcRenderer.invoke('plan:overview',options),
+  planCreate: (payload) => ipcRenderer.invoke('plan:create',payload),
+  planEdit: (payload) => ipcRenderer.invoke('plan:edit',payload),
+  planStatus: (id,status) => ipcRenderer.invoke('plan:status',id,status),
+  planLink: (payload) => ipcRenderer.invoke('plan:link',payload),
+  planUnlink: (payload) => ipcRenderer.invoke('plan:unlink',payload),
+  planReject: (payload) => ipcRenderer.invoke('plan:reject',payload),
+  planRename: (payload) => ipcRenderer.invoke('plan:rename',payload),
+  planHistory: (id) => ipcRenderer.invoke('plan:history',id)
 }));

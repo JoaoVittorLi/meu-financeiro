@@ -5,7 +5,7 @@ const vm=require('node:vm');
 const fs=require('node:fs');
 const path=require('node:path');
 const file=fs.readFileSync(path.join(__dirname,'../app/app.js'),'utf8');
-const code=file.replace(/ReactDOM\.render\(h\(App, \{\}\), document\.getElementById\('app'\)\);?\s*$/,'');
+const code=file.replace(/ReactDOM\.render\(h\(App, \{\}\), document\.getElementById\('app'\)\);?/g,'');
 const context={window:{financeDesktop:null},React:{Component:class{},createElement:()=>({})},ReactDOM:{},localStorage:{getItem:()=>null},console,Date,Intl,Map,Set,Math,Number,String,Array,Object,RegExp};
 vm.runInNewContext(code+'\n;globalThis.__helpers={dateSpan,spanLabel,daysInSpan,advanceDate,snapshotBetween,bankSnapshotBetween,flowSegments};',context);
 const {dateSpan,spanLabel,daysInSpan,advanceDate,snapshotBetween,bankSnapshotBetween,flowSegments}=context.__helpers;

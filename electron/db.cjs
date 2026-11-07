@@ -308,6 +308,7 @@ class FinanceDB {
          this.db.prepare('UPDATE categories SET name=?,color=?,emoji=? WHERE name=?').run(label,hex,icon,row.name);
          this.db.prepare('UPDATE transactions SET category=? WHERE category=?').run(label,row.name);
          this.db.prepare('UPDATE budgets SET category=? WHERE category=?').run(label,row.name);
+         if(this.db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='planned_items'").get())this.db.prepare('UPDATE planned_items SET category=? WHERE category=?').run(label,row.name);
        }else this.db.prepare('UPDATE categories SET color=?,emoji=? WHERE name=?').run(hex,icon,row.name);
      }else{
        if(this.db.prepare('SELECT 1 FROM categories WHERE name=? COLLATE NOCASE').get(label))throw new Error('Já existe uma categoria com esse nome.');
@@ -325,7 +326,8 @@ class FinanceDB {
      this.db.prepare('SELECT 1 FROM budgets WHERE category=? AND amount_cents>0 LIMIT 1').get(row.name),
      this.db.prepare('SELECT 1 FROM category_rules WHERE category=? LIMIT 1').get(row.name),
      this.db.prepare('SELECT 1 FROM bank_category_overrides WHERE category=? LIMIT 1').get(row.name),
-     this.db.prepare('SELECT 1 FROM bank_transaction_splits WHERE category=? LIMIT 1').get(row.name)
+     this.db.prepare('SELECT 1 FROM bank_transaction_splits WHERE category=? LIMIT 1').get(row.name),
+     ...(this.db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='planned_items'").get()?[this.db.prepare('SELECT 1 FROM planned_items WHERE category=? LIMIT 1').get(row.name)]:[])
    ];
    if(usages.some(Boolean))throw new Error('Categoria em uso. Reclassifique os lançamentos, ajuste o orçamento e remova as regras antes de excluir.');
    this.db.exec('BEGIN IMMEDIATE');
@@ -438,6 +440,7 @@ class FinanceDB {
    const key=bankKey(input),tx=this.getBankTransaction(key);
    const manualId=input.manualId;
    if(manualId===null){this.db.prepare('DELETE FROM bank_manual_links WHERE account_id=? AND external_id=?').run(key.accountId,key.externalId);return this.bankOverview();}
+   if(this.db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='planned_bank_links'").get()&&this.db.prepare('SELECT 1 FROM planned_bank_links WHERE account_id=? AND external_id=?').get(key.accountId,key.externalId))throw new Error('Esta movimentação já foi vinculada a um compromisso planejado.');
    if(tx.status!=='POSTED')throw new Error('Espere a movimentação ser confirmada antes de vincular.');
    if(typeof manualId!=='string'||!manualId||manualId.length>120)throw new Error('Lançamento manual inválido.');
    const manual=this.db.prepare('SELECT * FROM transactions WHERE profile=? AND id=?').get('real',manualId);

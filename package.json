@@ -1,8 +1,8 @@
 {
   "name": "meu-financeiro-desktop",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "private": true,
-  "description": "Meu Financeiro — organização inteligente de transações, revisão e reconciliação pessoal",
+  "description": "Meu Financeiro — transações e planejamento futuro, conciliação bancária e projeção diária no Windows",
   "main": "electron/main.cjs",
   "scripts": {
     "compile": "tsc --project tsconfig.json",

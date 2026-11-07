@@ -1,17 +1,22 @@
-# Primeiro acesso — Meu Financeiro v0.7.0
+# Meu Financeiro v0.8.0 — Leia antes de instalar
 
-1. Na versão anterior, abra Configurações e **Salve uma cópia completa**. Guarde o arquivo SQLite em lugar seguro.
-2. Instale a v0.7.0 sem excluir a pasta de dados. Abra o app e confirme que suas contas, categorias e lançamentos continuam presentes.
-3. Abra **Revisar movimentações** na barra lateral. Escolha uma compra e clique nela para abrir os detalhes.
-4. Ajuste o estabelecimento, a categoria, a natureza e as anotações. Marque **Conferi esta movimentação** e salve.
-5. Para dividir uma compra, adicione duas ou mais partes e confira que a soma é exatamente igual ao valor total.
-6. Para evitar dupla contagem manual, vincule um lançamento pessoal que corresponda em valor, direção e data próxima. O aplicativo não vincula nada automaticamente.
-7. Para uma transferência entre suas contas, verifique os dois lançamentos sugeridos antes de selecionar **Marcar ambas**.
+1. Abra a v0.7 e faça **Configurações → Salvar cópia completa**. Guarde o arquivo `.sqlite` em pasta segura.
+2. Feche o Meu Financeiro e instale a v0.8. A instalação não remove seus dados nem exige reconectar o banco.
+3. Abra **Planejamento**. Crie uma despesa ou receita futura e confira como ela altera o saldo de cada dia.
+4. Para contas recorrentes, selecione semanal, mensal ou anual e a quantidade de ocorrências (até 36). Para compras parceladas, informe **o valor total** e a quantidade de parcelas.
+5. Quando um pagamento aparecer entre as movimentações bancárias confirmadas, aceite uma sugestão de conciliação ou procure a movimentação no painel do compromisso. Nada é vinculado automaticamente.
+6. Caso confirme pagamento manual sem vínculo, certifique-se de que ele **já foi descontado/adicionado ao saldo atual**; do contrário sua projeção ficará imprecisa.
 
-## Segurança
+## Proteções e limites
 
-O extrato importado é preservado; suas preferências ficam em tabelas adicionais do SQLite. Uma alteração do banco em valor, descrição ou status devolve o item à revisão. Credenciais não fazem parte dos backups SQLite.
+- Valores bancários originais permanecem imutáveis. Nomes personalizados são armazenados em outra tabela.
+- Um pagamento confirmado não pode ser associado simultaneamente a dois compromissos nem a um vínculo manual existente.
+- Pagamentos parciais deixam apenas o valor restante na projeção; pagamento completo elimina essa previsão.
+- Rejeitar uma sugestão impede que a mesma combinação seja oferecida novamente.
+- Se o banco voltar a marcar uma movimentação como pendente ou alterar seu valor, o compromisso volta a apresentar o valor não quitado.
+- Períodos futuros disponíveis: do dia atual até aproximadamente 12 meses à frente. Recorrências são geradas explicitamente até 36 ocorrências.
+- Não há operações bancárias, pagamentos nem transferências pelo aplicativo.
+- Projeções são estimativas sobre o último saldo informado; contas com saldo desatualizado podem produzir conclusões incorretas.
+- O histórico bancário bruto e as categorias da versão anterior permanecem intactos.
 
-## Quando algo parecer errado
-
-Abra Configurações → Salvar cópia completa e comunique o problema. Não apague a pasta do aplicativo. Uma prévia gerada em navegador de teste foi validada com dados fictícios, mas os cliques finais e a instalação precisam ser confirmados em seu Windows.
+Em caso de problema, mantenha o backup e não exclua a pasta de dados do aplicativo. Os testes automatizados são uma etapa de proteção, mas o comportamento do instalador precisa ser confirmado no seu Windows.

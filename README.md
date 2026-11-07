@@ -1,25 +1,37 @@
-# Meu Financeiro — v0.7.0 💜
+# Meu Financeiro v0.8.0 — Central de Planejamento 💜
 
-Aplicativo de finanças pessoais para Windows (Electron + React/TypeScript + SQLite), com sincronização bancária opcional de somente leitura e processamento local das análises.
+Aplicativo pessoal para Windows (Electron + React/TypeScript + SQLite), com sincronização somente leitura das contas autorizadas e planejamento financeiro local.
 
-## Novidades da v0.7.0
+## Novidades v0.8
 
-- **Revisar movimentações:** caixa de entrada para registros bancários ainda não conferidos, com marcação individual ou em lote.
-- **Detalhes laterais:** consultar descrição original, valor, status, data e conta; adicionar notas, nome amigável do estabelecimento e classificar o tipo da movimentação.
-- **Dividir compras:** atribuir partes de uma despesa a diferentes categorias. A soma em centavos deve ser idêntica ao valor original; as divisões alimentam gráficos e orçamentos.
-- **Estabelecimentos personalizados:** criar padrões de texto para mostrar nomes organizados e criar regras de categorização a partir dos detalhes.
-- **Conciliação manual:** vincular um registro bancário confirmado a um lançamento pessoal com valor/tipo iguais e datas próximas (até 3 dias). Nada é conciliado sem aprovação.
-- **Transferências próprias:** sugestões conservadoras entre contas conectadas, com confirmação explícita, e opção de desconsiderar movimentações das estatísticas.
-- **Operações em lote:** aplicar categoria ou marcar revisadas até 100 movimentações por operação.
-- **Migração aditiva:** edições, divisões e conciliações permanecem em tabelas separadas, sem alterar o extrato bruto do banco.
+- **Planejamento**: nova central que reúne compromissos futuros, movimentações bancárias confirmadas e lançamentos manuais existentes.
+- **Linha do tempo diária**: selecione um dia do mês corrente ou dos próximos 12 meses e acompanhe saldo inicial, entradas, saídas e saldo final estimado.
+- **Lançamentos planejados**: receitas, despesas, datas, valores, categorias, notas, conta associada e grau de certeza.
+- **Recorrências**: semanais, mensais ou anuais; cada ocorrência pode ser editada separadamente, preservando as demais.
+- **Parcelas**: valor total dividido exatamente em centavos, até 36 parcelas mensais.
+- **Conciliação**: sugestões por data, valor e descrição com confirmação manual; também é possível procurar e vincular um pagamento específico, ignorar sugestões e desfazer vínculos.
+- **Pagamentos parciais**: um compromisso aceita múltiplos pagamentos confirmados até atingir o valor planejado. Se o valor pago for diferente, ajuste explicitamente o valor do compromisso; não é modificado automaticamente.
+- **Nome personalizado**: título independente da descrição bancária original (que permanece inalterada).
+- **Alertas**: saldo projetado negativo, vencidos e dados bancários desatualizados.
+- **Cenários**: receitas estimadas ficam fora da projeção conservadora até o usuário optar por incluí-las.
+- **Histórico de mudanças**: registros de criação, edição, conciliação, cancelamento e reativação.
+- **Preservação**: migração aditiva, sem substituir tabelas de transações da v0.7.
 
-## Instalar
+## Regra de projeção
 
-Baixe o instalador na [Release v0.7.0](https://github.com/JoaoVittorLi/meu-financeiro/releases/tag/v0.7.0) (repositório privado). O aplicativo não requer Python nem Node instalado no PC.
+O saldo bancário mais recente recebido é a referência quando existe saldo disponível; caso contrário o saldo manual é usado separadamente. Movimentos bancários já refletidos no saldo não são somados novamente. Apenas o **valor restante de compromissos futuros ou vencidos** altera a projeção. Receitas incertas são excluídas por padrão; despesas previstas, inclusive estimadas, entram de forma conservadora.
 
-Antes de atualizar: **Configurações → Salvar cópia completa**. Feche a versão antiga e instale a nova. Não remova a pasta de dados pessoais.
+Um pagamento marcado manualmente como quitado **deve já estar refletido no saldo atual**, pois não pode ser confirmado tecnicamente sem vínculo bancário. Um pagamento bancário importado não é ligado automaticamente: sugestões exigem aprovação.
 
-## Testes e desenvolvimento
+**Importante:** esta é uma estimativa e não garante disponibilidade real, pois os bancos podem atualizar dados com atraso, e movimentações não importadas não são conhecidas. Projeções históricas anteriores à data atual não são calculadas. A lista visual do banco segue o limite de 2.500 movimentações da versão anterior; as sugestões de conciliação consultam o banco SQLite diretamente.
+
+## Instalação
+
+Baixe o instalador ou executável portátil na [Release v0.8.0](https://github.com/JoaoVittorLi/meu-financeiro/releases/tag/v0.8.0). Repositório privado: acesso com sua conta GitHub. Não exige instalar Python nem Node no computador.
+
+Faça uma **cópia completa** em Configurações na versão anterior antes de atualizar. As credenciais da conexão bancária continuam protegidas separadamente pelo Windows; não são publicadas nem entram no backup SQLite.
+
+## Desenvolvimento e testes
 
 ```powershell
 npm install
@@ -27,10 +39,4 @@ npm run test
 npm start
 ```
 
-A compilação Windows é feita pelo GitHub Actions, com instalador, executável portátil e arquivo SHA-256.
-
-## Privacidade e limitações
-
-Os lançamentos importados da instituição nunca são sobrescritos por edições pessoais. Divisões, natureza, anotações e correções ficam em tabelas separadas. Credenciais ficam fora do SQLite e são protegidas pelo Windows. Não compartilhe segredos ou arquivos SQLite contendo dados financeiros.
-
-Esta v0.7.0 **não possui conciliação automática** nem unifica duas fontes por padrão; a associação exige sua confirmação. O dashboard bancário ainda usa as movimentações mais recentes expostas para a interface, limitada a 2.500 registros (o app alerta em caso de corte); pesquisas históricas completas virão em versão posterior. As classificações gerenciais não movem dinheiro, não alteram o saldo fornecido pelo banco e não fazem pagamentos.
+O `npm run test` executa a compilação TypeScript e testes de SQLite, categorias, segurança, recuperação, conciliação e projeção diária. O GitHub Actions compila os executáveis em Windows x64. A instalação e persistência no Windows real ainda precisam ser conferidas após a distribuição.
