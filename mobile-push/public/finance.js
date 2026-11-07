@@ -58,4 +58,45 @@ async function showPersonalFinance(){
     status.classList.add('finance-error');
   }
 }
-void showPersonalFinance();
+async function showBankServerStatus(){
+ const node=el('bankServerStatus');
+ if(!node)return;
+ try{
+  const response=await fetch('/api/bank/status',{
+   method:'GET',credentials:'same-origin',cache:'no-store',
+   headers:{Accept:'application/json'}
+  });
+  if(!response.ok)throw new Error('Histórico indisponível');
+  const state=await response.json();
+  if(state?.ok!==true||state.financialSyncEnabled!==false||
+     state.historicalCompletenessVerified!==false||
+     state.cloudCutoverAllowed!==false)
+   throw new Error('A verificação financeira ainda não foi concluída');
+  if(!state.providerConfigured){
+   node.textContent='Aguardando configuração segura do Pluggy na Cloudflare. Nenhuma movimentação bancária foi importada.';
+  }else if(state.stage==='staging'){
+   node.textContent='Consulta feita pela Cloudflare: '+state.accounts+
+     ' conta(s), '+state.transactions+' movimentações em conferência. '+
+     'Última atualização: '+new Date(state.lastSuccess).toLocaleString('pt-BR')+
+     '. O histórico e os vínculos ainda precisam ser conciliados.';
+  }else{
+   node.textContent='Servidor Pluggy configurado. Aguardando a primeira consulta e conferência do histórico.';
+  }
+  if(state.issue)node.textContent+=' A última consulta ficou incompleta; os dados anteriores foram preservados.';
+ }catch{
+  node.textContent='Atualização bancária ainda não disponível neste ambiente.';
+ }
+}
+let refreshing=false;
+async function refreshVisibleFinance(){
+ if(document.hidden||refreshing)return;
+ refreshing=true;
+ try{
+  await Promise.all([showPersonalFinance(),showBankServerStatus()]);
+ }finally{refreshing=false;}
+}
+document.addEventListener('visibilitychange',()=>{
+ if(!document.hidden)void refreshVisibleFinance();
+});
+setInterval(()=>{void refreshVisibleFinance();},60000);
+void refreshVisibleFinance();
