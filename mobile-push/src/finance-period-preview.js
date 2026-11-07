@@ -29,8 +29,10 @@ export function readFinancePreviewPeriod(storage,{start,end,source='bank'}={}){
  if(source==='bank'){
    ensureBankStaging(storage);
    const raw=sql.exec(
-     'SELECT account_id,external_id,date,description,amount_cents,status '+
-     'FROM mf_bank_staging_transactions ORDER BY date,account_id,external_id'
+     'SELECT t.account_id,t.external_id,t.date,t.description,t.amount_cents,t.status, '+
+     'c.category_original AS provider_category FROM mf_bank_staging_transactions t '+
+     'LEFT JOIN mf_bank_staging_categories c USING(account_id,external_id) '+
+     'ORDER BY t.date,t.account_id,t.external_id'
    ).toArray();
    rows=personalizeBankRows(storage,raw);
  }else{
