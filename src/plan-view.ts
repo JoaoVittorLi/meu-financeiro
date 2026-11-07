@@ -111,7 +111,7 @@ function renderPlanningView(app:any){const s=app.state;if(s.mode==='demo')return
    h('p',{className:'p-footnote'},'O saldo de referência vem da última informação disponível da instituição. Lançamentos já pagos e refletidos no banco não são descontados novamente. Previsões futuras são estimativas, não garantias.')
  );
 }
-function renderPlanEditor(app:any){const s=app.state,f=s.planForm,categories=app.getCategories();return h('div',{className:'modal-backdrop',onMouseDown:(e:any)=>{if(e.target===e.currentTarget)app.setState({planOpen:false});}},h('div',{className:'modal p-plan-modal'},
+function renderPlanEditor(app:any){const s=app.state,f=s.planForm,categories=app.getCategories();return h('div',{className:'modal-backdrop',onMouseDown:(e:any)=>{if(e.target===e.currentTarget)app.setState({planOpen:false});}},h('div',{className:'modal p-plan-modal',role:'dialog','aria-modal':'true','aria-label':'Planejar compromisso'},
  h('div',{className:'modal-head'},h('div',{},h('span',{className:'micro-label'},f.id?'EDITAR OCORRÊNCIA':'NOVO PLANEJAMENTO'),h('h2',{},f.id?'Editar compromisso':'Planejar movimentação')),h('button',{className:'close-button',onClick:()=>app.setState({planOpen:false})},'×')),
  h('div',{className:'segmented'},['expense','income'].map(k=>h('button',{key:k,className:f.kind===k?'selected':'',onClick:()=>app.setState({planForm:{...f,kind:k,category:k==='income'?'Salário':'Outros'}})},k==='expense'?'Despesa':'Receita'))),
  app.field('Como deseja chamar esta transação?',h('input',{className:'form-control',maxLength:140,value:f.title,placeholder:'Ex.: Aluguel, salário, notebook',onChange:(e:any)=>app.setState({planForm:{...f,title:e.target.value}})})),

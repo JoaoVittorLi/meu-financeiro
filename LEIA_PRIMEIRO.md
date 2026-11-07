@@ -1,15 +1,13 @@
-# Meu Financeiro v0.9.1 — orientações para atualização
+# Meu Financeiro v0.9.2 — Atualização
 
-1. **Faça backup completo SQLite** na versão instalada antes de atualizar.
-2. Feche completamente o aplicativo antigo.
-3. Instale o arquivo `MeuFinanceiro-Instalador-0.9.0-x64.exe` da Release privada no GitHub, ou use a versão portátil.
-4. Confira o histórico bancário, categorias, compromissos, vínculos e backup em Configurações.
-5. Abra **Movimentações** e veja as abas **Todas as movimentações** e **A revisar**.
-6. Abra **Simular compra**. O comparativo usa o planejamento realmente cadastrado, mas **não é garantia** de capacidade de pagamento.
+1. Abra sua versão instalada e escolha **Configurações → Salvar cópia completa**.
+2. Feche totalmente o aplicativo antes de executar `MeuFinanceiro-Instalador-0.9.2-x64.exe`.
+3. Após instalar, confira saldos, categorias, compromissos e movimentações existentes. Sua conexão bancária anterior deve ser mantida.
+4. Abra **Movimentações**: há abas para **Histórico**, **A revisar** e **Categorias e regras**. A revisão rápida marca uma movimentação como conferida sem abrir o painel lateral.
+5. Na Visão geral, selecione **Mês passado** ou outro período e depois abra Movimentações: o intervalo deverá continuar selecionado. Em Orçamentos, a fonte e o mês serão exibidos explicitamente.
+6. Em Simular compra, use **Planejar esta compra**. O compromisso só será criado depois de confirmar no formulário; o aplicativo não realiza pagamentos.
+7. Na página Minhas contas, abra o histórico de uma conta pelo atalho **Ver movimentações desta conta**.
 
-**O que não muda:** conexão pessoal com Meu Pluggy, dados do Itaú, extratos originais, categorias e planejamentos anteriores. O novo detector de duplicatas mostra alertas para sua conferência, mas não apaga dados.
+**Sem alteração destrutiva de banco:** a atualização concentra-se em navegação e interface. Seus dados pessoais seguem no SQLite local.
 
-**Limitações:** saldo bancário pode estar atrasado em relação ao banco; extrato em tela limitado às 2.500 linhas mais recentes; histórico completo armazenado continua consultado nos indicadores. Simulador não cria dívidas reais; recorrências cadastradas têm horizonte finito; não há criptografia adicional no arquivo SQLite. Se algum cálculo parecer estranho, confira a data de atualização do banco e os pagamentos planejados antes de tomar uma decisão.
-
-
-A linha do tempo agora mostra o mês completo. Arraste o controle abaixo do gráfico para selecionar cada dia e visualizar a diferença em relação ao dia anterior. Para datas passadas, a curva é uma reconstrução aproximada dos lançamentos importados, não um extrato de saldo histórico confirmado.
+**Atenção:** dados bancários podem estar desatualizados; projeções e simulações não garantem saldo nem capacidade de pagamento. Faça backup antes de atualizar.
