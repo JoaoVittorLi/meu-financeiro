@@ -98,7 +98,9 @@ async function connectPreviewIdentity(){
   browser.webContents.on('will-redirect',checkLoginNavigation);
   // No downloads from a remote authentication window.
   const onDownload=(event,webContents)=>{
-    if(webContents===browser.webContents)event.preventDefault();
+    if(webContents===browser.webContents||
+       [...authPopups].some(p=>!p.isDestroyed()&&p.webContents===webContents))
+      event.preventDefault();
   };
   ses.on('will-download',onDownload);
   cloudAuthPromise=new Promise(resolve=>{
