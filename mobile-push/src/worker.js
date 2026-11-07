@@ -167,9 +167,20 @@ export class PushHome {
     return {accepted,removed,failed,registered:keep.length,services};
   }
   async scheduleAlarm() {
+    // Existing push reminder and independent bank polling share ONE alarm.
     const queued=((await this.state.storage.get('events'))||[]).filter(x=>x.status==='queued');
-    if(!queued.length) { await this.state.storage.deleteAlarm(); return; }
-    await this.state.storage.setAlarm(Math.max(Date.now()+1000,Math.min(...queued.map(x=>x.at))));
+    const future=queued.map(x=>x.at);
+    const bankAt=await this.state.storage.get('bank_next_sync');
+    if(bankServerEnabled(this.env)&&Number.isSafeInteger(bankAt)&&bankAt>0)
+      future.push(bankAt);
+    if(!future.length){await this.state.storage.deleteAlarm();return;}
+    await this.state.storage.setAlarm(Math.max(Date.now()+1000,Math.min(...future)));
+  }
+  async scheduleNextBankSync(success) {
+    if(!bankServerEnabled(this.env))return;
+    const period=success?3*60*60*1000:30*60*1000;
+    await this.state.storage.put('bank_next_sync',Date.now()+period);
+    await this.scheduleAlarm();
   }
   async alarm() {
     const events=(await this.state.storage.get('events'))||[];
@@ -185,6 +196,12 @@ export class PushHome {
       if(event.status==='failed') { event.tries=(event.tries||0)+1; if(event.tries<3) {event.status='queued';event.at=Date.now()+Math.pow(2,event.tries)*60000;} }
     }
     await this.state.storage.put('events',events.slice(-40));
+    const bankAt=await this.state.storage.get('bank_next_sync');
+    if(bankServerEnabled(this.env)&&Number.isSafeInteger(bankAt)&&bankAt<=Date.now()){
+      // Only the Durable Object and server secrets can request Pluggy.
+      const result=await ingestPluggyToStaging(this.state.storage,this.env);
+      await this.scheduleNextBankSync(result.ok);
+    }
     await this.scheduleAlarm();
   }
   async fetch(request) {
@@ -203,7 +220,9 @@ export class PushHome {
     if(u.pathname==='/bank/refresh'&&request.method==='POST'){
       // The DO holds the trusted Worker env; a public caller cannot pass its
       // own secrets or provider configuration. Only server-side Pluggy calls.
-      return json(await ingestPluggyToStaging(this.state.storage,this.env));
+      const result=await ingestPluggyToStaging(this.state.storage,this.env);
+      await this.scheduleNextBankSync(result.ok);
+      return json(result);
     }
     if(u.pathname==='/migration/personal-overview'&&request.method==='GET'){
       return json(readVerifiedPersonalOverview(this.state.storage));
