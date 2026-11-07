@@ -9,8 +9,12 @@ const AUD='test-access-audience-00000001';
 const EMAIL='owner@example.test'; // Synthetic email; never a real user identity.
 const ENV={TEAM_DOMAIN:TEAM,POLICY_AUD:AUD,ACCESS_ALLOWED_EMAIL:EMAIL};
 const NOW=Date.parse('2026-11-07T15:00:00.000Z');
-const fetchImpl=async(url)=>{
+const fetchImpl=async(url,options)=>{
   assert.equal(url,TEAM+'/cdn-cgi/access/certs');
+  // Regression: Workers failed with redirect:'error' against real Cloudflare.
+  // Do not follow any redirect to a different host.
+  assert.equal(options.redirect,'manual');
+  assert.equal(options.headers.Accept,'application/json');
   return new Response(JSON.stringify({keys:[publicJwk]}),{status:200});
 };
 let privateKey,publicJwk;
@@ -80,6 +84,21 @@ test('Access verifier checks a real RSA signature, audience, issuer and allowlis
     headers:{'Cf-Access-Authenticated-User-Email':EMAIL}
   });
   assert.equal((await authorizeAccess(noJWT,ENV,options)).status,403);
+});
+
+test('signed Access JWT refuses redirecting JWKS endpoint even when it supplies a Location header',async()=>{
+  assert.ok(privateKey,'test RSA fixture must exist');
+  const redirectEnv={...ENV,TEAM_DOMAIN:'https://redirect-test.cloudflareaccess.com'};
+  const result=await authorizeAccess(request(await sign()),redirectEnv,{
+    now:NOW,fetchImpl:async(url,options)=>{
+      assert.equal(url,redirectEnv.TEAM_DOMAIN+'/cdn-cgi/access/certs');
+      assert.equal(options.redirect,'manual');
+      return new Response(null,{status:302,headers:{Location:'https://attacker.example.test/jwks'}});
+    }
+  });
+  assert.equal(result.ok,false);
+  assert.equal(result.status,503);
+  assert.equal(result.code,'CF-CERTS');
 });
 
 test('diagnostic codes identify safe verification stages without revealing any JWT or identities',async()=>{
