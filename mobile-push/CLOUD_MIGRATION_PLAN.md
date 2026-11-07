@@ -28,6 +28,14 @@ A aplicação e o sistema operacional ainda podem ter cache de arquivos estátic
 8. Simular compra com mesmo motor financeiro central.
 9. Avisos push, configurações, fila persistente e histórico de entrega.
 
+## Marco de preparação: identidade e inventário do SQLite (não é migração)
+
+- `src/access-auth.js` implementa validação de JWT Cloudflare Access (`Cf-Access-Jwt-Assertion`) com RS256 e verificação de emissor, audiência, tempo e identidade autorizada. O uso de JWT verificado é necessário porque Static Assets pode não repassar `ctx.access`.
+- As variáveis `TEAM_DOMAIN`, `POLICY_AUD` e `ACCESS_ALLOWED_EMAIL` **não estão confirmadas na Cloudflare**. Se forem parcialmente configuradas, a API de sincronização falha fechada; se não configuradas, o teste de notas fictícias permanece operacional pela sessão antiga.
+- `electron/cloud-migration-contract.cjs` inventaria 22 tabelas da v0.9.4 e verifica as chaves primárias para evitar migração parcial de vínculos financeiros. Não exporta dados.
+- `FINANCIAL_SCHEMA_ACTIVE` continua `false` por definição de código. A variável de ambiente `FINANCE_SYNC_ENABLED` sozinha não desbloqueia finanças.
+- Consulta: `ACCESS_SETUP.md` — passos de implantação e homologação da identidade.
+
 ## Segurança obrigatória antes dos dados financeiros
 
 - Proteger o Worker com **Cloudflare Access**, restrito à identidade do proprietário, além da sessão atual.
