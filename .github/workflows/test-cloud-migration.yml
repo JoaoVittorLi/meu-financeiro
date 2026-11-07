@@ -12,6 +12,8 @@ on:
       - 'tests/cloud-migration-manifest.test.cjs'
       - 'electron/cloud-onboarding.cjs'
       - 'tests/cloud-onboarding.test.cjs'
+      - 'electron/cloud-personal-snapshot.cjs'
+      - 'tests/cloud-personal-snapshot.test.cjs'
       - 'electron/cloud-data-routing.cjs'
       - 'tests/cloud-data-routing.test.cjs'
       - 'electron/recovery.cjs'
