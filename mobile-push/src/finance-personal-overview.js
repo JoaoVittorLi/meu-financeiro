@@ -21,14 +21,16 @@ export function readVerifiedPersonalOverview(storage){
     session.import_id,table,limit
   ).toArray().map(({row_json})=>JSON.parse(row_json));
   const categories=mergePersonalOverlays(storage,'categories',get('categories',150)).map(x=>({
-    name:x.name,color:x.color,emoji:x.emoji,kind:x.kind
+    name:x.name,color:x.color,emoji:x.emoji,kind:x.kind,revision:x._cloudRevision||0
   }));
   const budgets=mergePersonalOverlays(storage,'budgets',get('budgets',150)).filter(x=>x.profile==='real')
-    .map(x=>({category:x.category,amountCents:x.amount_cents}));
+    .map(x=>({category:x.category,amountCents:x.amount_cents,revision:x._cloudRevision||0}));
   const plans=mergePersonalOverlays(storage,'planned_items',get('planned_items',250)).map(x=>({
-    title:x.title,kind:x.kind,amountCents:x.amount_cents,
+    id:x.id,title:x.title,kind:x.kind,amountCents:x.amount_cents,
     dueDate:x.due_date,category:x.category,status:x.status,
-    certainty:x.certainty
+    certainty:x.certainty,notes:x.notes||'',revision:x._cloudRevision||0,
+    groupType:x.group_type,occurrence:x.occurrence,
+    totalOccurrences:x.total_occurrences
   })).sort((a,b)=>a.dueDate.localeCompare(b.dueDate));
   // Explicitly exclude original bank rows and account IDs. A plan with an
   // associated account is not marked paid until Pluggy reconciliation.
