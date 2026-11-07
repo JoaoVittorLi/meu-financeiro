@@ -25,3 +25,5 @@ body{background:#0b0914;color:#f7f2ff}
 .finance-badge{display:inline-flex;background:#28213a;color:#d4b5ff;border-radius:99px;padding:7px 10px;font-size:11px}
 .finance-hidden{display:none}
 @media(max-width:600px){.finance-layout{grid-template-columns:1fr}.finance-card.wide{grid-column:auto}.finance-shell{padding:20px 16px 75px}.finance-header{margin-bottom:34px}}
+
+.finance-bank{margin-top:18px}
