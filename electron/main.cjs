@@ -3,6 +3,7 @@ const {app,BrowserWindow,session,ipcMain,dialog,shell,safeStorage}=require('elec
 const path=require('node:path');
 const fs=require('node:fs');
 const {FinanceDB}=require('./db.cjs');
+const {inspectLocalBackupManifest}=require('./cloud-migration-manifest.cjs');
 const {PlanningStore}=require('./planning.cjs');
 const {automaticBackup,restoreBackup,listAutoBackups,validateBackupFile}=require('./recovery.cjs');
 const {PluggyVault}=require('./pluggy-vault.cjs');
@@ -58,6 +59,17 @@ app.whenReady().then(()=>{
    const result=await dialog.showSaveDialog(mainWindow,{title:'Salvar cópia do banco de dados',defaultPath:'MeuFinanceiro-backup-'+new Date().toISOString().slice(0,10)+'.sqlite',filters:[{name:'Banco SQLite',extensions:['sqlite']}]});
    if(result.canceled||!result.filePath)return {cancelled:true};
    return db.backupTo(result.filePath);
+ });
+ ipcMain.handle('finance:migration-audit',async(event)=>{
+   requireAppSender(event);
+   // A migration audit NEVER scans the active database automatically and
+   // never sends its contents over the network. User selects a backup file.
+   const picked=await dialog.showOpenDialog(mainWindow,{
+     title:'Conferir uma cópia local antes da migração',
+     properties:['openFile'],filters:[{name:'Cópia completa SQLite',extensions:['sqlite']}]
+   });
+   if(picked.canceled||!picked.filePaths?.[0])return {cancelled:true};
+   return inspectLocalBackupManifest(picked.filePaths[0]);
  });
  ipcMain.handle('finance:backup-status',(event)=>{
    requireAppSender(event);
