@@ -1,0 +1,8 @@
+:root{color-scheme:dark;font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif}
+*{box-sizing:border-box}body{background:#0b0914;color:#f6efff;margin:0;padding:30px 16px;display:grid;place-items:center;min-height:100vh}
+main{width:min(100%,520px);border:1px solid #43335c;background:#171121;border-radius:22px;padding:36px;box-shadow:0 10px 40px #0003}
+.logo{background:linear-gradient(125deg,#6426de,#b35ff2);font-weight:bold;border-radius:12px;display:grid;place-items:center;width:46px;height:46px;font-size:26px;margin-bottom:25px}
+.eyebrow{font-size:11px;letter-spacing:.16em;color:#bf92ff;text-transform:uppercase;font-weight:800}
+h1{font-size:33px;letter-spacing:-.04em;margin:12px 0 18px}p{font-size:14px;line-height:1.7;color:#cec1dc}
+a{color:#bd9aff}button{display:block;background:linear-gradient(95deg,#7d2ce8,#b051f4);border:0;border-radius:12px;padding:16px;color:#fff;width:100%;font-weight:800;cursor:pointer;margin:25px 0 14px}
+button:disabled{opacity:.65;cursor:default}#status{min-height:45px;font-weight:600}.foot{border-top:1px solid #3b2b48;padding-top:20px;font-size:12px;color:#ac9dbd}
