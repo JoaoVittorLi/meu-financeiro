@@ -108,3 +108,35 @@ reconciliados por identificador externo.
 Documentação Cloudflare: https://developers.cloudflare.com/durable-objects/api/sqlite-storage-api/
 — uso transacional de SQLite Durable Objects para importação atômica e
 sincronização posterior.
+
+
+## Progresso técnico adicional — pipeline real preparado (ainda sem transferência)
+
+### Pacote de personalizações Windows, *somente em memória*
+
+- \`electron/cloud-personal-snapshot.cjs\` lê o backup consistente localmente, valida a estrutura e gera representação fiel das **17 tabelas pessoais** (categorias/regras, títulos, divisões, orçamentos, planejamentos, notas e vínculos).
+- Gera SHA-256 e contagem por tabela, rejeita valores numéricos inseguros, BLOBs, alterações estruturais e payloads grandes; não inclui quatro tabelas bancárias do Pluggy nem \`app_meta\`.
+- O botão de preparação já executa essa serialização em memória, mas descarta os registros ao concluir a conferência. O renderer recebe apenas contagens agregadas e a confirmação de **zero registros enviados**.
+- A janela de login \`electron/cloud-preview-identity.cjs\` usa sessão Chromium separada \`persist:mf-cloud-preview\`, autenticação Cloudflare no domínio conhecido e consulta somente-leitura a \`/api/sync/health\`. Tokens, cookies e credenciais não são retornados ao renderer.
+- O botão na tela Configurações inicia **preparação + autenticação** em um fluxo, não mais duas tarefas manuais. O destino é exclusivamente o preview protegido, nunca Production.
+- Esses recursos foram testados automaticamente, mas **a janela de login integrada ao Electron ainda não foi testada pelo proprietário em Windows** e não existe instalador com a nova função disponível.
+
+### Validação e quarentena Cloudflare
+
+- \`mobile-push/src/finance-personal-validate.js\` valida em Node/Workers todas as 17 tabelas, tipos, colunas, inteiros em centavos, chaves, hashes e integridade referencial possível antes da leitura dos dados Pluggy.
+- Os vínculos com extrato bancário (manual/real, categorizações, splits e planejamentos) continuam explicitamente **pendentes de reconciliação com identificadores recuperados do Pluggy**.
+- \`mobile-push/src/finance-personal-quarantine.js\` implementa persistência atômica e idempotente de pacotes de até 2.500 registros, com rejeição de conflitos e descarte/rollback integral.
+- A quarentena usa tabelas separadas \`mf_import_*\` e **não atualiza \`sync_documents\`, o banco financeiro principal ou \`mf_stage_*\`**.
+- **Não existe rota HTTP pública/privada para importar dados reais**. As funções estão isoladas e foram testadas com bancos fictícios; isso é uma barreira proposital até concluirmos o emparelhamento desktop, lotes grandes, revalidação, importação financeira completa e rollback final.
+
+### Próximos bloqueios explícitos
+
+1. Testar login do Electron no Windows, incluindo o fluxo do PIN por e-mail, cookies persistentes e expiração da sessão.
+2. Implementar lotes com verificação de checksum e limite de CPU para os backups com mais de 2.500 registros pessoais; manter o isolamento dos dados antes do cutover.
+3. Expor API de importação **apenas após** autenticação Access verificada no servidor + sessão vinculada ao usuário + proteção contra repetições e dispositivos não autorizados.
+4. Integrar dados Pluggy por \`account_id + external_id\`, incluindo backfill quando faltarem transações históricas que sustentam vínculos.
+5. Comparar hashes, contagens, saldos e vínculo por vínculo. Depois de equivalência total, habilitar gravação na nuvem e implementar o cliente completo Windows/Android. Até lá, SQLite local segue sendo o banco principal.
+
+### Segurança do checkpoint
+
+**Não dizer "migração concluída" e não pedir backup/relatórios/segredos.** Nenhum dado financeiro real foi enviado nesta etapa. Produção e aplicativo Windows instalado permanecem intactos.
