@@ -35,7 +35,7 @@ function migrationLocalStatus(folder){
     latestBackupAt:found[0]?.createdAt||null};
 }
 
-async function prepareCloudMigration({finance,backupFolder,now=new Date(),id=randomUUID()}){
+async function prepareCloudMigration({finance,backupFolder,now=new Date(),id=randomUUID(),onValidatedSnapshot=null}){
   if(!finance?.backupTo||!finance?.db||typeof backupFolder!=='string')
     throw new TypeError('Banco local indisponível para preparar a sincronização.');
   if(!(now instanceof Date)||!Number.isFinite(now.valueOf())||
@@ -71,9 +71,24 @@ async function prepareCloudMigration({finance,backupFolder,now=new Date(),id=ran
      transfer.realRecordsUploaded!==0||transfer.financialSyncEnabled!==false||
      transfer.personalRecords!==personal.personalRecords)
     throw new Error('As personalizações não passaram na conferência. Nenhum dado enviado.');
+  // Only the Electron main process can pass this callback. It receives the
+  // in-memory snapshot after a consistent backup and complete local audit.
+  // No financial payload is ever returned through the renderer's IPC.
+  let quarantine=null;
+  if(onValidatedSnapshot!==null){
+    if(typeof onValidatedSnapshot!=='function')
+      throw new Error('Canal de transferência indisponível.');
+    quarantine=await onValidatedSnapshot(snapshot);
+    if(quarantine?.ok!==true||quarantine?.stage!=='quarantine_verified'||
+       quarantine?.recordsVerified!==personal.personalRecords||
+       quarantine?.financialSyncEnabled!==false||
+       quarantine?.cloudActivated!==false)
+      throw new Error('A quarentena não comprovou integridade. Backup local preservado.');
+  }
   // Do not return paths, record digests, rows, amounts, or any secrets to UI.
-  return {stage:STAGE,backupVerified:true,backupPresent:true,cloudConnected:false,
-    financialSyncEnabled:false,recordsSent:0,
+  return {stage:quarantine?'quarantine_verified':STAGE,
+    backupVerified:true,backupPresent:true,cloudConnected:!!quarantine,
+    financialSyncEnabled:false,recordsSent:quarantine?quarantine.recordsVerified:0,
     checkedTables:verified.tableCount,checkedRecords:verified.totalRows,
     personalTablesReady:personal.personalTables,personalRecordsReady:personal.personalRecords,
     personalChunksReady:transfer.chunks,
