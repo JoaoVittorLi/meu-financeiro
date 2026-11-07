@@ -74,7 +74,10 @@ export async function ingestPluggyToStaging(storage,env,{
 }={}){
   if(!bankServerEnabled(env))
     return {ok:false,stage:'not_configured',financialSyncEnabled:false};
-  const ids=itemIds(env.PLUGGY_ITEM_IDS);
+  let ids;
+  try{ids=itemIds(env.PLUGGY_ITEM_IDS);}
+  catch{return {ok:false,stage:'failed',code:'BANK_ITEM_IDS_INVALID',
+    financialSyncEnabled:false};}
   ensureBankStaging(storage);
   const lease=Number(clock());
   const reserved=storage.transactionSync(()=>{
@@ -85,12 +88,14 @@ export async function ingestPluggyToStaging(storage,env,{
     return true;
   });
   if(!reserved)return {ok:false,stage:'already_running',financialSyncEnabled:false};
+  let phase='AUTH';
   try{
     const client=provider||new PluggyReadOnlyProvider({
       clientId:env.PLUGGY_CLIENT_ID,clientSecret:env.PLUGGY_CLIENT_SECRET
     });
     const seen=new Set(),accounts=[],transactions=[];
     for(const itemId of ids){
+      phase='ITEM';
       if(typeof client.getItem==='function'){
         const item=await client.getItem(itemId);
         if(item.status==='LOGIN_ERROR'||item.status==='WAITING_USER_INPUT'||
@@ -100,6 +105,7 @@ export async function ingestPluggyToStaging(storage,env,{
              Date.parse(item.consentExpiresAt)<=Date.now()))
           throw new Error('Item Pluggy precisa ser renovado ou atualizado antes da leitura.');
       }
+      phase='ACCOUNTS';
       const found=await client.listAccounts(itemId);
       if(!found.length)throw new Error('Nenhuma conta disponível.');
       for(const account of found){
@@ -110,13 +116,16 @@ export async function ingestPluggyToStaging(storage,env,{
         if(seen.size>MAX_ACCOUNTS)throw new Error('Muitas contas para importar.');
         accounts.push({accountId:aid,itemId,name:trim(account.name||'Conta bancária'),
           currency:'BRL',balanceCents:account.balance===null||account.balance===undefined?null:cents(account.balance)});
+        phase='TRANSACTIONS';
         const tx=await client.listTransactions(aid);
         for(const raw of tx){
           transactions.push(normalize(account,raw));
           if(transactions.length>MAX_RECORDS)throw new Error('Histórico excede o limite de segurança.');
         }
+        phase='ACCOUNTS';
       }
     }
+    phase='VALIDATE';
     if(!accounts.length)throw new Error('Nenhuma conta bancária válida.');
     const keys=new Set();
     for(const row of transactions){
@@ -127,6 +136,7 @@ export async function ingestPluggyToStaging(storage,env,{
     // All pages and accounts validated BEFORE the first bank row is written.
     // Missing old records remain intact. No destructive cleanup or cutover.
     const at=now();
+    phase='STORAGE';
     const result=storage.transactionSync(()=>{
       for(const a of accounts){
         storage.sql.exec("INSERT INTO mf_bank_staging_accounts(account_id,item_id,name,currency,balance_cents,updated_at) VALUES(?,?,?,?,?,?) ON CONFLICT(account_id) DO UPDATE SET item_id=excluded.item_id,name=excluded.name,currency=excluded.currency,balance_cents=excluded.balance_cents,updated_at=excluded.updated_at",
@@ -143,13 +153,19 @@ export async function ingestPluggyToStaging(storage,env,{
         automaticSettlementEnabled:false,cloudCutoverAllowed:false};
     });
     return result;
-  }catch{
-    // Never leak Pluggy credentials, bank descriptions, IDs or stack traces.
+  }catch(error){
+    // ONLY predefined, untrusted-data-free classifications may reach the UI.
+    // Never return a Pluggy response body, exception message, stack trace,
+    // account number, bank balance or credential.
+    const providerCode=typeof error?.safeCode==='string'&&
+      /^PLUGGY_(AUTH|ITEM|ACCOUNTS|TRANSACTIONS)_(NETWORK|SCHEMA|HTTP_(400|401|403|404|408|409|422|429|500|502|503|504|OTHER))$/.test(error.safeCode)
+      ?error.safeCode:null;
+    const code=providerCode||'BANK_'+phase+'_INCOMPLETE';
     storage.transactionSync(()=>{
       storage.sql.exec("UPDATE mf_bank_sync_state SET running_until=0,last_error=? WHERE id=1",
-        'BANK_REFRESH_INCOMPLETE');
+        code);
     });
-    return {ok:false,stage:'failed',code:'BANK_REFRESH_INCOMPLETE',
+    return {ok:false,stage:'failed',code,
       financialSyncEnabled:false};
   }
 }
