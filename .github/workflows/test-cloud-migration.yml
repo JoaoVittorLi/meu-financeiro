@@ -1,32 +1,6 @@
+# GitHub-hosted Actions are intentionally manual on this preview branch while quota is exhausted.
 name: Validar preflight da migracao cloud
 on:
-  pull_request:
-    paths:
-      - 'electron/cloud-migration-audit.cjs'
-      - 'electron/db.cjs'
-      - 'electron/planning.cjs'
-      - 'tests/cloud-migration-audit.test.cjs'
-      - 'electron/cloud-migration-contract.cjs'
-      - 'tests/cloud-migration-contract.test.cjs'
-      - 'electron/cloud-migration-manifest.cjs'
-      - 'tests/cloud-migration-manifest.test.cjs'
-      - 'electron/cloud-onboarding.cjs'
-      - 'tests/cloud-onboarding.test.cjs'
-      - 'electron/cloud-personal-snapshot.cjs'
-      - 'tests/cloud-personal-snapshot.test.cjs'
-      - 'electron/cloud-preview-identity.cjs'
-      - 'tests/cloud-preview-identity.test.cjs'
-      - 'electron/cloud-transfer-plan.cjs'
-      - 'tests/cloud-transfer-plan.test.cjs'
-      - 'electron/cloud-personal-uploader.cjs'
-      - 'tests/cloud-personal-uploader.test.cjs'
-      - 'electron/cloud-data-routing.cjs'
-      - 'tests/cloud-data-routing.test.cjs'
-      - 'electron/recovery.cjs'
-      - 'electron/main.cjs'
-      - 'electron/preload.cjs'
-      - 'src/app.ts'
-      - '.github/workflows/test-cloud-migration.yml'
   workflow_dispatch:
 
 permissions:

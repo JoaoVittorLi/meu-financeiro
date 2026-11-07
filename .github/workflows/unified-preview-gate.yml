@@ -1,15 +1,6 @@
+# GitHub-hosted Actions are intentionally manual on this preview branch while quota is exhausted.
 name: Meu Financeiro - paridade Windows e PWA (Preview)
 on:
-  pull_request:
-    paths:
-      - 'src/**'
-      - 'electron/**'
-      - 'mobile-push/**'
-      - 'shared/**'
-      - 'tests/**'
-      - 'package.json'
-      - 'package-lock.json'
-      - '.github/workflows/unified-preview-gate.yml'
   workflow_dispatch:
 
 permissions:

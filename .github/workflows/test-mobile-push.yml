@@ -1,13 +1,8 @@
+# GitHub-hosted Actions are intentionally manual on this preview branch while quota is exhausted.
 name: Testar piloto de notificacoes
 on:
-  push:
-    paths:
-      - 'mobile-push/**'
-      - '.github/workflows/test-mobile-push.yml'
-  pull_request:
-    paths:
-      - 'mobile-push/**'
-      - '.github/workflows/test-mobile-push.yml'
+  workflow_dispatch:
+
 jobs:
   test:
     runs-on: ubuntu-latest

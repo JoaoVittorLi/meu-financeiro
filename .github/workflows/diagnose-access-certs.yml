@@ -1,9 +1,6 @@
+# GitHub-hosted Actions are intentionally manual on this preview branch while quota is exhausted.
 name: Diagnosticar certificados publicos Access (sem tokens)
 on:
-  pull_request:
-    paths:
-      - '.github/workflows/diagnose-access-certs.yml'
-      - 'mobile-push/src/access-auth.js'
   workflow_dispatch:
 
 permissions:
