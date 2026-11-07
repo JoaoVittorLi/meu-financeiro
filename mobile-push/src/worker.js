@@ -1,4 +1,5 @@
 import {CloudSyncStore} from './cloud-sync.js';
+import {authorizeAccess} from './access-auth.js';
 // Meu Financeiro: private proof-of-concept for standards-based Web Push.
 // No bank data or credentials are handled by this Worker.
 
@@ -211,6 +212,11 @@ export default {
     if(!signedIn)return json({error:'Faça login para continuar.'},401);
     if(url.pathname==='/api/logout'&&request.method==='POST')return json({ok:true},200,{'Set-Cookie':`${COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0`});
     if(url.pathname.startsWith('/api/sync/')) {
+      // The Static Assets router does not reliably pass ctx.access. Authenticate
+      // cryptographically using the signed Access JWT if Access is configured.
+      // The existing private session is required above as a second gate.
+      const identity=await authorizeAccess(request,env);
+      if(!identity.ok)return json({error:identity.error},identity.status);
       const stub=env.PUSH_HOME.get(env.PUSH_HOME.idFromName('one-private-user'));
       return stub.fetch(new Request('https://internal/sync/'+url.pathname.slice('/api/sync/'.length)+url.search,{
         method:request.method,headers:{'Content-Type':'application/json'},
