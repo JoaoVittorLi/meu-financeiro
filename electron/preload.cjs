@@ -11,6 +11,7 @@ contextBridge.exposeInMainWorld('financeDesktop', Object.freeze({
   cloudAccessStatus: () => ipcRenderer.invoke('cloud:access-status'),
   connectCloudAccess: () => ipcRenderer.invoke('cloud:access-connect'),
   previewQuarantineDemo: () => ipcRenderer.invoke('cloud:quarantine-demo'),
+  transferPersonalCloud: () => ipcRenderer.invoke('cloud:transfer-personal'),
   backupStatus: () => ipcRenderer.invoke('finance:backup-status'),
   restoreSQLite: () => ipcRenderer.invoke('finance:restore'),
   openBackupsFolder: () => ipcRenderer.invoke('finance:open-backups'),
