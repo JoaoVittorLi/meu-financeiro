@@ -6,6 +6,7 @@ import {runSyntheticBatchDemo} from './finance-synthetic-batches.js';
 import {beginPersonalTransfer,applyPersonalChunk,verifyPersonalTransfer,cancelPersonalTransfer,personalTransferStatus} from './finance-personal-batches.js';
 import {readVerifiedPersonalOverview} from './finance-personal-overview.js';
 import {bankServerEnabled,bankIngestionStatus,ingestPluggyToStaging} from './finance-bank-ingestion.js';
+import {applyPersonalEdit,personalEditChanges} from './finance-personal-edits.js';
 // Meu Financeiro: private proof-of-concept for standards-based Web Push.
 // No bank data or credentials are handled by this Worker.
 
@@ -214,6 +215,21 @@ export class PushHome {
         duplex:request.method==='POST'?'half':undefined
       }),this.env.FINANCE_SYNC_ENABLED==='true');
     }
+    if(u.pathname==='/personal/changes'&&request.method==='GET'){
+      try{
+        return json(personalEditChanges(this.state.storage,{
+          since:Number(u.searchParams.get('since')||0),
+          limit:Number(u.searchParams.get('limit')||100)
+        }));
+      }catch{return json({error:'Mudanças pessoais não disponíveis.'},409);}
+    }
+    if(u.pathname==='/personal/apply'&&request.method==='POST'){
+      const input=await request.json().catch(()=>null);
+      try{
+        const out=applyPersonalEdit(this.state.storage,input);
+        return json(out,out.ok?200:409);
+      }catch{return json({error:'Edição pessoal recusada por validação.'},409);}
+    }
     if(u.pathname==='/bank/status'&&request.method==='GET'){
       return json(bankIngestionStatus(this.state.storage));
     }
@@ -376,6 +392,30 @@ export default {
       return json({ok:true,port:body.port,nonce:body.nonce,
         accessAssertion:assertion,pilotSession:sessionValue,
         previewOnly:true,financialSyncEnabled:false});
+    }
+    if((url.pathname==='/api/personal/changes'&&request.method==='GET')||
+       (url.pathname==='/api/personal/apply'&&request.method==='POST')){
+      if(!personalQuarantineAllowed(env))
+        return json({error:'Sincronização pessoal não habilitada neste ambiente.'},403);
+      const identity=await authorizeAccess(request,env);
+      if(!identity.ok)return json({error:identity.error},identity.status);
+      const stub=env.PUSH_HOME.get(env.PUSH_HOME.idFromName('one-private-user'));
+      if(request.method==='GET'){
+        const since=Number(url.searchParams.get('since')||0),
+          limit=Number(url.searchParams.get('limit')||100);
+        if(!Number.isSafeInteger(since)||since<0||
+           !Number.isSafeInteger(limit)||limit<1||limit>200)
+          return json({error:'Parâmetros inválidos.'},400);
+        return stub.fetch(new Request('https://internal/personal/changes?since='+since+'&limit='+limit));
+      }
+      if(request.headers.get('X-MF-Personal-Edit')!=='optimistic-v1')
+        return json({error:'Confirmação de edição ausente.'},403);
+      let input;
+      try{input=await readBoundedJSON(request,16*1024);}
+      catch{return json({error:'Edição grande demais ou inválida.'},413);}
+      return stub.fetch(new Request('https://internal/personal/apply',{
+        method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(input)
+      }));
     }
     if(url.pathname==='/api/bank/status'&&request.method==='GET'){
       if(!personalQuarantineAllowed(env))
