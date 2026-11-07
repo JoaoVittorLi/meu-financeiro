@@ -171,3 +171,12 @@ sincronização posterior.
 - Novo botão de Preview: **"Testar transferência em lotes (fictícia)"**, em `/sync.html`.
 - O backend de importação **de dados reais** continua inacessível (não foi criado endpoint público). `FINANCIAL_SCHEMA_ACTIVE=false` permanece desligado, sem cutover, e os dados do SQLite desktop/Pluggy seguem inalterados.
 - Próximo checkpoint humano: proprietário clicar no botão novo e conferir **207 fictícios, reenvio de 80 sem duplicidade, retomada, hashes e descarte**. Após a aprovação, a etapa de produção exigirá emparelhamento seguro Windows, importação real autorizada, reconciliação com Pluggy e testes de rollback ponta a ponta.
+
+
+## Checkpoint confirmado pelo proprietário — 07/11/2026: transferência em lotes
+
+- Evidência: captura de tela do Preview com mensagem verde **“Teste aprovado: 207 registros fictícios em 19 lotes, reenvio de 80 registros sem duplicidade, retomada e integridade verificadas. Quarentena completamente descartada. Nenhum dado real transferido.”**
+- Classificação: **aprovado no ambiente Cloudflare Preview somente com dados fictícios**.
+- Concluídos os três ensaios do Preview: estrutura financeira fictícia (22 tabelas), importação fictícia com descarte (17 tabelas), transferência e retomada fictícia (207 registros).
+- Estes testes NÃO significam que o usuário aprovou importação de dados reais, nem que o Windows/Pluggy já sincronize automaticamente. Não solicitar repetir os ensaios fictícios sem necessidade.
+- Próximo trabalho prioritário: contrato de transporte autenticado e idempotente entre processo principal Electron e API de quarentena, com confirmação explícita do usuário antes de qualquer envio real. Em seguida reconciliar o extrato do Pluggy, preservar vínculos e ativar sincronização automática só após a equivalência dos registros.
