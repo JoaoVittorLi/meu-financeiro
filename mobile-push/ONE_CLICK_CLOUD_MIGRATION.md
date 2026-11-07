@@ -1,5 +1,16 @@
 # Meu Financeiro — ativação integrada da sincronização (fluxo definitivo)
 
+## Correção mais recente — login Google no navegador padrão do Windows
+
+- **Problema demonstrado pelo proprietário em print em 07/11/2026:** após liberar uma janela adicional do Electron, aparecia `Cloudflare Dashboard — Fazer login na Cloudflare`, mas clicar em **Google** não tinha efeito. A entrada com e-mail/senha na Cloudflare retornava "E-mail ou senha incorretos" porque o usuário utiliza Google como provedor de identidade.
+- **Não continuar tentando abrir Google OAuth dentro do Electron.** O Google não autoriza OAuth em embedded user agents (documentação oficial). O método anterior de permitir popups da Cloudflare foi substituído.
+- **Nova solução implementada:** `electron/cloud-system-browser.cjs` gera desafio criptográfico de 32 bytes, abre o navegador padrão via `shell.openExternal` para `/desktop-connect.html?port=<porta>&nonce=<aleatorio>` em Cloudflare Preview; servidor local temporário ligado somente a `127.0.0.1` recebe a resposta por POST, nunca por URLs com tokens, verifica desafio e origem exata, fecha porta após sucesso/cancelamento/timeout.
+- O usuário faz login pelo Google no Chrome/Edge, e depois confirma **Conectar este computador** na página `mobile-push/public/desktop-connect.html`. O script `desktop-connect.js` chama `POST /api/desktop/pair` apenas com sessão privada + Cloudflare Access JWT validado e confirmação explícita. O Worker só devolve as duas afirmações autenticadas no Preview, com `Cache-Control:no-store`, para que a página as envie ao `127.0.0.1`. CSP especial permite somente esse destino local no HTML de pareamento, sem relaxar as demais páginas.
+- O processo principal Electron armazena as credenciais somente na partição Chromium protegida `persist:mf-cloud-preview`, verifica pelo endpoint de saúde e mantém as rotas de upload de dados financeiros em quarentena sujeitas ao diálogo de consentimento.
+- **Testes implementados:** sessão RS256 válida/errada, falta de sessão privada, origem maliciosa, cookie e nonce inválidos, transferência localhost sem segredo na URL, cancelamento, fallback para formulário e CSP restrita.
+- **Status:** código e testes desenvolvidos; aprovação humana no Windows ainda pendente. Não prometer autenticação funcional até o proprietário testar a nova versão portátil. Produção e SQLite original permanecem intactos.
+
+
 > **ESTADO MAIS RECENTE — 07/11/2026, após a aprovação dos 207 fictícios:** as seções cronológicas abaixo descrevem checkpoints anteriores. O código atual já contém um endpoint **real, explicitamente autorizado e isolado em quarentena** para as 17 tabelas pessoais no Preview, bem como o transmissor Electron. A integração bancária e a sincronização definitiva ainda NÃO estão concluídas.
 
 ### Próximo checkpoint operacional: migração integrada do Windows
