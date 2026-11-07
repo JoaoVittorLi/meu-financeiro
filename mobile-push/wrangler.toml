@@ -25,6 +25,8 @@ TEAM_DOMAIN = "https://green-grass-c1e7.cloudflareaccess.com"
 POLICY_AUD = "075e93c4fe777fd73d7c153c9debbfe847289785f7cdc1e7ee3ee20558c42bc3"
 # Data may enter only isolated quarantine after signed owner auth and explicit desktop confirmation.
 PERSONAL_QUARANTINE_ENABLED = "true"
+# Keep the bank reader enabled only in this isolated Preview; credentials stay Cloudflare Secrets.
+PLUGGY_SERVER_ENABLED = "true"
 
 [[previews.durable_objects.bindings]]
 name = "PUSH_HOME"
