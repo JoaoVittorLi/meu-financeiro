@@ -8,8 +8,8 @@ const bank2={...bank1,external_id:'fictional-bank-2',
   description:'TRANSAÇÃO REJEITADA',amount_cents:-7200};
 const setup=async()=>({
   personalTables:(await createSyntheticPersonalPackage()).tables,
-  legacyTransactions:[bank1,bank2],
-  newTransactions:[bank1,bank2]
+  legacyTransactions:[{...bank1},{...bank2}],
+  newTransactions:[{...bank1},{...bank2}]
 });
 
 test('exact Pluggy keys preserve every customized bank reference and do not alter personal rows',async()=>{
