@@ -61,7 +61,7 @@ function validatePatch(storage,importId,table,patch){
        importId,'categories'
      ).toArray().map(x=>JSON.parse(x.row_json).name);
      if(!names.includes(v))fail('categoria não cadastrada.');
-   }else if(typeof v!=='string'||v.length<1||
+   }else if(typeof v!=='string'||(k!=='notes'&&v.length<1)||
      v.length>(k==='notes'?600:140))fail('texto inválido.');
  }
  return JSON.stringify(Object.fromEntries(Object.entries(patch).sort(([a],[b])=>a.localeCompare(b))));
