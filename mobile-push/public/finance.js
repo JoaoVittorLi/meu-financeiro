@@ -58,6 +58,31 @@ async function showPersonalFinance(){
     status.classList.add('finance-error');
   }
 }
+// Display safe diagnostic labels only. Never render raw Pluggy payloads.
+function bankDiagnostic(code){
+ const safe=typeof code==='string'&&/^[A-Z0-9_]{5,72}$/.test(code)?code:'BANK_UNKNOWN';
+ if(safe.startsWith('PLUGGY_AUTH_HTTP_401')||safe.startsWith('PLUGGY_AUTH_HTTP_403'))
+   return 'A Pluggy recusou o Client ID/Client Secret deste aplicativo.';
+ if(safe.startsWith('PLUGGY_ITEM_HTTP_404'))
+   return 'O itemId não foi encontrado para este aplicativo Pluggy.';
+ if(safe==='BANK_ITEM_IDS_INVALID')
+   return 'O itemId informado não tem um formato reconhecido.';
+ if(safe==='BANK_ACCOUNTS_INCOMPLETE')
+   return 'O item foi localizado, mas não retornou contas utilizáveis.';
+ if(safe==='BANK_ITEM_INCOMPLETE')
+   return 'A conexão Meu Pluggy precisa ser conferida ou renovada.';
+ if(safe==='BANK_TRANSACTIONS_INCOMPLETE')
+   return 'As movimentações não passaram na conferência de formato ou integridade.';
+ if(safe==='BANK_VALIDATION_INCOMPLETE'||safe==='BANK_VALIDATE_INCOMPLETE')
+   return 'A conferência das contas e movimentações não foi concluída.';
+ if(safe.includes('NETWORK')||safe.includes('HTTP_429')||safe.includes('HTTP_5'))
+   return 'A Pluggy não respondeu normalmente. Os dados anteriores foram preservados.';
+ if(safe.startsWith('PLUGGY_ACCOUNTS_'))
+   return 'A consulta às contas foi recusada ou retornou um formato inesperado.';
+ if(safe.startsWith('PLUGGY_TRANSACTIONS_'))
+   return 'A consulta às movimentações foi recusada ou retornou um formato inesperado.';
+ return 'Não foi possível concluir a consulta. Os dados anteriores permanecem intactos.';
+}
 async function showBankServerStatus(){
  const node=el('bankServerStatus');
  if(!node)return;
@@ -84,7 +109,7 @@ async function showBankServerStatus(){
   }else{
    node.textContent='Servidor Pluggy configurado. Aguardando a primeira consulta e conferência do histórico.';
   }
-  if(state.issue)node.textContent+=' A última consulta ficou incompleta; os dados anteriores foram preservados.';
+  if(state.issue)node.textContent+=' Falha: '+bankDiagnostic(state.issue)+' (código '+String(state.issue).replace(/[^A-Z0-9_]/g,'').slice(0,72)+').';
  }catch{
   node.textContent='Atualização bancária ainda não disponível neste ambiente.';
  }
@@ -120,17 +145,30 @@ if(activate)activate.addEventListener('click',async()=>{
    body:JSON.stringify({consent:'preview-bank-staging-only'})
   });
   const output=await res.json();
-  if(!res.ok||output.ok!==true)
-    throw new Error('Consulta incompleta ou autorização expirada.');
+  if(!res.ok||output.ok!==true){
+    const safe=output&&typeof output.code==='string'&&/^[A-Z0-9_]{5,72}$/.test(output.code)
+      ?output.code:null;
+    if(safe)throw new Error('CODE:'+safe);
+    if(res.status===401||res.status===403)throw new Error('AUTH_GATE');
+    throw new Error('UNKNOWN');
+  }
   el('bankServerStatus').textContent='Extrato consultado pelo servidor: '+
     output.accounts+' conta(s) e '+output.fetched+
     ' movimentações obtidas. Ainda é necessário reconciliar o histórico antes de ativar a sincronização bancária.';
- }catch{
-  el('bankServerStatus').textContent='Não foi possível concluir a atualização bancária. '+
-    'Nenhuma movimentação foi apagada. Verifique o consentimento no Meu Pluggy.';
+ }catch(error){
+  const raw=String(error?.message||'');
+  if(raw.startsWith('CODE:')){
+    const code=raw.slice(5);
+    el('bankServerStatus').textContent='Falha: '+bankDiagnostic(code)+' (código '+code+'). Nenhum dado anterior foi apagado.';
+  }else if(raw==='AUTH_GATE'){
+    el('bankServerStatus').textContent='Seu login de acesso precisa ser renovado. Nenhum dado anterior foi apagado.';
+  }else{
+    el('bankServerStatus').textContent='O servidor não conseguiu concluir a consulta. Nenhum dado anterior foi apagado.';
+  }
  }finally{
   activate.disabled=false;
-  void showBankServerStatus();
+  // Preserve the diagnostic until the next explicit check, rather than
+  // immediately overwriting it with the old generic status.
  }
 });
 void refreshVisibleFinance();
