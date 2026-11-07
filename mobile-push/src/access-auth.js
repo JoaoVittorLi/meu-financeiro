@@ -13,9 +13,9 @@ export function accessConfigured(env={}) {
 }
 
 function accessSettings(env){
-  const team=typeof env.TEAM_DOMAIN==='string'?env.TEAM_DOMAIN.replace(/\/+$/,''):'';
-  const audience=env.POLICY_AUD;
-  const email=env.ACCESS_ALLOWED_EMAIL;
+  const team=typeof env.TEAM_DOMAIN==='string'?env.TEAM_DOMAIN.trim().replace(/\/+$/,''):'';
+  const audience=typeof env.POLICY_AUD==='string'?env.POLICY_AUD.trim():env.POLICY_AUD;
+  const email=typeof env.ACCESS_ALLOWED_EMAIL==='string'?env.ACCESS_ALLOWED_EMAIL.trim():env.ACCESS_ALLOWED_EMAIL;
   if(!/^https:\/\/[a-z0-9][a-z0-9-]{0,62}\.cloudflareaccess\.com$/i.test(team) ||
      typeof audience!=='string'||!/^[a-zA-Z0-9_-]{8,160}$/.test(audience) ||
      typeof email!=='string'||email.length>254||!(/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)))return null;
@@ -52,15 +52,22 @@ async function certificates(team,fetchImpl,now){
   return keys;
 }
 
-function validClaims(payload,settings,now) {
+// Only explain claim mismatches AFTER verifying the JWT signature. Untrusted
+// token payloads must never be used for access-control diagnostics.
+function verifiedClaimError(payload,settings,now) {
   const epoch=Math.floor(now/1000);
   const audience=Array.isArray(payload.aud)?payload.aud:[payload.aud];
-  return payload.iss===settings.team &&
-    audience.includes(settings.audience) &&
-    Number.isSafeInteger(payload.exp) && payload.exp>epoch &&
-    (payload.nbf===undefined || (Number.isSafeInteger(payload.nbf) && payload.nbf<=epoch)) &&
-    (payload.iat===undefined || (Number.isSafeInteger(payload.iat) && payload.iat<=epoch+60)) &&
-    typeof payload.email==='string'&&payload.email.toLowerCase()===settings.email;
+  if(payload.iss!==settings.team)
+    return 'O login Cloudflare foi confirmado, mas TEAM_DOMAIN não corresponde ao domínio de autenticação. Confira esse campo no Preview.';
+  if(!audience.includes(settings.audience))
+    return 'O login Cloudflare foi confirmado, mas POLICY_AUD não corresponde ao aplicativo Access que protege o Preview. Confira esse campo.';
+  if(!Number.isSafeInteger(payload.exp)||payload.exp<=epoch||
+     (payload.nbf!==undefined&&(!Number.isSafeInteger(payload.nbf)||payload.nbf>epoch))||
+     (payload.iat!==undefined&&(!Number.isSafeInteger(payload.iat)||payload.iat>epoch+60)))
+    return 'A sessão Cloudflare expirou ou ainda não é válida. Abra novamente o Preview em janela anônima e faça login.';
+  if(typeof payload.email!=='string'||payload.email.trim().toLowerCase()!==settings.email)
+    return 'Seu login Cloudflare foi verificado, mas o e-mail não corresponde ao ACCESS_ALLOWED_EMAIL do Preview. Confira esse campo.';
+  return null;
 }
 
 // When no Access variables are present, ONLY the legacy text-note pilot remains
@@ -79,7 +86,7 @@ export async function authorizeAccess(request,env={},options={}){
     const payload=jsonFromPart(parts[1]);
     if(header.alg!=='RS256'||typeof header.kid!=='string'||header.kid.length>200)throw new Error('Disallowed algorithm.');
     const now=options.now===undefined?Date.now():options.now;
-    if(!validClaims(payload,settings,now))throw new Error('Invalid claims.');
+    // Verify the signature BEFORE examining claims or disclosing any mismatches.
     const keys=await certificates(settings.team,options.fetchImpl||fetch,now);
     const jwk=keys.find(k=>k.kid===header.kid);
     if(!jwk)throw new Error('Unknown signing key.');
@@ -90,8 +97,14 @@ export async function authorizeAccess(request,env={},options={}){
     const valid=await crypto.subtle.verify('RSASSA-PKCS1-v1_5',
       publicKey,signature,textEncoder.encode(parts[0]+'.'+parts[1]));
     if(!valid)throw new Error('Invalid signature.');
+    const claimError=verifiedClaimError(payload,settings,now);
+    if(claimError)return {ok:false,status:403,error:claimError};
     return {ok:true,mode:'access'};
-  }catch{
-    return {ok:false,status:403,error:'Autenticação Cloudflare Access inválida.'};
+  }catch(error){
+    // No JWT, signing key, token value, email or secret is sent to the UI/logs.
+    if(error instanceof Error&&
+      /Access certs (unavailable|invalid|missing)\./.test(error.message))
+      return {ok:false,status:503,error:'Não foi possível consultar o certificado Cloudflare. Confira TEAM_DOMAIN do Preview.'};
+    return {ok:false,status:403,error:'O token Cloudflare não pôde ser verificado. Reabra o Preview em janela anônima e faça login novamente.'};
   }
 }
