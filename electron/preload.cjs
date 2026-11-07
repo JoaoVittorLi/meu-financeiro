@@ -15,6 +15,7 @@ contextBridge.exposeInMainWorld('financeDesktop', Object.freeze({
   bankSync: () => ipcRenderer.invoke('bank:sync'),
   bankForget: () => ipcRenderer.invoke('bank:forget'),
   categoriesStatus: () => ipcRenderer.invoke('categories:status'),
+  importCategoryPack: () => ipcRenderer.invoke('categories:import-pack'),
   categorySave: (input) => ipcRenderer.invoke('categories:save',input),
   categoryDelete: (name) => ipcRenderer.invoke('categories:delete',name),
   ruleSave: (input) => ipcRenderer.invoke('rules:save',input),

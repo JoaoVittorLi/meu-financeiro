@@ -127,6 +127,28 @@ app.whenReady().then(()=>{
    }finally{syncing=false;}
  });
  // Categorização local: operações explícitas, sem expor SQL ao renderer.
+ ipcMain.handle('categories:import-pack',async(event)=>{
+   requireAppSender(event);
+   if(syncing||restoring||autoBackupBusy)throw new Error('Conclua a sincronização ou cópia de segurança antes de importar.');
+   const selected=await dialog.showOpenDialog(mainWindow,{title:'Importar sugestões de categorias',properties:['openFile'],filters:[{name:'Sugestões de categorias (JSON)',extensions:['json']}]});
+   if(selected.canceled||!selected.filePaths?.[0])return {cancelled:true};
+   const filename=selected.filePaths[0];
+   const stats=fs.statSync(filename);if(stats.size>2_000_000)throw new Error('Arquivo de categorias muito grande.');
+   const pack=JSON.parse(fs.readFileSync(filename,'utf8'));
+   const confirm=await dialog.showMessageBox(mainWindow,{type:'question',buttons:['Cancelar','Aplicar sugestões'],defaultId:0,cancelId:0,
+      title:'Aplicar categorização sugerida?',message:'Adicionar regras e categorizações ao seu histórico?',
+      detail:'Somente classificações confiáveis. Correções manuais existentes e valores bancários serão preservados. Criaremos uma cópia de segurança antes.'});
+   if(confirm.response!==1)return {cancelled:true};
+   if(syncing||restoring||autoBackupBusy)throw new Error('Aguarde a operação em andamento.');
+   autoBackupBusy=true;
+   try{
+     fs.mkdirSync(backupsDirectory(),{recursive:true,mode:0o700});
+     const pathBackup=path.join(backupsDirectory(),'antes-da-categorizacao-'+new Date().toISOString().replace(/[:.]/g,'-')+'.sqlite');
+     await db.backupTo(pathBackup);
+     const result=db.importCategoryPack(pack);
+     return {...result,data:titledBankData(),categories:db.listCategories()};
+   }finally{autoBackupBusy=false;}
+ });
  ipcMain.handle('categories:status',(event)=>{requireAppSender(event);return db.listCategories();});
  ipcMain.handle('categories:save',(event,input)=>{requireAppSender(event);return db.upsertCategory(input);});
  ipcMain.handle('categories:delete',(event,name)=>{requireAppSender(event);return db.deleteCategory(name);});

@@ -24,7 +24,7 @@ function pSummary(app:any){const s=app.state,p=s.planning,items=p.items,today=is
  {icon:'calendar',label:'Compromissos pendentes (todos)',value:pendingExpense,desc:overdue?`${overdue} vencido(s)`: 'Pagamentos que ainda aguardam quitação'},
  {icon:'chart',label:'Saldo ao fim do período',value:end?.closing??p.projection.anchor,desc:end?.date?pDate(end.date):'Sem projeção'}];
  return h('div',{className:'p-summary'},data.map((x,i)=>h('div',{className:'p-summary-card '+(i===3?'is-projected':''),key:x.label},h('span',{className:'p-summary-icon'},h(Icon,{name:x.icon,size:18})),h('small',{},x.label),h('strong',{className:i===3&&x.value<0?'bad-text':''},fmt(x.value)),h('span',{},x.desc))));}
-// The slider selects a day. The graph always shows the entire month.
+// The graph marker is the slider: pointer/touch and keyboard select days across the full month.
 function pTimeline(app:any){
  const s=app.state,today=iso(new Date()),month=s.planMonth,start=month+'-01',last=endOfMonth(month),max=Number(last.slice(-2));
  const timeline=s.planning.timeline||{rows:[],historicalNotice:null};
@@ -42,7 +42,9 @@ function pTimeline(app:any){
  const values=rows.map(r=>r.closing);
  const low=values.length?Math.min(...values):0,high=values.length?Math.max(...values):1;
  const pad=Math.max(5000,Math.round((high-low)*.18));
- const minY=low-pad,maxY=high+pad,span=Math.max(1,maxY-minY);
+ const minY=low>=0?Math.max(0,low-pad):low-pad;
+ const maxY=high<=0?Math.min(0,high+pad):high+pad;
+ const span=Math.max(1,maxY-minY);
  const xFor=(date:string)=>left+(Number(date.slice(-2))-1)*width/Math.max(1,max-1);
  const yFor=(v:number)=>bottom-(v-minY)/span*height;
  const pointPath=rows.map((r,i)=>(i?'L':'M')+xFor(r.date).toFixed(2)+' '+yFor(r.closing).toFixed(2)).join(' ');
@@ -52,28 +54,53 @@ function pTimeline(app:any){
  const activeX=selected?xFor(selected.date):left,activeY=selected?yFor(selected.closing):bottom;
  const ticks=[0,1,2,3,4].map(n=>({y:top+n*height/4,value:maxY-n*span/4}));
  const xLabels=[1,7,14,21,max].filter((v,i,a)=>v<=max&&a.indexOf(v)===i);
- const update=(e:any)=>{const date=month+'-'+String(Number(e.target.value)).padStart(2,'0');app.setState({planDay:date});};
+ const selectDay=(day:number)=>{
+   const date=month+'-'+String(Math.max(1,Math.min(max,day))).padStart(2,'0');
+   if(date!==app.state.planDay)app.setState({planDay:date});
+ };
+ const selectPointer=(e:any)=>{
+   const svg=e.currentTarget as SVGSVGElement;
+   const point=svg.createSVGPoint();point.x=e.clientX;point.y=e.clientY;
+   const matrix=svg.getScreenCTM();if(!matrix)return;
+   const x=point.matrixTransform(matrix.inverse()).x;
+   selectDay(Math.round((Math.max(left,Math.min(right,x))-left)/width*(max-1))+1);
+ };
+ const keyDay=(e:any)=>{
+   const day=Number(app.state.planDay.slice(-2));
+   const next=e.key==='ArrowLeft'||e.key==='ArrowDown'?day-1:
+    e.key==='ArrowRight'||e.key==='ArrowUp'?day+1:e.key==='PageDown'?day-7:
+    e.key==='PageUp'?day+7:e.key==='Home'?1:e.key==='End'?max:null;
+   if(next!==null){e.preventDefault();selectDay(next);}
+ };
  return h('div',{className:'p-timeline-panel'},
-   h('div',{className:'p-timeline-head'},h('div',{},h('span',{className:'micro-label'},'EVOLUÇÃO DO SALDO'),h('h2',{},'Seu dinheiro, dia após dia'),h('p',{},'Deslize para acompanhar a variação do saldo durante todo o mês.')),
+   h('div',{className:'p-timeline-head'},h('div',{},h('span',{className:'micro-label'},'EVOLUÇÃO DO SALDO'),h('h2',{},'Seu dinheiro, dia após dia'),h('p',{},'Arraste o ponto no gráfico para acompanhar o saldo de cada dia.')),
      h('div',{className:'p-month-arrows'},h('button',{disabled:month<=nowYM,onClick:()=>app.changePlanMonth(-1),'aria-label':'Mês anterior'},'‹'),h('strong',{},prettyMonth(month)),h('button',{disabled:month>=shiftMonth(nowYM,12),onClick:()=>app.changePlanMonth(1),'aria-label':'Próximo mês'},'›'))),
    h('div',{className:'p-chart-metrics'},
      h('div',{className:'p-chart-current'},h('span',{className:'micro-label'},label+' · '+pDate(s.planDay)),h('strong',{},selected?fmt(selected.closing):'—'),
        h('span',{className:'p-chart-delta '+(positive?'up':negative?'down':'neutral')},deltaLabel,h('small',{},' vs. dia anterior'))),
      h('div',{className:'p-chart-guide'},h('span',{},'Dia '+Number(s.planDay.slice(-2))+' de '+max),h('small',{},selected?.phase==='estimated_history'?'Valor histórico estimado, sujeito à disponibilidade dos dados':'Valores futuros são estimativas; não representam saldo garantido'))),
    h('div',{className:'p-chart-canvas'},
-     rows.length?h('svg',{viewBox:'0 0 1010 280',className:'p-balance-svg',role:'img','aria-label':'Evolução diária do saldo previsto para '+prettyMonth(month)},
+     rows.length?h('svg',{viewBox:'0 0 1010 280',className:'p-balance-svg p-draggable-chart',
+       role:'slider',tabindex:0,'aria-label':'Dia selecionado no gráfico de saldo · '+prettyMonth(month),
+       'aria-valuemin':1,'aria-valuemax':max,'aria-valuenow':Number(s.planDay.slice(-2)),
+       'aria-valuetext':pDate(s.planDay)+' · '+(selected?fmt(selected.closing):'sem valor')+' · '+deltaLabel,
+       onKeyDown:keyDay,
+       onPointerDown:(e:any)=>{if(e.button!==0)return;e.currentTarget.setPointerCapture(e.pointerId);selectPointer(e);},
+       onPointerMove:(e:any)=>{if(e.buttons&1)selectPointer(e);},
+       onMouseMove:(e:any)=>{if(e.buttons&1)selectPointer(e);},
+       onTouchStart:(e:any)=>{const touch=e.touches?.[0];if(touch)selectPointer({currentTarget:e.currentTarget,clientX:touch.clientX,clientY:touch.clientY});},
+       onTouchMove:(e:any)=>{const touch=e.touches?.[0];if(touch)selectPointer({currentTarget:e.currentTarget,clientX:touch.clientX,clientY:touch.clientY});},
+       onPointerUp:(e:any)=>{if(e.currentTarget.hasPointerCapture(e.pointerId)){selectPointer(e);e.currentTarget.releasePointerCapture(e.pointerId);}},
+       onPointerCancel:(e:any)=>{if(e.currentTarget.hasPointerCapture(e.pointerId))e.currentTarget.releasePointerCapture(e.pointerId);}},
        h('defs',{},h('linearGradient',{id:'pBalanceArea',x1:'0',y1:'0',x2:'0',y2:'1'},h('stop',{offset:'0%',stopColor:'#8f51ff',stopOpacity:'.30'}),h('stop',{offset:'100%',stopColor:'#8f51ff',stopOpacity:'.01'})),h('linearGradient',{id:'pBalanceStroke',x1:'0',y1:'0',x2:'1',y2:'0'},h('stop',{offset:'0%',stopColor:'#ad7aff'}),h('stop',{offset:'100%',stopColor:'#7b5dff'}))),
        ...ticks.map((t,i)=>h('g',{key:'tick-'+i},h('line',{x1:left,y1:t.y,x2:right,y2:t.y,className:'p-chart-grid-line'}),h('text',{x:left-15,y:t.y+4,className:'p-chart-axis-label',textAnchor:'end'},Math.abs(t.value)>=100000?'R$ '+(t.value/100000).toFixed(1).replace('.',',')+' mil':'R$ '+Math.round(t.value/100)))),
        ...xLabels.map(d=>h('text',{key:'day-'+d,x:left+(d-1)*width/Math.max(1,max-1),y:264,textAnchor:'middle',className:'p-chart-axis-label'},'Dia '+d)),
        h('path',{d:areaPath,fill:'url(#pBalanceArea)'}),
        h('path',{d:pointPath,fill:'none',stroke:'url(#pBalanceStroke)',strokeWidth:3.5,strokeLinecap:'round',strokeLinejoin:'round'}),
        pastRows.length>1?h('path',{d:historicalPath,fill:'none',stroke:'#d5bcff',strokeWidth:3.5,strokeDasharray:'7 7',strokeLinecap:'round'}):null,
-       selected?h('g',{},h('line',{x1:activeX,y1:top,x2:activeX,y2:bottom,className:'p-chart-active-line'}),h('circle',{cx:activeX,cy:activeY,r:9,fill:'#9265ff',stroke:'#e6d4ff',strokeWidth:3}),h('circle',{cx:activeX,cy:activeY,r:17,fill:'#9963ff',fillOpacity:.13})):null
+       selected?h('g',{},h('line',{x1:activeX,y1:top,x2:activeX,y2:bottom,className:'p-chart-active-line'}),h('circle',{cx:activeX,cy:activeY,r:10,fill:'#9265ff',stroke:'#e6d4ff',strokeWidth:3,className:'p-chart-drag-handle'}),h('circle',{cx:activeX,cy:activeY,r:17,fill:'#9963ff',fillOpacity:.13})):null
      ):h('div',{className:'p-chart-empty'},'Ainda não há dados para mostrar o gráfico.')),
-   h('div',{className:'p-slider-controls'},
-     h('div',{className:'p-slider-labels'},h('span',{},'Dia 1'),h('span',{},'Dia '+max)),
-     h('input',{type:'range',className:'p-day-slider',min:1,max,step:1,value:Number(s.planDay.slice(-2)),onChange:update,onInput:update,'aria-label':'Selecionar dia no gráfico','aria-valuetext':pDate(s.planDay)+' · '+(selected?fmt(selected.closing):'sem valor')}),
-     h('div',{className:'p-slider-under'},h('span',{},'← Deslize para explorar os dias →'),h('span',{},'Linha pontilhada: histórico estimado'))),
+   h('p',{className:'p-chart-instruction'},'Arraste a bolinha no gráfico ou use as setas do teclado. '+(pastRows.length?'Linha pontilhada: histórico estimado.':'')),
    timeline.historicalNotice&&month===today.slice(0,7)?h('p',{className:'p-chart-disclaimer'},timeline.historicalNotice):null,
    h('div',{className:'p-day-details'},h('div',{className:'p-day-balance-card'},h('span',{className:'micro-label'},'DIA '+pDate(s.planDay)),h('strong',{},selected?fmt(selected.closing):'—'),h('small',{},selected?.phase==='estimated_history'?'Saldo histórico reconstruído':'Saldo estimado ao final do dia'),selected?h('div',{className:'p-day-totals'},h('span',{},'Início '+fmt(selected.opening)),h('span',{className:'good-text'},'+'+fmt(selected.incoming)),h('span',{className:'bad-text'},'−'+fmt(selected.outgoing))):null),
      h('div',{className:'p-day-events'},h('h3',{},'Movimentações de '+pDate(s.planDay)),

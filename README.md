@@ -1,8 +1,16 @@
-# Meu Financeiro v0.9.2 — Experiência Unificada 💜
+# Meu Financeiro v0.9.3 — Linha do tempo e categorias inteligentes 💜
 
 Aplicativo financeiro pessoal para Windows x64, com Electron, React/TypeScript e SQLite local. Integração bancária somente leitura por meio de uma conta pessoal do Meu Pluggy.
 
-## Novidades desta versão
+## Atualização v0.9.3
+
+- **Gráfico interativo**: a própria bolinha é o controle; arraste com mouse/touch ou use setas/Home/End no teclado. Sem barra slider duplicada.
+- **Eixo vertical consistente**: se todos os saldos forem não negativos, o gráfico não mostrará um valor mínimo negativo artificial.
+- **Novas categorias**: Transferências, Rendimentos e Reembolsos (com emojis). Categoria não altera automaticamente a natureza: Pix para terceiros continua despesa/receita até revisão.
+- **Classificação assistida, local e opcional**: em Movimentações → Organização, use “Importar sugestões” com arquivo JSON preparado a partir do histórico. O aplicativo cria backup, aplica regras editáveis, verifica correspondências e não sobrescreve correções individuais.
+- **Privacidade**: o pacote com classificações do extrato particular não é incluído no GitHub e deve ser guardado privadamente.
+
+## Funcionalidades mantidas
 
 - Menu principal com **seis áreas**: Visão geral, Movimentações, Planejamento, Orçamentos, Simular compra e Minhas contas. Configurações permanece no rodapé.
 - **Movimentações** reúne Histórico, A revisar e Categorias e regras. As categorias não foram excluídas; mudaram de lugar.

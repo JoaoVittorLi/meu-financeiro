@@ -180,3 +180,14 @@ html,body,button,input,textarea,select,[role=combobox]{font-family:var(--font-ui
 
 .mf-bank-route{padding:22px 25px;display:flex;align-items:center;justify-content:space-between;gap:22px}.mf-bank-route h2{font-size:17px;margin:0 0 5px}.mf-bank-route p{margin:0}.mf-bank-route button{white-space:nowrap}.bank-account .mf-small-link{display:inline-flex;align-self:flex-start;margin-top:12px}
 @media(max-width:920px){.mf-bank-route{flex-direction:column;align-items:flex-start}}
+
+/* v0.9.3 - gráfico como controle e categorias sugeridas */
+.p-draggable-chart{cursor:crosshair;touch-action:none;user-select:none;outline:none}
+.p-draggable-chart:focus-visible{outline:2px solid #c49aff;outline-offset:2px;border-radius:8px}
+.p-chart-drag-handle{cursor:grab;filter:drop-shadow(0 0 9px #a076ff88)}
+.p-draggable-chart:active .p-chart-drag-handle{cursor:grabbing}
+.p-chart-instruction{color:#ad9bc6;font-size:11px;padding:8px 11px 2px;line-height:1.5}
+.mf-category-import{display:flex;justify-content:space-between;align-items:center;gap:18px;padding:18px 21px;margin-bottom:20px}
+.mf-category-import p{margin:6px 0 0;color:#a99bbe;font-size:12px;line-height:1.5}
+.mf-category-import button{white-space:nowrap}
+@media(max-width:760px){.mf-category-import{flex-direction:column;align-items:flex-start}}

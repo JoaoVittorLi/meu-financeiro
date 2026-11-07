@@ -27,8 +27,9 @@ with sync_playwright() as p:
         page.add_script_tag(content=(ROOT/'app'/f).read_text())
     page.get_by_role('heading',name='Visão geral').wait_for(timeout=15000)
     page.get_by_role('button',name='Planejamento',exact=True).click()
-    slider=page.get_by_role('slider',name='Selecionar dia no gráfico')
+    slider=page.get_by_role('slider',name='Dia selecionado no gráfico de saldo')
     slider.wait_for(timeout=10000)
+    assert page.locator('.p-day-slider').count()==0
     assert page.locator('.p-balance-svg').count()==1
     assert page.locator('.p-chart-current>strong').count()==1
     slider.focus();slider.press('End')

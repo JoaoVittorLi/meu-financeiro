@@ -8,13 +8,15 @@ const DEFAULT_CATEGORIES = [
   ['Moradia','#884bff'],['Alimentação','#bc80ff'],['Transporte','#db6ff5'],
   ['Saúde','#7549d8'],['Lazer','#a58cf4'],['Educação','#5b4da5'],
   ['Assinaturas','#4a386f'],['Compras','#7555bd'],['Contas','#c090e5'],
-  ['Outros','#3f375a'],['Salário','#27c498']
+  ['Outros','#3f375a'],['Salário','#27c498'],
+  ['Transferências','#7967ba'],['Rendimentos','#2fa48c'],['Reembolsos','#54a9b4']
 ];
 const CAT = DEFAULT_CATEGORIES.map(([name])=>name);
 const DEFAULT_EMOJIS = Object.freeze({
   'Moradia':'🏠','Alimentação':'🍽️','Transporte':'🚗','Saúde':'💊',
   'Lazer':'🎮','Educação':'📚','Assinaturas':'📱','Compras':'🛍️',
-  'Contas':'🧾','Outros':'✨','Salário':'💰'
+  'Contas':'🧾','Outros':'✨','Salário':'💰',
+  'Transferências':'🏦','Rendimentos':'📈','Reembolsos':'💸'
 });
 const ALLOWED_EMOJIS = Object.freeze([
   '🏠','🏡','🔑','🪴','🍽️','🍔','🍕','🥗','🥑','☕','🍿','🛒','🛍️',
@@ -52,6 +54,23 @@ function matchRule(description,scope,rules){
       (rule.matchMode==='contains'&&hay.includes(needle))) return rule.category;
   }
   return null;
+}
+// Categorias originais da instituição (em inglês) são mapeadas sem modificar o extrato bruto.
+// Categoria Transferências não equivale à natureza financeira transfer: um Pix a terceiro
+// permanece como receita/despesa até confirmação explícita de movimentação entre contas próprias.
+const BANK_PROVIDER_CATEGORIES = Object.freeze({
+ 'Groceries':'Alimentação','Food delivery':'Alimentação','Eating out':'Alimentação',
+ 'Shopping':'Compras','Electronics':'Compras','Clothing':'Compras',
+ 'Salary':'Salário','Pharmacy':'Saúde','Healthcare':'Saúde','Health insurance':'Saúde',
+ 'Gas stations':'Transporte','Transportation':'Transporte','Vehicle maintenance':'Transporte',
+ 'Taxi and ride-hailing':'Transporte','Parking':'Transporte','Automotive':'Transporte',
+ 'Digital services':'Assinaturas','Electricity':'Contas','Tickets':'Lazer',
+ 'Proceeds interests and dividends':'Rendimentos',
+ 'Same person transfer':'Transferências','Transfer - PIX':'Transferências','Transfers':'Transferências'
+});
+function providerCategory(original,categories){
+ const translated=BANK_PROVIDER_CATEGORIES[String(original||'')];
+ return translated&&categories.has(translated)?translated:(categories.has(original)?original:'Outros');
 }
 const KEYS = ['opening','income','fixed','existing','reserve'];
 const NATURES = ['auto','income','expense','transfer','ignore'];
@@ -373,6 +392,47 @@ class FinanceDB {
    }
    return this.bankOverview();
  }
+ // Importação de sugestões de categorias: validação estrita, idempotência e operação atômica.
+ // O arquivo só contém IDs e fingerprints, nunca Client Secret / dados de autenticação.
+ importCategoryPack(input){
+   if(!input||input.format!=='meu-financeiro-categorias-v1'||!Array.isArray(input.rules)||!Array.isArray(input.decisions)||input.rules.length>100||input.decisions.length>10000)
+      throw new Error('Pacote de categorias inválido.');
+   const {createHash}=require('node:crypto');
+   const existingRules=new Set(this.listCategories().rules.map(x=>[normalizeLabel(x.pattern),x.matchMode,x.category,x.scope].join('|')));
+   const possibleRules=[];
+   for(const rule of input.rules){
+     const pattern=String(rule.pattern||'').trim(),category=categoryName(rule.category),matchMode=String(rule.matchMode||'contains'),scope='bank',priority=Number(rule.priority);
+     if(!pattern||pattern.length>120||/[\x00-\x1f]/.test(pattern)||!['contains','starts','exact'].includes(matchMode)||!Number.isInteger(priority)||priority<1||priority>999)
+       throw new Error('Regra sugerida inválida.');
+     if(!this.db.prepare('SELECT 1 FROM categories WHERE name=?').get(category))throw new Error('Categoria não encontrada: '+category);
+     const key=[normalizeLabel(pattern),matchMode,category,scope].join('|');
+     if(existingRules.has(key))continue;
+     existingRules.add(key);possibleRules.push({pattern,matchMode,category,scope,priority});
+   }
+   const decisions=[];
+   const known=new Set();
+   for(const entry of input.decisions){
+     const {accountId,externalId}=bankKey(entry);const category=categoryName(entry.category);
+     if(entry.confidence!=='alta'||!/^[a-f0-9]{64}$/i.test(String(entry.fingerprint||'')))throw new Error('Decisão individual inválida.');
+     if(!this.db.prepare('SELECT 1 FROM categories WHERE name=?').get(category))throw new Error('Categoria não encontrada: '+category);
+     const key=accountId+'|'+externalId;if(known.has(key))throw new Error('Decisão duplicada.');known.add(key);
+     const row=this.db.prepare('SELECT description,amount_cents FROM bank_transactions WHERE account_id=? AND external_id=?').get(accountId,externalId);
+     if(!row)continue; // Histórico pode ter evoluído desde a geração do pacote.
+     const fingerprint=createHash('sha256').update(row.description+'|'+row.amount_cents).digest('hex');
+     if(fingerprint!==entry.fingerprint)continue; // Mudança no banco: não aplica classificação antiga.
+     const override=this.db.prepare('SELECT 1 FROM bank_category_overrides WHERE account_id=? AND external_id=?').get(accountId,externalId);
+     if(!override)decisions.push({accountId,externalId,category});
+   }
+   this.db.exec('BEGIN IMMEDIATE');
+   try{
+     const insertRule=this.db.prepare('INSERT INTO category_rules(pattern,match_mode,category,scope,priority,enabled) VALUES(?,?,?,?,?,1)');
+     for(const rule of possibleRules)insertRule.run(rule.pattern,rule.matchMode,rule.category,rule.scope,rule.priority);
+     const insertOverride=this.db.prepare('INSERT OR IGNORE INTO bank_category_overrides(account_id,external_id,category) VALUES(?,?,?)');
+     for(const entry of decisions)insertOverride.run(entry.accountId,entry.externalId,entry.category);
+     this.db.exec('COMMIT');
+     return {rulesAdded:possibleRules.length,overridesAdded:decisions.length,checked:input.decisions.length,missingOrChanged:input.decisions.length-decisions.length};
+   }catch(e){this.db.exec('ROLLBACK');throw e;}
+ }
  // User-controlled metadata never modifies data imported from a financial institution.
  getBankTransaction({accountId,externalId}){
    const key=bankKey({accountId,externalId});
@@ -521,7 +581,7 @@ class FinanceDB {
      LEFT JOIN bank_manual_links l ON l.account_id=b.account_id AND l.external_id=b.external_id
      ORDER BY b.date DESC,b.external_id DESC LIMIT 2500`).all().map(x=>{
        const fromRule=matchRule(x.description,'bank',rules);
-       const category=x.overrideCategory||fromRule||(categories.has(x.bankCategory)?x.bankCategory:'Outros');
+       const category=x.overrideCategory||fromRule||providerCategory(x.bankCategory,categories);
        const categorySource=x.overrideCategory?'manual':fromRule?'rule':'bank';
        const {overrideCategory,...safe}=x;
        const merchant=x.merchant||aliases.find(a=>normalizeLabel(x.description).includes(normalizeLabel(a.pattern)))?.displayName||'';
@@ -548,7 +608,7 @@ class FinanceDB {
      day.expense+=amount;
      const parts=splitMap.get(x.accountId+'|'+x.externalId)||[];
      const ok=parts.length&&parts.reduce((sum,part)=>sum+part.amount,0)===amount;
-     const category=x.overrideCategory||matchRule(x.description,'bank',rules)||(categories.has(x.bankCategory)?x.bankCategory:'Outros');
+     const category=x.overrideCategory||matchRule(x.description,'bank',rules)||providerCategory(x.bankCategory,categories);
      for(const part of ok?parts:[{category,amount}])day.categories.set(part.category,(day.categories.get(part.category)||0)+part.amount);
    }
    const dailyTotals=[...dayMap.values()].map(x=>({date:x.date,income:x.income,expense:x.expense,
