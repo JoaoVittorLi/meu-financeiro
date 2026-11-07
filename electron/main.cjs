@@ -4,6 +4,7 @@ const path=require('node:path');
 const fs=require('node:fs');
 const {FinanceDB}=require('./db.cjs');
 const {prepareCloudMigration,migrationLocalStatus}=require('./cloud-onboarding.cjs');
+const {uploadPersonalQuarantine,CONSENT}=require('./cloud-personal-uploader.cjs');
 const {PREVIEW_ORIGIN,allowedLoginNavigation,checkPreviewIdentity,testPreviewQuarantine}=require('./cloud-preview-identity.cjs');
 const {PlanningStore}=require('./planning.cjs');
 const {automaticBackup,restoreBackup,listAutoBackups,validateBackupFile}=require('./recovery.cjs');
@@ -164,6 +165,36 @@ app.whenReady().then(()=>{
    if(!identity.connected)return {ok:false,reason:'login_required',
      realRecordsSent:0,financialSyncEnabled:false};
    return testPreviewQuarantine((url,options)=>ses.fetch(url,options));
+ });
+ ipcMain.handle('cloud:transfer-personal',async(event)=>{
+   requireAppSender(event);
+   if(syncing||restoring||autoBackupBusy||cloudPreparationBusy)
+     throw new Error('Existe outra operação em andamento.');
+   // This is an explicit data transfer consent, NOT consent for cloud cutover.
+   // It is the only way real personal records may leave the desktop.
+   const prompt=await dialog.showMessageBox(mainWindow,{
+     type:'warning',title:'Conferir migração pessoal protegida',
+     message:'Autoriza copiar suas personalizações financeiras para a quarentena privada da Cloudflare?',
+     detail:'Envia categorias, regras, orçamentos, transações manuais, títulos, notas, divisões, planejamentos e identificadores vinculados. O backup SQLite permanecerá no seu computador. Os dados ficarão guardados no ambiente de testes protegido, para conferência. O Itaú não será consultado por este envio. A sincronização financeira NÃO será ativada nesta etapa.',
+     buttons:['Cancelar','Autorizo o envio para conferência'],
+     defaultId:0,cancelId:0,noLink:true
+   });
+   if(prompt.response!==1)
+     return {cancelled:true,financialSyncEnabled:false,recordsSent:0};
+   const ses=cloudPreviewSession();
+   const identity=await checkPreviewIdentity((url,options)=>ses.fetch(url,options));
+   if(!identity.connected)
+     throw new Error('Faça login no Preview protegido antes de enviar os dados.');
+   cloudPreparationBusy=true;
+   try{
+     return await prepareCloudMigration({
+       finance:db,backupFolder:backupsDirectory(),
+       onValidatedSnapshot:(snapshot)=>uploadPersonalQuarantine(
+         snapshot,(url,options)=>ses.fetch(url,options),
+         app.getPath('userData'),{consent:CONSENT}
+       )
+     });
+   }finally{cloudPreparationBusy=false;}
  });
  ipcMain.handle('cloud:migration-status',(event)=>{
    requireAppSender(event);
