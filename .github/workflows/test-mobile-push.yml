@@ -21,3 +21,8 @@ jobs:
           node --check mobile-push/src/worker.js
           node --check mobile-push/public/app.js
           node --test mobile-push/test/*.test.js
+      - name: Validar empacotamento Cloudflare (sem publicar)
+        working-directory: mobile-push
+        run: |
+          npm install --no-audit --no-fund
+          npx wrangler deploy --dry-run
