@@ -5,6 +5,7 @@ import {runSyntheticQuarantineDemo} from './finance-synthetic-quarantine.js';
 import {runSyntheticBatchDemo} from './finance-synthetic-batches.js';
 import {beginPersonalTransfer,applyPersonalChunk,verifyPersonalTransfer,cancelPersonalTransfer,personalTransferStatus} from './finance-personal-batches.js';
 import {readVerifiedPersonalOverview} from './finance-personal-overview.js';
+import {bankServerEnabled,bankIngestionStatus,ingestPluggyToStaging} from './finance-bank-ingestion.js';
 // Meu Financeiro: private proof-of-concept for standards-based Web Push.
 // No bank data or credentials are handled by this Worker.
 
@@ -196,6 +197,14 @@ export class PushHome {
         duplex:request.method==='POST'?'half':undefined
       }),this.env.FINANCE_SYNC_ENABLED==='true');
     }
+    if(u.pathname==='/bank/status'&&request.method==='GET'){
+      return json(bankIngestionStatus(this.state.storage));
+    }
+    if(u.pathname==='/bank/refresh'&&request.method==='POST'){
+      // The DO holds the trusted Worker env; a public caller cannot pass its
+      // own secrets or provider configuration. Only server-side Pluggy calls.
+      return json(await ingestPluggyToStaging(this.state.storage,this.env));
+    }
     if(u.pathname==='/migration/personal-overview'&&request.method==='GET'){
       return json(readVerifiedPersonalOverview(this.state.storage));
     }
@@ -273,6 +282,19 @@ export class PushHome {
 }
 
 export default {
+  async scheduled(_event,env,ctx){
+    // Production and unconfigured deployments cannot start a bank sync.
+    if(!bankServerEnabled(env)||!accessConfigured(env))return;
+    const job=async()=>{
+      const stub=env.PUSH_HOME.get(env.PUSH_HOME.idFromName('one-private-user'));
+      const response=await stub.fetch(new Request('https://internal/bank/refresh',{
+        method:'POST'
+      }));
+      // Never print bank records, credentials, errors or response bodies.
+      return response.status;
+    };
+    ctx.waitUntil(job().catch(()=>{}));
+  },
   async fetch(request,env) {
     const url=new URL(request.url);
     if(!url.pathname.startsWith('/api/')) {
@@ -335,6 +357,25 @@ export default {
       return json({ok:true,port:body.port,nonce:body.nonce,
         accessAssertion:assertion,pilotSession:sessionValue,
         previewOnly:true,financialSyncEnabled:false});
+    }
+    if(url.pathname==='/api/bank/status'&&request.method==='GET'){
+      if(!personalQuarantineAllowed(env))
+        return json({error:'Histórico bancário indisponível neste ambiente.'},403);
+      const identity=await authorizeAccess(request,env);
+      if(!identity.ok)return json({error:identity.error},identity.status);
+      const stub=env.PUSH_HOME.get(env.PUSH_HOME.idFromName('one-private-user'));
+      const result=await stub.fetch(new Request('https://internal/bank/status'));
+      const payload=await result.json();
+      return json({...payload,providerConfigured:bankServerEnabled(env)});
+    }
+    if(url.pathname==='/api/bank/refresh'&&request.method==='POST'){
+      if(!personalQuarantineAllowed(env)||!bankServerEnabled(env))
+        return json({error:'Atualização bancária do servidor ainda não configurada.'},403);
+      const identity=await authorizeAccess(request,env);
+      if(!identity.ok)return json({error:identity.error},identity.status);
+      const stub=env.PUSH_HOME.get(env.PUSH_HOME.idFromName('one-private-user'));
+      // No user-controlled Item IDs or secrets are accepted from HTTP.
+      return stub.fetch(new Request('https://internal/bank/refresh',{method:'POST'}));
     }
     if(url.pathname==='/api/migration/personal-overview'&&request.method==='GET'){
       if(!personalQuarantineAllowed(env))
