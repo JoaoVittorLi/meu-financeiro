@@ -13,6 +13,7 @@ const fs=require('node:fs');
 const path=require('node:path');
 const {randomUUID}=require('node:crypto');
 const {inspectLocalBackupManifest}=require('./cloud-migration-manifest.cjs');
+const {createPersonalSnapshotFromBackup,personalSnapshotSummary}=require('./cloud-personal-snapshot.cjs');
 
 const STAGE='prepared_locally';
 const FILE_PATTERN=/^antes-da-sincronizacao-\d{4}-\d{2}-\d{2}-[0-9a-f-]{36}\.sqlite$/;
@@ -56,10 +57,18 @@ async function prepareCloudMigration({finance,backupFolder,now=new Date(),id=ran
      verified.rowsUploaded!==0){
     throw new Error('A estrutura local não passou na conferência de migração. Nada foi enviado.');
   }
+  // The 17 personal tables are now serialized and cross-checked IN MEMORY.
+  // No data uploader, network request, renderer bridge or file picker exists.
+  // This is preparation, not cloud activation.
+  const personal=personalSnapshotSummary(createPersonalSnapshotFromBackup(file));
+  if(!personal.packageVerified||personal.personalTables!==17||
+     personal.sentToCloud!==false||personal.financialSyncEnabled!==false)
+    throw new Error('As personalizações não passaram na conferência. Nenhum dado enviado.');
   // Do not return paths, record digests, rows, amounts, or any secrets to UI.
   return {stage:STAGE,backupVerified:true,backupPresent:true,cloudConnected:false,
     financialSyncEnabled:false,recordsSent:0,
     checkedTables:verified.tableCount,checkedRecords:verified.totalRows,
+    personalTablesReady:personal.personalTables,personalRecordsReady:personal.personalRecords,
     backupCreatedAt:now.toISOString(),
     next:'secure_cloud_pairing_not_yet_available'};
 }
