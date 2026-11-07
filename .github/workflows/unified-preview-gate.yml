@@ -27,14 +27,14 @@ jobs:
         with:
           node-version: '22'
       - name: Dependencies (desktop)
-        run: npm ci --no-audit --no-fund
+        run: npm install --no-audit --no-fund
       - name: Windows financial-engine and shared contract tests
         run: npm run test:db
       - name: TypeScript contract
         run: npm run test:types
       - name: Dependencies (Worker/PWA)
         working-directory: mobile-push
-        run: npm ci --no-audit --no-fund
+        run: npm install --no-audit --no-fund
       - name: Worker, bank parity and PWA tests
         working-directory: mobile-push
         run: npm test
@@ -58,7 +58,7 @@ jobs:
       - name: Install and compile Windows
         shell: pwsh
         run: |
-          npm ci --no-audit --no-fund
+          npm install --no-audit --no-fund
           if ($LASTEXITCODE -ne 0) { throw "Installation failed" }
           npm run compile
           if ($LASTEXITCODE -ne 0) { throw "Compile failed" }
