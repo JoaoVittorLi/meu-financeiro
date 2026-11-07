@@ -66,25 +66,21 @@ test('Cloudflare account sign-in popups work only for pinned HTTPS IdP domains',
   }
 });
 
-test('Electron main-process auth handler has a sandboxed restricted popup and shared cookie partition',()=>{
+test('Electron no longer runs Google OAuth in an embedded BrowserWindow',()=>{
   const fs=require('node:fs');
   const path=require('node:path');
   const source=fs.readFileSync(path.join(__dirname,'../electron/main.cjs'),'utf8');
-  const start=source.indexOf('async function connectPreviewIdentity(){');
-  const end=source.indexOf('function createWindow(){',start);
-  assert.ok(start>0&&end>start,'auth window must exist');
-  const code=source.slice(start,end);
-  assert.match(code,/setWindowOpenHandler\(\(\{url\}\)=>\{/);
-  assert.match(code,/allowedLoginPopup\(url\)/);
-  assert.match(code,/action:'allow'/);
-  assert.match(code,/partition:'persist:mf-cloud-preview'/);
-  assert.match(code,/nodeIntegration:false/);
-  assert.match(code,/contextIsolation:true/);
-  assert.match(code,/sandbox:true/);
-  assert.match(code,/on\('will-navigate',checkLoginNavigation\)/);
-  assert.match(code,/on\('will-redirect',checkLoginNavigation\)/);
-  assert.match(code,/for\(const popup of authPopups\)/);
-  assert.doesNotMatch(code,/browser\.webContents\.setWindowOpenHandler\(\(\)=>\(\{action:'deny'\}\)\)/);
+  const begin=source.indexOf('async function connectPreviewIdentity(){');
+  const end=source.indexOf('function createWindow(){',begin);
+  assert.ok(begin>0&&end>begin);
+  const code=source.slice(begin,end);
+  assert.match(code,/pairViaSystemBrowser\(/);
+  assert.match(code,/shell\.openExternal\(url\)/);
+  assert.match(code,/CF_Authorization/);
+  assert.match(code,/mf_push_session/);
+  assert.match(code,/checkPreviewIdentity\(secureCloudFetch\(ses\)\)/);
+  assert.doesNotMatch(code,/new BrowserWindow\(/);
+  assert.doesNotMatch(code,/setWindowOpenHandler/);
 });
 
 test('identity probe rejects Access redirect, invalid password, html login page or financial mode',async()=>{
