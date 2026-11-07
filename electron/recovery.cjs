@@ -23,7 +23,7 @@ function validateBackupFile(filename){
     if(!present.has('app_meta'))throw new Error('Formato de cópia não reconhecido.');
     const tables=check.prepare('SELECT value FROM app_meta WHERE key=?').get('schema_version');
     if(!tables || !/^\d+$/.test(String(tables.value)))throw new Error('Versão da cópia não reconhecida.');
-    if(Number(tables.value)>4)throw new Error('Esta cópia pertence a uma versão mais recente do aplicativo.');
+    if(Number(tables.value)>5)throw new Error('Esta cópia pertence a uma versão mais recente do aplicativo.');
   }finally{check.close();}
   return {ok:true,bytes:info.size};
 }

@@ -54,6 +54,17 @@ function matchRule(description,scope,rules){
   return null;
 }
 const KEYS = ['opening','income','fixed','existing','reserve'];
+const NATURES = ['auto','income','expense','transfer','ignore'];
+function simpleText(value,max=180){
+  if(typeof value!=='string'||value.length>max||/[\x00-\x08\x0b\x0c\x0e-\x1f]/.test(value))throw new Error('Texto inválido.');
+  return value.trim();
+}
+function bankKey(input){
+  const accountId=String(input?.accountId||''),externalId=String(input?.externalId||'');
+  if(!accountId||!externalId||accountId.length>150||externalId.length>150)throw new Error('Movimentação inválida.');
+  return {accountId,externalId};
+}
+
 function isCents(n, allowNegative = false) {
   return Number.isSafeInteger(n) && n <= 100_000_000_000 && (allowNegative ? n >= -100_000_000_000 : n >= 0);
 }
@@ -182,6 +193,42 @@ class FinanceDB {
        FOREIGN KEY(account_id,external_id) REFERENCES bank_transactions(account_id,external_id) ON DELETE CASCADE
      );
    `);
+   // v0.7: edições e conciliações pessoais, sem tocar no extrato original.
+   this.db.exec(`
+     CREATE TABLE IF NOT EXISTS bank_transaction_notes (
+       account_id TEXT NOT NULL,
+       external_id TEXT NOT NULL,
+       merchant TEXT NOT NULL DEFAULT '',
+       note TEXT NOT NULL DEFAULT '',
+       nature TEXT NOT NULL DEFAULT 'auto' CHECK(nature IN ('auto','income','expense','transfer','ignore')),
+       reviewed_at TEXT,
+       PRIMARY KEY(account_id,external_id),
+       FOREIGN KEY(account_id,external_id) REFERENCES bank_transactions(account_id,external_id) ON DELETE CASCADE
+     );
+     CREATE TABLE IF NOT EXISTS bank_transaction_splits (
+       account_id TEXT NOT NULL,
+       external_id TEXT NOT NULL,
+       position INTEGER NOT NULL CHECK(position BETWEEN 0 AND 19),
+       category TEXT NOT NULL REFERENCES categories(name) ON UPDATE CASCADE ON DELETE RESTRICT,
+       amount_cents INTEGER NOT NULL CHECK(amount_cents>0),
+       PRIMARY KEY(account_id,external_id,position),
+       FOREIGN KEY(account_id,external_id) REFERENCES bank_transactions(account_id,external_id) ON DELETE CASCADE
+     );
+     CREATE TABLE IF NOT EXISTS bank_manual_links (
+       account_id TEXT NOT NULL,
+       external_id TEXT NOT NULL,
+       manual_id TEXT NOT NULL UNIQUE,
+       linked_at TEXT NOT NULL,
+       PRIMARY KEY(account_id,external_id),
+       FOREIGN KEY(account_id,external_id) REFERENCES bank_transactions(account_id,external_id) ON DELETE CASCADE
+     );
+     CREATE TABLE IF NOT EXISTS merchant_aliases (
+       id INTEGER PRIMARY KEY AUTOINCREMENT,
+       pattern TEXT NOT NULL,
+       display_name TEXT NOT NULL,
+       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+     );
+   `);
    // Migração aditiva: preserva dados, regras e categorias já cadastradas.
    const columns=this.db.prepare('PRAGMA table_info(categories)').all().map(x=>x.name);
    if(!columns.includes('emoji')){
@@ -198,7 +245,7 @@ class FinanceDB {
        this.db.prepare('INSERT OR IGNORE INTO categories(name,color,built_in) VALUES (?, ?,0)').run(name,'#884bff');
    }
    this.db.prepare('INSERT OR IGNORE INTO app_meta(key,value) VALUES (?,?)').run('schema_version','1');
-   this.db.prepare('UPDATE app_meta SET value=? WHERE key=?').run('4','schema_version');
+   this.db.prepare('UPDATE app_meta SET value=? WHERE key=?').run('5','schema_version');
  }
  load(profile){
    checkProfile(profile);
@@ -236,6 +283,7 @@ class FinanceDB {
      }
      const addSetting=this.db.prepare('INSERT INTO financial_settings(profile,name,value_cents) VALUES (?,?,?)');
      for(const [name,amount] of Object.entries(value.settings))addSetting.run(profile,name,amount);
+     if(profile==='real')this.pruneInvalidManualLinks();
      this.db.exec('COMMIT');
      return {ok:true,txCount:value.transactions.length};
    }catch(err){this.db.exec('ROLLBACK');throw err;}
@@ -276,7 +324,8 @@ class FinanceDB {
      this.db.prepare('SELECT 1 FROM transactions WHERE category=? LIMIT 1').get(row.name),
      this.db.prepare('SELECT 1 FROM budgets WHERE category=? AND amount_cents>0 LIMIT 1').get(row.name),
      this.db.prepare('SELECT 1 FROM category_rules WHERE category=? LIMIT 1').get(row.name),
-     this.db.prepare('SELECT 1 FROM bank_category_overrides WHERE category=? LIMIT 1').get(row.name)
+     this.db.prepare('SELECT 1 FROM bank_category_overrides WHERE category=? LIMIT 1').get(row.name),
+     this.db.prepare('SELECT 1 FROM bank_transaction_splits WHERE category=? LIMIT 1').get(row.name)
    ];
    if(usages.some(Boolean))throw new Error('Categoria em uso. Reclassifique os lançamentos, ajuste o orçamento e remova as regras antes de excluir.');
    this.db.exec('BEGIN IMMEDIATE');
@@ -317,21 +366,142 @@ class FinanceDB {
    }
    return this.bankOverview();
  }
+ // User-controlled metadata never modifies data imported from a financial institution.
+ getBankTransaction({accountId,externalId}){
+   const key=bankKey({accountId,externalId});
+   const row=this.db.prepare('SELECT date,amount_cents AS amount,status,description FROM bank_transactions WHERE account_id=? AND external_id=?').get(key.accountId,key.externalId);
+   if(!row)throw new Error('Movimentação não encontrada.');
+   return {...key,...row};
+ }
+ editBankTransaction(input){
+   const key=bankKey(input);this.getBankTransaction(key);
+   const merchant=simpleText(input.merchant||'',100);
+   const note=simpleText(input.note||'',600);
+   const nature=String(input.nature||'auto');
+   if(!NATURES.includes(nature))throw new Error('Natureza de movimentação inválida.');
+   const current=this.db.prepare('SELECT reviewed_at FROM bank_transaction_notes WHERE account_id=? AND external_id=?').get(key.accountId,key.externalId);
+   const reviewedAt=typeof input.reviewed==='boolean'?(input.reviewed?new Date().toISOString():null):(current?.reviewed_at||null);
+   this.db.prepare(`INSERT INTO bank_transaction_notes(account_id,external_id,merchant,note,nature,reviewed_at)
+     VALUES (?,?,?,?,?,?) ON CONFLICT(account_id,external_id) DO UPDATE SET
+       merchant=excluded.merchant,note=excluded.note,nature=excluded.nature,reviewed_at=excluded.reviewed_at`).run(key.accountId,key.externalId,merchant,note,nature,reviewedAt);
+   return this.bankOverview();
+ }
+ batchBankChanges(input){
+   const items=input?.items;
+   if(!Array.isArray(items)||!items.length||items.length>100)throw new Error('Selecione entre 1 e 100 movimentações.');
+   const category=input?.category==null?null:categoryName(input.category);
+   const reviewed=input?.reviewed;
+   const nature=input?.nature==null?null:String(input.nature);
+   if(category===null&&typeof reviewed!=='boolean'&&nature===null)throw new Error('Nenhuma alteração selecionada.');
+   if(nature!==null&&!NATURES.includes(nature))throw new Error('Natureza inválida.');
+   if(category!==null&&!this.db.prepare('SELECT 1 FROM categories WHERE name=?').get(category))throw new Error('Categoria inválida.');
+   const keys=items.map(bankKey);
+   if(new Set(keys.map(x=>x.accountId+'|'+x.externalId)).size!==keys.length)throw new Error('Movimentação duplicada na seleção.');
+   this.db.exec('BEGIN IMMEDIATE');
+   try{
+     for(const key of keys){
+       this.getBankTransaction(key);
+       if(category!==null)this.db.prepare(`INSERT INTO bank_category_overrides(account_id,external_id,category) VALUES(?,?,?)
+         ON CONFLICT(account_id,external_id) DO UPDATE SET category=excluded.category`).run(key.accountId,key.externalId,category);
+       if(typeof reviewed==='boolean'||nature!==null){
+         this.db.prepare(`INSERT OR IGNORE INTO bank_transaction_notes(account_id,external_id) VALUES (?,?)`).run(key.accountId,key.externalId);
+         if(typeof reviewed==='boolean')this.db.prepare('UPDATE bank_transaction_notes SET reviewed_at=? WHERE account_id=? AND external_id=?').run(reviewed?new Date().toISOString():null,key.accountId,key.externalId);
+         if(nature!==null)this.db.prepare('UPDATE bank_transaction_notes SET nature=? WHERE account_id=? AND external_id=?').run(nature,key.accountId,key.externalId);
+       }
+     }
+     this.db.exec('COMMIT');return this.bankOverview();
+   }catch(err){this.db.exec('ROLLBACK');throw err;}
+ }
+ setBankSplits(input){
+   const key=bankKey(input),tx=this.getBankTransaction(key);
+   if(tx.amount>=0)throw new Error('Só é possível dividir uma despesa.');
+   const parts=input?.parts;
+   if(!Array.isArray(parts)||parts.length>20||parts.length===1)throw new Error('Use de 2 a 20 partes, ou limpe a divisão.');
+   if(parts.length){
+     let total=0;
+     for(const part of parts){
+       if(!Number.isSafeInteger(part.amount)||part.amount<=0)throw new Error('Valor de parte inválido.');
+       if(!this.db.prepare('SELECT 1 FROM categories WHERE name=?').get(part.category))throw new Error('Categoria da divisão inválida.');
+       total+=part.amount;
+     }
+     if(total!==Math.abs(tx.amount))throw new Error('A soma das partes precisa ser exatamente igual à compra.');
+   }
+   this.db.exec('BEGIN IMMEDIATE');
+   try{
+     this.db.prepare('DELETE FROM bank_transaction_splits WHERE account_id=? AND external_id=?').run(key.accountId,key.externalId);
+     const insert=this.db.prepare('INSERT INTO bank_transaction_splits(account_id,external_id,position,category,amount_cents) VALUES (?,?,?,?,?)');
+     parts.forEach((part,index)=>insert.run(key.accountId,key.externalId,index,part.category,part.amount));
+     this.db.exec('COMMIT');return this.bankOverview();
+   }catch(e){this.db.exec('ROLLBACK');throw e;}
+ }
+ linkManualTransaction(input){
+   const key=bankKey(input),tx=this.getBankTransaction(key);
+   const manualId=input.manualId;
+   if(manualId===null){this.db.prepare('DELETE FROM bank_manual_links WHERE account_id=? AND external_id=?').run(key.accountId,key.externalId);return this.bankOverview();}
+   if(tx.status!=='POSTED')throw new Error('Espere a movimentação ser confirmada antes de vincular.');
+   if(typeof manualId!=='string'||!manualId||manualId.length>120)throw new Error('Lançamento manual inválido.');
+   const manual=this.db.prepare('SELECT * FROM transactions WHERE profile=? AND id=?').get('real',manualId);
+   if(!manual)throw new Error('Lançamento manual não encontrado.');
+   if(manual.amount_cents!==Math.abs(tx.amount)||manual.kind!==(tx.amount>=0?'income':'expense'))throw new Error('Valores ou tipos diferentes. Revise antes de vincular.');
+   const difference=Math.abs((Date.parse(manual.date+'T00:00:00Z')-Date.parse(tx.date+'T00:00:00Z'))/86400000);
+   if(difference>3)throw new Error('Datas com diferença acima de três dias.');
+   this.db.prepare(`INSERT INTO bank_manual_links(account_id,external_id,manual_id,linked_at) VALUES(?,?,?,?)
+     ON CONFLICT(account_id,external_id) DO UPDATE SET manual_id=excluded.manual_id,linked_at=excluded.linked_at`).run(key.accountId,key.externalId,manualId,new Date().toISOString());
+   return this.bankOverview();
+ }
+ saveMerchantAlias(input){
+   const pattern=simpleText(input?.pattern||'',120),displayName=simpleText(input?.displayName||'',100);
+   if(pattern.length<3||!displayName)throw new Error('Informe uma descrição de três caracteres ou mais e um nome.');
+   if(input?.id!=null){
+     const id=Number(input.id);
+     if(!Number.isInteger(id)||id<1||!this.db.prepare('SELECT 1 FROM merchant_aliases WHERE id=?').get(id))throw new Error('Estabelecimento não encontrado.');
+     this.db.prepare('UPDATE merchant_aliases SET pattern=?,display_name=? WHERE id=?').run(pattern,displayName,id);
+   }else this.db.prepare('INSERT INTO merchant_aliases(pattern,display_name) VALUES(?,?)').run(pattern,displayName);
+   return this.bankOverview();
+ }
+ deleteMerchantAlias(id){
+   const num=Number(id);if(!Number.isInteger(num)||num<=0)throw new Error('Identificador inválido.');
+   this.db.prepare('DELETE FROM merchant_aliases WHERE id=?').run(num);return this.bankOverview();
+ }
+ pruneInvalidManualLinks(){
+   this.db.exec(`DELETE FROM bank_manual_links WHERE NOT EXISTS (
+     SELECT 1 FROM transactions t JOIN bank_transactions b
+       ON b.account_id=bank_manual_links.account_id AND b.external_id=bank_manual_links.external_id
+     WHERE t.profile='real' AND t.id=bank_manual_links.manual_id
+       AND t.amount_cents=abs(b.amount_cents)
+       AND t.kind=CASE WHEN b.amount_cents>=0 THEN 'income' ELSE 'expense' END
+       AND b.status='POSTED'
+       AND abs(julianday(t.date)-julianday(b.date))<=3
+   )`);
+ }
  bankOverview(){
    const accounts=this.db.prepare(`SELECT account_id AS id,item_id AS itemId,name,subtype,currency,balance_cents AS balance,updated_at AS updatedAt FROM bank_accounts ORDER BY name`).all().map(x=>({...x}));
    const rules=this.listCategories().rules.filter(x=>x.enabled);
    const categories=new Set(this.listCategories().categories.map(x=>x.name));
-   const transactions=this.db.prepare(`SELECT b.external_id AS id,b.account_id AS accountId,a.name AS accountName,b.date,b.description,b.amount_cents AS amount,b.status,b.category AS bankCategory,o.category AS overrideCategory FROM bank_transactions b JOIN bank_accounts a USING(account_id) LEFT JOIN bank_category_overrides o ON o.account_id=b.account_id AND o.external_id=b.external_id ORDER BY date DESC,id DESC LIMIT 2500`).all().map(x=>{
-     const fromRule=matchRule(x.description,'bank',rules);
-     const category=x.overrideCategory||fromRule||(categories.has(x.bankCategory)?x.bankCategory:'Outros');
-     const categorySource=x.overrideCategory?'manual':fromRule?'rule':'bank';
-     const {overrideCategory,...safe}=x;
-     return {...safe,category,categorySource};
+   const aliases=this.db.prepare('SELECT id,pattern,display_name AS displayName FROM merchant_aliases ORDER BY length(pattern) DESC,id ASC').all();
+   const splits=this.db.prepare(`SELECT account_id AS accountId,external_id AS externalId,category,amount_cents AS amount FROM bank_transaction_splits ORDER BY position`).all();
+   const splitMap=new Map();for(const x of splits){const key=x.accountId+'|'+x.externalId;if(!splitMap.has(key))splitMap.set(key,[]);splitMap.get(key).push({category:x.category,amount:x.amount});}
+   const transactions=this.db.prepare(`SELECT b.external_id AS id,b.account_id AS accountId,a.name AS accountName,b.date,b.description,b.amount_cents AS amount,b.status,b.category AS bankCategory,
+     o.category AS overrideCategory,n.merchant,n.note,n.nature,n.reviewed_at AS reviewedAt,l.manual_id AS linkedManualId
+     FROM bank_transactions b JOIN bank_accounts a USING(account_id)
+     LEFT JOIN bank_category_overrides o ON o.account_id=b.account_id AND o.external_id=b.external_id
+     LEFT JOIN bank_transaction_notes n ON n.account_id=b.account_id AND n.external_id=b.external_id
+     LEFT JOIN bank_manual_links l ON l.account_id=b.account_id AND l.external_id=b.external_id
+     ORDER BY b.date DESC,b.external_id DESC LIMIT 2500`).all().map(x=>{
+       const fromRule=matchRule(x.description,'bank',rules);
+       const category=x.overrideCategory||fromRule||(categories.has(x.bankCategory)?x.bankCategory:'Outros');
+       const categorySource=x.overrideCategory?'manual':fromRule?'rule':'bank';
+       const {overrideCategory,...safe}=x;
+       const merchant=x.merchant||aliases.find(a=>normalizeLabel(x.description).includes(normalizeLabel(a.pattern)))?.displayName||'';
+       const savedSplits=splitMap.get(x.accountId+'|'+x.id)||[];
+       const splitOutdated=savedSplits.length>0&&savedSplits.reduce((sum,part)=>sum+part.amount,0)!==Math.abs(x.amount);
+       return {...safe,category,categorySource,merchant,note:x.note||'',nature:x.nature||'auto',reviewed:!!x.reviewedAt,
+         splits:splitOutdated?[]:savedSplits,splitOutdated};
    });
    const totalTransactions=this.db.prepare('SELECT COUNT(*) AS total FROM bank_transactions').get().total;
    const items=this.db.prepare(`SELECT item_id AS itemId,institution,status,consent_expires_at AS consentExpiresAt,last_sync_at AS lastSyncAt FROM bank_items ORDER BY last_sync_at DESC`).all().map(x=>({...x}));
    const last=this.db.prepare(`SELECT completed_at AS completedAt,new_count AS newCount,total_count AS totalCount FROM bank_sync_history ORDER BY id DESC LIMIT 1`).get()||null;
-   return {accounts,transactions,items,last,totalTransactions,truncated:totalTransactions>transactions.length};
+   return {accounts,transactions,items,last,totalTransactions,truncated:totalTransactions>transactions.length,aliases};
  }
  ingestBank(itemId,payload){
    if(typeof itemId!=='string'||!itemId.trim()||!payload||!Array.isArray(payload.data))throw new Error('Lote bancário inválido.');
@@ -355,13 +525,17 @@ class FinanceDB {
      const addAccount=this.db.prepare(`INSERT INTO bank_accounts(account_id,item_id,name,subtype,currency,balance_cents,updated_at) VALUES(?,?,?,?,?,?,?) ON CONFLICT(account_id) DO UPDATE SET name=excluded.name,subtype=excluded.subtype,balance_cents=excluded.balance_cents,updated_at=excluded.updated_at`);
      const addTx=this.db.prepare(`INSERT INTO bank_transactions(account_id,external_id,date,description,amount_cents,status,category,updated_at) VALUES(?,?,?,?,?,?,?,?) ON CONFLICT(account_id,external_id) DO UPDATE SET date=excluded.date,description=excluded.description,amount_cents=excluded.amount_cents,status=excluded.status,updated_at=excluded.updated_at`);
      let newCount=0,totalCount=0;
-     const exists=this.db.prepare('SELECT 1 FROM bank_transactions WHERE account_id=? AND external_id=?');
+     const exists=this.db.prepare('SELECT status,amount_cents,description FROM bank_transactions WHERE account_id=? AND external_id=?');
+     const unreview=this.db.prepare('UPDATE bank_transaction_notes SET reviewed_at=NULL WHERE account_id=? AND external_id=?');
      for(const e of entries){
        addAccount.run(e.account.id,itemId,e.account.name.slice(0,140),String(e.account.subtype||'').slice(0,50),'BRL',e.balance,now);
-       for(const t of e.transactions){if(!exists.get(e.account.id,t.id))newCount++;
+       for(const t of e.transactions){const previous=exists.get(e.account.id,t.id);
+         if(!previous)newCount++;
+         else if(previous.status!==t.status||previous.amount_cents!==t.amount||previous.description!==t.description)unreview.run(e.account.id,t.id);
          addTx.run(e.account.id,t.id,t.date,t.description,t.amount,t.status,t.category,now);totalCount++;
        }
      }
+     this.pruneInvalidManualLinks();
      this.db.prepare('INSERT INTO bank_sync_history(item_id,completed_at,new_count,total_count) VALUES(?,?,?,?)').run(itemId,now,newCount,totalCount);
      this.db.exec('COMMIT');return {newCount,totalCount};
    }catch(e){this.db.exec('ROLLBACK');throw e;}

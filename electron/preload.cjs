@@ -19,5 +19,11 @@ contextBridge.exposeInMainWorld('financeDesktop', Object.freeze({
   categoryDelete: (name) => ipcRenderer.invoke('categories:delete',name),
   ruleSave: (input) => ipcRenderer.invoke('rules:save',input),
   ruleDelete: (id) => ipcRenderer.invoke('rules:delete',id),
-  bankCategorize: (input) => ipcRenderer.invoke('bank:categorize',input)
+  bankCategorize: (input) => ipcRenderer.invoke('bank:categorize',input),
+  bankEditDetail: (input) => ipcRenderer.invoke('bank:edit-detail',input),
+  bankBatch: (input) => ipcRenderer.invoke('bank:batch',input),
+  bankSplit: (input) => ipcRenderer.invoke('bank:split',input),
+  bankLinkManual: (input) => ipcRenderer.invoke('bank:link-manual',input),
+  bankMerchantAlias: (input) => ipcRenderer.invoke('bank:merchant-alias',input),
+  bankDeleteAlias: (id) => ipcRenderer.invoke('bank:delete-alias',id)
 }));

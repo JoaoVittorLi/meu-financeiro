@@ -1,32 +1,17 @@
-# Meu Financeiro v0.6.1.0 — Categorias e regras automáticas
+# Primeiro acesso — Meu Financeiro v0.7.0
 
-O objetivo desta versão é personalizar a classificação dos lançamentos importados pelo Meu Pluggy e dos lançamentos manuais, com regras determinísticas (sem IA).
+1. Na versão anterior, abra Configurações e **Salve uma cópia completa**. Guarde o arquivo SQLite em lugar seguro.
+2. Instale a v0.7.0 sem excluir a pasta de dados. Abra o app e confirme que suas contas, categorias e lançamentos continuam presentes.
+3. Abra **Revisar movimentações** na barra lateral. Escolha uma compra e clique nela para abrir os detalhes.
+4. Ajuste o estabelecimento, a categoria, a natureza e as anotações. Marque **Conferi esta movimentação** e salve.
+5. Para dividir uma compra, adicione duas ou mais partes e confira que a soma é exatamente igual ao valor total.
+6. Para evitar dupla contagem manual, vincule um lançamento pessoal que corresponda em valor, direção e data próxima. O aplicativo não vincula nada automaticamente.
+7. Para uma transferência entre suas contas, verifique os dois lançamentos sugeridos antes de selecionar **Marcar ambas**.
 
-**Onde configurar:** seção **Categorias e regras** do aplicativo.
+## Segurança
 
-### Exemplo de uso
+O extrato importado é preservado; suas preferências ficam em tabelas adicionais do SQLite. Uma alteração do banco em valor, descrição ou status devolve o item à revisão. Credenciais não fazem parte dos backups SQLite.
 
-1. Crie a categoria `Delivery` com uma cor própria.
-2. Crie uma regra `Descrição contém IFOOD → Delivery`, escopo `Bancos e novos manuais`, prioridade `100`.
-3. Abra Transações: o histórico bancário já importado será exibido com `Delivery` (indicado como `Regra automática`).
-4. Se uma transação específica for outra categoria, selecione a categoria desejada: a correção individual prevalece e persiste após futuras sincronizações.
-5. Em uma linha corrigida, clique em `Auto` para voltar ao cálculo pelas regras.
+## Quando algo parecer errado
 
-Regras de menor número de prioridade vencem; empate preserva a regra criada primeiro. A busca ignora maiúsculas/minúsculas e acentos. Regras só alteram a visualização bancária e as categorias de **novos** lançamentos manuais; os registros brutos do banco nunca são modificados. Alterar categorias/rules no demo é desabilitado.
-
-### Antes da atualização
-
-**Salve uma cópia do SQLite pela versão anterior!** Os bancos v0.5.1 são migrados de forma aditiva ao abrir esta versão. Não desinstale excluindo os dados do aplicativo. As credenciais Pluggy não devem ser enviadas ou compartilhadas.
-
-### Backup
-
-O backup nativo `.sqlite` inclui transações, regras e categorias. O JSON manual antigo não contém essas entidades. As credenciais (Client Secret) ficam fora desses backups, protegidas pelo Windows.
-
-### Testes
-
-`npm run test`: testes Node/SQLite, regras, migração e validação TypeScript. Os executáveis são compilados no GitHub Actions em `windows-latest` com `npm run dist:windows`. A execução final deve ser verificada no seu Windows.
-
-
-## Data e sincronização na v0.6.1
-
-A nova Visão geral filtra receitas, despesas, gráficos, categorias e movimentações por período selecionado. O saldo bancário representa a posição mais recente informada, não o saldo histórico na data selecionada. O card de orçamento compara o mês correspondente ao fim do período escolhido com seu limite mensal. A atualização automática roda apenas quando o app está aberto, com intervalo mínimo de seis horas após a última sincronização bem-sucedida ou tentativa que falhou. O botão Atualizar pode ser usado manualmente a qualquer momento. Não confunda consulta Pluggy com atualização forçada dos dados pelo banco.
+Abra Configurações → Salvar cópia completa e comunique o problema. Não apague a pasta do aplicativo. Uma prévia gerada em navegador de teste foi validada com dados fictícios, mas os cliques finais e a instalação precisam ser confirmados em seu Windows.

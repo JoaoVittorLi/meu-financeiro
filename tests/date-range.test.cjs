@@ -43,3 +43,17 @@ test('UI não usa seletores ou calendário nativos Windows',()=>{
  assert(file.includes('class PeriodPicker'));
  assert(file.includes('class StyledSelect'));
 });
+test('transferências e valores desconsiderados não entram nas receitas ou despesas; divisão preserva totais',()=>{
+ const sample={data:{accounts:[{balance:50000}],transactions:[
+  {date:'2026-11-06',amount:-18000,status:'POSTED',category:'Alimentação',splits:[{category:'Alimentação',amount:14000},{category:'Contas',amount:4000}],nature:'auto'},
+  {date:'2026-11-06',amount:18000,status:'POSTED',category:'Outros',nature:'transfer'},
+  {date:'2026-11-06',amount:-1000,status:'POSTED',category:'Outros',nature:'ignore'},
+  {date:'2026-11-06',amount:262500,status:'POSTED',category:'Salário',nature:'income'},
+  {date:'2026-11-06',amount:-7000,status:'PENDING',category:'Alimentação',nature:'auto'}
+ ]}};
+ const result=bankSnapshotBetween(sample,'2026-11-01','2026-11-30');
+ assert.equal(result.income,262500);assert.equal(result.expense,18000);
+ assert.equal(result.categories.find(x=>x.name==='Alimentação').total,14000);
+ assert.equal(result.categories.find(x=>x.name==='Contas').total,4000);
+ assert.equal(result.balance,50000);
+});
