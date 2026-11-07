@@ -126,3 +126,31 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{ou
 .finance-audit-metric strong{font-size:clamp(20px,2.1vw,27px);color:#f6edff}
 .finance-bank-audit .finance-item{align-items:baseline;flex-wrap:wrap}
 @media(max-width:700px){.finance-audit-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Planning calendar: read-only snapshot; amounts are commitments, not bank balance. */
+.finance-plan-calendar{margin-bottom:16px}
+.finance-plan-calendar-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.finance-plan-calendar-toolbar h3{text-align:center;margin:0;font-size:clamp(15px,2.5vw,20px)}
+.finance-plan-calendar-toolbar button{min-width:74px}
+.finance-plan-calendar-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin:17px 0 22px}
+.finance-plan-calendar-metric{display:grid;gap:5px;border-radius:12px;padding:13px 11px;background:#110e1b;border:1px solid #473854;min-width:0}
+.finance-plan-calendar-metric strong{font-size:clamp(16px,2.1vw,23px);overflow-wrap:anywhere}
+.finance-plan-calendar-metric small{font-size:10px}
+.finance-plan-calendar-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.finance-plan-calendar-weekday{font-size:11px;color:#bba7cf;text-align:center;padding-bottom:7px}
+.finance-plan-calendar-day{min-height:88px;border-radius:10px;border:1px solid #342640;background:#110d19;color:#f6efff;text-align:left;padding:8px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.finance-plan-calendar-day:hover{border-color:#7452a1;background:#21162e}
+.finance-plan-calendar-day.is-selected{border-color:#b189f0;background:#372348}
+.finance-plan-calendar-day.is-today .finance-plan-calendar-date{background:#8257ca;border-radius:6px;padding:2px 5px;width:max-content}
+.finance-plan-calendar-date{font-weight:750;font-size:13px}
+.finance-plan-calendar-count,.finance-plan-calendar-money{font-size:10px;overflow-wrap:anywhere;color:#c9b7dc}
+.finance-plan-calendar-money{color:#e0a9b7}
+.finance-plan-calendar-selection{margin-top:18px;border-top:1px solid #3a2b4a;padding-top:13px}
+.finance-plan-calendar-selection h3{margin:0}
+@media(max-width:750px){
+ .finance-plan-calendar-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .finance-plan-calendar-grid{gap:4px}
+ .finance-plan-calendar-day{min-height:65px;padding:5px 4px}
+ .finance-plan-calendar-count,.finance-plan-calendar-money{font-size:9px}
+ .finance-plan-calendar-money{display:none}
+}
