@@ -42,7 +42,7 @@ function normalizeText(value){
     .toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
 }
 
-export function reconcileBankReferences({personalTables,legacyTransactions,newTransactions}){
+export function reconcileBankReferences({personalTables,legacyTransactions,newTransactions,pluggyHistoryComplete=false}){
   // legacyTransactions are the original SQLite bank rows, available only
   // locally from the consistent backup. newTransactions are server Pluggy
   // results, converted into same cents/date/description schema.
@@ -100,8 +100,10 @@ export function reconcileBankReferences({personalTables,legacyTransactions,newTr
   // User-visible stats never contain transaction text, bank account IDs,
   // personal notes, titles, amounts or provider IDs.
   const verifiedCount=[...verifiedKeys].length,pendingCount=pendingKeys.size;
-  const ready=pendingCount===0&&missingPlannedAccountRefs===0&&
-     pendingWithoutOldRecord===0;
+  // A perfect match over an INCOMPLETE Pluggy result is not enough for cutover.
+  // This can only be certified by the controlled provider-import process.
+  const ready=pluggyHistoryComplete===true&&pendingCount===0&&
+     missingPlannedAccountRefs===0&&pendingWithoutOldRecord===0;
   return {
     summary:{
       personalTablesInspected:KEY_TABLES.length+2,
@@ -110,6 +112,7 @@ export function reconcileBankReferences({personalTables,legacyTransactions,newTr
       pendingWithoutOldRecord,manualSuggestions:suggestions.length,
       missingPlannedAccountRefs,opaqueDismissalsPreserved:opaqueDismissals,
       bankTransactionsFetched:newTransactions.length,
+      pluggyHistoryComplete:pluggyHistoryComplete===true,
       oldAccounts:oldAccountIds.size,currentAccounts:currentAccountIds.size,
       safeToConsiderCutover:ready,
       bankDataPublished:false,personalEditsApplied:false,
