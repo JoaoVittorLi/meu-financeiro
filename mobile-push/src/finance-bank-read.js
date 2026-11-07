@@ -32,8 +32,10 @@ export function readBankTransactionsPage(storage,{offset=0,limit=30,search='',di
   const where=filters.length?' WHERE '+filters.join(' AND '):'';
   const total=storage.sql.exec('SELECT COUNT(*) AS n FROM mf_bank_staging_transactions'+where,...params).one().n;
   const rows=storage.sql.exec(
-    'SELECT account_id,external_id,date,description,amount_cents,status FROM mf_bank_staging_transactions'+where+
-    ' ORDER BY date DESC,account_id,external_id LIMIT ? OFFSET ?',
+    'SELECT t.account_id,t.external_id,t.date,t.description,t.amount_cents,t.status, '+
+    'c.category_original AS provider_category FROM mf_bank_staging_transactions t '+
+    'LEFT JOIN mf_bank_staging_categories c USING(account_id,external_id)'+where+
+    ' ORDER BY t.date DESC,t.account_id,t.external_id LIMIT ? OFFSET ?',
     ...params,size,start
   ).toArray();
   return {ok:true,stage:'bank_staging_preview',total,offset:start,limit:size,
