@@ -2,6 +2,7 @@ import {CloudSyncStore} from './cloud-sync.js';
 import {authorizeAccess,accessConfigured,diagnoseAccessCerts} from './access-auth.js';
 import {runSyntheticMigrationDryRun} from './finance-staging.js';
 import {runSyntheticQuarantineDemo} from './finance-synthetic-quarantine.js';
+import {runSyntheticBatchDemo} from './finance-synthetic-batches.js';
 // Meu Financeiro: private proof-of-concept for standards-based Web Push.
 // No bank data or credentials are handled by this Worker.
 
@@ -157,6 +158,12 @@ export class PushHome {
         duplex:request.method==='POST'?'half':undefined
       }),this.env.FINANCE_SYNC_ENABLED==='true');
     }
+    if(u.pathname==='/migration/batch-demo'&&request.method==='POST'){
+      // Fixed server-side fictional data, no client body accepted. Exercise
+      // chunk retries, integrity and automatic full rollback in the DO.
+      try{return json(await runSyntheticBatchDemo(this.state.storage));}
+      catch{return json({ok:false,error:'Teste de lotes fictícios não aprovado.'},500);}
+    }
     if(u.pathname==='/migration/quarantine-demo'&&request.method==='POST'){
       // Run the STRICT real 17-table import validator on a compiled-in fake
       // package, then discard every imported row from quarantine. No client
@@ -232,6 +239,18 @@ export default {
       // same-origin POST and Preview-only Access edge policy.
       if(!accessConfigured(env))return json({error:'Diagnóstico indisponível fora do Preview protegido.'},404);
       return json(await diagnoseAccessCerts(env));
+    }
+    if(url.pathname==='/api/migration/batch-demo'&&request.method==='POST'){
+      // BOTH independent authentication gates above remain mandatory.
+      // No financial rows or credentials from the request reach the DO.
+      if(!accessConfigured(env))
+        return json({error:'Teste de lotes requer Cloudflare Access configurado.'},403);
+      const identity=await authorizeAccess(request,env);
+      if(!identity.ok)return json({error:identity.error},identity.status);
+      const stub=env.PUSH_HOME.get(env.PUSH_HOME.idFromName('one-private-user'));
+      return stub.fetch(new Request('https://internal/migration/batch-demo',{
+        method:'POST',headers:{'Content-Type':'application/json'},body:'{}'
+      }));
     }
     if(url.pathname==='/api/migration/quarantine-demo'&&request.method==='POST'){
       // Must pass BOTH login layers. Missing Cloudflare Access preview config
