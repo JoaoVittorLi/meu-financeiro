@@ -1,4 +1,6 @@
 'use strict';
+// Register the existing push-only service worker; it never caches finance data.
+if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js').catch(()=>{});
 // Read-only finance PWA shell. No credentials, financial records or session
 // assertions are persisted in browser storage.
 const pwaEl=id=>document.getElementById(id);
