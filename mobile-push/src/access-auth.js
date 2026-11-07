@@ -118,14 +118,24 @@ function verifiedClaimError(payload,settings,now) {
   const audience=Array.isArray(payload.aud)?payload.aud:[payload.aud];
   if(payload.iss!==settings.team)
     return 'O login Cloudflare foi confirmado, mas TEAM_DOMAIN não corresponde ao domínio de autenticação. Confira esse campo no Preview.';
-  if(!audience.includes(settings.audience))
-    return 'O login Cloudflare foi confirmado, mas POLICY_AUD não corresponde ao aplicativo Access que protege o Preview. Confira esse campo.';
+  // Validate time and allowlisted owner BEFORE returning any diagnostics
+  // derived from the token claims. Never bypass strict audience matching.
   if(!Number.isSafeInteger(payload.exp)||payload.exp<=epoch||
      (payload.nbf!==undefined&&(!Number.isSafeInteger(payload.nbf)||payload.nbf>epoch))||
      (payload.iat!==undefined&&(!Number.isSafeInteger(payload.iat)||payload.iat>epoch+60)))
     return 'A sessão Cloudflare expirou ou ainda não é válida. Abra novamente o Preview em janela anônima e faça login.';
   if(typeof payload.email!=='string'||payload.email.trim().toLowerCase()!==settings.email)
     return 'Seu login Cloudflare foi verificado, mas o e-mail não corresponde ao ACCESS_ALLOWED_EMAIL do Preview. Confira esse campo.';
+  if(!audience.includes(settings.audience)){
+    // Application audience tags are public configuration identifiers (not
+    // passwords); show only a 64-hex tag from the verified, owner-bound JWT.
+    // No token header, signature, email or other claims are exposed.
+    const observed=audience.find(x=>typeof x==='string'&&/^[0-9a-f]{64}$/i.test(x));
+    return 'POLICY_AUD não corresponde ao aplicativo Access que assinou o login. '
+      +(observed?'AUD assinado neste login: '+observed+'. '
+        :'Nenhum AUD no formato esperado foi encontrado. ')
+      +'Nenhuma permissão foi liberada. Não compartilhe o token JWT.';
+  }
   return null;
 }
 
