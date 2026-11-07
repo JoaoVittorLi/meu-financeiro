@@ -9,6 +9,7 @@ import {bankServerEnabled,bankIngestionStatus,ingestPluggyToStaging} from './fin
 import {readBankTransactionsPage} from './finance-bank-read.js';
 import {cloudBankParityManifest} from './finance-bank-parity.js';
 import {readManualTransactionsPage} from './finance-manual-read.js';
+import {readFinancePreviewPeriod} from './finance-period-preview.js';
 import {applyPersonalEdit,personalEditChanges,personalEditBaseline} from './finance-personal-edits.js';
 // Meu Financeiro: private proof-of-concept for standards-based Web Push.
 // No bank data or credentials are handled by this Worker.
@@ -237,6 +238,14 @@ export class PushHome {
         return json(out,out.ok?200:409);
       }catch{return json({error:'Edição pessoal recusada por validação.'},409);}
     }
+    if(u.pathname==='/finance/period-summary'&&request.method==='GET'){
+      try{return json(readFinancePreviewPeriod(this.state.storage,{
+        start:u.searchParams.get('start'),
+        end:u.searchParams.get('end'),
+        source:u.searchParams.get('source')??'bank'
+      }));}
+      catch{return json({ok:false,error:'Período financeiro inválido.'},400);}
+    }
     if(u.pathname==='/bank/status'&&request.method==='GET'){
       return json(bankIngestionStatus(this.state.storage));
     }
@@ -446,6 +455,22 @@ export default {
       return stub.fetch(new Request('https://internal/personal/apply',{
         method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(input)
       }));
+    }
+    if(url.pathname==='/api/finance/period-summary'&&request.method==='GET'){
+      if(!personalQuarantineAllowed(env))
+        return json({error:'Resumo financeiro indisponível fora do Preview privado.'},403);
+      const identity=await authorizeAccess(request,env);
+      if(!identity.ok)return json({error:identity.error},identity.status);
+      const required=['start','end','source'];
+      const allowed=new Set(required);
+      for(const key of url.searchParams.keys()){
+        if(!allowed.has(key)||url.searchParams.getAll(key).length!==1)
+          return json({error:'Parâmetros de período inválidos.'},400);
+      }
+      if(required.some(key=>!url.searchParams.has(key)))
+        return json({error:'Informe período e origem.'},400);
+      const stub=env.PUSH_HOME.get(env.PUSH_HOME.idFromName('one-private-user'));
+      return stub.fetch(new Request('https://internal/finance/period-summary'+url.search));
     }
     if(url.pathname==='/api/bank/parity'&&request.method==='GET'){
       if(!personalQuarantineAllowed(env))
