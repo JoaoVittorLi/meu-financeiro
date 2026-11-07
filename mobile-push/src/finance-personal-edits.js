@@ -128,6 +128,26 @@ export function personalEditChanges(storage,{since=0,limit=100}={}){
  })),cursor:selection.length?selection.at(-1).seq:since,hasMore:rows.length>limit,
  financialSyncEnabled:false,cloudCutoverAllowed:false};
 }
+export function personalEditBaseline(storage){
+ const id=source(storage);
+ const result={};
+ for(const table of Object.keys(SPECS)){
+   const rows=storage.sql.exec(
+     'SELECT row_json FROM mf_transfer_rows WHERE import_id=? AND table_name=? ORDER BY ordinal',
+     id,table
+   ).toArray();
+   result[table]=rows.map(({row_json})=>{
+     const row=JSON.parse(row_json),spec=SPECS[table];
+     return {
+       identity:Object.fromEntries(spec.pk.map(k=>[k,row[k]])),
+       fields:Object.fromEntries(spec.fields.map(k=>[k,row[k]]))
+     };
+   });
+ }
+ return {ok:true,stage:'verified_baseline',tables:result,
+   financialSyncEnabled:false,cloudCutoverAllowed:false};
+}
+
 export function mergePersonalOverlays(storage,table,rows){
  if(!Object.hasOwn(SPECS,table)||!rows.length)return rows;
  ensurePersonalEdits(storage);
