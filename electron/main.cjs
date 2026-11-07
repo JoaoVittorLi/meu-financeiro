@@ -4,7 +4,7 @@ const path=require('node:path');
 const fs=require('node:fs');
 const {FinanceDB}=require('./db.cjs');
 const {prepareCloudMigration,migrationLocalStatus}=require('./cloud-onboarding.cjs');
-const {PREVIEW_ORIGIN,allowedLoginNavigation,checkPreviewIdentity}=require('./cloud-preview-identity.cjs');
+const {PREVIEW_ORIGIN,allowedLoginNavigation,checkPreviewIdentity,testPreviewQuarantine}=require('./cloud-preview-identity.cjs');
 const {PlanningStore}=require('./planning.cjs');
 const {automaticBackup,restoreBackup,listAutoBackups,validateBackupFile}=require('./recovery.cjs');
 const {PluggyVault}=require('./pluggy-vault.cjs');
@@ -154,6 +154,16 @@ app.whenReady().then(()=>{
    if(restoring||cloudPreparationBusy)
      throw new Error('Conclua a operação local antes de entrar na nuvem.');
    return connectPreviewIdentity();
+ });
+ ipcMain.handle('cloud:quarantine-demo',async(event)=>{
+   requireAppSender(event);
+   if(restoring||syncing||cloudPreparationBusy)
+     throw new Error('Outra operação financeira está em andamento.');
+   const ses=cloudPreviewSession();
+   const identity=await checkPreviewIdentity((url,options)=>ses.fetch(url,options));
+   if(!identity.connected)return {ok:false,reason:'login_required',
+     realRecordsSent:0,financialSyncEnabled:false};
+   return testPreviewQuarantine((url,options)=>ses.fetch(url,options));
  });
  ipcMain.handle('cloud:migration-status',(event)=>{
    requireAppSender(event);
