@@ -89,7 +89,7 @@ test('transport refuses extra large records and will not leak rows through summa
    }]
  }}};
  assert.throws(()=>buildTransferPlan(forged,{importId:id}),/grande demais/);
- assert.throws(()=>buildTransferPlan(p,{importId:'wrong'}),/identificador/);
+ assert.throws(()=>buildTransferPlan(p,{importId:'wrong'}),/identificador/i);
  assert.throws(()=>buildTransferPlan({...p,manifest:{...p.manifest,cutoverReady:true}},{importId:id}),/não autorizado/);
  const plan=buildTransferPlan(p,{importId:id});
  assert.equal(plan.summary.rowCount,17);
