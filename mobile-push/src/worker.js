@@ -1,3 +1,4 @@
+import {CloudSyncStore} from './cloud-sync.js';
 // Meu Financeiro: private proof-of-concept for standards-based Web Push.
 // No bank data or credentials are handled by this Worker.
 
@@ -145,6 +146,10 @@ export class PushHome {
   }
   async fetch(request) {
     const u=new URL(request.url);
+    if(u.pathname.startsWith('/sync/')) {
+      const cloud=new CloudSyncStore(this.state);
+      return cloud.fetch(request,this.env.FINANCE_SYNC_ENABLED==='true');
+    }
     if(u.pathname==='/config') {const {publicKey}=await this.getVapid();return json({publicKey});}
     if(u.pathname==='/status') {
       const sub=(await this.state.storage.get('subscriptions'))||[];
@@ -201,6 +206,14 @@ export default {
     if(url.pathname==='/api/session')return json({authenticated:signedIn});
     if(!signedIn)return json({error:'Faça login para continuar.'},401);
     if(url.pathname==='/api/logout'&&request.method==='POST')return json({ok:true},200,{'Set-Cookie':`${COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0`});
+    if(url.pathname.startsWith('/api/sync/')) {
+      const stub=env.PUSH_HOME.get(env.PUSH_HOME.idFromName('one-private-user'));
+      return stub.fetch(new Request('https://internal/sync/'+url.pathname.slice('/api/sync/'.length)+url.search,{
+        method:request.method,headers:{'Content-Type':'application/json'},
+        body:request.method==='POST'?request.body:null,
+        duplex:request.method==='POST'?'half':undefined
+      }));
+    }
     const routes={'/api/config':'/config','/api/status':'/status','/api/subscribe':'/subscribe','/api/check':'/check','/api/test':'/send','/api/test-later':'/schedule'};
     if(!routes[url.pathname])return json({error:'Rota indisponível.'},404);
     const stub=env.PUSH_HOME.get(env.PUSH_HOME.idFromName('one-private-user'));

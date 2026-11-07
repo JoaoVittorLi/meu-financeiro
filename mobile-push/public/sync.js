@@ -13,10 +13,13 @@ async function refresh(){
  const nextRevision=document?.revision||0, nextValue=document&&!document.deleted?document.value?.text||'':'';
  if(!submitting && (nextRevision!==currentRevision)){
   const dirty=$('memo').value!==lastValue;
-  if(dirty){state('Outra edição chegou. Seu texto não foi apagado; revise antes de salvar.','error');}
-  else{$('memo').value=nextValue;lastValue=nextValue;state('Sincronizado com a nuvem.','ok');}
+  if(dirty){
+   state('Outro dispositivo atualizou este registro. Seu rascunho foi preservado, mas não será sobrescrito. Para usar a última versão, clique em Atualizar agora após limpar o campo.','error');
+  }else{
+   $('memo').value=nextValue;lastValue=nextValue;currentRevision=nextRevision;
+   state('Sincronizado com a nuvem.','ok');
+  }
  }
- currentRevision=nextRevision;
  $('revision').textContent=String(currentRevision);
  $('changed').textContent=document?.changedAt?new Date(document.changedAt).toLocaleString('pt-BR'):'Ainda não';
 }

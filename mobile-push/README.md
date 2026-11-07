@@ -25,3 +25,11 @@ Este projeto é **isolado** do aplicativo financeiro para testar Web Push verdad
 ## Desenvolvimento local
 
 `npm install`, `npm test`, `npm run deploy`. Nunca coloque `.dev.vars` ou segredos em commits.
+
+## Sincronização: primeira etapa (sem dados reais)
+
+O piloto ganhou `/sync.html`, uma prova de sincronização versionada com o mesmo SQLite-backed Durable Object do push. Abra a mesma página no PC e no celular, entre com o acesso privado e altere uma frase fictícia. O outro aparelho consulta o servidor periodicamente; não há armazenamento financeiro local. Conflitos de edição retornam HTTP 409, em vez de sobrescrever silenciosamente.
+
+O endpoint de sincronização aceita **somente a coleção `test_notes`** enquanto `FINANCE_SYNC_ENABLED` não for explicitamente configurado com `true` na Cloudflare. **Não habilite dados financeiros antes de proteger o Worker com Cloudflare Access, exigir identidade individual e testar uma migração com dados fictícios.** A migração do SQLite financeiro, a paridade funcional das telas e a substituição do banco desktop ainda NÃO foram implementadas. Não considere o PWA atual como substituto do aplicativo Windows.
+
+As interfaces de API dessa etapa são: `GET /api/sync/health`, `GET /api/sync/snapshot`, `GET /api/sync/changes?since=0`, `POST /api/sync/apply` com controle por revisão. Exige sessão privada existente. Não suba extratos bancários nem segredos para testar.
