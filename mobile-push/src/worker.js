@@ -280,6 +280,13 @@ export default {
       const headers=new Headers(response.headers);
       headers.set('X-Content-Type-Options','nosniff');headers.set('Referrer-Policy','no-referrer');
       headers.set('Content-Security-Policy',"default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'");
+      // Only the browser pairing page can POST to loopback. Other public PWA
+      // pages retain the strict no-cross-origin CSP.
+      if(url.pathname==='/desktop-connect.html')
+        headers.set('Content-Security-Policy',
+          "default-src 'self'; script-src 'self'; style-src 'self'; "+
+          "connect-src 'self' http://127.0.0.1:*; form-action http://127.0.0.1:*; "+
+          "img-src 'self' data:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'");
       return new Response(response.body,{status:response.status,headers});
     }
     if(!env.APP_ACCESS_TOKEN || env.APP_ACCESS_TOKEN.length<18) return json({error:'O acesso privado ainda não foi configurado na Cloudflare.'},503);
