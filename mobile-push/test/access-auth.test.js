@@ -49,6 +49,20 @@ test('Access verifier checks a real RSA signature, audience, issuer and allowlis
   publicJwk={...(await webcrypto.subtle.exportKey('jwk',keys.publicKey)),kid:'test-key-1',alg:'RS256',use:'sig'};
   const options={fetchImpl,now:NOW};
   assert.deepEqual(await authorizeAccess(request(await sign()),ENV,options),{ok:true,mode:'access'});
+  const emailMismatch=await authorizeAccess(request(await sign({email:'intruder@example.test'})),ENV,options);
+  assert.equal(emailMismatch.status,403);
+  assert.match(emailMismatch.error,/ACCESS_ALLOWED_EMAIL/);
+  assert.equal(emailMismatch.error.includes('intruder@example.test'),false);
+  const audMismatch=await authorizeAccess(request(await sign({aud:'wrong-application'})),ENV,options);
+  assert.equal(audMismatch.status,403);
+  assert.match(audMismatch.error,/POLICY_AUD/);
+  const teamMismatch=await authorizeAccess(request(await sign({iss:'https://other.cloudflareaccess.com'})),ENV,options);
+  assert.equal(teamMismatch.status,403);
+  assert.match(teamMismatch.error,/TEAM_DOMAIN/);
+  assert.deepEqual(await authorizeAccess(request(await sign()),{
+    ...ENV,TEAM_DOMAIN:' '+TEAM+' /',POLICY_AUD:' '+AUD+' ',ACCESS_ALLOWED_EMAIL:' '+EMAIL.toUpperCase()+' '
+  },options),{ok:true,mode:'access'});
+
   assert.equal((await authorizeAccess(request(await sign({email:'intruder@example.test'})),ENV,options)).status,403);
   assert.equal((await authorizeAccess(request(await sign({aud:'wrong-application'})),ENV,options)).status,403);
   assert.equal((await authorizeAccess(request(await sign({iss:'https://other.cloudflareaccess.com'})),ENV,options)).status,403);
@@ -58,7 +72,9 @@ test('Access verifier checks a real RSA signature, audience, issuer and allowlis
   const valid=await sign();
   const parts=valid.split('.');
   const forged=parts[0]+'.'+parts[1]+'.'+(parts[2][0]==='A'?'B':'A')+parts[2].slice(1);
-  assert.equal((await authorizeAccess(request(forged),ENV,options)).status,403);
+  const forgedResult=await authorizeAccess(request(forged),ENV,options);
+  assert.equal(forgedResult.status,403);
+  assert.doesNotMatch(forgedResult.error,/ACCESS_ALLOWED_EMAIL|POLICY_AUD|TEAM_DOMAIN/);
   // Untrusted Cf-Access-Authenticated-User-Email is deliberately ignored.
   const noJWT=new Request('https://example.test/api/sync/health',{
     headers:{'Cf-Access-Authenticated-User-Email':EMAIL}
