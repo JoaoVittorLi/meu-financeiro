@@ -301,6 +301,34 @@ export default {
       if(!accessConfigured(env))return json({error:'Diagnóstico indisponível fora do Preview protegido.'},404);
       return json(await diagnoseAccessCerts(env));
     }
+    if(url.pathname==='/api/desktop/pair'&&request.method==='POST'){
+      // Only the owner in the actual system browser may bootstrap the
+      // native Preview. Both independently authenticated sessions are
+      // mandatory. Never return bearer assertions in URL redirects or logs.
+      if(!personalQuarantineAllowed(env))
+        return json({error:'Vinculação não disponível fora do Preview.'},403);
+      const identity=await authorizeAccess(request,env);
+      if(!identity.ok)return json({error:'Identidade Cloudflare não confirmada.'},identity.status);
+      let body;
+      try{body=await readBoundedJSON(request,1024);}
+      catch{return json({error:'Solicitação de vínculo inválida.'},400);}
+      if(!Number.isSafeInteger(body.port)||body.port<1024||body.port>65535||
+         typeof body.nonce!=='string'||!/^[a-f0-9]{64}$/.test(body.nonce)||
+         body.confirm!==true)
+        return json({error:'Confirmação de vínculo inválida.'},400);
+      const assertion=request.headers.get('Cf-Access-Jwt-Assertion');
+      const privateCookie=(request.headers.get('Cookie')||'').split(';')
+        .map(x=>x.trim()).find(x=>x.startsWith(COOKIE+'='));
+      const sessionValue=privateCookie?.slice(COOKIE.length+1);
+      if(!assertion||assertion.length>8192||
+         !/^\\d{10,11}\\.[A-Za-z0-9_-]{32,128}$/.test(sessionValue||''))
+        return json({error:'A sessão precisa ser renovada no navegador.'},403);
+      // Temporary bridge valid only for this owner-authenticated request.
+      // Referrer-Policy:no-referrer and no-store are set on all responses.
+      return json({ok:true,port:body.port,nonce:body.nonce,
+        accessAssertion:assertion,pilotSession:sessionValue,
+        previewOnly:true,financialSyncEnabled:false});
+    }
     if(url.pathname==='/api/migration/personal-overview'&&request.method==='GET'){
       if(!personalQuarantineAllowed(env))
         return json({error:'Prévia financeira indisponível neste ambiente.'},403);
