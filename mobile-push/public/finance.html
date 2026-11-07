@@ -15,6 +15,7 @@
 <script src="/finance-analytics.js" defer></script>
 <script src="/finance-personal-edit.js" defer></script>
 <script src="/finance-simulate.js" defer></script>
+<script src="/finance-reference-audit.js" defer></script>
 </head>
 <body>
 <div class="finance-app">
@@ -196,7 +197,17 @@
         <p id="bankServerStatus" class="finance-muted" role="status" aria-live="polite">Verificando...</p>
         <button id="bankRefreshNow" class="finance-bank-activate" type="button" hidden>Autorizar atualização bancária neste servidor</button>
       </article>
-      <p class="finance-safe">A data da consulta ao Pluggy não é necessariamente a data do saldo informado pelo Itaú. O saldo não será apresentado como disponível antes da conferência.</p>
+      <article class="finance-card finance-bank-audit">
+        <h3>Conferência de vínculos com o Windows</h3>
+        <p class="finance-muted">Identifica referências bancárias da cópia verificada do desktop que já existem no extrato Cloudflare, sem alterar lançamentos ou associar pagamentos.</p>
+        <button id="bankReferenceAuditButton" type="button" class="finance-secondary">Conferir identidades e vínculos</button>
+        <p id="bankReferenceAuditStatus" class="finance-muted" role="status" aria-live="polite">Aguardando sua consulta.</p>
+        <div id="bankReferenceAuditResults" hidden>
+          <div class="finance-audit-metrics" id="bankReferenceAuditMetrics"></div>
+          <ul id="bankReferenceAuditTables" class="finance-list"></ul>
+        </div>
+      </article>
+      <p class="finance-safe">A data da consulta ao Pluggy não é necessariamente a data do saldo informado pelo Itaú. O saldo não será apresentado como disponível antes da conferência. Esta auditoria de referências não substitui a comparação dos hashes bancários com o Windows nem a conferência de saldos e categorias.</p>
     </section>
 
     <dialog id="personalEditDialog" class="finance-edit-dialog" aria-labelledby="personalEditTitle">
