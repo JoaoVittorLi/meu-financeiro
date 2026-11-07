@@ -1,3 +1,4 @@
+import {mergePersonalOverlays} from './finance-personal-edits.js';
 // Read-only personal overlays for the verified bank stage.
 // Uses the immutable imported 17-table snapshot; never rewrites bank rows.
 // There is deliberately NO guessed provider category until that raw field
@@ -31,7 +32,8 @@ export function personalizeBankRows(storage,rows){
     splitCount:0,splitRequiresReview:false,
     hasManualLink:false,hasPlannedLink:false
   }));
-  const titles=indexBank(importedRows(storage,id,'bank_custom_titles'));
+  const titles=indexBank(mergePersonalOverlays(storage,'bank_custom_titles',
+    importedRows(storage,id,'bank_custom_titles')));
   const overrides=indexBank(importedRows(storage,id,'bank_category_overrides'));
   const notes=indexBank(importedRows(storage,id,'bank_transaction_notes'));
   const manualLinks=indexBank(importedRows(storage,id,'bank_manual_links'));
