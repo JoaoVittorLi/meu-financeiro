@@ -11,6 +11,24 @@ const DEFAULT_CATEGORIES = [
   ['Outros','#3f375a'],['Salário','#27c498']
 ];
 const CAT = DEFAULT_CATEGORIES.map(([name])=>name);
+const DEFAULT_EMOJIS = Object.freeze({
+  'Moradia':'🏠','Alimentação':'🍽️','Transporte':'🚗','Saúde':'💊',
+  'Lazer':'🎮','Educação':'📚','Assinaturas':'📱','Compras':'🛍️',
+  'Contas':'🧾','Outros':'✨','Salário':'💰'
+});
+const ALLOWED_EMOJIS = Object.freeze([
+  '🏠','🏡','🔑','🪴','🍽️','🍔','🍕','🥗','🥑','☕','🍿','🛒','🛍️',
+  '🚗','🚕','🚌','🚲','⛽','✈️','🧳','💊','🩺','💅','🧴','🧘',
+  '🎮','🎬','🎵','🎧','📚','🎓','💻','📱','📺','📷','🎨','🎟️',
+  '⚽','🏋️','🏆','🐶','🐱','🐾','💰','💸','💳','🏦','📈','🪙',
+  '🧾','💡','⚡','💧','📦','🎁','❤️','🌸','🌿','⭐','✨','🎯','🔧'
+]);
+function categoryEmoji(emoji,existing='✨') {
+  const value=emoji==null ? existing : String(emoji);
+  if(!ALLOWED_EMOJIS.includes(value))throw new Error('Escolha um dos emojis disponíveis.');
+  return value;
+}
+
 function normalizeLabel(value){
   return String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleUpperCase('pt-BR').replace(/\s+/g,' ').trim();
 }
@@ -164,8 +182,15 @@ class FinanceDB {
        FOREIGN KEY(account_id,external_id) REFERENCES bank_transactions(account_id,external_id) ON DELETE CASCADE
      );
    `);
-   const seed=this.db.prepare('INSERT OR IGNORE INTO categories(name,color,built_in) VALUES (?,?,1)');
-   for(const [name,color] of DEFAULT_CATEGORIES)seed.run(name,color);
+   // Migração aditiva: preserva dados, regras e categorias já cadastradas.
+   const columns=this.db.prepare('PRAGMA table_info(categories)').all().map(x=>x.name);
+   if(!columns.includes('emoji')){
+     this.db.exec("ALTER TABLE categories ADD COLUMN emoji TEXT NOT NULL DEFAULT '✨'");
+     const updateOld=this.db.prepare('UPDATE categories SET emoji=? WHERE name=?');
+     for(const [name] of DEFAULT_CATEGORIES)updateOld.run(DEFAULT_EMOJIS[name]||'✨',name);
+   }
+   const seed=this.db.prepare('INSERT OR IGNORE INTO categories(name,color,built_in,emoji) VALUES (?,?,1,?)');
+   for(const [name,color] of DEFAULT_CATEGORIES)seed.run(name,color,DEFAULT_EMOJIS[name]||'✨');
    // Compatibilidade: categorias pré-existentes em lançamentos manuais e orçamentos.
    const legacy=this.db.prepare(`SELECT category AS name FROM transactions UNION SELECT category AS name FROM budgets`);
    for(const {name} of legacy.all()){
@@ -173,7 +198,7 @@ class FinanceDB {
        this.db.prepare('INSERT OR IGNORE INTO categories(name,color,built_in) VALUES (?, ?,0)').run(name,'#884bff');
    }
    this.db.prepare('INSERT OR IGNORE INTO app_meta(key,value) VALUES (?,?)').run('schema_version','1');
-   this.db.prepare('UPDATE app_meta SET value=? WHERE key=?').run('3','schema_version');
+   this.db.prepare('UPDATE app_meta SET value=? WHERE key=?').run('4','schema_version');
  }
  load(profile){
    checkProfile(profile);
@@ -216,11 +241,11 @@ class FinanceDB {
    }catch(err){this.db.exec('ROLLBACK');throw err;}
  }
  listCategories(){
-   const categories=this.db.prepare('SELECT name,color,built_in AS builtIn FROM categories ORDER BY built_in DESC,name COLLATE NOCASE').all().map(x=>({...x}));
+   const categories=this.db.prepare('SELECT name,color,emoji,built_in AS builtIn FROM categories ORDER BY built_in DESC,name COLLATE NOCASE').all().map(x=>({...x}));
    const rules=this.db.prepare('SELECT id,pattern,match_mode AS matchMode,category,scope,priority,enabled FROM category_rules ORDER BY priority ASC,id ASC').all().map(x=>({...x}));
    return {categories,rules};
  }
- upsertCategory({previousName,name,color}){
+ upsertCategory({previousName,name,color,emoji}){
    const label=categoryName(name), hex=categoryColor(color), previous=String(previousName||'').trim();
    this.db.exec('BEGIN IMMEDIATE');
    try{
@@ -230,14 +255,15 @@ class FinanceDB {
        if(row.built_in&&row.name!==label)throw new Error('Categorias padrão podem mudar de cor, mas não de nome.');
        const clash=this.db.prepare('SELECT name FROM categories WHERE name=? COLLATE NOCASE').get(label);
        if(clash&&clash.name.toLowerCase()!==row.name.toLowerCase())throw new Error('Já existe uma categoria com esse nome.');
+       const icon=categoryEmoji(emoji,this.db.prepare('SELECT emoji FROM categories WHERE name=?').get(row.name)?.emoji||'✨');
        if(row.name!==label){
-         this.db.prepare('UPDATE categories SET name=?,color=? WHERE name=?').run(label,hex,row.name);
+         this.db.prepare('UPDATE categories SET name=?,color=?,emoji=? WHERE name=?').run(label,hex,icon,row.name);
          this.db.prepare('UPDATE transactions SET category=? WHERE category=?').run(label,row.name);
          this.db.prepare('UPDATE budgets SET category=? WHERE category=?').run(label,row.name);
-       }else this.db.prepare('UPDATE categories SET color=? WHERE name=?').run(hex,row.name);
+       }else this.db.prepare('UPDATE categories SET color=?,emoji=? WHERE name=?').run(hex,icon,row.name);
      }else{
        if(this.db.prepare('SELECT 1 FROM categories WHERE name=? COLLATE NOCASE').get(label))throw new Error('Já existe uma categoria com esse nome.');
-       this.db.prepare('INSERT INTO categories(name,color,built_in) VALUES(?,?,0)').run(label,hex);
+       this.db.prepare('INSERT INTO categories(name,color,built_in,emoji) VALUES(?,?,0,?)').run(label,hex,categoryEmoji(emoji));
      }
      this.db.exec('COMMIT');return this.listCategories();
    }catch(e){this.db.exec('ROLLBACK');throw e;}
@@ -302,9 +328,10 @@ class FinanceDB {
      const {overrideCategory,...safe}=x;
      return {...safe,category,categorySource};
    });
+   const totalTransactions=this.db.prepare('SELECT COUNT(*) AS total FROM bank_transactions').get().total;
    const items=this.db.prepare(`SELECT item_id AS itemId,institution,status,consent_expires_at AS consentExpiresAt,last_sync_at AS lastSyncAt FROM bank_items ORDER BY last_sync_at DESC`).all().map(x=>({...x}));
    const last=this.db.prepare(`SELECT completed_at AS completedAt,new_count AS newCount,total_count AS totalCount FROM bank_sync_history ORDER BY id DESC LIMIT 1`).get()||null;
-   return {accounts,transactions,items,last};
+   return {accounts,transactions,items,last,totalTransactions,truncated:totalTransactions>transactions.length};
  }
  ingestBank(itemId,payload){
    if(typeof itemId!=='string'||!itemId.trim()||!payload||!Array.isArray(payload.data))throw new Error('Lote bancário inválido.');
@@ -324,7 +351,7 @@ class FinanceDB {
    });
    this.db.exec('BEGIN IMMEDIATE');
    try{
-     this.db.prepare(`INSERT INTO bank_items(item_id,institution,status,consent_expires_at,last_sync_at) VALUES(?,?,?,?,?) ON CONFLICT(item_id) DO UPDATE SET institution=excluded.institution,status=excluded.status,consent_expires_at=excluded.consent_expires_at,last_sync_at=excluded.last_sync_at`).run(itemId,String(item.connector?.name||'Meu Pluggy').slice(0,100),String(item.status||'UPDATED').slice(0,40),item.consentExpiresAt||null,now);
+     this.db.prepare(`INSERT INTO bank_items(item_id,institution,status,consent_expires_at,last_sync_at) VALUES(?,?,?,?,?) ON CONFLICT(item_id) DO UPDATE SET institution=excluded.institution,status=excluded.status,consent_expires_at=excluded.consent_expires_at,last_sync_at=excluded.last_sync_at`).run(itemId,String(item.connector?.name||'Instituição conectada').slice(0,100),String(item.status||'UPDATED').slice(0,40),item.consentExpiresAt||null,now);
      const addAccount=this.db.prepare(`INSERT INTO bank_accounts(account_id,item_id,name,subtype,currency,balance_cents,updated_at) VALUES(?,?,?,?,?,?,?) ON CONFLICT(account_id) DO UPDATE SET name=excluded.name,subtype=excluded.subtype,balance_cents=excluded.balance_cents,updated_at=excluded.updated_at`);
      const addTx=this.db.prepare(`INSERT INTO bank_transactions(account_id,external_id,date,description,amount_cents,status,category,updated_at) VALUES(?,?,?,?,?,?,?,?) ON CONFLICT(account_id,external_id) DO UPDATE SET date=excluded.date,description=excluded.description,amount_cents=excluded.amount_cents,status=excluded.status,updated_at=excluded.updated_at`);
      let newCount=0,totalCount=0;
@@ -348,4 +375,4 @@ class FinanceDB {
  }
  close(){this.db.close();}
 }
-module.exports={FinanceDB, validate,matchRule,normalizeLabel};
+module.exports={FinanceDB, validate,matchRule,normalizeLabel,categoryEmoji,ALLOWED_EMOJIS};

@@ -34,7 +34,7 @@ jobs:
       - name: Disponibilizar executáveis
         uses: actions/upload-artifact@v4
         with:
-          name: MeuFinanceiro-v0.6.1-Windows
+          name: MeuFinanceiro-v0.6.2-Windows
           path: |
             release/*.exe
             release/SHA256.txt
@@ -46,12 +46,12 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          $tag = 'v0.6.1'
+          $tag = 'v0.6.2'
           $assets = @(Get-ChildItem release -Filter '*.exe' -File | ForEach-Object { $_.FullName })
           $assets += (Resolve-Path release/SHA256.txt).Path
           gh release view $tag --repo $env:GITHUB_REPOSITORY *> $null
           if ($LASTEXITCODE -eq 0) {
             gh release upload $tag @assets --clobber --repo $env:GITHUB_REPOSITORY
           } else {
-            gh release create $tag @assets --target $env:GITHUB_SHA --repo $env:GITHUB_REPOSITORY --title 'Meu Financeiro v0.6.1 — Períodos e atualização (prévia)' --notes 'Novo visual de dropdowns e calendário; visão geral com semana, últimos 15 dias, mês atual, mês passado e intervalo personalizado; atualização manual no dashboard e verificação automática a cada 6 horas com app aberto. Categorias, regras e integração Pluggy são preservadas. O extrato original permanece intacto e nenhuma credencial bancária é publicada. Faça um backup SQLite antes de atualizar.' --prerelease
+            gh release create $tag @assets --target $env:GITHUB_SHA --repo $env:GITHUB_REPOSITORY --title 'Meu Financeiro v0.6.2 — Períodos e atualização (prévia)' --notes 'Melhoria visual: paleta de cores e emojis para categorias. Linguagem mais amigável e configurações de conexão recolhidas. Cópias automáticas locais, restauração com cópia de segurança prévia, testes de migração e histórico preservado. Faça uma cópia antes de instalar e teste primeiro com dados de demonstração.' --prerelease
           }

@@ -1,13 +1,25 @@
 'use strict';
 const {app,BrowserWindow,session,ipcMain,dialog,shell,safeStorage}=require('electron');
 const path=require('node:path');
+const fs=require('node:fs');
 const {FinanceDB}=require('./db.cjs');
+const {automaticBackup,restoreBackup,listAutoBackups,validateBackupFile}=require('./recovery.cjs');
 const {PluggyVault}=require('./pluggy-vault.cjs');
 const {PluggyClient}=require('./pluggy.cjs');
-let db=null, mainWindow=null, vault=null, syncing=false;
+let db=null, mainWindow=null, vault=null, syncing=false, restoring=false, autoBackupBusy=false, backupTimer=null;
+function backupsDirectory(){return path.join(app.getPath('userData'),'copias-de-seguranca');}
+async function ensureAutomaticBackup(){
+  if(!db||restoring||syncing||autoBackupBusy)return;
+  autoBackupBusy=true;
+  try{await automaticBackup(db,backupsDirectory());}
+  catch(_){console.warn('Uma cópia de segurança automática não pôde ser concluída.');}
+  finally{autoBackupBusy=false;}
+}
+
 if(!app.requestSingleInstanceLock())app.quit();
 else app.on('second-instance',()=>{if(mainWindow){if(mainWindow.isMinimized())mainWindow.restore();mainWindow.focus();}});
 function requireAppSender(event){
+ if(restoring)throw new Error('A restauração dos seus dados está em andamento.');
  const url=event.senderFrame?.url || '';
  if(!event.sender || event.sender.isDestroyed() ||
    !url.startsWith('file://') || !url.endsWith('/app/index.html') ||
@@ -44,6 +56,37 @@ app.whenReady().then(()=>{
    const result=await dialog.showSaveDialog(mainWindow,{title:'Salvar cópia do banco de dados',defaultPath:'MeuFinanceiro-backup-'+new Date().toISOString().slice(0,10)+'.sqlite',filters:[{name:'Banco SQLite',extensions:['sqlite']}]});
    if(result.canceled||!result.filePath)return {cancelled:true};
    return db.backupTo(result.filePath);
+ });
+ ipcMain.handle('finance:backup-status',(event)=>{
+   requireAppSender(event);
+   const copies=listAutoBackups(backupsDirectory());
+   return {copies:copies.length,last:copies[0]?.modified||null};
+ });
+ ipcMain.handle('finance:open-backups',(event)=>{requireAppSender(event);
+   fs.mkdirSync(backupsDirectory(),{recursive:true,mode:0o700});return shell.openPath(backupsDirectory());
+ });
+ ipcMain.handle('finance:restore',async(event)=>{
+   requireAppSender(event);
+   if(syncing||restoring||autoBackupBusy)throw new Error('Conclua a sincronização ou cópia em andamento antes de restaurar.');
+   const picked=await dialog.showOpenDialog(mainWindow,{title:'Escolher cópia de segurança do Meu Financeiro',properties:['openFile'],filters:[{name:'Cópia completa',extensions:['sqlite']}]});
+   if(picked.canceled||!picked.filePaths?.[0])return {cancelled:true};
+   // Confirma formato e integridade antes de mostrar qualquer opção destrutiva.
+   validateBackupFile(picked.filePaths[0]);
+   const confirmation=await dialog.showMessageBox(mainWindow,{type:'warning',buttons:['Cancelar','Restaurar meus dados'],defaultId:0,cancelId:0,noLink:true,
+     title:'Confirmar restauração',message:'Substituir os dados atuais por esta cópia?',
+     detail:'Seus dados voltarão ao estado da cópia. Antes da restauração, salvaremos uma cópia dos dados atuais. Sua conexão bancária permanecerá configurada.'});
+   if(confirmation.response!==1)return {cancelled:true};
+   restoring=true;
+   try{
+     const result=await restoreBackup(db,picked.filePaths[0],filename,backupsDirectory());
+     db=result.db;
+     const state={ok:true};
+     mainWindow.webContents.reload();
+     return state;
+   }catch(error){
+     if(error.recoveredDb)db=error.recoveredDb;
+     throw new Error('Não foi possível restaurar seus dados: '+error.message);
+   }finally{restoring=false;}
  });
  ipcMain.handle('bank:status',async(event)=>{
    requireAppSender(event);
@@ -90,7 +133,9 @@ app.whenReady().then(()=>{
    requireAppSender(event);return shell.openPath(app.getPath('userData'));
  });
  createWindow();
+ void ensureAutomaticBackup();
+ backupTimer=setInterval(()=>void ensureAutomaticBackup(),60*60*1000);
  app.on('activate',()=>{if(BrowserWindow.getAllWindows().length===0)createWindow();});
 }).catch(error=>{dialog.showErrorBox('Erro ao iniciar Meu Financeiro','Não foi possível abrir o banco de dados: '+error.message);app.quit();});
 app.on('window-all-closed',()=>{if(process.platform!=='darwin')app.quit();});
-app.on('before-quit',()=>{if(db){db.close();db=null;}});
+app.on('before-quit',()=>{if(backupTimer)clearInterval(backupTimer);if(db){db.close();db=null;}});
