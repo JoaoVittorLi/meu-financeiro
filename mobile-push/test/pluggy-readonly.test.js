@@ -93,3 +93,19 @@ test('all Pluggy requests pin HTTPS origin and require valid account identifiers
  await assert.rejects(()=>client.listAccounts('item',{maxPages:0}),/Limite/);
  await assert.rejects(()=>client.listTransactions('acct',{maxPages:0}),/Limite/);
 });
+
+test('item consent details are requested on Pluggy server, not on the client',async()=>{
+ const itemId='26aa31a6-58ad-4ab0-9b7f-b718a01b7333';
+ const paths=[];
+ const client=new PluggyReadOnlyProvider({clientId:ID,clientSecret:SECRET,fetchImpl:async(url,opts)=>{
+  paths.push(url);
+  if(url.endsWith('/auth'))return apiResponse({apiKey:APIKEY});
+  assert.equal(url,'https://api.pluggy.ai/items/'+itemId);
+  assert.equal(opts.headers['X-API-KEY'],APIKEY);
+  return apiResponse({id:itemId,status:'UPDATED',consentExpiresAt:'2027-11-07T00:00:00.000Z'});
+ }});
+ const info=await client.getItem(itemId);
+ assert.equal(info.status,'UPDATED');
+ assert.equal(paths.length,2);
+ assert.doesNotMatch(paths.join(' '),/TEST-SECRET|test-client-id/);
+});
