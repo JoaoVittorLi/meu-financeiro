@@ -1,0 +1,61 @@
+name: Criar auditor isolado Windows (somente backup)
+on:
+  pull_request:
+    paths:
+      - 'electron/audit-main.cjs'
+      - 'electron/cloud-migration-manifest.cjs'
+      - 'electron/cloud-migration-contract.cjs'
+      - 'electron/cloud-migration-audit.cjs'
+      - 'electron/recovery.cjs'
+      - 'electron/db.cjs'
+      - 'electron/planning.cjs'
+      - 'tests/cloud-migration-manifest.test.cjs'
+      - 'audit-build.json'
+      - '.github/workflows/build-audit-windows.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  portable-auditor:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Instalar dependencias
+        shell: pwsh
+        run: npm install --no-audit --no-fund
+      - name: Testar esquema, back-ups e tipos antes de empacotar
+        shell: pwsh
+        run: |
+          npm run test:db
+          if ($LASTEXITCODE -ne 0) { throw "Testes SQLite falharam" }
+          npm run test:types
+          if ($LASTEXITCODE -ne 0) { throw "Verificacao TypeScript falhou" }
+      - name: Compilar auditor portatil isolado (nao altera instalacao)
+        shell: pwsh
+        run: |
+          npx electron-builder --config audit-build.json --win portable --x64 --publish never
+          if ($LASTEXITCODE -ne 0) { throw "Empacotamento falhou" }
+      - name: Verificar unico EXE e gerar SHA256
+        shell: pwsh
+        run: |
+          $exes = @(Get-ChildItem -Path release-audit -Filter '*.exe' -File)
+          if ($exes.Count -ne 1) { throw "Esperado um unico auditor .exe portatil" }
+          $exes | Get-FileHash -Algorithm SHA256 |
+            ForEach-Object { "$($_.Hash)  $(Split-Path $_.Path -Leaf)" } |
+            Set-Content -Path release-audit/SHA256.txt -Encoding utf8
+          Get-Content release-audit/SHA256.txt
+      - name: Disponibilizar auditor para teste local (14 dias)
+        uses: actions/upload-artifact@v4
+        with:
+          name: MeuFinanceiro-Auditoria-Backup-Preview
+          path: |
+            release-audit/*.exe
+            release-audit/SHA256.txt
+          if-no-files-found: error
+          retention-days: 14
