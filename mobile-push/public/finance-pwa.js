@@ -1,6 +1,6 @@
 'use strict';
 // Read-only finance PWA shell. No credentials, financial records or session
-// assertions are persisted in localStorage, IndexedDB or Cache Storage.
+// assertions are persisted in browser storage.
 const pwaEl=id=>document.getElementById(id);
 const pwaTitles={
   overview:'Visão geral',transactions:'Movimentações',planning:'Planejamento',
