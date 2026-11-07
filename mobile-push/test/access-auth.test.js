@@ -60,6 +60,24 @@ test('Access verifier checks a real RSA signature, audience, issuer and allowlis
   const audMismatch=await authorizeAccess(request(await sign({aud:'wrong-application'})),ENV,options);
   assert.equal(audMismatch.status,403);
   assert.match(audMismatch.error,/POLICY_AUD/);
+  // A real Cloudflare tag is 64 hexadecimal characters. It may be shown
+  // ONLY after verifying RSA signature, validity period, issuer and owner.
+  const observedAud='b'.repeat(64);
+  const verifiedAud=await authorizeAccess(request(await sign({aud:observedAud})),ENV,options);
+  assert.equal(verifiedAud.status,403);
+  assert.match(verifiedAud.error,new RegExp('AUD assinado neste login: '+observedAud));
+  assert.doesNotMatch(verifiedAud.error,/owner@example|test-key|eyJ/);
+  const someoneElsesAud=await authorizeAccess(request(await sign({
+    aud:observedAud,email:'attacker@example.test'
+  })),ENV,options);
+  assert.equal(someoneElsesAud.status,403);
+  assert.match(someoneElsesAud.error,/ACCESS_ALLOWED_EMAIL/);
+  assert.doesNotMatch(someoneElsesAud.error,/AUD assinado|bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb/);
+  const expiredAud=await authorizeAccess(request(await sign({
+    aud:observedAud,exp:Math.floor(NOW/1000)-3
+  })),ENV,options);
+  assert.equal(expiredAud.status,403);
+  assert.doesNotMatch(expiredAud.error,/AUD assinado|bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb/);
   const teamMismatch=await authorizeAccess(request(await sign({iss:'https://other.cloudflareaccess.com'})),ENV,options);
   assert.equal(teamMismatch.status,403);
   assert.match(teamMismatch.error,/TEAM_DOMAIN/);
