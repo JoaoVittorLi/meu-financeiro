@@ -1,5 +1,5 @@
 import {CloudSyncStore} from './cloud-sync.js';
-import {authorizeAccess,accessConfigured} from './access-auth.js';
+import {authorizeAccess,accessConfigured,diagnoseAccessCerts} from './access-auth.js';
 import {runSyntheticMigrationDryRun} from './finance-staging.js';
 // Meu Financeiro: private proof-of-concept for standards-based Web Push.
 // No bank data or credentials are handled by this Worker.
@@ -218,6 +218,13 @@ export default {
     if(url.pathname==='/api/session')return json({authenticated:signedIn});
     if(!signedIn)return json({error:'Faça login para continuar.'},401);
     if(url.pathname==='/api/logout'&&request.method==='POST')return json({ok:true},200,{'Set-Cookie':`${COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0`});
+    if(url.pathname==='/api/access/diagnose-certs'&&request.method==='POST'){
+      // Public-certificate connectivity only; returns NO JWT, JWK, email,
+      // secret or real financial records. Already requires the pilot session,
+      // same-origin POST and Preview-only Access edge policy.
+      if(!accessConfigured(env))return json({error:'Diagnóstico indisponível fora do Preview protegido.'},404);
+      return json(await diagnoseAccessCerts(env));
+    }
     if(url.pathname==='/api/migration/dry-run'&&request.method==='POST'){
       // Run only for an authenticated Access identity and pilot session.
       // Production without Access variables cannot invoke this new route.
