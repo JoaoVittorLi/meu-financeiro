@@ -130,7 +130,18 @@ function createWindow(){
  mainWindow.webContents.on('will-navigate',(event)=>event.preventDefault());
  mainWindow.loadFile(path.resolve(__dirname,'../app/index.html'));
 }
+// Preview portable and installed version share one local finance database.
+// Prevent concurrent Electron instances from writing to the same SQLite file.
+const isPrimaryInstance=app.requestSingleInstanceLock();
+if(!isPrimaryInstance)app.quit();
+app.on('second-instance',()=>{
+  if(mainWindow&&!mainWindow.isDestroyed()){
+    if(mainWindow.isMinimized())mainWindow.restore();
+    mainWindow.focus();
+  }
+});
 app.whenReady().then(()=>{
+ if(!isPrimaryInstance)return;
  app.setAppUserModelId('app.local.meufinanceiro');
  const filename=path.join(app.getPath('userData'),'meu-financeiro.sqlite');
  db=new FinanceDB(filename);
