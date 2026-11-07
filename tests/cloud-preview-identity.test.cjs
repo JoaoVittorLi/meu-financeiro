@@ -2,7 +2,8 @@
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const {PREVIEW_ORIGIN,ACCESS_TEAM_ORIGIN,previewHealthURL,
- allowedLoginNavigation,checkPreviewIdentity,testPreviewQuarantine}=require('../electron/cloud-preview-identity.cjs');
+ CLOUDFLARE_IDP_ORIGINS,allowedLoginNavigation,allowedLoginPopup,
+ checkPreviewIdentity,testPreviewQuarantine}=require('../electron/cloud-preview-identity.cjs');
 const health={ok:true,storage:'Cloudflare SQLite Durable Object',mode:'test_only',financialEnabled:false};
 const reply=(payload,status=200,contentType='application/json')=>new Response(JSON.stringify(payload),{
   status,headers:{'Content-Type':contentType}
@@ -38,6 +39,54 @@ test('login navigation limits trusted Access origins and denies browser escape',
     'not-a-url',''
   ])assert.equal(allowedLoginNavigation(url),false,url);
 });
+test('Cloudflare account sign-in popups work only for pinned HTTPS IdP domains',()=>{
+  assert.equal(CLOUDFLARE_IDP_ORIGINS.includes('https://dash.cloudflare.com'),true);
+  assert.equal(allowedLoginNavigation('https://dash.cloudflare.com/login'),true);
+  assert.equal(allowedLoginNavigation('https://dash.cloudflare.com/login?return_to=%2Foauth2'),true);
+  assert.equal(allowedLoginNavigation('https://accounts.cloudflare.com/signin'),true);
+  assert.equal(allowedLoginNavigation('https://login.cloudflare.com/'),true);
+  assert.equal(allowedLoginNavigation(ACCESS_TEAM_ORIGIN+'/cdn-cgi/access/login#callback'),true);
+  assert.equal(allowedLoginPopup('about:blank'),true,'IdP may create blank popup before navigation');
+  assert.equal(allowedLoginNavigation('about:blank'),false,'main-window navigation still rejects about:blank');
+  for(const url of [
+    'https://dash.cloudflare.com.evil.test/login',
+    'https://evil-dash.cloudflare.com/login',
+    'https://evil.cloudflare.com/login',
+    'http://dash.cloudflare.com/login',
+    'https://dash.cloudflare.com:8443/login',
+    'https://dash.cloudflare.com@evil.example/login',
+    'javascript:window.opener.location="file:///C:/data.sqlite"',
+    'file:///C:/Users/test/financial.sqlite',
+    'data:text/html,cloudflare',
+    'about:srcdoc',
+    'not-a-url'
+  ]){
+    assert.equal(allowedLoginPopup(url),false,url);
+    assert.equal(allowedLoginNavigation(url),false,url);
+  }
+});
+
+test('Electron main-process auth handler has a sandboxed restricted popup and shared cookie partition',()=>{
+  const fs=require('node:fs');
+  const path=require('node:path');
+  const source=fs.readFileSync(path.join(__dirname,'../electron/main.cjs'),'utf8');
+  const start=source.indexOf('async function connectPreviewIdentity(){');
+  const end=source.indexOf('function createWindow(){',start);
+  assert.ok(start>0&&end>start,'auth window must exist');
+  const code=source.slice(start,end);
+  assert.match(code,/setWindowOpenHandler\(\(\{url\}\)=>\{/);
+  assert.match(code,/allowedLoginPopup\(url\)/);
+  assert.match(code,/action:'allow'/);
+  assert.match(code,/partition:'persist:mf-cloud-preview'/);
+  assert.match(code,/nodeIntegration:false/);
+  assert.match(code,/contextIsolation:true/);
+  assert.match(code,/sandbox:true/);
+  assert.match(code,/on\('will-navigate',checkLoginNavigation\)/);
+  assert.match(code,/on\('will-redirect',checkLoginNavigation\)/);
+  assert.match(code,/for\(const popup of authPopups\)/);
+  assert.doesNotMatch(code,/browser\.webContents\.setWindowOpenHandler\(\(\)=>\(\{action:'deny'\}\)\)/);
+});
+
 test('identity probe rejects Access redirect, invalid password, html login page or financial mode',async()=>{
   const unauth=await checkPreviewIdentity(async()=>new Response(null,{status:302,headers:{Location:ACCESS_TEAM_ORIGIN}}));
   assert.equal(unauth.connected,false);
