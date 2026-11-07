@@ -3,6 +3,7 @@ import {authorizeAccess,accessConfigured,diagnoseAccessCerts} from './access-aut
 import {runSyntheticMigrationDryRun} from './finance-staging.js';
 import {runSyntheticQuarantineDemo} from './finance-synthetic-quarantine.js';
 import {runSyntheticBatchDemo} from './finance-synthetic-batches.js';
+import {beginPersonalTransfer,applyPersonalChunk,verifyPersonalTransfer,cancelPersonalTransfer,personalTransferStatus} from './finance-personal-batches.js';
 // Meu Financeiro: private proof-of-concept for standards-based Web Push.
 // No bank data or credentials are handled by this Worker.
 
@@ -46,6 +47,42 @@ async function checkSession(request, secret) {
 
 function json(data,status=200,extra={}) {
   return new Response(JSON.stringify(data),{status,headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff',...extra}});
+}
+
+
+// Strictly PREVIEW-only personal quarantine. This never touches live finance
+// tables or enables sync. It rejects Production even if other settings change.
+function personalQuarantineAllowed(env){
+  return env.PERSONAL_QUARANTINE_ENABLED==='true' && accessConfigured(env) &&
+    env.FINANCIAL_SCHEMA_ACTIVE!=='true';
+}
+
+async function readBoundedJSON(request,maxBytes){
+  const length=request.headers.get('Content-Length');
+  if(length!==null&&(!/^\d+$/.test(length)||Number(length)>maxBytes))
+    throw new Error('PAYLOAD_TOO_LARGE');
+  if(!request.body)throw new Error('BODY_REQUIRED');
+  const reader=request.body.getReader();
+  const chunks=[];let total=0;
+  try{
+    while(true){
+      const {value,done}=await reader.read();
+      if(done)break;
+      total+=value.byteLength;
+      if(total>maxBytes)throw new Error('PAYLOAD_TOO_LARGE');
+      chunks.push(value);
+    }
+  }catch(error){
+    await reader.cancel().catch(()=>{});
+    throw error;
+  }finally{reader.releaseLock();}
+  const data=new Uint8Array(total);let offset=0;
+  for(const chunk of chunks){data.set(chunk,offset);offset+=chunk.byteLength;}
+  const jsonText=new TextDecoder('utf-8',{fatal:true}).decode(data);
+  const parsed=JSON.parse(jsonText);
+  if(!parsed||typeof parsed!=='object'||Array.isArray(parsed))
+    throw new Error('BODY_INVALID');
+  return parsed;
 }
 
 function postIsSameOrigin(request) {
@@ -158,6 +195,26 @@ export class PushHome {
         duplex:request.method==='POST'?'half':undefined
       }),this.env.FINANCE_SYNC_ENABLED==='true');
     }
+    if(u.pathname.startsWith('/migration/personal/')&&request.method==='POST'){
+      // Internal Durable Object route only. Authentication and explicit
+      // preview owner consent are both checked at the Worker boundary.
+      const op=u.pathname.slice('/migration/personal/'.length);
+      if(!['begin','chunk','verify','cancel','status'].includes(op))
+        return json({error:'Operação de migração desconhecida.'},404);
+      const input=await request.json().catch(()=>null);
+      if(!input)return json({error:'Pacote inválido.'},400);
+      try{
+        const storage=this.state.storage;
+        if(op==='begin')return json(beginPersonalTransfer(storage,input));
+        if(op==='chunk')return json(applyPersonalChunk(storage,input));
+        if(op==='verify')return json(await verifyPersonalTransfer(storage,input.importId));
+        if(op==='cancel')return json(cancelPersonalTransfer(storage,input.importId));
+        return json(personalTransferStatus(storage,input.importId));
+      }catch{
+        // Never reflect row values, identifiers, schema errors or secrets.
+        return json({ok:false,error:'Operação recusada pela validação da quarentena.'},409);
+      }
+    }
     if(u.pathname==='/migration/batch-demo'&&request.method==='POST'){
       // Fixed server-side fictional data, no client body accepted. Exercise
       // chunk retries, integrity and automatic full rollback in the DO.
@@ -239,6 +296,29 @@ export default {
       // same-origin POST and Preview-only Access edge policy.
       if(!accessConfigured(env))return json({error:'Diagnóstico indisponível fora do Preview protegido.'},404);
       return json(await diagnoseAccessCerts(env));
+    }
+    if(url.pathname.startsWith('/api/migration/personal/')&&request.method==='POST'){
+      // Only this strictly isolated Preview accepts owner-approved personal
+      // data, and ONLY into quarantine. Production stays fail-closed.
+      if(!personalQuarantineAllowed(env))
+        return json({error:'Importação pessoal não habilitada neste ambiente.'},403);
+      const identity=await authorizeAccess(request,env);
+      if(!identity.ok)return json({error:identity.error},identity.status);
+      const op=url.pathname.slice('/api/migration/personal/'.length);
+      if(!['begin','chunk','verify','cancel','status'].includes(op))
+        return json({error:'Operação não disponível.'},404);
+      if(request.headers.get('X-MF-Migration-Consent')!=='preview-quarantine-only')
+        return json({error:'Confirmação explícita de migração ausente.'},403);
+      let input;
+      try{input=await readBoundedJSON(request,op==='chunk'?224*1024:12*1024);}
+      catch{return json({error:'Conteúdo de migração inválido ou grande demais.'},413);}
+      if(op==='begin'&&input.consent!=='preview-quarantine-only')
+        return json({error:'Autorização explícita necessária.'},403);
+      const stub=env.PUSH_HOME.get(env.PUSH_HOME.idFromName('one-private-user'));
+      return stub.fetch(new Request('https://internal/migration/personal/'+op,{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify(input)
+      }));
     }
     if(url.pathname==='/api/migration/batch-demo'&&request.method==='POST'){
       // BOTH independent authentication gates above remain mandatory.
