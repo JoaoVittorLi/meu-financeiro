@@ -20,6 +20,26 @@ $('dryRun').addEventListener('click',async()=>{
    output.style.color='#ffb9c4';
  }finally{button.disabled=false;}
 });
+$('quarantineDemo').addEventListener('click',async()=>{
+ const button=$('quarantineDemo'),output=$('quarantineResult');
+ button.disabled=true;output.textContent='Verificando login, importação e descarte de dados fictícios...';
+ try{
+   const result=await api('migration/quarantine-demo','POST',{});
+   if(result.ok!==true||result.mode!=='synthetic_personal_quarantine'||
+      result.personalTables!==17||result.payloadValidated!==true||
+      result.duplicateReplayPrevented!==true||result.rollbackVerified!==true||
+      result.realRecordsReceived!==0||result.financialMigrationActivated!==false||
+      result.syncedToDevices!==false)
+     throw new Error('A conferência não foi concluída. Nenhum dado real deve ser enviado.');
+   output.textContent='Teste aprovado: '+result.personalTables+' tabelas pessoais e '+
+     result.fictionalRecords+' registros fictícios. Validação, proteção contra duplicidade '+
+     'e descarte completo confirmados. Nenhum dado real transferido.';
+   output.style.color='#91e0c1';
+ }catch(error){
+   output.textContent='Teste não aprovado: '+(error?.message||'Conferência indisponível.');
+   output.style.color='#ffb9c4';
+ }finally{button.disabled=false;}
+});
 async function api(endpoint,method='GET',body){
  const response=await fetch('/api/'+endpoint,{method,credentials:'same-origin',cache:'no-store',
   headers:{'Content-Type':'application/json'},body:body===undefined?undefined:JSON.stringify(body)});
