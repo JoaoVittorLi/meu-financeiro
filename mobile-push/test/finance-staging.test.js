@@ -56,7 +56,7 @@ test('migration staging preserves a complete 22-table v0.9.4 shape with only syn
     assert.equal(storage.sql.exec('SELECT COUNT(*) AS n FROM mf_stage_bank_transactions').one().n,count);
     assert.equal(storage.sql.exec('SELECT COUNT(*) AS n FROM mf_stage_planned_bank_links').one().n,1);
     assert.equal(storage.sql.exec('SELECT COUNT(*) AS n FROM mf_stage_bank_manual_links').one().n,1);
-    assert.equal(storage.sql.exec("SELECT COUNT(*) AS n FROM sync_documents").toArray?.()?.[0]?.n||0,0);
+    assert.deepEqual(storage.sql.exec("SELECT name FROM sqlite_master WHERE type='table' AND name='sync_documents'").toArray(),[]);
   }finally{storage.close();}
 });
 
