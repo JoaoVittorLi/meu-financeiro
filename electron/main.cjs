@@ -4,11 +4,12 @@ const path=require('node:path');
 const fs=require('node:fs');
 const {FinanceDB}=require('./db.cjs');
 const {inspectLocalBackupManifest}=require('./cloud-migration-manifest.cjs');
+const {prepareCloudMigration,migrationLocalStatus}=require('./cloud-onboarding.cjs');
 const {PlanningStore}=require('./planning.cjs');
 const {automaticBackup,restoreBackup,listAutoBackups,validateBackupFile}=require('./recovery.cjs');
 const {PluggyVault}=require('./pluggy-vault.cjs');
 const {PluggyClient}=require('./pluggy.cjs');
-let planner=null, db=null, mainWindow=null, vault=null, syncing=false, restoring=false, autoBackupBusy=false, backupTimer=null;
+let planner=null, db=null, mainWindow=null, vault=null, syncing=false, restoring=false, autoBackupBusy=false, cloudPreparationBusy=false, backupTimer=null;
 function backupsDirectory(){return path.join(app.getPath('userData'),'copias-de-seguranca');}
 async function ensureAutomaticBackup(){
   if(!db||restoring||syncing||autoBackupBusy)return;
@@ -60,6 +61,20 @@ app.whenReady().then(()=>{
    if(result.canceled||!result.filePath)return {cancelled:true};
    return db.backupTo(result.filePath);
  });
+ ipcMain.handle('cloud:migration-status',(event)=>{
+   requireAppSender(event);
+   return migrationLocalStatus(backupsDirectory());
+ });
+ ipcMain.handle('cloud:prepare-migration',async(event)=>{
+   requireAppSender(event);
+   if(syncing||restoring||autoBackupBusy||cloudPreparationBusy)
+     throw new Error('Há outra operação em andamento. Conclua-a antes de preparar a nuvem.');
+   cloudPreparationBusy=true;
+   try{
+     // One click, no SQLite file picker or file upload.
+     return await prepareCloudMigration({finance:db,backupFolder:backupsDirectory()});
+   }finally{cloudPreparationBusy=false;}
+ });
  ipcMain.handle('finance:migration-audit',async(event)=>{
    requireAppSender(event);
    // A migration audit NEVER scans the active database automatically and
@@ -81,7 +96,7 @@ app.whenReady().then(()=>{
  });
  ipcMain.handle('finance:restore',async(event)=>{
    requireAppSender(event);
-   if(syncing||restoring||autoBackupBusy)throw new Error('Conclua a sincronização ou cópia em andamento antes de restaurar.');
+   if(syncing||restoring||autoBackupBusy||cloudPreparationBusy)throw new Error('Conclua a sincronização ou cópia em andamento antes de restaurar.');
    const picked=await dialog.showOpenDialog(mainWindow,{title:'Escolher cópia de segurança do Meu Financeiro',properties:['openFile'],filters:[{name:'Cópia completa',extensions:['sqlite']}]});
    if(picked.canceled||!picked.filePaths?.[0])return {cancelled:true};
    // Confirma formato e integridade antes de mostrar qualquer opção destrutiva.
