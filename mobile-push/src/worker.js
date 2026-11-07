@@ -7,6 +7,7 @@ import {beginPersonalTransfer,applyPersonalChunk,verifyPersonalTransfer,cancelPe
 import {readVerifiedPersonalOverview} from './finance-personal-overview.js';
 import {bankServerEnabled,bankIngestionStatus,ingestPluggyToStaging} from './finance-bank-ingestion.js';
 import {readBankTransactionsPage} from './finance-bank-read.js';
+import {cloudBankParityManifest} from './finance-bank-parity.js';
 import {applyPersonalEdit,personalEditChanges,personalEditBaseline} from './finance-personal-edits.js';
 // Meu Financeiro: private proof-of-concept for standards-based Web Push.
 // No bank data or credentials are handled by this Worker.
@@ -238,6 +239,10 @@ export class PushHome {
     if(u.pathname==='/bank/status'&&request.method==='GET'){
       return json(bankIngestionStatus(this.state.storage));
     }
+    if(u.pathname==='/bank/parity'&&request.method==='GET'){
+      try{return json(await cloudBankParityManifest(this.state.storage));}
+      catch{return json({ok:false,error:'Conferência bancária indisponível.'},409);}
+    }
     if(u.pathname==='/bank/transactions'&&request.method==='GET'){
       try{return json(readBankTransactionsPage(this.state.storage,{
         offset:u.searchParams.get('offset')??'0',
@@ -433,6 +438,14 @@ export default {
       return stub.fetch(new Request('https://internal/personal/apply',{
         method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(input)
       }));
+    }
+    if(url.pathname==='/api/bank/parity'&&request.method==='GET'){
+      if(!personalQuarantineAllowed(env))
+        return json({error:'Comparação não disponível fora do Preview protegido.'},403);
+      const identity=await authorizeAccess(request,env);
+      if(!identity.ok)return json({error:identity.error},identity.status);
+      const stub=env.PUSH_HOME.get(env.PUSH_HOME.idFromName('one-private-user'));
+      return stub.fetch(new Request('https://internal/bank/parity'));
     }
     if(url.pathname==='/api/bank/transactions'&&request.method==='GET'){
       if(!personalQuarantineAllowed(env))
