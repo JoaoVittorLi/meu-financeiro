@@ -4,6 +4,7 @@ import {runSyntheticMigrationDryRun} from './finance-staging.js';
 import {runSyntheticQuarantineDemo} from './finance-synthetic-quarantine.js';
 import {runSyntheticBatchDemo} from './finance-synthetic-batches.js';
 import {beginPersonalTransfer,applyPersonalChunk,verifyPersonalTransfer,cancelPersonalTransfer,personalTransferStatus} from './finance-personal-batches.js';
+import {readVerifiedPersonalOverview} from './finance-personal-overview.js';
 // Meu Financeiro: private proof-of-concept for standards-based Web Push.
 // No bank data or credentials are handled by this Worker.
 
@@ -195,6 +196,9 @@ export class PushHome {
         duplex:request.method==='POST'?'half':undefined
       }),this.env.FINANCE_SYNC_ENABLED==='true');
     }
+    if(u.pathname==='/migration/personal-overview'&&request.method==='GET'){
+      return json(readVerifiedPersonalOverview(this.state.storage));
+    }
     if(u.pathname.startsWith('/migration/personal/')&&request.method==='POST'){
       // Internal Durable Object route only. Authentication and explicit
       // preview owner consent are both checked at the Worker boundary.
@@ -296,6 +300,16 @@ export default {
       // same-origin POST and Preview-only Access edge policy.
       if(!accessConfigured(env))return json({error:'Diagnóstico indisponível fora do Preview protegido.'},404);
       return json(await diagnoseAccessCerts(env));
+    }
+    if(url.pathname==='/api/migration/personal-overview'&&request.method==='GET'){
+      if(!personalQuarantineAllowed(env))
+        return json({error:'Prévia financeira indisponível neste ambiente.'},403);
+      const identity=await authorizeAccess(request,env);
+      if(!identity.ok)return json({error:identity.error},identity.status);
+      const stub=env.PUSH_HOME.get(env.PUSH_HOME.idFromName('one-private-user'));
+      return stub.fetch(new Request('https://internal/migration/personal-overview',{
+        method:'GET'
+      }));
     }
     if(url.pathname.startsWith('/api/migration/personal/')&&request.method==='POST'){
       // Only this strictly isolated Preview accepts owner-approved personal
