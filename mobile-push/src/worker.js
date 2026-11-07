@@ -148,7 +148,11 @@ export class PushHome {
     const u=new URL(request.url);
     if(u.pathname.startsWith('/sync/')) {
       const cloud=new CloudSyncStore(this.state);
-      return cloud.fetch(request,this.env.FINANCE_SYNC_ENABLED==='true');
+      return cloud.fetch(new Request('https://internal/'+u.pathname.slice('/sync/'.length)+u.search,{
+        method:request.method,headers:{'Content-Type':'application/json'},
+        body:request.method==='POST'?request.body:null,
+        duplex:request.method==='POST'?'half':undefined
+      }),this.env.FINANCE_SYNC_ENABLED==='true');
     }
     if(u.pathname==='/config') {const {publicKey}=await this.getVapid();return json({publicKey});}
     if(u.pathname==='/status') {
