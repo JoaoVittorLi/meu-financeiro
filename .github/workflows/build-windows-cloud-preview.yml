@@ -1,13 +1,7 @@
 name: Meu Financeiro Windows — prévia de migração protegida
+# Automatic Windows builds now happen once in unified-preview-gate.yml
+# along with the PWA tests from the same commit. Keep this as manual fallback.
 on:
-  pull_request:
-    paths:
-      - 'electron/cloud-*'
-      - 'electron/main.cjs'
-      - 'electron/preload.cjs'
-      - 'src/app.ts'
-      - 'tests/cloud-*'
-      - '.github/workflows/build-windows-cloud-preview.yml'
   workflow_dispatch:
 
 permissions:
