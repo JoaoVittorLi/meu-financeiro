@@ -13,7 +13,7 @@ export function accessConfigured(env={}) {
 }
 
 function accessSettings(env){
-  const team=typeof env.TEAM_DOMAIN==='string'?env.TEAM_DOMAIN.trim().replace(/\/+$/,''):'';
+  const team=typeof env.TEAM_DOMAIN==='string'?env.TEAM_DOMAIN.trim().replace(/\/+$/,'').trim():'';
   const audience=typeof env.POLICY_AUD==='string'?env.POLICY_AUD.trim():env.POLICY_AUD;
   const email=typeof env.ACCESS_ALLOWED_EMAIL==='string'?env.ACCESS_ALLOWED_EMAIL.trim():env.ACCESS_ALLOWED_EMAIL;
   if(!/^https:\/\/[a-z0-9][a-z0-9-]{0,62}\.cloudflareaccess\.com$/i.test(team) ||
