@@ -8,6 +8,8 @@ contextBridge.exposeInMainWorld('financeDesktop', Object.freeze({
   backupSQLite: () => ipcRenderer.invoke('finance:backup'),
   cloudMigrationStatus: () => ipcRenderer.invoke('cloud:migration-status'),
   prepareCloudMigration: () => ipcRenderer.invoke('cloud:prepare-migration'),
+  cloudAccessStatus: () => ipcRenderer.invoke('cloud:access-status'),
+  connectCloudAccess: () => ipcRenderer.invoke('cloud:access-connect'),
   backupStatus: () => ipcRenderer.invoke('finance:backup-status'),
   restoreSQLite: () => ipcRenderer.invoke('finance:restore'),
   openBackupsFolder: () => ipcRenderer.invoke('finance:open-backups'),
