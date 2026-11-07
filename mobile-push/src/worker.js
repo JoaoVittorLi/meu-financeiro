@@ -1,5 +1,6 @@
 import {CloudSyncStore} from './cloud-sync.js';
-import {authorizeAccess} from './access-auth.js';
+import {authorizeAccess,accessConfigured} from './access-auth.js';
+import {runSyntheticMigrationDryRun} from './finance-staging.js';
 // Meu Financeiro: private proof-of-concept for standards-based Web Push.
 // No bank data or credentials are handled by this Worker.
 
@@ -155,6 +156,12 @@ export class PushHome {
         duplex:request.method==='POST'?'half':undefined
       }),this.env.FINANCE_SYNC_ENABLED==='true');
     }
+    if(u.pathname==='/migration/dry-run'&&request.method==='POST'){
+      // This route accepts NO client records. It writes only hardcoded fake
+      // rows into separate mf_stage_* tables in this Durable Object.
+      try{return json(runSyntheticMigrationDryRun(this.state.storage));}
+      catch{return json({ok:false,error:'Falha na migração fictícia. Não importe dados reais.'},500);}
+    }
     if(u.pathname==='/config') {const {publicKey}=await this.getVapid();return json({publicKey});}
     if(u.pathname==='/status') {
       const sub=(await this.state.storage.get('subscriptions'))||[];
@@ -211,6 +218,18 @@ export default {
     if(url.pathname==='/api/session')return json({authenticated:signedIn});
     if(!signedIn)return json({error:'Faça login para continuar.'},401);
     if(url.pathname==='/api/logout'&&request.method==='POST')return json({ok:true},200,{'Set-Cookie':`${COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0`});
+    if(url.pathname==='/api/migration/dry-run'&&request.method==='POST'){
+      // Run only for an authenticated Access identity and pilot session.
+      // Production without Access variables cannot invoke this new route.
+      if(!accessConfigured(env))
+        return json({error:'Teste de migração requer Cloudflare Access configurado.'},403);
+      const identity=await authorizeAccess(request,env);
+      if(!identity.ok)return json({error:identity.error},identity.status);
+      const stub=env.PUSH_HOME.get(env.PUSH_HOME.idFromName('one-private-user'));
+      return stub.fetch(new Request('https://internal/migration/dry-run',{
+        method:'POST',headers:{'Content-Type':'application/json'},body:'{}'
+      }));
+    }
     if(url.pathname.startsWith('/api/sync/')) {
       // The Static Assets router does not reliably pass ctx.access. Authenticate
       // cryptographically using the signed Access JWT if Access is configured.
