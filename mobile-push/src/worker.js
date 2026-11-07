@@ -10,6 +10,7 @@ import {readBankTransactionsPage} from './finance-bank-read.js';
 import {cloudBankParityManifest} from './finance-bank-parity.js';
 import {readManualTransactionsPage} from './finance-manual-read.js';
 import {readFinancePreviewPeriod} from './finance-period-preview.js';
+import {installmentQuote} from '../../shared/finance-installment-quote.mjs';
 import {applyPersonalEdit,personalEditChanges,personalEditBaseline} from './finance-personal-edits.js';
 // Meu Financeiro: private proof-of-concept for standards-based Web Push.
 // No bank data or credentials are handled by this Worker.
@@ -455,6 +456,17 @@ export default {
       return stub.fetch(new Request('https://internal/personal/apply',{
         method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(input)
       }));
+    }
+    if(url.pathname==='/api/finance/installment-quote'&&request.method==='POST'){
+      if(!personalQuarantineAllowed(env))
+        return json({error:'Simulação indisponível fora do Preview privado.'},403);
+      const identity=await authorizeAccess(request,env);
+      if(!identity.ok)return json({error:identity.error},identity.status);
+      let input;
+      try{input=await readBoundedJSON(request,2048);}
+      catch{return json({error:'Parâmetros da simulação inválidos.'},400);}
+      try{return json(installmentQuote(input));}
+      catch{return json({error:'Valor, parcelas, juros ou datas inválidos.'},400);}
     }
     if(url.pathname==='/api/finance/period-summary'&&request.method==='GET'){
       if(!personalQuarantineAllowed(env))
