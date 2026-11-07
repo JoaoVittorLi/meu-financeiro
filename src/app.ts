@@ -298,7 +298,7 @@ class App extends React.Component<any,State>{
    const now=!!(this.state.showEntry||this.state.editModal||this.state.detail||this.state.planOpen||this.state.planSelected);
    if(!before&&now){
      this.focusReturn=document.activeElement;
-     const dialog=document.querySelector('.modal-backdrop [role="dialog"],.mf-detail-drawer');
+     const dialog=document.querySelector('.modal-backdrop [role="dialog"],.mf-detail-drawer,.mf-ai-drawer');
      const control=dialog?.querySelector('input:not([disabled]),button:not([disabled])') as HTMLElement|null;
      control?.focus();
    }else if(before&&!now){
@@ -313,7 +313,7 @@ class App extends React.Component<any,State>{
  }
  componentWillUnmount(){window.removeEventListener('keydown',this.onGlobalKeydown);if(this.autoSyncTimer)clearInterval(this.autoSyncTimer);if(this.timeout)clearTimeout(this.timeout);}
  onGlobalKeydown=(event:KeyboardEvent)=>{
-   const dialog=document.querySelector('.modal-backdrop [role="dialog"],.mf-detail-drawer');
+   const dialog=document.querySelector('.modal-backdrop [role="dialog"],.mf-detail-drawer,.mf-ai-drawer');
    if(event.key==='Tab'&&dialog&&!document.querySelector('[role="listbox"],.mf-period-popover,.mf-single-calendar')){
      const controls=Array.from(dialog.querySelectorAll('button:not([disabled]),input:not([disabled]),textarea:not([disabled]),[tabindex="0"]')) as HTMLElement[];
      if(controls.length){
@@ -327,6 +327,7 @@ class App extends React.Component<any,State>{
    // Popup menus consume Escape without closing the underlying dialog.
    if(document.querySelector('[role="listbox"],.mf-period-popover,.mf-single-calendar'))return;
    if(this.state.quickAddOpen){this.setState({quickAddOpen:false});return;}
+   if(this.state.intelligencePanelOpen){this.setState({intelligencePanelOpen:false});return;}
    if(this.state.planSelected){this.setState({planSelected:null});return;}
    if(this.state.detail){this.setState({detail:null});return;}
    if(this.state.planOpen){this.setState({planOpen:false});return;}
