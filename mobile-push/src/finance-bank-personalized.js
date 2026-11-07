@@ -7,6 +7,23 @@ function folded(value){
   return String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
     .toLocaleUpperCase('pt-BR').replace(/\s+/g,' ').trim();
 }
+// Same provider category map as the v0.9.4 desktop FinanceDB.
+const PROVIDER_CATEGORIES=Object.freeze({
+  'Groceries':'Alimentação','Food delivery':'Alimentação','Eating out':'Alimentação',
+  'Shopping':'Compras','Electronics':'Compras','Clothing':'Compras',
+  'Salary':'Salário','Pharmacy':'Saúde','Healthcare':'Saúde','Health insurance':'Saúde',
+  'Gas stations':'Transporte','Transportation':'Transporte','Vehicle maintenance':'Transporte',
+  'Taxi and ride-hailing':'Transporte','Parking':'Transporte','Automotive':'Transporte',
+  'Digital services':'Assinaturas','Electricity':'Contas','Tickets':'Lazer',
+  'Proceeds interests and dividends':'Rendimentos',
+  'Same person transfer':'Transferências','Transfer - PIX':'Transferências','Transfers':'Transferências'
+});
+function categoryFromBank(original,validCategories){
+  if(typeof original!=='string'||!original.trim())return null;
+  const translated=PROVIDER_CATEGORIES[original];
+  return translated&&validCategories.has(translated)?translated:
+    validCategories.has(original)?original:'Outros';
+}
 const bankKey=(accountId,externalId)=>JSON.stringify([accountId,externalId]);
 function importId(storage){
   const tables=storage.sql.exec("SELECT name FROM sqlite_master WHERE type='table' AND name='mf_transfer_session'").toArray();
@@ -35,6 +52,7 @@ export function personalizeBankRows(storage,rows){
   const titles=indexBank(mergePersonalOverlays(storage,'bank_custom_titles',
     importedRows(storage,id,'bank_custom_titles')));
   const overrides=indexBank(importedRows(storage,id,'bank_category_overrides'));
+  const categoryNames=new Set(importedRows(storage,id,'categories').map(r=>r.name));
   const notes=indexBank(importedRows(storage,id,'bank_transaction_notes'));
   const manualLinks=indexBank(importedRows(storage,id,'bank_manual_links'));
   const plannedLinks=indexBank(importedRows(storage,id,'planned_bank_links'));
@@ -52,6 +70,7 @@ export function personalizeBankRows(storage,rows){
   return rows.map(row=>{
     const key=bankKey(row.account_id,row.external_id);
     const note=notes.get(key),override=overrides.get(key);
+    const bankCategory=categoryFromBank(row.provider_category,categoryNames);
     const hay=folded(row.description);
     const rule=rules.find(r=>{
       const needle=folded(r.pattern);
@@ -71,8 +90,8 @@ export function personalizeBankRows(storage,rows){
       merchant,reviewed:!!note?.reviewed_at,nature:note?.nature||'auto',
       // The bank category returned by Pluggy is not currently staged. Show
       // only explicit manual override or deterministic local rule.
-      category:override?.category||rule?.category||null,
-      categorySource:override?'manual':rule?'rule':'pending_provider_category',
+      category:override?.category||rule?.category||bankCategory,
+      categorySource:override?'manual':rule?'rule':bankCategory?'bank':'pending_provider_category',
       splits:outdated?[]:parts.map(part=>({category:part.category,amountCents:part.amount_cents})),
       splitCount:outdated?0:parts.length,splitRequiresReview:outdated,
       hasManualLink:manualLinks.has(key),hasPlannedLink:plannedLinks.has(key)
