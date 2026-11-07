@@ -32,6 +32,9 @@ test('single-click cloud preparation performs native SQLite backup and 22-table 
    assert.equal(result.financialSyncEnabled,false);
    assert.equal(result.recordsSent,0);
    assert.equal(result.checkedTables,22);
+   assert.equal(result.personalTablesReady,17);
+   assert.ok(result.personalRecordsReady>0);
+   assert.ok(Number.isSafeInteger(result.personalChunksReady)&&result.personalChunksReady>=1);
    assert.ok(result.checkedRecords>0);
    assert.equal(result.next,'secure_cloud_pairing_not_yet_available');
    const filenames=fs.readdirSync(backups).filter(name=>name.endsWith('.sqlite'));
