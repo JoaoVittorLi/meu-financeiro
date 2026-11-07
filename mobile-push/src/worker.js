@@ -321,7 +321,7 @@ export default {
         .map(x=>x.trim()).find(x=>x.startsWith(COOKIE+'='));
       const sessionValue=privateCookie?.slice(COOKIE.length+1);
       if(!assertion||assertion.length>8192||
-         !/^\\d{10,11}\\.[A-Za-z0-9_-]{32,128}$/.test(sessionValue||''))
+         !/^\d{10,11}\.[A-Za-z0-9_-]{32,128}$/.test(sessionValue||''))
         return json({error:'A sessão precisa ser renovada no navegador.'},403);
       // Temporary bridge valid only for this owner-authenticated request.
       // Referrer-Policy:no-referrer and no-store are set on all responses.
