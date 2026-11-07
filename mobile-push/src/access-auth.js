@@ -94,8 +94,13 @@ function jsonFromPart(part){
 async function certificates(team,fetchImpl,now){
   const previous=certCache.get(team);
   if(previous && previous.until>now)return previous.keys;
-  const response=await fetchImpl(team+'/cdn-cgi/access/certs',{redirect:'error'});
-  if(!response.ok)throw new Error('Access certs unavailable.');
+// Cloudflare Workers can fail with redirect:'error' even when this
+  // same public JWKS endpoint returns HTTP 200 using redirect:'manual'.
+  // Never follow redirects: only a direct successful response is trusted.
+  const response=await fetchImpl(team+'/cdn-cgi/access/certs',{
+    redirect:'manual',headers:{Accept:'application/json'}
+  });
+  if(response.status!==200)throw new Error('Access certs unavailable.');
   const result=await response.json();
   if(!Array.isArray(result?.keys) || result.keys.length<1 || result.keys.length>20)throw new Error('Access certs invalid.');
   const keys=result.keys.filter(k=>k&&k.kty==='RSA'&&typeof k.kid==='string'&&
