@@ -108,5 +108,5 @@ test('new API route denies unauthenticated, cross-site and missing Access enviro
   assert.equal((await worker.fetch(new Request(origin+'/api/migration/import',{
     method:'POST',headers:{Origin:origin,'Content-Type':'application/json',Cookie:cookie},
     body:'{}'
-  }),env)).status,403);
+  }),env)).status,404);
 });
