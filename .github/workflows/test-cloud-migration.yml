@@ -14,6 +14,8 @@ on:
       - 'tests/cloud-onboarding.test.cjs'
       - 'electron/cloud-personal-snapshot.cjs'
       - 'tests/cloud-personal-snapshot.test.cjs'
+      - 'electron/cloud-preview-identity.cjs'
+      - 'tests/cloud-preview-identity.test.cjs'
       - 'electron/cloud-data-routing.cjs'
       - 'tests/cloud-data-routing.test.cjs'
       - 'electron/recovery.cjs'
