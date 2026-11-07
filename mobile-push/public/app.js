@@ -68,8 +68,8 @@ $('test').addEventListener('click',async ()=>{
    x.registered===0?'Nenhum aparelho cadastrado. Reative as notificações.':
    x.removed>0?`${x.removed} inscrição(ões) expirada(s). Reative as notificações.`:
    `Envio recusado pelo serviço de push. Falhas: ${x.failed}.`;
- state(message+(provider?' Detalhe técnico: '+provider:''),x.accepted?'ok':'error');
  await refresh();
+ state(message+(provider?' Detalhe técnico: '+provider:''),x.accepted?'ok':'error');
 }
  catch(e){state(e.message,'error');}finally{$('test').disabled=false;}
 });
