@@ -1,0 +1,52 @@
+const $=(id)=>document.getElementById(id);
+const state=(text,kind='')=>{$('state').textContent=text;$('state').className='state '+kind;};
+let currentRevision=0,lastValue='',submitting=false;
+async function api(endpoint,method='GET',body){
+ const response=await fetch('/api/'+endpoint,{method,credentials:'same-origin',cache:'no-store',
+  headers:{'Content-Type':'application/json'},body:body===undefined?undefined:JSON.stringify(body)});
+ const data=await response.json().catch(()=>({}));
+ if(!response.ok){const error=new Error(data.error||'Falha na sincronização.');error.code=response.status;error.data=data;throw error;}return data;
+}
+async function refresh(){
+ const result=await api('sync/snapshot');
+ const document=result.documents.find(x=>x.collection==='test_notes'&&x.id==='one-note');
+ const nextRevision=document?.revision||0, nextValue=document&&!document.deleted?document.value?.text||'':'';
+ if(!submitting && (nextRevision!==currentRevision)){
+  const dirty=$('memo').value!==lastValue;
+  if(dirty){state('Outra edição chegou. Seu texto não foi apagado; revise antes de salvar.','error');}
+  else{$('memo').value=nextValue;lastValue=nextValue;state('Sincronizado com a nuvem.','ok');}
+ }
+ currentRevision=nextRevision;
+ $('revision').textContent=String(currentRevision);
+ $('changed').textContent=document?.changedAt?new Date(document.changedAt).toLocaleString('pt-BR'):'Ainda não';
+}
+$('save').addEventListener('click',async()=>{
+ const value=$('memo').value.trim();if(!value){state('Digite uma frase de teste primeiro.','error');return;}
+ submitting=true;$('save').disabled=true;
+ try{
+  const result=await api('sync/apply','POST',{mutationId:crypto.randomUUID().replace(/-/g,''),changes:[
+   {collection:'test_notes',id:'one-note',baseRevision:currentRevision,deleted:false,value:{text:value}}
+  ]});
+  currentRevision=result.changes[0].revision;lastValue=value;
+  state('Alteração salva na base única. Abra o outro dispositivo para conferir.','ok');
+ }catch(error){
+  if(error.code===409){state('Outro dispositivo salvou uma alteração antes. Seu texto foi mantido; confira antes de tentar novamente.','error');}
+  else state(error.message,'error');
+ }finally{submitting=false;$('save').disabled=false;await refresh();}
+});
+$('refresh').addEventListener('click',()=>refresh().catch(e=>state(e.message,'error')));
+$('loginForm').addEventListener('submit',async(event)=>{
+ event.preventDefault();
+ try{await api('login','POST',{code:$('code').value});$('code').value='';$('login').hidden=true;$('main').hidden=false;await refresh();state('Conectado à sua base central.','ok');}
+ catch(e){state(e.message,'error');}
+});
+(async()=>{
+ try{
+  const session=await api('session');
+  $('main').hidden=!session.authenticated;$('login').hidden=!!session.authenticated;
+  if(session.authenticated){await refresh();state('Conectado à sua base central.','ok');}
+  else state('Faça login para testar a sincronização.');
+  setInterval(()=>{if(!$('main').hidden&&document.visibilityState==='visible')refresh().catch(e=>state(e.message,'error'));},5000);
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&!$('main').hidden)refresh().catch(()=>{});});
+ }catch(e){state(e.message,'error');$('login').hidden=false;}
+})();

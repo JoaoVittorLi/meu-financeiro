@@ -1,0 +1,12 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#140e24"><title>Meu Financeiro | Sincronização</title><link rel="stylesheet" href="/style.css"><link rel="manifest" href="/manifest.webmanifest"></head>
+<body><main class="shell"><header class="brand"><img src="/icon-192.png" alt="" width="48" height="48"><div><strong>Meu Financeiro</strong><span>Seus dispositivos, uma base</span></div></header>
+<section class="hero"><div class="eyebrow">PRÉVIA DE SINCRONIZAÇÃO</div><h1>O mesmo dado, em qualquer tela.</h1><p>Esta etapa testa a sincronização entre PC e celular sem enviar informações bancárias. As alterações ficam exclusivamente no servidor; o navegador não guarda uma segunda base.</p><div id="state" class="state" role="status" aria-live="polite">Conectando...</div></section>
+<section class="card" id="main" hidden><h2>Teste entre dispositivos</h2><p>Abra esta página também no computador. Escreva uma frase em um aparelho e veja-a aparecer no outro, sem recarregar.</p>
+<label for="memo">Mensagem de teste (sem dados pessoais)</label><input id="memo" maxlength="140" placeholder="Ex.: sincronização funcionando" autocomplete="off">
+<div class="buttons"><button class="primary" id="save">Salvar na nuvem</button><button id="refresh">Atualizar agora</button></div>
+<div class="mini"><div><span>Revisão central</span><strong id="revision">—</strong></div><div><span>Última alteração</span><strong id="changed">—</strong></div></div>
+<p class="hint">Se ambos editarem ao mesmo tempo, o aplicativo recusa sobrescrever silenciosamente os dados do outro. Neste piloto, alterações financeiras reais estão bloqueadas.</p>
+<a href="/">← Voltar para notificações</a></section>
+<section class="card" id="login" hidden><h2>Entre no Meu Financeiro</h2><p>Utilize a mesma senha privada das notificações.</p><form id="loginForm"><label for="code">Código privado</label><input type="password" id="code" minlength="18" required autocomplete="off"><button class="primary" type="submit">Entrar</button></form></section>
+<footer>Piloto de sincronização · Dados de teste exclusivamente · Não importa dados financeiros</footer></main>
+<script type="module" src="/sync.js"></script></body></html>
