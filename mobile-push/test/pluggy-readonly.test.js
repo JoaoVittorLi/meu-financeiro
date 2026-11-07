@@ -109,3 +109,24 @@ test('item consent details are requested on Pluggy server, not on the client',as
  assert.equal(paths.length,2);
  assert.doesNotMatch(paths.join(' '),/TEST-SECRET|test-client-id/);
 });
+
+test('diagnostics preserve only safe Pluggy endpoint phase and HTTP status',async()=>{
+ const res=(status)=>async(url)=>{
+  if(url.endsWith('/auth'))return apiResponse(status==='AUTH_401'?{}:{apiKey:APIKEY},status==='AUTH_401'?401:200);
+  if(url.includes('/items/'))return apiResponse({},status==='ITEM_404'?404:200);
+  if(url.includes('/accounts'))return apiResponse({},status==='ACCOUNTS_403'?403:200);
+  return apiResponse({},502);
+ };
+ for(const [mode,call,expected] of [
+  ['AUTH_401',x=>x.listAccounts('fake-item'),'PLUGGY_AUTH_HTTP_401'],
+  ['ITEM_404',x=>x.getItem('valid-but-missing'),'PLUGGY_ITEM_HTTP_404'],
+  ['ACCOUNTS_403',x=>x.listAccounts('fake-item'),'PLUGGY_ACCOUNTS_HTTP_403']
+ ]){
+  const p=new PluggyReadOnlyProvider({clientId:ID,clientSecret:SECRET,fetchImpl:res(mode)});
+  await assert.rejects(()=>call(p),e=>{
+   assert.equal(e.safeCode,expected);
+   assert.doesNotMatch(e.message,/TEST-SECRET|test-client-id|fake-item/);
+   return true;
+  });
+ }
+});
