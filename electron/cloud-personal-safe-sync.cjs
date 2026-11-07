@@ -29,9 +29,9 @@ function recordFields(table,row){
 }
 function ensureMirror(sql){
  sql.exec("CREATE TABLE IF NOT EXISTS mf_personal_client_mirror(table_name TEXT NOT NULL,record_key TEXT NOT NULL,revision INTEGER NOT NULL,fields_json TEXT NOT NULL,PRIMARY KEY(table_name,record_key))");
- sql.exec("CREATE TABLE IF NOT EXISTS mf_personal_client_state(id INTEGER PRIMARY KEY CHECK(id=1),cursor INTEGER NOT NULL DEFAULT 0)");
+ sql.exec("CREATE TABLE IF NOT EXISTS mf_personal_client_state(id INTEGER PRIMARY KEY CHECK(id=1),cursor INTEGER NOT NULL DEFAULT 0,seeded INTEGER NOT NULL DEFAULT 0)");
  sql.exec("CREATE TABLE IF NOT EXISTS mf_personal_client_conflicts(table_name TEXT NOT NULL,record_key TEXT NOT NULL,reason TEXT NOT NULL,detected_at TEXT NOT NULL,PRIMARY KEY(table_name,record_key))");
- sql.prepare('INSERT OR IGNORE INTO mf_personal_client_state(id,cursor) VALUES(1,0)').run();
+ sql.prepare('INSERT OR IGNORE INTO mf_personal_client_state(id,cursor,seeded) VALUES(1,0,0)').run();
 }
 function currentRows(sql,table){
  if(!tablesExist(sql,table))return [];
@@ -54,13 +54,34 @@ function rememberConflict(sql,table,key,reason){
  sql.prepare("INSERT INTO mf_personal_client_conflicts(table_name,record_key,reason,detected_at) VALUES(?,?,?,?) ON CONFLICT(table_name,record_key) DO UPDATE SET reason=excluded.reason,detected_at=excluded.detected_at")
  .run(table,key,reason,new Date().toISOString());
 }
-function seedMirror(sql){
- for(const table of Object.keys(EDITABLE)){
-  for(const row of currentRows(sql,table)){
-   const key=identify(table,row),prev=sql.prepare('SELECT 1 FROM mf_personal_client_mirror WHERE table_name=? AND record_key=?').get(table,key);
-   if(!prev)updateMirror(sql,table,key,0,recordFields(table,row));
+function seedMirror(sql,baseline){
+ if(baseline?.ok!==true||baseline.stage!=='verified_baseline'||
+    baseline.financialSyncEnabled!==false||!baseline.tables)
+   throw new Error('Baseline autenticado não confirmado.');
+ sql.exec('BEGIN IMMEDIATE');
+ try{
+  for(const table of Object.keys(EDITABLE)){
+   const entries=baseline.tables[table];
+   if(!Array.isArray(entries)||entries.length>100000)
+     throw new Error('Baseline incompleto.');
+   for(const entry of entries){
+     if(!entry||!entry.identity||!entry.fields)
+       throw new Error('Linha de baseline inválida.');
+     const spec=EDITABLE[table],key=JSON.stringify(spec.pk.map(k=>entry.identity[k]));
+     const local=fetchLocal(sql,table,key);
+     if(!local){
+       rememberConflict(sql,table,key,'IMPORTED_ROW_MISSING_LOCALLY');
+       continue;
+     }
+     const fields=Object.fromEntries(spec.fields.map(k=>[k,entry.fields[k]]));
+     if(Object.values(fields).some(v=>v===undefined))
+       throw new Error('Campos do baseline incompletos.');
+     updateMirror(sql,table,key,0,fields);
+   }
   }
- }
+  sql.prepare('UPDATE mf_personal_client_state SET seeded=1 WHERE id=1').run();
+  sql.exec('COMMIT');
+ }catch(error){sql.exec('ROLLBACK');throw error;}
 }
 function equal(a,b){return JSON.stringify(a)===JSON.stringify(b);}
 function summary(sql,more={}){
@@ -93,7 +114,11 @@ async function syncPersonalSafeFields(finance,fetchImpl,{maxChanges=200,maxOutbo
  const sql=mustBeSqlite(finance);
  if(typeof fetchImpl!=='function')throw new TypeError('Canal de nuvem inválido.');
  ensureMirror(sql);
- seedMirror(sql);
+ const state=sql.prepare('SELECT cursor,seeded FROM mf_personal_client_state WHERE id=1').get();
+ if(!state.seeded){
+  const baseline=await remoteJson(fetchImpl,'/api/personal/baseline');
+  seedMirror(sql,baseline);
+ }
  let cursor=sql.prepare('SELECT cursor FROM mf_personal_client_state WHERE id=1').get().cursor;
  const incoming=await remoteJson(fetchImpl,'/api/personal/changes?since='+cursor+'&limit='+maxChanges);
  if(incoming.ok!==true||!Array.isArray(incoming.changes)||incoming.financialSyncEnabled!==false)
