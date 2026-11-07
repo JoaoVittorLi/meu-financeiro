@@ -117,3 +117,12 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{ou
 .finance-simulator-metrics strong{display:block;font-size:clamp(18px,2.4vw,25px);margin-top:10px}
 .finance-purchase-schedule{max-height:390px;overflow:auto;padding-right:5px}
 @media(max-width:600px){.finance-simulator-form{grid-template-columns:1fr}.finance-simulator-metrics{grid-template-columns:1fr}}
+
+/* Local bank-reference audit uses counts only and never exposes identities. */
+.finance-bank-audit{margin-top:16px}
+.finance-bank-audit .finance-secondary{margin:4px 0 14px}
+.finance-audit-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:16px 0}
+.finance-audit-metric{background:#110e1a;border:1px solid #423454;border-radius:12px;padding:14px 11px;display:grid;gap:8px}
+.finance-audit-metric strong{font-size:clamp(20px,2.1vw,27px);color:#f6edff}
+.finance-bank-audit .finance-item{align-items:baseline;flex-wrap:wrap}
+@media(max-width:700px){.finance-audit-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
