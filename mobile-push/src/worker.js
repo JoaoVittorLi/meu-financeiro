@@ -6,6 +6,7 @@ import {runSyntheticBatchDemo} from './finance-synthetic-batches.js';
 import {beginPersonalTransfer,applyPersonalChunk,verifyPersonalTransfer,cancelPersonalTransfer,personalTransferStatus} from './finance-personal-batches.js';
 import {readVerifiedPersonalOverview} from './finance-personal-overview.js';
 import {bankServerEnabled,bankIngestionStatus,ingestPluggyToStaging} from './finance-bank-ingestion.js';
+import {readBankTransactionsPage} from './finance-bank-read.js';
 import {applyPersonalEdit,personalEditChanges,personalEditBaseline} from './finance-personal-edits.js';
 // Meu Financeiro: private proof-of-concept for standards-based Web Push.
 // No bank data or credentials are handled by this Worker.
@@ -237,6 +238,15 @@ export class PushHome {
     if(u.pathname==='/bank/status'&&request.method==='GET'){
       return json(bankIngestionStatus(this.state.storage));
     }
+    if(u.pathname==='/bank/transactions'&&request.method==='GET'){
+      try{return json(readBankTransactionsPage(this.state.storage,{
+        offset:u.searchParams.get('offset')??'0',
+        limit:u.searchParams.get('limit')??'30',
+        search:u.searchParams.get('search')??'',
+        direction:u.searchParams.get('direction')??'all'
+      }));}
+      catch{return json({ok:false,error:'Consulta bancária inválida.'},400);}
+    }
     if(u.pathname==='/bank/refresh'&&request.method==='POST'){
       // The DO holds the trusted Worker env; a public caller cannot pass its
       // own secrets or provider configuration. Only server-side Pluggy calls.
@@ -423,6 +433,19 @@ export default {
       return stub.fetch(new Request('https://internal/personal/apply',{
         method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(input)
       }));
+    }
+    if(url.pathname==='/api/bank/transactions'&&request.method==='GET'){
+      if(!personalQuarantineAllowed(env))
+        return json({error:'Extrato de prévia indisponível neste ambiente.'},403);
+      const identity=await authorizeAccess(request,env);
+      if(!identity.ok)return json({error:identity.error},identity.status);
+      const allowed=new Set(['offset','limit','search','direction']);
+      for(const key of url.searchParams.keys()){
+        if(!allowed.has(key)||url.searchParams.getAll(key).length!==1)
+          return json({error:'Filtro de consulta inválido.'},400);
+      }
+      const stub=env.PUSH_HOME.get(env.PUSH_HOME.idFromName('one-private-user'));
+      return stub.fetch(new Request('https://internal/bank/transactions'+url.search));
     }
     if(url.pathname==='/api/bank/status'&&request.method==='GET'){
       if(!personalQuarantineAllowed(env))
