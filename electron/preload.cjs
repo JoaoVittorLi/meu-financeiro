@@ -13,6 +13,7 @@ contextBridge.exposeInMainWorld('financeDesktop', Object.freeze({
   previewQuarantineDemo: () => ipcRenderer.invoke('cloud:quarantine-demo'),
   transferPersonalCloud: () => ipcRenderer.invoke('cloud:transfer-personal'),
   cloudPersonalSyncStatus: () => ipcRenderer.invoke('cloud:personal-sync-status'),
+  cloudBankParity: () => ipcRenderer.invoke('cloud:bank-parity'),
   onCloudPersonalUpdated: (callback) => {
     if(typeof callback!=='function')throw new TypeError('Callback inválido.');
     const listener=(_event,data)=>callback({inbound:data?.inbound||0,conflicts:data?.conflicts||0});
