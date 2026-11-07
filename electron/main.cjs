@@ -4,14 +4,15 @@ const path=require('node:path');
 const fs=require('node:fs');
 const {FinanceDB}=require('./db.cjs');
 const {prepareCloudMigration,migrationLocalStatus}=require('./cloud-onboarding.cjs');
-const {uploadPersonalQuarantine,CONSENT}=require('./cloud-personal-uploader.cjs');
+const {uploadPersonalQuarantine,CONSENT,loadMarker,markerFile}=require('./cloud-personal-uploader.cjs');
+const {syncPersonalSafeFields,summary:cloudSafeSyncSummary}=require('./cloud-personal-safe-sync.cjs');
 const {PREVIEW_ORIGIN,checkPreviewIdentity,testPreviewQuarantine}=require('./cloud-preview-identity.cjs');
 const {pairViaSystemBrowser,cancelBrowserPairing}=require('./cloud-system-browser.cjs');
 const {PlanningStore}=require('./planning.cjs');
 const {automaticBackup,restoreBackup,listAutoBackups,validateBackupFile}=require('./recovery.cjs');
 const {PluggyVault}=require('./pluggy-vault.cjs');
 const {PluggyClient}=require('./pluggy.cjs');
-let planner=null, db=null, mainWindow=null, vault=null, syncing=false, restoring=false, autoBackupBusy=false, cloudPreparationBusy=false, backupTimer=null, cloudAuthPromise=null,cloudAccessAssertion=null;
+let planner=null, db=null, mainWindow=null, vault=null, syncing=false, restoring=false, autoBackupBusy=false, cloudPreparationBusy=false, backupTimer=null, cloudPersonalTimer=null, cloudPersonalBusy=false, cloudAuthPromise=null,cloudAccessAssertion=null;
 function backupsDirectory(){return path.join(app.getPath('userData'),'copias-de-seguranca');}
 async function ensureAutomaticBackup(){
   if(!db||restoring||syncing||autoBackupBusy)return;
@@ -44,12 +45,52 @@ async function previewIdentityStatus(){
   return checkPreviewIdentity((url,init)=>ses.fetch(url,init));
 }
 function secureCloudFetch(ses){
-  return (url,options={})=>ses.fetch(url,{
-    ...options,headers:{
-      ...(options.headers||{}),
-      ...(cloudAccessAssertion?{'Cf-Access-Jwt-Assertion':cloudAccessAssertion}:{})
+  return async(url,options={})=>{
+    if(typeof url!=='string'||!url.startsWith(PREVIEW_ORIGIN+'/'))
+      throw new Error('Origem de nuvem não autorizada.');
+    // On Windows restart the HttpOnly CF_Authorization cookie persists in
+    // the isolated profile, while process memory does not.
+    let assertion=cloudAccessAssertion;
+    if(!assertion){
+      const candidates=await ses.cookies.get({url:PREVIEW_ORIGIN,name:'CF_Authorization'});
+      assertion=candidates.find(x=>x.name==='CF_Authorization')?.value||null;
     }
-  });
+    return ses.fetch(url,{
+      ...options,headers:{
+        ...(options.headers||{}),
+        ...(assertion?{'Cf-Access-Jwt-Assertion':assertion}:{})
+      }
+    });
+  };
+}
+async function tickCloudPersonal(){
+  if(!db||cloudPersonalBusy||syncing||restoring||autoBackupBusy||
+     cloudPreparationBusy)return;
+  // Never replicate from an unapproved local database: the owner must have
+  // completed the original 17-table transfer and retained its marker.
+  let marker;
+  try{marker=loadMarker(app.getPath('userData'));}catch{return;}
+  if(!marker)return;
+  cloudPersonalBusy=true;
+  try{
+    const ses=cloudPreviewSession();
+    const client=secureCloudFetch(ses);
+    const identity=await checkPreviewIdentity(client);
+    if(!identity.connected)return;
+    const result=await syncPersonalSafeFields(db,client,{
+      maxChanges:100,maxOutbound:20
+    });
+    if((result.inboundApplied||result.outboundConfirmed)&&
+       mainWindow&&!mainWindow.isDestroyed()){
+      mainWindow.webContents.send('cloud:personal-updated',{
+        inbound:result.inboundApplied,outbound:result.outboundConfirmed,
+        conflicts:result.conflicts
+      });
+    }
+  }catch{
+    // Keep the local data and pending edits untouched until the next retry.
+    // Never log token, personal notes or transaction values.
+  }finally{cloudPersonalBusy=false;}
 }
 async function connectPreviewIdentity(){
   const ses=cloudPreviewSession();
@@ -176,6 +217,10 @@ app.whenReady().then(()=>{
      });
    }finally{cloudPreparationBusy=false;}
  });
+ ipcMain.handle('cloud:personal-sync-status',(event)=>{
+   requireAppSender(event);
+   return cloudSafeSyncSummary(db.db);
+ });
  ipcMain.handle('cloud:migration-status',(event)=>{
    requireAppSender(event);
    return migrationLocalStatus(backupsDirectory());
@@ -214,6 +259,8 @@ app.whenReady().then(()=>{
      const result=await restoreBackup(db,picked.filePaths[0],filename,backupsDirectory());
      db=result.db;
      planner=new PlanningStore(db);
+     // Restoring an older snapshot requires a new cloud comparison/approval.
+     fs.rmSync(markerFile(app.getPath('userData')),{force:true});
      const state={ok:true};
      mainWindow.webContents.reload();
      return state;
@@ -311,7 +358,9 @@ app.whenReady().then(()=>{
  createWindow();
  void ensureAutomaticBackup();
  backupTimer=setInterval(()=>void ensureAutomaticBackup(),60*60*1000);
+ cloudPersonalTimer=setInterval(()=>void tickCloudPersonal(),60*1000);
+ void tickCloudPersonal();
  app.on('activate',()=>{if(BrowserWindow.getAllWindows().length===0)createWindow();});
 }).catch(error=>{dialog.showErrorBox('Erro ao iniciar Meu Financeiro','Não foi possível abrir o banco de dados: '+error.message);app.quit();});
 app.on('window-all-closed',()=>{if(process.platform!=='darwin')app.quit();});
-app.on('before-quit',()=>{if(backupTimer)clearInterval(backupTimer);cancelBrowserPairing();if(db){db.close();db=null;}});
+app.on('before-quit',()=>{if(backupTimer)clearInterval(backupTimer);if(cloudPersonalTimer)clearInterval(cloudPersonalTimer);cancelBrowserPairing();if(db){db.close();db=null;}});
