@@ -105,3 +105,15 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{ou
 .finance-edit-actions .finance-secondary,.finance-edit-actions .finance-bank-activate{margin:0}
 .finance-edit-dialog button:disabled{opacity:.5;cursor:default}
 @media(max-width:600px){.finance-personal-toolbar{grid-template-columns:1fr}.finance-edit-dialog{padding:17px}.finance-item{align-items:flex-start}}
+
+/* The preview simulator uses the same server-side installment quote as Windows. */
+.finance-simulator-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:end;margin:0 0 18px}
+.finance-simulator-form label{display:grid;gap:8px;color:#cfbfe1;font-weight:650;font-size:12px}
+.finance-simulator-form input{min-width:0;width:100%;height:43px;border-radius:10px;border:1px solid #534367;background:#120e1c;color:#f6efff;padding:10px 12px}
+.finance-simulator-form button{grid-column:1/-1;background:#6730b5;color:#fff;font-weight:750;font-size:12px;min-height:43px;border:1px solid #9664db;border-radius:10px}
+.finance-simulator-form button:disabled{opacity:.55}
+.finance-simulator-metrics{margin:16px 0 22px}
+.finance-simulator-metrics>div{border-radius:12px;padding:15px;border:1px solid #423154;background:#100e18}
+.finance-simulator-metrics strong{display:block;font-size:clamp(18px,2.4vw,25px);margin-top:10px}
+.finance-purchase-schedule{max-height:390px;overflow:auto;padding-right:5px}
+@media(max-width:600px){.finance-simulator-form{grid-template-columns:1fr}.finance-simulator-metrics{grid-template-columns:1fr}}
