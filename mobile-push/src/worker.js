@@ -439,6 +439,13 @@ export default {
         return json({error:'Atualização bancária do servidor ainda não configurada.'},403);
       const identity=await authorizeAccess(request,env);
       if(!identity.ok)return json({error:identity.error},identity.status);
+      if(request.headers.get('X-MF-Bank-Consent')!=='preview-bank-staging-only')
+        return json({error:'Confirmação de importação bancária ausente.'},403);
+      let requested;
+      try{requested=await readBoundedJSON(request,512);}
+      catch{return json({error:'Pedido bancário inválido.'},400);}
+      if(requested.consent!=='preview-bank-staging-only')
+        return json({error:'Autorização bancária explícita necessária.'},403);
       const stub=env.PUSH_HOME.get(env.PUSH_HOME.idFromName('one-private-user'));
       // No user-controlled Item IDs or secrets are accepted from HTTP.
       return stub.fetch(new Request('https://internal/bank/refresh',{method:'POST'}));
