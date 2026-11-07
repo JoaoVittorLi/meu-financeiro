@@ -27,3 +27,7 @@ body{background:#0b0914;color:#f7f2ff}
 @media(max-width:600px){.finance-layout{grid-template-columns:1fr}.finance-card.wide{grid-column:auto}.finance-shell{padding:20px 16px 75px}.finance-header{margin-bottom:34px}}
 
 .finance-bank{margin-top:18px}
+
+.finance-bank-activate{display:block;width:100%;margin-top:16px;border:1px solid #9e63f0;background:#7431d3;color:white;font:inherit;font-weight:700;font-size:13px;padding:14px 10px;border-radius:12px;cursor:pointer}
+.finance-bank-activate[hidden]{display:none}
+.finance-bank-activate:disabled{opacity:.65;cursor:default}
