@@ -1,84 +1,106 @@
-// Read-only Pluggy API client intended for Cloudflare Worker / server only.
-// This module is NOT wired to any public route. No credentials are bundled
-// into the browser or desktop renderer. Do not enable real bank sync until
-// Cloudflare Access authorization, import/rollback and consent checks pass.
+// Read-only Pluggy connector, SERVER ONLY. Do not put credentials in the
+// PWA, Electron renderer, logs, URL queries or GitHub. Not yet connected to
+// any endpoint that can change a user's actual bank records.
 const BASE='https://api.pluggy.ai';
-const MAX_PAGES=40;
+const MAX_PAGES=100;
 function cleanId(value){
-  if(typeof value!=='string'||value.length<1||value.length>180||
-     /[\s\u0000-\u001f]/.test(value))throw new Error('Identificador bancário inválido.');
-  return value;
+ if(typeof value!=='string'||value.length<1||value.length>180||
+    /[\s\u0000-\u001f]/.test(value))
+  throw new Error('Identificador bancário inválido.');
+ return value;
 }
-function parseArray(payload) {
-  if(!payload||!Array.isArray(payload.results)||
-     !Number.isSafeInteger(payload.totalPages)||payload.totalPages<0||
-     payload.totalPages>100000)throw new Error('Resposta bancária incompleta.');
-  return payload;
+function requirePage(value){
+ if(!value||!Array.isArray(value.results)||
+    !Number.isSafeInteger(value.totalPages)||value.totalPages<0)
+  throw new Error('Resposta bancária incompleta.');
+ return value;
 }
-export class PluggyReadOnlyProvider {
-  #clientId;
-  #clientSecret;
-  #apiKey=null;
-  #apiKeyExpiry=0;
-  #fetch;
-  #clock;
-  constructor({clientId,clientSecret,fetchImpl=fetch,clock=()=>Date.now()}){
-    if(typeof clientId!=='string'||!clientId||typeof clientSecret!=='string'||!clientSecret)
-      throw new Error('Credenciais Pluggy indisponíveis no servidor.');
-    this.#clientId=clientId;
-    this.#clientSecret=clientSecret;
-    this.#fetch=fetchImpl;
-    this.#clock=clock;
+export class PluggyReadOnlyProvider{
+ #clientId;
+ #clientSecret;
+ #apiKey=null;
+ #expires=0;
+ #fetch;
+ #clock;
+ constructor({clientId,clientSecret,fetchImpl=fetch,clock=()=>Date.now()}){
+  if(typeof clientId!=='string'||!clientId||typeof clientSecret!=='string'||!clientSecret)
+   throw new Error('Credenciais Pluggy não configuradas no servidor.');
+  this.#clientId=clientId;this.#clientSecret=clientSecret;
+  this.#fetch=fetchImpl;this.#clock=clock;
+ }
+ async #auth(){
+  if(this.#apiKey&&this.#clock()<this.#expires)return this.#apiKey;
+  const res=await this.#fetch(BASE+'/auth',{
+   method:'POST',redirect:'manual',
+   headers:{'Content-Type':'application/json',Accept:'application/json'},
+   body:JSON.stringify({clientId:this.#clientId,clientSecret:this.#clientSecret})
+  });
+  if(res.status!==200)throw new Error('Autenticação bancária não concluída.');
+  const data=await res.json().catch(()=>null);
+  if(typeof data?.apiKey!=='string'||data.apiKey.length<16)
+   throw new Error('Resposta de autenticação bancária inválida.');
+  this.#apiKey=data.apiKey;this.#expires=this.#clock()+110*60*1000;
+  return this.#apiKey;
+ }
+ async #get(pathname,params){
+  const apiKey=await this.#auth();
+  const url=new URL(pathname,BASE);
+  for(const [key,value] of params)url.searchParams.set(key,value);
+  if(url.origin!==BASE||url.protocol!=='https:')
+   throw new Error('Origem Pluggy inválida.');
+  const res=await this.#fetch(url.toString(),{
+   method:'GET',redirect:'manual',
+   headers:{'X-API-KEY':apiKey,Accept:'application/json'}
+  });
+  if(res.status!==200)
+   throw new Error('Consulta do Pluggy indisponível. Dados anteriores preservados.');
+  const data=await res.json().catch(()=>null);
+  if(!data||typeof data!=='object'||!Array.isArray(data.results))
+   throw new Error('Resposta do Pluggy incompleta.');
+  return data;
+ }
+ async listAccounts(itemId,{maxPages=MAX_PAGES}={}){
+  const id=cleanId(itemId);
+  if(!Number.isInteger(maxPages)||maxPages<1||maxPages>MAX_PAGES)
+   throw new Error('Limite de páginas inválido.');
+  const rows=[];let pageCount=null;
+  for(let page=1;page<=maxPages;page++){
+   const data=requirePage(await this.#get('/accounts',[['itemId',id],['page',String(page)]]));
+   if(pageCount===null)pageCount=data.totalPages;
+   if(data.totalPages!==pageCount||pageCount>maxPages)
+    throw new Error('Lista de contas incompleta. Não importar parcialmente.');
+   rows.push(...data.results);
+   if(rows.length>100000)throw new Error('Lista de contas excede o limite.');
+   if(page>=pageCount)return rows;
   }
-  async #auth(){
-    if(this.#apiKey&&this.#clock()<this.#apiKeyExpiry)return this.#apiKey;
-    const r=await this.#fetch(BASE+'/auth',{
-      method:'POST',redirect:'manual',
-      headers:{'Content-Type':'application/json','Accept':'application/json'},
-      body:JSON.stringify({clientId:this.#clientId,clientSecret:this.#clientSecret})
-    });
-    if(r.status!==200)throw new Error('Autenticação bancária no servidor não foi concluída.');
-    const response=await r.json().catch(()=>null);
-    if(!response||typeof response.apiKey!=='string'||response.apiKey.length<16)
-      throw new Error('Resposta da autenticação bancária inválida.');
-    this.#apiKey=response.apiKey;
-    // The Pluggy API key lasts 2h; cache conservatively for 110 minutes.
-    this.#apiKeyExpiry=this.#clock()+110*60*1000;
-    return this.#apiKey;
+  throw new Error('Lista de contas incompleta.');
+ }
+ async listTransactions(accountId,{maxPages=MAX_PAGES}={}){
+  const id=cleanId(accountId);
+  if(!Number.isInteger(maxPages)||maxPages<1||maxPages>MAX_PAGES)
+   throw new Error('Limite de cursores inválido.');
+  let query='?accountId='+encodeURIComponent(id);
+  const seen=new Set();
+  const all=[];
+  for(let page=0;page<maxPages;page++){
+   if(seen.has(query))throw new Error('Cursor de transações repetido.');
+   seen.add(query);
+   const params=new URLSearchParams(query);
+   if(params.get('accountId')!==id||
+      [...params.keys()].some(k=>!['accountId','after'].includes(k))||
+      params.getAll('accountId').length!==1||
+      params.getAll('after').length>1)
+    throw new Error('Cursor de transações não confiável.');
+   const data=await this.#get('/v2/transactions',params);
+   if(data.next!==null&&typeof data.next!=='string')
+    throw new Error('Cursor de transações inválido.');
+   all.push(...data.results);
+   if(all.length>100000)throw new Error('Histórico grande demais.');
+   if(data.next===null)return all;
+   if(!data.next.startsWith('?')||data.next.length>4096)
+    throw new Error('Cursor não permitido.');
+   query=data.next;
   }
-  async #page(endpoint,idField,id,page){
-    const key=await this.#auth();
-    const url=new URL(endpoint,BASE);
-    url.searchParams.set(idField,cleanId(id));
-    url.searchParams.set('page',String(page));
-    if(url.origin!==BASE)throw new Error('Origem bancária inválida.');
-    const r=await this.#fetch(url.toString(),{
-      method:'GET',redirect:'manual',
-      headers:{'X-API-KEY':key,'Accept':'application/json'}
-    });
-    if(r.status!==200)throw new Error('Consulta bancária não concluída. Tente novamente.');
-    return parseArray(await r.json().catch(()=>null));
-  }
-  async #pages(endpoint,idField,id,maxPages){
-    if(!Number.isInteger(maxPages)||maxPages<1||maxPages>MAX_PAGES)
-      throw new Error('Limite de páginas bancárias inválido.');
-    const all=[];
-    let expectedPages=null;
-    for(let page=1;page<=maxPages;page++){
-      const body=await this.#page(endpoint,idField,id,page);
-      if(expectedPages===null)expectedPages=body.totalPages;
-      if(body.totalPages!==expectedPages)throw new Error('A paginação bancária mudou durante a consulta; repetir com segurança.');
-      if(expectedPages>maxPages)throw new Error('Histórico bancário não cabe na janela atual; não importar parcialmente.');
-      all.push(...body.results);
-      if(all.length>100000)throw new Error('Consulta bancária grande demais para uma execução.');
-      if(page>=expectedPages)return all;
-    }
-    throw new Error('Histórico bancário incompleto; não importar parcialmente.');
-  }
-  async listAccounts(itemId,{maxPages=MAX_PAGES}={}){
-    return this.#pages('/accounts','itemId',itemId,maxPages);
-  }
-  async listTransactions(accountId,{maxPages=MAX_PAGES}={}){
-    return this.#pages('/transactions','accountId',accountId,maxPages);
-  }
+  throw new Error('Histórico excedeu a janela de cursores. Não importar parcialmente.');
+ }
 }
