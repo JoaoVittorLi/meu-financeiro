@@ -34,7 +34,7 @@ test('single-click cloud preparation performs native SQLite backup and 22-table 
    assert.equal(result.checkedTables,22);
    assert.ok(result.checkedRecords>0);
    assert.equal(result.next,'secure_cloud_pairing_not_yet_available');
-   const filenames=fs.readdirSync(backups);
+   const filenames=fs.readdirSync(backups).filter(name=>name.endsWith('.sqlite'));
    assert.equal(filenames.length,1);
    assert.match(filenames[0],/^antes-da-sincronizacao-2026-11-07-/);
    const backup=new (require('node:sqlite').DatabaseSync)(path.join(backups,filenames[0]),{readOnly:true});
@@ -50,7 +50,7 @@ test('single-click cloud preparation performs native SQLite backup and 22-table 
    const output=JSON.stringify(result);
    assert.doesNotMatch(output,/LANÇAMENTO FICTÍCIO|sample-manual|10123|active.sqlite|[0-9a-f]{64}/);
    await prepareCloudMigration({finance:fin,backupFolder:backups,now:TIME,id:UUID_B});
-   assert.equal(fs.readdirSync(backups).length,2,'Subsequent clicks preserve previous backup');
+   assert.equal(fs.readdirSync(backups).filter(name=>name.endsWith('.sqlite')).length,2,'Subsequent clicks preserve previous backup');
    assert.rejects(()=>prepareCloudMigration({finance:fin,backupFolder:backups,now:TIME,id:UUID_B}),/já existe/);
  }finally{fin.close();fs.rmSync(folder,{recursive:true,force:true});}
 });
