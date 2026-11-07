@@ -6,15 +6,31 @@
 // The production domain may only be introduced after an explicit cutover.
 const PREVIEW_ORIGIN='https://safety-cloud-migration-preflight-20261107-meu-financeiro-push.joaov-despezzas.workers.dev';
 const ACCESS_TEAM_ORIGIN='https://green-grass-c1e7.cloudflareaccess.com';
-const ALLOWED_LOGIN_ORIGINS=Object.freeze([PREVIEW_ORIGIN,ACCESS_TEAM_ORIGIN]);
+// Cloudflare is the configured Access identity provider. Its account
+// sign-in is hosted outside the Access team domain (dash.cloudflare.com).
+// These are exact HTTPS origins, never wildcard suffix matches.
+const CLOUDFLARE_IDP_ORIGINS=Object.freeze([
+  'https://dash.cloudflare.com',
+  'https://accounts.cloudflare.com',
+  'https://login.cloudflare.com'
+]);
+const ALLOWED_LOGIN_ORIGINS=Object.freeze([
+  PREVIEW_ORIGIN,ACCESS_TEAM_ORIGIN,...CLOUDFLARE_IDP_ORIGINS
+]);
 
 function allowedLoginNavigation(url){
   if(typeof url!=='string'||url.length>4096)return false;
   try{
     const u=new URL(url);
-    if(u.protocol!=='https:'||u.username||u.password||u.port||u.hash)return false;
+    if(u.protocol!=='https:'||u.username||u.password||u.port)return false;
     return ALLOWED_LOGIN_ORIGINS.includes(u.origin);
   }catch{return false;}
+}
+
+// Many IdPs first create an empty popup then navigate it to a login URL.
+// The popup itself is sandboxed and every subsequent navigation is checked.
+function allowedLoginPopup(url){
+  return url==='about:blank'||allowedLoginNavigation(url);
 }
 
 function previewHealthURL(){return PREVIEW_ORIGIN+'/api/sync/health';}
@@ -95,6 +111,7 @@ async function testPreviewQuarantine(fetchImpl){
 }
 
 module.exports={
-  PREVIEW_ORIGIN,ACCESS_TEAM_ORIGIN,allowedLoginNavigation,
+  PREVIEW_ORIGIN,ACCESS_TEAM_ORIGIN,CLOUDFLARE_IDP_ORIGINS,
+  allowedLoginNavigation,allowedLoginPopup,
   previewHealthURL,checkPreviewIdentity,testPreviewQuarantine
 };
