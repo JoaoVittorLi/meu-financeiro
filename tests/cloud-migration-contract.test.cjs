@@ -12,7 +12,7 @@ test('migration manifest fully maps every persisted v0.9.4 table to primary keys
   assert.deepEqual(TABLE_KEYS.bank_transaction_splits,['account_id','external_id','position']);
   assert.deepEqual(TABLE_KEYS.planned_bank_links,['account_id','external_id']);
   assert.deepEqual(TABLE_KEYS.transactions,['profile','id']);
-  assert.ok(BUSINESS_INVARIANTS.some(x=>x.includes('não entram na migração')));
+  assert.ok(BUSINESS_INVARIANTS.some(x=>x.includes('nunca entram na migração')));
 });
 
 test('contract matches real SQLite schema without exporting any information',()=>{
