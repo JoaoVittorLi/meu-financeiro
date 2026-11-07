@@ -5,48 +5,110 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0b0914">
 <meta name="robots" content="noindex,nofollow">
-<title>Meu Financeiro — Meus dados na nuvem</title>
+<meta name="description" content="Prévia privada do Meu Financeiro no Windows e Android">
+<title>Meu Financeiro · Prévia PWA</title>
 <link rel="manifest" href="/manifest.webmanifest">
-<link rel="stylesheet" href="/style.css">
+<link rel="icon" href="/icon-192.png">
 <link rel="stylesheet" href="/finance.css">
 <script src="/finance.js" defer></script>
+<script src="/finance-pwa.js" defer></script>
 </head>
 <body>
-<main class="finance-shell">
-<header class="finance-header">
-<div class="finance-brand"><span class="finance-logo">▥</span><span>Meu Financeiro</span></div>
-<a href="/sync.html" class="finance-return">Voltar</a>
-</header>
-<div class="finance-tag">Prévia privada · Android e Windows</div>
-<h1 class="finance-hero">Seus dados, em uma só nuvem.</h1>
-<p class="finance-description">Aqui você acompanha as personalizações do Windows já conferidas na Cloudflare. Os extratos do Itaú ainda dependem da reconciliação com o Pluggy e não estão disponíveis nesta prévia.</p>
-<p id="financeStatus" class="finance-badge" role="status" aria-live="polite">Conferindo sessão...</p>
-<section class="finance-card finance-bank">
-<h2>Conexão bancária no servidor</h2>
-<p id="bankServerStatus" class="finance-muted" role="status" aria-live="polite">Verificando conexão independente do Windows...</p>
-<button id="bankRefreshNow" class="finance-bank-activate" type="button" hidden>Autorizar atualização bancária neste servidor</button>
-</section>
-<section id="financeContent" class="finance-layout finance-hidden">
-<article class="finance-card">
-<h2>Planejamento</h2>
-<div id="planCount" class="finance-stat">—</div>
-<p class="finance-muted">Compromissos preservados da sua Central de Planejamento.</p>
-</article>
-<article class="finance-card">
-<h2>Personalizações</h2>
-<div id="categoryCount" class="finance-stat">—</div>
-<p class="finance-muted">Categorias e regras trazidas do Windows.</p>
-</article>
-<article class="finance-card wide">
-<h2>Próximos compromissos</h2>
-<ul id="planList" class="finance-list"></ul>
-</article>
-<article class="finance-card wide">
-<h2>Orçamentos</h2>
-<ul id="budgetList" class="finance-list"></ul>
-</article>
-</section>
-<p class="finance-safe">Seus dados nesta tela são somente leitura. Nenhum valor bancário é alterado, nenhum pagamento é executado e a sincronização financeira completa ainda não foi ativada.</p>
-</main>
+<div class="finance-app">
+  <aside class="finance-sidebar">
+    <a class="finance-brand" href="/finance.html" aria-label="Meu Financeiro, início">
+      <span class="finance-logo" aria-hidden="true">▥</span>
+      <span>Meu Financeiro<small>Prévia privada · PWA</small></span>
+    </a>
+    <nav class="finance-nav" aria-label="Áreas financeiras">
+      <button type="button" data-view="overview" aria-current="page">Visão geral</button>
+      <button type="button" data-view="transactions">Movimentações</button>
+      <button type="button" data-view="planning">Planejamento</button>
+      <button type="button" data-view="budgets">Orçamentos</button>
+      <button type="button" data-view="simulate">Simular compra</button>
+      <button type="button" data-view="accounts">Minhas contas</button>
+    </nav>
+    <div class="finance-sidebar-bottom">
+      <a href="/">Notificações</a>
+      <span>Preview · somente leitura bancária</span>
+    </div>
+  </aside>
+
+  <main class="finance-main">
+    <header class="finance-topbar">
+      <div><span class="finance-tag">Área pessoal protegida</span>
+        <h1 id="viewTitle">Visão geral</h1></div>
+      <span id="financeStatus" class="finance-badge" role="status" aria-live="polite">Conferindo personalizações...</span>
+    </header>
+    <p class="finance-readonly">Dados bancários em conferência com o Pluggy. A prévia não altera lançamentos, vínculos nem saldos.</p>
+
+    <section id="view-overview" class="finance-view" aria-label="Visão geral">
+      <div class="finance-intro"><h2>Seus dados, em uma só nuvem.</h2>
+        <p>O mesmo projeto para Windows e Android. As informações abaixo são prévias e ainda não representam dinheiro livre.</p></div>
+      <div class="finance-metrics">
+        <article class="finance-card"><div class="finance-muted">Movimentações bancárias</div><strong class="finance-stat" id="overviewTransactions">—</strong><small>Extrato em conferência</small></article>
+        <article class="finance-card"><div class="finance-muted">Contas encontradas</div><strong class="finance-stat" id="overviewAccounts">—</strong><small>Saldo ainda não homologado</small></article>
+        <article class="finance-card" id="financeContent"><div class="finance-muted">Planejamentos preservados</div><strong class="finance-stat" id="planCount">—</strong><small>Dados pessoais transferidos</small>
+          <div class="finance-muted finance-category-counter">Categorias e regras: <strong id="categoryCount">—</strong></div>
+        </article>
+      </div>
+      <article class="finance-card finance-wide">
+        <h2>O que já está disponível</h2>
+        <p id="bankOverviewStatus" class="finance-muted" role="status">Verificando consulta bancária...</p>
+        <p class="finance-muted">As transações originais aparecem em Movimentações. Categorias personalizadas e vínculos ainda dependem da conferência do histórico.</p>
+      </article>
+    </section>
+
+    <section id="view-transactions" class="finance-view" hidden aria-label="Movimentações">
+      <div class="finance-intro"><h2>Movimentações</h2><p>Extrato original consultado pelo servidor. Sem classificações presumidas ou conciliações automáticas.</p></div>
+      <article class="finance-card">
+        <form id="bankFilters" class="finance-filters">
+          <label for="bankSearch">Pesquisar descrição
+            <input id="bankSearch" type="search" maxlength="100" autocomplete="off" placeholder="Descrição original do Itaú"></label>
+          <label for="bankDirection">Tipo de valor
+            <select id="bankDirection"><option value="all">Todos</option><option value="out">Saídas (valor negativo)</option><option value="in">Entradas (valor positivo)</option></select></label>
+          <button id="bankFilterButton" type="submit">Filtrar</button>
+        </form>
+        <p class="finance-muted" id="bankListStatus" role="status" aria-live="polite">Abra esta área para consultar o extrato.</p>
+        <ul id="bankTransactions" class="finance-list" aria-label="Extrato bancário"></ul>
+        <button type="button" id="bankLoadMore" class="finance-secondary" hidden>Ver mais movimentações</button>
+      </article>
+      <p class="finance-safe">Os sinais positivo e negativo indicam direção do movimento, não sua natureza contábil. Transferências e reembolsos serão tratados na conciliação.</p>
+    </section>
+
+    <section id="view-planning" class="finance-view" hidden aria-label="Planejamento">
+      <div class="finance-intro"><h2>Planejamento</h2><p>Compromissos já trazidos do Windows. Pagamentos e vínculos não serão alterados nesta fase.</p></div>
+      <article class="finance-card"><h3>Próximos compromissos cadastrados</h3><ul class="finance-list" id="planList"><li class="finance-muted">Carregando...</li></ul></article>
+      <p class="finance-safe">Cadastro, recorrências, liquidação parcial e projeções ficarão editáveis após a validação do motor financeiro comum.</p>
+    </section>
+
+    <section id="view-budgets" class="finance-view" hidden aria-label="Orçamentos">
+      <div class="finance-intro"><h2>Orçamentos</h2><p>Limites pessoais copiados do desktop. O consumo por categoria ainda não foi conciliado com o extrato.</p></div>
+      <article class="finance-card"><h3>Limites cadastrados</h3><ul class="finance-list" id="budgetList"><li class="finance-muted">Carregando...</li></ul></article>
+    </section>
+
+    <section id="view-simulate" class="finance-view" hidden aria-label="Simular compra">
+      <div class="finance-intro"><h2>Simular compra</h2><p>A estrutura da área está preparada para a mesma experiência do desktop.</p></div>
+      <article class="finance-card"><h3>Em preparação</h3>
+        <p class="finance-muted">Não vamos mostrar uma previsão de compra com saldo bancário não conciliado. O simulador retornará quando o cálculo central considerar compromissos, parcelas, reserva e saldos com datas verificadas.</p>
+        <p class="finance-muted">Nenhuma compra ou obrigação é criada nesta prévia.</p></article>
+    </section>
+
+    <section id="view-accounts" class="finance-view" hidden aria-label="Minhas contas">
+      <div class="finance-intro"><h2>Minhas contas</h2><p>Conexão Itaú / Meu Pluggy diretamente na Cloudflare, sem depender do Windows.</p></div>
+      <article class="finance-card finance-bank">
+        <h3>Conexão bancária no servidor</h3>
+        <p id="bankServerStatus" class="finance-muted" role="status" aria-live="polite">Verificando...</p>
+        <button id="bankRefreshNow" class="finance-bank-activate" type="button" hidden>Autorizar atualização bancária neste servidor</button>
+      </article>
+      <p class="finance-safe">A data da consulta ao Pluggy não é necessariamente a data do saldo informado pelo Itaú. O saldo não será apresentado como disponível antes da conferência.</p>
+    </section>
+
+    <footer class="finance-footer">
+      <span>Meu Financeiro · Preview protegido · Sem corte do SQLite</span>
+      <a href="/">Configurar notificações</a>
+    </footer>
+  </main>
+</div>
 </body>
 </html>
