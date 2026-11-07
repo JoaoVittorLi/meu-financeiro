@@ -6,6 +6,8 @@ on:
       - 'electron/db.cjs'
       - 'electron/planning.cjs'
       - 'tests/cloud-migration-audit.test.cjs'
+      - 'electron/cloud-migration-contract.cjs'
+      - 'tests/cloud-migration-contract.test.cjs'
       - '.github/workflows/test-cloud-migration.yml'
   workflow_dispatch:
 
