@@ -14,6 +14,7 @@
 <script src="/finance-pwa.js" defer></script>
 <script src="/finance-analytics.js" defer></script>
 <script src="/finance-personal-edit.js" defer></script>
+<script src="/finance-simulate.js" defer></script>
 </head>
 <body>
 <div class="finance-app">
@@ -154,10 +155,38 @@
     </section>
 
     <section id="view-simulate" class="finance-view" hidden aria-label="Simular compra">
-      <div class="finance-intro"><h2>Simular compra</h2><p>A estrutura da área está preparada para a mesma experiência do desktop.</p></div>
-      <article class="finance-card"><h3>Em preparação</h3>
-        <p class="finance-muted">Não vamos mostrar uma previsão de compra com saldo bancário não conciliado. O simulador retornará quando o cálculo central considerar compromissos, parcelas, reserva e saldos com datas verificadas.</p>
-        <p class="finance-muted">Nenhuma compra ou obrigação é criada nesta prévia.</p></article>
+      <div class="finance-intro"><h2>Simular compra</h2><p>Parcelas e juros calculados pela mesma fórmula do Windows, sem criar compromisso ou movimentação.</p></div>
+      <article class="finance-card">
+        <form id="purchaseSimulator" class="finance-simulator-form">
+          <label>Valor da compra (R$)
+            <input id="purchaseAmount" type="text" inputmode="decimal" autocomplete="off"
+              placeholder="Ex.: 1500,00" required maxlength="16"></label>
+          <label>Quantidade de parcelas
+            <input id="purchaseInstallments" type="number" min="1" max="60" step="1" value="1" required></label>
+          <label>Juros mensais (%)
+            <input id="purchaseRate" type="text" inputmode="decimal" value="0" maxlength="8"
+              placeholder="Ex.: 2,5" required></label>
+          <label>Primeiro vencimento
+            <input id="purchaseFirstDue" type="date"></label>
+          <button type="submit">Calcular parcelas</button>
+        </form>
+        <p id="purchaseSimulationStatus" role="status" aria-live="polite" class="finance-muted">
+          Informe os dados da compra para simular parcelas.
+        </p>
+        <div id="purchaseSimulationResult" hidden>
+          <div class="finance-metrics finance-simulator-metrics">
+            <div><span class="finance-muted">Parcela base</span><strong id="purchaseMonthly">—</strong></div>
+            <div><span class="finance-muted">Valor total</span><strong id="purchaseTotal">—</strong></div>
+            <div><span class="finance-muted">Juros totais</span><strong id="purchaseInterest">—</strong></div>
+          </div>
+          <h3>Calendário de parcelas</h3>
+          <ul id="purchaseSchedule" class="finance-list finance-purchase-schedule"></ul>
+        </div>
+      </article>
+      <p class="finance-safe">
+        Cálculo de parcelas apenas. O impacto na reserva, o risco e o saldo futuro só serão habilitados
+        quando os compromissos e os saldos bancários estiverem conciliados. Nenhuma compra é cadastrada aqui.
+      </p>
     </section>
 
     <section id="view-accounts" class="finance-view" hidden aria-label="Minhas contas">
