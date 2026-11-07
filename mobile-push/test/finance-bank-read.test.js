@@ -24,7 +24,7 @@ function memory(){
     ['a','t1','2026-11-07','Compra Mercado',-3456,'POSTED'],
     ['a','t2','2026-11-06','Salário',262500,'POSTED'],
     ['a','t3','2026-11-05','Tarifa 50% teste',-507,'POSTED'],
-    ['a','t4','2026-11-04','Teste de apóstrofo O'Hara',-50,'POSTED']
+    ['a','t4','2026-11-04',"Teste de apóstrofo O'Hara",-50,'POSTED']
   ];
   for(const row of rows){
     storage.sql.exec(
