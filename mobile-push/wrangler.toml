@@ -13,3 +13,10 @@ class_name = "PushHome"
 [[migrations]]
 tag = "push_v1"
 new_sqlite_classes = ["PushHome"]
+
+# Isolated Cloudflare Preview (pull requests) namespace. Never bind a PR to
+# the production Durable Object holding PWA subscriptions or finance tests.
+# Preview secrets are separately configured in Cloudflare; none are committed.
+[[previews.durable_objects.bindings]]
+name = "PUSH_HOME"
+class_name = "PushHome"
