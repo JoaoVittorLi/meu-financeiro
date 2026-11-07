@@ -1,4 +1,4 @@
-# Meu Financeiro v0.9.3 — Atualização
+# Meu Financeiro v0.9.4 — Atualização
 
 1. Abra sua versão instalada e escolha **Configurações → Salvar cópia completa**.
 2. Feche totalmente o aplicativo antes de executar `MeuFinanceiro-Instalador-0.9.2-x64.exe`.
@@ -14,7 +14,7 @@
 
 ### Classificação inicial de movimentos
 1. Abra Movimentações → Categorias e regras.
-2. Clique em **Importar sugestões** e escolha `MeuFinanceiro_v0.9.3_Sugestoes_Inteligentes.json` baixado da conversa.
+2. Clique em **Importar sugestões** e escolha `MeuFinanceiro_v0.9.4_Sugestoes_Inteligentes.json` baixado da conversa.
 3. Confira a mensagem de sucesso. Uma cópia de segurança será criada automaticamente.
 4. Os Pix genéricos passam à categoria Transferências, mas continuarão contabilizados como entradas/saídas até você alterar explicitamente sua natureza.
 5. Verifique os lançamentos ambíguos no relatório CSV, sem presumir que são contas próprias, salário ou reembolso.

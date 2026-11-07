@@ -1,8 +1,8 @@
-# Meu Financeiro v0.9.3 — Linha do tempo e categorias inteligentes 💜
+# Meu Financeiro v0.9.4 — Linha do tempo e categorias inteligentes 💜
 
 Aplicativo financeiro pessoal para Windows x64, com Electron, React/TypeScript e SQLite local. Integração bancária somente leitura por meio de uma conta pessoal do Meu Pluggy.
 
-## Atualização v0.9.3
+## Atualização v0.9.4
 
 - **Gráfico interativo**: a própria bolinha é o controle; arraste com mouse/touch ou use setas/Home/End no teclado. Sem barra slider duplicada.
 - **Eixo vertical consistente**: se todos os saldos forem não negativos, o gráfico não mostrará um valor mínimo negativo artificial.
@@ -50,3 +50,7 @@ O GitHub Actions gera o instalador e o executável portátil Windows. As verific
 - O planejamento aceita até 36 parcelas; o simulador é uma avaliação que pode examinar mais meses. A conversão para compromisso exige confirmação.
 - Recorrências cadastradas são finitas. Vinculações, classificações e conciliações devem ser verificadas pelo usuário. Não há transferências reais nem pagamentos automatizados.
 - **Antes de atualizar, salve uma cópia completa do SQLite e feche a versão anterior.**
+
+
+### v0.9.4 · Orçamentos por natureza
+Gastos e Receitas separados; categorias com tipo (gasto, receita ou entrada/saída); transferência entre contas próprias continua dependendo de confirmação explícita; cartões sem limites não mostram barras vazias; categorias sem movimento são recolhidas; fonte financeira fica discreta e acessível. Orçamentos antigos com valor zero passam a significar sem limite (versões anteriores não distinguiam essa informação); novas edições de zero permanecem explícitas.

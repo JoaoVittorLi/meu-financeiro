@@ -47,8 +47,9 @@ with sync_playwright() as p:
     page.get_by_role('button',name='Histórico',exact=True).click()
     assert page.get_by_role('button',name='Categorias e regras').count()==1
     page.get_by_role('button',name='Orçamentos',exact=True).click()
-    assert page.get_by_text('Fonte dos indicadores:',exact=True).count()==1
-    page.get_by_role('button',name='Registros manuais').click()
+    assert page.locator('.mf-source-trigger').count()==1
+    page.locator('.mf-source-trigger').click()
+    page.get_by_role('button',name='Adicionado por você',exact=True).click()
     page.get_by_role('button',name='Simular compra',exact=True).click()
     page.locator('input[placeholder="Ex.: 1.499,90"]').fill('500,00')
     page.get_by_role('button',name='Analisar compra').click()

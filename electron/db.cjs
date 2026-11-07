@@ -39,6 +39,10 @@ function categoryName(name){
   if(!value||value.length>50||/[\x00-\x1f<>]/.test(value))throw new Error('Informe uma categoria de até 50 caracteres.');
   return value;
 }
+function categoryKind(value){
+  if(!['expense','income','both'].includes(value))throw new Error('Tipo de categoria inválido.');
+  return value;
+}
 function categoryColor(color){
   if(typeof color!=='string'||!/^#[a-fA-F0-9]{6}$/.test(color))throw new Error('Cor da categoria inválida.');
   return color.toLowerCase();
@@ -109,7 +113,7 @@ function validate(payload) {
   }
   const settings={};
   for(const k of KEYS){const value=payload.settings[k] ?? 0;if(!isCents(value,k==='opening'))throw new Error('Configuração inválida: '+k);settings[k]=value;}
-  return {version:4, transactions, budgets, settings};
+  return {version:5, transactions, budgets, settings};
 }
 function checkProfile(profile){if(profile!=='real'&&profile!=='demo') throw new Error('Perfil inválido');return profile;}
 class FinanceDB {
@@ -260,8 +264,17 @@ class FinanceDB {
      const updateOld=this.db.prepare('UPDATE categories SET emoji=? WHERE name=?');
      for(const [name] of DEFAULT_CATEGORIES)updateOld.run(DEFAULT_EMOJIS[name]||'✨',name);
    }
+   // v0.9.4: tipo de categoria é APENAS um agrupamento visual; não converte Pix em
+   // transferências próprias nem altera a natureza dos movimentos originais.
+   if(!columns.includes('kind')){
+     this.db.exec("ALTER TABLE categories ADD COLUMN kind TEXT NOT NULL DEFAULT 'expense' CHECK(kind IN ('expense','income','both'))");
+     this.db.prepare("UPDATE categories SET kind='income' WHERE name IN ('Salário','Rendimentos','Reembolsos')").run();
+     this.db.prepare("UPDATE categories SET kind='both' WHERE name IN ('Transferências','Outros')").run();
+   }
    const seed=this.db.prepare('INSERT OR IGNORE INTO categories(name,color,built_in,emoji) VALUES (?,?,1,?)');
    for(const [name,color] of DEFAULT_CATEGORIES)seed.run(name,color,DEFAULT_EMOJIS[name]||'✨');
+   this.db.prepare("UPDATE categories SET kind='income' WHERE name IN ('Salário','Rendimentos','Reembolsos') AND kind='expense'").run();
+   this.db.prepare("UPDATE categories SET kind='both' WHERE name IN ('Transferências','Outros') AND kind='expense'").run();
    // Compatibilidade: categorias pré-existentes em lançamentos manuais e orçamentos.
    const legacy=this.db.prepare(`SELECT category AS name FROM transactions UNION SELECT category AS name FROM budgets`);
    for(const {name} of legacy.all()){
@@ -269,17 +282,23 @@ class FinanceDB {
        this.db.prepare('INSERT OR IGNORE INTO categories(name,color,built_in) VALUES (?, ?,0)').run(name,'#884bff');
    }
    this.db.prepare('INSERT OR IGNORE INTO app_meta(key,value) VALUES (?,?)').run('schema_version','1');
-   this.db.prepare('UPDATE app_meta SET value=? WHERE key=?').run('5','schema_version');
+   // Os zeros de versões antigas eram criados por padrão e significavam 'sem limite'.
+   // Uma nova edição explícita para zero, a partir desta versão, permanece distinta.
+   if(!this.db.prepare("SELECT 1 FROM app_meta WHERE key='budget_zero_migration_094'").get()){
+     this.db.prepare('DELETE FROM budgets WHERE amount_cents=0').run();
+     this.db.prepare("INSERT INTO app_meta(key,value) VALUES('budget_zero_migration_094','done')").run();
+   }
+   this.db.prepare('UPDATE app_meta SET value=? WHERE key=?').run('6','schema_version');
  }
  load(profile){
    checkProfile(profile);
    if(!this.db.prepare('SELECT 1 FROM profiles WHERE profile=?').get(profile))return null;
-   const budgets=Object.fromEntries(this.listCategories().categories.map(c=>[c.name,0]));
+   const budgets={};
    for(const r of this.db.prepare('SELECT category, amount_cents FROM budgets WHERE profile=?').all(profile))budgets[r.category]=r.amount_cents;
    const settings={opening:0,income:0,fixed:0,existing:0,reserve:0};
    for(const r of this.db.prepare('SELECT name, value_cents FROM financial_settings WHERE profile=?').all(profile))if(KEYS.includes(r.name))settings[r.name]=r.value_cents;
    const transactions=this.db.prepare('SELECT id,date,description,kind,amount_cents AS amount,category,origin FROM transactions WHERE profile=? ORDER BY date,id').all(profile).map(x=>({...x}));
-   return {version:4,transactions,budgets,settings};
+   return {version:5,transactions,budgets,settings};
  }
  save(profile,payload){
    checkProfile(profile);const value=validate(payload);
@@ -313,11 +332,11 @@ class FinanceDB {
    }catch(err){this.db.exec('ROLLBACK');throw err;}
  }
  listCategories(){
-   const categories=this.db.prepare('SELECT name,color,emoji,built_in AS builtIn FROM categories ORDER BY built_in DESC,name COLLATE NOCASE').all().map(x=>({...x}));
+   const categories=this.db.prepare('SELECT name,color,emoji,kind,built_in AS builtIn FROM categories ORDER BY built_in DESC,name COLLATE NOCASE').all().map(x=>({...x}));
    const rules=this.db.prepare('SELECT id,pattern,match_mode AS matchMode,category,scope,priority,enabled FROM category_rules ORDER BY priority ASC,id ASC').all().map(x=>({...x}));
    return {categories,rules};
  }
- upsertCategory({previousName,name,color,emoji}){
+ upsertCategory({previousName,name,color,emoji,kind}){
    const label=categoryName(name), hex=categoryColor(color), previous=String(previousName||'').trim();
    this.db.exec('BEGIN IMMEDIATE');
    try{
@@ -328,15 +347,18 @@ class FinanceDB {
        const clash=this.db.prepare('SELECT name FROM categories WHERE name=? COLLATE NOCASE').get(label);
        if(clash&&clash.name.toLowerCase()!==row.name.toLowerCase())throw new Error('Já existe uma categoria com esse nome.');
        const icon=categoryEmoji(emoji,this.db.prepare('SELECT emoji FROM categories WHERE name=?').get(row.name)?.emoji||'✨');
+       const previousKind=this.db.prepare('SELECT kind FROM categories WHERE name=?').get(row.name).kind;
+       const chosenKind=kind===undefined?previousKind:categoryKind(kind);
+       if(row.built_in&&chosenKind!==previousKind)throw new Error('O tipo das categorias padrão não pode ser alterado.');
        if(row.name!==label){
-         this.db.prepare('UPDATE categories SET name=?,color=?,emoji=? WHERE name=?').run(label,hex,icon,row.name);
+         this.db.prepare('UPDATE categories SET name=?,color=?,emoji=?,kind=? WHERE name=?').run(label,hex,icon,chosenKind,row.name);
          this.db.prepare('UPDATE transactions SET category=? WHERE category=?').run(label,row.name);
          this.db.prepare('UPDATE budgets SET category=? WHERE category=?').run(label,row.name);
          if(this.db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='planned_items'").get())this.db.prepare('UPDATE planned_items SET category=? WHERE category=?').run(label,row.name);
-       }else this.db.prepare('UPDATE categories SET color=?,emoji=? WHERE name=?').run(hex,icon,row.name);
+       }else this.db.prepare('UPDATE categories SET color=?,emoji=?,kind=? WHERE name=?').run(hex,icon,chosenKind,row.name);
      }else{
        if(this.db.prepare('SELECT 1 FROM categories WHERE name=? COLLATE NOCASE').get(label))throw new Error('Já existe uma categoria com esse nome.');
-       this.db.prepare('INSERT INTO categories(name,color,built_in,emoji) VALUES(?,?,0,?)').run(label,hex,categoryEmoji(emoji));
+       this.db.prepare('INSERT INTO categories(name,color,built_in,emoji,kind) VALUES(?,?,0,?,?)').run(label,hex,categoryEmoji(emoji),categoryKind(kind||'expense'));
      }
      this.db.exec('COMMIT');return this.listCategories();
    }catch(e){this.db.exec('ROLLBACK');throw e;}
@@ -569,7 +591,9 @@ class FinanceDB {
  bankOverview(){
    const accounts=this.db.prepare(`SELECT account_id AS id,item_id AS itemId,name,subtype,currency,balance_cents AS balance,updated_at AS updatedAt FROM bank_accounts ORDER BY name`).all().map(x=>({...x}));
    const rules=this.listCategories().rules.filter(x=>x.enabled);
-   const categories=new Set(this.listCategories().categories.map(x=>x.name));
+   const categoryInfo=this.listCategories().categories;
+   const categories=new Set(categoryInfo.map(x=>x.name));
+   const kindByCategory=new Map(categoryInfo.map(x=>[x.name,x.kind]));
    const aliases=this.db.prepare('SELECT id,pattern,display_name AS displayName FROM merchant_aliases ORDER BY length(pattern) DESC,id ASC').all();
    const splits=this.db.prepare(`SELECT account_id AS accountId,external_id AS externalId,category,amount_cents AS amount FROM bank_transaction_splits ORDER BY position`).all();
    const splitMap=new Map();for(const x of splits){const key=x.accountId+'|'+x.externalId;if(!splitMap.has(key))splitMap.set(key,[]);splitMap.get(key).push({category:x.category,amount:x.amount});}
@@ -601,18 +625,28 @@ class FinanceDB {
    for(const x of ledger){
      const nature=x.nature&&x.nature!=='auto'?x.nature:(x.amount>=0?'income':'expense');
      if(nature==='transfer'||nature==='ignore')continue;
-     if(!dayMap.has(x.date))dayMap.set(x.date,{date:x.date,income:0,expense:0,categories:new Map()});
+     if(!dayMap.has(x.date))dayMap.set(x.date,{date:x.date,income:0,expense:0,categories:new Map(),incomeCategories:new Map()});
      const day=dayMap.get(x.date),amount=Math.abs(x.amount);
-     if(nature==='income'){day.income+=amount;continue;}
+     if(nature==='income'){
+       day.income+=amount;
+       const proposed=x.overrideCategory||matchRule(x.description,'bank',rules)||(normalizeLabel(x.description).includes('PIX DEVOLVIDO')?'Reembolsos':providerCategory(x.bankCategory,categories));
+       const category=kindByCategory.get(proposed)==='expense'?'Outros':proposed;
+       day.incomeCategories.set(category,(day.incomeCategories.get(category)||0)+amount);
+       continue;
+     }
      if(nature!=='expense')continue;
      day.expense+=amount;
      const parts=splitMap.get(x.accountId+'|'+x.externalId)||[];
      const ok=parts.length&&parts.reduce((sum,part)=>sum+part.amount,0)===amount;
      const category=x.overrideCategory||matchRule(x.description,'bank',rules)||providerCategory(x.bankCategory,categories);
-     for(const part of ok?parts:[{category,amount}])day.categories.set(part.category,(day.categories.get(part.category)||0)+part.amount);
+     for(const part of ok?parts:[{category,amount}]){
+       const bucket=kindByCategory.get(part.category)==='income'?'Outros':part.category;
+       day.categories.set(bucket,(day.categories.get(bucket)||0)+part.amount);
+     }
    }
    const dailyTotals=[...dayMap.values()].map(x=>({date:x.date,income:x.income,expense:x.expense,
-     categories:[...x.categories].map(([name,total])=>({name,total}))}));
+     categories:[...x.categories].map(([name,total])=>({name,total})),
+     incomeCategories:[...x.incomeCategories].map(([name,total])=>({name,total}))}));
    const totalTransactions=this.db.prepare('SELECT COUNT(*) AS total FROM bank_transactions').get().total;
    const items=this.db.prepare(`SELECT item_id AS itemId,institution,status,consent_expires_at AS consentExpiresAt,last_sync_at AS lastSyncAt FROM bank_items ORDER BY last_sync_at DESC`).all().map(x=>({...x}));
    const last=this.db.prepare(`SELECT completed_at AS completedAt,new_count AS newCount,total_count AS totalCount FROM bank_sync_history ORDER BY id DESC LIMIT 1`).get()||null;

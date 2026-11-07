@@ -56,5 +56,5 @@ test('cópia SQLite é íntegra e reabre após backup online',async()=>{
 });
 test('backup JSON da v0.3 pode ser importado com version 3',()=>{
  const db=new FinanceDB(':memory:');db.save('real',dataset([tx()]));
- assert.equal(db.load('real').version,4);db.close();
+ assert.equal(db.load('real').version,5);db.close();
 });
