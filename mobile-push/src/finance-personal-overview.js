@@ -1,3 +1,4 @@
+import {mergePersonalOverlays} from './finance-personal-edits.js';
 // Read-only, owner-authenticated preview of a VERIFIED migration quarantine.
 // It never calls Pluggy and does not claim to be the live finance database.
 // Safe to expose only behind Cloudflare Access + the private session.
@@ -19,12 +20,12 @@ export function readVerifiedPersonalOverview(storage){
     'SELECT row_json FROM mf_transfer_rows WHERE import_id=? AND table_name=? ORDER BY ordinal LIMIT ?',
     session.import_id,table,limit
   ).toArray().map(({row_json})=>JSON.parse(row_json));
-  const categories=get('categories',150).map(x=>({
+  const categories=mergePersonalOverlays(storage,'categories',get('categories',150)).map(x=>({
     name:x.name,color:x.color,emoji:x.emoji,kind:x.kind
   }));
-  const budgets=get('budgets',150).filter(x=>x.profile==='real')
+  const budgets=mergePersonalOverlays(storage,'budgets',get('budgets',150)).filter(x=>x.profile==='real')
     .map(x=>({category:x.category,amountCents:x.amount_cents}));
-  const plans=get('planned_items',250).map(x=>({
+  const plans=mergePersonalOverlays(storage,'planned_items',get('planned_items',250)).map(x=>({
     title:x.title,kind:x.kind,amountCents:x.amount_cents,
     dueDate:x.due_date,category:x.category,status:x.status,
     certainty:x.certainty
