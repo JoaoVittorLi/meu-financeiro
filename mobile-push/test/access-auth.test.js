@@ -82,6 +82,51 @@ test('Access verifier checks a real RSA signature, audience, issuer and allowlis
   assert.equal((await authorizeAccess(noJWT,ENV,options)).status,403);
 });
 
+test('diagnostic codes identify safe verification stages without revealing any JWT or identities',async()=>{
+  // The keypair is generated in the preceding signature verification test.
+  assert.ok(privateKey);
+  const token=await sign();
+  const failCertDomain='https://failure-certs.cloudflareaccess.com';
+  const unavailable=await authorizeAccess(request(token),{...ENV,TEAM_DOMAIN:failCertDomain},{
+    now:NOW,fetchImpl:async()=>{throw new Error('A private error that must not be shown.');}
+  });
+  assert.equal(unavailable.status,503);
+  assert.equal(unavailable.code,'CF-CERTS');
+  assert.doesNotMatch(unavailable.error,/private error|owner@example|eyJ|test-key/);
+
+  const noKeyDomain='https://failure-key.cloudflareaccess.com';
+  const noKey=await authorizeAccess(request(token),{...ENV,TEAM_DOMAIN:noKeyDomain},{
+    now:NOW,fetchImpl:async()=>new Response(JSON.stringify({
+      keys:[{...publicJwk,kid:'different-test-key'}]
+    }),{status:200})
+  });
+  assert.equal(noKey.status,403);
+  assert.equal(noKey.code,'CF-KEY');
+  assert.doesNotMatch(noKey.error,/owner@example|eyJ|test-key/);
+
+  const badCryptoDomain='https://failure-crypto.cloudflareaccess.com';
+  const badCrypto=await authorizeAccess(request(token),{...ENV,TEAM_DOMAIN:badCryptoDomain},{
+    now:NOW,fetchImpl:async()=>new Response(JSON.stringify({
+      keys:[{...publicJwk,n:'this-is-not-a-valid-rsa-key'}]
+    }),{status:200})
+  });
+  assert.equal(badCrypto.status,503);
+  assert.equal(badCrypto.code,'CF-CRYPTO');
+
+  const tampered=token.split('.');
+  // Modify signing bytes without changing the valid token header and claims.
+  const original=await sign({email:'owner@example.test'});
+  const altered=original.slice(0,-5)+(original.slice(-5)[0]==='A'?'B':'A')+original.slice(-4);
+  const invalidSig=await authorizeAccess(request(altered),ENV,{now:NOW,fetchImpl});
+  assert.equal(invalidSig.status,403);
+  assert.equal(invalidSig.code,'CF-SIGNATURE');
+  assert.doesNotMatch(invalidSig.error,/owner@example|eyJ|test-key/);
+
+  const malformed=await authorizeAccess(request('not-a-jwt'),ENV,{now:NOW,fetchImpl});
+  assert.equal(malformed.code,'CF-FORMAT');
+  assert.equal(malformed.status,403);
+});
+
 test('synthetic migration route refuses unauthenticated and missing-Access callers',async()=>{
   const origin='https://example.test';
   const token='fake-test-private-code-longer-than-18';
