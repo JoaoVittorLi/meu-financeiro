@@ -63,6 +63,11 @@ credenciais em campos técnicos.
 - `mobile-push/src/finance-bank-reconcile.js`: função sem efeitos colaterais
   que atualiza registros bancários por chave estável, mantém históricos não
   presentes na consulta recente e recusa duplicidades/centavos inválidos.
+- `mobile-push/src/pluggy-readonly.js`: cliente **somente servidor** para autenticar
+  via `POST /auth` e consultar contas/extratos com paginação por
+  `X-API-KEY`, sem publicar credenciais, URLs arbitrárias ou aceitar importação
+  bancária parcial. Testado com respostas fictícias; nenhuma credencial real
+  foi configurada.
 - Esses módulos são fundamento do serviço de importação; **ainda não há
   exportação financeira pela rede nem ingestão Pluggy em produção**.
 
