@@ -82,6 +82,30 @@ test('Access verifier checks a real RSA signature, audience, issuer and allowlis
   assert.equal((await authorizeAccess(noJWT,ENV,options)).status,403);
 });
 
+test('synthetic migration route refuses unauthenticated and missing-Access callers',async()=>{
+  const origin='https://example.test';
+  const token='fake-test-private-code-longer-than-18';
+  const base={APP_ACCESS_TOKEN:token,ASSETS:{fetch:()=>new Response('ok')}};
+  const body=JSON.stringify({records:[{amount_cents:12345}]});
+  const post=(cookie,headers={})=>new Request(origin+'/api/migration/dry-run',{
+    method:'POST',headers:{Origin:origin,'Content-Type':'application/json',...(cookie?{Cookie:cookie}:{}),...headers},
+    body
+  });
+  assert.equal((await worker.fetch(post(null),base)).status,401);
+  const login=await worker.fetch(new Request(origin+'/api/login',{
+    method:'POST',headers:{Origin:origin,'Content-Type':'application/json'},
+    body:JSON.stringify({code:token})
+  }),base);
+  const cookie=login.headers.get('set-cookie').split(';')[0];
+  const missingAccess=await worker.fetch(post(cookie),base);
+  assert.equal(missingAccess.status,403);
+  assert.match((await missingAccess.json()).error,/Cloudflare Access configurado/);
+  const noIdentity=await worker.fetch(post(cookie),{...base,...ENV});
+  assert.equal(noIdentity.status,403);
+  assert.match((await noIdentity.json()).error,/Cloudflare Access obrigatório/);
+  assert.equal((await worker.fetch(post(cookie,{Origin:'https://attacker.test'}),base)).status,403);
+});
+
 test('Worker denies sync to logged-in pilot session without verified Access identity when configured',async()=>{
   const env={...ENV,APP_ACCESS_TOKEN:'fake-test-private-code-longer-than-18',ASSETS:{fetch:()=>new Response('ok')}};
   const origin='https://example.test';
