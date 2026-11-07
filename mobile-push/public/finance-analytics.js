@@ -173,4 +173,5 @@ analyticsEl('analyticsFilters').addEventListener('submit',event=>{
   event.preventDefault();void analyticsRefresh();
 });
 document.addEventListener('finance:bank-updated',()=>void analyticsRefresh());
+document.addEventListener('finance:personal-updated',()=>void analyticsRefresh());
 void analyticsRefresh();
