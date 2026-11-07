@@ -2,6 +2,7 @@
 // Raw bank records are never modified, categorized or settled by this API.
 // The Worker boundary MUST verify private session + signed Access identity.
 import {ensureBankStaging} from './finance-bank-ingestion.js';
+import {personalizeBankRows} from './finance-bank-personalized.js';
 
 const MAX_LIMIT=100;
 const MAX_OFFSET=100000;
@@ -31,16 +32,13 @@ export function readBankTransactionsPage(storage,{offset=0,limit=30,search='',di
   const where=filters.length?' WHERE '+filters.join(' AND '):'';
   const total=storage.sql.exec('SELECT COUNT(*) AS n FROM mf_bank_staging_transactions'+where,...params).one().n;
   const rows=storage.sql.exec(
-    'SELECT date,description,amount_cents,status FROM mf_bank_staging_transactions'+where+
+    'SELECT account_id,external_id,date,description,amount_cents,status FROM mf_bank_staging_transactions'+where+
     ' ORDER BY date DESC,account_id,external_id LIMIT ? OFFSET ?',
     ...params,size,start
   ).toArray();
   return {ok:true,stage:'bank_staging_preview',total,offset:start,limit:size,
     nextOffset:start+rows.length<total?start+rows.length:null,
-    rows:rows.map(row=>({
-      date:row.date,description:row.description,
-      amountCents:row.amount_cents,status:row.status
-    })),
+    rows:personalizeBankRows(storage,rows),
     financialSyncEnabled:false,reconciliationVerified:false,
     cloudCutoverAllowed:false};
 }
