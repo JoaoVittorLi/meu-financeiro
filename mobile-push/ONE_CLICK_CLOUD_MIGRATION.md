@@ -1,5 +1,8 @@
 # Meu Financeiro — ativação integrada da sincronização (fluxo definitivo)
 
+> **CHECKPOINT MAIS RECENTE — 07/11/2026 — PLUGGY NO SERVIDOR + ALTERAÇÕES AUTOMÁTICAS:** as fases abaixo são históricas. O novo trabalho está em [CLOUD_BANK_AND_SYNC.md](./CLOUD_BANK_AND_SYNC.md). O proprietário aprovou a importação pessoal de **93 registros em 17 tabelas** e validou a prévia mobile. A nova PR implementou leitura Pluggy independente do Windows em staging do Durable Object, com refresh periódico via alarme persistente após ativação consentida, integridade/idempotência, detecção de consentimento expirado e ausência de exclusões por retorno parcial. As credenciais Pluggy **ainda não estão configuradas no Cloudflare Preview**, portanto **nenhuma consulta bancária real foi executada**. Também foram implementados feed/edições com revisão e resolução de conflitos para campos seguros, além da integração periódica entre Electron e servidor, com testes fictícios. `FINANCIAL_SCHEMA_ACTIVE=false` e a fonte bancária original continuam intactas. **Não dizer que a sincronização financeira completa já foi ativada; a interface mobile equivalente ao Windows vem depois da conciliação.**
+
+
 ## Correção mais recente — login Google no navegador padrão do Windows
 
 - **Problema demonstrado pelo proprietário em print em 07/11/2026:** após liberar uma janela adicional do Electron, aparecia `Cloudflare Dashboard — Fazer login na Cloudflare`, mas clicar em **Google** não tinha efeito. A entrada com e-mail/senha na Cloudflare retornava "E-mail ou senha incorretos" porque o usuário utiliza Google como provedor de identidade.
