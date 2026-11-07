@@ -78,11 +78,11 @@ test('cursor anomalies, incomplete history and redirect attempts are rejected',a
  }});
  await assert.rejects(()=>missing.listAccounts('item'),/incompleta/);
  const unauthorized=new PluggyReadOnlyProvider({...init,fetchImpl:async()=>apiResponse({error:'private'},401)});
- await assert.rejects(()=>unauthorized.listAccounts('item'),/Autenticação bancária/);
+ await assert.rejects(()=>unauthorized.listAccounts('item'),error=>error.safeCode==='PLUGGY_AUTH_HTTP_401');
  const redirected=new PluggyReadOnlyProvider({...init,fetchImpl:async()=>new Response(null,{
   status:302,headers:{Location:'https://attacker.invalid/steal'}
  })});
- await assert.rejects(()=>redirected.listAccounts('item'),/Autenticação bancária/);
+ await assert.rejects(()=>redirected.listAccounts('item'),error=>error.safeCode==='PLUGGY_AUTH_HTTP_OTHER');
 });
 
 test('all Pluggy requests pin HTTPS origin and require valid account identifiers',async()=>{
