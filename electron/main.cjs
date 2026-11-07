@@ -5,7 +5,7 @@ const fs=require('node:fs');
 const {FinanceDB}=require('./db.cjs');
 const {prepareCloudMigration,migrationLocalStatus}=require('./cloud-onboarding.cjs');
 const {uploadPersonalQuarantine,CONSENT}=require('./cloud-personal-uploader.cjs');
-const {PREVIEW_ORIGIN,allowedLoginNavigation,checkPreviewIdentity,testPreviewQuarantine}=require('./cloud-preview-identity.cjs');
+const {PREVIEW_ORIGIN,allowedLoginNavigation,allowedLoginPopup,checkPreviewIdentity,testPreviewQuarantine}=require('./cloud-preview-identity.cjs');
 const {PlanningStore}=require('./planning.cjs');
 const {automaticBackup,restoreBackup,listAutoBackups,validateBackupFile}=require('./recovery.cjs');
 const {PluggyVault}=require('./pluggy-vault.cjs');
@@ -62,17 +62,40 @@ async function connectPreviewIdentity(){
     }
   });
   cloudAuthWindow=browser;
-  browser.webContents.setWindowOpenHandler(()=>({action:'deny'}));
-  // Restrict navigation to the known Preview and the single configured
-  // Cloudflare Access team. Never allow file:, data:, or arbitrary domains.
-  browser.webContents.on('will-navigate',(event,details)=>{
-    const url=typeof details==='string'?details:details.url;
+  // Cloudflare's own IdP uses a sign-in popup/redirect outside the Access
+  // team domain. The former blanket deny stopped the visible 'Cloudflare'
+  // button without telling the user why. Allow exact trusted login origins
+  // only; every popup uses the SAME isolated Chromium cookie partition.
+  const authPopups=new Set();
+  const checkLoginNavigation=(event,details)=>{
+    const url=typeof details==='string'?details:details?.url;
     if(!allowedLoginNavigation(url))event.preventDefault();
+  };
+  browser.webContents.setWindowOpenHandler(({url})=>{
+    if(!allowedLoginPopup(url))return {action:'deny'};
+    return {action:'allow',overrideBrowserWindowOptions:{
+      parent:browser,show:true,width:700,height:790,
+      minWidth:460,minHeight:520,autoHideMenuBar:true,
+      title:'Meu Financeiro — login Cloudflare',
+      webPreferences:{
+        partition:'persist:mf-cloud-preview',
+        sandbox:true,nodeIntegration:false,contextIsolation:true,
+        webSecurity:true,devTools:false,webviewTag:false
+      }
+    }};
   });
-  browser.webContents.on('will-redirect',(event,details)=>{
-    const url=typeof details==='string'?details:details.url;
-    if(!allowedLoginNavigation(url))event.preventDefault();
+  browser.webContents.on('did-create-window',child=>{
+    authPopups.add(child);
+    child.setMenuBarVisibility(false);
+    child.webContents.setWindowOpenHandler(()=>({action:'deny'}));
+    child.webContents.on('will-navigate',checkLoginNavigation);
+    child.webContents.on('will-redirect',checkLoginNavigation);
+    child.once('closed',()=>authPopups.delete(child));
   });
+  // Restrict all main-frame navigation to exact trusted login origins.
+  // Never allow file:, data:, http:, wildcard subdomains or arbitrary IdPs.
+  browser.webContents.on('will-navigate',checkLoginNavigation);
+  browser.webContents.on('will-redirect',checkLoginNavigation);
   // No downloads from a remote authentication window.
   const onDownload=(event,webContents)=>{
     if(webContents===browser.webContents)event.preventDefault();
@@ -87,6 +110,10 @@ async function connectPreviewIdentity(){
       if(interval)clearInterval(interval);
       ses.removeListener('will-download',onDownload);
       cloudAuthWindow=null;cloudAuthPromise=null;
+      for(const popup of authPopups){
+        if(!popup.isDestroyed())popup.close();
+      }
+      authPopups.clear();
       if(!browser.isDestroyed())browser.close();
       resolve(result);
     };
