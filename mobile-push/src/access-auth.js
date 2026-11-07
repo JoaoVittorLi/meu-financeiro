@@ -22,6 +22,60 @@ function accessSettings(env){
   return {team,audience,email:email.toLowerCase()};
 }
 
+// Preview-only operational probe. It NEVER accepts a URL or token from the
+// browser and NEVER returns identity, signing keys, credentials or response body.
+// The route calling this helper requires the pilot's signed session and is
+// additionally protected by Access at the edge.
+export async function diagnoseAccessCerts(env={},options={}){
+  const settings=accessSettings(env);
+  if(!settings)return {ok:false,code:'CONFIG_INVALID',credentialsIncluded:false};
+  const fetchImpl=options.fetchImpl||fetch;
+  const url=settings.team+'/cdn-cgi/access/certs';
+  const observations=[];
+  // A strict redirect policy can fail differently from a manual policy in
+  // Workers. Compare both WITHOUT following any redirect to another origin.
+  for(const redirect of ['error','manual']){
+    let response;
+    try{
+      response=await fetchImpl(url,{redirect,headers:{Accept:'application/json'}});
+    }catch{
+      observations.push({mode:redirect,code:'FETCH_FAILED'});
+      continue;
+    }
+    const status=Number.isInteger(response?.status)?response.status:null;
+    if(status===null){
+      observations.push({mode:redirect,code:'INVALID_RESPONSE'});
+      continue;
+    }
+    if(status>=300&&status<400){
+      observations.push({mode:redirect,code:'REDIRECT',httpStatus:status});
+      continue;
+    }
+    if(!response.ok){
+      observations.push({mode:redirect,code:'HTTP_ERROR',httpStatus:status});
+      continue;
+    }
+    let data;
+    try{data=await response.json();}
+    catch{
+      observations.push({mode:redirect,code:'INVALID_JSON',httpStatus:status});
+      continue;
+    }
+    if(!Array.isArray(data?.keys)){
+      observations.push({mode:redirect,code:'KEYS_MISSING',httpStatus:status});
+      continue;
+    }
+    const rsaKeys=data.keys.filter(k=>k&&k.kty==='RSA'&&
+      typeof k.kid==='string'&&typeof k.n==='string'&&typeof k.e==='string');
+    observations.push({
+      mode:redirect,code:rsaKeys.length?'CERTS_OK':'NO_RSA_KEYS',
+      httpStatus:status,keyCount:rsaKeys.length
+    });
+  }
+  return {ok:observations.some(item=>item.code==='CERTS_OK'),
+    code:'CERTS_PROBE_COMPLETE',observations,credentialsIncluded:false};
+}
+
 function bytesFromB64url(value){
   if(typeof value!=='string'||!(/^[a-zA-Z0-9_-]+$/.test(value)))throw new Error('Malformed token.');
   const base64=value.replace(/-/g,'+').replace(/_/g,'/');
