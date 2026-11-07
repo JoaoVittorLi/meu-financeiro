@@ -20,9 +20,24 @@ jobs:
         run: |
           node --check mobile-push/src/worker.js
           node --check mobile-push/public/app.js
+          node --check mobile-push/public/sync.js
+          node --check mobile-push/src/cloud-sync.js
           node --test mobile-push/test/*.test.js
       - name: Validar empacotamento Cloudflare (sem publicar)
         working-directory: mobile-push
         run: |
           npm install --no-audit --no-fund
           npx wrangler deploy --dry-run
+
+      - name: Testar sincronizacao real no Worker local
+        working-directory: mobile-push
+        shell: bash
+        run: |
+          npx wrangler dev --local --ip 127.0.0.1 --port 8787 --var APP_ACCESS_TOKEN:local-test-access-code-2026 > /tmp/worker-sync.log 2>&1 &
+          pid=$!
+          trap 'kill "$pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 45); do
+            if curl --fail --silent http://127.0.0.1:8787/manifest.webmanifest >/dev/null; then break; fi
+            sleep 2
+          done
+          TEST_ACCESS_TOKEN=local-test-access-code-2026 node test/sync-e2e.mjs || { cat /tmp/worker-sync.log; exit 1; }
