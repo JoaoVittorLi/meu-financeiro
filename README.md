@@ -1,8 +1,8 @@
-# Meu Financeiro v0.9.0 💜
+# Meu Financeiro v0.9.1 💜
 
 Aplicativo financeiro pessoal **Windows x64**, com Electron, React/TypeScript e SQLite local. Integração bancária **somente leitura** via Meu Pluggy.
 
-## Novidades v0.9.0
+## Novidades v0.9.1
 
 - **Simular compra** usa o **mesmo motor diário** da Central de Planejamento, sem gravar dívidas fictícias. Compara saldos com/sem compra, compromissos por vencimento, reserva configurada e até 60 parcelas com juros mensais.
 - A simulação examina pelo menos 90 dias seguintes, e continua até 30 dias após a última parcela. O teste inclui saldos negativos, períodos críticos e reservas comprometidas.
@@ -15,7 +15,7 @@ Aplicativo financeiro pessoal **Windows x64**, com Electron, React/TypeScript e 
 
 ## Como usar
 
-1. Faça backup completo na versão atual antes de instalar a v0.9.0.
+1. Faça backup completo na versão atual antes de instalar a v0.9.1.
 2. Abra **Planejamento** e confirme seus compromissos futuros, pagamentos e possíveis vínculos bancários.
 3. Entre em **Simular compra**, escolha valor, prazo, juros e primeira data de pagamento.
 4. Compare o menor saldo dos cenários e leia os avisos. Uma projeção **não confirma** capacidade de pagamento.
@@ -41,3 +41,11 @@ Para Windows, o GitHub Actions gera instalador NSIS e portátil. O app **não** 
 - O detector de possíveis duplicatas é conservador e pode ter falsos positivos/negativos; **não** remove registros.
 - Transferências e estornos precisam ser classificados corretamente; o app não pode deduzi-los de maneira infalível. O dashboard não soma indiscriminadamente o histórico manual ao bancário.
 - Todos os valores monetários e testes do motor são expressos em centavos inteiros. Não compartilhe credenciais bancárias ou dados pessoais no repositório.
+
+
+## v0.9.1 — Linha do tempo contínua e tipografia
+- Gráfico de linha mensal do primeiro ao último dia, com marcador móvel e slider de acesso contínuo por teclado, mouse ou toque.
+- Variação de saldo em R$ ante o dia anterior, destacada em verde, rosa ou neutro.
+- Dias anteriores ao saldo de referência: estimativas históricas reconstruídas, desenhadas com traço pontilhado e aviso; não equivalem a saldos bancários confirmados.
+- Dias atuais e futuros: projeções usando o motor de planejamento já existente.
+- Tipografia secundária redesenhada em hierarquia moderna e com fontes de sistema offline; não são carregadas fontes externas.

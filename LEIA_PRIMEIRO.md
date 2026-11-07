@@ -1,4 +1,4 @@
-# Meu Financeiro v0.9.0 — orientações para atualização
+# Meu Financeiro v0.9.1 — orientações para atualização
 
 1. **Faça backup completo SQLite** na versão instalada antes de atualizar.
 2. Feche completamente o aplicativo antigo.
@@ -10,3 +10,6 @@
 **O que não muda:** conexão pessoal com Meu Pluggy, dados do Itaú, extratos originais, categorias e planejamentos anteriores. O novo detector de duplicatas mostra alertas para sua conferência, mas não apaga dados.
 
 **Limitações:** saldo bancário pode estar atrasado em relação ao banco; extrato em tela limitado às 2.500 linhas mais recentes; histórico completo armazenado continua consultado nos indicadores. Simulador não cria dívidas reais; recorrências cadastradas têm horizonte finito; não há criptografia adicional no arquivo SQLite. Se algum cálculo parecer estranho, confira a data de atualização do banco e os pagamentos planejados antes de tomar uma decisão.
+
+
+A linha do tempo agora mostra o mês completo. Arraste o controle abaixo do gráfico para selecionar cada dia e visualizar a diferença em relação ao dia anterior. Para datas passadas, a curva é uma reconstrução aproximada dos lançamentos importados, não um extrato de saldo histórico confirmado.

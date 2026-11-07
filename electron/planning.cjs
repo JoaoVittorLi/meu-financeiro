@@ -279,11 +279,60 @@ class PlanningStore {
    risk,rows:[...monthly.values()],estimatedIncomeIncluded:includeEstimatedIncome,
    warning:'Estimativa baseada em dados e compromissos cadastrados. Saldos bancários podem estar desatualizados; não representa garantia de capacidade de pagamento.'};
  }
+ /** Timeline for the full selected month. Past dates are RECONSTRUCTIONS, not bank statements. */
+ monthTimeline({today=isoToday(),month=today.slice(0,7),includeEstimatedIncome=false}={}){
+  requiredDate(today);
+  if(typeof month!=='string'||!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)||month<today.slice(0,7)||month>'2100-12')throw new Error('Mês da linha do tempo inválido.');
+  const first=month+'-01',last=nextOccurrence(first,1,'monthly');
+  const end=addDay(last,-1),start=first<today?today:first;
+  const future=this.projection({today,start,end,includeEstimatedIncome});
+  const futureByDate=new Map(future.rows.map(row=>[row.date,{...row,phase:'projection'}]));
+  if(first>=today)return {month,rows:future.rows.map(x=>({...x,phase:'projection'})),historicalNotice:null};
+  // Reverse the recorded cash movements from the most recent available anchor.
+  // This is NOT a reliable historic statement: balance timestamps and full history
+  // coverage are not guaranteed by a provider's sync time.
+  let cashMovements;
+  if(future.source==='bank'){
+   cashMovements=this.db.prepare(`SELECT b.date, SUM(b.amount_cents) AS net,
+      SUM(CASE WHEN b.amount_cents>0 THEN b.amount_cents ELSE 0 END) AS incoming,
+      SUM(CASE WHEN b.amount_cents<0 THEN -b.amount_cents ELSE 0 END) AS outgoing
+      FROM bank_transactions b JOIN bank_accounts a ON a.account_id=b.account_id
+      WHERE a.balance_cents IS NOT NULL AND b.status='POSTED' AND b.date>=? AND b.date<=?
+      GROUP BY b.date`).all(first,today);
+  }else{
+   const manual=this.fin.load('real');const m=new Map();
+   for(const tx of manual?.transactions||[]){
+    if(tx.date<first||tx.date>today)continue;
+    const r=m.get(tx.date)||{date:tx.date,net:0,incoming:0,outgoing:0};
+    const signed=tx.kind==='income'?tx.amount:-tx.amount;
+    r.net+=signed;if(signed>=0)r.incoming+=signed;else r.outgoing-=signed;
+    m.set(tx.date,r);
+   }
+   cashMovements=[...m.values()];
+  }
+  const flow=new Map(cashMovements.map(r=>[r.date,r]));
+  const historical=new Map();
+  let latest=future.anchor;
+  for(let date=addDay(today,-1);date>=first;date=addDay(date,-1)){
+   const tomorrow=flow.get(addDay(date,1));
+   latest-=tomorrow?.net||0;
+   const f=flow.get(date)||{net:0,incoming:0,outgoing:0};
+   historical.set(date,{date,opening:latest-f.net,incoming:f.incoming,outgoing:f.outgoing,
+     closing:latest,items:[],phase:'estimated_history'});
+  }
+  const rows=[];
+  for(let d=first;d<=end;d=addDay(d,1)){
+   const row=historical.get(d)||futureByDate.get(d);
+   if(row)rows.push(row);
+  }
+  return {month,rows,historicalNotice:'Dias anteriores a hoje são estimativas reconstruídas a partir das movimentações disponíveis. Não representam saldo bancário histórico confirmado.'};
+ }
  overview(opts={}){
   const today=opts.today||isoToday();const items=this.list({today});const suggestions=this.suggest(today);
   const start=opts.start||today,end=opts.end||addDay(today,60);
   const projection=this.projection({today,start,end,includeEstimatedIncome:!!opts.includeEstimatedIncome});
-  return {items,suggestions,bankTitles:this.bankTitles(),projection,generatedAt:new Date().toISOString()};
+  const timeline=this.monthTimeline({today,month:opts.month||today.slice(0,7),includeEstimatedIncome:!!opts.includeEstimatedIncome});
+  return {items,suggestions,bankTitles:this.bankTitles(),projection,timeline,generatedAt:new Date().toISOString()};
  }
  history(itemId){this.item(itemId);return this.db.prepare('SELECT action,details,at FROM planned_audit WHERE item_id=? ORDER BY id DESC LIMIT 50').all(itemId);}
 }

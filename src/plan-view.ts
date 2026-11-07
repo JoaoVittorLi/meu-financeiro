@@ -24,22 +24,64 @@ function pSummary(app:any){const s=app.state,p=s.planning,items=p.items,today=is
  {icon:'calendar',label:'Compromissos pendentes (todos)',value:pendingExpense,desc:overdue?`${overdue} vencido(s)`: 'Pagamentos que ainda aguardam quitação'},
  {icon:'chart',label:'Saldo ao fim do período',value:end?.closing??p.projection.anchor,desc:end?.date?pDate(end.date):'Sem projeção'}];
  return h('div',{className:'p-summary'},data.map((x,i)=>h('div',{className:'p-summary-card '+(i===3?'is-projected':''),key:x.label},h('span',{className:'p-summary-icon'},h(Icon,{name:x.icon,size:18})),h('small',{},x.label),h('strong',{className:i===3&&x.value<0?'bad-text':''},fmt(x.value)),h('span',{},x.desc))));}
-function pTimeline(app:any){const s=app.state,today=iso(new Date()),month=s.planMonth,start=month+'-01',last=endOfMonth(month),max=Number(last.slice(-2)),forecast=new Map(s.planning.projection.rows.map((r:PlanDay)=>[r.date,r]));
- const day=forecast.get(s.planDay) as PlanDay|undefined;
+// The slider selects a day. The graph always shows the entire month.
+function pTimeline(app:any){
+ const s=app.state,today=iso(new Date()),month=s.planMonth,start=month+'-01',last=endOfMonth(month),max=Number(last.slice(-2));
+ const timeline=s.planning.timeline||{rows:[],historicalNotice:null};
+ const rows=timeline.rows as (PlanDay & {phase?:string})[];
+ const byDay=new Map(rows.map(r=>[r.date,r]));
+ const selected=byDay.get(s.planDay),previous=byDay.get(advanceDate(s.planDay,-1));
+ const delta=selected&&previous?selected.closing-previous.closing:null;
+ const positive=delta!==null&&delta>0,negative=delta!==null&&delta<0;
+ const deltaLabel=delta===null?'Sem comparação':delta===0?'Sem mudança no saldo':(positive?'▲ +':'▼ −')+fmt(Math.abs(delta));
+ const label=selected?.phase==='estimated_history'?'Estimativa histórica':'Projeção ao fim do dia';
  const items=s.planning.items.filter((x:PlanItem)=>x.dueDate===s.planDay||(s.planDay===today&&x.status==='planned'&&x.dueDate<today));
  const bank=s.bank.data.transactions.filter((x:BankTx)=>x.date===s.planDay&&x.status==='POSTED');
+ // Chart geometry is deterministic, independent from the currently selected day.
+ const left=70,right=980,top=24,bottom=237,width=right-left,height=bottom-top;
+ const values=rows.map(r=>r.closing);
+ const low=values.length?Math.min(...values):0,high=values.length?Math.max(...values):1;
+ const pad=Math.max(5000,Math.round((high-low)*.18));
+ const minY=low-pad,maxY=high+pad,span=Math.max(1,maxY-minY);
+ const xFor=(date:string)=>left+(Number(date.slice(-2))-1)*width/Math.max(1,max-1);
+ const yFor=(v:number)=>bottom-(v-minY)/span*height;
+ const pointPath=rows.map((r,i)=>(i?'L':'M')+xFor(r.date).toFixed(2)+' '+yFor(r.closing).toFixed(2)).join(' ');
+ const areaPath=rows.length?pointPath+' L '+xFor(rows[rows.length-1].date).toFixed(2)+' '+bottom+' L '+xFor(rows[0].date).toFixed(2)+' '+bottom+' Z':'';
+ const pastRows=rows.filter(r=>r.phase==='estimated_history');
+ const historicalPath=pastRows.map((r,i)=>(i?'L':'M')+xFor(r.date).toFixed(2)+' '+yFor(r.closing).toFixed(2)).join(' ');
+ const activeX=selected?xFor(selected.date):left,activeY=selected?yFor(selected.closing):bottom;
+ const ticks=[0,1,2,3,4].map(n=>({y:top+n*height/4,value:maxY-n*span/4}));
+ const xLabels=[1,7,14,21,max].filter((v,i,a)=>v<=max&&a.indexOf(v)===i);
+ const update=(e:any)=>{const date=month+'-'+String(Number(e.target.value)).padStart(2,'0');app.setState({planDay:date});};
  return h('div',{className:'p-timeline-panel'},
-   h('div',{className:'p-timeline-head'},h('div',{},h('span',{className:'micro-label'},'LINHA DO TEMPO'),h('h2',{},'Quanto terei em cada dia?'),h('p',{},'Saldo estimado ao final do dia · não é garantia de saldo disponível.')),
+   h('div',{className:'p-timeline-head'},h('div',{},h('span',{className:'micro-label'},'EVOLUÇÃO DO SALDO'),h('h2',{},'Seu dinheiro, dia após dia'),h('p',{},'Deslize para acompanhar a variação do saldo durante todo o mês.')),
      h('div',{className:'p-month-arrows'},h('button',{disabled:month<=nowYM,onClick:()=>app.changePlanMonth(-1),'aria-label':'Mês anterior'},'‹'),h('strong',{},prettyMonth(month)),h('button',{disabled:month>=shiftMonth(nowYM,12),onClick:()=>app.changePlanMonth(1),'aria-label':'Próximo mês'},'›'))),
-   h('div',{className:'p-timeline-scroll',role:'group','aria-label':'Escolher dia para visualizar o saldo previsto'},Array.from({length:max},(_,idx)=>{const d=start.slice(0,7)+'-'+String(idx+1).padStart(2,'0');const row=forecast.get(d) as PlanDay|undefined;const past=d<today,active=s.planDay===d;
-    return h('button',{key:d,type:'button',className:'p-day-tile '+(active?'active ':'')+(row&&row.closing<0?'negative ':'')+(past?'past':''),disabled:past,onClick:()=>app.setState({planDay:d}),title:past?'Projeções disponíveis a partir de hoje':row?'Saldo esperado: '+fmt(row.closing):'Selecione o dia'},h('small',{},pShort(d)),h('strong',{},String(idx+1).padStart(2,'0')),row?h('span',{className:'p-day-balance'},fmt(row.closing)):h('span',{},'—'),row?.items.length?h('i',{className:'p-day-dot'}):null);
-   })),
-   h('div',{className:'p-day-details'},h('div',{className:'p-day-balance-card'},h('span',{className:'micro-label'},'DIA '+pDate(s.planDay)),h('strong',{},day?fmt(day.closing):'—'),h('small',{},day?'Saldo ao final do dia':'Selecione uma data futura para projetar.'),day?h('div',{className:'p-day-totals'},h('span',{},'Início '+fmt(day.opening)),h('span',{className:'good-text'},'+'+fmt(day.incoming)),h('span',{className:'bad-text'},'−'+fmt(day.outgoing))):null),
-    h('div',{className:'p-day-events'},h('h3',{},'Movimentações do dia'),
-    items.length||bank.length?[
-      ...items.map((i:PlanItem)=>h('button',{className:'p-event-row',key:i.id,onClick:()=>app.openPlanDetail(i.id)},h('span',{className:'p-event-icon'},app.getCategories().find((c:CategoryInfo)=>c.name===i.category)?.emoji||'🧾'),h('span',{className:'p-event-name'},h('b',{},i.title),h('small',{},pStatus(i.effectiveStatus)+(i.certainty==='estimated'?' · estimado':''))),h('strong',{className:i.kind==='income'?'good-text':'bad-text'},(i.kind==='income'?'+':'−')+fmt(i.remaining||i.amount)))),
-      ...bank.map((b:BankTx)=>h('button',{className:'p-event-row',key:'bank'+b.id,onClick:()=>app.openPlanBankDetail(b)},h('span',{className:'p-event-icon'},'🏦'),h('span',{className:'p-event-name'},h('b',{},b.customTitle||b.merchant||b.description),h('small',{},'Realizada · '+b.accountName)),h('strong',{className:b.amount>=0?'good-text':'bad-text'},(b.amount>=0?'+':'−')+fmt(Math.abs(b.amount)))))
-    ]:h('p',{className:'muted-desc'},'Nenhuma movimentação registrada para esta data.'))));}
+   h('div',{className:'p-chart-metrics'},
+     h('div',{className:'p-chart-current'},h('span',{className:'micro-label'},label+' · '+pDate(s.planDay)),h('strong',{},selected?fmt(selected.closing):'—'),
+       h('span',{className:'p-chart-delta '+(positive?'up':negative?'down':'neutral')},deltaLabel,h('small',{},' vs. dia anterior'))),
+     h('div',{className:'p-chart-guide'},h('span',{},'Dia '+Number(s.planDay.slice(-2))+' de '+max),h('small',{},selected?.phase==='estimated_history'?'Valor histórico estimado, sujeito à disponibilidade dos dados':'Valores futuros são estimativas; não representam saldo garantido'))),
+   h('div',{className:'p-chart-canvas'},
+     rows.length?h('svg',{viewBox:'0 0 1010 280',className:'p-balance-svg',role:'img','aria-label':'Evolução diária do saldo previsto para '+prettyMonth(month)},
+       h('defs',{},h('linearGradient',{id:'pBalanceArea',x1:'0',y1:'0',x2:'0',y2:'1'},h('stop',{offset:'0%',stopColor:'#8f51ff',stopOpacity:'.30'}),h('stop',{offset:'100%',stopColor:'#8f51ff',stopOpacity:'.01'})),h('linearGradient',{id:'pBalanceStroke',x1:'0',y1:'0',x2:'1',y2:'0'},h('stop',{offset:'0%',stopColor:'#ad7aff'}),h('stop',{offset:'100%',stopColor:'#7b5dff'}))),
+       ...ticks.map((t,i)=>h('g',{key:'tick-'+i},h('line',{x1:left,y1:t.y,x2:right,y2:t.y,className:'p-chart-grid-line'}),h('text',{x:left-15,y:t.y+4,className:'p-chart-axis-label',textAnchor:'end'},Math.abs(t.value)>=100000?'R$ '+(t.value/100000).toFixed(1).replace('.',',')+' mil':'R$ '+Math.round(t.value/100)))),
+       ...xLabels.map(d=>h('text',{key:'day-'+d,x:left+(d-1)*width/Math.max(1,max-1),y:264,textAnchor:'middle',className:'p-chart-axis-label'},'Dia '+d)),
+       h('path',{d:areaPath,fill:'url(#pBalanceArea)'}),
+       h('path',{d:pointPath,fill:'none',stroke:'url(#pBalanceStroke)',strokeWidth:3.5,strokeLinecap:'round',strokeLinejoin:'round'}),
+       pastRows.length>1?h('path',{d:historicalPath,fill:'none',stroke:'#d5bcff',strokeWidth:3.5,strokeDasharray:'7 7',strokeLinecap:'round'}):null,
+       selected?h('g',{},h('line',{x1:activeX,y1:top,x2:activeX,y2:bottom,className:'p-chart-active-line'}),h('circle',{cx:activeX,cy:activeY,r:9,fill:'#9265ff',stroke:'#e6d4ff',strokeWidth:3}),h('circle',{cx:activeX,cy:activeY,r:17,fill:'#9963ff',fillOpacity:.13})):null
+     ):h('div',{className:'p-chart-empty'},'Ainda não há dados para mostrar o gráfico.')),
+   h('div',{className:'p-slider-controls'},
+     h('div',{className:'p-slider-labels'},h('span',{},'Dia 1'),h('span',{},'Dia '+max)),
+     h('input',{type:'range',className:'p-day-slider',min:1,max,step:1,value:Number(s.planDay.slice(-2)),onChange:update,onInput:update,'aria-label':'Selecionar dia no gráfico','aria-valuetext':pDate(s.planDay)+' · '+(selected?fmt(selected.closing):'sem valor')}),
+     h('div',{className:'p-slider-under'},h('span',{},'← Deslize para explorar os dias →'),h('span',{},'Linha pontilhada: histórico estimado'))),
+   timeline.historicalNotice&&month===today.slice(0,7)?h('p',{className:'p-chart-disclaimer'},timeline.historicalNotice):null,
+   h('div',{className:'p-day-details'},h('div',{className:'p-day-balance-card'},h('span',{className:'micro-label'},'DIA '+pDate(s.planDay)),h('strong',{},selected?fmt(selected.closing):'—'),h('small',{},selected?.phase==='estimated_history'?'Saldo histórico reconstruído':'Saldo estimado ao final do dia'),selected?h('div',{className:'p-day-totals'},h('span',{},'Início '+fmt(selected.opening)),h('span',{className:'good-text'},'+'+fmt(selected.incoming)),h('span',{className:'bad-text'},'−'+fmt(selected.outgoing))):null),
+     h('div',{className:'p-day-events'},h('h3',{},'Movimentações de '+pDate(s.planDay)),
+      items.length||bank.length?[
+       ...items.map((i:PlanItem)=>h('button',{className:'p-event-row',key:i.id,onClick:()=>app.openPlanDetail(i.id)},h('span',{className:'p-event-icon'},app.getCategories().find((c:CategoryInfo)=>c.name===i.category)?.emoji||'🧾'),h('span',{className:'p-event-name'},h('b',{},i.title),h('small',{},pStatus(i.effectiveStatus)+(i.certainty==='estimated'?' · estimado':''))),h('strong',{className:i.kind==='income'?'good-text':'bad-text'},(i.kind==='income'?'+':'−')+fmt(i.remaining||i.amount)))),
+       ...bank.map((b:BankTx)=>h('button',{className:'p-event-row',key:b.accountId+':'+b.id,onClick:()=>app.openPlanBankDetail(b)},h('span',{className:'p-event-icon'},'🏦'),h('span',{className:'p-event-name'},h('b',{},b.customTitle||b.merchant||b.description),h('small',{},'Realizada · '+b.accountName)),h('strong',{className:b.amount>=0?'good-text':'bad-text'},(b.amount>=0?'+':'−')+fmt(Math.abs(b.amount)))))
+      ]:h('p',{className:'muted-desc'},'Nenhuma movimentação registrada para esta data.'))));
+}
 function pSuggestions(app:any){const s=app.state,suggestions=s.planning.suggestions.filter((x:PlanSuggestion)=>s.planning.items.some((i:PlanItem)=>i.id===x.itemId));
  if(!suggestions.length)return null;
  return h('section',{className:'p-suggestions'},h('div',{className:'p-section-heading'},h('div',{},h('span',{className:'micro-label'},'SUGESTÕES PARA VOCÊ'),h('h2',{},'Possíveis pagamentos encontrados'),h('p',{},'Comparamos valores e datas. Você decide se é o mesmo pagamento.'))),h('div',{className:'p-suggestion-grid'},suggestions.slice(0,4).map((match:PlanSuggestion)=>{
