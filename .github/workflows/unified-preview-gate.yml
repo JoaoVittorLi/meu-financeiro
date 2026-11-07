@@ -1,0 +1,83 @@
+name: Meu Financeiro - paridade Windows e PWA (Preview)
+on:
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'electron/**'
+      - 'mobile-push/**'
+      - 'shared/**'
+      - 'tests/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/unified-preview-gate.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Both Preview clients must originate from the same source commit.
+# This workflow does NOT deploy Production, merge main or enable cloud cutover.
+jobs:
+  parity-and-security:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Dependencies (desktop)
+        run: npm ci --no-audit --no-fund
+      - name: Windows financial-engine and shared contract tests
+        run: npm run test:db
+      - name: TypeScript contract
+        run: npm run test:types
+      - name: Dependencies (Worker/PWA)
+        working-directory: mobile-push
+        run: npm ci --no-audit --no-fund
+      - name: Worker, bank parity and PWA tests
+        working-directory: mobile-push
+        run: npm test
+      - name: Bundle Cloudflare Preview without publishing
+        working-directory: mobile-push
+        run: npx wrangler deploy --dry-run --outdir /tmp/mf-preview-bundle
+      - name: Single source revision
+        run: |
+          echo "Source SHA: $GITHUB_SHA"
+          test -f shared/bank-parity.mjs
+          node -e "const p=require('./package.json'); console.log('Windows base '+p.version)"
+  preview-windows:
+    needs: parity-and-security
+    runs-on: windows-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install and compile Windows
+        shell: pwsh
+        run: |
+          npm ci --no-audit --no-fund
+          if ($LASTEXITCODE -ne 0) { throw "Installation failed" }
+          npm run compile
+          if ($LASTEXITCODE -ne 0) { throw "Compile failed" }
+      - name: Build Windows Preview from the same SHA (not a release)
+        shell: pwsh
+        run: |
+          npx electron-builder --win portable --x64 --publish never
+          if ($LASTEXITCODE -ne 0) { throw "Build failed" }
+          $exes = @(Get-ChildItem release -Filter 'MeuFinanceiro-Portable-*.exe' -File)
+          if ($exes.Count -ne 1) { throw "Expected one portable build" }
+          $hash = (Get-FileHash $exes[0].FullName -Algorithm SHA256).Hash
+          "Source commit: $env:GITHUB_SHA" | Set-Content release/BUILD-COMMIT.txt
+          "Portable SHA256: $hash" | Add-Content release/BUILD-COMMIT.txt
+      - name: Attach Windows Preview to this PR's source commit
+        uses: actions/upload-artifact@v4
+        with:
+          name: MeuFinanceiro-Preview-Windows-Mesmo-Commit
+          path: |
+            release/MeuFinanceiro-Portable-*.exe
+            release/BUILD-COMMIT.txt
+          retention-days: 14
+          if-no-files-found: error
