@@ -40,7 +40,8 @@ test('single-click cloud preparation performs native SQLite backup and 22-table 
    const backup=new (require('node:sqlite').DatabaseSync)(path.join(backups,filenames[0]),{readOnly:true});
    try{
      const row=backup.prepare('SELECT description,amount_cents FROM transactions WHERE id=?').get('sample-manual');
-     assert.deepEqual(row,{description:'LANÇAMENTO FICTÍCIO',amount_cents:10123});
+     assert.equal(row.description,'LANÇAMENTO FICTÍCIO');
+     assert.equal(row.amount_cents,10123);
    }finally{backup.close();}
    assert.equal(fin.db.prepare('PRAGMA quick_check').get().quick_check,'ok');
    const status=migrationLocalStatus(backups);
