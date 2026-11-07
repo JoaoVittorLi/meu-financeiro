@@ -46,9 +46,22 @@ function pwaBankRow(row){
     return null;
   const item=pwaText('li','','finance-item');
   const left=pwaText('div','','finance-main-text');
-  left.append(pwaText('div',row.description||'Movimentação sem descrição','finance-main-label'));
-  left.append(pwaText('div',row.date.slice(8,10)+'/'+row.date.slice(5,7)+'/'+row.date.slice(0,4)+
-    ' · Registro original do banco','finance-meta'));
+  const mainTitle=typeof row.customTitle==='string'&&row.customTitle.trim()?
+    row.customTitle:typeof row.merchant==='string'&&row.merchant.trim()?row.merchant:
+    row.description||'Movimentação sem descrição';
+  left.append(pwaText('div',mainTitle,'finance-main-label'));
+  if(mainTitle!==row.description)
+    left.append(pwaText('div','Original do Itaú: '+row.description,'finance-meta'));
+  const parts=[
+    row.date.slice(8,10)+'/'+row.date.slice(5,7)+'/'+row.date.slice(0,4),
+    row.category||'Categoria bancária em conferência',
+    row.reviewed?'Revisada':'A conferir'
+  ];
+  if(row.splitRequiresReview)parts.push('Divisão precisa ser revista');
+  else if(row.splitCount>0)parts.push(row.splitCount+' divisões cadastradas');
+  if(row.hasManualLink||row.hasPlannedLink)
+    parts.push('Vínculo preservado; conciliação pendente');
+  left.append(pwaText('div',parts.join(' · '),'finance-meta'));
   const amount=pwaText('span',pwaMoney(row.amountCents),'finance-amount '+
     (row.amountCents<0?'out':row.amountCents>0?'in':''));
   item.append(left,amount);
