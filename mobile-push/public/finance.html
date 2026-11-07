@@ -73,6 +73,13 @@
         <ul id="bankTransactions" class="finance-list" aria-label="Extrato bancário"></ul>
         <button type="button" id="bankLoadMore" class="finance-secondary" hidden>Ver mais movimentações</button>
       </article>
+      <article class="finance-card finance-manual-card">
+        <h3>Lançamentos adicionados por você</h3>
+        <p class="finance-muted">Registros manuais preservados do Windows. Aqueles vinculados ao banco não devem ser contabilizados duas vezes.</p>
+        <p class="finance-muted" id="manualListStatus" role="status" aria-live="polite">Conferindo lançamentos manuais...</p>
+        <ul id="manualTransactions" class="finance-list" aria-label="Lançamentos manuais"></ul>
+        <button type="button" id="manualLoadMore" class="finance-secondary" hidden>Ver mais lançamentos manuais</button>
+      </article>
       <p class="finance-safe">Os sinais positivo e negativo indicam direção do movimento, não sua natureza contábil. Transferências e reembolsos serão tratados na conciliação.</p>
     </section>
 
