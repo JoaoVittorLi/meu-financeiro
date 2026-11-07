@@ -72,6 +72,8 @@ async function showBankServerStatus(){
      state.historicalCompletenessVerified!==false||
      state.cloudCutoverAllowed!==false)
    throw new Error('A verificação financeira ainda não foi concluída');
+  const activation=el('bankRefreshNow');
+  if(activation)activation.hidden=!state.providerConfigured;
   if(!state.providerConfigured){
    node.textContent='Aguardando configuração segura do Pluggy na Cloudflare. Nenhuma movimentação bancária foi importada.';
   }else if(state.stage==='staging'){
@@ -99,4 +101,36 @@ document.addEventListener('visibilitychange',()=>{
  if(!document.hidden)void refreshVisibleFinance();
 });
 setInterval(()=>{void refreshVisibleFinance();},60000);
+const activate=el('bankRefreshNow');
+if(activate)activate.addEventListener('click',async()=>{
+ const approved=window.confirm(
+  'Autoriza consultar suas contas e movimentações do Pluggy diretamente na Cloudflare? '+
+  'Os dados serão guardados na quarentena privada do Preview para conferência. '+
+  'O banco SQLite original e os pagamentos planejados não serão alterados. '+
+  'Após esta consulta, o servidor repetirá as leituras periodicamente até que a conexão seja desativada.'
+ );
+ if(!approved)return;
+ activate.disabled=true;
+ el('bankServerStatus').textContent='Consultando Pluggy diretamente do servidor. Nenhum dado do desktop será enviado.';
+ try{
+  const res=await fetch('/api/bank/refresh',{
+   method:'POST',credentials:'same-origin',cache:'no-store',
+   headers:{'Content-Type':'application/json','Accept':'application/json',
+     'X-MF-Bank-Consent':'preview-bank-staging-only'},
+   body:JSON.stringify({consent:'preview-bank-staging-only'})
+  });
+  const output=await res.json();
+  if(!res.ok||output.ok!==true)
+    throw new Error('Consulta incompleta ou autorização expirada.');
+  el('bankServerStatus').textContent='Extrato consultado pelo servidor: '+
+    output.accounts+' conta(s) e '+output.fetched+
+    ' movimentações obtidas. Ainda é necessário reconciliar o histórico antes de ativar a sincronização bancária.';
+ }catch{
+  el('bankServerStatus').textContent='Não foi possível concluir a atualização bancária. '+
+    'Nenhuma movimentação foi apagada. Verifique o consentimento no Meu Pluggy.';
+ }finally{
+  activate.disabled=false;
+  void showBankServerStatus();
+ }
+});
 void refreshVisibleFinance();
