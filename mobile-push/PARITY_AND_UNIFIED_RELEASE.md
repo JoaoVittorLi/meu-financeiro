@@ -66,3 +66,17 @@ Validação do proprietário (ordem):
 6. Só depois implementar gradualmente as mutações seguras e a paridade de todas as funções, incluindo Planejamento, Simular compra, Configurações e alertas financeiros.
 
 Uma atualização para todos: o workflow de Preview já testa o Worker/PWA e constrói o portátil Windows do mesmo commit, mas não faz lançamento simultâneo em Production. Ainda são necessários versão única, API compatível N/N-1, testes e promoção controlada com backup/rollback antes da distribuição estável.
+
+## 07/11/2026 — Planejamento e Orçamentos: edição end-to-end de campos seguros
+
+- O Windows já possuía sync de campos seguros via electron/cloud-personal-safe-sync.cjs, com baseline, revisão CAS, eventos, idempotência e detecção explícita de conflitos, inclusive sincronização periódica quando a sessão está conectada.
+- O endpoint existente POST /api/personal/apply (somente Preview protegido, Cloudflare Access e sessão privada, header X-MF-Personal-Edit) agora é consumido pelo PWA. Nenhuma nova credencial, base ou rota de escrita bancária foi criada.
+- mobile-push/src/finance-personal-overview.js retorna IDs e revisões das ocorrências e dos limites já importados e verificados. Acesso continua restrito ao proprietário autenticado; não expõe IDs de conta Pluggy.
+- mobile-push/public/finance-personal-edit.js implementa filtro/pesquisa de planejamento, edição de título/notas e, em itens planned, vencimento, categoria e certeza; edição de limite mensal existente com zero permitido. Revisão obsoleta gera mensagem de conflito e exige reabrir o registro antes de repetir a decisão.
+- No desktop, os campos seguros já estavam previstos no cliente de sync. Edição no PWA não confirma automaticamente aplicação imediata no Windows: depende de sessão conectada, sincronizador local ativo e ausência de conflito.
+- Pagamentos, vínculos bancários, valores de compromissos, recorrências novas, criação/exclusão de planejamentos e cutover permanecem DESABILITADOS até API financeira completa e validada. O PWA ainda não é uma cópia funcional total do desktop.
+- Os indicadores de orçamento são recalculados após editar o limite. O snapshot imutável e os 93 objetos iniciais da importação permanecem intactos.
+- Adicionados testes sintéticos em mobile-push/test/finance-personal-pwa-edit.test.js para edição ponta a ponta de um planejamento existente e de limite, replay idempotente, conflitos CAS, preservação de status/valor e snapshot imutável.
+- BLOQUEIO DE VALIDAÇÃO: novas execuções Actions (ex.: 42424685780, inclusive rerun) falham antes de qualquer step, e o endpoint de log retorna BlobNotFound. Não classificar como testes verdes nem anunciar novo .exe. Verificar anotação na UI GitHub Actions e billing/runner/permissões; NÃO expor tokens e não tornar repositório público para economizar minutos. A causa exata ainda não foi verificada.
+- Último build Windows previamente CONFIRMADO com testes success no histórico da PR: execução 42423819073, artefato 13594294613 (ZIP com portátil). Ele é ANTERIOR à etapa atual de edição e não contém as novas telas de edição.
+- Estratégia seguinte: concluir a base única financeira e integrar o frontend React desktop/PWA ao mesmo contrato de dados; depois migrar criação, status, vinculação e simulação em lotes funcionais, com testes das duas plataformas e releases da mesma revisão, sem alterações de produção não aprovadas.
