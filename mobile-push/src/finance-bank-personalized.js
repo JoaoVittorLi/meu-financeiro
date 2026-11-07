@@ -73,6 +73,7 @@ export function personalizeBankRows(storage,rows){
       // only explicit manual override or deterministic local rule.
       category:override?.category||rule?.category||null,
       categorySource:override?'manual':rule?'rule':'pending_provider_category',
+      splits:outdated?[]:parts.map(part=>({category:part.category,amountCents:part.amount_cents})),
       splitCount:outdated?0:parts.length,splitRequiresReview:outdated,
       hasManualLink:manualLinks.has(key),hasPlannedLink:plannedLinks.has(key)
     };
