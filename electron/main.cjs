@@ -5,12 +5,13 @@ const fs=require('node:fs');
 const {FinanceDB}=require('./db.cjs');
 const {prepareCloudMigration,migrationLocalStatus}=require('./cloud-onboarding.cjs');
 const {uploadPersonalQuarantine,CONSENT}=require('./cloud-personal-uploader.cjs');
-const {PREVIEW_ORIGIN,allowedLoginNavigation,allowedLoginPopup,checkPreviewIdentity,testPreviewQuarantine}=require('./cloud-preview-identity.cjs');
+const {PREVIEW_ORIGIN,checkPreviewIdentity,testPreviewQuarantine}=require('./cloud-preview-identity.cjs');
+const {pairViaSystemBrowser,cancelBrowserPairing}=require('./cloud-system-browser.cjs');
 const {PlanningStore}=require('./planning.cjs');
 const {automaticBackup,restoreBackup,listAutoBackups,validateBackupFile}=require('./recovery.cjs');
 const {PluggyVault}=require('./pluggy-vault.cjs');
 const {PluggyClient}=require('./pluggy.cjs');
-let planner=null, db=null, mainWindow=null, vault=null, syncing=false, restoring=false, autoBackupBusy=false, cloudPreparationBusy=false, backupTimer=null, cloudAuthWindow=null, cloudAuthPromise=null;
+let planner=null, db=null, mainWindow=null, vault=null, syncing=false, restoring=false, autoBackupBusy=false, cloudPreparationBusy=false, backupTimer=null, cloudAuthPromise=null,cloudAccessAssertion=null;
 function backupsDirectory(){return path.join(app.getPath('userData'),'copias-de-seguranca');}
 async function ensureAutomaticBackup(){
   if(!db||restoring||syncing||autoBackupBusy)return;
@@ -42,103 +43,42 @@ async function previewIdentityStatus(){
   const ses=cloudPreviewSession();
   return checkPreviewIdentity((url,init)=>ses.fetch(url,init));
 }
-async function connectPreviewIdentity(){
-  const ses=cloudPreviewSession();
-  const existing=await checkPreviewIdentity((url,init)=>ses.fetch(url,init));
-  if(existing.connected)return existing;
-  if(cloudAuthPromise){
-    if(cloudAuthWindow&&!cloudAuthWindow.isDestroyed())cloudAuthWindow.focus();
-    return cloudAuthPromise;
-  }
-  const browser=new BrowserWindow({
-    parent:mainWindow||undefined,
-    width:690,height:790,minWidth:500,minHeight:530,
-    title:'Meu Financeiro — autenticação protegida',autoHideMenuBar:true,
-    backgroundColor:'#0b0a11',show:false,
-    webPreferences:{
-      partition:'persist:mf-cloud-preview',
-      sandbox:true,nodeIntegration:false,contextIsolation:true,
-      webSecurity:true,devTools:false,webviewTag:false
+function secureCloudFetch(ses){
+  return (url,options={})=>ses.fetch(url,{
+    ...options,headers:{
+      ...(options.headers||{}),
+      ...(cloudAccessAssertion?{'Cf-Access-Jwt-Assertion':cloudAccessAssertion}:{})
     }
   });
-  cloudAuthWindow=browser;
-  // Cloudflare's own IdP uses a sign-in popup/redirect outside the Access
-  // team domain. The former blanket deny stopped the visible 'Cloudflare'
-  // button without telling the user why. Allow exact trusted login origins
-  // only; every popup uses the SAME isolated Chromium cookie partition.
-  const authPopups=new Set();
-  const checkLoginNavigation=(event,details)=>{
-    const url=typeof details==='string'?details:details?.url;
-    if(!allowedLoginNavigation(url))event.preventDefault();
-  };
-  browser.webContents.setWindowOpenHandler(({url})=>{
-    if(!allowedLoginPopup(url))return {action:'deny'};
-    return {action:'allow',overrideBrowserWindowOptions:{
-      parent:browser,show:true,width:700,height:790,
-      minWidth:460,minHeight:520,autoHideMenuBar:true,
-      title:'Meu Financeiro — login Cloudflare',
-      webPreferences:{
-        partition:'persist:mf-cloud-preview',
-        sandbox:true,nodeIntegration:false,contextIsolation:true,
-        webSecurity:true,devTools:false,webviewTag:false
+}
+async function connectPreviewIdentity(){
+  const ses=cloudPreviewSession();
+  const existing=await checkPreviewIdentity(secureCloudFetch(ses));
+  if(existing.connected)return existing;
+  if(cloudAuthPromise)return cloudAuthPromise;
+  cloudAuthPromise=pairViaSystemBrowser({
+    openBrowser:url=>shell.openExternal(url),
+    acceptSession:async({accessAssertion,pilotSession})=>{
+      // The browser-to-localhost pairing never exposes tokens in renderer
+      // IPC or URLs. Session cookies stay in an isolated Chromium profile.
+      await ses.cookies.set({url:PREVIEW_ORIGIN,
+        name:'CF_Authorization',value:accessAssertion,
+        secure:true,httpOnly:true,sameSite:'no_restriction',path:'/'});
+      await ses.cookies.set({url:PREVIEW_ORIGIN,
+        name:'mf_push_session',value:pilotSession,
+        secure:true,httpOnly:true,sameSite:'strict',path:'/'});
+      cloudAccessAssertion=accessAssertion;
+      const confirmed=await checkPreviewIdentity(secureCloudFetch(ses));
+      if(!confirmed.connected){
+        cloudAccessAssertion=null;
+        await Promise.allSettled([
+          ses.cookies.remove(PREVIEW_ORIGIN,'CF_Authorization'),
+          ses.cookies.remove(PREVIEW_ORIGIN,'mf_push_session')
+        ]);
       }
-    }};
-  });
-  browser.webContents.on('did-create-window',child=>{
-    authPopups.add(child);
-    child.setMenuBarVisibility(false);
-    child.webContents.setWindowOpenHandler(()=>({action:'deny'}));
-    child.webContents.on('will-navigate',checkLoginNavigation);
-    child.webContents.on('will-redirect',checkLoginNavigation);
-    child.once('closed',()=>authPopups.delete(child));
-  });
-  // Restrict all main-frame navigation to exact trusted login origins.
-  // Never allow file:, data:, http:, wildcard subdomains or arbitrary IdPs.
-  browser.webContents.on('will-navigate',checkLoginNavigation);
-  browser.webContents.on('will-redirect',checkLoginNavigation);
-  // No downloads from a remote authentication window.
-  const onDownload=(event,webContents)=>{
-    if(webContents===browser.webContents||
-       [...authPopups].some(p=>!p.isDestroyed()&&p.webContents===webContents))
-      event.preventDefault();
-  };
-  ses.on('will-download',onDownload);
-  cloudAuthPromise=new Promise(resolve=>{
-    let ended=false,checking=false;
-    let interval;
-    const settle=(result)=>{
-      if(ended)return;
-      ended=true;
-      if(interval)clearInterval(interval);
-      ses.removeListener('will-download',onDownload);
-      cloudAuthWindow=null;cloudAuthPromise=null;
-      for(const popup of authPopups){
-        if(!popup.isDestroyed())popup.close();
-      }
-      authPopups.clear();
-      if(!browser.isDestroyed())browser.close();
-      resolve(result);
-    };
-    const check=async()=>{
-      if(ended||checking||browser.isDestroyed())return;
-      checking=true;
-      try{
-        const result=await checkPreviewIdentity((url,init)=>ses.fetch(url,init));
-        if(result.connected)settle(result);
-      }finally{checking=false;}
-    };
-    browser.once('ready-to-show',()=>browser.show());
-    browser.on('closed',()=>settle({
-      connected:false,reason:'login_closed',
-      financialSyncEnabled:false,recordsTransferred:0
-    }));
-    browser.webContents.on('did-stop-loading',()=>void check());
-    interval=setInterval(()=>void check(),4000);
-    browser.loadURL(PREVIEW_ORIGIN+'/sync.html').catch(()=>settle({
-      connected:false,reason:'login_window_failed',
-      financialSyncEnabled:false,recordsTransferred:0
-    }));
-  });
+      return confirmed;
+    }
+  }).finally(()=>{cloudAuthPromise=null;});
   return cloudAuthPromise;
 }
 
@@ -201,10 +141,10 @@ app.whenReady().then(()=>{
    if(restoring||syncing||cloudPreparationBusy)
      throw new Error('Outra operação financeira está em andamento.');
    const ses=cloudPreviewSession();
-   const identity=await checkPreviewIdentity((url,options)=>ses.fetch(url,options));
+   const identity=await checkPreviewIdentity(secureCloudFetch(ses));
    if(!identity.connected)return {ok:false,reason:'login_required',
      realRecordsSent:0,financialSyncEnabled:false};
-   return testPreviewQuarantine((url,options)=>ses.fetch(url,options));
+   return testPreviewQuarantine(secureCloudFetch(ses));
  });
  ipcMain.handle('cloud:transfer-personal',async(event)=>{
    requireAppSender(event);
@@ -222,7 +162,7 @@ app.whenReady().then(()=>{
    if(prompt.response!==1)
      return {cancelled:true,financialSyncEnabled:false,recordsSent:0};
    const ses=cloudPreviewSession();
-   const identity=await checkPreviewIdentity((url,options)=>ses.fetch(url,options));
+   const identity=await checkPreviewIdentity(secureCloudFetch(ses));
    if(!identity.connected)
      throw new Error('Faça login no Preview protegido antes de enviar os dados.');
    cloudPreparationBusy=true;
@@ -230,7 +170,7 @@ app.whenReady().then(()=>{
      return await prepareCloudMigration({
        finance:db,backupFolder:backupsDirectory(),
        onValidatedSnapshot:(snapshot)=>uploadPersonalQuarantine(
-         snapshot,(url,options)=>ses.fetch(url,options),
+         snapshot,secureCloudFetch(ses),
          app.getPath('userData'),{consent:CONSENT}
        )
      });
@@ -374,4 +314,4 @@ app.whenReady().then(()=>{
  app.on('activate',()=>{if(BrowserWindow.getAllWindows().length===0)createWindow();});
 }).catch(error=>{dialog.showErrorBox('Erro ao iniciar Meu Financeiro','Não foi possível abrir o banco de dados: '+error.message);app.quit();});
 app.on('window-all-closed',()=>{if(process.platform!=='darwin')app.quit();});
-app.on('before-quit',()=>{if(backupTimer)clearInterval(backupTimer);if(cloudAuthWindow&&!cloudAuthWindow.isDestroyed())cloudAuthWindow.close();if(db){db.close();db=null;}});
+app.on('before-quit',()=>{if(backupTimer)clearInterval(backupTimer);cancelBrowserPairing();if(db){db.close();db=null;}});
