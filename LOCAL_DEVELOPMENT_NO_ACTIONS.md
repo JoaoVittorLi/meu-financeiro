@@ -52,3 +52,7 @@ A prévia continua isolada e protegida por Cloudflare Access e sessão privada.
 A compilação Windows da nova etapa NÃO foi executada no GitHub devido à cota; não há novo EXE validado nem um novo link de Release correspondente. A validação local completa ainda precisa ser executada no Windows. É inadequado dizer que as seis áreas já têm equivalência total. A UI React comum, criação/edição financeira completa, orçamento definitivo, pagamento/vínculos, simulação de risco financeiro, conciliação real de todas as contas e cutover único continuam pendentes.
 
 Nunca modificar main/Production, descartar SQLite, reimportar os dados pessoais ou liberar liquidação automática somente por coincidência de valor/data. Acompanhar resultados do Preview e versões diretas em GitHub Releases.
+
+## Verificação sem Actions realizada nesta etapa
+
+Foi realizada uma verificação independente das fórmulas reais de parcelamento: o método PlanningStore.simulatePurchase extraído do código desktop foi executado em um harness sintético com projeção substituída por stub (sem dados pessoais), e comparado com shared/finance-installment-quote.mjs em quatro cenários, incluindo divisão de centavos, juros e vencimentos. Os quatro resultados concordaram exatamente em parcela, total, juros e calendário. Também passaram as verificações de sintaxe dos scripts PWA e Worker e os IDs da interface. Isso NÃO substitui a suíte Node/TypeScript nem o empacotamento e smoke test Windows, que continuam pendentes no checkout local.
