@@ -26,6 +26,23 @@ async function api(endpoint,method='GET',body){
  const data=await response.json().catch(()=>({}));
  if(!response.ok){const error=new Error(data.error||'Falha na sincronização.');error.code=response.status;error.data=data;throw error;}return data;
 }
+// Diagnose a *public* certificate endpoint only when Cloudflare Access auth
+// fails; the response contains fixed status codes, no identity or JWT.
+let certProbe=null;
+async function reportAccessError(error){
+ let message=error?.message||'Falha ao autenticar.';
+ if(message.includes('CF-CERTS')){
+   if(!certProbe){
+     certProbe=api('access/diagnose-certs','POST',{}).then(result=>{
+       const entries=Array.isArray(result.observations)?result.observations:[];
+       return entries.map(item=>item.mode+': '+item.code+
+         (Number.isInteger(item.httpStatus)?' HTTP '+item.httpStatus:'')).join('; ')||'sem diagnóstico';
+     }).catch(()=> 'indisponível');
+   }
+   message+=' | Consulta pública: '+await certProbe;
+ }
+ state(message,'error');
+}
 async function refresh(){
  const result=await api('sync/snapshot');
  const document=result.documents.find(x=>x.collection==='test_notes'&&x.id==='one-note');
@@ -60,7 +77,7 @@ $('refresh').addEventListener('click',()=>refresh().catch(e=>state(e.message,'er
 $('loginForm').addEventListener('submit',async(event)=>{
  event.preventDefault();
  try{await api('login','POST',{code:$('code').value});$('code').value='';setAuthenticated(true);await refresh();state('Conectado à sua base central.','ok');}
- catch(e){state(e.message,'error');}
+ catch(e){await reportAccessError(e);}
 });
 (async()=>{
  try{
@@ -68,10 +85,10 @@ $('loginForm').addEventListener('submit',async(event)=>{
   setAuthenticated(!!session.authenticated);
   if(session.authenticated){
    try{await refresh();state('Conectado à sua base central.','ok');}
-   catch(e){state(e.message,'error');}
+   catch(e){await reportAccessError(e);}
   }
   else state('Faça login para testar a sincronização.');
-  setInterval(()=>{if(!$('main').hidden&&document.visibilityState==='visible')refresh().catch(e=>state(e.message,'error'));},5000);
-  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&!$('main').hidden)refresh().catch(()=>{});});
+  setInterval(()=>{if(!$('main').hidden&&document.visibilityState==='visible')refresh().catch(reportAccessError);},5000);
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&!$('main').hidden)refresh().catch(reportAccessError);});
  }catch(e){setAuthenticated(false);state(e.message,'error');}
 })();
