@@ -1,5 +1,21 @@
 # Meu Financeiro — ativação integrada da sincronização (fluxo definitivo)
 
+> **ESTADO MAIS RECENTE — 07/11/2026, após a aprovação dos 207 fictícios:** as seções cronológicas abaixo descrevem checkpoints anteriores. O código atual já contém um endpoint **real, explicitamente autorizado e isolado em quarentena** para as 17 tabelas pessoais no Preview, bem como o transmissor Electron. A integração bancária e a sincronização definitiva ainda NÃO estão concluídas.
+
+### Próximo checkpoint operacional: migração integrada do Windows
+
+- O proprietário confirmou o teste fictício de **207 registros em 19 lotes**, com retomada, reenvio de 80 sem duplicidade, hashes e descarte total.
+- `mobile-push/src/worker.js` agora expõe exclusivamente no **Preview protegido** as rotas `POST /api/migration/personal/{status,begin,chunk,verify,cancel}`, protegidas por sessão privada, Cloudflare Access JWT assinado e e-mail autorizado, origem correta, tamanho limitado e cabeçalho explícito `X-MF-Migration-Consent`. A variável `PERSONAL_QUARANTINE_ENABLED` está **somente em [previews.vars]**, e `FINANCIAL_SCHEMA_ACTIVE` segue desligada. Production não recebe essas permissões.
+- `electron/cloud-personal-uploader.cjs` consegue enviar as **17 tabelas pessoais reais** à quarentena com backup automático, consentimento via diálogo nativo Windows, lotes de 80, retomada segura após falhas e marcador local que contém apenas UUID+hash, nunca valores financeiros.
+- `electron/main.cjs` fornece `cloud:transfer-personal`; `src/app.ts` apresenta **Iniciar migração protegida** na área Configurações. O aplicativo jamais retorna registros brutos à interface. A confirmação do upload **NÃO** ativa sincronização ou muda o SQLite original.
+- `mobile-push/src/finance-personal-overview.js` e `mobile-push/public/finance.html` disponibilizam somente após validação, e apenas para o dono autenticado, leitura de categorias, orçamentos e planos transferidos no Preview. Não expõem contas bancárias, itens Pluggy nem saldos falsamente conciliados.
+- O Workflow `.github/workflows/build-windows-cloud-preview.yml` gera a versão Windows **portátil** em PR, testando SQLite e TypeScript antes do empacotamento. Não publica Release e não altera main. O proprietário ainda **não confirmou teste manual de importação das próprias finanças**.
+- `mobile-push/src/pluggy-readonly.js` foi ajustado para `GET /v2/transactions` com cursor opaco e tratamento de paginação atual (cf. documentação Pluggy); o Pluggy **ainda não possui credenciais configuradas no servidor** e não opera nas contas reais da Cloudflare.
+
+**Ainda faltam obrigatoriamente:** teste real de login e upload via Windows portátil, reconciliação completa com dados bancários Pluggy incluindo limite de histórico e IDs, provisionamento protegido dos segredos do Pluggy sem expô-los no PWA, definição da base única de escrita, seis telas financeiras no Android, sincronização online com revisão/conflitos e restauração verificada. O botão atual migra somente para quarentena; não prometer integração total antes dessas etapas.
+
+
+
 ## Objetivo aprovado pelo proprietário (07/11/2026)
 
 O proprietário rejeitou executar auditoria separada e realizar upload manual
