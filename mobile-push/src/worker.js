@@ -100,20 +100,27 @@ export class PushHome {
   }
   async send() {
     const subs=(await this.state.storage.get('subscriptions'))||[];
-    if(!subs.length) return {accepted:0,removed:0,failed:0,registered:0};
+    if(!subs.length) {
+      const outcome={accepted:0,removed:0,failed:0,registered:0,services:[]};
+      await this.state.storage.put('last_test',{at:Date.now(),...outcome});
+      return outcome;
+    }
     const vapid=await this.getVapid();
-    const keep=[]; let accepted=0,removed=0,failed=0;
+    const keep=[]; let accepted=0,removed=0,failed=0;const services=[];
     for(const sub of subs) {
       try {
         const jwt=await makeJWT(vapid.publicKey,vapid.privateJwk,sub.endpoint,this.env.VAPID_CONTACT || 'https://github.com/JoaoVittorLi/meu-financeiro');
-        const response=await fetch(sub.endpoint,{method:'POST',headers:{Authorization:`vapid t=${jwt}, k=${vapid.publicKey}`,TTL:'60',Urgency:'normal'}});
+        const response=await fetch(sub.endpoint,{method:'POST',headers:{Authorization:`vapid t=${jwt}, k=${vapid.publicKey}`,TTL:'3600',Urgency:'high'}});
+        const host=new URL(sub.endpoint).hostname;
+        const provider=host.includes('apple')?'Apple':host.includes('google')?'Google':host.includes('mozilla')?'Mozilla':'Outro';
+        services.push({provider,httpStatus:response.status,result:response.ok?'accepted':(response.status===404||response.status===410)?'subscription_expired':'rejected'});
         if(response.status===404 || response.status===410) removed++;
         else {keep.push(sub); if(response.ok) accepted++; else failed++;}
-      } catch { keep.push(sub); failed++; }
+      } catch { keep.push(sub); failed++; services.push({provider:'Não identificado',httpStatus:null,result:'network_error'}); }
     }
     if(removed) await this.state.storage.put('subscriptions',keep);
-    await this.state.storage.put('last_test',{at:Date.now(),accepted,failed,removed});
-    return {accepted,removed,failed,registered:keep.length};
+    await this.state.storage.put('last_test',{at:Date.now(),accepted,failed,removed,services});
+    return {accepted,removed,failed,registered:keep.length,services};
   }
   async scheduleAlarm() {
     const queued=((await this.state.storage.get('events'))||[]).filter(x=>x.status==='queued');
@@ -153,6 +160,12 @@ export class PushHome {
       await this.state.storage.put('subscriptions',subs);
       return json({ok:true,registered:subs.length});
     }
+    if(u.pathname==='/check'&&request.method==='POST') {
+      const body=await request.json().catch(()=>null);
+      if(typeof body?.endpoint!=='string'||!isApprovedEndpoint(body.endpoint)) return json({error:'Inscrição do aparelho inválida.'},400);
+      const subs=(await this.state.storage.get('subscriptions'))||[];
+      return json({registered:subs.some(s=>s.endpoint===body.endpoint),total:subs.length});
+    }
     if(u.pathname==='/send'&&request.method==='POST') return json(await this.send());
     if(u.pathname==='/schedule'&&request.method==='POST') {
       const events=(await this.state.storage.get('events'))||[];
@@ -188,7 +201,7 @@ export default {
     if(url.pathname==='/api/session')return json({authenticated:signedIn});
     if(!signedIn)return json({error:'Faça login para continuar.'},401);
     if(url.pathname==='/api/logout'&&request.method==='POST')return json({ok:true},200,{'Set-Cookie':`${COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0`});
-    const routes={'/api/config':'/config','/api/status':'/status','/api/subscribe':'/subscribe','/api/test':'/send','/api/test-later':'/schedule'};
+    const routes={'/api/config':'/config','/api/status':'/status','/api/subscribe':'/subscribe','/api/check':'/check','/api/test':'/send','/api/test-later':'/schedule'};
     if(!routes[url.pathname])return json({error:'Rota indisponível.'},404);
     const stub=env.PUSH_HOME.get(env.PUSH_HOME.idFromName('one-private-user'));
     return stub.fetch(new Request(`https://internal${routes[url.pathname]}`,{method:request.method,headers:{'Content-Type':'application/json'},body:request.method==='POST'?request.body:null,duplex:request.method==='POST'?'half':undefined}));

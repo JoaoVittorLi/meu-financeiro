@@ -39,3 +39,22 @@ test('private API refuses missing authorization and accepts valid session only',
  const req=new Request('https://example.com/api/session',{headers:{Cookie:cookie}});
  assert.equal((await (await worker.fetch(req,env)).json()).authenticated,true);
 });
+
+test('zero subscribed devices yields explicit diagnostics',async()=>{
+ const store=new Map();
+ const state={storage:{get:async k=>store.get(k),put:async(k,v)=>{store.set(k,v)}}};
+ const home=new PushHome(state,{});
+ const result=await home.send();
+ assert.deepEqual(result,{accepted:0,removed:0,failed:0,registered:0,services:[]});
+ assert.equal(store.get('last_test').registered,0);
+});
+test('device membership verification distinguishes local and remote registration',async()=>{
+ const store=new Map();
+ const state={storage:{get:async k=>store.get(k),put:async(k,v)=>{store.set(k,v)}}};
+ const home=new PushHome(state,{});
+ const endpoint='https://fcm.googleapis.com/fcm/send/diagnostic';
+ const query=()=>new Request('https://internal/check',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({endpoint})});
+ assert.equal((await (await home.fetch(query())).json()).registered,false);
+ store.set('subscriptions',[{endpoint}]);
+ assert.equal((await (await home.fetch(query())).json()).registered,true);
+});

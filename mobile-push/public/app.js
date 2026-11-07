@@ -17,9 +17,15 @@ async function refresh(){
  try{const s=await api('status');$('registered').textContent=s.registered;
  $('last').textContent=s.lastTest?new Date(s.lastTest.at).toLocaleString('pt-BR'):'Nenhum';
  const sub=await workerReady?.then(w=>w?.pushManager.getSubscription()).catch(()=>null);
- const enabled=Notification.permission==='granted'&&!!sub;
- $('badge').textContent=enabled?'Ativado':'Não ativado'; $('test').disabled=!enabled; $('testLater').disabled=!enabled;
- state(enabled?'Seu aparelho está pronto para receber avisos.':'Ative as notificações para começar.',enabled?'ok':'');
+ const enabled=('Notification' in window)&&Notification.permission==='granted'&&!!sub;
+ const check=enabled?await api('check','POST',{endpoint:sub.endpoint}):null;
+ const synced=enabled&&check?.registered===true;
+ $('badge').textContent=synced?'Pronto':enabled?'Revalidar inscrição':'Não ativado';
+ $('deviceStatus').textContent=synced?'Confirmado':enabled?'Não registrado':'Não ativado';
+ $('localTest').disabled=!enabled; $('test').disabled=!synced; $('testLater').disabled=!synced;
+ state(synced?'Este aparelho está registrado. Primeiro teste uma notificação local.':
+       enabled?'Inscrição do navegador não consta no servidor. Toque em Ativar notificações para registrar novamente.':
+       'Ative as notificações para começar.',synced?'ok':'');
  }catch(e){state(e.message,'error');}
 }
 $('loginForm').addEventListener('submit',async event=>{
@@ -36,15 +42,35 @@ $('enable').addEventListener('click',async ()=>{
    throw new Error('No iPhone, use Compartilhar → Adicionar à Tela de Início e abra o app pelo ícone.');
   if(!cachedRegistration||!cachedPublicKey) throw new Error('Reabra a página para preparar as notificações.');
   // Subscribe synchronously from the tap/click handler (required by Safari).
-  const pending=cachedRegistration.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:from64(cachedPublicKey)});
-  const sub=await pending;
+  const existing=await cachedRegistration.pushManager.getSubscription();
+  const sub=existing||await cachedRegistration.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:from64(cachedPublicKey)});
   await api('subscribe','POST',sub.toJSON());
   state('Notificações ativadas neste aparelho!','ok');await refresh();
  }catch(e){state(e.message,'error');}finally{b.disabled=false;}
 });
+$('localTest').addEventListener('click',async()=>{
+ const b=$('localTest');b.disabled=true;
+ try{
+  if(!cachedRegistration||Notification.permission!=='granted') throw new Error('Autorize primeiro as notificações.');
+  await cachedRegistration.showNotification('💜 Meu Financeiro — Teste local',{
+   body:'Aviso gerado no próprio celular. Se aparecer, a exibição local está funcionando.',
+   icon:'/icon-192.png',badge:'/icon-192.png',tag:'mf-local-'+Date.now()
+  });
+  state('Teste local solicitado. Confira a central de notificações do celular.','ok');
+ }catch(e){state('Falha ao testar no aparelho: '+e.message,'error');}finally{b.disabled=false;}
+});
 $('test').addEventListener('click',async ()=>{
  $('test').disabled=true;
- try{const x=await api('test','POST',{});state(x.accepted?`Aviso aceito pelo serviço push (${x.accepted} aparelho(s)).`:`Não enviado: ${x.failed} falha(s).` ,x.accepted?'ok':'error');}
+ try{
+ const x=await api('test','POST',{});
+ const provider=(x.services||[]).map(v=>`${v.provider}: ${v.httpStatus??'sem resposta'} (${v.result})`).join('; ');
+ const message=x.accepted?`Serviço push aceitou ${x.accepted} envio(s). A exibição no celular ainda precisa ser confirmada.`:
+   x.registered===0?'Nenhum aparelho cadastrado. Reative as notificações.':
+   x.removed>0?`${x.removed} inscrição(ões) expirada(s). Reative as notificações.`:
+   `Envio recusado pelo serviço de push. Falhas: ${x.failed}.`;
+ state(message+(provider?' Detalhe técnico: '+provider:''),x.accepted?'ok':'error');
+ await refresh();
+}
  catch(e){state(e.message,'error');}finally{$('test').disabled=false;}
 });
 $('testLater').addEventListener('click',async ()=>{
