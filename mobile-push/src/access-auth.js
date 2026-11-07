@@ -79,6 +79,9 @@ export async function authorizeAccess(request,env={},options={}){
   if(!settings)return {ok:false,status:503,error:'Configuração do acesso reforçado incompleta.'};
   const token=request.headers.get('Cf-Access-Jwt-Assertion');
   if(!token||token.length>8192)return {ok:false,status:403,error:'Cloudflare Access obrigatório.'};
+  // Diagnostics intentionally contain ONLY fixed codes. Never echo tokens,
+  // signing-key IDs, emails or unverified claims to the browser or logs.
+  let stage='FORMAT';
   try{
     const parts=token.split('.');
     if(parts.length!==3 || parts.some(x=>!x))throw new Error('Malformed token.');
@@ -86,25 +89,42 @@ export async function authorizeAccess(request,env={},options={}){
     const payload=jsonFromPart(parts[1]);
     if(header.alg!=='RS256'||typeof header.kid!=='string'||header.kid.length>200)throw new Error('Disallowed algorithm.');
     const now=options.now===undefined?Date.now():options.now;
-    // Verify the signature BEFORE examining claims or disclosing any mismatches.
+
+    stage='CERTS';
     const keys=await certificates(settings.team,options.fetchImpl||fetch,now);
+
+    stage='SIGNING_KEY';
     const jwk=keys.find(k=>k.kid===header.kid);
     if(!jwk)throw new Error('Unknown signing key.');
+
+    stage='IMPORT_KEY';
     const publicKey=await crypto.subtle.importKey('jwk',
       {kty:'RSA',n:jwk.n,e:jwk.e,alg:'RS256',ext:true},
       {name:'RSASSA-PKCS1-v1_5',hash:'SHA-256'},false,['verify']);
+
+    stage='SIGNATURE';
     const signature=bytesFromB64url(parts[2]);
     const valid=await crypto.subtle.verify('RSASSA-PKCS1-v1_5',
       publicKey,signature,textEncoder.encode(parts[0]+'.'+parts[1]));
     if(!valid)throw new Error('Invalid signature.');
+
+    stage='CLAIMS';
     const claimError=verifiedClaimError(payload,settings,now);
     if(claimError)return {ok:false,status:403,error:claimError};
     return {ok:true,mode:'access'};
-  }catch(error){
-    // No JWT, signing key, token value, email or secret is sent to the UI/logs.
-    if(error instanceof Error&&
-      /Access certs (unavailable|invalid|missing)\./.test(error.message))
-      return {ok:false,status:503,error:'Não foi possível consultar o certificado Cloudflare. Confira TEAM_DOMAIN do Preview.'};
-    return {ok:false,status:403,error:'O token Cloudflare não pôde ser verificado. Reabra o Preview em janela anônima e faça login novamente.'};
+  }catch{
+    const messages={
+      FORMAT:'CF-FORMAT',
+      CERTS:'CF-CERTS',
+      SIGNING_KEY:'CF-KEY',
+      IMPORT_KEY:'CF-CRYPTO',
+      SIGNATURE:'CF-SIGNATURE',
+      CLAIMS:'CF-CLAIMS'
+    };
+    const code=messages[stage]||'CF-UNKNOWN';
+    const status=stage==='CERTS'||stage==='IMPORT_KEY'?503:403;
+    return {ok:false,status,
+      error:'Não foi possível validar o login Cloudflare (código '+code+'). Envie somente esse código ao suporte do projeto; não envie o token.',
+      code};
   }
 }
