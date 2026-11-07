@@ -18,6 +18,8 @@ on:
       - 'tests/cloud-preview-identity.test.cjs'
       - 'electron/cloud-transfer-plan.cjs'
       - 'tests/cloud-transfer-plan.test.cjs'
+      - 'electron/cloud-personal-uploader.cjs'
+      - 'tests/cloud-personal-uploader.test.cjs'
       - 'electron/cloud-data-routing.cjs'
       - 'tests/cloud-data-routing.test.cjs'
       - 'electron/recovery.cjs'
