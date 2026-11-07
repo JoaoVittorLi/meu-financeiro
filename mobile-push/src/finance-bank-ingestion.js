@@ -91,6 +91,15 @@ export async function ingestPluggyToStaging(storage,env,{
     });
     const seen=new Set(),accounts=[],transactions=[];
     for(const itemId of ids){
+      if(typeof client.getItem==='function'){
+        const item=await client.getItem(itemId);
+        if(item.status==='LOGIN_ERROR'||item.status==='WAITING_USER_INPUT'||
+           item.status==='UPDATING'||
+           item.error?.code==='USER_AUTHORIZATION_EXPIRED'||
+           (typeof item.consentExpiresAt==='string'&&
+             Date.parse(item.consentExpiresAt)<=Date.now()))
+          throw new Error('Item Pluggy precisa ser renovado ou atualizado antes da leitura.');
+      }
       const found=await client.listAccounts(itemId);
       if(!found.length)throw new Error('Nenhuma conta disponível.');
       for(const account of found){
