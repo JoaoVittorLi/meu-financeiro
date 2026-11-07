@@ -192,3 +192,15 @@ export function cancelPersonalTransfer(storage,importId){
    return {ok:true,discarded:true,financialSyncEnabled:false};
  });
 }
+
+export function personalTransferStatus(storage,importId){
+ assertId(importId);
+ ensureTransferTables(storage);
+ const current=get(storage,importId);
+ if(!current)return {ok:true,stage:'not_started',receivedRows:0,
+   financialSyncEnabled:false,realDataPublished:false};
+ const summary=JSON.parse(current.manifest_json);
+ return {ok:true,stage:current.state,receivedRows:current.row_count,
+   expectedRows:summary.rows,personalTables:17,
+   financialSyncEnabled:false,realDataPublished:false};
+}
