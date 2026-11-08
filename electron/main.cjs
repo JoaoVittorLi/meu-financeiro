@@ -18,6 +18,7 @@ const {AIAuthVault}=require('./ai-vault.cjs');
 const {AIPersonalStore}=require('./ai-personal.cjs');
 const {ChatGPTSignIn}=require('./ai-auth.cjs');
 const {ChatGPTDemoClient}=require('./ai-client.cjs');
+const {buildSyntheticFinancialContext}=require('../shared/ai-financial-context.mjs');
 let planner=null, db=null, mainWindow=null, vault=null, syncing=false, restoring=false, autoBackupBusy=false, cloudPreparationBusy=false, backupTimer=null, cloudPersonalTimer=null, cloudPersonalBusy=false, cloudAuthPromise=null,cloudAccessAssertion=null;
 function backupsDirectory(){return path.join(app.getPath('userData'),'copias-de-seguranca');}
 async function ensureAutomaticBackup(){
@@ -386,6 +387,11 @@ app.whenReady().then(()=>{
  // ChatGPT OAuth and fictitious-only tests; strictly isolated from finances.
  ipcMain.handle('ai:status',(event)=>{requireAppSender(event);return aiAuth.status();});
  ipcMain.handle('ai:capabilities',(event)=>{requireAppSender(event);return aiDemo.capabilities();});
+ ipcMain.handle('ai:financial-context-demo',(event,source)=>{
+   requireAppSender(event);
+   // Synthetic-only, non-network, read-only. Never reach FinanceDB, Pluggy or OpenAI.
+   return buildSyntheticFinancialContext(source);
+ });
  ipcMain.handle('ai:memory-list',async(event)=>{
    requireAppSender(event);
    return aiPersonal.list(await aiDemo.personalSubject());

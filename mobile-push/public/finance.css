@@ -173,3 +173,10 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{ou
 .finance-ai-context-preview strong{font-size:12px;color:#f3e5ff}
 .finance-ai-context-preview p{line-height:1.65;font-size:12px;margin:9px 0}
 .finance-ai-context-preview small{font-size:11px;color:#a897c0}
+
+/* E4.1: demo context never contains account data or API credentials. */
+.finance-ai-financial-actions{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0}
+.finance-ai-financial-actions .finance-secondary{width:auto;margin:0}
+.finance-ai-context-preview pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:11px;line-height:1.65;color:#d7c3e8}
+.finance-ai-context-preview details{margin-top:12px}
+.finance-ai-context-preview summary{cursor:pointer;font-size:12px;color:#e9d5ff}

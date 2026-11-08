@@ -64,6 +64,7 @@ contextBridge.exposeInMainWorld('financeDesktop', Object.freeze({
   aiMemoryClear: () => ipcRenderer.invoke('ai:memory-clear'),
   aiUsageSummary: () => ipcRenderer.invoke('ai:usage-summary'),
   aiContextPreview: (input) => ipcRenderer.invoke('ai:context-preview',input),
+  aiFinancialContextDemo: (source) => ipcRenderer.invoke('ai:financial-context-demo',source),
   onAIDelta: (callback) => {
     if(typeof callback!=='function')throw new TypeError('Callback inválido.');
     const listener=(_event,data)=>callback(typeof data?.delta==='string'?data.delta:'');

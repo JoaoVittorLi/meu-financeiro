@@ -15,6 +15,7 @@ import {readFinancePreviewPeriod} from './finance-period-preview.js';
 import {installmentQuote} from '../../shared/finance-installment-quote.mjs';
 import {publicCapabilities,buildDemoRequest} from '../../shared/ai-policy.mjs';
 import {assembleDemoContext} from '../../shared/ai-context.mjs';
+import {buildSyntheticFinancialContext} from '../../shared/ai-financial-context.mjs';
 import {applyPersonalEdit,personalEditChanges,personalEditBaseline} from './finance-personal-edits.js';
 // Meu Financeiro: private proof-of-concept for standards-based Web Push.
 // No bank data or credentials are handled by this Worker.
@@ -424,6 +425,15 @@ export default {
         const preview=assembleDemoContext(buildDemoRequest(caseId),[],false).inspection;
         return json(preview);
       }catch{return json({error:'Exemplo de demonstração inválido.'},400);}
+    }
+    if(url.pathname==='/api/ai/financial-context-demo'&&request.method==='GET'){
+      // Strictly synthetic context; no SQL, no real balances, and no inference.
+      // Reuse the same Preview session + Access authorizations.
+      if(!personalQuarantineAllowed(env))return json({error:'Prévia de IA não habilitada.'},403);
+      const identity=await authorizeAccess(request,env);
+      if(!identity.ok)return json({error:'Acesso protegido necessário.'},identity.status);
+      try{return json(buildSyntheticFinancialContext(url.searchParams.get('source')));}
+      catch{return json({error:'Fonte fictícia inválida.'},400);}
     }
     if(url.pathname==='/api/logout'&&request.method==='POST')return json({ok:true},200,{'Set-Cookie':`${COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0`});
     if(url.pathname==='/api/access/diagnose-certs'&&request.method==='POST'){
