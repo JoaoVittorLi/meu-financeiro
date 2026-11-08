@@ -10,7 +10,7 @@ on:
       - .ci/request-preview-build.txt
 
 permissions:
-  contents: write
+  contents: read
 
 # Both Preview clients must originate from the same source commit.
 # This workflow does NOT deploy Production, merge main or enable cloud cutover.
@@ -46,6 +46,8 @@ jobs:
           node -e "const win=require('./package.json'); const pwa=require('./mobile-push/package.json'); if(win.version!==pwa.version){console.error('Version mismatch');process.exit(1)} console.log('Windows and PWA '+win.version)"
   preview-windows:
     needs: parity-and-security
+    permissions:
+      contents: write
     runs-on: windows-latest
     timeout-minutes: 35
     steps:
