@@ -212,3 +212,9 @@
 @media(prefers-reduced-motion:reduce){
  .mf-ai-card-grid,.mf-ai-action-card,.mf-ai-lab-disclosure{animation:none;transition:none}
 }
+
+/* At 320px, present all three Intelligence tabs without clipping their names. */
+@media(max-width:560px){
+ .mf-ai-tabbar{flex-wrap:wrap;overflow-x:visible;gap:6px}
+ .mf-ai-tabbar button{flex:1 1 110px;min-width:0;white-space:normal;padding:9px 8px;text-align:center}
+}
