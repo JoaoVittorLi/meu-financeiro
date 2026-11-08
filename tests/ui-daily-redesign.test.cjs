@@ -115,7 +115,7 @@ test('UI03 seven-day agenda is computed only from planned unpaid expenses',()=>{
  const multiple=Array.from({length:7},(_,i)=>({...events[0],id:'extra-'+i,dueDate:today}));
  const overflow=pUpcoming({state:{planning:{items:multiple}},openPlanDetail:()=>{}});
  assert.equal(walk(overflow,n=>n.name==='button'&&n.props.className==='p-upcoming-row').length,5);
- assert.match(JSON.stringify(overflow),/Mais 2 compromisso\\(s\\)/);
+ assert.match(JSON.stringify(overflow),/Mais 2 compromisso\(s\)/);
 });
 
 test('UI03 planning prioritizes upcoming commitments and agenda before graph',()=>{
