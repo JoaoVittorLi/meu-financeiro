@@ -79,6 +79,23 @@ Write-Host 'Executando comando oficial: npm run dist:windows...'
 & $npmExecutable run dist:windows
 Assert-Success 'npm run dist:windows'
 
+Write-Host 'Verificando que o renderer atual corresponde ao commit e ao manifesto...'
+& $nodeExecutable scripts/renderer-provenance.cjs verify
+Assert-Success 'Manifesto B00 do renderer'
+
+$asarCandidates = @(
+  (Join-Path $root 'release/win-unpacked/resources/app.asar'),
+  (Join-Path $root 'release/win-x64-unpacked/resources/app.asar')
+)
+$asarPath = $asarCandidates | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
+if (!$asarPath) { throw 'Nenhum app.asar de staging foi encontrado para conferência B00.' }
+& $nodeExecutable scripts/renderer-provenance.cjs verify-asar $asarPath
+Assert-Success 'ASAR B00 versus renderer testado'
+$rendererManifestPath = Join-Path $root 'app/renderer-provenance.json'
+$rendererManifest = Get-Content -LiteralPath $rendererManifestPath -Raw | ConvertFrom-Json
+$rendererManifestHash = (Get-FileHash -LiteralPath $rendererManifestPath -Algorithm SHA256).Hash.ToLowerInvariant()
+$asarHash = (Get-FileHash -LiteralPath $asarPath -Algorithm SHA256).Hash.ToLowerInvariant()
+
 $releaseDir = Join-Path $root 'release'
 $installerName = "MeuFinanceiro-Instalador-$version-x64.exe"
 $portableName = "MeuFinanceiro-Portable-$version-x64.exe"
@@ -114,6 +131,9 @@ $hashLines = @(
   "# Commit: $sha",
   "# Versao: $version",
   "# Origem: $($env:CIRCLE_BUILD_URL)",
+  "# Renderer manifest SHA256: $rendererManifestHash",
+  "# Renderer bundle SHA256: $($rendererManifest.assets.'app/app.js')",
+  "# ASAR SHA256: $asarHash",
   "$((Get-FileHash -LiteralPath $installerPath -Algorithm SHA256).Hash.ToLowerInvariant())  $installerName",
   "$((Get-FileHash -LiteralPath $portablePath -Algorithm SHA256).Hash.ToLowerInvariant())  $portableName"
 )
