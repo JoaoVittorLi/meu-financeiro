@@ -100,9 +100,11 @@ class ChatGPTDemoClient{
     this.busy=true;
     try{
       const token=await this.accessTokenChecked();
-      const available=await this.modelAvailable(token);
-      if(!available)throw new Error('GPT-6.1 Sol não está disponível para esta conta.');
-      // Count only attempts that can reach inference. Never repeat an ambiguous POST.
+      // The model is fixed by shared/ai-policy.mjs. The models catalog is
+      // only required for an interactive model picker, which this app has not.
+      // Skip the fragile GET /models preflight; entitlement is checked by
+      // POST /responses itself. No alternative model or paid API fallback.
+      // Count attempts at the single inference POST; never retry ambiguous POSTs.
       this.tests++;
       const response=await this.safeFetch('de envio da análise','https://api.openai.com/v1/responses',{
         method:'POST',
