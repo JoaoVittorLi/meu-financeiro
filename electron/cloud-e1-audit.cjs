@@ -38,7 +38,7 @@ function localE1Evidence(finance,userDataDir){
     accountIdentities:hashTuples(accountRows,r=>[r.account_id,r.item_id]),
     accountBalancesUndated:hashTuples(accountRows,r=>[r.account_id,r.balance_cents]),
     providerCategories:hashTuples(bankRows,r=>[r.account_id,r.external_id,
-      typeof r.category==='string'&&r.category.trim()?r.category:null]),
+      typeof r.category==='string'&&r.category.trim()?r.category:'Outros']),
     originalImportDigest:marker?.digest||null,
     personalTableCounts:counts
   };
