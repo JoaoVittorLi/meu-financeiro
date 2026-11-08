@@ -17,6 +17,7 @@
 <script src="/finance-simulate.js" defer></script>
 <script src="/finance-reference-audit.js" defer></script>
 <script src="/finance-planning-calendar.js" defer></script>
+<script src="/finance-ai.js" defer></script>
 </head>
 <body>
 <div class="finance-app">
@@ -32,6 +33,7 @@
       <button type="button" data-view="budgets">Orçamentos</button>
       <button type="button" data-view="simulate">Simular compra</button>
       <button type="button" data-view="accounts">Minhas contas</button>
+      <button type="button" data-view="intelligence">✦ Inteligência</button>
     </nav>
     <div class="finance-sidebar-bottom">
       <a href="/">Notificações</a>
@@ -222,6 +224,26 @@
         </div>
       </article>
       <p class="finance-safe">A data da consulta ao Pluggy não é necessariamente a data do saldo informado pelo Itaú. O saldo não será apresentado como disponível antes da conferência. Esta auditoria de referências não substitui a comparação dos hashes bancários com o Windows nem a conferência de saldos e categorias.</p>
+    </section>
+
+    <section id="view-intelligence" class="finance-view" hidden aria-label="Inteligência financeira">
+      <div class="finance-intro"><span class="finance-tag">Inteligência compartilhada · Entrega 2</span>
+        <h2>Entenda melhor suas decisões.</h2>
+        <p>A mesma política financeira do desktop. O ChatGPT ainda não é executado diretamente no PWA porque a autenticação remota precisa de autorização específica.</p>
+      </div>
+      <article class="finance-card finance-ai-card">
+        <h3>GPT-6.1 Sol · Low / Medium</h3>
+        <p id="financeAiStatus" role="status" aria-live="polite" class="finance-muted">Consultando as capacidades compartilhadas...</p>
+        <div id="financeAiTabs" class="finance-ai-tabs" role="tablist" aria-label="Áreas da Inteligência">
+          <button type="button" data-ai-tab="today" aria-selected="true">Hoje</button>
+          <button type="button" data-ai-tab="chat" aria-selected="false">Conversar</button>
+          <button type="button" data-ai-tab="actions" aria-selected="false">Plano de ação</button>
+        </div>
+        <div id="financeAiContent" class="finance-ai-content">
+          <p class="finance-muted">As análises do aplicativo continuam baseadas nos mesmos cálculos. Esta página não faz inferência e não consome tokens.</p>
+        </div>
+      </article>
+      <p class="finance-safe">Não serão solicitadas credenciais do ChatGPT no navegador nem armazenados tokens no PWA. Os testes com GPT-6.1 Sol são iniciados pelo Electron, com autorização local.</p>
     </section>
 
     <dialog id="personalEditDialog" class="finance-edit-dialog" aria-labelledby="personalEditTitle">
