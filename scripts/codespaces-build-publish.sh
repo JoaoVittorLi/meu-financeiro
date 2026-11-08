@@ -55,7 +55,7 @@ RELEASE_DIR="$ROOT/release"
 
 echo "Commit: $SHA"
 echo 'Etapa 1/4: dependências e testes do desktop...'
-npm ci --no-audit --no-fund
+npm install --no-audit --no-fund --package-lock=false
 npm run test:types
 npm run test:db
 npm run compile
@@ -63,7 +63,7 @@ npm run compile
 echo 'Etapa 2/4: testes Worker/PWA e dry-run Cloudflare...'
 (
   cd mobile-push
-  npm ci --no-audit --no-fund
+  npm install --no-audit --no-fund --package-lock=false
   npm test
   npx wrangler deploy --dry-run --outdir "$LOG_DIR/cloudflare-dry-run"
 )
