@@ -351,7 +351,7 @@ class PeriodPicker extends React.Component<any,any>{
   e.preventDefault();e.stopPropagation();
   const next=e.key==='Home'?advanceDate(day,-((fromISO(day).getDay()+6)%7)):
    e.key==='End'?advanceDate(day,6-((fromISO(day).getDay()+6)%7)):advanceDate(day,delta[e.key]);
-  const focusDay=()=>this.panel?.querySelector('[data-date="'+next+'"]')?.focus();
+  const focusDay=()=>this.panel?.querySelector('[data-date="'+next+'"]')?.focus({preventScroll:true});
   if(next.slice(0,7)!==this.state.view)this.setState({view:next.slice(0,7)},focusDay);else focusDay();
  };
  onScroll=(e:any)=>{
