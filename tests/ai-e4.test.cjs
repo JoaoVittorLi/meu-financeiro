@@ -83,6 +83,8 @@ test('E4 renderer and Electron use a restricted preview bridge with no inference
  assert.match(ui,/desktop\.aiFinancialContextDemo\(source\)/);
  assert.match(ui,/report\.inferenceCalled!==false/);
  assert.match(engine,/import \{aggregateFinancePeriod,budgetProgress\} from '\.\/finance-period-ledger\.mjs'/);
- for(const forbidden of ['sqlite','pluggy','api.openai.com','fetch(','db.prepare('])
-  assert.ok(!engine.toLowerCase().includes(forbidden.toLowerCase()),'E4 preview contains forbidden dependency: '+forbidden);
+ // Comments may mention risk terms; reject executable I/O dependencies, not prose.
+ assert.doesNotMatch(engine,/\b(?:db\.prepare|fetch|require)\s*\(/);
+ assert.doesNotMatch(engine,/from\s+['"][^'"]*(?:electron\/db|pluggy|sqlite)[^'"]*['"]/i);
+ assert.doesNotMatch(engine,/api\.openai\.com/);
 });
