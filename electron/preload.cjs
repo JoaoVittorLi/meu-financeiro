@@ -14,6 +14,7 @@ contextBridge.exposeInMainWorld('financeDesktop', Object.freeze({
   transferPersonalCloud: () => ipcRenderer.invoke('cloud:transfer-personal'),
   cloudPersonalSyncStatus: () => ipcRenderer.invoke('cloud:personal-sync-status'),
   cloudBankParity: () => ipcRenderer.invoke('cloud:bank-parity'),
+  cloudE1Audit: () => ipcRenderer.invoke('cloud:e1-audit'),
   onCloudPersonalUpdated: (callback) => {
     if(typeof callback!=='function')throw new TypeError('Callback inválido.');
     const listener=(_event,data)=>callback({inbound:data?.inbound||0,conflicts:data?.conflicts||0});
