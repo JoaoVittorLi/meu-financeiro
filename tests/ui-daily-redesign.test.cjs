@@ -108,6 +108,14 @@ test('UI03 seven-day agenda is computed only from planned unpaid expenses',()=>{
  assert.deepEqual(visited,['a']);
  const firstHeading=walk(rendered,n=>n.name==='div'&&n.props.className==='p-section-heading')[0];
  assert.ok(JSON.stringify(firstHeading).includes('R$ 1050.00'));
+ // Guard both branches of the nested conditional/map that previously broke TS compilation.
+ const empty=pUpcoming({state:{planning:{items:[]}},openPlanDetail:()=>{}});
+ assert.equal(walk(empty,n=>n.name==='button'&&n.props.className==='p-upcoming-row').length,0);
+ assert.match(JSON.stringify(empty),/Nenhuma despesa pendente/);
+ const multiple=Array.from({length:7},(_,i)=>({...events[0],id:'extra-'+i,dueDate:today}));
+ const overflow=pUpcoming({state:{planning:{items:multiple}},openPlanDetail:()=>{}});
+ assert.equal(walk(overflow,n=>n.name==='button'&&n.props.className==='p-upcoming-row').length,5);
+ assert.match(JSON.stringify(overflow),/Mais 2 compromisso\\(s\\)/);
 });
 
 test('UI03 planning prioritizes upcoming commitments and agenda before graph',()=>{
