@@ -1110,8 +1110,10 @@ class App extends React.Component<any,State>{
    this.state.cloudParityMessage?h('p',{className:'muted-desc',role:'status'},
      this.state.cloudParityMessage):null,
    this.state.cloudE1Report?.checks?h('div',{className:'mf-e1-results',role:'status'},
-     ...Object.entries(this.state.cloudE1Report.checks).map(([code,check])=>
-       h('div',{className:'mf-e1-result',key:code},
+     ...Object.entries(this.state.cloudE1Report.checks).map(([code,check])=>{
+       // A resposta da auditoria é externa; verificar o formato antes de ler status.
+       const status=check!==null&&typeof check==='object'&&'status' in check?check.status:null;
+       return h('div',{className:'mf-e1-result',key:code},
          h('b',{},({'bankIdentities':'IDs bancários','bankDatesAndMoney':'Datas e centavos',
            'bankDescriptionsAndStatuses':'Descrições e status','accountIdentities':'Contas',
            'categoryOriginals':'Categorias originais','snapshotOriginal':'Pacote pessoal original',
@@ -1120,8 +1122,9 @@ class App extends React.Component<any,State>{
            'duplicateDismissals':'Duplicatas revisadas','providerHistoryCoverage':'Cobertura histórica',
            'balanceTimestamp':'Data do saldo','effectivePersonalEdits':'Edições sincronizadas',
            'businessRules':'Regras financeiras'} as Record<string,string>)[code]||code),
-         h('span',{className:'muted-desc'},check.status==='verified'?'Verificado':
-           check.status==='mismatch'?'Divergente':'Pendente')))):null,
+         h('span',{className:'muted-desc'},status==='verified'?'Verificado':
+           status==='mismatch'?'Divergente':'Pendente'));
+     })):null,
    this.state.cloudE1Report?.monthDeltas?.ok===true?h('div',{className:'mf-e1-results',role:'status'},
      h('b',{},'Comparação por mês: '+(this.state.cloudE1Report.monthDeltas.totalDifferenceMonths||0)+' mês(es) com diferenças'),
      ...this.state.cloudE1Report.monthDeltas.items.map(month=>
