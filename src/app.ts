@@ -61,6 +61,16 @@ function findCategoryRule(description:string,scope:'manual'|'bank',rules:RuleInf
 function effectiveNature(t:BankTx):'income'|'expense'|'transfer'|'ignore' {
  return t.nature&&t.nature!=='auto'?t.nature:(t.amount>=0?'income':'expense');
 }
+function bankBalanceCoverage(accounts:BankAccount[]){
+ const known=accounts.filter(a=>Number.isFinite(a.balance));
+ const knownCount=known.length,totalCount=accounts.length,missingCount=totalCount-knownCount;
+ const amountKnown=known.reduce((total,a)=>total+(a.balance as number),0);
+ return {knownCount,totalCount,missingCount,amountKnown};
+}
+function bankBalanceLabel(coverage:ReturnType<typeof bankBalanceCoverage>){
+ if(!coverage.knownCount)return 'Saldo indisponível';
+ return (coverage.missingCount?'Parcial · ':'')+fmt(coverage.amountKnown);
+}
 function bankTotalsInRange(bank:BankState,start:string,end:string){
  // SQLite calculates these daily totals from the full history. The visible transaction list is capped.
  const totals=new Map<string,number>(),incomeCats=new Map<string,number>();let income=0,expense=0;
@@ -83,8 +93,9 @@ function bankTotalsInRange(bank:BankState,start:string,end:string){
    }
   }
  }
- const balance=(bank.data.accounts||[]).reduce((v,a)=>v+(a.balance||0),0);
- return {income,expense,net:income-expense,balance,categories:[...totals].map(([name,total])=>({name,total})).sort((a,b)=>b.total-a.total),incomeCategories:[...incomeCats].map(([name,total])=>({name,total})).sort((a,b)=>b.total-a.total)};
+ const balanceCoverage=bankBalanceCoverage(bank.data.accounts||[]);
+ const balance=balanceCoverage.amountKnown;
+ return {income,expense,net:income-expense,balance,balanceCoverage,categories:[...totals].map(([name,total])=>({name,total})).sort((a,b)=>b.total-a.total),incomeCategories:[...incomeCats].map(([name,total])=>({name,total})).sort((a,b)=>b.total-a.total)};
 }
 function bankSnapshot(bank:BankState,month:string){return bankTotalsInRange(bank,firstOfMonth(month),endOfMonth(month));}
 const fmt = (n:number)=> (n/100).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
@@ -192,7 +203,7 @@ function Icon(p:{name:string,size?:number}){
 }
 function Logo(){return h('span',{className:'logo-glyph'},h('span',{className:'bar b1'}),h('span',{className:'bar b2'}),h('span',{className:'bar b3'}));}
 function Card(p:any){return h('div',{className:'card '+(p.className||'')},p.children);}
-function Stat(p:any){return h('div',{className:'stat '+(p.featured?'stat-featured':'')},h('div',{className:'stat-head'},h('span',{className:'stat-icon '+(p.color||'')},h(Icon,{name:p.icon})),h('span',{className:'stat-label'},p.label)),h('div',{className:'stat-value'},fmt(p.amount)),h('div',{className:'stat-foot'},p.hint));}
+function Stat(p:any){return h('div',{className:'stat '+(p.featured?'stat-featured':'')},h('div',{className:'stat-head'},h('span',{className:'stat-icon '+(p.color||'')},h(Icon,{name:p.icon})),h('span',{className:'stat-label'},p.label)),h('div',{className:'stat-value'},p.displayValue??fmt(p.amount)),h('div',{className:'stat-foot'},p.hint));}
 function prettyMonth(ym:string){const [year,month]=ym.split('-');return new Date(Number(year),Number(month)-1,1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});}
 function monthShort(ym:string){return new Date(Number(ym.slice(0,4)),Number(ym.slice(5,7))-1,1).toLocaleDateString('pt-BR',{month:'short'}).replace('.','');}
 // Axis values use integer centavos from the canonical ledger; formatting never changes totals.
@@ -783,7 +794,7 @@ class App extends React.Component<any,State>{
   catch(e:any){this.setState({outcome:{error:'Não foi possível simular: '+String(e?.message||e)}});}
  }
  field(label:string,el:any,hint?:string){return h('label',{className:'field'},h('span',{},label),el,hint?h('small',{},hint):null);}
- navItem(page:string,icon:string,label:string){return h('button',{key:page,className:'nav-item '+(this.state.page===page?'active':''),onClick:()=>this.navigate(page)},h(Icon,{name:icon,size:19}),h('span',{},label));}
+ navItem(page:string,icon:string,label:string){return h('button',{key:page,type:'button','aria-label':label,'aria-current':this.state.page===page?'page':undefined,title:label,className:'nav-item '+(this.state.page===page?'active':''),onClick:()=>this.navigate(page)},h(Icon,{name:icon,size:19}),h('span',{},label));}
  renderSide(){return h('aside',{className:'sidebar'},
    h('div',{className:'brand'},h(Logo),h('div',{className:'brand-text'},h('strong',{},'Meu Financeiro'),h('small',{},'CONTROLE DO SEU DINHEIRO'))),
    h('div',{className:'side-label'},'SEU ESPAÇO'),
@@ -855,6 +866,7 @@ class App extends React.Component<any,State>{
  const {start,end}=period,bank=this.state.bank;
  const useBank=this.state.mode==='real'&&this.state.dashboardSource==='bank'&&bank.data.accounts.length>0;
  const s=useBank?bankSnapshotBetween(bank,start,end):snapshotBetween(d,start,end);
+ const balanceCoverage=useBank?bankBalanceCoverage(bank.data.accounts):null;
  const snapshotRange=(a:string,b:string)=>useBank?bankSnapshotBetween(bank,a,b):snapshotBetween(d,a,b);
  const mdata=flowSegments(start,end,snapshotRange);
  const recent=useBank?bank.data.transactions.filter(x=>x.date>=start&&x.date<=end&&x.status==='POSTED'&&effectiveNature(x)!=='ignore'&&effectiveNature(x)!=='transfer').sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5).map(x=>({id:'bank-'+x.accountId+'-'+x.id,date:x.date,description:x.merchant||x.description,kind:effectiveNature(x) as Kind,amount:Math.abs(x.amount),category:x.category})):d.transactions.filter(x=>x.date>=start&&x.date<=end).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5);
@@ -867,7 +879,7 @@ class App extends React.Component<any,State>{
     bank.config.configured&&this.state.bankBusy?h('span',{},'Atualizando seus dados…'):null),
  this.state.bankMessage&&bank.config.configured?h('div',{className:'sync-feedback',role:'status'},this.state.bankMessage):null,
  null,
- h('div',{className:'stats-grid'},h(Stat,{label:useBank?'Saldo bancário de referência':'Saldo manual calculado',amount:s.balance,icon:'wallet',hint:useBank?'Última referência recebida; pode estar atrasada ou incompleta':'Saldo inicial + lançamentos manuais',featured:true}),h(Stat,{label:'Receitas no período',amount:s.income,icon:'trend',hint:'Entradas confirmadas no intervalo',color:'green'}),h(Stat,{label:'Despesas no período',amount:s.expense,icon:'down',hint:'Saídas confirmadas no intervalo',color:'pink'}),h(Stat,{label:'Resultado no período',amount:s.net,icon:'chart',hint:'Receitas menos despesas no intervalo',color:'purple'})),
+ h('div',{className:'stats-grid'},h(Stat,{label:useBank?(balanceCoverage?.missingCount?'Saldo bancário incompleto':'Saldo bancário de referência'):'Saldo manual calculado',amount:s.balance,displayValue:balanceCoverage?bankBalanceLabel(balanceCoverage):undefined,icon:'wallet',hint:balanceCoverage?'Saldos disponíveis de '+balanceCoverage.knownCount+' de '+balanceCoverage.totalCount+' conta(s). '+(balanceCoverage.missingCount?'Total não confirmado.':'Última referência recebida. Pode estar desatualizada.'):'Saldo inicial + lançamentos manuais',featured:true}),h(Stat,{label:'Receitas no período',amount:s.income,icon:'trend',hint:'Entradas confirmadas no intervalo',color:'green'}),h(Stat,{label:'Despesas no período',amount:s.expense,icon:'down',hint:'Saídas confirmadas no intervalo',color:'pink'}),h(Stat,{label:'Resultado no período',amount:s.net,icon:'chart',hint:'Receitas menos despesas no intervalo',color:'purple'})),
  h('div',{className:'mf-plan-shortcut'},h('div',{},h('strong',{},'Próximos compromissos'),h('small',{},'Confira a agenda e os vencimentos no Planejamento.')),h('button',{className:'outlined-action',onClick:()=>this.navigate('planning')},'Abrir agenda',h(Icon,{name:'arrow',size:16}))),
   h('div',{className:'mid-grid'},h(Card,{className:'flow-card'},h('div',{className:'card-heading'},h('div',{},h('h2',{},'Fluxo de caixa'),h('p',{},'Evolução dentro do período · '+(useBank?'Banco confirmado':'Registros adicionados por você'))),h('div',{className:'chart-legend'},h('span',{},h('i',{className:'dot-purple'}),'Receitas'),h('span',{},h('i',{className:'dot-pink'}),'Despesas'))),h(Chart,{data:mdata})),h(Card,{className:'donut-card'},h('div',{className:'card-heading'},h('div',{},h('h2',{},'Gastos por categoria'),h('p',{},'Despesas do período selecionado'))),h(Donut,{items:s.categories,colors:Object.fromEntries(this.getCategories().map(c=>[c.name,c.color])),emojis:Object.fromEntries(this.getCategories().map(c=>[c.name,c.emoji]))}))),
  this.renderBankQuick(),
@@ -1104,8 +1116,8 @@ class App extends React.Component<any,State>{
    if(this.state.mode==='demo')return null;
    const b=this.state.bank,a=b.data.accounts||[],last=b.data.last;
    if(!a.length && !b.config.configured)return null;
-   const balance=a.filter(x=>x.balance!==null).reduce((sum,x)=>sum+(x.balance||0),0);
-   return h('div',{className:'bank-quick'},h('div',{},h('small',{},'SALDOS INFORMADOS PELAS INSTITUIÇÕES'),h('strong',{},a.length?(a.some(x=>x.balance!==null)?(a.some(x=>x.balance===null)?'Parcial · ':'')+fmt(balance):'Saldo indisponível'):'Configuração bancária salva'),h('span',{},a.length?a.length+' conta(s) · atualização: '+(last?.completedAt?new Date(last.completedAt).toLocaleString('pt-BR'):'pendente'):'Sincronize para obter suas contas')),
+   const coverage=bankBalanceCoverage(a);
+   return h('div',{className:'bank-quick'},h('div',{},h('small',{},'SALDOS INFORMADOS PELAS INSTITUIÇÕES'),h('strong',{},a.length?bankBalanceLabel(coverage):'Configuração bancária salva'),h('span',{},a.length?a.length+' conta(s) · atualização: '+(last?.completedAt?new Date(last.completedAt).toLocaleString('pt-BR'):'pendente'):'Sincronize para obter suas contas')),
    h('button',{className:'outlined-action',onClick:()=>this.navigate('banks')},'Ver contas bancárias',h(Icon,{name:'arrow',size:16})),
    h('p',{},'Saldos e extratos bancários não são somados aos lançamentos manuais para evitar duplicidades.'),
    b.data.truncated?h('p',{className:'bank-warning'},'Alguns registros antigos não estão incluídos nos totais exibidos. Uma atualização futura ampliará a consulta histórica.'):null);
