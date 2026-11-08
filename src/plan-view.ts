@@ -14,6 +14,18 @@ function pFilterTransactions(app:any){
  const manual=s.data.transactions.filter((i:Tx)=>i.date.slice(0,7)===month&&!manualLinked.has(i.id)).map((i:Tx)=>({key:'manual:'+i.id,type:'manual',kind:i.kind,date:i.date,title:i.description,original:'',category:i.category,amount:i.amount,status:'paid',item:i}));
  return [...planned,...bank,...manual].filter(x=>(mode==='all'||(mode==='planned'&&x.type==='planned')||(mode==='bank'&&x.type==='bank')||(mode==='pending'&&x.type==='planned'&&(x.status==='pending'||x.status==='overdue'))||(mode==='paid'&&x.status==='paid'))&&(!t||[x.title,x.original,x.category].join(' ').toLowerCase().includes(t))).sort((a,b)=>b.date.localeCompare(a.date)||a.key.localeCompare(b.key)).slice(0,350);
 }
+// UI-03: upcoming commitments from canonical planning state, without recalculating balances.
+function pUpcoming(app:any){
+ const today=iso(new Date()),endDate=new Date();endDate.setDate(endDate.getDate()+6);
+ const until=iso(endDate);
+ const due=app.state.planning.items.filter((x:PlanItem)=>x.status==='planned'&&x.kind==='expense'&&x.remaining>0&&x.dueDate>=today&&x.dueDate<=until).sort((a:PlanItem,b:PlanItem)=>a.dueDate.localeCompare(b.dueDate)||String(a.id).localeCompare(String(b.id)));
+ const total=due.reduce((sum:number,item:PlanItem)=>sum+item.remaining,0);
+ return h('section',{className:'p-upcoming','aria-label':'Compromissos dos próximos sete dias'},
+  h('div',{className:'p-section-heading'},h('div',{},h('h2',{},'Próximos sete dias'),h('p',{},'Valores pendentes cadastrados · '+pDate(today)+' a '+pDate(until))),h('strong',{},due.length?fmt(total):'Nenhum vencimento')),
+  due.length?h('div',{className:'p-upcoming-list'},due.slice(0,5).map((item:PlanItem)=>h('button',{type:'button',className:'p-upcoming-row',key:item.id,onClick:()=>app.openPlanDetail(item.id)},
+    h('span',{},h('b',{},item.title),h('small',{},pDate(item.dueDate)+' · '+item.category)),h('strong',{},fmt(item.remaining)))),due.length>5?h('p',{className:'muted-desc'},'Mais '+(due.length-5)+' compromisso(s) neste intervalo. Consulte a agenda completa abaixo.'):null):
+   h('p',{className:'p-upcoming-empty'},'Nenhuma despesa pendente com vencimento nos próximos sete dias. Consulte a agenda para outros períodos.'));
+}
 function pSummary(app:any){const s=app.state,p=s.planning,items=p.items,today=iso(new Date()),future=items.filter((x:PlanItem)=>x.status==='planned'&&x.remaining>0);
  const pendingExpense=future.filter((x:PlanItem)=>x.kind==='expense').reduce((sum:number,x:PlanItem)=>sum+x.remaining,0);
  const pendingIncome=future.filter((x:PlanItem)=>x.kind==='income'&&x.certainty==='confirmed').reduce((sum:number,x:PlanItem)=>sum+x.remaining,0);
@@ -118,13 +130,13 @@ function pSuggestions(app:any){const s=app.state,suggestions=s.planning.suggesti
 function renderPlanningView(app:any){const s=app.state;if(s.mode==='demo')return h('section',{className:'p-empty'},h('h2',{},'Planejamento para suas finanças reais'),h('p',{},'Saia da demonstração para cadastrar e acompanhar seus compromissos.'),h('button',{className:'primary-button',onClick:()=>app.toggleMode()},'Ver meus dados'));
  const p=s.planning,today=iso(new Date()),rows=pFilterTransactions(app);
  return h('div',{className:'p-main'},
-  h('section',{className:'p-hero'},h('div',{},h('span',{className:'micro-label'},'UM PASSO À FRENTE'),h('h2',{},'Seu futuro financeiro, dia após dia.'),h('p',{},'Organize o que entrou, o que já saiu e tudo o que ainda está por vir.')),h('div',{className:'p-hero-actions'},h('button',{className:'primary-button',onClick:()=>app.openPlan(undefined,'expense')},'＋ Planejar despesa'),h('button',{className:'ghost-button',onClick:()=>app.openPlan(undefined,'income')},'＋ Prever receita'),h('button',{className:'p-sync',disabled:s.bankBusy||s.planBusy,onClick:()=>app.syncBank(false)},h(Icon,{name:'refresh',size:15}),s.bankBusy?'Atualizando…':'Atualizar'))),
+  h('section',{className:'p-hero'},h('div',{},h('span',{className:'micro-label'},'SUA AGENDA FINANCEIRA'),h('h2',{},'Planeje pagamentos e recebimentos.'),h('p',{},'Compromissos pendentes e realizados em uma única agenda.')),h('div',{className:'p-hero-actions'},h('button',{className:'primary-button',onClick:()=>app.openPlan(undefined,'expense')},'＋ Planejar despesa'),h('button',{className:'ghost-button',onClick:()=>app.openPlan(undefined,'income')},'＋ Prever receita'),h('button',{className:'p-sync',disabled:s.bankBusy||s.planBusy,onClick:()=>app.syncBank(false)},h(Icon,{name:'refresh',size:15}),s.bankBusy?'Atualizando…':'Atualizar'))),
+  pUpcoming(app),
   pSummary(app),
   p.projection.reference?.quality==='stale'?h('div',{className:'p-warning'},'O último saldo recebido tem mais de 24 horas. Atualize suas contas antes de usar esta previsão.'):p.projection.reference?.quality==='incomplete'?h('div',{className:'p-warning'},'Algumas contas não informaram saldo. O total projetado pode estar incompleto.'):p.projection.reference?.quality==='unverified'?h('div',{className:'p-warning'},'O banco foi consultado recentemente, mas o saldo pode não incluir operações mais novas. Confira antes de assumir compromissos.'):null,
   p.projection.negativeDays.length?h('div',{className:'p-warning'},h(Icon,{name:'alert',size:16}),'Há '+p.projection.negativeDays.length+' dia(s) com saldo projetado negativo. Primeiro: '+pDate(p.projection.negativeDays[0])):null,
   h('div',{className:'p-scenario-toggle'},h('span',{},h('b',{},'Projeção conservadora'),h('small',{},'Receitas incertas ficam fora do saldo previsto por padrão.')),h('label',{},h('input',{type:'checkbox',checked:s.planIncludeEstimated,onChange:(e:any)=>app.setState({planIncludeEstimated:e.target.checked},()=>app.refreshPlanning())}),'Incluir receitas incertas')),
-  pTimeline(app),pSuggestions(app),
-  h('section',{className:'p-ledger'},h('div',{className:'p-section-heading'},h('div',{},h('span',{className:'micro-label'},'CENTRAL DE MOVIMENTAÇÕES'),h('h2',{},'Tudo em um só lugar'),h('p',{},'Pagamentos realizados, pendentes, planejados e importados.')),
+  h('section',{className:'p-ledger'},h('div',{className:'p-section-heading'},h('div',{},h('span',{className:'micro-label'},'AGENDA COMPLETA'),h('h2',{},'Compromissos e movimentações'),h('p',{},'Priorize os vencimentos e consulte o histórico por período.')),
    h('span',{className:'p-count'},rows.length+' registros no mês')),
    h('div',{className:'p-ledger-tools'},h('input',{className:'form-control',placeholder:'Buscar nome, descrição ou categoria...',value:s.planTerm,onChange:(e:any)=>app.setState({planTerm:e.target.value})}),h(StyledSelect,{value:s.planView,options:[{value:'all',label:'Tudo'},{value:'planned',label:'Planejadas'},{value:'pending',label:'Pendentes e vencidas'},{value:'bank',label:'Movimentações do banco'},{value:'paid',label:'Realizadas'}],onChange:(v:string)=>app.setState({planView:v})})),
    h('div',{className:'p-ledger-list'},rows.length?rows.map((r:any)=>{
@@ -135,6 +147,7 @@ function renderPlanningView(app:any){const s=app.state;if(s.mode==='demo')return
       h('span',{className:'p-ledger-date'},pDate(r.date)),pChip(r.status),h('strong',{className:r.kind==='income'?'good-text':'bad-text'},(r.kind==='income'?'+':'−')+fmt(r.amount)),h('span',{className:'p-row-arrow'},'›'));
    }):h('div',{className:'p-empty-list'},'Não há movimentações para estes filtros. Adicione uma previsão ou altere a pesquisa.')),
    s.bank.data.truncated?h('p',{className:'p-warning'},'O histórico de transações do banco é parcial nesta visualização. Consulte sua conta para dados mais antigos.'):null),
+   pSuggestions(app),pTimeline(app),
    h('p',{className:'p-footnote'},'O saldo de referência vem da última informação disponível da instituição. Lançamentos já pagos e refletidos no banco não são descontados novamente. Previsões futuras são estimativas, não garantias.')
  );
 }
