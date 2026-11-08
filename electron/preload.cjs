@@ -51,5 +51,17 @@ contextBridge.exposeInMainWorld('financeDesktop', Object.freeze({
   planUnlink: (payload) => ipcRenderer.invoke('plan:unlink',payload),
   planReject: (payload) => ipcRenderer.invoke('plan:reject',payload),
   planRename: (payload) => ipcRenderer.invoke('plan:rename',payload),
+  aiStatus: () => ipcRenderer.invoke('ai:status'),
+  aiCapabilities: () => ipcRenderer.invoke('ai:capabilities'),
+  aiConnect: () => ipcRenderer.invoke('ai:connect'),
+  aiDisconnect: () => ipcRenderer.invoke('ai:disconnect'),
+  aiModelAvailable: () => ipcRenderer.invoke('ai:model-available'),
+  aiRunDemo: (input) => ipcRenderer.invoke('ai:run-demo',input),
+  onAIDelta: (callback) => {
+    if(typeof callback!=='function')throw new TypeError('Callback inválido.');
+    const listener=(_event,data)=>callback(typeof data?.delta==='string'?data.delta:'');
+    ipcRenderer.on('ai:delta',listener);
+    return () => ipcRenderer.removeListener('ai:delta',listener);
+  },
   planHistory: (id) => ipcRenderer.invoke('plan:history',id)
 }));
