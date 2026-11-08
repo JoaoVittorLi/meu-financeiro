@@ -445,3 +445,18 @@ body,button,input,select,textarea{font-family:var(--font-ui)}
  .setting-row{flex-wrap:wrap}
  .donut-wrap{grid-template-columns:minmax(0,1fr)}
 }
+
+/* Browser smoke 320px: demonstration warning must remain readable. */
+@media(max-width:560px){
+ .demo-strip{display:block;line-height:1.55;overflow-wrap:normal;word-break:normal}
+ .demo-strip svg{display:inline-block;vertical-align:middle;margin-right:8px}
+ .demo-strip button{display:block;margin:9px 0 0;font-size:12px}
+}
+.mf-single-calendar{max-height:calc(100vh - 20px);overflow-y:auto}
+.mf-period-popover{max-height:calc(100vh - 20px);overflow-y:auto}
+
+/* F03 visual smoke: reduce vertical height without shrinking category names. */
+.donut-legend{grid-template-columns:repeat(2,minmax(0,1fr));column-gap:11px;row-gap:2px}
+.donut-legend .legend-row{min-width:0;padding:5px 0}
+.donut-legend .legend-row strong{padding-left:14px;font-size:11px}
+@media(max-width:560px){.donut-legend{grid-template-columns:minmax(0,1fr)}}

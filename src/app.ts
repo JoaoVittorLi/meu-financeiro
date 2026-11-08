@@ -310,12 +310,21 @@ class SingleDatePicker extends React.Component<any,any>{
   e.preventDefault();e.stopPropagation();
   const next=e.key==='Home'?advanceDate(day,-((fromISO(day).getDay()+6)%7)):
    e.key==='End'?advanceDate(day,6-((fromISO(day).getDay()+6)%7)):advanceDate(day,delta[e.key]);
-  const focusDay=()=>this.panel?.querySelector('[data-date="'+next+'"]')?.focus();
+  const focusDay=()=>this.panel?.querySelector('[data-date="'+next+'"]')?.focus({preventScroll:true});
   if(next.slice(0,7)!==this.state.view)this.setState({view:next.slice(0,7)},focusDay);else focusDay();
  };
- onScroll=(e:any)=>{if(!this.panel?.contains(e.target))this.close();};
+ onScroll=(e:any)=>{
+  if(!this.state.open||this.panel?.contains(e.target))return;
+  if(e.target===document||e.target===document.documentElement||e.target===document.body){
+   const r=this.trigger?.getBoundingClientRect();if(!r)return;
+   const width=Math.min(326,window.innerWidth-20);
+   const left=Math.max(10,Math.min(r.left,window.innerWidth-width-10));
+   const height=Math.min(380,window.innerHeight-20);
+   this.setState({left,top:r.bottom+height+6>window.innerHeight?Math.max(10,r.top-height-6):r.bottom+6});
+  }else this.close();
+ };
  outside=(e:any)=>{if(this.state.open&&!this.trigger?.contains(e.target)&&!this.panel?.contains(e.target))this.close();};
- toggle=()=>{const r=this.trigger?.getBoundingClientRect();if(!r)return;const width=Math.max(0,Math.min(326,window.innerWidth-20)),left=Math.max(10,Math.min(r.left,window.innerWidth-width-10));this.setState({open:!this.state.open,view:(this.props.value||iso(new Date())).slice(0,7),left,top:r.bottom+310>window.innerHeight?Math.max(10,r.top-313):r.bottom+6},()=>{if(this.state.open)this.panel?.querySelector('.mf-day.selected,.mf-day')?.focus();});};
+ toggle=()=>{const r=this.trigger?.getBoundingClientRect();if(!r)return;const width=Math.max(0,Math.min(326,window.innerWidth-20)),left=Math.max(10,Math.min(r.left,window.innerWidth-width-10));this.setState({open:!this.state.open,view:(this.props.value||iso(new Date())).slice(0,7),left,top:r.bottom+Math.min(380,window.innerHeight-20)+6>window.innerHeight?Math.max(10,r.top-Math.min(380,window.innerHeight-20)-6):r.bottom+6},()=>{if(this.state.open)this.panel?.querySelector('.mf-day.selected,.mf-day')?.focus({preventScroll:true});});};
  render(){const ym=this.state.view,[y,m]=ym.split('-').map(Number),first=new Date(y,m-1,1),offset=(first.getDay()+6)%7,count=new Date(y,m,0).getDate();
   return h('div',{className:'mf-single-date'},h('button',{ref:(e:any)=>this.trigger=e,type:'button',className:'mf-date-trigger',onClick:this.toggle,onKeyDown:this.onKeyDown,'aria-haspopup':'dialog','aria-expanded':this.state.open},h(Icon,{name:'calendar',size:16}),this.props.value?.split('-').reverse().join('/')||'Selecionar data',h('span',{className:'mf-caret'},'⌄')),
    this.state.open?ReactDOM.createPortal(h('div',{ref:(e:any)=>this.panel=e,className:'mf-single-calendar',role:'dialog','aria-label':'Selecionar data',onKeyDown:this.onKeyDown,style:{position:'fixed',left:this.state.left,top:this.state.top,width:Math.min(326,window.innerWidth-20)}},
@@ -342,10 +351,19 @@ class PeriodPicker extends React.Component<any,any>{
   e.preventDefault();e.stopPropagation();
   const next=e.key==='Home'?advanceDate(day,-((fromISO(day).getDay()+6)%7)):
    e.key==='End'?advanceDate(day,6-((fromISO(day).getDay()+6)%7)):advanceDate(day,delta[e.key]);
-  const focusDay=()=>this.panel?.querySelector('[data-date="'+next+'"]')?.focus();
+  const focusDay=()=>this.panel?.querySelector('[data-date="'+next+'"]')?.focus({preventScroll:true});
   if(next.slice(0,7)!==this.state.view)this.setState({view:next.slice(0,7)},focusDay);else focusDay();
  };
- onScroll=(e:any)=>{if(!this.panel?.contains(e.target))this.close();};
+ onScroll=(e:any)=>{
+  if(!this.state.open||this.panel?.contains(e.target))return;
+  if(e.target===document||e.target===document.documentElement||e.target===document.body){
+   const r=this.trigger?.getBoundingClientRect();if(!r)return;
+   const width=Math.min(366,window.innerWidth-20);
+   const left=Math.max(10,Math.min(r.right-width,window.innerWidth-width-10));
+   const top=r.bottom+8;
+   this.setState({placement:{left,top:top+440>window.innerHeight?Math.max(10,r.top-446):top}});
+  }else this.close();
+ };
  onOutside=(e:any)=>{if(this.state.open&&!this.trigger?.contains(e.target)&&!this.panel?.contains(e.target))this.close();};
  toggle=()=>{const r=this.trigger?.getBoundingClientRect();if(!r)return;const width=Math.min(366,window.innerWidth-20);const left=Math.max(10,Math.min(r.right-width,window.innerWidth-width-10));const top=r.bottom+8;this.setState({open:!this.state.open,custom:this.props.mode==='custom',start:this.props.span.start,end:this.props.span.end,step:'start',view:this.props.span.end.slice(0,7),placement:{left,top:top+440>window.innerHeight?Math.max(10,r.top-446):top}},()=>{if(this.state.open)this.panel?.querySelector('button')?.focus();});};
  pickPreset=(mode:PeriodMode)=>{this.closeAndFocus();this.props.onChange(mode);};
