@@ -218,7 +218,7 @@ function Chart(p:any){
    vals.map((x,i)=>h('g',{key:x.month},h('text',{x:xx(i),y:H-8,fill:'#bcb0cb',fontSize:12,textAnchor:'middle'},x.label||monthShort(x.month)),h('circle',{cx:xx(i),cy:yy(x.income),r:3,fill:'#a981ff'}))),
   h('details',{className:'mf-chart-data'},h('summary',{},'Consultar valores do gráfico'),
    h('div',{className:'mf-chart-table-wrap'},h('table',{},h('thead',{},h('tr',{},['Período','Receitas','Despesas'].map(a=>h('th',{key:a,scope:'col'},a)))),
-    h('tbody',{},vals.map((x,i)=>h('tr',{key:x.month+'-'+i},h('th',{scope:'row'},x.label||monthShort(x.month)),h('td',{},fmt(x.income)),h('td',{},fmt(x.expense)))))))));
+    h('tbody',{},vals.map((x,i)=>h('tr',{key:x.month+'-'+i},h('th',{scope:'row'},x.label||monthShort(x.month)),h('td',{},fmt(x.income)),h('td',{},fmt(x.expense))))))))));
 }
 function Donut(p:any){
  const all=(p.items as {name:string;total:number}[]).filter(x=>x.total>0).sort((a,b)=>b.total-a.total);
