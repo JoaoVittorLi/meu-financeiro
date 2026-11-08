@@ -9,6 +9,7 @@ import {bankServerEnabled,bankIngestionStatus,ingestPluggyToStaging} from './fin
 import {readBankTransactionsPage} from './finance-bank-read.js';
 import {cloudBankParityManifest} from './finance-bank-parity.js';
 import {auditVerifiedBankReferences} from './finance-reference-audit.js';
+import {cloudE1Evidence} from './finance-e1-audit.js';
 import {readManualTransactionsPage} from './finance-manual-read.js';
 import {readFinancePreviewPeriod} from './finance-period-preview.js';
 import {installmentQuote} from '../../shared/finance-installment-quote.mjs';
@@ -251,6 +252,10 @@ export class PushHome {
     if(u.pathname==='/bank/status'&&request.method==='GET'){
       return json(bankIngestionStatus(this.state.storage));
     }
+    if(u.pathname==='/bank/e1-evidence'&&request.method==='GET'){
+      try{return json(await cloudE1Evidence(this.state.storage));}
+      catch{return json({ok:false,error:'Diagnóstico E1 não disponível.'},409);}
+    }
     if(u.pathname==='/bank/reference-audit'&&request.method==='GET'){
       try{return json(auditVerifiedBankReferences(this.state.storage));}
       catch{return json({ok:false,error:'Conferência de vínculos indisponível.'},409);}
@@ -488,6 +493,14 @@ export default {
         return json({error:'Informe período e origem.'},400);
       const stub=env.PUSH_HOME.get(env.PUSH_HOME.idFromName('one-private-user'));
       return stub.fetch(new Request('https://internal/finance/period-summary'+url.search));
+    }
+    if(url.pathname==='/api/bank/e1-evidence'&&request.method==='GET'){
+      if(!personalQuarantineAllowed(env))
+        return json({error:'Auditoria indisponível fora do Preview protegido.'},403);
+      const identity=await authorizeAccess(request,env);
+      if(!identity.ok)return json({error:identity.error},identity.status);
+      const stub=env.PUSH_HOME.get(env.PUSH_HOME.idFromName('one-private-user'));
+      return stub.fetch(new Request('https://internal/bank/e1-evidence'));
     }
     if(url.pathname==='/api/bank/reference-audit'&&request.method==='GET'){
       if(!personalQuarantineAllowed(env))
