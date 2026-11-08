@@ -90,7 +90,12 @@ test('cliente consulta catálogo e envia apenas cenário fictício e parâmetros
   return {ok:true,body:fakeSSE([{type:'response.output_text.delta',delta:'Análise fictícia.'},{type:'response.completed',response:{usage:{input_tokens:100,output_tokens:25}}}])};
  };
  const client=new ChatGPTDemoClient({auth:{accessToken:async()=> 'access_mock'},fetchFn});
- await assert.rejects(client.testDemo({caseId:'budget',creditsDisabledConfirmed:false}),/Confirme/);
+ // A proteção rejeita antes de qualquer tentativa de autenticação ou rede.
+ // A expressão regular é insensível a caixa: a mensagem pode dizer "confirme".
+ await assert.rejects(client.testDemo({caseId:'budget',creditsDisabledConfirmed:false}),/confirme/i);
+ assert.equal(calls.length,0,'Confirmação ausente não pode consultar nem o catálogo simulado.');
+ assert.equal(client.tests,0,'Confirmação ausente não pode consumir a cota de testes.');
+ assert.equal(client.busy,false,'O cliente deve permanecer livre após a recusa.');
  const result=await client.testDemo({caseId:'budget',effort:'medium',creditsDisabledConfirmed:true});
  assert.equal(result.model,'gpt-6.1-sol');assert.equal(result.text,'Análise fictícia.');
  assert.deepEqual(calls.map(c=>c.url),['https://api.openai.com/v1/models','https://api.openai.com/v1/responses']);
