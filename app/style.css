@@ -233,3 +233,9 @@ html,body,button,input,textarea,select,[role=combobox]{font-family:var(--font-ui
 @media(max-width:560px){.mf-budget-summary,.mf-budget-quiet-grid{grid-template-columns:1fr}.mf-source-panel{min-width:260px}}
 
 .mf-budget-limit-actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:flex-end}.mf-budget-expected{font-size:12px;color:#a5d1c3;background:#152720;border:1px solid #355c4a;border-radius:9px;padding:11px 14px;margin:0}
+
+/* B02: category labels become accessible buttons without changing table geometry. */
+.mf-category-edit{display:inline-flex;align-items:center;gap:7px;max-width:100%;font-family:inherit;font-weight:600;line-height:1.3;cursor:pointer;text-align:left;white-space:normal}
+.mf-category-edit:hover{background:#37274a;border-color:#9663e5;color:#fff}
+.mf-category-edit:focus-visible{outline:2px solid #af86ff;outline-offset:2px}
+.mf-category-edit-mark{opacity:.7;font-size:12px;flex-shrink:0}

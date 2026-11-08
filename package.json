@@ -1,6 +1,6 @@
 {
   "name": "meu-financeiro-desktop",
-  "version": "0.9.5-beta.3",
+  "version": "0.9.5-beta.4",
   "private": true,
   "description": "Meu Financeiro — transações, conciliação, planejamento e simulação de compra usando fluxo de caixa diário",
   "main": "electron/main.cjs",
