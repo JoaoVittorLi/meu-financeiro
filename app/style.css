@@ -239,3 +239,175 @@ html,body,button,input,textarea,select,[role=combobox]{font-family:var(--font-ui
 .mf-category-edit:hover{background:#37274a;border-color:#9663e5;color:#fff}
 .mf-category-edit:focus-visible{outline:2px solid #af86ff;outline-offset:2px}
 .mf-category-edit-mark{opacity:.7;font-size:12px;flex-shrink:0}
+
+
+/* UI-03 | Design system progressivo. Preserva os fluxos e os motores financeiros. */
+:root{
+ --mf-canvas:#0D0C12;--mf-surface:#17151F;--mf-raised:#211D2C;
+ --mf-primary:#F4F1FA;--mf-secondary:#BEB5CD;--mf-muted-readable:#9A90AA;
+ --mf-accent:#A981FF;--mf-accent-solid:#7540C8;--mf-stroke:#35303F;
+ --mf-positive:#67DCB3;--mf-negative:#FFA0B5;--mf-warning:#F0CA80;
+ --font-ui:'Segoe UI Variable','Segoe UI',Arial,sans-serif;
+ --bg:var(--mf-canvas);--surface:var(--mf-surface);--surface2:var(--mf-raised);
+ --text:var(--mf-primary);--muted:var(--mf-secondary);--violet:var(--mf-accent);
+}
+body,button,input,select,textarea{font-family:var(--font-ui)}
+.main-area{padding:28px clamp(16px,2.6vw,38px) 24px;max-width:1540px}
+.topbar{margin-bottom:20px;align-items:flex-start}
+.topbar h1{font-size:clamp(25px,2.5vw,31px);font-weight:700;letter-spacing:-.8px;margin:4px 0 5px}
+.topbar p{font-size:13px;color:var(--mf-secondary)}
+.page-kicker,.micro-label{font-size:11px;letter-spacing:.09em}
+.brand{margin-bottom:42px}
+.sidebar{width:232px;min-width:232px;padding-top:24px;background:#121019}
+.nav-item{font-size:14px;padding:12px 13px}
+.card,.stat{background:var(--mf-surface);box-shadow:none;border:1px solid var(--mf-stroke);border-radius:14px}
+.card{padding:20px}.section{gap:16px}
+.stats-grid{gap:12px;margin-bottom:12px}
+.stat{min-height:116px;padding:16px}
+.stat-featured{background:#251A35;border-color:#62417E;box-shadow:none}
+.stat-head{margin-bottom:10px}
+.stat-label,.stat-foot{font-size:12px;color:var(--mf-secondary)}
+.stat-foot{margin-top:7px}
+.stat-value{font-size:clamp(21px,2.1vw,28px);font-weight:700;font-variant-numeric:tabular-nums}
+.stat-value,.amount-cell,.bank-account strong,.mf-budget-money strong,.p-summary-card strong,.p-upcoming-row strong,.mf-budget-summary strong,.result-metrics strong{font-variant-numeric:tabular-nums}
+.mf-plan-shortcut{display:flex;justify-content:space-between;align-items:center;gap:16px;margin:0 0 16px;padding:12px 16px;background:#1B1625;border:1px solid #403452;border-radius:12px}
+.mf-plan-shortcut>div{display:flex;flex-direction:column;gap:3px}
+.mf-plan-shortcut strong{font-size:14px;color:var(--mf-primary)}
+.mf-plan-shortcut small{font-size:12px;color:var(--mf-secondary)}
+.mf-plan-shortcut .outlined-action{padding:10px 12px}
+.mid-grid,.bottom-grid{gap:12px;margin-bottom:12px}
+.flow-card,.donut-card,.recent-card,.budget-card{min-height:0}
+.flow-card,.donut-card{padding-bottom:14px}
+.chart-svg{height:auto;max-height:236px;margin-top:2px}
+.mf-chart-block{min-width:0}
+.mf-chart-data{margin-top:8px;border-top:1px solid var(--mf-stroke);padding-top:7px;color:var(--mf-secondary)}
+.mf-chart-data summary{font-size:12px;color:#C8ACFA;cursor:pointer;padding:7px 0}
+.mf-chart-data summary:focus-visible{outline:2px solid var(--mf-accent);outline-offset:3px}
+.mf-chart-table-wrap{overflow-x:auto}
+.mf-chart-table-wrap table{width:100%;border-collapse:collapse;font-size:12px}
+.mf-chart-table-wrap th,.mf-chart-table-wrap td{padding:8px 10px;border-bottom:1px solid var(--mf-stroke);text-align:left;white-space:nowrap}
+.mf-chart-table-wrap td{text-align:right;font-variant-numeric:tabular-nums}
+.donut-wrap{margin-top:12px;gap:12px}
+.donut-legend{gap:9px;min-width:0}
+.donut-legend .legend-row{font-size:12px;gap:10px}
+.donut-legend .legend-row strong{font-size:12px;font-weight:600;white-space:nowrap;font-variant-numeric:tabular-nums}
+.donut-legend .legend-text{min-width:0;overflow-wrap:anywhere}
+.bank-quick{padding:13px 17px;margin-bottom:12px;border-radius:12px;background:#191522;box-shadow:none}
+.bank-quick strong{font-size:21px}
+.bank-quick p{font-size:12px}
+.intro-banner.mf-compact-banner{min-height:0;padding:16px 20px;background:#1B1625;border-color:#403452;border-radius:13px;box-shadow:none}
+.intro-banner.mf-compact-banner h2{font-size:19px;margin:3px 0}
+.intro-banner.mf-compact-banner p{font-size:13px;max-width:740px;color:var(--mf-secondary)}
+.intro-banner.mf-compact-banner .banner-orb{display:none}
+.table-card{min-height:0}
+.table-card .list-intro{padding:15px 18px}
+.table-card td{padding:12px 14px;font-size:13px}
+.table-card th{padding:11px 14px;font-size:11px}
+.mf-row-detail,.category-tag,.mf-quick-review{min-height:34px}
+.mf-budget-heading h2{font-size:20px;margin:3px 0}
+.mf-budget-summary{gap:8px}
+.mf-budget-summary>div{min-height:74px;padding:13px 16px;gap:5px;background:var(--mf-surface)}
+.mf-budget-summary small{font-size:12px;color:var(--mf-secondary)}
+.mf-budget-summary strong{font-size:20px}
+.mf-budget-section .budget-grid{grid-template-columns:1fr;gap:9px}
+.mf-budget-card{display:grid;grid-template-columns:minmax(170px,1.2fr) minmax(120px,.7fr) minmax(190px,1.35fr) auto;align-items:center;gap:14px;min-height:0;padding:14px 18px}
+.mf-budget-card .budget-item-top{min-width:0}
+.mf-budget-card .budget-item-top h3{font-size:14px}
+.mf-budget-card .mf-budget-money{margin:0}
+.mf-budget-card .mf-budget-money strong{font-size:19px}
+.mf-budget-card .mf-budget-limit,.mf-budget-card .mf-no-budget,.mf-budget-card .mf-income-share{margin:0;min-width:0}
+.mf-budget-card .budget-item-bottom{margin:0;justify-self:end}
+.mf-budget-card .cat-symbol{width:38px;height:38px}
+.mf-budget-card .progress-track{height:7px}
+.mf-budget-card .mf-no-budget{display:flex;align-items:center;gap:12px}
+.mf-budget-card .mf-budget-limit-actions{justify-content:flex-start}
+.p-main{gap:14px}
+.p-hero{padding:16px 20px;min-height:0;gap:14px;border-radius:13px;background:#1B1625;border-color:#403452}
+.p-hero h2{font-size:20px;margin:3px 0}
+.p-hero p{font-size:12px;color:var(--mf-secondary)}
+.p-hero-actions{gap:8px}
+.p-summary{gap:9px}
+.p-summary-card{min-height:0;padding:14px 16px;border-radius:12px;box-shadow:none}
+.p-summary-card small,.p-summary-card span{font-size:12px}
+.p-upcoming{border:1px solid #59466C;background:#211A2C;border-radius:14px;padding:16px 20px}
+.p-upcoming .p-section-heading{margin-bottom:8px}
+.p-upcoming .p-section-heading h2{font-size:18px;margin:0 0 3px}
+.p-upcoming .p-section-heading p{font-size:12px;color:var(--mf-secondary)}
+.p-upcoming .p-section-heading>strong{font-size:19px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.p-upcoming-list{display:flex;flex-direction:column}
+.p-upcoming-row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 4px;border:0;border-top:1px solid #40344B;background:transparent;text-align:left;color:var(--mf-primary)}
+.p-upcoming-row:hover{background:#30233F}
+.p-upcoming-row:focus-visible{outline:2px solid var(--mf-accent);outline-offset:-2px}
+.p-upcoming-row span{display:flex;flex-direction:column;gap:4px}
+.p-upcoming-row b{font-size:13px}
+.p-upcoming-row small,.p-upcoming-empty{font-size:12px;color:var(--mf-secondary)}
+.p-ledger,.p-suggestions{padding:17px}
+.p-ledger .p-section-heading{margin-bottom:10px}
+.assistant-grid{gap:12px}
+.sim-form-card,.result-card{min-height:0;padding:20px}
+.empty-result{min-height:220px;padding:20px}
+.empty-result-icon{width:52px;height:52px;margin-bottom:12px}
+.empty-result h2{font-size:16px}
+.result-metrics{gap:9px}
+.result-metrics>div{padding:13px}
+.mf-accounts-first{display:flex;flex-direction:column;gap:10px}
+.mf-bank-account-heading{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.mf-bank-account-heading h2{font-size:18px;margin:0}
+.mf-bank-account-heading small{font-size:12px;color:var(--mf-secondary)}
+.bank-account-grid{gap:11px}
+.bank-account{min-height:0;padding:18px}
+.bank-account strong{font-size:21px}
+.bank-grid{gap:12px}
+.settings-grid{gap:12px}
+.settings-card{padding:20px}
+.setting-row{padding:14px 0}
+.setting-row b{font-size:13px}
+.setting-row small{font-size:12px;color:var(--mf-secondary)}
+.card-heading p,.list-intro p,.mf-budget-heading p{font-size:12px;color:var(--mf-secondary)}
+.primary-button{background:var(--mf-accent-solid);border-color:#8960CF;box-shadow:none}
+.primary-button:hover{filter:brightness(1.13)}
+.primary-button:focus-visible,.outlined-action:focus-visible,.ghost-button:focus-visible{outline:2px solid var(--mf-accent);outline-offset:3px}
+.form-control,.mf-select-trigger,.mf-date-trigger,.mf-period-trigger{font-size:14px}
+.mf-source-trigger,.mode-tag,.mf-budget-context{font-size:12px}
+.mf-budget-disclaimer,.p-footnote,.privacy-small,.disclaimer{color:var(--mf-secondary);font-size:12px}
+@media(max-width:1220px){
+ .mf-budget-card{grid-template-columns:minmax(150px,1.1fr) minmax(110px,.8fr) minmax(180px,1.3fr)}
+ .mf-budget-card .budget-item-bottom{grid-column:1/-1;justify-self:start}
+ .bank-grid{grid-template-columns:1fr}
+ .assistant-grid{grid-template-columns:1fr 1fr}
+}
+@media(max-width:1080px){
+ .sidebar{width:75px;min-width:75px}
+ .stats-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .mid-grid,.bottom-grid,.bank-grid,.assistant-grid{grid-template-columns:1fr}
+ .mf-budget-card{grid-template-columns:minmax(150px,.9fr) minmax(140px,.7fr) minmax(220px,1.4fr)}
+ .p-hero{align-items:flex-start}
+}
+@media(max-width:760px){
+ .main-area{padding:18px 14px}
+ .topbar{gap:12px}
+ .header-actions{flex-wrap:wrap}
+ .mf-plan-shortcut,.p-hero,.mf-bank-account-heading{align-items:flex-start;flex-direction:column}
+ .mf-budget-card{display:flex;flex-direction:column;align-items:stretch}
+ .mf-budget-card .budget-item-bottom{align-self:flex-start}
+ .p-upcoming .p-section-heading{align-items:flex-start}
+ .p-summary,.mf-budget-summary,.bank-account-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:560px){
+ .sidebar{width:56px;min-width:56px;padding-inline:5px}
+ .sidebar .nav-item{padding:12px 6px}
+ .main-area{padding:14px 10px}
+ .stat{padding:12px;min-height:0}
+ .stats-grid,.mf-budget-summary,.p-summary,.bank-account-grid{grid-template-columns:1fr}
+ .donut-wrap{grid-template-columns:1fr}
+ .chart-svg{max-height:175px}
+ .p-upcoming{padding:12px}
+ .p-upcoming-row{flex-wrap:wrap}
+ .p-upcoming .p-section-heading>strong{white-space:normal}
+ .card,.p-ledger,.p-suggestions{padding:14px}
+ .p-ledger .p-ledger-tools{flex-direction:column}
+ .topbar h1{font-size:23px}
+}
+@media(prefers-reduced-motion:reduce){
+ .stat,.p-upcoming-row,.mf-category-edit,.p-hero,.mf-compact-banner{animation:none;transition:none}
+}
