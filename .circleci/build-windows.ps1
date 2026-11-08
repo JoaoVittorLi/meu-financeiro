@@ -117,7 +117,7 @@ $hashLines = @(
   "$((Get-FileHash -LiteralPath $installerPath -Algorithm SHA256).Hash.ToLowerInvariant())  $installerName",
   "$((Get-FileHash -LiteralPath $portablePath -Algorithm SHA256).Hash.ToLowerInvariant())  $portableName"
 )
-$utf8 = New-Object System.Text.UTF8Encoding($false)
+$utf8 = [System.Text.UTF8Encoding]::new($false)
 [System.IO.File]::WriteAllLines((Join-Path $artifactDir 'SHA256.txt'), $hashLines, $utf8)
 $publishedFiles = @(Get-ChildItem -LiteralPath $artifactDir -File)
 if ($publishedFiles.Count -ne 3) { throw 'Devem ser publicados exatamente três artifacts.' }
