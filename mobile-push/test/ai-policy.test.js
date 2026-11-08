@@ -30,7 +30,11 @@ test('PWA tem área Inteligência e não recebe OAuth no navegador',()=>{
  assert.match(js,/pwaGet\('\/api\/ai\/capabilities'\)/);
  for(const forbidden of ['client_secret','access_token','refresh_token','api.openai.com/v1/responses'])
    assert.ok(!js.includes(forbidden),'PWA não pode conter '+forbidden);
- assert.match(worker,/import \{publicCapabilities\} from '\.\.\/\.\.\/shared\/ai-policy\.mjs'/);
+ assert.match(worker,/import \{publicCapabilities,buildDemoRequest\} from '\.\.\/\.\.\/shared\/ai-policy\.mjs'/);
+ assert.match(worker,/url\.pathname==='\/api\/ai\/demo-preview'/);
+ assert.match(js,/pwaGet\('\/api\/ai\/demo-preview\?caseId='/);
+ assert.ok(caps.contextLimits.maxMemories<=8);
+ assert.equal(caps.memoryLocalOnly,true);
  assert.match(worker,/url\.pathname==='\/api\/ai\/capabilities'/);
  assert.match(worker,/authorizeAccess\(request,env\)/);
 });
