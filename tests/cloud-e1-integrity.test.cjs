@@ -3,12 +3,16 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 const {createHash}=require('node:crypto');
 const {FinanceDB}=require('../electron/db.cjs');
+const {PlanningStore}=require('../electron/planning.cjs');
 const {localE1Evidence,auditE1Windows,hashTuples}=require('../electron/cloud-e1-audit.cjs');
 const {PREVIEW_ORIGIN}=require('../electron/cloud-preview-identity.cjs');
 
 const sha=text=>createHash('sha256').update(text,'utf8').digest('hex');
 function fixture(){
   const finance=new FinanceDB(':memory:');
+  // FinanceDB intentionally does not own the planning schema; production initializes
+  // PlanningStore separately. Mirror that lifecycle in the synthetic E1 fixture.
+  new PlanningStore(finance);
   const db=finance.db;
   db.prepare('INSERT INTO bank_items(item_id,institution,status,last_sync_at) VALUES(?,?,?,?)')
     .run('synthetic-item','Banco teste','UPDATED','2026-11-07');
