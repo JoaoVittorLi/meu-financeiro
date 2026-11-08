@@ -75,6 +75,65 @@ async function intelligencePreviewContext(app:any){
     app.setState({aiPreview:result,aiMemoryError:''});
   }catch(e:any){app.setState({aiPreview:null,aiMemoryError:String(e?.message||'Prévia indisponível.').slice(0,200)});}
 }
+
+async function intelligenceBuildFinanceDemo(app){
+  if(!desktop?.aiFinancialContextDemo||app.state.aiFinancialDemoBusy)return;
+  const source=app.state.aiFinancialDemoSource;
+  if(source!=='bank'&&source!=='manual')return;
+  app.setState({aiFinancialDemoBusy:true,aiFinancialDemo:null,aiFinancialDemoError:''});
+  try{
+    const report=await desktop.aiFinancialContextDemo(source);
+    if(report?.stage!=='synthetic_financial_context_preview'||report.source!==source||
+       report.realFinancialDataIncluded!==false||report.inferenceCalled!==false||
+       report.changesApplied!==false||report.cloudCutoverAllowed!==false)
+      throw new Error('Prévia financeira não autorizada.');
+    app.setState({aiFinancialDemoBusy:false,aiFinancialDemo:report});
+  }catch(err){
+    app.setState({aiFinancialDemoBusy:false,aiFinancialDemo:null,
+      aiFinancialDemoError:String(err?.message||'Prévia indisponível.').slice(0,180)});
+  }
+}
+function renderIntelligenceFinancialContext(app){
+ const s=app.state,r=s.aiFinancialDemo;
+ const money=n=>new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(n/100);
+ const budgets=r?r.budgets.map(b=>h('p',{key:b.category},b.category+': '+
+   money(b.spentCents)+' / '+money(b.limitCents)+' · '+(b.pct===null?'sem limite':b.pct+'%'))):[];
+ const warnings=r?r.warnings.map((w,i)=>h('li',{key:i},w)):[];
+ return h('section',{className:'mf-ai-financial-demo'},
+   h('span',{className:'micro-label'},'ENTREGA 4.1 · MOTOR FINANCEIRO'),
+   h('h2',{},'Prévia financeira estruturada'),
+   h('p',{},'Demonstração fictícia de novembro/2026. Não consulta suas contas nem envia conteúdo ao GPT.'),
+   h('div',{className:'mf-ai-finance-controls'},
+     h('label',{},'Fonte fictícia',
+       h('select',{value:s.aiFinancialDemoSource,
+         onChange:e=>app.setState({aiFinancialDemoSource:e.target.value,
+           aiFinancialDemo:null,aiFinancialDemoError:''})},
+         h('option',{value:'bank'},'Banco fictício'),
+         h('option',{value:'manual'},'Lançamentos manuais fictícios'))),
+     h('button',{type:'button',className:'primary-button',
+       disabled:s.aiFinancialDemoBusy,onClick:()=>intelligenceBuildFinanceDemo(app)},
+       s.aiFinancialDemoBusy?'Calculando...':'Gerar prévia sem tokens')),
+   r?h('div',{className:'mf-ai-finance-results'},
+     h('p',{className:'mf-ai-finance-privacy'},'Dados fictícios · Nenhuma chamada de IA · Nenhuma alteração'),
+     h('div',{className:'mf-ai-finance-metrics'},
+       h('div',{},h('small',{},'Receitas lançadas'),h('strong',{},money(r.realized.incomeCents))),
+       h('div',{},h('small',{},'Despesas lançadas'),h('strong',{},money(r.realized.expenseCents))),
+       h('div',{},h('small',{},'Diferença — não é saldo'),h('strong',{},money(r.realized.netCents)))),
+     h('div',{className:'mf-ai-finance-grid'},
+       h('div',{},h('h3',{},'Orçamentos fictícios'),...budgets),
+       h('div',{},h('h3',{},'Compromissos fictícios'),
+         h('p',{},'Despesas futuras confirmadas: '+money(r.future.pendingConfirmedExpensesCents)),
+         h('p',{},'Receitas futuras incertas: '+money(r.future.futureUncertainIncomeCents)))),
+     h('h3',{},'Avisos sobre dados não verificados'),
+     h('ul',{},...warnings),
+     h('details',{className:'mf-ai-finance-payload'},
+       h('summary',{},'Inspecionar contexto (não enviado)'),
+       h('pre',{},r.contextText),
+       h('small',{},'Estimativa textual: '+r.estimatedInputTokensApprox+' tokens; não é consumo.'))):
+     h('p',{className:'mf-ai-muted'},'Selecione uma fonte e gere o exemplo sem usar IA.'),
+   s.aiFinancialDemoError?h('p',{className:'mf-ai-error',role:'alert'},s.aiFinancialDemoError):null);
+}
+
 function renderIntelligencePrivacy(app:any){
   const s=app.state,connected=Boolean(s.aiStatus?.connected);
   const types=[{id:'preference',label:'Preferência'},{id:'goal',label:'Objetivo'},{id:'constraint',label:'Restrição'}];
