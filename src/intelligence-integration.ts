@@ -13,7 +13,7 @@ async function intelligenceConnect(app:any){
 }
 async function intelligenceDisconnect(app:any){
   if(!desktop?.aiDisconnect||app.state.aiBusy)return;
-  if(!confirm('Desconectar o ChatGPT deste computador? Os dados financeiros não serão afetados.'))return;
+  if(!confirm('Sair do ChatGPT neste computador? Para revogar o acesso remoto, use também as configurações de segurança do ChatGPT. Seus dados financeiros não serão afetados.'))return;
   app.setState({aiBusy:true,aiError:'',aiResult:null,aiStreaming:''});
   try{const status=await desktop.aiDisconnect();app.setState({aiStatus:status,aiBusy:false,aiCreditsConfirmed:false});}
   catch(e:any){app.setState({aiBusy:false,aiError:'Não foi possível desconectar.'});}
@@ -38,7 +38,7 @@ function renderIntelligenceConnection(app:any){
      h('span',{className:'mf-ai-live-state '+(connected?'ready':'')},connected?'Conectado':'Não conectado')),
    h('div',{className:'mf-ai-live-actions'},
      !connected?h('button',{type:'button',className:'primary-button',disabled:!available||s.aiBusy||s.aiStatus?.secure===false&&s.aiStatus?.secure!==undefined,
-        onClick:()=>intelligenceConnect(app)},'Continuar com ChatGPT'):h('button',{type:'button',className:'ghost-button',disabled:s.aiBusy,onClick:()=>intelligenceDisconnect(app)},'Desconectar ChatGPT'),
+        onClick:()=>intelligenceConnect(app)},'Continuar com ChatGPT'):h('button',{type:'button',className:'ghost-button',disabled:s.aiBusy,onClick:()=>intelligenceDisconnect(app)},'Sair deste computador'),
      h('button',{type:'button',className:'ghost-button',disabled:!available||s.aiBusy,onClick:()=>intelligenceRefresh(app)},'Atualizar estado')),
    !available?h('p',{className:'mf-ai-notice'},'A conexão exige a versão Electron atualizada. Esta prévia web não suporta autenticação de assinatura.'):null,
    connected?h('div',{className:'mf-ai-live-settings'},
@@ -49,10 +49,10 @@ function renderIntelligenceConnection(app:any){
        ['auto','low','medium'].map(e=>h('option',{key:e,value:e},e==='auto'?'Automático':e==='low'?'Baixo':'Médio')))),
      h('label',{className:'mf-ai-check'},h('input',{type:'checkbox',checked:s.aiCreditsConfirmed,
        onChange:(e:any)=>app.setState({aiCreditsConfirmed:Boolean(e.target.checked)})}),
-       h('span',{},'Conferi em Configurações → Uso do ChatGPT que créditos adicionais estão desativados.')),
+       h('span',{},'Conferi em Configurações → Uso: créditos adicionais desativados e limite semanal do aplicativo abaixo de 100%.')),
      h('button',{type:'button',className:'primary-button',disabled:s.aiBusy||!s.aiCreditsConfirmed,
        onClick:()=>intelligenceTest(app)},s.aiBusy?'Executando teste...':'Testar GPT-6.1 Sol com dados fictícios'),
-     h('p',{className:'mf-ai-usage-warning'},'A configuração de créditos adicionais é controlada pelo ChatGPT. O aplicativo não consegue alterá-la nem comprová-la automaticamente. O teste conta com limite preventivo de três solicitações por sessão.')):null,
+     h('p',{className:'mf-ai-usage-warning'},'As configurações de créditos e o teto semanal são controlados pelo ChatGPT. Limite deste aplicativo abaixo de 100% impede uso de créditos adicionais nessa modalidade. O app não consegue verificar esses ajustes automaticamente. O teste conta com limite preventivo de três solicitações por sessão.')):null,
    s.aiBusy?h('p',{className:'mf-ai-progress',role:'status'},'Aguardando autenticação ou conclusão do teste...'):null,
    s.aiStreaming?h('div',{className:'mf-ai-stream',role:'status'},h('strong',{},'Resposta em andamento'),h('p',{},s.aiStreaming.slice(0,12000))):null,
    s.aiResult?h('div',{className:'mf-ai-test-result'},
