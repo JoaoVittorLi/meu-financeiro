@@ -212,22 +212,35 @@ class StyledSelect extends React.Component<any,any>{
  componentDidMount(){document.addEventListener('pointerdown',this.onOutside,true);window.addEventListener('resize',this.close);window.addEventListener('scroll',this.onScroll,true);}
  componentWillUnmount(){document.removeEventListener('pointerdown',this.onOutside,true);window.removeEventListener('resize',this.close);window.removeEventListener('scroll',this.onScroll,true);}
  close=()=>{if(this.state.open)this.setState({open:false});};
- onScroll=(e:any)=>{if(!this.menu?.contains(e.target))this.close();};
+ onScroll=(e:any)=>{
+  if(!this.state.open||this.menu?.contains(e.target))return;
+  // Keep an open portal aligned when its own drawer scrolls.
+  if(e.target?.contains?.(this.trigger)){this.setState({placement:this.geometry()});return;}
+  this.close();
+ };
  onOutside=(e:any)=>{if(this.state.open&&!this.trigger?.contains(e.target)&&!this.menu?.contains(e.target))this.close();};
  geometry(){const r=this.trigger?.getBoundingClientRect();if(!r)return this.state.placement;const height=Math.min(300,window.innerHeight-30),below=window.innerHeight-r.bottom-14;const width=Math.max(r.width,Math.min(250,window.innerWidth-24));return{left:Math.max(12,Math.min(r.left,window.innerWidth-width-12)),top:below>160?r.bottom+6:Math.max(10,r.top-height-6),width,maxHeight:below>160?Math.min(height,below):height};}
  open=()=>{if(this.props.disabled)return;const idx=(this.props.options||[]).findIndex((x:Choice)=>x.value===this.props.value);this.setState({open:!this.state.open,focusIndex:Math.max(0,idx),placement:this.geometry()});};
  pick=(v:string)=>{this.setState({open:false});this.props.onChange(v);this.trigger?.focus();};
  onKey=(e:any)=>{
-  const options=this.props.options||[];if(!options.length)return;
-  if(e.key==='Escape'){this.close();return;}
+  const options=this.props.options||[];
+  if(e.key==='Escape'){
+   if(!this.state.open)return;
+   e.preventDefault();
+   e.stopPropagation(); // Escape closes the selector, never its parent drawer.
+   this.close();
+   this.trigger?.focus();
+   return;
+  }
+  if(!options.length)return;
   if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();const dir=e.key==='ArrowDown'?1:-1;this.setState((s:any)=>({open:true,placement:this.geometry(),focusIndex:s.open?(s.focusIndex+dir+options.length)%options.length:Math.max(0,options.findIndex((x:Choice)=>x.value===this.props.value))}));return;}
   if(e.key==='Enter'||e.key===' '){e.preventDefault();if(this.state.open)this.pick(options[this.state.focusIndex]?.value||options[0].value);else this.open();}
  };
  render(){const options:Choice[]=this.props.options||[],current=options.find(x=>x.value===this.props.value),p=this.state.placement;
   return h('div',{className:'mf-select-wrap '+(this.props.wrapperClass||'')},
     h('button',{type:'button',ref:(e:any)=>this.trigger=e,disabled:this.props.disabled,role:'combobox','aria-expanded':this.state.open,'aria-haspopup':'listbox','aria-label':this.props.ariaLabel||'Selecionar opção',className:'mf-select-trigger '+(this.props.className||''),onClick:this.open,onKeyDown:this.onKey},h('span',{},current?.label||this.props.value||'Selecione'),h('span',{className:'mf-caret','aria-hidden':'true'},'⌄')),
-    this.state.open?ReactDOM.createPortal(h('div',{ref:(e:any)=>this.menu=e,className:'mf-select-popover',role:'listbox',style:{position:'fixed',left:p.left,top:p.top,width:p.width,maxHeight:p.maxHeight}},
-      options.map((item,i)=>h('button',{key:item.value,type:'button',role:'option','aria-selected':item.value===this.props.value,className:'mf-option '+(item.value===this.props.value?'is-selected ':'')+(i===this.state.focusIndex?'is-focused':''),onMouseEnter:()=>this.setState({focusIndex:i}),onClick:()=>this.pick(item.value)},h('span',{},item.label),item.value===this.props.value?h('b',{},'✓'):null))),document.body):null);
+    this.state.open?ReactDOM.createPortal(h('div',{ref:(e:any)=>this.menu=e,className:'mf-select-popover',role:'listbox',onKeyDown:this.onKey,style:{position:'fixed',left:p.left,top:p.top,width:p.width,maxHeight:p.maxHeight}},
+      options.map((item,i)=>h('button',{key:item.value,type:'button',role:'option','aria-selected':item.value===this.props.value,className:'mf-option '+(item.value===this.props.value?'is-selected ':'')+(i===this.state.focusIndex?'is-focused':''),onMouseEnter:()=>{if(this.state.focusIndex!==i)this.setState({focusIndex:i});},onClick:()=>this.pick(item.value)},h('span',{},item.label),item.value===this.props.value?h('b',{},'✓'):null))),document.body):null);
  }
 }
 
