@@ -13,7 +13,8 @@ import {cloudE1Evidence} from './finance-e1-audit.js';
 import {readManualTransactionsPage} from './finance-manual-read.js';
 import {readFinancePreviewPeriod} from './finance-period-preview.js';
 import {installmentQuote} from '../../shared/finance-installment-quote.mjs';
-import {publicCapabilities} from '../../shared/ai-policy.mjs';
+import {publicCapabilities,buildDemoRequest} from '../../shared/ai-policy.mjs';
+import {assembleDemoContext} from '../../shared/ai-context.mjs';
 import {applyPersonalEdit,personalEditChanges,personalEditBaseline} from './finance-personal-edits.js';
 // Meu Financeiro: private proof-of-concept for standards-based Web Push.
 // No bank data or credentials are handled by this Worker.
@@ -411,6 +412,18 @@ export default {
       const identity=await authorizeAccess(request,env);
       if(!identity.ok)return json({error:'Acesso protegido necessário.'},identity.status);
       return json(publicCapabilities());
+    }
+    if(url.pathname==='/api/ai/demo-preview'&&request.method==='GET'){
+      // Deterministic shared context preview only; never calls OpenAI.
+      // Same pilot-session + Cloudflare Access gates as /api/ai/capabilities.
+      if(!personalQuarantineAllowed(env))return json({error:'Prévia de IA não habilitada.'},403);
+      const identity=await authorizeAccess(request,env);
+      if(!identity.ok)return json({error:'Acesso protegido necessário.'},identity.status);
+      try{
+        const caseId=url.searchParams.get('caseId');
+        const preview=assembleDemoContext(buildDemoRequest(caseId),[],false).inspection;
+        return json(preview);
+      }catch{return json({error:'Exemplo de demonstração inválido.'},400);}
     }
     if(url.pathname==='/api/logout'&&request.method==='POST')return json({ok:true},200,{'Set-Cookie':`${COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0`});
     if(url.pathname==='/api/access/diagnose-certs'&&request.method==='POST'){
