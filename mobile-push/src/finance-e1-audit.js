@@ -4,13 +4,15 @@
 import {PERSONAL_COLUMNS} from './finance-personal-validate.js';
 import {auditVerifiedBankReferences} from './finance-reference-audit.js';
 import {bankIngestionStatus,ensureBankStaging} from './finance-bank-ingestion.js';
+import {bankMonthlyEvidence} from '../../shared/e1-monthly-evidence.mjs';
 
 const enc=new TextEncoder();
 const SHA=/^[a-f0-9]{64}$/;
-const hash=async lines=>{
-  const bytes=await crypto.subtle.digest('SHA-256',enc.encode(lines.map(x=>JSON.stringify(x)).join('\n')+'\n'));
+const shaText=async text=>{
+  const bytes=await crypto.subtle.digest('SHA-256',enc.encode(text));
   return Array.from(new Uint8Array(bytes),b=>b.toString(16).padStart(2,'0')).join('');
 };
+const hash=lines=>shaText(lines.map(x=>JSON.stringify(x)).join('\n')+'\n');
 const canonical=(rows,fn)=>rows.map(fn).sort((a,b)=>{
   const left=JSON.stringify(a),right=JSON.stringify(b);
   return left<right?-1:left>right?1:0;
@@ -24,7 +26,7 @@ export async function cloudE1Evidence(storage){
   const sql=storage.sql;
   ensureBankStaging(storage);
   const transactions=sql.exec(
-    'SELECT account_id,external_id FROM mf_bank_staging_transactions'
+    'SELECT account_id,external_id,date,description,amount_cents,status FROM mf_bank_staging_transactions'
   ).toArray();
   if(transactions.length>100000)throw new Error('Histórico fora do limite.');
   const bankKeys=canonical(transactions,r=>[r.account_id,r.external_id]);
@@ -56,7 +58,23 @@ export async function cloudE1Evidence(storage){
     return [r.account_id,r.external_id,meta.has(key)?(meta.get(key)||'Outros'):null];
   });
   const categoryMetadataComplete=meta.size===transactions.length&&orphanCategories===0;
-  const withCategory=categoryTuples.filter(t=>typeof t[2]==='string'&&t[2].trim()).length;
+  // Distinguish an absent sidecar row from a Pluggy category explicitly null.
+  // The Windows app maps a null provider category to "Outros" on ingestion.
+  const covered=transactions.filter(row=>meta.has(JSON.stringify([row.account_id,row.external_id])));
+  const missingMetadata=transactions.filter(row=>!meta.has(JSON.stringify([row.account_id,row.external_id])));
+  const rawCategoriesPresent=covered.filter(row=>{
+    const value=meta.get(JSON.stringify([row.account_id,row.external_id]));
+    return typeof value==='string'&&value.trim().length>0;
+  }).length;
+  const nullProviderCategories=covered.length-rawCategoriesPresent;
+  const missingByMonth=new Map();
+  for(const row of missingMetadata){
+    const month=row.date.slice(0,7);
+    missingByMonth.set(month,(missingByMonth.get(month)||0)+1);
+  }
+  const categoryMetadataGapsByMonth=[...missingByMonth.entries()].sort((a,b)=>b[0].localeCompare(a[0]))
+    .slice(0,12).map(([month,count])=>({month,count}));
+  const monthly=await bankMonthlyEvidence(transactions,shaText);
 
   const snapshotExists=exists(sql,'mf_transfer_session')&&exists(sql,'mf_transfer_rows');
   const transfer=snapshotExists?sql.exec(
@@ -115,12 +133,17 @@ export async function cloudE1Evidence(storage){
         stage:ingestion.stage
       },
       categoryMetadataRows:sidecar.length,
-      providerCategoriesPresent:withCategory,
+      providerCategoriesPresent:covered.length,
+      rawProviderCategoriesPresent:rawCategoriesPresent,
+      explicitlyUncategorizedByProvider:nullProviderCategories,
+      missingCategoryMetadata:missingMetadata.length,
+      missingCategoryMetadataByMonth:categoryMetadataGapsByMonth,
       categoryMetadataComplete,orphanCategoryMetadata:orphanCategories,
       accountsWithNumericBalance:accounts.filter(a=>Number.isSafeInteger(a.balance_cents)).length,
       accountLatestQuery:accounts.map(a=>a.updated_at).filter(x=>typeof x==='string')
         .sort().at(-1)||null
     },
+    monthly,
     fingerprints:{
       accountIdentities:await hash(accountTuples),
       accountBalancesUndated:await hash(accountBalanceTuples),
