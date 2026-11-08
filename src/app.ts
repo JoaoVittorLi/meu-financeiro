@@ -300,15 +300,28 @@ class SingleDatePicker extends React.Component<any,any>{
  componentDidMount(){document.addEventListener('pointerdown',this.outside,true);window.addEventListener('resize',this.close);window.addEventListener('scroll',this.onScroll,true);}
  componentWillUnmount(){document.removeEventListener('pointerdown',this.outside,true);window.removeEventListener('resize',this.close);window.removeEventListener('scroll',this.onScroll,true);}
  close=()=>this.setState({open:false});
+ closeAndFocus=()=>{if(this.state.open)this.setState({open:false},()=>this.trigger?.focus());};
+ onKeyDown=(e:any)=>{
+  if(e.key==='Escape'&&this.state.open){e.preventDefault();e.stopPropagation();this.closeAndFocus();return;}
+  const day=e.target?.getAttribute?.('data-date');
+  if(!day||!this.state.open)return;
+  const delta:{[key:string]:number}={ArrowLeft:-1,ArrowRight:1,ArrowUp:-7,ArrowDown:7};
+  if(delta[e.key]===undefined&&e.key!=='Home'&&e.key!=='End')return;
+  e.preventDefault();e.stopPropagation();
+  const next=e.key==='Home'?advanceDate(day,-((fromISO(day).getDay()+6)%7)):
+   e.key==='End'?advanceDate(day,6-((fromISO(day).getDay()+6)%7)):advanceDate(day,delta[e.key]);
+  const focusDay=()=>this.panel?.querySelector('[data-date="'+next+'"]')?.focus();
+  if(next.slice(0,7)!==this.state.view)this.setState({view:next.slice(0,7)},focusDay);else focusDay();
+ };
  onScroll=(e:any)=>{if(!this.panel?.contains(e.target))this.close();};
  outside=(e:any)=>{if(this.state.open&&!this.trigger?.contains(e.target)&&!this.panel?.contains(e.target))this.close();};
- toggle=()=>{const r=this.trigger?.getBoundingClientRect();if(!r)return;const width=326,left=Math.max(12,Math.min(r.left,window.innerWidth-width-12));this.setState({open:!this.state.open,view:(this.props.value||iso(new Date())).slice(0,7),left,top:r.bottom+310>window.innerHeight?Math.max(10,r.top-313):r.bottom+6});};
+ toggle=()=>{const r=this.trigger?.getBoundingClientRect();if(!r)return;const width=Math.max(0,Math.min(326,window.innerWidth-20)),left=Math.max(10,Math.min(r.left,window.innerWidth-width-10));this.setState({open:!this.state.open,view:(this.props.value||iso(new Date())).slice(0,7),left,top:r.bottom+310>window.innerHeight?Math.max(10,r.top-313):r.bottom+6},()=>{if(this.state.open)this.panel?.querySelector('.mf-day.selected,.mf-day')?.focus();});};
  render(){const ym=this.state.view,[y,m]=ym.split('-').map(Number),first=new Date(y,m-1,1),offset=(first.getDay()+6)%7,count=new Date(y,m,0).getDate();
-  return h('div',{className:'mf-single-date'},h('button',{ref:(e:any)=>this.trigger=e,type:'button',className:'mf-date-trigger',onClick:this.toggle,'aria-haspopup':'dialog','aria-expanded':this.state.open},h(Icon,{name:'calendar',size:16}),this.props.value?.split('-').reverse().join('/')||'Selecionar data',h('span',{className:'mf-caret'},'⌄')),
-   this.state.open?ReactDOM.createPortal(h('div',{ref:(e:any)=>this.panel=e,className:'mf-single-calendar',role:'dialog','aria-label':'Selecionar data',style:{position:'fixed',left:this.state.left,top:this.state.top}},
+  return h('div',{className:'mf-single-date'},h('button',{ref:(e:any)=>this.trigger=e,type:'button',className:'mf-date-trigger',onClick:this.toggle,onKeyDown:this.onKeyDown,'aria-haspopup':'dialog','aria-expanded':this.state.open},h(Icon,{name:'calendar',size:16}),this.props.value?.split('-').reverse().join('/')||'Selecionar data',h('span',{className:'mf-caret'},'⌄')),
+   this.state.open?ReactDOM.createPortal(h('div',{ref:(e:any)=>this.panel=e,className:'mf-single-calendar',role:'dialog','aria-label':'Selecionar data',onKeyDown:this.onKeyDown,style:{position:'fixed',left:this.state.left,top:this.state.top,width:Math.min(326,window.innerWidth-20)}},
      h('div',{className:'mf-calendar-nav'},h('button',{type:'button',onClick:()=>this.setState({view:shiftMonth(ym,-1)})},'‹'),h('strong',{},prettyMonth(ym)),h('button',{type:'button',onClick:()=>this.setState({view:shiftMonth(ym,1)})},'›')),
-     h('div',{className:'mf-calendar-grid'},['S','T','Q','Q','S','S','D'].map((label,i)=>h('span',{key:'h'+i,className:'mf-weekday'},label)),Array.from({length:offset},(_,i)=>h('span',{key:'e'+i})),Array.from({length:count},(_,i)=>{const day=ym+'-'+String(i+1).padStart(2,'0');return h('button',{key:day,type:'button','aria-label':day,'aria-pressed':this.props.value===day,className:'mf-day '+(this.props.value===day?'selected':''),onClick:()=>{this.props.onChange(day);this.close();}},i+1);})),
-     h('button',{type:'button',className:'mf-today-link',onClick:()=>{this.props.onChange(iso(new Date()));this.close();}},'Hoje')),
+     h('div',{className:'mf-calendar-grid'},['S','T','Q','Q','S','S','D'].map((label,i)=>h('span',{key:'h'+i,className:'mf-weekday'},label)),Array.from({length:offset},(_,i)=>h('span',{key:'e'+i})),Array.from({length:count},(_,i)=>{const day=ym+'-'+String(i+1).padStart(2,'0');return h('button',{key:day,type:'button','aria-label':day,'data-date':day,'aria-pressed':this.props.value===day,className:'mf-day '+(this.props.value===day?'selected':''),onClick:()=>{this.props.onChange(day);this.closeAndFocus();}},i+1);})),
+     h('button',{type:'button',className:'mf-today-link',onClick:()=>{this.props.onChange(iso(new Date()));this.closeAndFocus();}},'Hoje')),
     document.body):null);
  }
 }
@@ -319,24 +332,37 @@ class PeriodPicker extends React.Component<any,any>{
  componentDidMount(){document.addEventListener('pointerdown',this.onOutside,true);window.addEventListener('resize',this.close);window.addEventListener('scroll',this.onScroll,true);}
  componentWillUnmount(){document.removeEventListener('pointerdown',this.onOutside,true);window.removeEventListener('resize',this.close);window.removeEventListener('scroll',this.onScroll,true);}
  close=()=>{if(this.state.open)this.setState({open:false});};
+ closeAndFocus=()=>{if(this.state.open)this.setState({open:false},()=>this.trigger?.focus());};
+ onKeyDown=(e:any)=>{
+  if(e.key==='Escape'&&this.state.open){e.preventDefault();e.stopPropagation();this.closeAndFocus();return;}
+  const day=e.target?.getAttribute?.('data-date');
+  if(!day||!this.state.open)return;
+  const delta:{[key:string]:number}={ArrowLeft:-1,ArrowRight:1,ArrowUp:-7,ArrowDown:7};
+  if(delta[e.key]===undefined&&e.key!=='Home'&&e.key!=='End')return;
+  e.preventDefault();e.stopPropagation();
+  const next=e.key==='Home'?advanceDate(day,-((fromISO(day).getDay()+6)%7)):
+   e.key==='End'?advanceDate(day,6-((fromISO(day).getDay()+6)%7)):advanceDate(day,delta[e.key]);
+  const focusDay=()=>this.panel?.querySelector('[data-date="'+next+'"]')?.focus();
+  if(next.slice(0,7)!==this.state.view)this.setState({view:next.slice(0,7)},focusDay);else focusDay();
+ };
  onScroll=(e:any)=>{if(!this.panel?.contains(e.target))this.close();};
  onOutside=(e:any)=>{if(this.state.open&&!this.trigger?.contains(e.target)&&!this.panel?.contains(e.target))this.close();};
- toggle=()=>{const r=this.trigger?.getBoundingClientRect();if(!r)return;const width=Math.min(366,window.innerWidth-20);const left=Math.max(10,Math.min(r.right-width,window.innerWidth-width-10));const top=r.bottom+8;this.setState({open:!this.state.open,custom:this.props.mode==='custom',start:this.props.span.start,end:this.props.span.end,step:'start',view:this.props.span.end.slice(0,7),placement:{left,top:top+440>window.innerHeight?Math.max(10,r.top-446):top}});};
- pickPreset=(mode:PeriodMode)=>{this.close();this.props.onChange(mode);};
+ toggle=()=>{const r=this.trigger?.getBoundingClientRect();if(!r)return;const width=Math.min(366,window.innerWidth-20);const left=Math.max(10,Math.min(r.right-width,window.innerWidth-width-10));const top=r.bottom+8;this.setState({open:!this.state.open,custom:this.props.mode==='custom',start:this.props.span.start,end:this.props.span.end,step:'start',view:this.props.span.end.slice(0,7),placement:{left,top:top+440>window.innerHeight?Math.max(10,r.top-446):top}},()=>{if(this.state.open)this.panel?.querySelector('button')?.focus();});};
+ pickPreset=(mode:PeriodMode)=>{this.closeAndFocus();this.props.onChange(mode);};
  pickDate=(day:string)=>{if(this.state.step==='start'||day<this.state.start){this.setState({start:day,end:'',step:'end'});}else this.setState({end:day,step:'start'});};
  renderCalendar(){const ym=this.state.view,[year,mon]=ym.split('-').map(Number),first=new Date(year,mon-1,1),offset=(first.getDay()+6)%7,num=new Date(year,mon,0).getDate(),dates:Array<string|null>=Array.from({length:offset},()=>null).concat(Array.from({length:num},(_,i)=>ym+'-'+String(i+1).padStart(2,'0')));
   return h('div',{className:'mf-calendar'},h('div',{className:'mf-calendar-nav'},h('button',{type:'button',onClick:()=>this.setState({view:shiftMonth(ym,-1)})},'‹'),h('strong',{},prettyMonth(ym)),h('button',{type:'button',onClick:()=>this.setState({view:shiftMonth(ym,1)})},'›')),
-   h('div',{className:'mf-calendar-grid'},['S','T','Q','Q','S','S','D'].map((d,i)=>h('span',{key:'weekday'+i,className:'mf-weekday'},d)),dates.map((day,i)=>day?h('button',{type:'button',key:day, 'aria-label':day, 'aria-pressed':day===this.state.start||day===this.state.end,className:'mf-day '+(day===this.state.start||day===this.state.end?'selected ':'')+(this.state.end&&day>this.state.start&&day<this.state.end?'in-range':''),onClick:()=>this.pickDate(day)},String(+day.slice(8))):h('span',{key:'empty'+i}))) );
+   h('div',{className:'mf-calendar-grid'},['S','T','Q','Q','S','S','D'].map((d,i)=>h('span',{key:'weekday'+i,className:'mf-weekday'},d)),dates.map((day,i)=>day?h('button',{type:'button',key:day, 'aria-label':day,'data-date':day, 'aria-pressed':day===this.state.start||day===this.state.end,className:'mf-day '+(day===this.state.start||day===this.state.end?'selected ':'')+(this.state.end&&day>this.state.start&&day<this.state.end?'in-range':''),onClick:()=>this.pickDate(day)},String(+day.slice(8))):h('span',{key:'empty'+i}))) );
  }
  render(){const presets:Choice[]=[{value:'week',label:'Esta semana'},{value:'15d',label:'Últimos 15 dias'},{value:'month',label:'Mês atual'},{value:'lastmonth',label:'Mês passado'}],span=this.props.span,p=this.state.placement;
-  return h('div',{className:'mf-period-holder'},h('button',{type:'button',className:'mf-period-trigger',ref:(e:any)=>this.trigger=e,'aria-expanded':this.state.open,'aria-haspopup':'dialog',onClick:this.toggle},h(Icon,{name:'calendar',size:17}),h('span',{},spanLabel(this.props.mode,span)),h('span',{className:'mf-caret'},'⌄')),
-   this.state.open?ReactDOM.createPortal(h('div',{className:'mf-period-popover',role:'dialog','aria-label':'Selecionar período',ref:(e:any)=>this.panel=e,style:{position:'fixed',left:p.left,top:p.top,width:Math.min(366,window.innerWidth-20)}},
+  return h('div',{className:'mf-period-holder'},h('button',{type:'button',className:'mf-period-trigger',ref:(e:any)=>this.trigger=e,'aria-expanded':this.state.open,'aria-haspopup':'dialog',onClick:this.toggle,onKeyDown:this.onKeyDown},h(Icon,{name:'calendar',size:17}),h('span',{},spanLabel(this.props.mode,span)),h('span',{className:'mf-caret'},'⌄')),
+   this.state.open?ReactDOM.createPortal(h('div',{className:'mf-period-popover',role:'dialog','aria-label':'Selecionar período',ref:(e:any)=>this.panel=e,onKeyDown:this.onKeyDown,style:{position:'fixed',left:p.left,top:p.top,width:Math.min(366,window.innerWidth-20)}},
      h('strong',{className:'mf-popup-title'},'Período de análise'),
      h('div',{className:'mf-period-presets'},presets.map(a=>h('button',{key:a.value,type:'button',className:this.props.mode===a.value&&!this.state.custom?'selected':'',onClick:()=>this.pickPreset(a.value as PeriodMode)},a.label))),
      h('button',{type:'button',className:'mf-custom-toggle '+(this.state.custom?'selected':''),onClick:()=>this.setState({custom:!this.state.custom,step:'start'})},'Selecionar datas personalizadas',h('span',{},'⌄')),
      this.state.custom?h('div',{className:'mf-custom-calendar'},h('p',{},this.state.step==='start'?'Selecione a data inicial':'Agora selecione a data final'),
         h('div',{className:'mf-range-values'},h('span',{},'Início: ',h('b',{},this.state.start?.split('-').reverse().join('/')||'—')),h('span',{},'Fim: ',h('b',{},this.state.end?.split('-').reverse().join('/')||'—'))),
-        this.renderCalendar(),h('div',{className:'mf-range-actions'},h('button',{type:'button',onClick:this.close},'Cancelar'),h('button',{type:'button',disabled:!this.state.start||!this.state.end||this.state.end<this.state.start,onClick:()=>{this.props.onChange('custom',this.state.start,this.state.end);this.close();}},'Aplicar período'))):null),document.body):null);
+        this.renderCalendar(),h('div',{className:'mf-range-actions'},h('button',{type:'button',onClick:this.close},'Cancelar'),h('button',{type:'button',disabled:!this.state.start||!this.state.end||this.state.end<this.state.start,onClick:()=>{this.props.onChange('custom',this.state.start,this.state.end);this.closeAndFocus();}},'Aplicar período'))):null),document.body):null);
  }
 }
 
