@@ -74,6 +74,20 @@ async function auditE1Windows(finance,fetchImpl,userDataDir){
   catch{return {ok:false,reason:'bank_compare_unavailable',financialSyncEnabled:false};}
   if(bank?.ok!==true)
     return {ok:false,reason:bank?.reason||'bank_compare_unavailable',financialSyncEnabled:false};
+  let monthly={ok:false,stage:'not_available',items:[],limitedResults:true,cutoverAllowed:false};
+  try{
+    if(cloud.monthly){
+      const {bankMonthlyEvidence,compareBankMonthlyEvidence}=
+        await import('../shared/e1-monthly-evidence.mjs');
+      const rows=finance.db.prepare(
+        'SELECT account_id,external_id,date,description,amount_cents,status FROM bank_transactions'
+      ).all();
+      const localMonthly=await bankMonthlyEvidence(rows,sha256);
+      monthly=compareBankMonthlyEvidence(localMonthly,cloud.monthly);
+    }
+  }catch{
+    return {ok:false,reason:'monthly_comparison_incompatible',financialSyncEnabled:false};
+  }
   try{
     const {evaluateE1}=await import('../shared/e1-integrity-verdict.mjs');
     const report=evaluateE1({local,cloud,bank});
@@ -81,6 +95,7 @@ async function auditE1Windows(finance,fetchImpl,userDataDir){
     // Detailed account hashes & personally identifying fields stay privileged.
     return {
       ...report,
+      monthDeltas:monthly,
       counts:{
         bankWindows:bank.localCount,bankCloud:bank.cloudCount,
         accountsWindows:local.accountCount,accountsCloud:cloud.cloud.bankAccounts,
