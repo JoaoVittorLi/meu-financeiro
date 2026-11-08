@@ -104,3 +104,57 @@ test('cliente consulta catálogo e envia apenas cenário fictício e parâmetros
  assert.match(payload.input[0].content,/hipotética/);
  assert.ok(!JSON.stringify(payload).includes('pluggy'));
 });
+
+
+test('falha na consulta do catálogo não envia análise, não gasta tentativa e informa a etapa',async()=>{
+ const calls=[];
+ const network=Object.assign(new TypeError('fetch failed'),{cause:{code:'ENOTFOUND'}});
+ const client=new ChatGPTDemoClient({
+   auth:{accessToken:async()=> 'fake-local-token'},
+   fetchFn:async url=>{calls.push(url);throw network;}
+ });
+ await assert.rejects(
+   client.testDemo({caseId:'categorize',effort:'low',creditsDisabledConfirmed:true}),
+   /etapa de consulta ao catálogo de modelos.*ENOTFOUND.*A análise ainda não foi enviada/i
+ );
+ assert.deepEqual(calls,['https://api.openai.com/v1/models']);
+ assert.equal(client.tests,0,'Falha anterior ao POST não deve consumir tentativa.');
+ assert.equal(client.busy,false);
+});
+
+test('falha de rede durante envio ao modelo não repete POST e registra uma tentativa',async()=>{
+ const calls=[];
+ const client=new ChatGPTDemoClient({
+   auth:{accessToken:async()=> 'fake-local-token'},
+   fetchFn:async(url,options)=>{
+     calls.push({url,method:options.method||'GET'});
+     if(url.endsWith('/models'))return {ok:true,json:async()=>({models:[{slug:AI_MODEL}]})};
+     throw Object.assign(new TypeError('fetch failed'),{cause:{code:'ECONNRESET'}});
+   }
+ });
+ await assert.rejects(
+   client.testDemo({caseId:'categorize',effort:'low',creditsDisabledConfirmed:true}),
+   /etapa de envio da análise.*ECONNRESET.*Não foi possível confirmar se o servidor recebeu/i
+ );
+ assert.deepEqual(calls,[
+   {url:'https://api.openai.com/v1/models',method:'GET'},
+   {url:'https://api.openai.com/v1/responses',method:'POST'}
+ ]);
+ assert.equal(client.tests,1,'POST possivelmente recebido deve contar como tentativa por segurança.');
+ assert.equal(client.busy,false);
+});
+
+test('falha de rede ao acessar sessão não consulta APIs nem consome tentativa',async()=>{
+ let calls=0;
+ const client=new ChatGPTDemoClient({
+   auth:{accessToken:async()=>{throw new TypeError('fetch failed');}},
+   fetchFn:async()=>{calls++;throw new Error('Não deveria consultar a rede.');}
+ });
+ await assert.rejects(
+   client.testDemo({caseId:'categorize',effort:'low',creditsDisabledConfirmed:true}),
+   /etapa de acesso à sessão ChatGPT.*A análise ainda não foi enviada/i
+ );
+ assert.equal(calls,0);
+ assert.equal(client.tests,0);
+ assert.equal(client.busy,false);
+});
