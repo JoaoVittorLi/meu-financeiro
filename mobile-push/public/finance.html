@@ -16,6 +16,7 @@
 <script src="/finance-personal-edit.js" defer></script>
 <script src="/finance-simulate.js" defer></script>
 <script src="/finance-reference-audit.js" defer></script>
+<script src="/finance-e1-audit.js" defer></script>
 <script src="/finance-planning-calendar.js" defer></script>
 </head>
 <body>
@@ -210,6 +211,19 @@
         <h3>Conexão bancária no servidor</h3>
         <p id="bankServerStatus" class="finance-muted" role="status" aria-live="polite">Verificando...</p>
         <button id="bankRefreshNow" class="finance-bank-activate" type="button" hidden>Autorizar atualização bancária neste servidor</button>
+      </article>
+      <article class="finance-card finance-bank-e1">
+        <h3>E1 · Integridade da base financeira</h3>
+        <p class="finance-muted">Diagnóstico consolidado do banco e das 17 tabelas migradas. Esta tela mostra a nuvem; a comparação completa com seu SQLite é executada no Windows.</p>
+        <button id="bankE1Button" type="button" class="finance-secondary">
+          Executar diagnóstico E1 na nuvem
+        </button>
+        <p id="bankE1Status" class="finance-muted" role="status" aria-live="polite">
+          Aguardando conferência. Nenhum registro será alterado.
+        </p>
+        <div id="bankE1Metrics" class="finance-audit-metrics" hidden></div>
+        <ul id="bankE1Checklist" class="finance-list" aria-label="Verificações da E1" hidden></ul>
+        <p class="finance-safe">A E1 só poderá ser homologada depois de executar a auditoria no Windows e validar saldos datados e cobertura histórica. Contagem igual não autoriza a migração definitiva.</p>
       </article>
       <article class="finance-card finance-bank-audit">
         <h3>Conferência de vínculos com o Windows</h3>
