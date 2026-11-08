@@ -15,7 +15,7 @@ test('Inteligência tem rota própria sem substituir Simular compra',()=>{
 
 test('Interface nova mantém Hoje, Conversar e Plano de ação como prévia',()=>{
  const view=source('src/intelligence-view.ts');
- for(const label of ["label:'Hoje'","label:'Conversar'","label:'Plano de ação'","Prévia offline","NÃO ENVIADA"])
+ for(const label of ["label:'Hoje'","label:'Conversar'","label:'Plano de ação'","Prévia · dados fictícios","NÃO ENVIADA"])
   assert.ok(view.includes(label),'Esperado na interface: '+label);
  assert.match(view,/renderIntelligencePanel\(app:any\)/);
  assert.match(view,/renderIntelligenceSettings\(app:any\)/);
@@ -39,9 +39,10 @@ test('Painel contextual oferece perguntas para todas as seis áreas',()=>{
  assert.match(app,/renderIntelligencePanel\(this\)/);
 });
 
-test('Configurações não coletam credenciais nesta entrega',()=>{
+test('Configurações não coletam segredos no renderer',()=>{
  const view=source('src/intelligence-view.ts');
  assert.match(view,/Não conectada/);
  assert.match(view,/GPT-6\.1 Sol/);
- assert.match(view,/Nenhuma credencial é solicitada agora/);
+ assert.match(view,/O login com ChatGPT é iniciado no Windows/);
+ assert.match(source('src/intelligence-integration.ts'),/desktop\.aiConnect/);
 });
