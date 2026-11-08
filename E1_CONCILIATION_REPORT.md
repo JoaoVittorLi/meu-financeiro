@@ -78,3 +78,14 @@ A consulta Pluggy preserva no staging registros antigos não retornados na atual
 **Próxima evidência obrigatória:** após o deployment Ready, executar novamente o diagnóstico E1 na nuvem e registrar o mês com metadados ausentes e `lastFetched`. Compilar a revisão Windows localmente, executar a auditoria E1 e verificar o relatório mensal de divergências. Só corrigir as divergências comprovadas.
 
 O GitHub Actions continua indisponível por limite de minutos; nenhum .exe Windows desta nova revisão foi publicado no Releases. A versão v0.9.4 disponível é anterior ao novo E1 e não deve ser apresentada como se o executasse.
+
+
+## 07/11/2026 — tentativa de build Windows/PWA 0.9.5-beta.1
+
+- Corrigida a declaração TypeScript `DesktopBridge.cloudE1Audit`, mantendo a implementação Electron IPC existente.
+- Os manifestos `package.json` Windows e `mobile-push/package.json` foram alinhados em `0.9.5-beta.1`, sem lançamento em produção.
+- Workflow `.github/workflows/unified-preview-gate.yml` preparado para gatilho pontual por alteração exclusiva de `.ci/request-preview-build.txt` e, depois dos testes (Node/SQLite/TypeScript/Worker), empacotamento de EXE portátil e instalador Windows, checksums SHA256 e pré-release privado com links diretos dos dois EXEs.
+- Uma única tentativa de disparo foi feita no commit `cd5e25f46d951e6d31a781a7c607894604918237`, execução Actions [42432442097](https://github.com/JoaoVittorLi/meu-financeiro/actions/runs/42432442097). **Falhou ANTES de executar qualquer step**: `parity-and-security` failure, `preview-windows` skipped, nenhuma etapa de testes executada, nenhuma build/artifact/release publicada. Logs retornam BlobNotFound; GitHub indica duas anotações na verificação, mas seu texto não foi recuperado.
+- Causa exata não comprovada; compatível com bloqueio de cota/billing ou runner. NÃO chamar o código de validado, NÃO dizer que o exe foi gerado. Não disparar novamente até verificar a anotação do GitHub e a franquia/billing.
+- Após o desbloqueio, preferir reexecução do mesmo workflow/run se suportada. Se houver mudanças de código, um único novo gatilho aprovado do marcador após todos os commits consolidados. **Nunca** reabilitar disparos automáticos por cada commit.
+- A PR #1 continua draft e isolada da `main`; a tela Inteligência fica nas branches próprias. E1 ainda exige comparação efetiva com SQLite real e não autoriza cutover.
