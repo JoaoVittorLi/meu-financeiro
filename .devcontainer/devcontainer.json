@@ -1,0 +1,19 @@
+{
+  "name": "Meu Financeiro — build Windows (sem instalar nada no PC)",
+  "image": "electronuserland/builder:wine",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "22"
+    },
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+  "postCreateCommand": "bash scripts/codespaces-build-publish.sh",
+  "waitFor": "postCreateCommand",
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "telemetry.telemetryLevel": "off"
+      }
+    }
+  }
+}
