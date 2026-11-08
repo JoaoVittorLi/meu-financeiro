@@ -11,8 +11,10 @@ const hash=async lines=>{
   const bytes=await crypto.subtle.digest('SHA-256',enc.encode(lines.map(x=>JSON.stringify(x)).join('\n')+'\n'));
   return Array.from(new Uint8Array(bytes),b=>b.toString(16).padStart(2,'0')).join('');
 };
-const canonical=(rows,fn)=>rows.map(fn).sort((a,b)=>
-  JSON.stringify(a).localeCompare(JSON.stringify(b),'en'));
+const canonical=(rows,fn)=>rows.map(fn).sort((a,b)=>{
+  const left=JSON.stringify(a),right=JSON.stringify(b);
+  return left<right?-1:left>right?1:0;
+});
 const tableNames=Object.keys(PERSONAL_COLUMNS);
 const exists=(sql,table)=>sql.exec(
   "SELECT name FROM sqlite_master WHERE type='table' AND name=?",table
