@@ -103,6 +103,10 @@ test('E1 does not invent categories or a verified snapshot after partial metadat
   const {db,storage}=memory();
   try{
     bank(storage,false);
+    storage.sql.exec(
+      'INSERT INTO mf_bank_sync_state(id,running_until,last_success,last_count) VALUES(1,0,?,?)',
+      '2026-11-08',1
+    );
     const evidence=await cloudE1Evidence(storage);
     assert.equal(evidence.personal.verified,false);
     assert.equal(evidence.personal.declaredRows,0);
@@ -114,6 +118,16 @@ test('E1 does not invent categories or a verified snapshot after partial metadat
     assert.equal(evidence.cloud.explicitlyUncategorizedByProvider,0);
     assert.equal(evidence.cloud.missingCategoryMetadata,1);
     assert.deepEqual(evidence.cloud.missingCategoryMetadataByMonth,[{month:'2026-11',count:1}]);
+    assert.equal(evidence.cloud.missingMetadataOutsideLastFetch,1);
+    assert.equal(evidence.cloud.missingMetadataInLastFetch,0);
+    // Simulate an unexpected missing sidecar for a row returned in the latest refresh.
+    storage.sql.exec(
+      'UPDATE mf_bank_staging_transactions SET ingested_at=? WHERE external_id=?',
+      '2026-11-08','fictional-bank-2'
+    );
+    const anomalous=await cloudE1Evidence(storage);
+    assert.equal(anomalous.cloud.missingMetadataOutsideLastFetch,0);
+    assert.equal(anomalous.cloud.missingMetadataInLastFetch,1);
     assert.equal(evidence.cloudCutoverAllowed,false);
   }finally{db.close();}
 });
