@@ -82,3 +82,25 @@
 
 /* Navegação adicional deve continuar acessível em janelas mais baixas. */
 @media(max-height:820px){.sidebar{overflow-y:auto;overscroll-behavior:contain}.side-bottom{flex-shrink:0}}
+
+/* Entrega 2 — OAuth autorizado somente no Electron; respostas de teste fictícias. */
+.mf-ai-live-panel{display:flex;flex-direction:column;gap:15px;border:1px solid #543b76;background:linear-gradient(145deg,#241b32,#17141d);padding:23px;border-radius:18px}
+.mf-ai-live-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px}
+.mf-ai-live-head h2{font-size:19px;margin:9px 0;letter-spacing:-.35px}
+.mf-ai-live-head p{font-size:12px;line-height:1.6;color:#afa3bd;margin:0;max-width:680px}
+.mf-ai-live-state{display:inline-flex;border:1px solid #665176;color:#d5b8e8;background:#30213e;border-radius:99px;padding:7px 10px;font-size:11px;white-space:nowrap}
+.mf-ai-live-state.ready{background:#1a382e;color:#89e8bb;border-color:#3f785c}
+.mf-ai-live-actions{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.mf-ai-live-settings{display:flex;flex-direction:column;align-items:flex-start;gap:14px;border-top:1px solid #3f314f;padding-top:17px}
+.mf-ai-live-settings>p{font-size:12px;line-height:1.65;color:#b6a8c6}
+.mf-ai-live-settings>label:not(.mf-ai-check){display:flex;flex-direction:column;gap:8px;color:#cbb3e0;font-size:12px;font-weight:700;max-width:420px;width:100%}
+.mf-ai-live-settings select{background:#201827;color:#f3e6ff;border:1px solid #56426c;border-radius:9px;padding:10px;width:100%}
+.mf-ai-check{display:flex;gap:10px;align-items:flex-start;line-height:1.65;font-size:12px;color:#d8c6e9;max-width:640px}
+.mf-ai-check input{width:17px;height:17px;margin:2px 0 0;accent-color:#9361d5}
+.mf-ai-usage-warning{border-left:3px solid #7e6994;padding-left:12px;color:#ab9db8!important;font-size:11px!important}
+.mf-ai-stream,.mf-ai-test-result{border:1px solid #55446f;border-radius:12px;padding:17px;background:#1b1524}
+.mf-ai-stream p,.mf-ai-test-result p{font-size:13px;line-height:1.75;white-space:pre-wrap;overflow-wrap:anywhere}
+.mf-ai-test-result small{font-size:11px;color:#af9dbf}
+.mf-ai-error{color:#ffb7cd;border:1px solid #90485f;border-radius:10px;padding:12px;font-size:12px;background:#351e2c}
+.mf-ai-progress,.mf-ai-notice{color:#c8b1df;font-size:12px;line-height:1.55}
+@media(max-width:740px){.mf-ai-live-head{flex-direction:column}.mf-ai-live-panel{padding:18px}.mf-ai-live-settings>label:not(.mf-ai-check){max-width:none}}
