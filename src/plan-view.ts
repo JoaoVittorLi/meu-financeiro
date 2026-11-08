@@ -18,12 +18,12 @@ function pFilterTransactions(app:any){
 function pUpcoming(app:any){
  const today=iso(new Date()),endDate=new Date();endDate.setDate(endDate.getDate()+6);
  const until=iso(endDate);
- const due=app.state.planning.items.filter((x:PlanItem)=>x.status==='planned'&&x.kind==='expense'&&x.remaining>0&&x.dueDate>=today&&x.dueDate<=until).sort((a:PlanItem,b:PlanItem)=>a.dueDate.localeCompare(b.dueDate)||a.id.localeCompare(b.id));
+ const due=app.state.planning.items.filter((x:PlanItem)=>x.status==='planned'&&x.kind==='expense'&&x.remaining>0&&x.dueDate>=today&&x.dueDate<=until).sort((a:PlanItem,b:PlanItem)=>a.dueDate.localeCompare(b.dueDate)||String(a.id).localeCompare(String(b.id)));
  const total=due.reduce((sum:number,item:PlanItem)=>sum+item.remaining,0);
  return h('section',{className:'p-upcoming','aria-label':'Compromissos dos próximos sete dias'},
   h('div',{className:'p-section-heading'},h('div',{},h('h2',{},'Próximos sete dias'),h('p',{},'Valores pendentes cadastrados · '+pDate(today)+' a '+pDate(until))),h('strong',{},due.length?fmt(total):'Nenhum vencimento')),
   due.length?h('div',{className:'p-upcoming-list'},due.slice(0,5).map((item:PlanItem)=>h('button',{type:'button',className:'p-upcoming-row',key:item.id,onClick:()=>app.openPlanDetail(item.id)},
-    h('span',{},h('b',{},item.title),h('small',{},pDate(item.dueDate)+' · '+item.category)),h('strong',{},fmt(item.remaining)))),due.length>5?h('p',{className:'muted-desc'},'Mais '+(due.length-5)+' compromisso(s) neste intervalo. Consulte a agenda completa abaixo.'):null):
+    h('span',{},h('b',{},item.title),h('small',{},pDate(item.dueDate)+' · '+item.category)),h('strong',{},fmt(item.remaining))),due.length>5?h('p',{className:'muted-desc'},'Mais '+(due.length-5)+' compromisso(s) neste intervalo. Consulte a agenda completa abaixo.'):null):
    h('p',{className:'p-upcoming-empty'},'Nenhuma despesa pendente com vencimento nos próximos sete dias. Consulte a agenda para outros períodos.'));
 }
 function pSummary(app:any){const s=app.state,p=s.planning,items=p.items,today=iso(new Date()),future=items.filter((x:PlanItem)=>x.status==='planned'&&x.remaining>0);
