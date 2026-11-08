@@ -138,7 +138,7 @@ test('UI03 does not introduce new financial engines or changes to data identity'
  assert.match(app,/bankCategorize\(\{accountId:tx\.accountId,externalId:tx\.id,category:/);
  assert.match(app,/this\.updateData\(\{\.\.\.data,transactions:data\.transactions\.map/);
  assert.match(app,/bankSnapshotBetween\(bank,start,end\)/);
- assert.match(app,/p\.projection\.negativeDays/); // Any financial warning remains visible in planning source.
+ assert.match(plan,/p\.projection\.negativeDays/); // Any financial warning remains visible in planning source.
  assert.ok(!app.includes('v0.9.5-beta.4'),'old version labels must be absent');
  assert.equal(pkg.version,'0.9.5-beta.5');
  assert.equal((app.match(/v0\.9\.5-beta\.5/g)||[]).length,3);
