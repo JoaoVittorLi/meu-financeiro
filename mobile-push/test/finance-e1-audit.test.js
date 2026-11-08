@@ -70,7 +70,14 @@ test('E1 cloud evidence verifies 17-table transferred snapshot, IDs and sidecar 
     assert.equal(result.cloud.bankAccounts,1);
     assert.equal(result.cloud.categoryMetadataRows,2);
     assert.equal(result.cloud.categoryMetadataComplete,true);
-    assert.equal(result.cloud.providerCategoriesPresent,1);
+    assert.equal(result.cloud.providerCategoriesPresent,2);
+    assert.equal(result.cloud.rawProviderCategoriesPresent,1);
+    assert.equal(result.cloud.explicitlyUncategorizedByProvider,1);
+    assert.equal(result.cloud.missingCategoryMetadata,0);
+    assert.deepEqual(result.cloud.missingCategoryMetadataByMonth,[]);
+    assert.equal(result.monthly.contract,'mf-e1-months-v1');
+    assert.equal(result.monthly.months[0].month,'2026-11');
+    assert.equal(result.monthly.months[0].count,2);
     assert.equal(result.checks.bankStagingPresent,true);
     assert.equal(result.checks.accountReferencesPresent,true);
     assert.equal(result.personal.verified,true);
@@ -103,6 +110,10 @@ test('E1 does not invent categories or a verified snapshot after partial metadat
     assert.equal(evidence.cloud.categoryMetadataComplete,false);
     assert.equal(evidence.fingerprints.providerCategories,null);
     assert.equal(evidence.cloud.providerCategoriesPresent,1);
+    assert.equal(evidence.cloud.rawProviderCategoriesPresent,1);
+    assert.equal(evidence.cloud.explicitlyUncategorizedByProvider,0);
+    assert.equal(evidence.cloud.missingCategoryMetadata,1);
+    assert.deepEqual(evidence.cloud.missingCategoryMetadataByMonth,[{month:'2026-11',count:1}]);
     assert.equal(evidence.cloudCutoverAllowed,false);
   }finally{db.close();}
 });
