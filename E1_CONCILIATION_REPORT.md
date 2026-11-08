@@ -59,3 +59,22 @@
 Não usar o Preview como fonte financeira definitiva, não habilitar FINANCIAL_SCHEMA_ACTIVE, não dar merge na main, não reimportar registros sem causa/backup, não alterar vínculos automaticamente, não apagar SQLite. cloudCutoverAllowed e financialSyncEnabled continuam false.
 
 A tela Inteligência é desenvolvida em paralelo. A E1 não altera esses arquivos; o contrato INTELLIGENCE_PARALLEL_INTEGRATION.md permanece.
+
+## Evidência real do proprietário (capturas de tela do Preview)
+
+Em 07/11/2026, o diagnóstico protegido retornou **632 transações em staging**, **1 conta**, **93 registros pessoais**, manifesto das **17 tabelas verificado** e **7 de 7 referências bancárias distintas encontradas**, com **0 referências não localizadas**. A categoria foi informada para 631 das 632 transações pelo diagnóstico anterior. Isso atesta apenas o estado do staging: **não** comprova equivalência atual com o Windows.
+
+### Investigação da diferença de duas transações e da categoria pendente
+
+A consulta Pluggy preserva no staging registros antigos não retornados na atualização seguinte. O antigo indicador de "categoria identificada" não separava: (a) registro auxiliar de categoria ausente, (b) registro existente com categoria original nula. Em seu cálculo, os valores nulos eram normalizados como "Outros", logo 631 de 632 significa que pelo menos uma transação não possui linha auxiliar; não significa que o Itaú necessariamente omitiu sua categoria.
+
+**Correção aditiva implementada, ainda aguardando inspeção no Preview:**
+- O diagnóstico E1 agora distingue cobertura das linhas auxiliares, categoria original explícita, categoria nula do Pluggy e metadados sem registro.
+- Exibe os meses das lacunas de metadados e a diferença entre o total retornado pelo último refresh e o total histórico preservado. Não revela IDs, valores ou descrições no PWA.
+- Contrato mensal compartilhado `shared/e1-monthly-evidence.mjs` calcula hashes SHA256 de identidades, datas/centavos e descrição/status por mês, sem transferir o histórico local. Os últimos **até 48 meses** podem ser confrontados no Windows, e a UI mostra até 12 meses divergentes com quantidades de cada lado.
+- O mecanismo destaca se as 2 transações adicionais estão no mês corrente, meses anteriores, ou se houve mudança de identidade, centavos ou texto. Não presume que as 2 transações são novas até o relatório Windows confirmar.
+- Não há exclusão, reimportação automática, backfill sem autorização nem ajuste silencioso de categoria. O indicador de migração financeira continua `false`.
+
+**Próxima evidência obrigatória:** após o deployment Ready, executar novamente o diagnóstico E1 na nuvem e registrar o mês com metadados ausentes e `lastFetched`. Compilar a revisão Windows localmente, executar a auditoria E1 e verificar o relatório mensal de divergências. Só corrigir as divergências comprovadas.
+
+O GitHub Actions continua indisponível por limite de minutos; nenhum .exe Windows desta nova revisão foi publicado no Releases. A versão v0.9.4 disponível é anterior ao novo E1 e não deve ser apresentada como se o executasse.
