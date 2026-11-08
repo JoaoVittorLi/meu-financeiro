@@ -239,6 +239,11 @@ function Donut(p:any){
    h('small',{},'Percentuais arredondados; valores em reais preservam o total.')):null);
 }
 
+// B02: accessible category action per row, opening the already existing editor.
+function TransactionCategoryButton(p:{category:string;emoji?:string;label:string;onClick:()=>void}){
+ return h('button',{type:'button',className:'category-tag mf-category-edit',title:'Editar categoria','aria-label':p.label,onClick:p.onClick},
+  h('span',{},(p.emoji||'✨')+' '+p.category),h('span',{className:'mf-category-edit-mark','aria-hidden':'true'},'✎'));
+}
 type Choice = {value:string;label:string};
 class StyledSelect extends React.Component<any,any>{
  private trigger:any=null;private menu:any=null;
