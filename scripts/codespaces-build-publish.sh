@@ -57,7 +57,29 @@ echo "Commit: $SHA"
 echo 'Etapa 1/4: dependências e testes do desktop...'
 npm install --no-audit --no-fund --package-lock=false
 npm run test:types
-npm run test:db
+# Guardar diagnóstico local dos testes: não é enviado ao GitHub Releases.
+# Se algum teste falhar, RESULTADO.txt mostra os nomes, sem exigir terminal.
+TEST_LOG="$LOG_DIR/TESTES_DESKTOP.log"
+if npm run test:db > "$TEST_LOG" 2>&1; then
+  echo 'Testes desktop aprovados.'
+  tail -n 9 "$TEST_LOG" || true
+else
+  {
+    echo 'ERRO — A suíte de testes do desktop não foi aprovada.'
+    echo 'O instalador NÃO foi publicado para evitar distribuir um aplicativo com defeitos.'
+    echo ''
+    echo 'TESTES QUE FALHARAM:'
+    grep -E '^not ok [0-9]+ ' "$TEST_LOG" | head -n 25 || true
+    echo ''
+    echo 'RESUMO:'
+    grep -E '^# (tests|pass|fail|cancelled|skipped|duration_ms)' "$TEST_LOG" | tail -n 10 || true
+    echo ''
+    echo 'Abra o arquivo codespaces-release/TESTES_DESKTOP.log e procure a primeira linha "not ok".'
+    echo 'Envie um print dessa parte para diagnóstico, sem mostrar tokens ou dados financeiros.'
+  } > "$STATUS"
+  cat "$STATUS"
+  exit 1
+fi
 npm run compile
 
 echo 'Etapa 2/4: testes Worker/PWA e dry-run Cloudflare...'
