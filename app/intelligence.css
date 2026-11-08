@@ -141,3 +141,27 @@
 .mf-ai-table-wrap td,.mf-ai-table-wrap th{padding:9px 11px;text-align:left;border:1px solid #4b395f}
 .mf-ai-table-wrap th{background:#332441;color:#f6dfff}
 .mf-ai-table-wrap tr:nth-child(even){background:#21192b}
+
+/* E4.1 — source-isolated and synthetic-only financial context preview */
+.mf-ai-financial-demo{display:flex;flex-direction:column;gap:15px;padding:24px;border:1px solid #57406c;border-radius:17px;background:linear-gradient(135deg,#211a2b,#15131d)}
+.mf-ai-financial-demo h2{font-size:21px;margin:0}.mf-ai-financial-demo h3{font-size:13px;color:#ead9fa;margin:7px 0}
+.mf-ai-financial-demo>p{font-size:12px;color:#b3a5c6;line-height:1.65;margin:0}
+.mf-ai-finance-controls{display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px}
+.mf-ai-finance-controls label{display:flex;flex-direction:column;gap:7px;font-size:12px;color:#d3c2e8}
+.mf-ai-finance-controls select{min-width:220px;min-height:41px;background:#18131f;color:#f1e6fb;border:1px solid #624777;border-radius:8px;padding:9px 11px}
+.mf-ai-finance-controls button{min-height:41px}
+.mf-ai-finance-results{background:#1a1521;border:1px solid #493751;border-radius:13px;padding:18px;display:grid;gap:16px}
+.mf-ai-finance-privacy{font-size:12px;color:#c9b0ec}
+.mf-ai-finance-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.mf-ai-finance-metrics>div{display:grid;gap:5px;background:#241d2e;padding:12px;border-radius:10px;min-width:0}
+.mf-ai-finance-metrics small{font-size:11px;color:#aa9ab9}
+.mf-ai-finance-metrics strong{font-size:16px;color:#f8efff;overflow-wrap:anywhere}
+.mf-ai-finance-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.mf-ai-finance-grid>div{min-width:0}
+.mf-ai-finance-grid p{font-size:12px;line-height:1.65;color:#e6d9f1}
+.mf-ai-finance-results ul{font-size:12px;line-height:1.7;color:#ccb6df;padding-left:20px}
+.mf-ai-finance-payload{border:1px solid #5e4671;padding:14px;border-radius:10px;overflow:hidden}
+.mf-ai-finance-payload summary{cursor:pointer;font-size:12px;color:#e6d2fa}
+.mf-ai-finance-payload pre{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.65;font-size:11px;color:#c8b9d8}
+.mf-ai-finance-payload small{font-size:10px;color:#aa9ab9}
+@media(max-width:700px){.mf-ai-financial-demo{padding:17px}.mf-ai-finance-metrics,.mf-ai-finance-grid{grid-template-columns:1fr}}
