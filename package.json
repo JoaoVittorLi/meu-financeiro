@@ -10,12 +10,15 @@
     "test:types": "tsc --project tsconfig.json --noEmit",
     "test": "npm run compile && npm run test:db",
     "start": "npm run compile && electron .",
-    "dist:windows": "npm run test && electron-builder --win portable nsis --x64 --publish never"
+    "dist:windows": "npm run test && npm run provenance:create && npm run provenance:verify && electron-builder --win portable nsis --x64 --publish never",
+    "provenance:create": "node scripts/renderer-provenance.cjs create",
+    "provenance:verify": "node scripts/renderer-provenance.cjs verify"
   },
   "devDependencies": {
     "electron": "45.2.3",
     "electron-builder": "26.0.0",
-    "typescript": "5.8.3"
+    "typescript": "5.8.3",
+    "@electron/asar": "4.3.1"
   },
   "build": {
     "appId": "app.local.meufinanceiro",
