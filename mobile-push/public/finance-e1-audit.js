@@ -88,7 +88,13 @@ e1Node('bankE1Button').addEventListener('click',async()=>{
            report.cloud.missingCategoryMetadataByMonth.length?
             report.cloud.missingCategoryMetadataByMonth.map(x=>
               x.month.slice(5,7)+'/'+x.month.slice(0,4)+': '+e1Fmt(x.count)).join('; '):
-            'nenhum')+'. Isso não prova perda de histórico.'),
+            'nenhum')+'. Metadados ausentes preservados de consultas anteriores: '+
+          (report.cloud.missingMetadataOutsideLastFetch===null?'não determinado':
+            e1Fmt(report.cloud.missingMetadataOutsideLastFetch))+
+          '; ausências entre registros da última consulta: '+
+          (report.cloud.missingMetadataInLastFetch===null?'não determinado':
+            e1Fmt(report.cloud.missingMetadataInLastFetch))+
+          '. Isso não prova perda de histórico.'),
       e1Row('Igualdade Windows × Cloudflare','Pendente',
         'Execute a auditoria E1 em Configurações do Windows para comparar IDs, datas, centavos, categorias e contas.'),
       e1Row('Saldos e cobertura histórica','Pendente',
