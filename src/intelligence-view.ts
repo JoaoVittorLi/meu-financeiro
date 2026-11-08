@@ -79,7 +79,8 @@ function renderIntelligenceView(app:any){
         className:tab===item.id?'active':'',onClick:()=>app.setState({intelligenceTab:item.id})},item.label))),
     section,
     tab==='chat'?renderIntelligenceConnection(app):null,
-    tab==='chat'?renderIntelligencePrivacy(app):null);
+    tab==='chat'?renderIntelligencePrivacy(app):null,
+    tab==='chat'?renderIntelligenceFinancialContext(app):null);
 }
 function renderIntelligencePanel(app:any){
   if(!app.state.intelligencePanelOpen)return null;
