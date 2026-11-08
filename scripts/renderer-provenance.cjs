@@ -114,11 +114,16 @@ function validateManifest(root,manifest,expectedCommit){
  return true;
 }
 function loadManifest(root){return JSON.parse(fs.readFileSync(path.join(root,MANIFEST),'utf8'));}
+// Manifest paths stay portable (POSIX). ASAR traverses nested directories using
+// path.sep, so its API must receive native paths on Windows as well as Linux.
+function createArchiveReader(extractFile,pathApi=path){
+ return (archive,name)=>extractFile(archive,pathApi.normalize(name));
+}
 async function verifyArchive(root,archivePath,reader,expectedCommit=getSha(root)){
  const manifest=loadManifest(root);
  validateManifest(root,manifest,expectedCommit);
  if(!fs.existsSync(archivePath))throw new Error('ASAR não encontrado: '+archivePath);
- const read=reader||((await import('@electron/asar')).extractFile);
+ const read=reader||createArchiveReader((await import('@electron/asar')).extractFile);
  const inside=JSON.parse(Buffer.from(await read(archivePath,MANIFEST)).toString('utf8'));
  if(JSON.stringify(inside)!==JSON.stringify(manifest))throw new Error('Manifesto interno não corresponde ao testado.');
  for(const [name,expected] of Object.entries(manifest.assets)){
@@ -149,4 +154,4 @@ async function main(){
  }else throw new Error('Uso: renderer-provenance.cjs create|check-bundle|verify|verify-asar <app.asar>');
 }
 if(require.main===module)main().catch(e=>{console.error('ERRO B00: '+e.message);process.exitCode=1});
-module.exports={hash,listAssets,checkFreshBundle,makeManifest,validateManifest,verifyArchive,MANIFEST,SCHEMA};
+module.exports={hash,listAssets,checkFreshBundle,makeManifest,validateManifest,verifyArchive,createArchiveReader,MANIFEST,SCHEMA};

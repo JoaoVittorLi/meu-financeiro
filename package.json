@@ -7,10 +7,11 @@
   "scripts": {
     "compile": "tsc --project tsconfig.json",
     "test:db": "node --test tests/*.test.cjs",
+    "test:asar": "node --test tests/renderer-asar.integration.cjs",
     "test:types": "tsc --project tsconfig.json --noEmit",
     "test": "npm run compile && npm run test:db",
     "start": "npm run compile && electron .",
-    "dist:windows": "npm run test && npm run provenance:create && npm run provenance:verify && electron-builder --win portable nsis --x64 --publish never",
+    "dist:windows": "npm run test && npm run test:asar && npm run provenance:create && npm run provenance:verify && electron-builder --win portable nsis --x64 --publish never",
     "provenance:create": "node scripts/renderer-provenance.cjs create",
     "provenance:verify": "node scripts/renderer-provenance.cjs verify"
   },
