@@ -159,7 +159,8 @@ function renderIntelligenceConnection(app:any){
    s.aiStreaming&&!s.aiResult?h('div',{className:'mf-ai-stream',role:'status'},h('strong',{},'Resposta em andamento'),h('p',{},s.aiStreaming.slice(0,12000))):null,
    s.aiResult?h('div',{className:'mf-ai-test-result'},
      h('span',{className:'micro-label'},'TESTE CONCLUÍDO · APENAS DADOS FICTÍCIOS'),
-     h('p',{},s.aiResult.text||'Nenhum texto retornado.'),
+     h('div',{className:'mf-ai-markdown'},...aiMarkdownNodes(s.aiResult.text||'Nenhum texto retornado.')),
+     s.aiResult.usageStored===false?h('small',{},'As métricas desta resposta não puderam ser salvas no histórico local.'):null,
      h('small',{},'Modelo '+s.aiResult.model+' · esforço '+s.aiResult.effort+
        (s.aiResult.usage?' · entrada '+s.aiResult.usage.inputTokens+' tokens · saída '+s.aiResult.usage.outputTokens+' tokens':''))):null,
    s.aiError?h('p',{className:'mf-ai-error',role:'alert'},s.aiError):null);
