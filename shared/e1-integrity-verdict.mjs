@@ -19,10 +19,12 @@ export function evaluateE1({bank,cloud,local}){
     throw new Error('Paridade bancária E1 inválida.');
   const bankPresent=bank.localCount>0&&bank.cloudCount>0;
   const safeDigest=value=>typeof value==='string'&&/^[a-f0-9]{64}$/.test(value);
-  const sameAccounts=local.accountCount>0&&
-    local.accountCount===cloud.cloud.bankAccounts&&
+  const accountsComparable=local.accountCount>0&&
+    Number.isSafeInteger(cloud.cloud.bankAccounts)&&cloud.cloud.bankAccounts>0;
+  const sameAccounts=!accountsComparable?null:
+    local.accountCount!==cloud.cloud.bankAccounts?false:
     safeDigest(local.accountIdentities)&&
-    safeDigest(cloud.fingerprints.accountIdentities)?
+      safeDigest(cloud.fingerprints.accountIdentities)?
       local.accountIdentities===cloud.fingerprints.accountIdentities:null;
   const nominalBalanceSame=sameAccounts===true&&
     local.accountCount===local.balancesAvailable&&
