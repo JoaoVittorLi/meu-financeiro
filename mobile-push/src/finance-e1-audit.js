@@ -26,7 +26,7 @@ export async function cloudE1Evidence(storage){
   const sql=storage.sql;
   ensureBankStaging(storage);
   const transactions=sql.exec(
-    'SELECT account_id,external_id,date,description,amount_cents,status FROM mf_bank_staging_transactions'
+    'SELECT account_id,external_id,date,description,amount_cents,status,ingested_at FROM mf_bank_staging_transactions'
   ).toArray();
   if(transactions.length>100000)throw new Error('Histórico fora do limite.');
   const bankKeys=canonical(transactions,r=>[r.account_id,r.external_id]);
@@ -111,6 +111,14 @@ export async function cloudE1Evidence(storage){
   }
   const references=auditVerifiedBankReferences(storage);
   const ingestion=bankIngestionStatus(storage);
+  // Rows not returned in the last Pluggy response remain preserved by design.
+  // Comparing ingested_at against the last successful refresh identifies
+  // whether a missing sidecar is historical or an unexpected current gap.
+  const lastRefresh=ingestion.lastSuccess;
+  const missingMetadataInLastFetch=lastRefresh?
+    missingMetadata.filter(row=>row.ingested_at===lastRefresh).length:null;
+  const missingMetadataOutsideLastFetch=lastRefresh?
+    missingMetadata.length-missingMetadataInLastFetch:null;
   const statuses={
     bankStagingPresent:transactions.length>0&&accounts.length>0,
     accountReferencesPresent:bankTransactionsWithoutAccount===0,
@@ -138,6 +146,7 @@ export async function cloudE1Evidence(storage){
       explicitlyUncategorizedByProvider:nullProviderCategories,
       missingCategoryMetadata:missingMetadata.length,
       missingCategoryMetadataByMonth:categoryMetadataGapsByMonth,
+      missingMetadataInLastFetch,missingMetadataOutsideLastFetch,
       categoryMetadataComplete,orphanCategoryMetadata:orphanCategories,
       accountsWithNumericBalance:accounts.filter(a=>Number.isSafeInteger(a.balance_cents)).length,
       accountLatestQuery:accounts.map(a=>a.updated_at).filter(x=>typeof x==='string')
