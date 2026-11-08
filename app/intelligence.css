@@ -165,3 +165,50 @@
 .mf-ai-finance-payload pre{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.65;font-size:11px;color:#c8b9d8}
 .mf-ai-finance-payload small{font-size:10px;color:#aa9ab9}
 @media(max-width:700px){.mf-ai-financial-demo{padding:17px}.mf-ai-finance-metrics,.mf-ai-finance-grid{grid-template-columns:1fr}}
+
+
+/* UI-03: make demonstrative content explicit and hide technical tools by default. */
+.mf-ai-intro{padding:16px 20px;border-radius:13px;background:#211A2C;border-color:#403452;gap:12px}
+.mf-ai-intro h2{font-size:19px;margin:4px 0 5px;font-family:var(--font-ui)}
+.mf-ai-intro p{font-size:12px;color:#BEB5CD}
+.mf-ai-preview-label{font-size:12px}
+.mf-ai-tabbar{gap:5px;padding-bottom:7px}
+.mf-ai-tabbar button{font-size:13px;padding:9px 13px}
+.mf-ai-welcome{padding:0 0 5px}
+.mf-ai-welcome h2{font-size:19px;margin:4px 0 5px}
+.mf-ai-welcome p{font-size:13px;color:#BEB5CD;line-height:1.5}
+.mf-ai-card-grid{gap:10px}
+.mf-ai-example-card{padding:16px;gap:10px;background:#17151F;border-color:#35303F;border-radius:13px}
+.mf-ai-example-copy p{font-size:12px;color:#BEB5CD}
+.mf-ai-example-copy strong{font-size:14px}
+.mf-ai-explainer{padding:12px 15px}
+.mf-ai-chat-layout{gap:12px}
+.mf-ai-chat-main,.mf-ai-prompts{background:#17151F;border-color:#35303F;border-radius:13px}
+.mf-ai-chat-main{padding:19px;gap:13px;min-height:0}
+.mf-ai-chat-hero{display:block}
+.mf-ai-orb{display:none}
+.mf-ai-chat-hero h2{font-size:18px;margin:0 0 5px}
+.mf-ai-chat-hero p{font-size:13px;color:#BEB5CD}
+.mf-ai-actions{gap:9px}
+.mf-ai-action-card{padding:14px 16px;background:#17151F;border-color:#35303F}
+.mf-ai-action-text>p{font-size:13px;color:#BEB5CD}
+.mf-ai-lab-disclosure{border:1px solid #514267;background:#17151F;border-radius:13px;padding:0 16px;min-width:0}
+.mf-ai-lab-disclosure>summary{display:flex;align-items:center;flex-wrap:wrap;gap:10px;color:#D5C4ED;padding:14px 0;cursor:pointer;font-size:14px;font-weight:650;list-style:none}
+.mf-ai-lab-disclosure>summary::-webkit-details-marker{display:none}
+.mf-ai-lab-disclosure>summary:after{content:'⌄';margin-left:auto;font-size:18px;color:#A981FF}
+.mf-ai-lab-disclosure[open]>summary:after{content:'⌃'}
+.mf-ai-lab-disclosure>summary small{font-size:12px;color:#BEB5CD;font-weight:400}
+.mf-ai-lab-disclosure>summary:focus-visible{outline:2px solid #A981FF;outline-offset:4px}
+.mf-ai-lab-disclosure[open]{padding-bottom:16px}
+.mf-ai-lab-disclosure[open]>*+*{margin-top:14px}
+@media(max-width:880px){
+ .mf-ai-card-grid{grid-template-columns:1fr}
+ .mf-ai-intro{align-items:flex-start;flex-wrap:wrap}
+}
+@media(max-width:560px){
+ .mf-ai-intro,.mf-ai-chat-main,.mf-ai-lab-disclosure{padding-inline:12px}
+ .mf-ai-lab-disclosure>summary small{flex-basis:100%}
+}
+@media(prefers-reduced-motion:reduce){
+ .mf-ai-card-grid,.mf-ai-action-card,.mf-ai-lab-disclosure{animation:none;transition:none}
+}
