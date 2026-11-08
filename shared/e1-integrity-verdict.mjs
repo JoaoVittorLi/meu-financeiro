@@ -17,6 +17,7 @@ export function evaluateE1({bank,cloud,local}){
   if(bank.ok!==true||bank.cloudCutoverAllowed!==false||
      !Number.isSafeInteger(bank.localCount)||!Number.isSafeInteger(bank.cloudCount))
     throw new Error('Paridade bancária E1 inválida.');
+  const bankPresent=bank.localCount>0&&bank.cloudCount>0;
   const safeDigest=value=>typeof value==='string'&&/^[a-f0-9]{64}$/.test(value);
   const sameAccounts=local.accountCount>0&&
     local.accountCount===cloud.cloud.bankAccounts&&
@@ -29,7 +30,7 @@ export function evaluateE1({bank,cloud,local}){
     safeDigest(local.accountBalancesUndated)&&
     safeDigest(cloud.fingerprints.accountBalancesUndated)?
       local.accountBalancesUndated===cloud.fingerprints.accountBalancesUndated:null;
-  const categoriesComparable=bank.matched===true&&
+  const categoriesComparable=bankPresent&&bank.matched===true&&
     cloud.cloud.categoryMetadataComplete===true&&
     safeDigest(local.providerCategories)&&
     safeDigest(cloud.fingerprints.providerCategories);
@@ -52,16 +53,16 @@ export function evaluateE1({bank,cloud,local}){
     Number.isSafeInteger(cloud.references.missingPlannedAccounts)?
     cloud.references.missingIdentities===0&&
       cloud.references.missingPlannedAccounts===0:null;
-  const orphanRows=Number.isSafeInteger(cloud.cloud.bankTransactionsWithoutAccount)?
+  const orphanRows=bankPresent&&Number.isSafeInteger(cloud.cloud.bankTransactionsWithoutAccount)?
     cloud.cloud.bankTransactionsWithoutAccount===0:null;
   const duplicateReview=Number.isSafeInteger(cloud.references.duplicateDismissalsPending)&&
       cloud.references.duplicateDismissalsPending===0;
   const checks={
-    bankIdentities:yes(bank.exactIdentities===true&&bank.sameCount===true,
+    bankIdentities:yes(bankPresent?bank.exactIdentities===true&&bank.sameCount===true:null,
       'bank_ids_match','bank_ids_diverge'),
-    bankDatesAndMoney:yes(bank.exactDatesAndCents===true,
+    bankDatesAndMoney:yes(bankPresent?bank.exactDatesAndCents===true:null,
       'bank_dates_amounts_match','bank_dates_amounts_diverge'),
-    bankDescriptionsAndStatuses:yes(bank.exactDescriptionsAndStatuses===true,
+    bankDescriptionsAndStatuses:yes(bankPresent?bank.exactDescriptionsAndStatuses===true:null,
       'bank_text_status_match','bank_text_status_diverge'),
     accountIdentities:yes(sameAccounts,'account_ids_match','account_ids_diverge','account_ids_not_comparable'),
     categoryOriginals:yes(categoriesEqual,'provider_categories_match','provider_categories_diverge','provider_categories_not_complete'),
