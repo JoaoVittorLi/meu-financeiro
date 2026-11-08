@@ -7,6 +7,21 @@
 <div class="mini"><div><span>Revisão central</span><strong id="revision">—</strong></div><div><span>Última alteração</span><strong id="changed">—</strong></div></div>
 <p class="hint">Se ambos editarem ao mesmo tempo, o aplicativo recusa sobrescrever silenciosamente os dados do outro. Neste piloto, alterações financeiras reais estão bloqueadas.</p>
 <a href="/">← Voltar para notificações</a></section>
+<section class="card" id="migration" hidden style="margin-top:14px"><div class="eyebrow">ETAPA DE MIGRAÇÃO — TESTE SEGURO</div>
+<h2 style="margin-top:9px">Conferir estrutura financeira na nuvem</h2>
+<p>O teste cria registros <strong>inteiramente fictícios</strong> numa área separada do banco Cloudflare. Confere 22 tabelas, centavos, pagamentos vinculados e divisões de despesas. Não acessa seu Itaú, não importa seu SQLite e não altera seu orçamento real.</p>
+<button class="primary" id="dryRun" type="button">Executar teste financeiro fictício</button>
+<p id="dryRunResult" role="status" aria-live="polite">A primeira verificação utiliza somente registros fictícios.</p>
+<hr style="margin:18px 0;border:0;border-top:1px solid rgba(255,255,255,.12)">
+<h3>Testar importação e desfazer</h3>
+<p>Um segundo ensaio autentica o acesso, valida 17 tabelas de personalizações e testa a importação em quarentena com prevenção de duplicidades. Ao terminar, descarta automaticamente todos os registros fictícios, sem ativar a sincronização financeira.</p>
+<button class="primary" id="quarantineDemo" type="button">Testar importação protegida (fictícia)</button>
+<p id="quarantineResult" role="status" aria-live="polite">Nenhum dado do Windows é enviado neste teste.</p>
+<hr style="margin:18px 0;border:0;border-top:1px solid rgba(255,255,255,.12)">
+<h3>Conferir histórico maior e retomada de conexão</h3>
+<p>O próximo ensaio envia 207 registros inteiramente fictícios em blocos, simula um reenvio após interrupção, verifica os 17 conjuntos de dados e remove todos os registros de teste.</p>
+<button class="primary" id="batchDemo" type="button">Testar transferência em lotes (fictícia)</button>
+<p id="batchResult" role="status" aria-live="polite">Nenhum dado real será enviado ou sincronizado.</p></section>
 <section class="card" id="login" hidden><h2>Entre no Meu Financeiro</h2><p>Utilize a mesma senha privada das notificações.</p><form id="loginForm"><label for="code">Código privado</label><input type="password" id="code" minlength="18" required autocomplete="off"><button class="primary" type="submit">Entrar</button></form></section>
 <footer>Piloto de sincronização · Dados de teste exclusivamente · Não importa dados financeiros</footer></main>
 <script type="module" src="/sync.js"></script></body></html>

@@ -28,10 +28,11 @@ type CategoryEditor = {previousName:string;name:string;color:string;emoji:string
 type RuleEditor = {id:number|null;pattern:string;matchMode:'contains'|'starts'|'exact';category:string;scope:'both'|'bank'|'manual';priority:string};
 type BankState = {config:BankConfig;data:{accounts:BankAccount[];transactions:BankTx[];items:{itemId:string;institution:string;status:string;consentExpiresAt:string|null;lastSyncAt:string|null}[];last:{completedAt:string;newCount:number;totalCount:number}|null;totalTransactions?:number;truncated?:boolean;aliases?:{id:number;pattern:string;displayName:string}[];dailyTotals?:{date:string;income:number;expense:number;categories:{name:string;total:number}[];incomeCategories?:{name:string;total:number}[]}[];suspectedDuplicates?:{pairKey:string;accountIdA:string;externalIdA:string;accountIdB:string;externalIdB:string;description:string;amount:number;date:string;accountName:string}[]}};
 const EMPTY_BANK:BankState={config:{configured:false,clientId:'',itemIds:[],secure:false},data:{accounts:[],transactions:[],items:[],last:null}};
+type E1Report = {ok:boolean;reason?:string;stage?:string;verifiedCount?:number;pendingCount?:number;mismatchCount?:number;checks?:Record<string,{status:'verified'|'mismatch'|'pending';reason:string}>;counts?:{bankWindows:number;bankCloud:number;accountsWindows:number;accountsCloud:number;personalOriginalRows:number;overlayEditsCloud:number;missingBankRefsCloud:number;missingPlanningAccountsCloud:number};e1Completed?:boolean;cloudCutoverAllowed?:boolean;monthDeltas?:{ok:boolean;stage:string;totalDifferenceMonths?:number;limitedResults:boolean;items:{month:string;windowsCount:number;cloudCount:number;difference:number;status:string}[]}};
 type State = { fatal?:string; booting?:boolean; mode:'real'|'demo'; data:Data; page:string; month:string; showEntry:boolean; entry:{date:string;description:string;kind:Kind;category:string;value:string}; sim:Sim; outcome:any; query:string; toast:string; budgetEdit:string; busy:boolean; editModal:null|{type:'budget'|'setting';key:string;title:string;value:string};bank:BankState;bankForm:{clientId:string;clientSecret:string;itemIds:string};bankBusy:boolean;bankMessage:string;bankFilter:string;txSource:'all'|'bank'|'manual';txReviewOnly:boolean;txOrganize:boolean;categoryMoreEmojis:boolean;quickAddOpen:boolean;dashboardSource:'bank'|'manual';sourceDetailsOpen:boolean;budgetTab:'expense'|'income';showAllBudgetCategories:boolean;
- categories:CategoryInfo[];rules:RuleInfo[];categoryEditor:CategoryEditor;ruleEditor:RuleEditor;ruleTest:string;categoryMessage:string;entryCategoryTouched:boolean;bankConfigOpen:boolean;overviewPeriod:PeriodMode;customStart:string;customEnd:string;backupInfo:{copies:number;last:string|null};detail:DetailSelection;detailDraft:DetailDraft;detailBusy:boolean;txSelected:string[];txBatchCategory:string; planning:PlanOverview;planMonth:string;planDay:string;planSelected:string|null;planOpen:boolean;planForm:PlanForm;planBusy:boolean;planView:string;planTerm:string;planIncludeEstimated:boolean;planBankTitle:string;planMatchQuery:string;planHistory:{action:string;details:string;at:string}[] };
+ categories:CategoryInfo[];rules:RuleInfo[];categoryEditor:CategoryEditor;ruleEditor:RuleEditor;ruleTest:string;categoryMessage:string;entryCategoryTouched:boolean;bankConfigOpen:boolean;overviewPeriod:PeriodMode;customStart:string;customEnd:string;backupInfo:{copies:number;last:string|null};detail:DetailSelection;detailDraft:DetailDraft;detailBusy:boolean;txSelected:string[];txBatchCategory:string; planning:PlanOverview;planMonth:string;planDay:string;planSelected:string|null;planOpen:boolean;planForm:PlanForm;planBusy:boolean;planView:string;planTerm:string;planIncludeEstimated:boolean;planBankTitle:string;planMatchQuery:string;planHistory:{action:string;details:string;at:string}[];cloudStage:string;cloudBusy:boolean;cloudMessage:string;cloudIdentityConnected:boolean;cloudQuarantineVerified:boolean;cloudPersonalTransferred:boolean;cloudParityBusy:boolean;cloudParityMessage:string;cloudE1Report:E1Report|null };
 // Bridge com o processo principal Electron. No preview web, mantém o armazenamento legado.
-interface DesktopBridge {load:(mode:'real'|'demo')=>Promise<Data|null>;save:(mode:'real'|'demo',data:Data)=>Promise<any>;info:()=>Promise<any>;backupSQLite:()=>Promise<{cancelled?:boolean;ok?:boolean}>;restoreSQLite:()=>Promise<{cancelled?:boolean;ok?:boolean}>;backupStatus:()=>Promise<{copies:number;last:string|null}>;openBackupsFolder:()=>Promise<string>;openDataFolder:()=>Promise<string>;bankStatus:()=>Promise<BankState>;bankConfigure:(c:any)=>Promise<BankState>;bankSync:()=>Promise<BankState & {newCount:number;totalCount:number}>;bankForget:()=>Promise<BankState>;importCategoryPack?:()=>Promise<any>;categoriesStatus:()=>Promise<{categories:CategoryInfo[];rules:RuleInfo[]}>;
+interface DesktopBridge {load:(mode:'real'|'demo')=>Promise<Data|null>;save:(mode:'real'|'demo',data:Data)=>Promise<any>;info:()=>Promise<any>;backupSQLite:()=>Promise<{cancelled?:boolean;ok?:boolean}>;cloudMigrationStatus:()=>Promise<{stage:string;cloudConnected:boolean;financialSyncEnabled:boolean;backupPresent:boolean;latestBackupAt:string|null}>;prepareCloudMigration:()=>Promise<{stage:string;checkedTables:number;checkedRecords:number;recordsSent:number;backupVerified:boolean;personalTablesReady:number;personalRecordsReady:number}>;cloudAccessStatus:()=>Promise<{connected:boolean;stage?:string;reason?:string;financialSyncEnabled:boolean;recordsTransferred:number}>;connectCloudAccess:()=>Promise<{connected:boolean;stage?:string;reason?:string;financialSyncEnabled:boolean;recordsTransferred:number}>;previewQuarantineDemo:()=>Promise<{ok:boolean;stage?:string;reason?:string;personalTables?:number;fictionalRecords?:number;realRecordsSent:number;financialSyncEnabled:boolean}>;transferPersonalCloud:()=>Promise<{cancelled?:boolean;stage?:string;recordsSent?:number;personalTablesReady?:number;personalRecordsReady?:number;backupVerified?:boolean;financialSyncEnabled:boolean}>;cloudPersonalSyncStatus?:()=>Promise<{cursor:number;conflicts:number;financialSyncEnabled:boolean}>;cloudBankParity?:()=>Promise<{ok:boolean;reason?:string;localCount?:number;cloudCount?:number;exactIdentities?:boolean;exactDatesAndCents?:boolean;exactDescriptionsAndStatuses?:boolean;matched?:boolean;financialSyncEnabled:boolean}>;cloudE1Audit?:()=>Promise<E1Report>;onCloudPersonalUpdated?:(callback:(data:{inbound:number;conflicts:number})=>void)=>(()=>void);restoreSQLite:()=>Promise<{cancelled?:boolean;ok?:boolean}>;backupStatus:()=>Promise<{copies:number;last:string|null}>;openBackupsFolder:()=>Promise<string>;openDataFolder:()=>Promise<string>;bankStatus:()=>Promise<BankState>;bankConfigure:(c:any)=>Promise<BankState>;bankSync:()=>Promise<BankState & {newCount:number;totalCount:number}>;bankForget:()=>Promise<BankState>;importCategoryPack?:()=>Promise<any>;categoriesStatus:()=>Promise<{categories:CategoryInfo[];rules:RuleInfo[]}>;
  categorySave:(input:CategoryEditor)=>Promise<any>;categoryDelete:(name:string)=>Promise<any>;
  ruleSave:(input:any)=>Promise<any>;ruleDelete:(id:number)=>Promise<any>;
  bankCategorize:(input:{accountId:string;externalId:string;category:string|null})=>Promise<BankState['data']>;
@@ -277,8 +278,8 @@ class PeriodPicker extends React.Component<any,any>{
 }
 
 class App extends React.Component<any,State>{
- private fileInput:any; private csvInput:any; private timeout:any; private writeInProgress=false; private autoSyncTimer:any=null; private lastSyncAttempt=0; private focusReturn:any=null;
- constructor(props:any){super(props);const mode:'real'|'demo'='real';this.state={mode,data:desktop?starter():load(mode),page:'overview',month:nowYM,showEntry:false,entry:{date:iso(new Date()),description:'',kind:'expense',category:'Outros',value:''},sim:{value:'',installments:'6',interest:'0'},outcome:null,query:'',toast:'',budgetEdit:'',busy:!!desktop,booting:!!desktop,editModal:null,bank:EMPTY_BANK,bankForm:{clientId:'',clientSecret:'',itemIds:''},bankBusy:false,bankMessage:'',bankFilter:'',txSource:'all',txReviewOnly:false,txOrganize:false,categoryMoreEmojis:false,quickAddOpen:false,dashboardSource:'bank',sourceDetailsOpen:false,budgetTab:'expense',showAllBudgetCategories:false,categories:DEFAULT_CATEGORY_INFOS,rules:[],categoryEditor:{previousName:'',name:'',color:'#884bff',emoji:'✨',kind:'expense'},ruleEditor:emptyRule(),ruleTest:'IFOOD',categoryMessage:'',entryCategoryTouched:false,bankConfigOpen:false,overviewPeriod:'month',customStart:iso(new Date()),customEnd:iso(new Date()),backupInfo:{copies:0,last:null},detail:null,detailDraft:{merchant:'',note:'',nature:'auto',reviewed:false,aliasPattern:'',splitParts:[]},detailBusy:false,txSelected:[],txBatchCategory:'Alimentação',planning:EMPTY_PLANNING,planMonth:nowYM,planDay:iso(new Date()),planSelected:null,planOpen:false,planForm:freshPlanForm(),planBusy:false,planView:'all',planTerm:'',planIncludeEstimated:false,planBankTitle:'',planMatchQuery:'',planHistory:[]};}
+ private fileInput:any; private csvInput:any; private timeout:any; private writeInProgress=false; private autoSyncTimer:any=null; private unsubscribePersonalCloud:(()=>void)|null=null; private lastSyncAttempt=0; private focusReturn:any=null;
+ constructor(props:any){super(props);const mode:'real'|'demo'='real';this.state={mode,data:desktop?starter():load(mode),page:'overview',month:nowYM,showEntry:false,entry:{date:iso(new Date()),description:'',kind:'expense',category:'Outros',value:''},sim:{value:'',installments:'6',interest:'0'},outcome:null,query:'',toast:'',budgetEdit:'',busy:!!desktop,booting:!!desktop,editModal:null,bank:EMPTY_BANK,bankForm:{clientId:'',clientSecret:'',itemIds:''},bankBusy:false,bankMessage:'',bankFilter:'',txSource:'all',txReviewOnly:false,txOrganize:false,categoryMoreEmojis:false,quickAddOpen:false,dashboardSource:'bank',sourceDetailsOpen:false,budgetTab:'expense',showAllBudgetCategories:false,categories:DEFAULT_CATEGORY_INFOS,rules:[],categoryEditor:{previousName:'',name:'',color:'#884bff',emoji:'✨',kind:'expense'},ruleEditor:emptyRule(),ruleTest:'IFOOD',categoryMessage:'',entryCategoryTouched:false,bankConfigOpen:false,overviewPeriod:'month',customStart:iso(new Date()),customEnd:iso(new Date()),backupInfo:{copies:0,last:null},detail:null,detailDraft:{merchant:'',note:'',nature:'auto',reviewed:false,aliasPattern:'',splitParts:[]},detailBusy:false,txSelected:[],txBatchCategory:'Alimentação',planning:EMPTY_PLANNING,planMonth:nowYM,planDay:iso(new Date()),planSelected:null,planOpen:false,planForm:freshPlanForm(),planBusy:false,planView:'all',planTerm:'',planIncludeEstimated:false,planBankTitle:'',planMatchQuery:'',planHistory:[],cloudStage:'not_started',cloudBusy:false,cloudMessage:'',cloudIdentityConnected:false,cloudQuarantineVerified:false,cloudPersonalTransferred:false,cloudParityBusy:false,cloudParityMessage:'',cloudE1Report:null};}
  async componentDidMount(){
    window.addEventListener('keydown',this.onGlobalKeydown);
    if(!desktop)return;
@@ -288,7 +289,12 @@ class App extends React.Component<any,State>{
      await this.refreshCategories();
      const currentBank=await this.refreshBank();
      await this.refreshPlanning();
+     this.unsubscribePersonalCloud=desktop.onCloudPersonalUpdated?.((event)=>{
+       if(event?.inbound>0&&this.state.mode==='real')void this.refreshCloudPersonalUI();
+     })||null;
      try{const backupInfo=await desktop.backupStatus?.();if(backupInfo)this.setState({backupInfo});}catch(_){}
+     try{const cloud=await desktop.cloudMigrationStatus?.();if(cloud)this.setState({cloudStage:cloud.stage});}catch(_){}
+     try{const identity=await desktop.cloudAccessStatus?.();if(identity)this.setState({cloudIdentityConnected:!!identity.connected});}catch(_){}
      this.autoSyncTimer=window.setInterval(()=>this.maybeAutoSync(),30*60*1000);
      if(currentBank)this.maybeAutoSync(currentBank);
    } catch(e:any){this.setState({fatal:'Não foi possível abrir seus dados pessoais: '+String(e?.message||e),busy:false,booting:false});}
@@ -306,12 +312,23 @@ class App extends React.Component<any,State>{
      this.focusReturn=null;
    }
  }
+ async refreshCloudPersonalUI(){
+   if(!desktop||this.state.mode!=='real')return;
+   try{
+     const latest=await desktop.load('real');
+     if(latest)this.setState({data:safeData(latest)});
+     await this.refreshCategories();
+     await this.refreshPlanning();
+   }catch(_){
+     // Keep existing forms and local data if cloud refresh is interrupted.
+   }
+ }
  async refreshBank(){
    if(!desktop?.bankStatus)return;
    try{const bank=await desktop.bankStatus();this.setState({bank,bankForm:{clientId:bank.config.clientId||'',clientSecret:'',itemIds:(bank.config.itemIds||[]).join(', ')}});return bank;}
    catch(e:any){this.setState({bankMessage:'Não foi possível consultar a integração: '+String(e?.message||e)});}
  }
- componentWillUnmount(){window.removeEventListener('keydown',this.onGlobalKeydown);if(this.autoSyncTimer)clearInterval(this.autoSyncTimer);if(this.timeout)clearTimeout(this.timeout);}
+ componentWillUnmount(){window.removeEventListener('keydown',this.onGlobalKeydown);this.unsubscribePersonalCloud?.();if(this.autoSyncTimer)clearInterval(this.autoSyncTimer);if(this.timeout)clearTimeout(this.timeout);}
  onGlobalKeydown=(event:KeyboardEvent)=>{
    const dialog=document.querySelector('.modal-backdrop [role="dialog"],.mf-detail-drawer');
    if(event.key==='Tab'&&dialog&&!document.querySelector('[role="listbox"],.mf-period-popover,.mf-single-calendar')){
@@ -506,6 +523,94 @@ class App extends React.Component<any,State>{
    if(!desktop)return;
    try{const r=await desktop.backupSQLite();if(!r?.cancelled)this.flash('Sua cópia de segurança foi salva.');}
    catch(e:any){this.flash('Não foi possível salvar a cópia de segurança: '+String(e?.message||e));}
+ }
+ async prepareCloudOnboarding(){
+   if(!desktop?.transferPersonalCloud||!desktop?.connectCloudAccess||this.state.cloudBusy||
+      this.state.busy||this.state.bankBusy||this.state.mode!=='real')return;
+   this.setState({cloudBusy:true,
+     cloudMessage:'Conectando ao login protegido. O envio precisará da sua confirmação explícita...'});
+   try{
+     const identity=await desktop.connectCloudAccess();
+     if(!identity?.connected){
+       this.setState({cloudBusy:false,cloudIdentityConnected:false,
+         cloudMessage:'Login ainda não concluído. Nenhum dado enviado. Clique para tentar novamente.'});
+       return;
+     }
+     this.setState({cloudIdentityConnected:true,
+       cloudMessage:'Login confirmado. O Windows solicitará autorização antes de copiar suas personalizações.'});
+     const result=await desktop.transferPersonalCloud();
+     if(result?.cancelled){
+       this.setState({cloudBusy:false,cloudMessage:'Transferência cancelada por você. Nenhum registro novo enviado.'});
+       return;
+     }
+     if(result?.stage!=='quarantine_verified'||!result.backupVerified||
+        result.personalTablesReady!==17||result.recordsSent!==result.personalRecordsReady||
+        result.financialSyncEnabled!==false)
+       throw new Error('A nuvem não confirmou o pacote completo.');
+     this.setState({cloudBusy:false,cloudPersonalTransferred:true,
+       cloudStage:'quarantine_verified',
+       cloudMessage:'Personalizações copiadas e conferidas na área protegida da Cloudflare: '+
+         result.recordsSent+' registros em 17 tabelas. Backup automático preservado. '+
+         'Sincronização financeira ainda não ativada; falta conciliar o histórico bancário com o Pluggy.'});
+   }catch(error:any){
+     this.setState({cloudBusy:false,
+       cloudMessage:'Não foi possível concluir a conferência na nuvem: '+
+         String(error?.message||error)+
+         '. O SQLite original permanece disponível e a sincronização financeira continua desativada.'});
+   }
+ }
+ async auditCloudE1(){
+   if(!desktop?.cloudE1Audit||this.state.cloudParityBusy||
+      this.state.busy||this.state.bankBusy||this.state.mode!=='real')return;
+   this.setState({cloudParityBusy:true,cloudE1Report:null,
+     cloudParityMessage:'Conferindo histórico, contas, categorias e referências do Windows com a nuvem...'});
+   try{
+     const result=await desktop.cloudE1Audit();
+     if(result?.ok!==true||result.stage!=='e1_consolidated_comparison'||
+        result.e1Completed!==false||result.cloudCutoverAllowed!==false||!result.checks){
+       this.setState({cloudParityBusy:false,cloudE1Report:null,
+         cloudParityMessage:result?.reason==='cloud_login_required'?
+           'Entre na sessão protegida da Cloudflare no Windows e tente novamente.':
+           'Auditoria indisponível neste ambiente. Nenhuma informação financeira foi alterada.'});
+       return;
+     }
+     this.setState({cloudParityBusy:false,cloudE1Report:result,
+       cloudParityMessage:'E1: '+result.verifiedCount+' verificações confirmadas, '+
+         result.mismatchCount+' divergências e '+result.pendingCount+
+         ' pendências. Windows '+result.counts?.bankWindows+
+         ' × Cloudflare '+result.counts?.bankCloud+
+         ' transações. A base única continua bloqueada até a conclusão da conferência.'});
+   }catch{
+     this.setState({cloudParityBusy:false,cloudE1Report:null,
+       cloudParityMessage:'A auditoria não pôde ser finalizada. Seus registros locais permanecem intactos.'});
+   }
+ }
+ async compareCloudBank(){
+   if(!desktop?.cloudBankParity||this.state.cloudParityBusy||
+      this.state.busy||this.state.bankBusy||this.state.mode!=='real')return;
+   this.setState({cloudParityBusy:true,cloudParityMessage:'Comparando somente resumos criptográficos do histórico bancário...'});
+   try{
+     const comparison=await desktop.cloudBankParity();
+     if(comparison?.ok!==true){
+       const message=comparison?.reason==='cloud_login_required'?'Entre no Preview da Cloudflare antes da conferência.':
+         comparison?.reason==='network_unavailable'?'A Cloudflare não respondeu à consulta.':
+         'A conferência não pôde ser concluída. Nenhum dado local foi modificado.';
+       this.setState({cloudParityBusy:false,cloudParityMessage:message});
+       return;
+     }
+     const yes=(n:boolean|undefined)=>n===true?'coincide':'diverge';
+     this.setState({cloudParityBusy:false,cloudParityMessage:
+       'Windows: '+comparison.localCount+' · Cloudflare: '+comparison.cloudCount+
+       ' movimentações. Identificadores: '+yes(comparison.exactIdentities)+
+       '. Datas e valores: '+yes(comparison.exactDatesAndCents)+
+       '. Descrições e status: '+yes(comparison.exactDescriptionsAndStatuses)+
+       '. '+(comparison.matched?'Histórico comparado sem divergências nesses campos. ':
+           'Diferenças identificadas; não ativar a base única. ')+
+       'Categorias, vínculos, saldos e atualização bancária ainda exigem conferência independente.'});
+   }catch{
+     this.setState({cloudParityBusy:false,
+       cloudParityMessage:'Não foi possível comparar os históricos. O SQLite original permanece intacto.'});
+   }
  }
  async restoreDB(){
    if(!desktop?.restoreSQLite||this.state.busy||this.state.bankBusy)return;
@@ -970,7 +1075,62 @@ class App extends React.Component<any,State>{
           'Ver movimentações',h(Icon,{name:'arrow',size:16}))));
 
  }
- renderSettings(){const d=this.state.data;const entries:[keyof Settings,string,string][]=[['opening','Saldo inicial da conta','Saldo no início do acompanhamento.'],['income','Renda mensal prevista','Use um valor conservador, sem depender de ganhos variáveis.'],['fixed','Despesas fixas mensais','Contas recorrentes previstas, sem incluir parcelas abaixo.'],['existing','Parcelas atuais por mês','Somatório de parcelas ainda em aberto.'],['reserve','Reserva mínima protegida','Valor que deve permanecer disponível.']];return h('div',{className:'section'},h('div',{className:'settings-grid'},h(Card,{className:'settings-card'},h('div',{className:'card-heading'},h('div',{},h('h2',{},'Seu perfil financeiro'),h('p',{},'Base utilizada nas projeções e recomendações'))),entries.map(([key,title,hint])=>h('div',{className:'setting-row',key},h('div',{},h('b',{},title),h('small',{},hint)),h('button',{className:'setting-edit',onClick:()=>this.setState({editModal:{type:'setting',key,title,value:moneyString(d.settings[key])}})},fmt(d.settings[key]),h(Icon,{name:'edit',size:16}))))),h('div',{className:'settings-right'},h(Card,{className:'settings-card'},h('h2',{},'Seus dados e segurança'),h('p',{className:'muted-desc'},desktop?'Seus dados ficam neste computador. A cópia completa inclui contas, categorias e movimentações; as chaves da conexão bancária são protegidas separadamente. Criamos também cópias automáticas locais.':'Seus dados são mantidos neste computador. Salve cópias de segurança regularmente.'),h('button',{className:'outlined-action full',onClick:()=>this.exportJSON()},h(Icon,{name:'download',size:17}),'Exportar lançamentos manuais'),h('button',{className:'outlined-action full',onClick:()=>this.fileInput?.click()},h(Icon,{name:'upload',size:17}),'Importar lançamentos manuais'),desktop?h('button',{className:'outlined-action full',onClick:()=>this.backupDB()},h(Icon,{name:'download',size:17}),'Salvar cópia completa'):null,desktop?h('button',{className:'outlined-action full',onClick:()=>this.restoreDB()},h(Icon,{name:'upload',size:17}),'Restaurar cópia completa'):null,desktop?h('div',{className:'backups-info'},h(Icon,{name:'shield',size:18}),h('div',{},h('b',{},'Cópias automáticas locais'),h('small',{},this.state.backupInfo.last?'Última cópia: '+new Date(this.state.backupInfo.last).toLocaleString('pt-BR')+' · Até 7 datas preservadas':'Uma cópia por dia em que o app estiver aberto.'))):null,desktop?h('button',{className:'outlined-action full',onClick:()=>this.openBackupsFolder()},h(Icon,{name:'folder',size:17}),'Ver minhas cópias automáticas'):null,desktop?h('button',{className:'outlined-action full',onClick:()=>this.openDataDir()},h(Icon,{name:'bank',size:17}),'Abrir pasta dos meus dados'):null,h('div',{className:'privacy-small'},h(Icon,{name:'shield',size:17}),'Seu histórico pessoal permanece no seu computador. A conexão com o banco usa uma chave protegida.')),h(Card,{className:'settings-card'},h('h2',{},'Modo de demonstração'),h('p',{className:'muted-desc'},'O modo de demonstração tem transações fictícias e armazenamento separado dos seus dados pessoais.'),h('button',{className:'outlined-action full',onClick:()=>this.toggleMode()},this.state.mode==='real'?'Entrar na demonstração':'Voltar aos dados pessoais',h(Icon,{name:'arrow',size:16}))))));
+ renderSettings(){const d=this.state.data;const entries:[keyof Settings,string,string][]=[['opening','Saldo inicial da conta','Saldo no início do acompanhamento.'],['income','Renda mensal prevista','Use um valor conservador, sem depender de ganhos variáveis.'],['fixed','Despesas fixas mensais','Contas recorrentes previstas, sem incluir parcelas abaixo.'],['existing','Parcelas atuais por mês','Somatório de parcelas ainda em aberto.'],['reserve','Reserva mínima protegida','Valor que deve permanecer disponível.']];return h('div',{className:'section'},h('div',{className:'settings-grid'},h(Card,{className:'settings-card'},h('div',{className:'card-heading'},h('div',{},h('h2',{},'Seu perfil financeiro'),h('p',{},'Base utilizada nas projeções e recomendações'))),entries.map(([key,title,hint])=>h('div',{className:'setting-row',key},h('div',{},h('b',{},title),h('small',{},hint)),h('button',{className:'setting-edit',onClick:()=>this.setState({editModal:{type:'setting',key,title,value:moneyString(d.settings[key])}})},fmt(d.settings[key]),h(Icon,{name:'edit',size:16}))))),h('div',{className:'settings-right'},
+ desktop?h(Card,{className:'settings-card'},
+   h('h2',{},'Sincronização na nuvem'),
+   h('p',{className:'muted-desc'},
+     this.state.cloudPersonalTransferred
+       ?'Suas personalizações estão na quarentena protegida da Cloudflare. A etapa bancária e a sincronização automática ainda não estão ativas.'
+       :'Clique para iniciar o backup automático e a transferência protegida de suas personalizações. Você confirmará o envio em uma janela do Windows.'),
+   h('div',{className:'backups-info'},h(Icon,{name:'shield',size:18}),
+     h('div',{},h('b',{},this.state.cloudPersonalTransferred?'Personalizações verificadas na nuvem':'Dados protegidos no Windows'),
+       h('small',{},this.state.cloudIdentityConnected?'Login Cloudflare verificado · Sincronização financeira não ativada':'Nuvem financeira: ainda não ativada · Nenhum registro enviado'))),
+   h('button',{
+     className:'outlined-action full',type:'button',
+     disabled:this.state.cloudBusy||this.state.busy||this.state.bankBusy||this.state.mode!=='real'||this.state.cloudPersonalTransferred,
+     onClick:()=>void this.prepareCloudOnboarding()
+   },h(Icon,{name:'cloud',size:17}),
+     this.state.cloudBusy?'Conferindo dados...':this.state.cloudPersonalTransferred?'Personalizações na quarentena':
+     'Iniciar migração protegida'),
+   this.state.cloudMessage?h('p',{className:'muted-desc',role:'status'},this.state.cloudMessage):null,
+   h('div',{className:'privacy-small'},h(Icon,{name:'shield',size:17}),
+     'A comparação bancária envia somente requisições de leitura; o extrato local não é enviado.'),
+   h('button',{className:'outlined-action full',type:'button',
+     disabled:this.state.cloudParityBusy||this.state.busy||this.state.bankBusy||this.state.mode!=='real',
+     onClick:()=>void this.auditCloudE1()},
+     h(Icon,{name:'shield',size:17}),
+     this.state.cloudParityBusy?'Executando E1...':'Executar auditoria E1 · Windows × Cloudflare'),
+   this.state.cloudParityMessage?h('p',{className:'muted-desc',role:'status'},
+     this.state.cloudParityMessage):null,
+   this.state.cloudE1Report?.checks?h('div',{className:'mf-e1-results',role:'status'},
+     ...Object.entries(this.state.cloudE1Report.checks).map(([code,check])=>
+       h('div',{className:'mf-e1-result',key:code},
+         h('b',{},({'bankIdentities':'IDs bancários','bankDatesAndMoney':'Datas e centavos',
+           'bankDescriptionsAndStatuses':'Descrições e status','accountIdentities':'Contas',
+           'categoryOriginals':'Categorias originais','snapshotOriginal':'Pacote pessoal original',
+           'personalRowCounts':'Contagens pessoais atuais','bankReferences':'Vínculos bancários',
+           'stagedAccountIntegrity':'Referências de contas','nominalAccountBalances':'Saldos numéricos',
+           'duplicateDismissals':'Duplicatas revisadas','providerHistoryCoverage':'Cobertura histórica',
+           'balanceTimestamp':'Data do saldo','effectivePersonalEdits':'Edições sincronizadas',
+           'businessRules':'Regras financeiras'} as Record<string,string>)[code]||code),
+         h('span',{className:'muted-desc'},check.status==='verified'?'Verificado':
+           check.status==='mismatch'?'Divergente':'Pendente')))):null,
+   this.state.cloudE1Report?.monthDeltas?.ok===true?h('div',{className:'mf-e1-results',role:'status'},
+     h('b',{},'Comparação por mês: '+(this.state.cloudE1Report.monthDeltas.totalDifferenceMonths||0)+' mês(es) com diferenças'),
+     ...this.state.cloudE1Report.monthDeltas.items.map(month=>
+       h('div',{className:'mf-e1-result',key:month.month},
+         h('b',{},month.month.slice(5,7)+'/'+month.month.slice(0,4)),
+         h('span',{className:'muted-desc'},
+           'Windows: '+month.windowsCount+' · Cloudflare: '+month.cloudCount+' · '+
+           (month.status==='count_difference'?'quantidades diferentes':
+             month.status==='identity_difference'?'IDs diferentes':
+             month.status==='amount_or_date_difference'?'datas ou valores diferentes':
+             'descrições ou status diferentes')))),
+     this.state.cloudE1Report.monthDeltas.limitedResults?
+       h('p',{className:'muted-desc'},'Análise mensal limitada; detalhes restantes precisam ser conferidos.') :null
+   ):null
+ ):null,
+ h(Card,{className:'settings-card'},h('h2',{},'Seus dados e segurança'),h('p',{className:'muted-desc'},desktop?'Seus dados ficam neste computador. A cópia completa inclui contas, categorias e movimentações; as chaves da conexão bancária são protegidas separadamente. Criamos também cópias automáticas locais.':'Seus dados são mantidos neste computador. Salve cópias de segurança regularmente.'),h('button',{className:'outlined-action full',onClick:()=>this.exportJSON()},h(Icon,{name:'download',size:17}),'Exportar lançamentos manuais'),h('button',{className:'outlined-action full',onClick:()=>this.fileInput?.click()},h(Icon,{name:'upload',size:17}),'Importar lançamentos manuais'),desktop?h('button',{className:'outlined-action full',onClick:()=>this.backupDB()},h(Icon,{name:'download',size:17}),'Salvar cópia completa'):null,desktop?h('button',{className:'outlined-action full',onClick:()=>this.restoreDB()},h(Icon,{name:'upload',size:17}),'Restaurar cópia completa'):null,desktop?h('div',{className:'backups-info'},h(Icon,{name:'shield',size:18}),h('div',{},h('b',{},'Cópias automáticas locais'),h('small',{},this.state.backupInfo.last?'Última cópia: '+new Date(this.state.backupInfo.last).toLocaleString('pt-BR')+' · Até 7 datas preservadas':'Uma cópia por dia em que o app estiver aberto.'))):null,desktop?h('button',{className:'outlined-action full',onClick:()=>this.openBackupsFolder()},h(Icon,{name:'folder',size:17}),'Ver minhas cópias automáticas'):null,desktop?h('button',{className:'outlined-action full',onClick:()=>this.openDataDir()},h(Icon,{name:'bank',size:17}),'Abrir pasta dos meus dados'):null,h('div',{className:'privacy-small'},h(Icon,{name:'shield',size:17}),'Seu histórico pessoal permanece no seu computador. A conexão com o banco usa uma chave protegida.')),h(Card,{className:'settings-card'},h('h2',{},'Modo de demonstração'),h('p',{className:'muted-desc'},'O modo de demonstração tem transações fictícias e armazenamento separado dos seus dados pessoais.'),h('button',{className:'outlined-action full',onClick:()=>this.toggleMode()},this.state.mode==='real'?'Entrar na demonstração':'Voltar aos dados pessoais',h(Icon,{name:'arrow',size:16}))))));
  }
  renderDetailDrawer(){
    const selected=this.state.detail;if(!selected)return null;

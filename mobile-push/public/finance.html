@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b0914">
+<meta name="robots" content="noindex,nofollow">
+<meta name="description" content="Prévia privada do Meu Financeiro no Windows e Android">
+<title>Meu Financeiro · Prévia PWA</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/icon-192.png">
+<link rel="stylesheet" href="/finance.css">
+<script src="/finance.js" defer></script>
+<script src="/finance-pwa.js" defer></script>
+<script src="/finance-analytics.js" defer></script>
+<script src="/finance-personal-edit.js" defer></script>
+<script src="/finance-simulate.js" defer></script>
+<script src="/finance-reference-audit.js" defer></script>
+<script src="/finance-e1-audit.js" defer></script>
+<script src="/finance-planning-calendar.js" defer></script>
+</head>
+<body>
+<div class="finance-app">
+  <aside class="finance-sidebar">
+    <a class="finance-brand" href="/finance.html" aria-label="Meu Financeiro, início">
+      <span class="finance-logo" aria-hidden="true">▥</span>
+      <span>Meu Financeiro<small>Prévia privada · PWA</small></span>
+    </a>
+    <nav class="finance-nav" aria-label="Áreas financeiras">
+      <button type="button" data-view="overview" aria-current="page">Visão geral</button>
+      <button type="button" data-view="transactions">Movimentações</button>
+      <button type="button" data-view="planning">Planejamento</button>
+      <button type="button" data-view="budgets">Orçamentos</button>
+      <button type="button" data-view="simulate">Simular compra</button>
+      <button type="button" data-view="accounts">Minhas contas</button>
+    </nav>
+    <div class="finance-sidebar-bottom">
+      <a href="/">Notificações</a>
+      <span>Preview · somente leitura bancária</span>
+    </div>
+  </aside>
+
+  <main class="finance-main">
+    <header class="finance-topbar">
+      <div><span class="finance-tag">Área pessoal protegida</span>
+        <h1 id="viewTitle">Visão geral</h1></div>
+      <span id="financeStatus" class="finance-badge" role="status" aria-live="polite">Conferindo personalizações...</span>
+    </header>
+    <p class="finance-readonly">Dados bancários em conferência com o Pluggy. A prévia não altera lançamentos, vínculos nem saldos.</p>
+
+    <section id="view-overview" class="finance-view" aria-label="Visão geral">
+      <div class="finance-intro"><h2>Seus dados, em uma só nuvem.</h2>
+        <p>O mesmo projeto para Windows e Android. As informações abaixo são prévias e ainda não representam dinheiro livre.</p></div>
+      <form class="finance-period-controls finance-card" id="analyticsFilters">
+        <label for="analyticsSource">Fonte dos indicadores
+          <select id="analyticsSource">
+            <option value="bank">Contas conectadas</option>
+            <option value="manual">Adicionado por você</option>
+          </select>
+        </label>
+        <label for="analyticsPeriod">Período
+          <select id="analyticsPeriod">
+            <option value="month">Mês atual</option>
+            <option value="lastmonth">Mês anterior</option>
+            <option value="week">Esta semana</option>
+            <option value="15d">Últimos 15 dias</option>
+            <option value="90d">Últimos 90 dias</option>
+          </select>
+        </label>
+        <button type="submit">Atualizar gráficos</button>
+      </form>
+      <p id="analyticsStatus" class="finance-muted" role="status" aria-live="polite">Preparando indicadores em modo somente leitura...</p>
+      <div class="finance-metrics finance-analytics-metrics">
+        <article class="finance-card"><div class="finance-muted">Receitas do período · prévia</div><strong class="finance-stat" id="cashIncome">—</strong><small>Sem somar fontes bancária e manual</small></article>
+        <article class="finance-card"><div class="finance-muted">Despesas do período · prévia</div><strong class="finance-stat" id="cashExpense">—</strong><small>Exclui transferências próprias identificadas</small></article>
+        <article class="finance-card"><div class="finance-muted">Resultado do período · prévia</div><strong class="finance-stat" id="cashNet">—</strong><small>Não equivale a saldo disponível</small></article>
+      </div>
+      <div class="finance-analytics-grid">
+        <article class="finance-card"><h2>Fluxo de caixa</h2>
+          <p class="finance-muted">Receitas e despesas por intervalo · resultado provisório</p>
+          <div id="financeFlow" class="finance-flow" role="img" aria-label="Gráfico de fluxo de caixa ainda não carregado"></div>
+        </article>
+        <article class="finance-card"><h2>Gastos por categoria</h2>
+          <p class="finance-muted">Categorias ainda não conciliadas aparecem como “A classificar”.</p>
+          <div id="financeCategoryList" class="finance-category-list"></div>
+        </article>
+      </div>
+      <div class="finance-metrics">
+        <article class="finance-card"><div class="finance-muted">Movimentações bancárias</div><strong class="finance-stat" id="overviewTransactions">—</strong><small>Extrato em conferência</small></article>
+        <article class="finance-card"><div class="finance-muted">Contas encontradas</div><strong class="finance-stat" id="overviewAccounts">—</strong><small>Saldo ainda não homologado</small></article>
+        <article class="finance-card" id="financeContent"><div class="finance-muted">Planejamentos preservados</div><strong class="finance-stat" id="planCount">—</strong><small>Dados pessoais transferidos</small>
+          <div class="finance-muted finance-category-counter">Categorias e regras: <strong id="categoryCount">—</strong></div>
+        </article>
+      </div>
+      <article class="finance-card finance-wide">
+        <h2>O que já está disponível</h2>
+        <p id="bankOverviewStatus" class="finance-muted" role="status">Verificando consulta bancária...</p>
+        <p class="finance-muted">As transações originais aparecem em Movimentações. Categorias personalizadas e vínculos ainda dependem da conferência do histórico.</p>
+      </article>
+    </section>
+
+    <section id="view-transactions" class="finance-view" hidden aria-label="Movimentações">
+      <div class="finance-intro"><h2>Movimentações</h2><p>Extrato original consultado pelo servidor. Sem classificações presumidas ou conciliações automáticas.</p></div>
+      <article class="finance-card">
+        <form id="bankFilters" class="finance-filters">
+          <label for="bankSearch">Pesquisar descrição
+            <input id="bankSearch" type="search" maxlength="100" autocomplete="off" placeholder="Descrição original do Itaú"></label>
+          <label for="bankDirection">Tipo de valor
+            <select id="bankDirection"><option value="all">Todos</option><option value="out">Saídas (valor negativo)</option><option value="in">Entradas (valor positivo)</option></select></label>
+          <button id="bankFilterButton" type="submit">Filtrar</button>
+        </form>
+        <p class="finance-muted" id="bankListStatus" role="status" aria-live="polite">Abra esta área para consultar o extrato.</p>
+        <ul id="bankTransactions" class="finance-list" aria-label="Extrato bancário"></ul>
+        <button type="button" id="bankLoadMore" class="finance-secondary" hidden>Ver mais movimentações</button>
+      </article>
+      <article class="finance-card finance-manual-card">
+        <h3>Lançamentos adicionados por você</h3>
+        <p class="finance-muted">Registros manuais preservados do Windows. Aqueles vinculados ao banco não devem ser contabilizados duas vezes.</p>
+        <p class="finance-muted" id="manualListStatus" role="status" aria-live="polite">Conferindo lançamentos manuais...</p>
+        <ul id="manualTransactions" class="finance-list" aria-label="Lançamentos manuais"></ul>
+        <button type="button" id="manualLoadMore" class="finance-secondary" hidden>Ver mais lançamentos manuais</button>
+      </article>
+      <p class="finance-safe">Os sinais positivo e negativo indicam direção do movimento, não sua natureza contábil. Transferências e reembolsos serão tratados na conciliação.</p>
+    </section>
+
+    <section id="view-planning" class="finance-view" hidden aria-label="Planejamento">
+      <div class="finance-intro"><h2>Planejamento</h2><p>Compromissos sincronizáveis com o Windows: edite título, data, categoria, confiança e observações dos registros já migrados.</p></div>
+      <article class="finance-card finance-plan-calendar">
+        <div class="finance-plan-calendar-toolbar">
+          <button type="button" id="planCalendarPrev" class="finance-edit-trigger" aria-label="Mês anterior">Anterior</button>
+          <h3 id="planCalendarMonth" aria-live="polite">Calendário financeiro</h3>
+          <button type="button" id="planCalendarNext" class="finance-edit-trigger" aria-label="Próximo mês">Próximo</button>
+        </div>
+        <p class="finance-muted">Agenda mensal dos compromissos cadastrados no Windows. Valores previstos, sem confusão com saldo bancário ou pagamentos conciliados.</p>
+        <div id="planCalendarMetrics" class="finance-plan-calendar-metrics"></div>
+        <div id="planCalendarDays" class="finance-plan-calendar-grid" role="group" aria-label="Dias do planejamento"></div>
+        <div id="planCalendarSelection" class="finance-plan-calendar-selection" aria-live="polite">
+          Selecione um dia do calendário para consultar compromissos.
+        </div>
+      </article>
+      <article class="finance-card">
+        <div class="finance-personal-toolbar">
+          <label for="planFilter">Exibir compromissos
+            <select id="planFilter">
+              <option value="all">Todos</option>
+              <option value="pending">Pendentes</option>
+              <option value="paid">Pagos</option>
+              <option value="cancelled">Cancelados</option>
+            </select>
+          </label>
+          <label for="planSearch">Pesquisar
+            <input id="planSearch" type="search" maxlength="100" placeholder="Título ou categoria" autocomplete="off">
+          </label>
+        </div>
+        <p id="planEditStatus" class="finance-muted" role="status" aria-live="polite">Carregando registros pessoais...</p>
+        <ul class="finance-list" id="planList"><li class="finance-muted">Carregando...</li></ul>
+      </article>
+      <p class="finance-safe">A edição utiliza revisão por registro. Pagamentos, valores, vínculos, cancelamentos, criação e recorrências ainda exigem a base financeira compartilhada. Não marque pagamentos por esta prévia.</p>
+    </section>
+
+    <section id="view-budgets" class="finance-view" hidden aria-label="Orçamentos">
+      <div class="finance-intro"><h2>Orçamentos</h2><p>Limites pessoais copiados do desktop. O consumo por categoria ainda não foi conciliado com o extrato.</p></div>
+      <article class="finance-card"><h3>Consumo mensal por categoria · prévia</h3>
+        <p class="finance-muted" id="budgetPreviewStatus">Os gastos por categoria dependem de conciliação. Percentuais aqui são provisórios.</p>
+        <div id="budgetProgressList" class="finance-budget-grid" aria-live="polite"></div>
+      </article>
+      <article class="finance-card finance-manual-card"><h3>Limites cadastrados no Windows</h3>
+        <p id="budgetEditStatus" class="finance-muted" role="status" aria-live="polite">Valores editáveis com revisão; consumo ainda provisório.</p>
+        <ul class="finance-list" id="budgetList"><li class="finance-muted">Carregando...</li></ul>
+      </article>
+    </section>
+
+    <section id="view-simulate" class="finance-view" hidden aria-label="Simular compra">
+      <div class="finance-intro"><h2>Simular compra</h2><p>Parcelas e juros calculados pela mesma fórmula do Windows, sem criar compromisso ou movimentação.</p></div>
+      <article class="finance-card">
+        <form id="purchaseSimulator" class="finance-simulator-form">
+          <label>Valor da compra (R$)
+            <input id="purchaseAmount" type="text" inputmode="decimal" autocomplete="off"
+              placeholder="Ex.: 1500,00" required maxlength="16"></label>
+          <label>Quantidade de parcelas
+            <input id="purchaseInstallments" type="number" min="1" max="60" step="1" value="1" required></label>
+          <label>Juros mensais (%)
+            <input id="purchaseRate" type="text" inputmode="decimal" value="0" maxlength="8"
+              placeholder="Ex.: 2,5" required></label>
+          <label>Primeiro vencimento
+            <input id="purchaseFirstDue" type="date"></label>
+          <button type="submit">Calcular parcelas</button>
+        </form>
+        <p id="purchaseSimulationStatus" role="status" aria-live="polite" class="finance-muted">
+          Informe os dados da compra para simular parcelas.
+        </p>
+        <div id="purchaseSimulationResult" hidden>
+          <div class="finance-metrics finance-simulator-metrics">
+            <div><span class="finance-muted">Parcela base</span><strong id="purchaseMonthly">—</strong></div>
+            <div><span class="finance-muted">Valor total</span><strong id="purchaseTotal">—</strong></div>
+            <div><span class="finance-muted">Juros totais</span><strong id="purchaseInterest">—</strong></div>
+          </div>
+          <h3>Calendário de parcelas</h3>
+          <ul id="purchaseSchedule" class="finance-list finance-purchase-schedule"></ul>
+        </div>
+      </article>
+      <p class="finance-safe">
+        Cálculo de parcelas apenas. O impacto na reserva, o risco e o saldo futuro só serão habilitados
+        quando os compromissos e os saldos bancários estiverem conciliados. Nenhuma compra é cadastrada aqui.
+      </p>
+    </section>
+
+    <section id="view-accounts" class="finance-view" hidden aria-label="Minhas contas">
+      <div class="finance-intro"><h2>Minhas contas</h2><p>Conexão Itaú / Meu Pluggy diretamente na Cloudflare, sem depender do Windows.</p></div>
+      <article class="finance-card finance-bank">
+        <h3>Conexão bancária no servidor</h3>
+        <p id="bankServerStatus" class="finance-muted" role="status" aria-live="polite">Verificando...</p>
+        <button id="bankRefreshNow" class="finance-bank-activate" type="button" hidden>Autorizar atualização bancária neste servidor</button>
+      </article>
+      <article class="finance-card finance-bank-e1">
+        <h3>E1 · Integridade da base financeira</h3>
+        <p class="finance-muted">Diagnóstico consolidado do banco e das 17 tabelas migradas. Esta tela mostra a nuvem; a comparação completa com seu SQLite é executada no Windows.</p>
+        <button id="bankE1Button" type="button" class="finance-secondary">
+          Executar diagnóstico E1 na nuvem
+        </button>
+        <p id="bankE1Status" class="finance-muted" role="status" aria-live="polite">
+          Aguardando conferência. Nenhum registro será alterado.
+        </p>
+        <div id="bankE1Metrics" class="finance-audit-metrics" hidden></div>
+        <ul id="bankE1Checklist" class="finance-list" aria-label="Verificações da E1" hidden></ul>
+        <p class="finance-safe">A E1 só poderá ser homologada depois de executar a auditoria no Windows e validar saldos datados e cobertura histórica. Contagem igual não autoriza a migração definitiva.</p>
+      </article>
+      <article class="finance-card finance-bank-audit">
+        <h3>Conferência de vínculos com o Windows</h3>
+        <p class="finance-muted">Identifica referências bancárias da cópia verificada do desktop que já existem no extrato Cloudflare, sem alterar lançamentos ou associar pagamentos.</p>
+        <button id="bankReferenceAuditButton" type="button" class="finance-secondary">Conferir identidades e vínculos</button>
+        <p id="bankReferenceAuditStatus" class="finance-muted" role="status" aria-live="polite">Aguardando sua consulta.</p>
+        <div id="bankReferenceAuditResults" hidden>
+          <div class="finance-audit-metrics" id="bankReferenceAuditMetrics"></div>
+          <ul id="bankReferenceAuditTables" class="finance-list"></ul>
+        </div>
+      </article>
+      <p class="finance-safe">A data da consulta ao Pluggy não é necessariamente a data do saldo informado pelo Itaú. O saldo não será apresentado como disponível antes da conferência. Esta auditoria de referências não substitui a comparação dos hashes bancários com o Windows nem a conferência de saldos e categorias.</p>
+    </section>
+
+    <dialog id="personalEditDialog" class="finance-edit-dialog" aria-labelledby="personalEditTitle">
+      <form id="personalEditForm">
+        <h2 id="personalEditTitle">Editar registro pessoal</h2>
+        <p id="personalEditHint" class="finance-muted"></p>
+        <div id="personalEditFields" class="finance-edit-fields"></div>
+        <p id="personalEditMessage" class="finance-muted" role="status" aria-live="polite"></p>
+        <div class="finance-edit-actions">
+          <button type="button" id="personalEditCancel" class="finance-secondary">Cancelar</button>
+          <button type="submit" id="personalEditSubmit" class="finance-bank-activate">Salvar na Cloudflare</button>
+        </div>
+      </form>
+    </dialog>
+    <footer class="finance-footer">
+      <span>Meu Financeiro · Preview protegido · Sem corte do SQLite</span>
+      <a href="/">Configurar notificações</a>
+    </footer>
+  </main>
+</div>
+</body>
+</html>

@@ -1,11 +1,89 @@
 const $=(id)=>document.getElementById(id);
 const state=(text,kind='')=>{$('state').textContent=text;$('state').className='state '+kind;};
 let currentRevision=0,lastValue='',submitting=false;
+function setAuthenticated(yes){
+ $('main').hidden=!yes;$('migration').hidden=!yes;$('login').hidden=!!yes;
+}
+$('dryRun').addEventListener('click',async()=>{
+ const button=$('dryRun'),output=$('dryRunResult');
+ button.disabled=true;output.textContent='Conferindo dados fictícios na Cloudflare...';
+ try{
+   const result=await api('migration/dry-run','POST',{});
+   if(!result.ok||result.realFinancialDataAccepted!==false||
+      result.financialMigrationActivated!==false||result.tableCount!==22)
+      throw new Error('Resultado inesperado. Não envie dados financeiros.');
+   output.textContent='Teste aprovado: '+result.tableCount+' tabelas, '+result.bankRecordCount+
+    ' movimentações fictícias, valores e vínculos conferidos. Nenhum dado real importado.';
+   output.style.color='#91e0c1';
+ }catch(error){
+   output.textContent='Teste ainda não aprovado: '+(error?.message||'Falha na verificação.');
+   output.style.color='#ffb9c4';
+ }finally{button.disabled=false;}
+});
+$('quarantineDemo').addEventListener('click',async()=>{
+ const button=$('quarantineDemo'),output=$('quarantineResult');
+ button.disabled=true;output.textContent='Verificando login, importação e descarte de dados fictícios...';
+ try{
+   const result=await api('migration/quarantine-demo','POST',{});
+   if(result.ok!==true||result.mode!=='synthetic_personal_quarantine'||
+      result.personalTables!==17||result.payloadValidated!==true||
+      result.duplicateReplayPrevented!==true||result.rollbackVerified!==true||
+      result.realRecordsReceived!==0||result.financialMigrationActivated!==false||
+      result.syncedToDevices!==false)
+     throw new Error('A conferência não foi concluída. Nenhum dado real deve ser enviado.');
+   output.textContent='Teste aprovado: '+result.personalTables+' tabelas pessoais e '+
+     result.fictionalRecords+' registros fictícios. Validação, proteção contra duplicidade '+
+     'e descarte completo confirmados. Nenhum dado real transferido.';
+   output.style.color='#91e0c1';
+ }catch(error){
+   output.textContent='Teste não aprovado: '+(error?.message||'Conferência indisponível.');
+   output.style.color='#ffb9c4';
+ }finally{button.disabled=false;}
+});
+$('batchDemo').addEventListener('click',async()=>{
+  const button=$('batchDemo'),output=$('batchResult');
+  button.disabled=true;output.textContent='Conferindo reenvio, retomada e descarte de registros fictícios...';
+  try{
+    const result=await api('migration/batch-demo','POST',{});
+    if(result.ok!==true||result.mode!=='synthetic_batched_quarantine'||
+       result.personalTables!==17||result.fictionalRecords!==207||
+       result.fictionalTransactions!==191||result.chunkCount<19||
+       result.replayedWithoutDuplicates!==80||result.interruptedTransferResumed!==true||
+       result.allTableHashesValidated!==true||result.rollbackVerified!==true||
+       result.quarantineRowsRemaining!==0||result.realRecordsReceived!==0||
+       result.financialMigrationActivated!==false||result.syncedToDevices!==false)
+      throw new Error('A conferência dos lotes não foi concluída.');
+    output.textContent='Teste aprovado: 207 registros fictícios em '+result.chunkCount+
+      ' lotes, reenvio de 80 registros sem duplicidade, retomada e integridade verificadas. '+
+      'Quarentena completamente descartada. Nenhum dado real transferido.';
+    output.style.color='#91e0c1';
+  }catch(error){
+    output.textContent='Teste não aprovado: '+(error?.message||'Verificação indisponível.');
+    output.style.color='#ffb9c4';
+  }finally{button.disabled=false;}
+});
 async function api(endpoint,method='GET',body){
  const response=await fetch('/api/'+endpoint,{method,credentials:'same-origin',cache:'no-store',
   headers:{'Content-Type':'application/json'},body:body===undefined?undefined:JSON.stringify(body)});
  const data=await response.json().catch(()=>({}));
  if(!response.ok){const error=new Error(data.error||'Falha na sincronização.');error.code=response.status;error.data=data;throw error;}return data;
+}
+// Diagnose a *public* certificate endpoint only when Cloudflare Access auth
+// fails; the response contains fixed status codes, no identity or JWT.
+let certProbe=null;
+async function reportAccessError(error){
+ let message=error?.message||'Falha ao autenticar.';
+ if(message.includes('CF-CERTS')){
+   if(!certProbe){
+     certProbe=api('access/diagnose-certs','POST',{}).then(result=>{
+       const entries=Array.isArray(result.observations)?result.observations:[];
+       return entries.map(item=>item.mode+': '+item.code+
+         (Number.isInteger(item.httpStatus)?' HTTP '+item.httpStatus:'')).join('; ')||'sem diagnóstico';
+     }).catch(()=> 'indisponível');
+   }
+   message+=' | Consulta pública: '+await certProbe;
+ }
+ state(message,'error');
 }
 async function refresh(){
  const result=await api('sync/snapshot');
@@ -40,16 +118,19 @@ $('save').addEventListener('click',async()=>{
 $('refresh').addEventListener('click',()=>refresh().catch(e=>state(e.message,'error')));
 $('loginForm').addEventListener('submit',async(event)=>{
  event.preventDefault();
- try{await api('login','POST',{code:$('code').value});$('code').value='';$('login').hidden=true;$('main').hidden=false;await refresh();state('Conectado à sua base central.','ok');}
- catch(e){state(e.message,'error');}
+ try{await api('login','POST',{code:$('code').value});$('code').value='';setAuthenticated(true);await refresh();state('Conectado à sua base central.','ok');}
+ catch(e){await reportAccessError(e);}
 });
 (async()=>{
  try{
   const session=await api('session');
-  $('main').hidden=!session.authenticated;$('login').hidden=!!session.authenticated;
-  if(session.authenticated){await refresh();state('Conectado à sua base central.','ok');}
+  setAuthenticated(!!session.authenticated);
+  if(session.authenticated){
+   try{await refresh();state('Conectado à sua base central.','ok');}
+   catch(e){await reportAccessError(e);}
+  }
   else state('Faça login para testar a sincronização.');
-  setInterval(()=>{if(!$('main').hidden&&document.visibilityState==='visible')refresh().catch(e=>state(e.message,'error'));},5000);
-  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&!$('main').hidden)refresh().catch(()=>{});});
- }catch(e){state(e.message,'error');$('login').hidden=false;}
+  setInterval(()=>{if(!$('main').hidden&&document.visibilityState==='visible')refresh().catch(reportAccessError);},5000);
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&!$('main').hidden)refresh().catch(reportAccessError);});
+ }catch(e){setAuthenticated(false);state(e.message,'error');}
 })();

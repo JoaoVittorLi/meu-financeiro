@@ -1,0 +1,156 @@
+:root{color-scheme:dark;font-family:Inter,"Segoe UI Variable",system-ui,-apple-system,sans-serif;background:#0b0914;color:#f7f3ff;font-synthesis:none}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 75% -10%,#58298522,transparent 48%),#0b0914}
+button,input,select{font:inherit}button{cursor:pointer}
+a{color:#d5b3ff}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #c091ff;outline-offset:3px}
+[hidden],.finance-hidden{display:none!important}
+.finance-app{display:grid;grid-template-columns:244px minmax(0,1fr);min-height:100vh}
+.finance-sidebar{position:sticky;top:0;height:100vh;background:#110e1b;border-right:1px solid #30253e;padding:29px 17px;display:flex;flex-direction:column;gap:35px}
+.finance-brand{display:flex;align-items:center;gap:11px;text-decoration:none;color:#fff;font-weight:800;font-size:18px;letter-spacing:-.4px;white-space:nowrap}
+.finance-brand small{display:block;font-size:10px;color:#b8a4c9;font-weight:600;letter-spacing:.04em;margin-top:4px}
+.finance-logo{display:grid;place-items:center;flex:0 0 39px;height:39px;border-radius:11px;background:linear-gradient(135deg,#6430dc,#ae5fe6);font-size:21px}
+.finance-nav{display:grid;gap:7px}
+.finance-nav button{border:1px solid transparent;border-radius:12px;background:transparent;text-align:left;padding:12px;color:#c2b7d2;font-size:13px;font-weight:650}
+.finance-nav button:hover{background:#20172f;color:#fff}
+.finance-nav button[aria-current="page"]{background:#392150;border-color:#694197;color:#f6eaff}
+.finance-sidebar-bottom{margin-top:auto;display:grid;gap:15px;color:#857694;font-size:11px}
+.finance-main{width:min(1100px,100%);padding:38px clamp(20px,5vw,58px) 50px;margin:0 auto;min-width:0}
+.finance-topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.finance-topbar h1{margin:7px 0;font-size:clamp(26px,3.2vw,39px);letter-spacing:-.05em}
+.finance-tag{text-transform:uppercase;letter-spacing:.15em;font-size:10px;font-weight:750;color:#b487e8}
+.finance-badge{background:#282038;border:1px solid #3e2b54;border-radius:50px;padding:8px 11px;color:#d8b9ff;font-size:11px;max-width:100%}
+.finance-readonly{color:#bdaecd;border-bottom:1px solid #33273d;padding-bottom:20px;margin:10px 0 27px;font-size:12px;line-height:1.6}
+.finance-intro{margin:0 0 21px}
+.finance-intro h2{font-size:clamp(21px,3vw,29px);letter-spacing:-.035em;margin:0 0 8px}
+.finance-intro p{color:#b6a9c6;font-size:13px;line-height:1.7;margin:0;max-width:680px}
+.finance-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-bottom:17px}
+.finance-card{background:#191521;border:1px solid #382b4b;border-radius:18px;padding:22px;min-width:0}
+.finance-card h2,.finance-card h3{margin:0 0 13px;font-size:17px;letter-spacing:-.025em}
+.finance-card p{line-height:1.65}
+.finance-card small{display:block;color:#9586ab;font-size:11px;margin-top:8px}
+.finance-stat{display:block;font-size:34px;font-weight:800;letter-spacing:-.04em;margin-top:10px}
+.finance-muted{color:#b3a5c6;font-size:12px;line-height:1.7}
+.finance-category-counter{margin-top:15px}
+.finance-wide{margin-bottom:15px}
+.finance-safe{font-size:12px;color:#c3afdb;line-height:1.7;border-left:2px solid #8e52d9;padding-left:12px;margin:18px 0}
+.finance-error{color:#ffb6ca!important}
+.finance-filters{display:grid;grid-template-columns:minmax(0,1fr) minmax(175px,220px) auto;gap:10px;align-items:end;margin-bottom:19px}
+.finance-filters label{display:grid;gap:7px;font-size:11px;font-weight:650;color:#cab9df}
+.finance-filters input,.finance-filters select{width:100%;background:#100d18;border:1px solid #4a3b5d;border-radius:10px;color:#f7f0ff;padding:11px;min-width:0;height:42px}
+.finance-filters button,.finance-secondary{border:1px solid #8d4bd8;border-radius:10px;background:#6530af;color:#fff;padding:11px 17px;font-size:12px;font-weight:750;min-height:42px}
+.finance-filters button:hover,.finance-secondary:hover{background:#7740c5}
+.finance-list{list-style:none;display:grid;gap:0;padding:0;margin:14px 0}
+.finance-item{display:flex;justify-content:space-between;gap:17px;align-items:flex-start;padding:14px 2px;border-bottom:1px solid #342a40}
+.finance-item:last-child{border-bottom:0}
+.finance-main-text{min-width:0}
+.finance-main-label{font-size:13px;font-weight:650;overflow-wrap:anywhere}
+.finance-main-label,.finance-main{color:#f5eeff}
+.finance-meta{color:#a69ab7;font-size:11px;margin-top:6px;line-height:1.5}
+.finance-amount{font-size:13px;font-weight:750;text-align:right;white-space:nowrap}
+.finance-amount.out{color:#f4a9b7}.finance-amount.in{color:#a0e5c5}
+.finance-bank-activate{width:100%;margin-top:13px;padding:13px 12px;background:#7330c8;border:1px solid #9b5fe8;color:#fff;border-radius:11px;font-size:12px;font-weight:750}
+.finance-bank-activate:disabled{opacity:.55;cursor:default}
+.finance-secondary{width:100%;margin-top:10px}
+.finance-footer{display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;color:#887a9a;font-size:11px;margin-top:38px;border-top:1px solid #30273b;padding-top:24px}
+@media(max-width:980px){.finance-app{grid-template-columns:minmax(0,1fr)}.finance-sidebar{position:sticky;top:0;z-index:3;height:auto;padding:12px 16px;gap:12px;background:#110e1bf5;border-right:0;border-bottom:1px solid #382b48}.finance-sidebar-bottom{display:none}.finance-brand{font-size:14px}.finance-brand small{display:none}.finance-logo{height:29px;flex-basis:29px;font-size:15px;border-radius:8px}.finance-nav{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:thin}.finance-nav button{white-space:nowrap;padding:10px 12px;flex:0 0 auto;font-size:12px}.finance-main{padding:25px 20px 35px}}
+@media(max-width:660px){.finance-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.finance-metrics .finance-card:last-child{grid-column:1/-1}.finance-card{padding:17px}.finance-filters{grid-template-columns:1fr 1fr}.finance-filters label:first-child{grid-column:1/-1}.finance-filters button{grid-column:1/-1}.finance-topbar{align-items:flex-start}.finance-badge{font-size:10px}.finance-main{padding:23px 14px 35px}.finance-item{gap:10px}.finance-amount{font-size:12px}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;transition:none!important}}
+
+.finance-manual-card{margin-top:16px}
+
+
+/* Source-separated cashflow preview: no bank balance or settlement is inferred. */
+.finance-period-controls{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;gap:12px;align-items:end;margin:0 0 15px}
+.finance-period-controls label{display:grid;gap:7px;color:#c9b8db;font-size:12px;font-weight:650}
+.finance-period-controls select{min-width:0;width:100%;background:#100d18;border:1px solid #4a3b5d;border-radius:10px;color:#f7f0ff;padding:10px;height:43px}
+.finance-period-controls button{background:#6730b5;border:1px solid #9664db;color:#fff;font-size:12px;font-weight:700;border-radius:10px;padding:11px 14px;min-height:43px}
+.finance-analytics-metrics{margin-top:14px}
+.finance-analytics-metrics .finance-stat{font-size:clamp(20px,2.35vw,29px)}
+.finance-analytics-grid{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:15px;margin:15px 0}
+.finance-analytics-grid .finance-card{min-width:0}
+.finance-flow svg{width:100%;height:auto;margin:8px 0;display:block}
+.finance-chart-income{fill:#45b6a0}
+.finance-chart-expense{fill:#945de4}
+.finance-chart-date{fill:#a897bf;font-size:11px}
+.finance-chart-legend{color:#bdaacb;font-size:11px;white-space:pre-wrap}
+.finance-category-list,.finance-budget-grid{display:grid;gap:14px;margin:15px 0}
+.finance-category-row,.finance-budget-row{display:grid;gap:6px}
+.finance-category-head{display:flex;justify-content:space-between;gap:10px;align-items:baseline;flex-wrap:wrap;color:#e9defa;font-size:12px}
+.finance-category-head strong{font-weight:750}
+.finance-category-list progress,.finance-budget-grid progress{display:block;appearance:none;width:100%;height:8px;border:none;border-radius:99px;overflow:hidden;background:#352944}
+.finance-category-list progress::-webkit-progress-bar,.finance-budget-grid progress::-webkit-progress-bar{background:#352944;border-radius:99px}
+.finance-category-list progress::-webkit-progress-value,.finance-budget-grid progress::-webkit-progress-value{background:#9b66e4;border-radius:99px}
+.finance-category-list progress::-moz-progress-bar,.finance-budget-grid progress::-moz-progress-bar{background:#9b66e4;border-radius:99px}
+@media(max-width:900px){.finance-analytics-grid{grid-template-columns:1fr}}
+@media(max-width:660px){.finance-period-controls{grid-template-columns:1fr 1fr}.finance-period-controls button{grid-column:1/-1}.finance-analytics-metrics .finance-card:last-child{grid-column:1/-1}}
+
+/* Safe personal editing: server-side CAS, no inline banking controls. */
+.finance-personal-toolbar{display:grid;grid-template-columns:minmax(0,180px) minmax(0,1fr);gap:12px;align-items:end}
+.finance-personal-toolbar label,.finance-personal-field{display:grid;gap:7px;color:#cfbfe1;font-size:12px}
+.finance-personal-toolbar select,.finance-personal-toolbar input,.finance-personal-field input,.finance-personal-field select,.finance-personal-field textarea{
+  min-width:0;width:100%;height:43px;padding:10px 12px;border-radius:10px;border:1px solid #534367;
+  background:#120e1c;color:#f6efff;font:inherit
+}
+.finance-personal-field textarea{height:auto;min-height:90px;resize:vertical}
+.finance-edit-row-right{display:flex;align-items:flex-end;flex-direction:column;gap:9px;white-space:nowrap}
+.finance-edit-trigger{border:1px solid #745498;background:#292039;border-radius:9px;padding:7px 13px;font-size:11px;font-weight:750;color:#eedbff}
+.finance-edit-trigger:hover{background:#3c2854}
+.finance-edit-dialog{width:min(520px,calc(100vw - 28px));max-height:calc(100dvh - 36px);overflow-y:auto;
+  border:1px solid #6c4f8e;border-radius:19px;padding:24px;background:#1a1424;color:#f4ebff;box-shadow:0 25px 95px #0008}
+.finance-edit-dialog::backdrop{background:#07050acd}
+.finance-edit-dialog h2{margin:0 0 6px;font-size:23px}
+.finance-edit-fields{display:grid;gap:14px;margin:18px 0 12px}
+.finance-edit-actions{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:20px}
+.finance-edit-actions .finance-secondary,.finance-edit-actions .finance-bank-activate{margin:0}
+.finance-edit-dialog button:disabled{opacity:.5;cursor:default}
+@media(max-width:600px){.finance-personal-toolbar{grid-template-columns:1fr}.finance-edit-dialog{padding:17px}.finance-item{align-items:flex-start}}
+
+/* The preview simulator uses the same server-side installment quote as Windows. */
+.finance-simulator-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:end;margin:0 0 18px}
+.finance-simulator-form label{display:grid;gap:8px;color:#cfbfe1;font-weight:650;font-size:12px}
+.finance-simulator-form input{min-width:0;width:100%;height:43px;border-radius:10px;border:1px solid #534367;background:#120e1c;color:#f6efff;padding:10px 12px}
+.finance-simulator-form button{grid-column:1/-1;background:#6730b5;color:#fff;font-weight:750;font-size:12px;min-height:43px;border:1px solid #9664db;border-radius:10px}
+.finance-simulator-form button:disabled{opacity:.55}
+.finance-simulator-metrics{margin:16px 0 22px}
+.finance-simulator-metrics>div{border-radius:12px;padding:15px;border:1px solid #423154;background:#100e18}
+.finance-simulator-metrics strong{display:block;font-size:clamp(18px,2.4vw,25px);margin-top:10px}
+.finance-purchase-schedule{max-height:390px;overflow:auto;padding-right:5px}
+@media(max-width:600px){.finance-simulator-form{grid-template-columns:1fr}.finance-simulator-metrics{grid-template-columns:1fr}}
+
+/* Local bank-reference audit uses counts only and never exposes identities. */
+.finance-bank-audit{margin-top:16px}
+.finance-bank-audit .finance-secondary{margin:4px 0 14px}
+.finance-audit-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:16px 0}
+.finance-audit-metric{background:#110e1a;border:1px solid #423454;border-radius:12px;padding:14px 11px;display:grid;gap:8px}
+.finance-audit-metric strong{font-size:clamp(20px,2.1vw,27px);color:#f6edff}
+.finance-bank-audit .finance-item{align-items:baseline;flex-wrap:wrap}
+@media(max-width:700px){.finance-audit-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Planning calendar: read-only snapshot; amounts are commitments, not bank balance. */
+.finance-plan-calendar{margin-bottom:16px}
+.finance-plan-calendar-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.finance-plan-calendar-toolbar h3{text-align:center;margin:0;font-size:clamp(15px,2.5vw,20px)}
+.finance-plan-calendar-toolbar button{min-width:74px}
+.finance-plan-calendar-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin:17px 0 22px}
+.finance-plan-calendar-metric{display:grid;gap:5px;border-radius:12px;padding:13px 11px;background:#110e1b;border:1px solid #473854;min-width:0}
+.finance-plan-calendar-metric strong{font-size:clamp(16px,2.1vw,23px);overflow-wrap:anywhere}
+.finance-plan-calendar-metric small{font-size:10px}
+.finance-plan-calendar-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.finance-plan-calendar-weekday{font-size:11px;color:#bba7cf;text-align:center;padding-bottom:7px}
+.finance-plan-calendar-day{min-height:88px;border-radius:10px;border:1px solid #342640;background:#110d19;color:#f6efff;text-align:left;padding:8px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.finance-plan-calendar-day:hover{border-color:#7452a1;background:#21162e}
+.finance-plan-calendar-day.is-selected{border-color:#b189f0;background:#372348}
+.finance-plan-calendar-day.is-today .finance-plan-calendar-date{background:#8257ca;border-radius:6px;padding:2px 5px;width:max-content}
+.finance-plan-calendar-date{font-weight:750;font-size:13px}
+.finance-plan-calendar-count,.finance-plan-calendar-money{font-size:10px;overflow-wrap:anywhere;color:#c9b7dc}
+.finance-plan-calendar-money{color:#e0a9b7}
+.finance-plan-calendar-selection{margin-top:18px;border-top:1px solid #3a2b4a;padding-top:13px}
+.finance-plan-calendar-selection h3{margin:0}
+@media(max-width:750px){
+ .finance-plan-calendar-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .finance-plan-calendar-grid{gap:4px}
+ .finance-plan-calendar-day{min-height:65px;padding:5px 4px}
+ .finance-plan-calendar-count,.finance-plan-calendar-money{font-size:9px}
+ .finance-plan-calendar-money{display:none}
+}

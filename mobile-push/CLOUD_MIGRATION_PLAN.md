@@ -13,6 +13,7 @@ A aplicação e o sistema operacional ainda podem ter cache de arquivos estátic
 - `/sync.html` prova escrita e leitura entre dispositivos, sem dados financeiros.
 - `/api/sync/...` oferece API com revisão por registro, operações atômicas e recusas HTTP 409 em conflitos.
 - `FINANCE_SYNC_ENABLED` deve **permanecer ausente**. Financeiro real não tem migração nem validação de esquema completas.
+- O sincronizador também mantém a trava de código `FINANCIAL_SCHEMA_ACTIVE = false`: ativar uma variável no painel Cloudflare **não habilita** registros financeiros. A trava só poderá ser removida após autenticação Cloudflare Access verificada no Worker, validação de cada entidade, migração testada e revisão de segurança.
 - O Electron v0.9.4 ainda usa SQLite local. Nunca apagar ou desativar os dados locais nesta fase.
 
 ## Domínios a migrar, preservando as mesmas regras
@@ -27,6 +28,14 @@ A aplicação e o sistema operacional ainda podem ter cache de arquivos estátic
 8. Simular compra com mesmo motor financeiro central.
 9. Avisos push, configurações, fila persistente e histórico de entrega.
 
+## Marco de preparação: identidade e inventário do SQLite (não é migração)
+
+- `src/access-auth.js` implementa validação de JWT Cloudflare Access (`Cf-Access-Jwt-Assertion`) com RS256 e verificação de emissor, audiência, tempo e identidade autorizada. O uso de JWT verificado é necessário porque Static Assets pode não repassar `ctx.access`.
+- As variáveis `TEAM_DOMAIN`, `POLICY_AUD` e `ACCESS_ALLOWED_EMAIL` **não estão confirmadas na Cloudflare**. Se forem parcialmente configuradas, a API de sincronização falha fechada; se não configuradas, o teste de notas fictícias permanece operacional pela sessão antiga.
+- `electron/cloud-migration-contract.cjs` inventaria 22 tabelas da v0.9.4 e verifica as chaves primárias para evitar migração parcial de vínculos financeiros. Não exporta dados.
+- `FINANCIAL_SCHEMA_ACTIVE` continua `false` por definição de código. A variável de ambiente `FINANCE_SYNC_ENABLED` sozinha não desbloqueia finanças.
+- Consulta: `ACCESS_SETUP.md` — passos de implantação e homologação da identidade.
+
 ## Segurança obrigatória antes dos dados financeiros
 
 - Proteger o Worker com **Cloudflare Access**, restrito à identidade do proprietário, além da sessão atual.
@@ -36,6 +45,14 @@ A aplicação e o sistema operacional ainda podem ter cache de arquivos estátic
 - Revisão explícita de permissões, limites de requisição, retenção, backup independente e recuperação.
 - Transações bancárias originais não podem ser editadas pela interface; categorias e títulos são metadados separados.
 - O aplicativo desktop deve consultar o mesmo serviço remoto; configurações e dados locais não podem ser uma segunda fonte de verdade.
+
+## Pré-auditoria local sem dados reais (primeira entrega da próxima fase)
+
+- `electron/cloud-migration-audit.cjs` inspeciona **somente a estrutura** do SQLite: presença de tabelas e colunas obrigatórias, integridade do banco e quantidade de violações de chave estrangeira.
+- Não exporta registros, saldos, dados pessoais, documentos bancários ou credenciais, não altera o banco e não envia nada à nuvem.
+- `tests/cloud-migration-audit.test.cjs` valida a auditoria em banco `:memory:` e detecta estrutura de planejamento ausente.
+- `mobile-push/test/sync.test.js` confirma que a prova de conceito continua com dados fictícios e que o flag Cloudflare não libera finanças acidentalmente.
+- **Atenção:** passar na pré-auditoria estrutural **não** aprova o banco para migração. Próximo estágio: autenticação de identidade no Worker e contrato remoto para cada domínio financeiro, antes de exportar/importar dados fictícios.
 
 ## Migração segura do SQLite instalado
 
