@@ -154,3 +154,16 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{ou
  .finance-plan-calendar-count,.finance-plan-calendar-money{font-size:9px}
  .finance-plan-calendar-money{display:none}
 }
+
+/* Entrega 2 · Inteligência PWA — sem inferência nem token OAuth remoto. */
+.finance-ai-card{display:grid;gap:16px}
+.finance-ai-card h3{margin:0;font-size:16px}
+.finance-ai-tabs{display:flex;gap:8px;flex-wrap:wrap}
+.finance-ai-tabs button{border:1px solid #4e3b67;border-radius:10px;background:#21182f;color:#c5b0db;padding:12px 16px;font-size:12px;font-weight:700;cursor:pointer}
+.finance-ai-tabs button[aria-selected="true"]{background:#4b2a69;border-color:#8e62be;color:#fff}
+.finance-ai-content{border:1px solid #3f3450;background:#191525;padding:20px;border-radius:15px;min-height:140px}
+.finance-ai-content h4{font-size:15px;margin:0 0 11px}
+.finance-ai-content p{font-size:12px;line-height:1.7;margin:0 0 11px}
+.finance-ai-cases{display:grid;gap:10px;margin-top:14px}
+.finance-ai-cases button{min-height:44px;text-align:left}
+@media(max-width:650px){.finance-ai-tabs button{flex:1}.finance-ai-content{padding:15px}}

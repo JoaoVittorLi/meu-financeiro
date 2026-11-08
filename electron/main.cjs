@@ -14,6 +14,9 @@ const {PlanningStore}=require('./planning.cjs');
 const {automaticBackup,restoreBackup,listAutoBackups,validateBackupFile}=require('./recovery.cjs');
 const {PluggyVault}=require('./pluggy-vault.cjs');
 const {PluggyClient}=require('./pluggy.cjs');
+const {AIAuthVault}=require('./ai-vault.cjs');
+const {ChatGPTSignIn}=require('./ai-auth.cjs');
+const {ChatGPTDemoClient}=require('./ai-client.cjs');
 let planner=null, db=null, mainWindow=null, vault=null, syncing=false, restoring=false, autoBackupBusy=false, cloudPreparationBusy=false, backupTimer=null, cloudPersonalTimer=null, cloudPersonalBusy=false, cloudAuthPromise=null,cloudAccessAssertion=null;
 function backupsDirectory(){return path.join(app.getPath('userData'),'copias-de-seguranca');}
 async function ensureAutomaticBackup(){
@@ -159,6 +162,9 @@ app.whenReady().then(()=>{
  db=new FinanceDB(filename);
  planner=new PlanningStore(db);
  vault=new PluggyVault(app.getPath('userData'),safeStorage);
+ const aiVault=new AIAuthVault(app.getPath('userData'),safeStorage);
+ const aiAuth=new ChatGPTSignIn({vault:aiVault,openExternal:url=>shell.openExternal(url)});
+ const aiDemo=new ChatGPTDemoClient({auth:aiAuth});
  session.defaultSession.setPermissionRequestHandler((_wc,_permission,callback)=>callback(false));
  ipcMain.handle('finance:load',(event,profile)=>{requireAppSender(event);return db.load(profile);});
  ipcMain.handle('finance:save',(event,profile,data)=>{requireAppSender(event);return db.save(profile,data);});
@@ -375,6 +381,19 @@ app.whenReady().then(()=>{
  ipcMain.handle('plan:reject',(event,payload)=>{requireAppSender(event);planner.reject(payload);return planner.overview();});
  ipcMain.handle('plan:rename',(event,payload)=>{requireAppSender(event);planner.renameBank(payload);return {overview:planner.overview(),data:titledBankData()};});
  ipcMain.handle('plan:history',(event,id)=>{requireAppSender(event);return planner.history(id);});
+ // ChatGPT OAuth and fictitious-only tests; strictly isolated from finances.
+ ipcMain.handle('ai:status',(event)=>{requireAppSender(event);return aiAuth.status();});
+ ipcMain.handle('ai:capabilities',(event)=>{requireAppSender(event);return aiDemo.capabilities();});
+ ipcMain.handle('ai:connect',(event)=>{requireAppSender(event);return aiAuth.connect();});
+ ipcMain.handle('ai:disconnect',(event)=>{requireAppSender(event);return aiAuth.disconnect();});
+ ipcMain.handle('ai:model-available',(event)=>{requireAppSender(event);return aiDemo.modelAvailable();});
+ ipcMain.handle('ai:run-demo',(event,input)=>{
+   requireAppSender(event);
+   if(!input||typeof input!=='object'||typeof input.caseId!=='string'||input.caseId.length>36||!['auto','low','medium'].includes(input.effort)||input.creditsDisabledConfirmed!==true)
+     throw new Error('Confirmação e parâmetros de teste inválidos.');
+   return aiDemo.testDemo({caseId:input.caseId,effort:input.effort,creditsDisabledConfirmed:true,
+     onDelta:delta=>{if(mainWindow&&!mainWindow.isDestroyed())mainWindow.webContents.send('ai:delta',{delta});}});
+ });
  ipcMain.handle('finance:open-data-folder',async(event)=>{
    requireAppSender(event);return shell.openPath(app.getPath('userData'));
  });
