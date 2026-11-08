@@ -7,6 +7,7 @@ const {prepareCloudMigration,migrationLocalStatus}=require('./cloud-onboarding.c
 const {uploadPersonalQuarantine,CONSENT,loadMarker,markerFile}=require('./cloud-personal-uploader.cjs');
 const {syncPersonalSafeFields,summary:cloudSafeSyncSummary}=require('./cloud-personal-safe-sync.cjs');
 const {compareLocalBankWithPreview}=require('./cloud-bank-parity.cjs');
+const {auditE1Windows}=require('./cloud-e1-audit.cjs');
 const {PREVIEW_ORIGIN,checkPreviewIdentity,testPreviewQuarantine}=require('./cloud-preview-identity.cjs');
 const {pairViaSystemBrowser,cancelBrowserPairing}=require('./cloud-system-browser.cjs');
 const {PlanningStore}=require('./planning.cjs');
@@ -227,6 +228,17 @@ app.whenReady().then(()=>{
    const identity=await checkPreviewIdentity(client);
    if(!identity.connected)return {ok:false,reason:'cloud_login_required',financialSyncEnabled:false};
    return compareLocalBankWithPreview(db,client);
+ });
+ ipcMain.handle('cloud:e1-audit',async(event)=>{
+   requireAppSender(event);
+   if(restoring||syncing||cloudPreparationBusy||autoBackupBusy||cloudPersonalBusy)
+     return {ok:false,reason:'local_operation_in_progress',financialSyncEnabled:false};
+   const ses=cloudPreviewSession();
+   const client=secureCloudFetch(ses);
+   const identity=await checkPreviewIdentity(client);
+   if(!identity.connected)
+     return {ok:false,reason:'cloud_login_required',financialSyncEnabled:false};
+   return auditE1Windows(db,client,app.getPath('userData'));
  });
  ipcMain.handle('cloud:personal-sync-status',(event)=>{
    requireAppSender(event);
