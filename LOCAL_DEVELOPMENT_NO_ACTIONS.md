@@ -2,7 +2,7 @@
 
 ## Estado de 07/11/2026
 
-A franquia de GitHub-hosted Actions foi atingida. Na PR #1, branch safety/cloud-migration-preflight-20261107, os workflows automáticos de testes e preview foram alterados para acionamento manual, para não iniciar novos jobs a cada commit. Foram pausados somente na branch: unified-preview-gate.yml, test-mobile-push.yml, test-cloud-migration.yml e diagnose-access-certs.yml. O workflow do Windows de main e os segredos Cloudflare não foram alterados.
+A franquia de GitHub-hosted Actions foi atingida. Na PR #1, branch safety/cloud-migration-preflight-20261107, os workflows comuns permanecem sem disparos por commit. O workflow unificado agora aceita apenas o acionamento pontual por alteração do marcador `.ci/request-preview-build.txt` (ou manual se estiver disponível no GitHub). Não criar/alterar o marcador enquanto a franquia não estiver renovada. Foram pausados somente na branch: unified-preview-gate.yml, test-mobile-push.yml, test-cloud-migration.yml e diagnose-access-certs.yml. O workflow do Windows de main e os segredos Cloudflare não foram alterados.
 
 É possível continuar fazendo commits e recebendo deployments de Cloudflare Preview pelo sistema próprio da Cloudflare, sujeito aos limites desse serviço. READY no painel de Cloudflare NÃO certifica os testes que não puderam executar no GitHub.
 
@@ -56,3 +56,17 @@ Nunca modificar main/Production, descartar SQLite, reimportar os dados pessoais 
 ## Verificação sem Actions realizada nesta etapa
 
 Foi realizada uma verificação independente das fórmulas reais de parcelamento: o método PlanningStore.simulatePurchase extraído do código desktop foi executado em um harness sintético com projeção substituída por stub (sem dados pessoais), e comparado com shared/finance-installment-quote.mjs em quatro cenários, incluindo divisão de centavos, juros e vencimentos. Os quatro resultados concordaram exatamente em parcela, total, juros e calendário. Também passaram as verificações de sintaxe dos scripts PWA e Worker e os IDs da interface. Isso NÃO substitui a suíte Node/TypeScript nem o empacotamento e smoke test Windows, que continuam pendentes no checkout local.
+
+## Próximo Windows: 0.9.5-beta.1, via GitHub Releases (sem instalação local obrigatória)
+
+A PR #1 já possui o workflow `.github/workflows/unified-preview-gate.yml`, configurado para:
+- Executar testes SQLite, TypeScript e Worker/PWA num runner Ubuntu.
+- Apenas após aprovação, executar testes SQLite no Windows, compilar o React e gerar portátil + instalador no mesmo commit.
+- Calcular SHA256 e publicar um pré-release privado `preview-<12 caracteres do SHA>` com os dois arquivos .exe como assets de download DIRETO, sem ZIP do Actions.
+- Nunca fazer merge em main, habilitar cutover ou alterar produção.
+
+**Não há build Windows desta revisão publicado ainda.** Para não queimar minutos antes de terminar as correções E1, os commits comuns não iniciam o workflow. Depois de o proprietário confirmar que a franquia está liberada, o desenvolvedor deve **criar/alterar somente** o arquivo `.ci/request-preview-build.txt` com um motivo curto e o HEAD que foi revisado, em um commit na branch safety/cloud-migration-preflight-20261107. Este push é o gatilho de uma execução única. Não alterar a marca em cada commit. Só informar links de Releases reais após verificar o job e os assets publicados.
+
+Na UI de Releases da versão resultante, distinguir claramente build/testes automáticos aprovados de homologação com a base real (pendente). O proprietário deve testar o E1 no portátil Windows conectado ao Preview e, após validar, pode optar pelo instalador. O .exe recém-compilado jamais deve ser apresentado como migração financeira definitiva.
+
+A frente paralela **Inteligência** não foi incluída nesta branch de Preview. Antes de prometer "tudo" numa release estável, conferir a PR/branch dessa frente e integrar com revisão própria.
