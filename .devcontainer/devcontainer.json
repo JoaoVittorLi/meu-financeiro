@@ -15,5 +15,11 @@
         "telemetry.telemetryLevel": "off"
       }
     }
+  },
+  "containerUser": "root",
+  "remoteUser": "root",
+  "updateRemoteUserUID": false,
+  "containerEnv": {
+    "HOME": "/root"
   }
 }
