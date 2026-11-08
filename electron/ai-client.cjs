@@ -3,6 +3,22 @@
 // No API key, paid fallback, financial database access or automatic retries.
 const {AI_MODEL,buildDemoRequest,publicCapabilities}=require('../shared/ai-policy.mjs');
 const MAX_DEMO_TESTS=3;
+// Only approved, non-sensitive connection codes can reach the renderer.
+const NETWORK_CODES=new Set([
+  'ENOTFOUND','EAI_AGAIN','ETIMEDOUT','ECONNRESET','ECONNREFUSED',
+  'ENETUNREACH','EHOSTUNREACH','UND_ERR_CONNECT_TIMEOUT','UND_ERR_HEADERS_TIMEOUT',
+  'UND_ERR_SOCKET','UND_ERR_BODY_TIMEOUT'
+]);
+function connectionError(stage,error,mayHaveReachedServer=false){
+  const code=String(error?.cause?.code||error?.code||'');
+  const safeCode=NETWORK_CODES.has(code)?' ('+code+')':'';
+  const timeout=error?.name==='TimeoutError'||error?.name==='AbortError';
+  const label=timeout?'tempo de conexão excedido':'conexão indisponível';
+  const suffix=mayHaveReachedServer
+    ?'Não foi possível confirmar se o servidor recebeu a solicitação.'
+    :'A análise ainda não foi enviada ao modelo.';
+  return new Error('Falha de rede na etapa '+stage+': '+label+safeCode+'. '+suffix+' Nenhuma nova tentativa automática foi feita.');
+}
 function normalizedError(status){
   if(status===401||status===403)return 'Sessão ChatGPT sem autorização de inferência. Conecte novamente.';
   if(status===402||status===429)return 'Limite da assinatura atingido ou uso indisponível. Nenhum fallback pago foi executado.';
@@ -54,9 +70,21 @@ class ChatGPTDemoClient{
     this.auth=auth;this.fetchFn=fetchFn;this.tests=0;this.busy=false;
   }
   capabilities(){return {...publicCapabilities(),remainingDemoTests:Math.max(0,MAX_DEMO_TESTS-this.tests)};}
-  async modelAvailable(){
-    const token=await this.auth.accessToken();
-    const response=await this.fetchFn('https://api.openai.com/v1/models',{
+  async accessTokenChecked(){
+    try{return await this.auth.accessToken();}
+    catch(error){
+      if(error?.name==='TypeError'||error?.name==='TimeoutError'||error?.name==='AbortError')
+        throw connectionError('de acesso à sessão ChatGPT',error);
+      throw error;
+    }
+  }
+  async safeFetch(stage,url,options,mayHaveReachedServer=false){
+    try{return await this.fetchFn(url,options);}
+    catch(error){throw connectionError(stage,error,mayHaveReachedServer);}
+  }
+  async modelAvailable(knownToken){
+    const token=knownToken||await this.accessTokenChecked();
+    const response=await this.safeFetch('de consulta ao catálogo de modelos','https://api.openai.com/v1/models',{
       headers:{Authorization:'Bearer '+token},redirect:'error',signal:AbortSignal.timeout(20000)
     });
     if(!response.ok)throw new Error(normalizedError(response.status));
@@ -69,17 +97,19 @@ class ChatGPTDemoClient{
     if(this.busy)throw new Error('Uma análise já está em andamento.');
     if(this.tests>=MAX_DEMO_TESTS)throw new Error('Limite preventivo de três testes nesta sessão atingido.');
     const request=buildDemoRequest(caseId,effort);
-    this.busy=true;this.tests++;
+    this.busy=true;
     try{
-      const token=await this.auth.accessToken();
-      const available=await this.modelAvailable();
+      const token=await this.accessTokenChecked();
+      const available=await this.modelAvailable(token);
       if(!available)throw new Error('GPT-6.1 Sol não está disponível para esta conta.');
-      const response=await this.fetchFn('https://api.openai.com/v1/responses',{
+      // Count only attempts that can reach inference. Never repeat an ambiguous POST.
+      this.tests++;
+      const response=await this.safeFetch('de envio da análise','https://api.openai.com/v1/responses',{
         method:'POST',
         headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},
         body:JSON.stringify(request),
         signal:AbortSignal.timeout(90000),redirect:'error'
-      });
+      },true);
       if(!response.ok)throw new Error(normalizedError(response.status));
       const {text,usage}=await readSSE(response.body,onDelta);
       return {model:AI_MODEL,effort:request.reasoning.effort,caseId,text,usage,onlyFictitiousData:true,remainingDemoTests:Math.max(0,MAX_DEMO_TESTS-this.tests)};
