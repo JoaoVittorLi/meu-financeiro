@@ -2,7 +2,7 @@
  * Shared policy is imported in Electron and Cloudflare; renderer never sees access tokens. */
 async function intelligenceRefresh(app:any){
   if(!desktop?.aiStatus)return;
-  try{const status=await desktop.aiStatus();app.setState({aiStatus:status,aiError:''});}
+  try{const [status,capabilities]=await Promise.all([desktop.aiStatus(),desktop.aiCapabilities?.()||Promise.resolve(null)]);app.setState({aiStatus:status,aiCapabilities:capabilities,aiError:''});}
   catch(e:any){app.setState({aiError:'Não foi possível consultar o estado da conexão.'});}
 }
 async function intelligenceConnect(app:any){
@@ -29,7 +29,7 @@ async function intelligenceTest(app:any){
 }
 function renderIntelligenceConnection(app:any){
  const s=app.state,connected=Boolean(s.aiStatus?.connected),available=Boolean(desktop?.aiStatus);
- const cases=[{id:'budget',label:'Orçamento fictício'},{id:'categorize',label:'Categoria fictícia'},{id:'planning',label:'Planejamento fictício'}];
+ const cases=Array.isArray(s.aiCapabilities?.demoCases)?s.aiCapabilities.demoCases:[];
  return h('div',{className:'mf-ai-live-panel'},
    h('div',{className:'mf-ai-live-head'},
      h('div',{},h('span',{className:'micro-label'},'ENTREGA 2 · TESTE DE AUTORIZAÇÃO'),
