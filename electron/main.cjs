@@ -15,6 +15,7 @@ const {automaticBackup,restoreBackup,listAutoBackups,validateBackupFile}=require
 const {PluggyVault}=require('./pluggy-vault.cjs');
 const {PluggyClient}=require('./pluggy.cjs');
 const {AIAuthVault}=require('./ai-vault.cjs');
+const {AIPersonalStore}=require('./ai-personal.cjs');
 const {ChatGPTSignIn}=require('./ai-auth.cjs');
 const {ChatGPTDemoClient}=require('./ai-client.cjs');
 let planner=null, db=null, mainWindow=null, vault=null, syncing=false, restoring=false, autoBackupBusy=false, cloudPreparationBusy=false, backupTimer=null, cloudPersonalTimer=null, cloudPersonalBusy=false, cloudAuthPromise=null,cloudAccessAssertion=null;
@@ -164,7 +165,8 @@ app.whenReady().then(()=>{
  vault=new PluggyVault(app.getPath('userData'),safeStorage);
  const aiVault=new AIAuthVault(app.getPath('userData'),safeStorage);
  const aiAuth=new ChatGPTSignIn({vault:aiVault,openExternal:url=>shell.openExternal(url)});
- const aiDemo=new ChatGPTDemoClient({auth:aiAuth});
+ const aiPersonal=new AIPersonalStore(app.getPath('userData'),safeStorage);
+ const aiDemo=new ChatGPTDemoClient({auth:aiAuth,personalStore:aiPersonal});
  session.defaultSession.setPermissionRequestHandler((_wc,_permission,callback)=>callback(false));
  ipcMain.handle('finance:load',(event,profile)=>{requireAppSender(event);return db.load(profile);});
  ipcMain.handle('finance:save',(event,profile,data)=>{requireAppSender(event);return db.save(profile,data);});
@@ -384,14 +386,43 @@ app.whenReady().then(()=>{
  // ChatGPT OAuth and fictitious-only tests; strictly isolated from finances.
  ipcMain.handle('ai:status',(event)=>{requireAppSender(event);return aiAuth.status();});
  ipcMain.handle('ai:capabilities',(event)=>{requireAppSender(event);return aiDemo.capabilities();});
+ ipcMain.handle('ai:memory-list',async(event)=>{
+   requireAppSender(event);
+   return aiPersonal.list(await aiDemo.personalSubject());
+ });
+ ipcMain.handle('ai:memory-add',async(event,input)=>{
+   requireAppSender(event);
+   if(!input||typeof input!=='object'||Array.isArray(input)||typeof input.kind!=='string'||typeof input.text!=='string')
+     throw new Error('Memória inválida.');
+   return aiPersonal.add(await aiDemo.personalSubject(),{kind:input.kind,text:input.text});
+ });
+ ipcMain.handle('ai:memory-remove',async(event,id)=>{
+   requireAppSender(event);
+   return aiPersonal.remove(await aiDemo.personalSubject(),id);
+ });
+ ipcMain.handle('ai:memory-clear',async(event)=>{
+   requireAppSender(event);
+   return aiPersonal.clearMemories(await aiDemo.personalSubject());
+ });
+ ipcMain.handle('ai:usage-summary',async(event)=>{
+   requireAppSender(event);
+   return aiPersonal.summary(await aiDemo.personalSubject());
+ });
+ ipcMain.handle('ai:context-preview',(event,input)=>{
+   requireAppSender(event);
+   if(!input||typeof input!=='object'||typeof input.caseId!=='string'||
+     !['auto','low','medium'].includes(input.effort)||typeof input.useSavedMemories!=='boolean')
+     throw new Error('Parâmetros de prévia de contexto inválidos.');
+   return aiDemo.contextPreview(input);
+ });
  ipcMain.handle('ai:connect',(event)=>{requireAppSender(event);return aiAuth.connect();});
  ipcMain.handle('ai:disconnect',(event)=>{requireAppSender(event);return aiAuth.disconnect();});
  ipcMain.handle('ai:model-available',(event)=>{requireAppSender(event);return aiDemo.modelAvailable();});
  ipcMain.handle('ai:run-demo',(event,input)=>{
    requireAppSender(event);
-   if(!input||typeof input!=='object'||typeof input.caseId!=='string'||input.caseId.length>36||!['auto','low','medium'].includes(input.effort)||input.creditsDisabledConfirmed!==true)
+   if(!input||typeof input!=='object'||typeof input.caseId!=='string'||input.caseId.length>36||!['auto','low','medium'].includes(input.effort)||input.creditsDisabledConfirmed!==true||typeof input.useSavedMemories!=='boolean')
      throw new Error('Confirmação e parâmetros de teste inválidos.');
-   return aiDemo.testDemo({caseId:input.caseId,effort:input.effort,creditsDisabledConfirmed:true,
+   return aiDemo.testDemo({caseId:input.caseId,effort:input.effort,creditsDisabledConfirmed:true,useSavedMemories:input.useSavedMemories,
      onDelta:delta=>{if(mainWindow&&!mainWindow.isDestroyed())mainWindow.webContents.send('ai:delta',{delta});}});
  });
  ipcMain.handle('finance:open-data-folder',async(event)=>{
