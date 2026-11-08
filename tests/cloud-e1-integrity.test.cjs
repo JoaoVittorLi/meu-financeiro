@@ -82,10 +82,15 @@ test('E1 audits only read access and returns status codes without raw account da
     assert.equal(report.ok,true);
     assert.equal(report.stage,'e1_consolidated_comparison');
     for(const name of ['bankIdentities','bankDatesAndMoney','bankDescriptionsAndStatuses',
-      'accountIdentities','nominalAccountBalances','categoryOriginals','bankReferences',
+      'accountIdentities','nominalAccountBalances','categoryOriginals',
       'stagedAccountIntegrity']){
       assert.equal(report.checks[name].status,'verified',name);
     }
+    // Matching bank IDs alone cannot certify personal-bank references while
+    // the cloud's personal snapshot is not verified.
+    assert.equal(report.checks.bankReferences.status,'pending');
+    assert.equal(report.checks.bankReferences.reason,'reference_ids_not_comparable');
+    assert.equal(report.checks.personalRowCounts.status,'pending');
     assert.equal(report.checks.snapshotOriginal.status,'pending');
     assert.equal(report.checks.balanceTimestamp.status,'pending');
     assert.equal(report.checks.providerHistoryCoverage.status,'pending');
@@ -96,6 +101,40 @@ test('E1 audits only read access and returns status codes without raw account da
     assert.doesNotMatch(JSON.stringify(report),/synthetic-account|synthetic-item|transaction-a|transaction-b|Mercado de teste|250000|Groceries/);
   }finally{finance.close();}
 });
+test('bank references need a verified personal snapshot and zero missing IDs',async()=>{
+  const {evaluateE1}=await import('../shared/e1-integrity-verdict.mjs');
+  const finance=fixture();
+  try{
+    const local=localE1Evidence(finance,'/synthetic-nonexistent-userdata');
+    const cloud=mockCloud(local);
+    const bank={
+      ok:true,cloudCutoverAllowed:false,localCount:2,cloudCount:2,
+      sameCount:true,exactIdentities:true,exactDatesAndCents:true,
+      exactDescriptionsAndStatuses:true,matched:true
+    };
+    const pending=evaluateE1({bank,cloud,local});
+    assert.equal(pending.checks.bankReferences.status,'pending');
+    assert.equal(pending.checks.bankReferences.reason,'reference_ids_not_comparable');
+
+    cloud.personal.verified=true;
+    const verified=evaluateE1({bank,cloud,local});
+    assert.equal(verified.checks.bankReferences.status,'verified');
+    assert.equal(verified.checks.bankReferences.reason,'reference_ids_found');
+    assert.equal(verified.checks.snapshotOriginal.status,'pending',
+      'Personal snapshot baseline remains unverified without matching digests.');
+
+    cloud.references.missingIdentities=1;
+    const mismatch=evaluateE1({bank,cloud,local});
+    assert.equal(mismatch.checks.bankReferences.status,'mismatch');
+    assert.equal(mismatch.checks.bankReferences.reason,'reference_ids_missing');
+    for(const report of [pending,verified,mismatch]){
+      assert.equal(report.e1Completed,false);
+      assert.equal(report.cloudCutoverAllowed,false);
+      assert.equal(report.financialSyncEnabled,false);
+    }
+  }finally{finance.close();}
+});
+
 test('E1 catches category changes and undated amount mismatches without clearing local history',async()=>{
   const finance=fixture();
   try{
