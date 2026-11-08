@@ -1,0 +1,30 @@
+# CircleCI | Meu Financeiro desktop Windows
+# Só executa o job Windows quando a pipeline receber run_windows_build=true.
+# Pushes e PRs normais usam o default false e não consomem créditos de runner.
+version: 2.1
+
+parameters:
+  run_windows_build:
+    type: boolean
+    default: false
+
+jobs:
+  build_windows:
+    machine:
+      image: "windows-server-2022-gui:current"
+    resource_class: windows.medium
+    steps:
+      - checkout
+      - run:
+          name: "Windows Server 2022 | Node 22 | testes e instaladores x64"
+          command: "powershell.exe -NoProfile -ExecutionPolicy Bypass -File .circleci/build-windows.ps1"
+          no_output_timeout: 25m
+      - store_artifacts:
+          path: circleci-artifacts
+          destination: MeuFinanceiro-Windows
+
+workflows:
+  windows_on_demand:
+    when: << pipeline.parameters.run_windows_build >>
+    jobs:
+      - build_windows
