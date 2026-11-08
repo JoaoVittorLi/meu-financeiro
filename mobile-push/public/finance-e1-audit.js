@@ -46,6 +46,10 @@ e1Node('bankE1Button').addEventListener('click',async()=>{
        !report.cloud||!report.personal||!report.references||!report.checks||
        !Number.isSafeInteger(report.cloud.bankRows)||
        !Number.isSafeInteger(report.cloud.bankAccounts)||
+       !Number.isSafeInteger(report.cloud.missingCategoryMetadata)||
+       !Number.isSafeInteger(report.cloud.rawProviderCategoriesPresent)||
+       !Number.isSafeInteger(report.cloud.explicitlyUncategorizedByProvider)||
+       !Array.isArray(report.cloud.missingCategoryMetadataByMonth)||
        !Number.isSafeInteger(report.personal.storedRows)||
        !Number.isSafeInteger(report.references.missingIdentities))
       throw new Error('Diagnóstico E1 incompleto.');
@@ -65,9 +69,26 @@ e1Node('bankE1Button').addEventListener('click',async()=>{
         report.references.missingIdentities===0&&
           report.references.missingPlannedAccounts===0?'Sem ausências':'Revisar',
         'Conferência apenas dos identificadores existentes na nuvem.'),
-      e1Row('Categorias originais do Pluggy',
-        report.cloud.categoryMetadataComplete?'Metadados presentes':'Pendente',
-        e1Fmt(report.cloud.providerCategoriesPresent)+' transações possuem categoria de origem; ainda falta comparar com o desktop.'),
+      e1Row('Cobertura de metadados do Pluggy',
+        report.cloud.categoryMetadataComplete?'Cobertura completa':'Pendente',
+        e1Fmt(report.cloud.providerCategoriesPresent)+' de '+
+          e1Fmt(report.cloud.bankRows)+' movimentações possuem linha de metadados. '+
+          e1Fmt(report.cloud.missingCategoryMetadata)+' sem linha auxiliar; '+
+          e1Fmt(report.cloud.rawProviderCategoriesPresent)+
+          ' com categoria enviada pelo banco; '+
+          e1Fmt(report.cloud.explicitlyUncategorizedByProvider)+
+          ' sem categoria na origem. Ainda falta comparar com o Windows.'),
+      e1Row('Diagnóstico da atualização bancária',
+        'Somente leitura',
+        'Última consulta retornou '+
+          e1Fmt(report.cloud.bankFirstLastFetch?.lastFetched)+
+          ' transações; staging preserva '+e1Fmt(report.cloud.bankRows)+
+          '. Meses com metadados ausentes: '+
+          (Array.isArray(report.cloud.missingCategoryMetadataByMonth)&&
+           report.cloud.missingCategoryMetadataByMonth.length?
+            report.cloud.missingCategoryMetadataByMonth.map(x=>
+              x.month.slice(5,7)+'/'+x.month.slice(0,4)+': '+e1Fmt(x.count)).join('; '):
+            'nenhum')+'. Isso não prova perda de histórico.'),
       e1Row('Igualdade Windows × Cloudflare','Pendente',
         'Execute a auditoria E1 em Configurações do Windows para comparar IDs, datas, centavos, categorias e contas.'),
       e1Row('Saldos e cobertura histórica','Pendente',
