@@ -1,4 +1,4 @@
-# GitHub-hosted Actions are intentionally manual on this preview branch while quota is exhausted.
+# One-shot preview build: ordinary commits never consume Actions minutes; change the trigger marker only after quota is renewed.
 name: Meu Financeiro - paridade Windows e PWA (Preview)
 on:
   workflow_dispatch:
@@ -39,11 +39,11 @@ jobs:
       - name: Bundle Cloudflare Preview without publishing
         working-directory: mobile-push
         run: npx wrangler deploy --dry-run --outdir /tmp/mf-preview-bundle
-      - name: Single source revision
+      - name: Single source revision and paired Windows/PWA version
         run: |
           echo "Source SHA: $GITHUB_SHA"
           test -f shared/bank-parity.mjs
-          node -e "const p=require('./package.json'); console.log('Windows base '+p.version)"
+          node -e "const win=require('./package.json'); const pwa=require('./mobile-push/package.json'); if(win.version!==pwa.version){console.error('Version mismatch');process.exit(1)} console.log('Windows and PWA '+win.version)"
   preview-windows:
     needs: parity-and-security
     runs-on: windows-latest
