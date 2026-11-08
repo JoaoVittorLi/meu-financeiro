@@ -1,0 +1,127 @@
+# Meu Financeiro — CircleCI Windows x64.
+# Dependências e runtime instalados apenas na VM; nenhum setup no PC do usuário.
+# Não faz deploy e não toca em dados locais, Cloudflare ou releases do GitHub.
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+$ProgressPreference = 'SilentlyContinue'
+
+function Assert-Success([string]$Step) {
+  if ($LASTEXITCODE -ne 0) { throw "$Step falhou com código $LASTEXITCODE." }
+}
+
+$root = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
+Set-Location -LiteralPath $root
+$ErrorActionPreference = 'Stop'
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+
+$sha = (& git.exe rev-parse HEAD).Trim()
+Assert-Success 'Git'
+if ($sha -notmatch '^[a-f0-9]{40}$') { throw 'Commit não reconhecido.' }
+if ($env:CIRCLE_SHA1 -and $sha -ne $env:CIRCLE_SHA1) {
+  throw 'O checkout não corresponde ao commit informado pelo CircleCI.'
+}
+$branch = if ($env:CIRCLE_BRANCH) { $env:CIRCLE_BRANCH } else { '(sem branch informado)' }
+$package = Get-Content -LiteralPath (Join-Path $root 'package.json') -Raw | ConvertFrom-Json
+$version = [string]$package.version
+if ($version -notmatch '^\d+\.\d+\.\d+([.-][a-zA-Z0-9.-]+)?$') {
+  throw 'Versão inválida no package.json.'
+}
+Write-Host "Meu Financeiro | Windows x64"
+Write-Host "Branch: $branch"
+Write-Host "Commit: $sha"
+Write-Host "Versão do package.json: $version"
+Write-Host 'Build manual CircleCI, sem deploy e sem GitHub Releases.'
+
+# Instalamos Node 22 diretamente de nodejs.org, conferindo SHA-256 oficial.
+# Isso não depende de Chocolatey, nvm, winget nem de software no PC local.
+$toolRoot = Join-Path $env:TEMP 'mf-circleci-node22'
+New-Item -ItemType Directory -Path $toolRoot -Force | Out-Null
+$checksumFile = Join-Path $toolRoot 'SHASUMS256.txt'
+$nodeDist = 'https://nodejs.org/dist/latest-v22.x/'
+Write-Host 'Obtendo lista oficial de versões e hashes Node.js 22...'
+Invoke-WebRequest -UseBasicParsing -Uri ($nodeDist + 'SHASUMS256.txt') -OutFile $checksumFile
+$validLine = $null
+foreach ($line in (Get-Content -LiteralPath $checksumFile)) {
+  $match = [regex]::Match($line.Trim(), '^(?<hash>[a-fA-F0-9]{64})\s+(?<name>node-v22\.\d+\.\d+-win-x64\.zip)$')
+  if ($match.Success) { $validLine = $match; break }
+}
+if ($null -eq $validLine) { throw 'Não foi encontrado o ZIP oficial do Node.js 22 Windows x64.' }
+$zipName = $validLine.Groups['name'].Value
+$expectedHash = $validLine.Groups['hash'].Value.ToLowerInvariant()
+$zipPath = Join-Path $toolRoot $zipName
+Invoke-WebRequest -UseBasicParsing -Uri ($nodeDist + $zipName) -OutFile $zipPath
+$actualHash = (Get-FileHash -LiteralPath $zipPath -Algorithm SHA256).Hash.ToLowerInvariant()
+if ($actualHash -ne $expectedHash) { throw 'O download do Node.js não passou no SHA256 oficial.' }
+Expand-Archive -LiteralPath $zipPath -DestinationPath $toolRoot -Force
+$nodeDirectory = Join-Path $toolRoot $zipName.Replace('.zip', '')
+$nodeExecutable = Join-Path $nodeDirectory 'node.exe'
+$npmExecutable = Join-Path $nodeDirectory 'npm.cmd'
+if (!(Test-Path -LiteralPath $nodeExecutable) -or !(Test-Path -LiteralPath $npmExecutable)) {
+  throw 'Node.js 22 ou npm não foram extraídos corretamente.'
+}
+$env:PATH = "$nodeDirectory;$env:PATH"
+$nodeVersion = (& $nodeExecutable --version).Trim()
+Assert-Success 'Verificação do Node.js'
+if ($nodeVersion -notmatch '^v22\.') { throw "Node.js incorreto: $nodeVersion" }
+Write-Host "Node verificado: $nodeVersion"
+
+Write-Host 'Instalando dependências do projeto (sem lockfile; não modifica Git)...'
+& $npmExecutable install --no-audit --no-fund --package-lock=false
+Assert-Success 'npm install'
+
+Write-Host 'Verificação de tipos TypeScript...'
+& $npmExecutable run test:types
+Assert-Success 'npm run test:types'
+
+Write-Host 'Executando comando oficial: npm run dist:windows...'
+# dist:windows executa compilação TypeScript, testes Node/SQLite e electron-builder NSIS + portable.
+# Nunca bypassar os testes em caso de erro.
+& $npmExecutable run dist:windows
+Assert-Success 'npm run dist:windows'
+
+$releaseDir = Join-Path $root 'release'
+$installerName = "MeuFinanceiro-Instalador-$version-x64.exe"
+$portableName = "MeuFinanceiro-Portable-$version-x64.exe"
+$installerPath = Join-Path $releaseDir $installerName
+$portablePath = Join-Path $releaseDir $portableName
+$executables = @(Get-ChildItem -LiteralPath $releaseDir -File -Filter '*.exe' -ErrorAction Stop)
+if ($executables.Count -ne 2) {
+  throw "Esperados exatamente 2 arquivos EXE; encontrados $($executables.Count)."
+}
+foreach ($path in @($installerPath,$portablePath)) {
+  if (!(Test-Path -LiteralPath $path)) {
+    throw "O executável esperado não foi encontrado: $(Split-Path $path -Leaf)"
+  }
+  $file = Get-Item -LiteralPath $path
+  if ($file.Length -lt 10000000) {
+    throw "Executável possivelmente incompleto: $($file.Name)"
+  }
+}
+
+# A pasta publicada contém APENAS 2 executáveis e SHA256.txt.
+# Os demais arquivos intermediários do electron-builder não são distribuídos.
+$artifactDir = Join-Path $root 'circleci-artifacts'
+if (Test-Path -LiteralPath $artifactDir) {
+  Remove-Item -LiteralPath $artifactDir -Recurse -Force
+}
+New-Item -ItemType Directory -Path $artifactDir | Out-Null
+Copy-Item -LiteralPath $installerPath -Destination $artifactDir
+Copy-Item -LiteralPath $portablePath -Destination $artifactDir
+
+$hashLines = @(
+  "# Meu Financeiro | Compilacao Windows x64 | CircleCI",
+  "# Branch: $branch",
+  "# Commit: $sha",
+  "# Versao: $version",
+  "# Origem: $($env:CIRCLE_BUILD_URL)",
+  "$((Get-FileHash -LiteralPath $installerPath -Algorithm SHA256).Hash.ToLowerInvariant())  $installerName",
+  "$((Get-FileHash -LiteralPath $portablePath -Algorithm SHA256).Hash.ToLowerInvariant())  $portableName"
+)
+$utf8 = New-Object System.Text.UTF8Encoding($false)
+[System.IO.File]::WriteAllLines((Join-Path $artifactDir 'SHA256.txt'), $hashLines, $utf8)
+$publishedFiles = @(Get-ChildItem -LiteralPath $artifactDir -File)
+if ($publishedFiles.Count -ne 3) { throw 'Devem ser publicados exatamente três artifacts.' }
+Write-Host 'SUCESSO: testes concluídos e três artifacts preparados para download.'
+foreach ($file in $publishedFiles) { Write-Host ("ARTIFACT: " + $file.Name + " (" + $file.Length + " bytes)") }
+Write-Host "Branch=$branch; Commit=$sha; Versão=$version"
+Write-Host 'Abra o job no CircleCI > Artifacts. Nenhum GitHub Release foi alterado.'
