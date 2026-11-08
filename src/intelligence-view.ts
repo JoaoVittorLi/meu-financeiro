@@ -42,7 +42,7 @@ function renderIntelligenceView(app:any){
       s.intelligencePreparedQuestion?h('div',{className:'mf-ai-prepared',role:'status'},
         h('span',{className:'micro-label'},'PERGUNTA PREPARADA · NÃO ENVIADA'),
         h('p',{},s.intelligencePreparedQuestion),
-        h('small',{},'A autenticação e a análise real serão implementadas na próxima etapa. Não foram consumidos tokens.')):null,
+        h('small',{},'Este rascunho não é enviado ao Sol. Use os casos fictícios autorizados abaixo; nenhuma chamada ocorreu aqui.')):null,
       h('div',{className:'mf-ai-composer'},h('label',{className:'mf-ai-composer-label',htmlFor:'mf-ai-draft'},'Sua pergunta'),
         h('textarea',{id:'mf-ai-draft',value:s.intelligenceDraft||'',rows:3,maxLength:750,placeholder:'Ex.: Quanto posso investir sem comprometer meus pagamentos?',onChange:(e:any)=>app.setState({intelligenceDraft:e.target.value})}),
         h('span',{className:'mf-ai-compose-actions'},h('small',{},'Prévia local · sem conexão com IA'),
@@ -52,7 +52,7 @@ function renderIntelligenceView(app:any){
       h('strong',{},'Para começar'),
       ['Como construir uma reserva de emergência?','Como funcionam limites inteligentes?','Quando faz sentido antecipar uma dívida?'].map((q:string,i:number)=>
         h('button',{type:'button',key:i,onClick:()=>app.setState({intelligenceDraft:q})},q,h(Icon,{name:'arrow',size:14}))),
-      h('div',{className:'mf-ai-prompt-foot'},h('b',{},'Modelo planejado'),h('span',{},'GPT-6.1 Sol · Low/Medium'),h('small',{},'Conexão pendente. Nenhuma API paga será ativada nesta entrega.'))));
+      h('div',{className:'mf-ai-prompt-foot'},h('b',{},'Modelo em testes'),h('span',{},'GPT-6.1 Sol · Low/Medium'),h('small',{},'OAuth local no Windows; sem fallback pago e sem acesso bancário pela IA.'))));
   else section=h('div',{className:'mf-ai-actions'},
     h('div',{className:'mf-ai-welcome'},
       h('span',{className:'micro-label'},'EXEMPLOS DE DECISÕES · SEM ALTERAÇÕES REAIS'),
@@ -78,7 +78,8 @@ function renderIntelligenceView(app:any){
       tabs.map((item:any)=>h('button',{type:'button',key:item.id,role:'tab','aria-selected':tab===item.id,
         className:tab===item.id?'active':'',onClick:()=>app.setState({intelligenceTab:item.id})},item.label))),
     section,
-    tab==='chat'?renderIntelligenceConnection(app):null);
+    tab==='chat'?renderIntelligenceConnection(app):null,
+    tab==='chat'?renderIntelligencePrivacy(app):null);
 }
 function renderIntelligencePanel(app:any){
   if(!app.state.intelligencePanelOpen)return null;
@@ -103,7 +104,7 @@ function renderIntelligenceSettings(app:any){
     h('div',{className:'mf-ai-setting-line'},h('span',{},'Estado'),h('strong',{},app.state.aiStatus.connected?'Conectada':'Não conectada')),
     h('div',{className:'mf-ai-setting-line'},h('span',{},'Modelo previsto'),h('strong',{},'GPT-6.1 Sol')),
     h('div',{className:'mf-ai-setting-line'},h('span',{},'Raciocínio'),h('strong',{},'Low / Medium automático')),
-    h('div',{className:'mf-ai-setting-line'},h('span',{},'Economia de tokens'),h('strong',{},'Padrão planejado')),
-    h('p',{className:'muted-desc'},'O login com ChatGPT é iniciado no Windows e guarda tokens criptografados. Os testes aceitam apenas casos fictícios; memória e dados financeiros reais continuam desabilitados.'),
+    h('div',{className:'mf-ai-setting-line'},h('span',{},'Economia de tokens'),h('strong',{},'Contexto mínimo + aprovação por teste')),
+    h('p',{className:'muted-desc'},'OAuth e memórias aprovadas são protegidos localmente no Windows. Nenhuma memória é enviada sem consentimento por teste. Dados bancários e sincronização de memórias no PWA continuam indisponíveis para a IA.'),
     h('button',{type:'button',className:'outlined-action full',onClick:()=>app.navigate('intelligence')},h(Icon,{name:'spark',size:17}),'Abrir prévia da Inteligência'));
 }

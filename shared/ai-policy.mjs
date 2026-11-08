@@ -1,4 +1,5 @@
 // Shared, side-effect-free AI policy. Imported by Electron and Cloudflare Worker.
+import {AI_CONTEXT_LIMITS} from './ai-context.mjs';
 // The same task contract is used by both clients; no tokens or bank data live here.
 export const AI_MODEL = 'gpt-6.1-sol';
 export const AI_EFFORTS = Object.freeze(['low','medium']);
@@ -66,7 +67,8 @@ export function buildDemoRequest(caseId,override='auto'){
 }
 export function publicCapabilities(){
   return {
-    version:2,model:AI_MODEL,efforts:[...AI_EFFORTS],tabs:AI_TABS.map(x=>({...x})),
+    version:3,model:AI_MODEL,efforts:[...AI_EFFORTS],tabs:AI_TABS.map(x=>({...x})),
+    contextLimits:AI_CONTEXT_LIMITS,memoryLocalOnly:true,localUsageMetrics:true,
     demoCases:AI_DEMO_CASES.map(({id,label,task})=>({id,label,task})),
     status:'desktop_oauth_required',
     pwaInferenceEnabled:false,

@@ -58,6 +58,12 @@ contextBridge.exposeInMainWorld('financeDesktop', Object.freeze({
   aiDisconnect: () => ipcRenderer.invoke('ai:disconnect'),
   aiModelAvailable: () => ipcRenderer.invoke('ai:model-available'),
   aiRunDemo: (input) => ipcRenderer.invoke('ai:run-demo',input),
+  aiMemoryList: () => ipcRenderer.invoke('ai:memory-list'),
+  aiMemoryAdd: (input) => ipcRenderer.invoke('ai:memory-add',input),
+  aiMemoryRemove: (id) => ipcRenderer.invoke('ai:memory-remove',id),
+  aiMemoryClear: () => ipcRenderer.invoke('ai:memory-clear'),
+  aiUsageSummary: () => ipcRenderer.invoke('ai:usage-summary'),
+  aiContextPreview: (input) => ipcRenderer.invoke('ai:context-preview',input),
   onAIDelta: (callback) => {
     if(typeof callback!=='function')throw new TypeError('Callback inválido.');
     const listener=(_event,data)=>callback(typeof data?.delta==='string'?data.delta:'');

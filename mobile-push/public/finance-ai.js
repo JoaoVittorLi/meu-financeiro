@@ -1,7 +1,7 @@
 'use strict';
 // Protected PWA reads the same AI policy as the Electron app.
 // No OpenAI OAuth, no inference, no credentials in the browser.
-let pwaAICapabilities=null,pwaAICurrent='today',pwaAIPending=null,pwaAILoading=false;
+let pwaAICapabilities=null,pwaAICurrent='today',pwaAIPending=null,pwaAILoading=false,pwaAIContextPreview=null;
 function aiText(tag,value,cls){
   const node=document.createElement(tag);node.textContent=String(value);
   if(cls)node.className=cls;
@@ -19,20 +19,42 @@ function aiRenderPWA(){
     root.append(aiText('h4','Hoje: recomendações sem consumir tokens'));
     root.append(aiText('p','Neste estágio, alertas de orçamento e projeção continuam sendo produzidos pelo motor determinístico. A IA só será acionada mediante solicitação explícita em uma integração autorizada.','finance-muted'));
     root.append(aiText('p','Modelo fixo: '+caps.model+' · baixo/médio · fallback pago desativado.','finance-muted'));
+    root.append(aiText('p','Motor de contexto compartilhado · até '+(caps.contextLimits?.maxMemories||0)+' memórias aprovadas por análise no Windows. No PWA, memórias e inferência permanecem desativadas.','finance-muted'));
   }else if(pwaAICurrent==='chat'){
     root.append(aiText('h4','Perguntas de demonstração'));
     root.append(aiText('p','Selecione um teste para ver a pergunta fictícia que o desktop pode executar. Não há envio ao GPT por esta página.','finance-muted'));
     const list=aiText('div','','finance-ai-cases');
     for(const item of caps.demoCases||[]){
       const button=aiText('button',item.label,'finance-secondary');
-      button.type='button';button.addEventListener('click',()=>{
+      button.type='button';button.addEventListener('click',async()=>{
         pwaAIPending=item.id;
+        pwaAIContextPreview=null;
         const status=document.getElementById('financeAiStatus');
-        if(status)status.textContent='Caso '+item.label+' selecionado. Execute somente no Windows após autorizar sua conta ChatGPT.';
+        if(status)status.textContent='Preparando o contexto fictício sem utilizar IA...';
+        try{
+          const preview=await pwaGet('/api/ai/demo-preview?caseId='+encodeURIComponent(item.id));
+          if(preview?.model!=='gpt-6.1-sol'||preview.bankDataIncluded!==false||
+             preview.memoryCount!==0||preview.onlyFictitiousFinancialData!==true)throw new Error('Contrato inválido.');
+          if(pwaAIPending!==item.id)return;
+          pwaAIContextPreview=preview;
+          if(status)status.textContent='Prévia do contexto preparada sem chamadas ao GPT.';
+        }catch{
+          if(status)status.textContent='Prévia indisponível. Nenhuma chamada de IA foi executada.';
+        }
+        aiRenderPWA();
       });
       list.append(button);
     }
     root.append(list);
+    if(pwaAIContextPreview){
+      const preview=aiText('div','','finance-ai-context-preview');
+      preview.append(aiText('strong','Contexto fictício — prévia, não enviado'));
+      preview.append(aiText('p',pwaAIContextPreview.question,'finance-muted'));
+      preview.append(aiText('small','Caracteres: '+pwaAIContextPreview.inputCharacters+
+        ' · Estimativa aproximada de entrada: '+pwaAIContextPreview.estimatedInputTokensApprox+
+        ' tokens · Banco: não incluído · Memórias: 0'));
+      root.append(preview);
+    }
   }else{
     root.append(aiText('h4','Plano de ação: fase de preparação'));
     root.append(aiText('p','As sugestões futuras serão validadas, auditadas e confirmadas antes de alterar qualquer dado. Esta prévia não registra mudanças financeiras.','finance-muted'));

@@ -4,7 +4,9 @@ const assert=require('node:assert/strict');
 const {readFileSync}=require('node:fs');
 const {join}=require('node:path');
 const root=join(__dirname,'..');
-const read=path=>readFileSync(join(root,path),'utf8');
+// Git checkout on Windows can write CRLF; regex contracts assert LF only.
+// Normalize *test input*, not the actual GitHub Actions workflow.
+const read=path=>readFileSync(join(root,path),'utf8').replace(/\r\n?/g,'\n');
 
 test('E1 Windows IPC contract is declared and wired in all three desktop layers',()=>{
   const app=read('src/app.ts');

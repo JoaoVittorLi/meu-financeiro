@@ -2,6 +2,7 @@
 // Responses API client for eligible Sign in with ChatGPT sessions.
 // No API key, paid fallback, financial database access or automatic retries.
 const {AI_MODEL,buildDemoRequest,publicCapabilities}=require('../shared/ai-policy.mjs');
+const {assembleDemoContext,AI_CONTEXT_LIMITS}=require('../shared/ai-context.mjs');
 const MAX_DEMO_TESTS=3;
 // Only approved, non-sensitive connection codes can reach the renderer.
 const NETWORK_CODES=new Set([
@@ -65,11 +66,26 @@ async function readSSE(body,onDelta=()=>{}){
   }};
 }
 class ChatGPTDemoClient{
-  constructor({auth,fetchFn=globalThis.fetch}){
+  constructor({auth,personalStore=null,fetchFn=globalThis.fetch}){
     if(!auth)throw new Error('Autenticação necessária.');
-    this.auth=auth;this.fetchFn=fetchFn;this.tests=0;this.busy=false;
+    this.auth=auth;this.personalStore=personalStore;this.fetchFn=fetchFn;this.tests=0;this.busy=false;
   }
-  capabilities(){return {...publicCapabilities(),remainingDemoTests:Math.max(0,MAX_DEMO_TESTS-this.tests)};}
+  capabilities(){return {...publicCapabilities(),contextLimits:AI_CONTEXT_LIMITS,memoryLocalOnly:true,
+    remainingDemoTests:Math.max(0,MAX_DEMO_TESTS-this.tests)};}
+  async personalSubject(){
+    const session=await this.auth?.vault?.read?.();
+    if(!session||typeof session.subject!=='string')throw new Error('Conecte sua conta ChatGPT antes de acessar memórias.');
+    return session.subject;
+  }
+  async contextPreview({caseId,effort='auto',useSavedMemories=false}){
+    if(typeof useSavedMemories!=='boolean')throw new Error('Consentimento de memórias inválido.');
+    const base=buildDemoRequest(caseId,effort);
+    if(!useSavedMemories)return assembleDemoContext(base).inspection;
+    if(!this.personalStore)throw new Error('Memórias locais indisponíveis.');
+    const subject=await this.personalSubject();
+    const notes=await this.personalStore.list(subject);
+    return assembleDemoContext(base,notes,true).inspection;
+  }
   async accessTokenChecked(){
     try{return await this.auth.accessToken();}
     catch(error){
@@ -92,13 +108,22 @@ class ChatGPTDemoClient{
     if(!Array.isArray(catalog.models))throw new Error('Catálogo de modelos inválido.');
     return catalog.models.some(m=>m.slug===AI_MODEL);
   }
-  async testDemo({caseId,effort='auto',creditsDisabledConfirmed=false,onDelta=()=>{}}){
+  async testDemo({caseId,effort='auto',creditsDisabledConfirmed=false,useSavedMemories=false,onDelta=()=>{}}){
     if(!creditsDisabledConfirmed)throw new Error('Antes do teste, confirme nas configurações do ChatGPT que créditos adicionais estão desativados.');
     if(this.busy)throw new Error('Uma análise já está em andamento.');
     if(this.tests>=MAX_DEMO_TESTS)throw new Error('Limite preventivo de três testes nesta sessão atingido.');
-    const request=buildDemoRequest(caseId,effort);
+    if(typeof useSavedMemories!=='boolean')throw new Error('Consentimento de memória inválido.');
+    const base=buildDemoRequest(caseId,effort);
     this.busy=true;
     try{
+      let subject=null;
+      let notes=[];
+      if(useSavedMemories){
+        if(!this.personalStore)throw new Error('Memórias locais não disponíveis.');
+        subject=await this.personalSubject();
+        notes=await this.personalStore.list(subject);
+      }
+      const {request,inspection}=assembleDemoContext(base,notes,useSavedMemories);
       const token=await this.accessTokenChecked();
       // The model is fixed by shared/ai-policy.mjs. The models catalog is
       // only required for an interactive model picker, which this app has not.
@@ -114,7 +139,17 @@ class ChatGPTDemoClient{
       },true);
       if(!response.ok)throw new Error(normalizedError(response.status));
       const {text,usage}=await readSSE(response.body,onDelta);
-      return {model:AI_MODEL,effort:request.reasoning.effort,caseId,text,usage,onlyFictitiousData:true,remainingDemoTests:Math.max(0,MAX_DEMO_TESTS-this.tests)};
+      let usageStored=false;
+      if(this.personalStore&&usage){
+        try{
+          const owner=subject||await this.personalSubject();
+          await this.personalStore.recordUsage(owner,{...usage,effort:request.reasoning.effort,caseId,memoryCount:inspection.memoryCount});
+          usageStored=true;
+        }catch{/* Response is valid; UI must disclose that local usage was not saved. */}
+      }
+      return {model:AI_MODEL,effort:request.reasoning.effort,caseId,text,usage,
+        usageStored,context:inspection,onlyFictitiousData:true,
+        remainingDemoTests:Math.max(0,MAX_DEMO_TESTS-this.tests)};
     } finally {this.busy=false;}
   }
 }
