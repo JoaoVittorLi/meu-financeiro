@@ -142,6 +142,21 @@ test('UI03 daily information hierarchy covers all eight sections',()=>{
  assert.match(app,/renderSourcePicker\(\)/);
 });
 
+test('UI03 retains B02 category button after donut and chart redesign',()=>{
+ const Category=compile(extract(app,'function TransactionCategoryButton(','type Choice = {value:string;label:string};'),
+   'TransactionCategoryButton',{h});
+ let clicks=0;
+ const button=Category({category:'Alimentação',emoji:'🍕',
+   label:'Editar categoria da conta fictícia A',onClick:()=>clicks++});
+ assert.equal(button.name,'button');
+ assert.equal(button.props.type,'button');
+ assert.match(button.props.className,/mf-category-edit/);
+ assert.match(button.props['aria-label'],/conta fictícia A/);
+ button.props.onClick();
+ assert.equal(clicks,1);
+ assert.match(app,/h\(TransactionCategoryButton,\{category:t\.category/);
+});
+
 test('UI03 does not introduce new financial engines or changes to data identity',()=>{
  assert.match(app,/bankCategorize\(\{accountId:tx\.accountId,externalId:tx\.id,category:/);
  assert.match(app,/this\.updateData\(\{\.\.\.data,transactions:data\.transactions\.map/);
