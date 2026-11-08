@@ -8,5 +8,5 @@
     "removeComments": true,
     "skipLibCheck": true
   },
-  "files": ["src/app.ts", "src/plan-view.ts", "src/intelligence-view.ts"]
+  "files": ["src/app.ts", "src/plan-view.ts", "src/intelligence-view.ts", "src/intelligence-integration.ts"]
 }
