@@ -25,8 +25,8 @@ function renderIntelligenceView(app:any){
   if(tab==='today')section=h('div',{className:'mf-ai-today'},
     h('div',{className:'mf-ai-welcome'},
       h('span',{className:'micro-label'},'PAINEL CONCEITUAL · DADOS FICTÍCIOS'),
-      h('h2',{},'Decisões mais claras começam aqui.'),
-      h('p',{},'Os exemplos abaixo demonstram como seus próximos alertas serão organizados. Nenhum dado bancário foi consultado e nenhuma chamada à IA foi feita.')),
+      h('h2',{},'Três assuntos para explorar.'),
+      h('p',{},'Exemplos fictícios. Eles não representam alertas reais das suas contas.')),
     h('div',{className:'mf-ai-card-grid'},
       intelligenceExampleCard(app,'future','Compromissos à frente','Analise pagamentos futuros antes de separar dinheiro para investir.','calendar','Avalie meus compromissos futuros antes de eu reservar dinheiro para investimentos.'),
       intelligenceExampleCard(app,'budgets','Limites mais inteligentes','Compare o comportamento das categorias antes de alterar seu orçamento.','pie','Ajude-me a elaborar limites inteligentes para o próximo mês.'),
@@ -37,8 +37,8 @@ function renderIntelligenceView(app:any){
   else if(tab==='chat')section=h('div',{className:'mf-ai-chat-layout'},
     h('div',{className:'mf-ai-chat-main'},
       h('div',{className:'mf-ai-chat-hero'},h('span',{className:'mf-ai-orb'},h(Icon,{name:'spark',size:25})),
-        h('h2',{},'Pergunte sobre suas finanças.'),
-        h('p',{},'Perguntas livres ficam em rascunho nesta etapa. Os testes reais do GPT-6.1 Sol usam somente cenários fictícios autorizados no painel abaixo.')),
+        h('h2',{},'Prepare uma pergunta.'),
+        h('p',{},'Este campo prepara apenas um rascunho local. Para testes de IA, abra o laboratório abaixo.')),
       s.intelligencePreparedQuestion?h('div',{className:'mf-ai-prepared',role:'status'},
         h('span',{className:'micro-label'},'PERGUNTA PREPARADA · NÃO ENVIADA'),
         h('p',{},s.intelligencePreparedQuestion),
@@ -56,8 +56,8 @@ function renderIntelligenceView(app:any){
   else section=h('div',{className:'mf-ai-actions'},
     h('div',{className:'mf-ai-welcome'},
       h('span',{className:'micro-label'},'EXEMPLOS DE DECISÕES · SEM ALTERAÇÕES REAIS'),
-      h('h2',{},'Transforme análises em ações.'),
-      h('p',{},'Aqui ficarão sugestões pendentes, aplicadas ou descartadas. Os itens abaixo são exemplos não vinculados às suas contas.')),
+      h('h2',{},'Sugestões para revisar, nunca automáticas.'),
+      h('p',{},'Os itens ilustrativos abaixo não estão vinculados às suas contas e não alteram registros.')),
     [{id:'limits',title:'Revisar limites de categorias',description:'Compare médias, compromissos e uma margem de segurança.',question:'Prepare uma proposta de limites por categoria para o próximo mês.'},
      {id:'reserve',title:'Planejar reserva de emergência',description:'Estime um objetivo compatível com despesas essenciais e liquidez.',question:'Como construir uma reserva de emergência considerando meus compromissos?'},
      {id:'review',title:'Revisar despesas recorrentes',description:'Identifique cobranças repetidas antes de propor mudanças.',question:'Como posso avaliar se meus gastos recorrentes precisam de revisão?'}].map((item:any)=>
@@ -71,16 +71,15 @@ function renderIntelligenceView(app:any){
   return h('section',{className:'section mf-intelligence-page','aria-label':'Inteligência financeira'},
     h('div',{className:'mf-ai-intro'},
       h('div',{},h('span',{className:'micro-label'},'INTELIGÊNCIA FINANCEIRA'),
-        h('h2',{},'Sua visão mais inteligente do dinheiro.'),
-        h('p',{},'Um espaço para descobrir prioridades, preparar perguntas e organizar decisões financeiras.')),
+        h('h2',{},'Entenda os próximos passos.'),
+        h('p',{},'Hoje, conversa e plano de ação — com dados demonstrativos identificados.')),
       h('span',{className:'mf-ai-preview-label'},h(Icon,{name:'shield',size:15}),'Prévia · dados fictícios')),
     h('div',{className:'mf-ai-tabbar',role:'tablist','aria-label':'Seções da Inteligência'},
       tabs.map((item:any)=>h('button',{type:'button',key:item.id,role:'tab','aria-selected':tab===item.id,
         className:tab===item.id?'active':'',onClick:()=>app.setState({intelligenceTab:item.id})},item.label))),
     section,
-    tab==='chat'?renderIntelligenceConnection(app):null,
-    tab==='chat'?renderIntelligencePrivacy(app):null,
-    tab==='chat'?renderIntelligenceFinancialContext(app):null);
+    tab==='chat'?h('details',{className:'mf-ai-lab-disclosure'},h('summary',{},h(Icon,{name:'settings',size:17}),h('span',{},'Laboratório de Inteligência'),h('small',{},'Conexão, memória, contexto fictício e testes opcionais')),
+       renderIntelligenceConnection(app),renderIntelligencePrivacy(app),renderIntelligenceFinancialContext(app)):null);
 }
 function renderIntelligencePanel(app:any){
   if(!app.state.intelligencePanelOpen)return null;
