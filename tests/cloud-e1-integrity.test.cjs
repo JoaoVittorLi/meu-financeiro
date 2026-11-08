@@ -125,6 +125,23 @@ test('E1 will not treat HTML login redirects or invalid audit contracts as succe
     assert.equal(out.financialSyncEnabled,false);
   }finally{finance.close();}
 });
+test('E1 rejects a truly incomplete local planning schema before contacting Cloudflare',async()=>{
+  // FinanceDB alone is an intentionally incomplete schema: PlanningStore is
+  // initialized separately by the desktop. An audit must fail closed here.
+  const finance=new FinanceDB(':memory:');
+  let requests=0;
+  try{
+    const out=await auditE1Windows(finance,async()=>{
+      requests++;
+      throw new Error('O serviço remoto não pode ser consultado com esquema incompleto.');
+    },'/synthetic-nonexistent-userdata');
+    assert.equal(out.ok,false);
+    assert.equal(out.reason,'local_snapshot_unavailable');
+    assert.equal(out.financialSyncEnabled,false);
+    assert.equal(requests,0);
+  }finally{finance.close();}
+});
+
 test('different account pair order yields identical cryptographic identity digest',()=>{
   const entries=[
     {account_id:'account-b',item_id:'item-2'},
