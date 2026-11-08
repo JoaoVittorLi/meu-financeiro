@@ -411,3 +411,13 @@ body,button,input,select,textarea{font-family:var(--font-ui)}
 @media(prefers-reduced-motion:reduce){
  .stat,.p-upcoming-row,.mf-category-edit,.p-hero,.mf-compact-banner{animation:none;transition:none}
 }
+
+
+/* The top-five donut groups the rest without discarding the underlying category detail. */
+.donut-all-categories{grid-column:1/-1;border-top:1px solid var(--mf-stroke);margin-top:3px;padding-top:8px;color:var(--mf-secondary)}
+.donut-all-categories summary{font-size:12px;color:#C8ACFA;cursor:pointer;padding:6px 0}
+.donut-all-categories summary:focus-visible{outline:2px solid var(--mf-accent);outline-offset:3px}
+.donut-all-list{display:flex;flex-direction:column;gap:6px;padding:8px 0}
+.donut-all-list>div{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:12px}
+.donut-all-list strong{font-variant-numeric:tabular-nums;white-space:nowrap}
+.donut-all-categories>small{font-size:11px;color:var(--mf-secondary)}
