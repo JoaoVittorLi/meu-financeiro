@@ -72,7 +72,7 @@ test('B00 compares every ASAR renderer byte, including package version',async()=
 });
 
 // F08: a previous renderer with the correct E3/E4.1 markers must not receive
- // a fresh commit SHA merely because the package version changed.
+// a fresh commit SHA merely because the package version changed.
 test('F08 rejects stale but marker-complete renderer and changed TS source',()=>{
  const {root,release}=fixture();
  try{
