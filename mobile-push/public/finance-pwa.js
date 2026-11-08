@@ -6,7 +6,7 @@ if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js').catch
 const pwaEl=id=>document.getElementById(id);
 const pwaTitles={
   overview:'Visão geral',transactions:'Movimentações',planning:'Planejamento',
-  budgets:'Orçamentos',simulate:'Simular compra',accounts:'Minhas contas'
+  budgets:'Orçamentos',simulate:'Simular compra',accounts:'Minhas contas',intelligence:'Inteligência'
 };
 const pwaState={active:'overview',busy:false,loaded:false,nextOffset:null,shown:0,total:0,manualBusy:false,manualLoaded:false,manualOffset:null,manualShown:0};
 function pwaMoney(value){
@@ -42,6 +42,7 @@ function pwaSelectView(name){
   if(name==='transactions'&&!pwaState.loaded)void pwaLoadTransactions(false);
   if(name==='transactions'&&!pwaState.manualLoaded)void pwaLoadManual(false);
   if(name==='overview'||name==='accounts')void pwaLoadSummary();
+  if(name==='intelligence'&&typeof pwaInitIntelligence==='function')void pwaInitIntelligence();
 }
 function pwaBankRow(row){
   if(!row||typeof row.description!=='string'||typeof row.date!=='string'||
