@@ -1,0 +1,6 @@
+One-shot E1 Windows and PWA preview validation
+Approved in conversation on 2026-11-07 after user announced additional GitHub Actions minutes.
+Trigger: the creation of this file ONLY. Do not edit on subsequent normal development commits.
+Base reviewed SHA: c55356fe6d7e7f9ef22125624674693852de323b
+Purpose: run Node/TypeScript/Worker test gates and compile both Windows EXEs, then publish a prerelease only if green.
+No merge to main, no production deployment, no financial database cutover.
