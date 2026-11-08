@@ -21,6 +21,8 @@ jobs:
             npm install --no-audit --no-fund --package-lock=false
             npm run test:types
             npm run test:db
+            npm run compile
+            node scripts/renderer-provenance.cjs check-bundle
           no_output_timeout: 20m
       - run:
           name: "Preflight | Worker/PWA + bundle Cloudflare sem publicar"
