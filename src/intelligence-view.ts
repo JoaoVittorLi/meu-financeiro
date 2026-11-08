@@ -38,7 +38,7 @@ function renderIntelligenceView(app:any){
     h('div',{className:'mf-ai-chat-main'},
       h('div',{className:'mf-ai-chat-hero'},h('span',{className:'mf-ai-orb'},h(Icon,{name:'spark',size:25})),
         h('h2',{},'Pergunte sobre suas finanças.'),
-        h('p',{},'Escreva sua pergunta ou escolha um exemplo. Nesta entrega, ela é apenas preparada: não há conexão com o ChatGPT.')),
+        h('p',{},'Perguntas livres ficam em rascunho nesta etapa. Os testes reais do GPT-6.1 Sol usam somente cenários fictícios autorizados no painel abaixo.')),
       s.intelligencePreparedQuestion?h('div',{className:'mf-ai-prepared',role:'status'},
         h('span',{className:'micro-label'},'PERGUNTA PREPARADA · NÃO ENVIADA'),
         h('p',{},s.intelligencePreparedQuestion),
