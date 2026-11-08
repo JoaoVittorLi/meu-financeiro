@@ -24,6 +24,7 @@ test('PWA tem área Inteligência e não recebe OAuth no navegador',()=>{
  const html=read('mobile-push/public/finance.html');
  const js=read('mobile-push/public/finance-ai.js');
  const worker=read('mobile-push/src/worker.js');
+ const caps=publicCapabilities();
  assert.match(html,/data-view="intelligence"/);
  assert.match(html,/id="view-intelligence"/);
  assert.match(html,/finance-ai\.js/);
