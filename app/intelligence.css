@@ -128,3 +128,16 @@
 .mf-ai-context-preview small,.mf-ai-usage-panel small,.mf-ai-muted{color:#aba0bf;font-size:11px;line-height:1.7}
 .mf-ai-usage-panel p{font-size:12px;line-height:1.6;margin:0;color:#e3d6f0}
 @media(max-width:700px){.mf-ai-personal-panel{padding:17px}.mf-ai-personal-form{align-items:stretch;flex-direction:column}.mf-ai-personal-form>label{width:100%}.mf-ai-memory-row{align-items:flex-start}.mf-ai-memory-row button{margin-top:7px}}
+
+/* E3 — safe formatted model response */
+.mf-ai-markdown{font-size:13px;line-height:1.75;color:#f0e6f8;overflow-wrap:anywhere}
+.mf-ai-markdown p{margin:10px 0}
+.mf-ai-markdown strong{font-weight:800;color:#fff}
+.mf-ai-markdown ul,.mf-ai-markdown ol{margin:11px 0;padding-left:24px}
+.mf-ai-markdown li{margin:5px 0}
+.mf-ai-markdown h3{font-size:15px;margin:16px 0 9px;color:#f3e6ff}
+.mf-ai-table-wrap{max-width:100%;overflow-x:auto;margin:14px 0}
+.mf-ai-table-wrap table{width:100%;border-collapse:collapse;min-width:350px;font-size:12px}
+.mf-ai-table-wrap td,.mf-ai-table-wrap th{padding:9px 11px;text-align:left;border:1px solid #4b395f}
+.mf-ai-table-wrap th{background:#332441;color:#f6dfff}
+.mf-ai-table-wrap tr:nth-child(even){background:#21192b}
