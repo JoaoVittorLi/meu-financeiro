@@ -18,6 +18,7 @@ export function evaluateE1({bank,cloud,local}){
      !Number.isSafeInteger(bank.localCount)||!Number.isSafeInteger(bank.cloudCount))
     throw new Error('Paridade bancária E1 inválida.');
   const bankPresent=bank.localCount>0&&bank.cloudCount>0;
+  const sameBankIdentities=bankPresent&&bank.sameCount===true&&bank.exactIdentities===true;
   const safeDigest=value=>typeof value==='string'&&/^[a-f0-9]{64}$/.test(value);
   const accountsComparable=local.accountCount>0&&
     Number.isSafeInteger(cloud.cloud.bankAccounts)&&cloud.cloud.bankAccounts>0;
@@ -62,10 +63,10 @@ export function evaluateE1({bank,cloud,local}){
   const checks={
     bankIdentities:yes(bankPresent?bank.exactIdentities===true&&bank.sameCount===true:null,
       'bank_ids_match','bank_ids_diverge'),
-    bankDatesAndMoney:yes(bankPresent?bank.exactDatesAndCents===true:null,
-      'bank_dates_amounts_match','bank_dates_amounts_diverge'),
-    bankDescriptionsAndStatuses:yes(bankPresent?bank.exactDescriptionsAndStatuses===true:null,
-      'bank_text_status_match','bank_text_status_diverge'),
+    bankDatesAndMoney:yes(sameBankIdentities?bank.exactDatesAndCents===true:null,
+      'bank_dates_amounts_match','bank_dates_amounts_diverge','bank_ids_must_match_first'),
+    bankDescriptionsAndStatuses:yes(sameBankIdentities?bank.exactDescriptionsAndStatuses===true:null,
+      'bank_text_status_match','bank_text_status_diverge','bank_ids_must_match_first'),
     accountIdentities:yes(sameAccounts,'account_ids_match','account_ids_diverge','account_ids_not_comparable'),
     categoryOriginals:yes(categoriesEqual,'provider_categories_match','provider_categories_diverge','provider_categories_not_complete'),
     snapshotOriginal:yes(importedMatch,'import_manifest_matches','import_manifest_diverges','import_manifest_not_comparable'),
