@@ -3,6 +3,7 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 const {DatabaseSync}=require('node:sqlite');
 const {FinanceDB}=require('../electron/db.cjs');
+const {PlanningStore}=require('../electron/planning.cjs');
 const {localE1Evidence}=require('../electron/cloud-e1-audit.cjs');
 
 function staging(){
@@ -22,6 +23,8 @@ test('actual cloud and Windows account/category hashes match, including absent p
   const {ensureBankStaging}=await import('../mobile-push/src/finance-bank-ingestion.js');
   const finance=new FinanceDB(':memory:'),cloud=staging();
   try{
+    // Mirror real desktop initialization before collecting E1 evidence.
+    new PlanningStore(finance);
     ensureBankStaging(cloud.storage);
     finance.db.prepare('INSERT INTO bank_items(item_id,institution,status) VALUES(?,?,?)')
       .run('synthetic-item','Banco fictício','UPDATED');
