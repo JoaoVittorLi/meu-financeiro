@@ -82,9 +82,9 @@ test('B02 category editor is marked for both origins and remains separate from s
  assert.match(src,/onChange:\(\)=>this\.toggleSelected\(v\)/);
 });
 
-test('B02 Windows beta.4 can be differentiated from the currently compiling beta.3',()=>{
- assert.equal(pkg.version,'0.9.5-beta.4');
- assert.equal((src.match(/v0\.9\.5-beta\.4/g)||[]).length,3);
- assert.equal((src.match(/v0\.9\.5-beta\.3/g)||[]).length,0);
+test('B02 renderer labels match the current candidate version and exclude prior releases',()=>{
+ assert.match(pkg.version,/^\d+\.\d+\.\d+-beta\.\d+$/);
+ assert.equal(src.split('v'+pkg.version).length-1,3);
+ assert.equal((src.match(/v0\.9\.5-beta\.[34](?!\d)/g)||[]).length,0);
  assert.match(pkg.scripts['dist:windows'],/provenance:verify/);
 });
