@@ -4,7 +4,7 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const os=require('node:os');
 const path=require('node:path');
-const {makeManifest,validateManifest,verifyArchive,checkFreshBundle,hash,MANIFEST}=require('../scripts/renderer-provenance.cjs');
+const {makeManifest,validateManifest,verifyArchive,checkFreshBundle,createArchiveReader,hash,MANIFEST}=require('../scripts/renderer-provenance.cjs');
 const ts=require('typescript');
 const sha='a'.repeat(40);
 function fixture(){
@@ -18,6 +18,7 @@ function fixture(){
   'app.js':'function renderIntelligencePrivacy(){}function renderIntelligenceFinancialContext(){}',
   'style.css':'.mf-select-popover{z-index:600}',
   'intelligence.css':'.mf-ai-drawer{z-index:500}',
+  'vendor/LICENSE_REACT.txt':'MIT license fixture',
   'vendor/react.min.js':'test fixture'
  }))fs.writeFileSync(path.join(root,'app',name),contents);
  const release=()=>fs.rmSync(root,{recursive:true,force:true});
@@ -33,6 +34,25 @@ test('B00 records version, commit, toolchain and exact renderer asset hashes',()
   assert.ok(!Object.keys(manifest.assets).includes(MANIFEST));
   assert.equal(validateManifest(root,manifest,sha),true);
  }finally{release()}
+});
+
+test('B00 normalizes nested archive paths for Windows and POSIX readers',()=>{
+ // ASAR uses dirname() and then split(path.sep) when traversing its header.
+ // A forward-slash dirname with two segments is one nonexistent key on Windows.
+ for(const paths of [path.win32,path.posix]){
+  const header={files:{app:{files:{vendor:{files:{'LICENSE_REACT.txt':'MIT'}}}}}};
+  const extract=(_archive,name)=>{
+   let node=header;
+   for(const part of paths.dirname(name).split(paths.sep))node=node.files?.[part];
+   const file=node?.files?.[paths.basename(name)];
+   if(!file)throw new Error('not found in archive: '+name);
+   return file;
+  };
+  if(paths===path.win32)assert.throws(()=>extract('fixture.asar','app/vendor/LICENSE_REACT.txt'),/not found/);
+  const read=createArchiveReader(extract,paths);
+  assert.equal(read('fixture.asar','app/vendor/LICENSE_REACT.txt'),'MIT');
+  assert.throws(()=>read('fixture.asar','app/vendor/MISSING.txt'),/not found/);
+ }
 });
 test('B00 rejects old bundles, tampered CSS and a different commit',()=>{
  const {root,release}=fixture();

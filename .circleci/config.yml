@@ -4,6 +4,9 @@
 version: 2.1
 
 parameters:
+  run_preflight:
+    type: boolean
+    default: false
   run_windows_build:
     type: boolean
     default: false
@@ -23,6 +26,7 @@ jobs:
             npm run test:db
             npm run compile
             node scripts/renderer-provenance.cjs check-bundle
+            npm run test:asar
           no_output_timeout: 20m
       - run:
           name: "Preflight | Worker/PWA + bundle Cloudflare sem publicar"
@@ -47,6 +51,13 @@ jobs:
           destination: MeuFinanceiro-Windows
 
 workflows:
+  preflight_on_demand:
+    when:
+      and:
+        - << pipeline.parameters.run_preflight >>
+        - not: << pipeline.parameters.run_windows_build >>
+    jobs:
+      - preflight_linux
   windows_on_demand:
     when: << pipeline.parameters.run_windows_build >>
     jobs:
