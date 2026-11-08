@@ -9,6 +9,27 @@ parameters:
     default: false
 
 jobs:
+  preflight_linux:
+    docker:
+      - image: node:22-bookworm
+    steps:
+      - checkout
+      - run:
+          name: "Preflight | TypeScript, SQLite, auditoria E1 e regressões IA"
+          command: |
+            export ELECTRON_SKIP_BINARY_DOWNLOAD=1
+            npm install --no-audit --no-fund --package-lock=false
+            npm run test:types
+            npm run test:db
+          no_output_timeout: 20m
+      - run:
+          name: "Preflight | Worker/PWA + bundle Cloudflare sem publicar"
+          command: |
+            cd mobile-push
+            npm install --no-audit --no-fund --package-lock=false
+            npm test
+            npx wrangler deploy --dry-run --outdir /tmp/mf-e4-preview
+          no_output_timeout: 20m
   build_windows:
     machine:
       image: "windows-server-2022-gui:current"
@@ -27,4 +48,7 @@ workflows:
   windows_on_demand:
     when: << pipeline.parameters.run_windows_build >>
     jobs:
-      - build_windows
+      - preflight_linux
+      - build_windows:
+          requires:
+            - preflight_linux
