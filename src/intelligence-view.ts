@@ -73,11 +73,12 @@ function renderIntelligenceView(app:any){
       h('div',{},h('span',{className:'micro-label'},'INTELIGÊNCIA FINANCEIRA'),
         h('h2',{},'Sua visão mais inteligente do dinheiro.'),
         h('p',{},'Um espaço para descobrir prioridades, preparar perguntas e organizar decisões financeiras.')),
-      h('span',{className:'mf-ai-preview-label'},h(Icon,{name:'shield',size:15}),'Prévia offline')),
+      h('span',{className:'mf-ai-preview-label'},h(Icon,{name:'shield',size:15}),'Prévia · dados fictícios')),
     h('div',{className:'mf-ai-tabbar',role:'tablist','aria-label':'Seções da Inteligência'},
       tabs.map((item:any)=>h('button',{type:'button',key:item.id,role:'tab','aria-selected':tab===item.id,
         className:tab===item.id?'active':'',onClick:()=>app.setState({intelligenceTab:item.id})},item.label))),
-    section);
+    section,
+    tab==='chat'?renderIntelligenceConnection(app):null);
 }
 function renderIntelligencePanel(app:any){
   if(!app.state.intelligencePanelOpen)return null;
@@ -98,11 +99,11 @@ function renderIntelligencePanel(app:any){
 }
 function renderIntelligenceSettings(app:any){
   return h(Card,{className:'settings-card mf-ai-settings'},
-    h('div',{className:'card-heading'},h('div',{},h('h2',{},'Inteligência artificial'),h('p',{},'Configuração planejada para a próxima entrega'))),
-    h('div',{className:'mf-ai-setting-line'},h('span',{},'Estado'),h('strong',{},'Não conectada')),
+    h('div',{className:'card-heading'},h('div',{},h('h2',{},'Inteligência artificial'),h('p',{},'Autenticação local e testes fictícios · Entrega 2'))),
+    h('div',{className:'mf-ai-setting-line'},h('span',{},'Estado'),h('strong',{},app.state.aiStatus.connected?'Conectada':'Não conectada')),
     h('div',{className:'mf-ai-setting-line'},h('span',{},'Modelo previsto'),h('strong',{},'GPT-6.1 Sol')),
     h('div',{className:'mf-ai-setting-line'},h('span',{},'Raciocínio'),h('strong',{},'Low / Medium automático')),
     h('div',{className:'mf-ai-setting-line'},h('span',{},'Economia de tokens'),h('strong',{},'Padrão planejado')),
-    h('p',{className:'muted-desc'},'Login ChatGPT, memória, histórico e monitoramento de uso serão habilitados após validação da integração. Nenhuma credencial é solicitada agora.'),
+    h('p',{className:'muted-desc'},'O login com ChatGPT é iniciado no Windows e guarda tokens criptografados. Os testes aceitam apenas casos fictícios; memória e dados financeiros reais continuam desabilitados.'),
     h('button',{type:'button',className:'outlined-action full',onClick:()=>app.navigate('intelligence')},h(Icon,{name:'spark',size:17}),'Abrir prévia da Inteligência'));
 }
