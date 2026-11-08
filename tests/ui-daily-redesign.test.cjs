@@ -131,8 +131,8 @@ test('UI03 daily information hierarchy covers all eight sections',()=>{
  assert.ok(overview.indexOf("className:'stats-grid'")<overview.indexOf("className:'mf-plan-shortcut'"));
  const banks=extract(app,'renderBanks(){','renderSettings(){');
  assert.ok(banks.indexOf('mf-accounts-first')<banks.indexOf("className:'bank-grid'"));
- assert.match(app,/className:'mf-compact-banner'/);
- assert.match(app,/className:'mf-budget-section'/);
+ assert.match(app,/className:'[^']*\bmf-compact-banner\b[^']*'/);
+ assert.match(app,/className:'[^']*\bmf-budget-section\b[^']*'/);
  assert.match(css,/\.mf-budget-section \.budget-grid\{grid-template-columns:1fr/);
  assert.match(app,/renderAssistant\(includeBanner:boolean=true\)/);
  assert.match(app,/renderSettings\(\)/);
