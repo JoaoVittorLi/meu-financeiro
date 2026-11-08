@@ -52,7 +52,8 @@ export async function cloudE1Evidence(storage){
   }
   const categoryTuples=canonical(transactions,r=>{
     const key=JSON.stringify([r.account_id,r.external_id]);
-    return [r.account_id,r.external_id,meta.has(key)?meta.get(key):null];
+    // Windows bank ingest stores 'Outros' when Pluggy omits a category.
+    return [r.account_id,r.external_id,meta.has(key)?(meta.get(key)||'Outros'):null];
   });
   const categoryMetadataComplete=meta.size===transactions.length&&orphanCategories===0;
   const withCategory=categoryTuples.filter(t=>typeof t[2]==='string'&&t[2].trim()).length;
