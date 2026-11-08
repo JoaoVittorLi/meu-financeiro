@@ -4,7 +4,8 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const os=require('node:os');
 const path=require('node:path');
-const {makeManifest,validateManifest,verifyArchive,hash,MANIFEST}=require('../scripts/renderer-provenance.cjs');
+const {makeManifest,validateManifest,verifyArchive,checkFreshBundle,hash,MANIFEST}=require('../scripts/renderer-provenance.cjs');
+const ts=require('typescript');
 const sha='a'.repeat(40);
 function fixture(){
  const root=fs.mkdtempSync(path.join(os.tmpdir(),'mf-b00-'));
@@ -67,5 +68,33 @@ test('B00 compares every ASAR renderer byte, including package version',async()=
   const bad=async(_,name)=>name==='app/app.js'?Buffer.from('old renderer'):reader(_,name);
   try{await verifyArchive(root,archive,bad,sha)}catch(e){corrupt=/ASAR.*app.js/.test(e.message)}
   assert.equal(corrupt,true);
+ }finally{release()}
+});
+
+// F08: a previous renderer with the correct E3/E4.1 markers must not receive
+// a fresh commit SHA merely because the package version changed.
+test('F08 rejects stale but marker-complete renderer and changed TS source',()=>{
+ const {root,release}=fixture();
+ try{
+  fs.mkdirSync(path.join(root,'src'));
+  const source=path.join(root,'src','app.ts');
+  fs.writeFileSync(source,'function renderIntelligencePrivacy(){}\nfunction renderIntelligenceFinancialContext(){}\n');
+  fs.writeFileSync(path.join(root,'tsconfig.json'),JSON.stringify({compilerOptions:{target:'ES2019',module:'none',outFile:'app/app.js',removeComments:true},files:['src/app.ts']}));
+  // Simulate the actual TypeScript compilation used by npm run compile.
+  const program=ts.createProgram([source],{target:ts.ScriptTarget.ES2019,module:ts.ModuleKind.None,outFile:path.join(root,'app','app.js'),removeComments:true});
+  const result=program.emit();assert.equal(result.emitSkipped,false);
+  const proof=checkFreshBundle(root);assert.equal(proof.inputSHA256['src/app.ts'].length,64);
+  const manifest=makeManifest(root,sha,{node:'v22.16.0',typescript:'5.8.3'});
+  assert.equal(validateManifest(root,manifest,sha),true);
+  // Same version, both E3 markers remain, but the new source was not built.
+  fs.writeFileSync(source,fs.readFileSync(source,'utf8')+'function newerScreen(){}\n');
+  assert.throws(()=>makeManifest(root,sha,{node:'v22.16.0',typescript:'5.8.3'}),/Bundle desatualizado/);
+  assert.throws(()=>validateManifest(root,manifest,sha),/Bundle desatualizado/);
+  // Recompile fixes the bundle, but the original manifest must still fail.
+  const fresh=ts.createProgram([source],{target:ts.ScriptTarget.ES2019,module:ts.ModuleKind.None,outFile:path.join(root,'app','app.js'),removeComments:true});
+  assert.equal(fresh.emit().emitSkipped,false);
+  assert.throws(()=>validateManifest(root,manifest,sha),/Fonte ou compilação diferente/);
+  const updated=makeManifest(root,sha,{node:'v22.16.0',typescript:'5.8.3'});
+  assert.equal(validateManifest(root,updated,sha),true);
  }finally{release()}
 });
