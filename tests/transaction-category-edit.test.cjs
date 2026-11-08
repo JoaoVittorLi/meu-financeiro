@@ -84,7 +84,8 @@ test('B02 category editor is marked for both origins and remains separate from s
 
 test('B02 renderer labels match the current candidate version and exclude prior releases',()=>{
  assert.match(pkg.version,/^\d+\.\d+\.\d+-beta\.\d+$/);
- assert.equal(src.split('v'+pkg.version).length-1,3);
- assert.equal((src.match(/v0\.9\.5-beta\.[34](?!\d)/g)||[]).length,0);
+ const labels=src.match(/\bv\d+\.\d+\.\d+-beta\.\d+\b/g)||[];
+ assert.equal(labels.length,3);
+ assert.deepEqual([...new Set(labels)],['v'+pkg.version]);
  assert.match(pkg.scripts['dist:windows'],/provenance:verify/);
 });
