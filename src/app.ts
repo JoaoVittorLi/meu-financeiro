@@ -277,11 +277,13 @@ class PeriodPicker extends React.Component<any,any>{
 }
 
 class App extends React.Component<any,State>{
- private fileInput:any; private csvInput:any; private timeout:any; private writeInProgress=false; private autoSyncTimer:any=null; private unsubscribePersonalCloud:(()=>void)|null=null; private lastSyncAttempt=0; private focusReturn:any=null;
+ private fileInput:any; private csvInput:any; private timeout:any; private writeInProgress=false; private autoSyncTimer:any=null; private unsubscribePersonalCloud:(()=>void)|null=null; private unsubscribeAI:(()=>void)|null=null; private lastSyncAttempt=0; private focusReturn:any=null;
  constructor(props:any){super(props);const mode:'real'|'demo'='real';this.state={mode,data:desktop?starter():load(mode),page:'overview',month:nowYM,showEntry:false,entry:{date:iso(new Date()),description:'',kind:'expense',category:'Outros',value:''},sim:{value:'',installments:'6',interest:'0'},outcome:null,query:'',toast:'',budgetEdit:'',busy:!!desktop,booting:!!desktop,editModal:null,bank:EMPTY_BANK,bankForm:{clientId:'',clientSecret:'',itemIds:''},bankBusy:false,bankMessage:'',bankFilter:'',txSource:'all',txReviewOnly:false,txOrganize:false,categoryMoreEmojis:false,quickAddOpen:false,dashboardSource:'bank',sourceDetailsOpen:false,budgetTab:'expense',showAllBudgetCategories:false,categories:DEFAULT_CATEGORY_INFOS,rules:[],categoryEditor:{previousName:'',name:'',color:'#884bff',emoji:'✨',kind:'expense'},ruleEditor:emptyRule(),ruleTest:'IFOOD',categoryMessage:'',entryCategoryTouched:false,bankConfigOpen:false,overviewPeriod:'month',customStart:iso(new Date()),customEnd:iso(new Date()),backupInfo:{copies:0,last:null},detail:null,detailDraft:{merchant:'',note:'',nature:'auto',reviewed:false,aliasPattern:'',splitParts:[]},detailBusy:false,txSelected:[],txBatchCategory:'Alimentação',planning:EMPTY_PLANNING,planMonth:nowYM,planDay:iso(new Date()),planSelected:null,planOpen:false,planForm:freshPlanForm(),planBusy:false,planView:'all',planTerm:'',planIncludeEstimated:false,planBankTitle:'',planMatchQuery:'',planHistory:[],cloudStage:'not_started',cloudBusy:false,cloudMessage:'',cloudIdentityConnected:false,cloudQuarantineVerified:false,cloudPersonalTransferred:false,cloudParityBusy:false,cloudParityMessage:'',intelligenceTab:'today',intelligenceDraft:'',intelligencePreparedQuestion:'',intelligencePanelOpen:false,intelligenceContext:'overview',intelligenceExpandedAction:null,aiStatus:{connected:false,secure:false},aiBusy:false,aiError:'',aiDemoCase:'budget',aiEffort:'auto',aiCreditsConfirmed:false,aiResult:null,aiStreaming:''};}
  async componentDidMount(){
    window.addEventListener('keydown',this.onGlobalKeydown);
    if(!desktop)return;
+   this.unsubscribeAI=desktop.onAIDelta?.((delta:string)=>this.setState((previous:State)=>({aiStreaming:(previous.aiStreaming+delta).slice(0,12000)})))||null;
+   void intelligenceRefresh(this);
    try {
      const persisted=await desktop.load('real');
      this.setState({data:persisted?safeData(persisted):starter(),busy:false,booting:false});
@@ -299,8 +301,8 @@ class App extends React.Component<any,State>{
    } catch(e:any){this.setState({fatal:'Não foi possível abrir seus dados pessoais: '+String(e?.message||e),busy:false,booting:false});}
  }
  componentDidUpdate(_prevProps:any,previous:State){
-   const before=!!(previous.showEntry||previous.editModal||previous.detail||previous.planOpen||previous.planSelected);
-   const now=!!(this.state.showEntry||this.state.editModal||this.state.detail||this.state.planOpen||this.state.planSelected);
+   const before=!!(previous.showEntry||previous.editModal||previous.detail||previous.planOpen||previous.planSelected||previous.intelligencePanelOpen);
+   const now=!!(this.state.showEntry||this.state.editModal||this.state.detail||this.state.planOpen||this.state.planSelected||this.state.intelligencePanelOpen);
    if(!before&&now){
      this.focusReturn=document.activeElement;
      const dialog=document.querySelector('.modal-backdrop [role="dialog"],.mf-detail-drawer,.mf-ai-drawer');
@@ -327,7 +329,7 @@ class App extends React.Component<any,State>{
    try{const bank=await desktop.bankStatus();this.setState({bank,bankForm:{clientId:bank.config.clientId||'',clientSecret:'',itemIds:(bank.config.itemIds||[]).join(', ')}});return bank;}
    catch(e:any){this.setState({bankMessage:'Não foi possível consultar a integração: '+String(e?.message||e)});}
  }
- componentWillUnmount(){window.removeEventListener('keydown',this.onGlobalKeydown);this.unsubscribePersonalCloud?.();if(this.autoSyncTimer)clearInterval(this.autoSyncTimer);if(this.timeout)clearTimeout(this.timeout);}
+ componentWillUnmount(){window.removeEventListener('keydown',this.onGlobalKeydown);this.unsubscribePersonalCloud?.();this.unsubscribeAI?.();if(this.autoSyncTimer)clearInterval(this.autoSyncTimer);if(this.timeout)clearTimeout(this.timeout);}
  onGlobalKeydown=(event:KeyboardEvent)=>{
    const dialog=document.querySelector('.modal-backdrop [role="dialog"],.mf-detail-drawer,.mf-ai-drawer');
    if(event.key==='Tab'&&dialog&&!document.querySelector('[role="listbox"],.mf-period-popover,.mf-single-calendar')){
@@ -637,6 +639,7 @@ class App extends React.Component<any,State>{
    this.setState({page:target,txReviewOnly:page==='review',txOrganize:page==='categories',quickAddOpen:false,
       month:newMonth, ...(enteringPlan?{planMonth:newMonth,planDay:newMonth===nowYM?iso(new Date()):newMonth+'-01'}:{}),
       showEntry:false,outcome:null},()=>{if(enteringPlan)void this.refreshPlanning();});
+   if(target==='intelligence'||target==='settings')void intelligenceRefresh(this);
    if(page==='settings'&&desktop?.backupStatus)void desktop.backupStatus().then(backupInfo=>this.setState({backupInfo})).catch(()=>{});
  }
  setSharedPeriod(mode:PeriodMode,start?:string,end?:string){
