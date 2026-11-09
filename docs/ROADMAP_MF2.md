@@ -1,6 +1,6 @@
 # MEU FINANCEIRO 2.0 — roadmap mestre, backlog e controle de avanço
 
-**Identificador:** MF2-ROADMAP • **Revisão:** 1.1 • **Base verificada:** 09/11/2026  
+**Identificador:** MF2-ROADMAP • **Revisão:** 1.2 — Rodada A documental • **Base verificada:** 09/11/2026  
 **Natureza:** especificação de produto + plano de engenharia + acompanhamento, **não** atestado de funcionalidades entregues.  
 **Contexto multiagente:** [README](ai-context/README.md) · [Estado comprovado](ai-context/CURRENT_STATE.md) · [Guia de análise](ai-context/ANALYSIS_PLAYBOOK.md) · [Catálogo de experiência](ai-context/PRODUCT_BLUEPRINT.md) · [Propostas criativas](ai-context/IDEA_REGISTER.md) · [Protocolo de atualização](ai-context/ROADMAP_UPDATE_RULES.md).
 
@@ -256,17 +256,26 @@ Não abrir novas abas para cada card, radar, chatbot, relatório ou objetivo. N�
 
 | Marco | Rodada A | Rodada B | Gate | Evidência mais recente / próximo passo |
 | --- | --- | --- | --- | --- |
-| MF2-00 | PREPARACAO_DOCUMENTAL | NAO_INICIADO | NAO_HOMOLOGADO | PR #16 c535cb0 U1–U3; obter checkpoint Work, CI+smoke Windows |
-| MF2-01 | PENDENTE | BLOQUEADO_G0 | NAO_HOMOLOGADO | E1_CONCILIATION_REPORT, 630/632 sem comparação completa |
-| MF2-02 | PENDENTE | BLOQUEADO_G1 | NAO_HOMOLOGADO | shared/finance-period-ledger.mjs já existe parcialmente |
-| MF2-03 | PENDENTE | BLOQUEADO_G2 | NAO_HOMOLOGADO | U4 solicitada, ainda não publicada/comprovada |
-| MF2-04 | PENDENTE | BLOQUEADO_G3 | NAO_HOMOLOGADO | fundamentos D1–D4 e U1–U3 presentes |
-| MF2-05 | PENDENTE | BLOQUEADO_G2_G3 | NAO_HOMOLOGADO | categorias/regras já existem em modo parcial |
-| MF2-06 | PENDENTE | BLOQUEADO_G2_G5 | NAO_HOMOLOGADO | planejamento e simulador parcial existentes |
-| MF2-07 | PENDENTE | BLOQUEADO_G6 | NAO_HOMOLOGADO | limites recorrentes U3, sem envelopes completos |
-| MF2-08 | PENDENTE | BLOQUEADO_G2_G7 | NAO_HOMOLOGADO | patrimônio/investimentos em escopo 2.0 |
-| MF2-09 | PENDENTE | BLOQUEADO_G2_G4_G8 | NAO_HOMOLOGADO | IA de demonstração; leitura/escrita real não homologada |
-| MF2-10 | PENDENTE | BLOQUEADO_G0_G9 | NAO_HOMOLOGADO | Release mais recente v0.9.4 |
+| MF2-00 | AGUARDANDO_DECISAO | NAO_INICIADO | NAO_HOMOLOGADO | PR #16 c535cb0 U1–U3; obter checkpoint Work, CI+smoke Windows · **Rodada A: revisão estática #17, sem testes novos; decisão/execução pendentes** ([relatório](ai-context/reviews/2026-11-09-MF2-ANALYSIS.md)) |
+| MF2-01 | ANALISADO | BLOQUEADO_G0 | NAO_HOMOLOGADO | E1_CONCILIATION_REPORT, 630/632 sem comparação completa · **Rodada A: revisão estática #17, sem testes novos; decisão/execução pendentes** ([relatório](ai-context/reviews/2026-11-09-MF2-ANALYSIS.md)) |
+| MF2-02 | ANALISADO | BLOQUEADO_G1 | NAO_HOMOLOGADO | shared/finance-period-ledger.mjs já existe parcialmente · **Rodada A: revisão estática #17, sem testes novos; decisão/execução pendentes** ([relatório](ai-context/reviews/2026-11-09-MF2-ANALYSIS.md)) |
+| MF2-03 | ANALISADO | BLOQUEADO_G2 | NAO_HOMOLOGADO | U4 solicitada, ainda não publicada/comprovada · **Rodada A: revisão estática #17, sem testes novos; decisão/execução pendentes** ([relatório](ai-context/reviews/2026-11-09-MF2-ANALYSIS.md)) |
+| MF2-04 | AGUARDANDO_DECISAO | BLOQUEADO_G3 | NAO_HOMOLOGADO | fundamentos D1–D4 e U1–U3 presentes · **Rodada A: revisão estática #17, sem testes novos; decisão/execução pendentes** ([relatório](ai-context/reviews/2026-11-09-MF2-ANALYSIS.md)) |
+| MF2-05 | AGUARDANDO_DECISAO | BLOQUEADO_G2_G3 | NAO_HOMOLOGADO | categorias/regras já existem em modo parcial · **Rodada A: revisão estática #17, sem testes novos; decisão/execução pendentes** ([relatório](ai-context/reviews/2026-11-09-MF2-ANALYSIS.md)) |
+| MF2-06 | AGUARDANDO_DECISAO | BLOQUEADO_G2_G5 | NAO_HOMOLOGADO | planejamento e simulador parcial existentes · **Rodada A: revisão estática #17, sem testes novos; decisão/execução pendentes** ([relatório](ai-context/reviews/2026-11-09-MF2-ANALYSIS.md)) |
+| MF2-07 | AGUARDANDO_DECISAO | BLOQUEADO_G6 | NAO_HOMOLOGADO | limites recorrentes U3, sem envelopes completos · **Rodada A: revisão estática #17, sem testes novos; decisão/execução pendentes** ([relatório](ai-context/reviews/2026-11-09-MF2-ANALYSIS.md)) |
+| MF2-08 | AGUARDANDO_DECISAO | BLOQUEADO_G2_G7 | NAO_HOMOLOGADO | patrimônio/investimentos em escopo 2.0 · **Rodada A: revisão estática #17, sem testes novos; decisão/execução pendentes** ([relatório](ai-context/reviews/2026-11-09-MF2-ANALYSIS.md)) |
+| MF2-09 | AGUARDANDO_DECISAO | BLOQUEADO_G2_G4_G8 | NAO_HOMOLOGADO | IA de demonstração; leitura/escrita real não homologada · **Rodada A: revisão estática #17, sem testes novos; decisão/execução pendentes** ([relatório](ai-context/reviews/2026-11-09-MF2-ANALYSIS.md)) |
+| MF2-10 | ANALISADO | BLOQUEADO_G0_G9 | NAO_HOMOLOGADO | Release mais recente v0.9.4 · **Rodada A: revisão estática #17, sem testes novos; decisão/execução pendentes** ([relatório](ai-context/reviews/2026-11-09-MF2-ANALYSIS.md)) |
+
+### Checkpoint da Rodada A — 09/11/2026, PR #17 (somente análise)
+
+**Documento de evidência:** [Relatório completo A0–A7](ai-context/reviews/2026-11-09-MF2-ANALYSIS.md) · [registro de ideias](ai-context/IDEA_REGISTER.md) · [log](ai-context/logs/2026-11-09-MF2-rodada-a-diagnostico.md). Base de código #16 `c535cb0`, base documental inicial #17 `ed6f49a`. **Inspeção remota do GitHub; sem acesso ao Work anterior, sem testes novos de app e sem homologação Windows/PWA.**
+
+- **MANTER:** MF2-00/01/02/03/10 como prioridades técnicas e gates inalterados; preservar investimentos já feitos em U1–U3, PWA e serviços existentes.
+- **MODIFICAR se aprovado:** MF2-04 home contextual e qualidade por indicador; MF2-05 inbox de revisão; MF2-06 ciclo salarial/Laboratório único; MF2-07 Flex como camada simples opcional; MF2-08 patrimônio decomposto; MF2-09 ferramentas tipadas com recibo. **Propostas ainda NÃO incorporadas como requisito novo.**
+- **ADIAR 2.1:** digest opt-in (IDEA-28). **REJEITAR por ora:** score único opaco e reescrita visual/arquitetural total (IDEA-29/30).
+- **Decisão exigida:** autorizar a primeira missão B de MF2-00, depois de reconciliar as alterações locais do Work; confirmar stack gradual, UX e limites de IA. Nenhuma linha da coluna Rodada B ou Gate foi promovida e nenhuma flag de migração foi alterada.
 
 **Na Rodada A:** atualizar coluna A, evidências, backlog e decisões; preservar B/gates como não executados. **Na Rodada B:** atualizar B + evidências do SHA/teste/PR após cada fatia; gate somente após homologação. **Integrador:** valida estado global e publica o progresso real; status em branch draft não representa publicação.
 
