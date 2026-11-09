@@ -2,16 +2,16 @@
 
 **Verificação via GitHub:** 09/11/2026 • **Status:** PREPARADO, não homologado nem mesclado na main.  
 **Documento de análise operacional:** este plano não autoriza merges em cadeia nem cutover financeiro.  
-**Candidata preparada:** \`integration/mf2-baseline-candidate-20261109\`, nascida do PR #17, SHA \`b3a53eaef9544cf8a86dee01d3565d8414c476d3\`.  
-**Revisões-base:** \`main\` e0d5131 (v0.9.4); PR #16 \`design/despezzas-d1-d4\` c535cb0; PR #17 documentação e Rodada A b3a53ea.
+**Candidata preparada:** `integration/mf2-baseline-candidate-20261109`, nascida do PR #17, SHA `b3a53eaef9544cf8a86dee01d3565d8414c476d3`.  
+**Revisões-base:** `main` e0d5131 (v0.9.4); PR #16 `design/despezzas-d1-d4` c535cb0; PR #17 documentação e Rodada A b3a53ea.
 
 ## 1. Achado principal
 
-O projeto não tem 17 implementações independentes esperando merge. Há uma **linhagem principal encadeada** e algumas frentes antigas **divergentes**. A documentação PR #17 é descendente direta de \`design/despezzas-d1-d4\` (#16). O código U1–U3, cloud/IA já incorporados à linhagem e a documentação da Rodada A podem ser usados como **uma única base candidata sem mesclar todos os PRs individualmente**.
+O projeto não tem 17 implementações independentes esperando merge. Há uma **linhagem principal encadeada** e algumas frentes antigas **divergentes**. A documentação PR #17 é descendente direta de `design/despezzas-d1-d4` (#16). O código U1–U3, cloud/IA já incorporados à linhagem e a documentação da Rodada A podem ser usados como **uma única base candidata sem mesclar todos os PRs individualmente**.
 
 ### Gráfico simplificado (ancestralidade comprovada)
 
-\`\`\`text
+```text
 main v0.9.4
    ├─ safety/cloud-migration-preflight (#1)
    │     └─ integration/v0.9.5-beta.1-inteligencia-circleci (#6)
@@ -25,13 +25,13 @@ main v0.9.4
    ├─ feat/inteligencia-interface-e1 (#2) — divergente
    ├─ ci/circleci-windows-manual (#4) — divergente
    └─ outras branches E2/CI (#3/#5) — divergentes da candidata
-\`\`\`
+```
 
 **Atenção:** "divergente" significa diferença de **histórico Git**, não significa necessariamente que o comportamento da branch esteja faltando na candidata. A PR #6 trouxe integrações e pode conter código equivalente com commits diferentes.
 
 ## 2. Comparações de ancestralidade já verificadas
 
-Comparado cada branch como \`base\` com \`head=docs/mf2-multi-agent-context-20261109\` (SHA b3a53ea):
+Comparado cada branch como `base` com `head=docs/mf2-multi-agent-context-20261109` (SHA b3a53ea):
 
 | Branch-base | Status do compare | Conclusão |
 | --- | --- | --- |
@@ -47,22 +47,22 @@ Comparado cada branch como \`base\` com \`head=docs/mf2-multi-agent-context-2026
 | ci/circleci-inteligencia-e1-e2 (#5) | diverged | Verificar equivalência antes de encerrar |
 
 **Não** executar merge #2/#3/#4/#5 só porque são divergentes. Primeiro comparar conteúdo/contratos com o código da candidata. Por exemplo:
-- #2: rota/UX Inteligência e teste \`tests/ai-ui.test.cjs\`; código equivalente pode ter sido integrado manualmente.
+- #2: rota/UX Inteligência e teste `tests/ai-ui.test.cjs`; código equivalente pode ter sido integrado manualmente.
 - #3/#5: OAuth/PKCE, Electron AI, shared/ai-policy e CI; verificar versões, configurações e testes sem retroceder proteção ou qualidade.
-- #4: \`.circleci/config.yml\` e \`build-windows.ps1\`; comparar scripts e workflow atual; nunca substituir pipeline posterior por versão antiga.
+- #4: `.circleci/config.yml` e `build-windows.ps1`; comparar scripts e workflow atual; nunca substituir pipeline posterior por versão antiga.
 - #1/#6–#16: já ancestrais; **não** cherry-pick novamente.
 
 ## 3. O que foi feito neste checkpoint
 
 - Foi criada **uma branch candidata não destrutiva**, a partir do HEAD publicado do PR #17, para servir de base de consolidação após a análise. Nenhum dos PRs existentes foi fechado/mesclado e a main não foi alterada.
 - Esta branch deve permanecer **CANDIDATA, não VALIDADA** até terminar MF2-00 (CI, smoke, integridade e exame de paridade). Código e documentação estão na mesma linhagem.
-- A branch auxiliar \`docs/mf2-market-benchmark-deep-dive-20261109\` foi criada anteriormente para não conflitar com Work; ainda não contém implementação de produto; **não é frente de execução** e deverá ser arquivada/encerrada somente após confirmação de conteúdo equivalente.
+- A branch auxiliar `docs/mf2-market-benchmark-deep-dive-20261109` foi criada anteriormente para não conflitar com Work; ainda não contém implementação de produto; **não é frente de execução** e deverá ser arquivada/encerrada somente após confirmação de conteúdo equivalente.
 - Preservar branches históricas durante a auditoria, para recuperação e proveniência.
 
 ## 4. Próximos passos obrigatórios antes de consolidar de verdade
 
 ### C0 — Congelar inventário, não a produção
-Rechecar GitHub e Work local: SHA, \`git status\`, branches e arquivos locais não publicados; pedir checkpoint. Se houver mudanças úteis fora da candidata, **salvá-las primeiro** em branch própria e log.
+Rechecar GitHub e Work local: SHA, `git status`, branches e arquivos locais não publicados; pedir checkpoint. Se houver mudanças úteis fora da candidata, **salvá-las primeiro** em branch própria e log.
 
 ### C1 — Comparação de equivalência
 Montar matriz das branches divergentes (#2/#3/#4/#5), arquivo/funcionalidade/teste, estado em candidata, risco de trazer código antigo, decisão: **PRESENTE / FALTA / SUBSTITUÍDO / EM CONFLITO / NÃO VERIFICADO**. Zero merges cegos.
