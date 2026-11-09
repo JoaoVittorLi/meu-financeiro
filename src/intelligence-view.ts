@@ -7,10 +7,37 @@ const INTELLIGENCE_CONTEXTS:{[name:string]:{label:string;description:string;ques
   budgets:{label:'Orçamentos',description:'Limites, histórico de categorias e oportunidades de ajuste.',questions:['Como definir limites mais inteligentes por categoria?','Quais categorias devo analisar antes de reduzir gastos?']},
   assistant:{label:'Simular compra',description:'Impacto de compras e parcelamentos no planejamento.',questions:['Como avaliar se uma nova compra cabe no meu orçamento?','O que devo comparar antes de parcelar uma compra?']},
   banks:{label:'Minhas contas',description:'Saldos bancários e qualidade das informações sincronizadas.',questions:['Quais dados preciso conferir antes de tomar uma decisão?','Como identificar divergências entre saldo e movimentações?']}
+,
+  settings:{label:'Configurações',description:'Aparência, preferências e recuperação de dados.',questions:['O que muda ao escolher esta preferência?','Qual a diferença entre exportação manual e cópia completa?']},
+  intelligence:{label:'Inteligência',description:'Rascunhos locais e testes autorizados de IA.',questions:['O que está disponível nesta etapa?','Que contexto deve ser revisado antes de uma análise?']}
 };
 function intelligenceContextFor(page:string){return INTELLIGENCE_CONTEXTS[page]||INTELLIGENCE_CONTEXTS.overview;}
+function intelligencePageScope(app:any,page:string=app.state.page){
+ const s=app.state,info=intelligenceContextFor(page);let period='Sem filtro de período';const filters:string[]=[];
+ if(page==='overview'||page==='transactions')period=page==='transactions'&&s.txReviewOnly?'Todos os períodos':spanLabel(s.overviewPeriod,dateSpan(s.overviewPeriod,s.customStart,s.customEnd));
+ if(page==='planning')period=prettyMonth(s.planMonth);
+ if(page==='budgets')period=prettyMonth(s.month);
+ if(page==='assistant')period='Cenário atual';
+ if(page==='banks')period='Referências das instituições';
+ if(page==='transactions'){
+  if(s.query?.trim())filters.push('Busca: '+s.query.trim().slice(0,100));
+  if(s.bankFilter)filters.push('Conta filtrada');
+  if(s.txReviewOnly)filters.push('A revisar');
+  if(s.txOrganize)filters.push('Categorias e regras');
+  if(s.txSelected?.length)filters.push(s.txSelected.length+' selecionada(s)');
+  if(s.detail)filters.push('Movimentação aberta');
+ }
+ if(page==='planning'&&s.planTerm?.trim())filters.push('Busca: '+s.planTerm.trim().slice(0,100));
+ return {page,label:info.label,period,filters,mode:s.mode==='demo'?'Demonstração':'Pessoal'};
+}
+function intelligenceNextTab(current:string,key:string){
+ const ids=['today','chat','actions'],index=Math.max(0,ids.indexOf(current));
+ if(key==='Home')return ids[0];if(key==='End')return ids[2];
+ if(key==='ArrowRight')return ids[(index+1)%ids.length];
+ if(key==='ArrowLeft')return ids[(index+ids.length-1)%ids.length];return null;
+}
 function intelligencePrepare(app:any,question:string){
-  app.setState({page:'intelligence',intelligenceTab:'chat',intelligenceDraft:question,intelligencePanelOpen:false,detail:null,planSelected:null});
+  app.setState({page:'intelligence',intelligenceTab:'chat',intelligenceDraft:question,intelligenceDraftScope:app.state.intelligencePanelOpen&&app.state.intelligenceContextSnapshot?app.state.intelligenceContextSnapshot:intelligencePageScope(app),intelligencePanelOpen:false,detail:null,planSelected:null});
 }
 function intelligenceExampleCard(app:any,id:string,title:string,description:string,icon:string,question:string){
   return h('div',{className:'mf-ai-example-card',key:id},
@@ -38,14 +65,15 @@ function renderIntelligenceView(app:any){
     h('div',{className:'mf-ai-chat-main'},
       h('div',{className:'mf-ai-chat-hero'},h('span',{className:'mf-ai-orb'},h(Icon,{name:'spark',size:25})),
         h('h2',{},'Prepare uma pergunta.'),
-        h('p',{},'Este campo prepara apenas um rascunho local. Para testes de IA, abra o laboratório abaixo.')),
+        h('p',{},'Escreva e revise um rascunho local. Os testes de IA ficam no laboratório, com dados fictícios.')),
+      s.intelligenceDraftScope?h('div',{className:'mf-ai-context-meta'},h('span',{},'Rascunho de '+s.intelligenceDraftScope.label),h('span',{},s.intelligenceDraftScope.period)):null,
       s.intelligencePreparedQuestion?h('div',{className:'mf-ai-prepared',role:'status'},
         h('span',{className:'micro-label'},'PERGUNTA PREPARADA · NÃO ENVIADA'),
         h('p',{},s.intelligencePreparedQuestion),
         h('small',{},'Este rascunho não é enviado ao Sol. Use os casos fictícios autorizados abaixo; nenhuma chamada ocorreu aqui.')):null,
       h('div',{className:'mf-ai-composer'},h('label',{className:'mf-ai-composer-label',htmlFor:'mf-ai-draft'},'Sua pergunta'),
         h('textarea',{id:'mf-ai-draft',value:s.intelligenceDraft||'',rows:3,maxLength:750,placeholder:'Ex.: Quanto posso investir sem comprometer meus pagamentos?',onChange:(e:any)=>app.setState({intelligenceDraft:e.target.value})}),
-        h('span',{className:'mf-ai-compose-actions'},h('small',{},'Prévia local · sem conexão com IA'),
+        h('span',{className:'mf-ai-compose-actions'},h('small',{},'Rascunho local · não enviado'),
           h('button',{type:'button',className:'primary-button',disabled:!(s.intelligenceDraft||'').trim(),onClick:()=>app.setState({intelligencePreparedQuestion:(s.intelligenceDraft||'').trim(),intelligenceDraft:''})},
             'Preparar pergunta',h(Icon,{name:'arrow',size:16}))))),
     h('aside',{className:'mf-ai-prompts'},
@@ -71,31 +99,35 @@ function renderIntelligenceView(app:any){
   return h('section',{className:'section mf-intelligence-page','aria-label':'Inteligência financeira'},
     h('div',{className:'mf-ai-intro'},
       h('div',{},h('span',{className:'micro-label'},'INTELIGÊNCIA FINANCEIRA'),
-        h('h2',{},'Entenda os próximos passos.'),
+        h('h2',{},'Seu espaço de análise'),
         h('p',{},'Hoje, conversa e plano de ação — com dados demonstrativos identificados.')),
       h('span',{className:'mf-ai-preview-label'},h(Icon,{name:'shield',size:15}),'Prévia · dados fictícios')),
     h('div',{className:'mf-ai-tabbar',role:'tablist','aria-label':'Seções da Inteligência'},
       tabs.map((item:any)=>h('button',{type:'button',key:item.id,role:'tab','aria-selected':tab===item.id,
-        className:tab===item.id?'active':'',onClick:()=>app.setState({intelligenceTab:item.id})},item.label))),
-    section,
+        id:'mf-ai-tab-'+item.id,'aria-controls':'mf-ai-section-'+item.id,tabIndex:tab===item.id?0:-1,className:tab===item.id?'active':'',onClick:()=>app.setState({intelligenceTab:item.id}),onKeyDown:(e:any)=>{const next=intelligenceNextTab(item.id,e.key);if(next){e.preventDefault();app.setState({intelligenceTab:next},()=>document.getElementById('mf-ai-tab-'+next)?.focus());}}},item.label))),
+    h('div',{id:'mf-ai-section-'+tab,role:'tabpanel','aria-labelledby':'mf-ai-tab-'+tab,tabIndex:0},section),
     tab==='chat'?h('details',{className:'mf-ai-lab-disclosure'},h('summary',{},h(Icon,{name:'settings',size:17}),h('span',{},'Laboratório de Inteligência'),h('small',{},'Conexão, memória, contexto fictício e testes opcionais')),
        renderIntelligenceConnection(app),renderIntelligencePrivacy(app),renderIntelligenceFinancialContext(app)):null);
 }
 function renderIntelligencePanel(app:any){
   if(!app.state.intelligencePanelOpen)return null;
   const info=intelligenceContextFor(app.state.intelligenceContext);
+  const scope=app.state.intelligenceContextSnapshot||intelligencePageScope(app,app.state.intelligenceContext);
   return h('div',{className:'mf-ai-backdrop',role:'presentation',onMouseDown:(e:any)=>{if(e.target===e.currentTarget)app.setState({intelligencePanelOpen:false});}},
     h('aside',{className:'mf-ai-drawer',role:'dialog','aria-modal':'true','aria-label':'Assistente contextual de '+info.label},
       h('div',{className:'mf-ai-drawer-head'},
         h('div',{},h('span',{className:'micro-label'},'ASSISTENTE CONTEXTUAL'),h('h2',{},info.label)),
         h('button',{type:'button',className:'close-button','aria-label':'Fechar assistente',onClick:()=>app.setState({intelligencePanelOpen:false})},'×')),
       h('div',{className:'mf-ai-drawer-body'},
+        h('div',{className:'mf-ai-context-meta'},h('span',{},scope.label),h('span',{},scope.period),h('span',{},scope.mode),...scope.filters.map((filter:string)=>h('span',{key:filter},filter))),
         h('div',{className:'mf-ai-preview-notice'},h(Icon,{name:'shield',size:20}),
-          h('div',{},h('strong',{},'Prévia sem conexão'),h('p',{},'O assistente ainda não acessa seus dados nem envia perguntas ao GPT.'))),
+          h('div',{},h('strong',{},'Rascunho local'),h('p',{},'Este painel não consulta contas nem envia perguntas ao GPT. Os testes autorizados ficam no laboratório.'))),
         h('p',{className:'muted-desc'},info.description),
-        h('h3',{},'O que você poderá perguntar'),
+        h('h3',{},'Sugestões para esta página'),
         info.questions.map((q:string,i:number)=>h('button',{type:'button',className:'mf-ai-context-prompt',key:i,onClick:()=>intelligencePrepare(app,q)},
           h('span',{},q),h(Icon,{name:'arrow',size:16}))),
+        h('label',{className:'mf-ai-context-composer'},h('span',{},'Rascunho da pergunta'),h('textarea',{value:app.state.intelligenceDraft||'',rows:3,maxLength:750,placeholder:'Escreva o que deseja analisar…',onChange:(e:any)=>app.setState({intelligenceDraft:e.target.value})})),
+        h('button',{type:'button',className:'primary-button full',disabled:!(app.state.intelligenceDraft||'').trim(),onClick:()=>intelligencePrepare(app,app.state.intelligenceDraft.trim())},'Preparar na Inteligência'),
         h('div',{className:'mf-ai-drawer-footer'},h('button',{type:'button',className:'primary-button full',onClick:()=>app.setState({page:'intelligence',intelligenceTab:'chat',intelligencePanelOpen:false,detail:null,planSelected:null})},'Abrir Inteligência')))));
 }
 function renderIntelligenceSettings(app:any){

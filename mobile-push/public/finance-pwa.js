@@ -6,7 +6,7 @@ if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js').catch
 const pwaEl=id=>document.getElementById(id);
 const pwaTitles={
   overview:'Visão geral',transactions:'Movimentações',planning:'Planejamento',
-  budgets:'Orçamentos',simulate:'Simular compra',accounts:'Minhas contas',intelligence:'Inteligência'
+  budgets:'Orçamentos',simulate:'Simular compra',accounts:'Minhas contas',intelligence:'Inteligência',settings:'Configurações'
 };
 const pwaState={active:'overview',busy:false,loaded:false,nextOffset:null,shown:0,total:0,manualBusy:false,manualLoaded:false,manualOffset:null,manualShown:0};
 function pwaMoney(value){

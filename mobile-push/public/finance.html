@@ -9,7 +9,9 @@
 <title>Meu Financeiro · Prévia PWA</title>
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="icon" href="/icon-192.png">
+<script src="/appearance.js"></script>
 <link rel="stylesheet" href="/finance.css">
+<link rel="stylesheet" href="/design-system.css">
 <script src="/finance.js" defer></script>
 <script src="/finance-pwa.js" defer></script>
 <script src="/finance-analytics.js" defer></script>
@@ -19,6 +21,7 @@
 <script src="/finance-e1-audit.js" defer></script>
 <script src="/finance-planning-calendar.js" defer></script>
 <script src="/finance-ai.js" defer></script>
+<script src="/finance-appearance.js" defer></script>
 </head>
 <body>
 <div class="finance-app">
@@ -34,9 +37,11 @@
       <button type="button" data-view="budgets">Orçamentos</button>
       <button type="button" data-view="simulate">Simular compra</button>
       <button type="button" data-view="accounts">Minhas contas</button>
+      <button type="button" data-view="settings">Configurações</button>
       <button type="button" data-view="intelligence">✦ Inteligência</button>
     </nav>
     <div class="finance-sidebar-bottom">
+      <label class="mf-appearance">Aparência <select id="financeAppearance" data-appearance="select" aria-label="Tema do aplicativo"><option value="light">Claro</option><option value="dark">Escuro</option><option value="system">Sistema</option></select></label>
       <a href="/">Notificações</a>
       <span>Preview · somente leitura bancária</span>
     </div>
@@ -260,6 +265,12 @@
       <p class="finance-safe">Não serão solicitadas credenciais do ChatGPT no navegador nem armazenados tokens no PWA. Os testes com GPT-6.1 Sol são iniciados pelo Electron, com autorização local.</p>
     </section>
 
+    <section id="view-settings" class="finance-view" aria-label="Configurações" hidden>
+      <article class="finance-card"><h2>Aparência</h2><p class="finance-muted">Escolha o tema para este dispositivo.</p>
+        <label class="mf-appearance">Tema em Configurações <select id="financeSettingsAppearance" data-appearance="select" aria-label="Tema em Configurações"><option value="light">Claro</option><option value="dark">Escuro</option><option value="system">Acompanhar o sistema</option></select></label></article>
+      <article class="finance-card"><h2>Dados e recuperação</h2><p class="finance-muted">A cópia completa e a restauração são feitas no aplicativo Windows. A PWA usa o acesso protegido e mantém as limitações de edição indicadas em cada tela.</p></article>
+      <article class="finance-card"><h2>Notificações</h2><p class="finance-muted">Consulte os controles disponíveis para este dispositivo.</p><a href="/">Abrir preferências de notificações</a></article>
+    </section>
     <dialog id="personalEditDialog" class="finance-edit-dialog" aria-labelledby="personalEditTitle">
       <form id="personalEditForm">
         <h2 id="personalEditTitle">Editar registro pessoal</h2>
