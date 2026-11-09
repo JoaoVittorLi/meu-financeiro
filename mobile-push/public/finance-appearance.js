@@ -7,6 +7,8 @@
   }
   const settingsTheme = document.getElementById('financeSettingsAppearance');
   if(settingsTheme){settingsTheme.value=window.MFAppearance.get();settingsTheme.addEventListener('change',()=>window.MFAppearance.set(settingsTheme.value));}
+  const viewTitle=document.getElementById('viewTitle'),breadcrumb=document.getElementById('financeBreadcrumb');
+  if(viewTitle&&breadcrumb){const sync=()=>{breadcrumb.textContent=viewTitle.textContent;};sync();new MutationObserver(sync).observe(viewTitle,{childList:true,subtree:true,characterData:true});}
   let draft = '';
   const labels = { overview:'Visão geral', transactions:'Movimentações', planning:'Planejamento', budgets:'Orçamentos', simulate:'Simular compra', accounts:'Minhas contas', intelligence:'Inteligência',settings:'Configurações' };
   const prompts = {
