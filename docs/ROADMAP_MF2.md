@@ -309,3 +309,13 @@ Escala de auditoria: **APROVADO / APROVADO_COM_PENDENCIAS / REPROVADO / NAO_HOMO
 5. Após autorização, iniciar **Rodada B: MF2-00**, com build e smoke do candidato, e prosseguir pelos gates.
 
 O esforço sugerido ao Work é **Alto na primeira análise arquitetural ampla, Médio para investigações por módulo, Leve para checkpoints**. O Chat pode preparar pesquisas, priorização e prompts sem consumir Work. Consultar [WORK_PROMPT](ai-context/WORK_PROMPT.md).
+
+
+## Anexo documental de 09/11/2026 — consolidação e benchmark aprofundado (Rodada A)
+
+**Status:** proposta documental na branch candidata \`integration/mf2-baseline-candidate-20261109\`, derivada da revisão mais recente do PR #17. **Nenhum gate de execução promovido.** Este adendo não altera escopo previamente aprovado nem declara código testado.
+
+- [BRANCH_CONSOLIDATION_PLAN](ai-context/BRANCH_CONSOLIDATION_PLAN.md): a linhagem #1→#16→#17 já é majoritariamente ancestral; não mesclar PRs antigos cegamente. Branches de Inteligência/CI divergentes (#2/#3/#4/#5) exigem diff funcional e testes antes de encerrar; Work local pode ter mudanças não publicadas. A nova branch é **CANDIDATA**, não baseline homologada.
+- [MARKET_FEATURES_DEEP_DIVE](ai-context/MARKET_FEATURES_DEEP_DIVE.md): especificação de dez experiências com referência de mercado, fluxo do usuário, MVP, contratos, dependências e testes. São **recomendações para a Rodada A**, não novas entregas aprovadas.
+- Primeiro gate técnico continua **MF2-00**: recuperar checkpoint do Work, validar equivalência de branches divergentes, executar CI Windows e smoke no SHA final, confirmar documentação e rollback.
+- Decisões de UX/pesquisa não podem acionar automaticamente a Rodada B. Integrador atualiza CURRENT_STATE após verificação; branch candidata não altera \`main\`.

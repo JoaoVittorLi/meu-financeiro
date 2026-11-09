@@ -52,3 +52,12 @@ Um único integrador é responsável por CURRENT_STATE e atualizações dos gate
 ## Próximo checkpoint a pedir ao Work ativo
 
 Perguntar sem alterar nada: tarefa atual; branch e SHA; alterações locais não commitadas; U4 e IA realmente implementadas; últimos testes executados; riscos; arquivos em uso; próxima ação. Publicar código e logs em PR apropriado **somente após o agente concluir sua execução em andamento**, sem interrompê-la.
+
+
+## 09/11/2026 — frente de consolidação candidata
+
+- **Branch criada:** \`integration/mf2-baseline-candidate-20261109\`, derivada do HEAD do PR #17 (\`b3a53ea\`) para oferecer ponto único **candidato** com código histórico U1–U3 e documentação da Rodada A.
+- **Sem merge de PRs:** #1–#17 permanecem rastreáveis; \`main\` continua 0.9.4; nenhum gate foi aprovado.
+- **Ownership desta frente:** documentação de plano de branches e pesquisa de mercado; não modificar código do Work em andamento.
+- **Estado de análise:** consultar BRANCH_CONSOLIDATION_PLAN.md e MARKET_FEATURES_DEEP_DIVE.md nesta branch.
+- **Próximo integrador:** verificar alterações locais do Work e PR17 mais novo; se moverem, comparar/reconciliar antes de usar a branch candidata para execução. Só marcar G0 após testes/homologação.
