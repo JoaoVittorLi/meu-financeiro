@@ -29,3 +29,7 @@ GitHub reconfirmado: main e0d5131 v0.9.4; PR #16 SHA c535cb0 U1–U3; PR #17 doc
 1. O novo Work faz Rodada A: reconciliar Work anterior, auditar produto, benchmark e ideias, publicar review e atualizar apenas status analítico.
 2. Usuário/Chat arquiteto escolhe recomendações e autoriza a primeira missão B.
 3. Executar MF2-00 com preflight/Windows homologado e depois gates em ordem, atualizando roadmap+log em todo PR.
+
+## Complemento de governança no mesmo PR
+
+Adicionados AGENTS.md na raiz, .github/pull_request_template.md, templates de entrega/análise e prompts prontos de recuperação, Rodada A e Rodada B em WORK_PROMPT.md. O PR continua exclusivamente Markdown e não altera nenhum arquivo executável.

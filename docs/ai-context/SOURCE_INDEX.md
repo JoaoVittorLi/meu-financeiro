@@ -50,3 +50,10 @@ Os arquivos listados podem evoluir. O índice é um mapa de navegação, não um
 - docs/ai-context/IDEA_REGISTER.md — hipóteses/propostas ainda não aprovadas.
 - docs/ai-context/ROADMAP_UPDATE_RULES.md — atualização obrigatória contínua.
 - docs/ai-context/reviews/ — análises datadas.
+
+## Enforcements e templates Markdown
+
+- AGENTS.md — ponto de entrada reconhecível no root do repositório para agentes de programação.
+- .github/pull_request_template.md — checklist documental de PR para roadmap+log e distinção de evidências.
+- docs/ai-context/templates/DELIVERY_LOG_TEMPLATE.md — log de implementação.
+- docs/ai-context/templates/ANALYSIS_REPORT_TEMPLATE.md — estrutura de review de Rodada A.

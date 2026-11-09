@@ -42,6 +42,11 @@ Uma entrega pode estar **implementada** e continuar **não homologada**. Um PR d
 
 ## Navegação
 
+- [AGENTS.md na raiz](../../AGENTS.md) — regras reconhecíveis por agentes de desenvolvimento.
+- [.github/pull_request_template.md](../../.github/pull_request_template.md) — checklist obrigatório ao abrir PRs.
+- [Templates de log e análise](templates/) — modelos para novas entregas e reviews.
+
+
 | Documento | Responsabilidade |
 | --- | --- |
 | [CURRENT_STATE](CURRENT_STATE.md) | Snapshot factual e pendências |
