@@ -18,7 +18,7 @@ function styledSelect(){
  const doc={body:{},addEventListener(){},removeEventListener(){}};
  const win={innerWidth:1440,innerHeight:900,addEventListener(){},removeEventListener(){}};
  const ReactDOM={createPortal:node=>({portal:true,node})};
- return {Class:new Function('React','h','document','window','ReactDOM',code+';return StyledSelect;')(React,h,doc,win,ReactDOM)};
+ return {Class:new Function('React','h','document','window','ReactDOM','Icon',code+';return StyledSelect;')(React,h,doc,win,ReactDOM,props=>h('svg',props))};
 }
 test('B01 portal selector stays above detail drawer and AI overlay',()=>{
  const layer=Number(css.match(/--mf-z-select-portal:\s*(\d+)/)?.[1]);
