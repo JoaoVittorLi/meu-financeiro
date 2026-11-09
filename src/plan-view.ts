@@ -10,9 +10,9 @@ function pFilterTransactions(app:any){
  const allBank=s.mode==='demo'?[]:s.bank.data.transactions.filter((i:BankTx)=>i.date.slice(0,7)===month);
  // In the consolidated view, show a linked payment under its plan, not as a second purchase.
  const bank=allBank.filter((i:BankTx)=>mode==='bank'||!linked.has(i.accountId+'|'+i.id)).map((i:BankTx)=>({key:'bank:'+i.accountId+'|'+i.id,type:'bank',kind:i.amount>0?'income':'expense',date:i.date,title:i.customTitle||i.merchant||i.description,original:i.description,category:i.category,amount:Math.abs(i.amount),status:i.status==='POSTED'?'paid':'pending',item:i}));
- const manualLinked=new Set<string>(allBank.map((b:BankTx)=>b.linkedManualId).filter(Boolean) as string[]);
+ const manualLinked=new Set<string>(allBank.filter((b:BankTx)=>b.status==='POSTED').map((b:BankTx)=>b.linkedManualId).filter(Boolean) as string[]);
  const manual=s.data.transactions.filter((i:Tx)=>i.date.slice(0,7)===month&&!manualLinked.has(i.id)).map((i:Tx)=>({key:'manual:'+i.id,type:'manual',kind:i.kind,date:i.date,title:i.description,original:'',category:i.category,amount:i.amount,status:'paid',item:i}));
- return [...planned,...bank,...manual].filter(x=>(mode==='all'||(mode==='planned'&&x.type==='planned')||(mode==='bank'&&x.type==='bank')||(mode==='pending'&&x.type==='planned'&&(x.status==='pending'||x.status==='overdue'))||(mode==='paid'&&x.status==='paid'))&&(!t||[x.title,x.original,x.category].join(' ').toLowerCase().includes(t))).sort((a,b)=>b.date.localeCompare(a.date)||a.key.localeCompare(b.key)).slice(0,350);
+ return [...planned,...bank,...manual].filter(x=>(mode==='all'||(mode==='planned'&&x.type==='planned')||(mode==='bank'&&x.type==='bank')||(mode==='pending'&&x.type==='planned'&&(x.status==='pending'||x.status==='overdue'))||(mode==='paid'&&x.status==='paid'))&&(!t||[x.title,x.original,x.category].join(' ').toLowerCase().includes(t))).sort((a,b)=>a.date.localeCompare(b.date)||a.key.localeCompare(b.key));
 }
 // UI-03: upcoming commitments from canonical planning state, without recalculating balances.
 function pUpcoming(app:any){
@@ -20,22 +20,45 @@ function pUpcoming(app:any){
  const until=iso(endDate);
  const due=app.state.planning.items.filter((x:PlanItem)=>x.status==='planned'&&x.kind==='expense'&&x.remaining>0&&x.dueDate>=today&&x.dueDate<=until).sort((a:PlanItem,b:PlanItem)=>a.dueDate.localeCompare(b.dueDate)||String(a.id).localeCompare(String(b.id)));
  const total=due.reduce((sum:number,item:PlanItem)=>sum+item.remaining,0);
+ if(app.state.planning.generatedAt===''&&!app.state.planning.items.length)return h('section',{className:'p-upcoming'},h('h2',{},'Próximos sete dias'),h('p',{className:'p-upcoming-empty'},'Atualize para carregar os compromissos.'));
  return h('section',{className:'p-upcoming','aria-label':'Compromissos dos próximos sete dias'},
   h('div',{className:'p-section-heading'},h('div',{},h('h2',{},'Próximos sete dias'),h('p',{},'Valores pendentes cadastrados · '+pDate(today)+' a '+pDate(until))),h('strong',{},due.length?fmt(total):'Nenhum vencimento')),
   due.length?h('div',{className:'p-upcoming-list'},due.slice(0,5).map((item:PlanItem)=>h('button',{type:'button',className:'p-upcoming-row',key:item.id,onClick:()=>app.openPlanDetail(item.id)},
     h('span',{},h('b',{},item.title),h('small',{},pDate(item.dueDate)+' · '+item.category)),h('strong',{},fmt(item.remaining)))),due.length>5?h('p',{className:'muted-desc'},'Mais '+(due.length-5)+' compromisso(s) neste intervalo. Consulte a agenda completa abaixo.'):null):
    h('p',{className:'p-upcoming-empty'},'Nenhuma despesa pendente com vencimento nos próximos sete dias. Consulte a agenda para outros períodos.'));
 }
-function pSummary(app:any){const s=app.state,p=s.planning,items=p.items,today=iso(new Date()),future=items.filter((x:PlanItem)=>x.status==='planned'&&x.remaining>0);
- const pendingExpense=future.filter((x:PlanItem)=>x.kind==='expense').reduce((sum:number,x:PlanItem)=>sum+x.remaining,0);
- const pendingIncome=future.filter((x:PlanItem)=>x.kind==='income'&&x.certainty==='confirmed').reduce((sum:number,x:PlanItem)=>sum+x.remaining,0);
- const overdue=future.filter((x:PlanItem)=>x.kind==='expense'&&x.dueDate<today).length;
- const end=p.projection.rows?.at(-1);
- const data=[{icon:'wallet',label:'Saldo de referência',value:p.projection.anchor,desc:p.projection.source==='bank'?'Último saldo recebido das contas':'Calculado dos lançamentos manuais'},
- {icon:'trend',label:'Receitas previstas',value:pendingIncome,desc:'Valores confirmados ainda esperados'},
- {icon:'calendar',label:'Compromissos pendentes (todos)',value:pendingExpense,desc:overdue?`${overdue} vencido(s)`: 'Pagamentos que ainda aguardam quitação'},
- {icon:'chart',label:'Saldo ao fim do período',value:end?.closing??p.projection.anchor,desc:end?.date?pDate(end.date):'Sem projeção'}];
- return h('div',{className:'p-summary'},data.map((x,i)=>h('div',{className:'p-summary-card '+(i===3?'is-projected':''),key:x.label},h('span',{className:'p-summary-icon'},h(Icon,{name:x.icon,size:18})),h('small',{},x.label),h('strong',{className:i===3&&x.value<0?'bad-text':''},fmt(x.value)),h('span',{},x.desc))));}
+function pMonthSummary(items:PlanItem[],month:string,today:string){
+ const until=advanceDate(today,6),open=items.filter(x=>x.status==='planned'&&x.remaining>0&&x.dueDate.slice(0,7)===month);
+ const expenses=open.filter(x=>x.kind==='expense'),overdue=expenses.filter(x=>x.dueDate<today),soon=expenses.filter(x=>x.dueDate>=today&&x.dueDate<=until);
+ const total=(xs:PlanItem[])=>xs.reduce((sum,x)=>sum+x.remaining,0);
+ return {expense:total(expenses),income:total(open.filter(x=>x.kind==='income'&&x.certainty==='confirmed')),overdue:total(overdue),overdueCount:overdue.length,soon:total(soon),soonCount:soon.length};
+}
+function pSummary(app:any){const s=app.state,p=s.planning,summary=pMonthSummary(p.items,s.planMonth,iso(new Date())),loaded=!!p.generatedAt||p.items.length>0;
+ const data=[{label:'Despesas a pagar',value:summary.expense,desc:'Restante pendente · '+prettyMonth(s.planMonth)},
+ {label:'Receitas a receber',value:summary.income,desc:'Somente previsões confirmadas no mês'},
+ {label:'Vencidos no mês',value:summary.overdue,desc:summary.overdueCount+' compromisso(s) aguardando pagamento'},
+ {label:'Próximos sete dias no mês',value:summary.soon,desc:summary.soonCount+' compromisso(s) no intervalo'}];
+ return h('div',{className:'p-summary u2-metrics'},data.map(x=>h('article',{className:'u2-metric',key:x.label},h('span',{},x.label),h('strong',{},loaded?fmt(x.value):'—'),h('small',{},loaded?x.desc:'Agenda ainda não carregada'))));
+}
+function pLedgerRow(app:any,r:any){
+ const category=app.getCategories().find((c:CategoryInfo)=>c.name===r.category);
+ return h('button',{type:'button',className:'p-ledger-row',key:r.key,onClick:()=>r.type==='planned'?app.openPlanDetail(r.item.id):r.type==='bank'?app.openPlanBankDetail(r.item):app.openManualDetail(r.item)},
+ h('span',{className:'p-ledger-icon',style:{background:category?category.color+'25':undefined}},category?.emoji||'🧾'),
+ h('span',{className:'p-ledger-name'},h('strong',{},r.title),h('small',{},r.category+' · '+(r.type==='planned'?'Planejado':r.type==='bank'?'Banco':'Manual')),r.original&&r.original!==r.title?h('small',{},r.original):null),
+ h('span',{className:'p-ledger-date'},pDate(r.date)),pChip(r.status),h('span',{className:'u2-ledger-amount'},h('strong',{className:r.kind==='income'?'good-text':'bad-text'},(r.kind==='income'?'+':'−')+fmt(r.amount)),r.type==='planned'&&r.item.remaining>0?h('small',{},fmt(r.item.remaining)+' restante'):null),h('span',{className:'p-row-arrow'},h(Icon,{name:'chevron-right',size:16})));
+}
+function pAgenda(app:any,rows:any[]){
+ const shown=rows.slice(0,350),groups=[...new Set(shown.map(r=>r.date))];
+ return h('div',{className:'u2-agenda'},groups.map(date=>h('section',{className:'u2-day-group',key:date},h('h3',{},pShort(date)+' · '+pDate(date),h('span',{},rows.filter(r=>r.date===date).length+' registro(s)')),shown.filter(r=>r.date===date).map(r=>pLedgerRow(app,r)))),rows.length>350?h('p',{className:'muted-desc'},'Exibindo os primeiros 350 de '+rows.length+' registros. Refine os filtros para consultar os demais.'):null);
+}
+function pCalendar(app:any,rows:any[]){
+ const month=app.state.planMonth,first=new Date(month+'-01T12:00:00').getDay(),days=Number(endOfMonth(month).slice(-2));
+ const selected=app.state.planDay,dayRows=rows.filter(r=>r.date===selected);
+ return h('div',{className:'u2-calendar'},h('p',{className:'muted-desc'},'Selecione um dia para consultar os registros. Os filtros acima também se aplicam ao calendário.'),
+ h('div',{className:'u2-calendar-week','aria-hidden':'true'},['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'].map(day=>h('span',{},day))),
+ h('div',{className:'u2-calendar-grid','aria-label':'Dias de '+prettyMonth(month)},Array.from({length:first},(_,i)=>h('span',{key:'blank'+i})),Array.from({length:days},(_,i)=>{const date=month+'-'+String(i+1).padStart(2,'0'),count=rows.filter(r=>r.date===date).length;return h('button',{type:'button',key:date,'aria-pressed':selected===date,'aria-label':pDate(date)+' · '+count+' registro(s)',onClick:()=>app.setState({planDay:date})},h('b',{},i+1),h('small',{},count?count+' registro(s)':'—'));})),
+ h('h3',{className:'u2-calendar-selected'},pDate(selected)+' · '+dayRows.length+' registro(s)'),dayRows.length?pAgenda(app,dayRows):h('p',{className:'p-empty-list'},'Nenhum registro para este dia e estes filtros.'));
+}
 // The graph marker is the slider: pointer/touch and keyboard select days across the full month.
 function pTimeline(app:any){
  const s=app.state,today=iso(new Date()),month=s.planMonth,start=month+'-01',last=endOfMonth(month),max=Number(last.slice(-2));
@@ -131,26 +154,21 @@ function pMonthNavigation(app:any){const month=app.state.planMonth;
  return h('div',{className:'p-month-arrows','aria-label':'Mês da agenda'},h('button',{type:'button',disabled:month<=nowYM,onClick:()=>app.changePlanMonth(-1),'aria-label':'Mês anterior'},h(Icon,{name:'chevron-left',size:16})),h('strong',{},prettyMonth(month)),h('button',{type:'button',disabled:month>=shiftMonth(nowYM,12),onClick:()=>app.changePlanMonth(1),'aria-label':'Próximo mês'},h(Icon,{name:'chevron-right',size:16})));
 }
 function renderPlanningView(app:any){const s=app.state;if(s.mode==='demo')return h('section',{className:'p-empty'},h('h2',{},'Planejamento para suas finanças reais'),h('p',{},'Saia da demonstração para cadastrar e acompanhar seus compromissos.'),h('button',{className:'primary-button',onClick:()=>app.toggleMode()},'Ver meus dados'));
- const p=s.planning,today=iso(new Date()),rows=pFilterTransactions(app);
- return h('div',{className:'p-main'},
-  h('section',{className:'p-hero'},h('div',{},h('span',{className:'micro-label'},'SUA AGENDA FINANCEIRA'),h('h2',{},'Sua agenda'),h('p',{},'Compromissos pendentes e realizados em uma única agenda.')),h('div',{className:'p-hero-actions'},h('button',{className:'primary-button',onClick:()=>app.openPlan(undefined,'expense')},'＋ Planejar despesa'),h('button',{className:'ghost-button',onClick:()=>app.openPlan(undefined,'income')},'＋ Prever receita'),h('button',{className:'p-sync',disabled:s.bankBusy||s.planBusy,onClick:()=>app.syncBank(false)},h(Icon,{name:'refresh',size:15}),s.bankBusy?'Atualizando…':'Atualizar'))),
+ const p=s.planning,today=iso(new Date()),rows=pFilterTransactions(app),presentation=s.planPresentation||'agenda';
+ return h('div',{className:'p-main u2-planning'},
+  h('section',{className:'p-hero'},h('div',{},h('span',{className:'micro-label'},'SUA AGENDA FINANCEIRA'),h('h2',{},'Organize o próximo passo.'),h('p',{},'Vencimentos, pagamentos e previsões no mesmo lugar.')),h('div',{className:'p-hero-actions'},h('button',{className:'primary-button',onClick:()=>app.openPlan(undefined,'expense')},'＋ Planejar despesa'),h('button',{className:'ghost-button',onClick:()=>app.openPlan(undefined,'income')},'＋ Prever receita'),h('button',{className:'p-sync',disabled:s.bankBusy||s.planBusy,onClick:()=>app.syncBank(false)},h(Icon,{name:'refresh',size:15}),s.bankBusy?'Atualizando…':'Atualizar'))),
   pUpcoming(app),
   pSummary(app),
   p.projection.reference?.quality==='stale'?h('div',{className:'p-warning'},'O último saldo recebido tem mais de 24 horas. Atualize suas contas antes de usar esta previsão.'):p.projection.reference?.quality==='incomplete'?h('div',{className:'p-warning'},'Algumas contas não informaram saldo. O total projetado pode estar incompleto.'):p.projection.reference?.quality==='unverified'?h('div',{className:'p-warning'},'O banco foi consultado recentemente, mas o saldo pode não incluir operações mais novas. Confira antes de assumir compromissos.'):null,
   p.projection.negativeDays.length?h('div',{className:'p-warning'},h(Icon,{name:'alert',size:16}),'Há '+p.projection.negativeDays.length+' dia(s) com saldo projetado negativo. Primeiro: '+pDate(p.projection.negativeDays[0])):null,
-  h('div',{className:'p-scenario-toggle'},h('span',{},h('b',{},'Projeção conservadora'),h('small',{},'Receitas incertas ficam fora do saldo previsto por padrão.')),h('label',{},h('input',{type:'checkbox',checked:s.planIncludeEstimated,onChange:(e:any)=>app.setState({planIncludeEstimated:e.target.checked},()=>app.refreshPlanning())}),'Incluir receitas incertas')),
   h('section',{className:'p-ledger'},h('div',{className:'p-section-heading'},h('div',{},h('span',{className:'micro-label'},'AGENDA COMPLETA'),h('h2',{},'Compromissos e movimentações'),h('p',{},'Priorize os vencimentos e consulte o histórico por período.')),
-   h('div',{className:'p-ledger-navigation'},pMonthNavigation(app),h('span',{className:'p-count'},rows.length+' registros no mês'))),
-   h('div',{className:'p-ledger-tools'},h('input',{className:'form-control',placeholder:'Buscar nome, descrição ou categoria...',value:s.planTerm,onChange:(e:any)=>app.setState({planTerm:e.target.value})}),h(StyledSelect,{value:s.planView,options:[{value:'all',label:'Tudo'},{value:'planned',label:'Planejadas'},{value:'pending',label:'Pendentes e vencidas'},{value:'bank',label:'Movimentações do banco'},{value:'paid',label:'Realizadas'}],onChange:(v:string)=>app.setState({planView:v})})),
-   h('div',{className:'p-ledger-list'},rows.length?rows.map((r:any)=>{
-    const category=app.getCategories().find((c:CategoryInfo)=>c.name===r.category);
-    return h('button',{className:'p-ledger-row',key:r.key,onClick:()=>r.type==='planned'?app.openPlanDetail(r.item.id):r.type==='bank'?app.openPlanBankDetail(r.item):app.openManualDetail(r.item)},
-      h('span',{className:'p-ledger-icon',style:{background:category?.color+'25'}},category?.emoji||'🧾'),
-      h('span',{className:'p-ledger-name'},h('strong',{},r.title),r.original&&r.original!==r.title?h('small',{},r.original):h('small',{},r.category+' · '+(r.type==='planned'?'Prevista':r.type==='bank'?'Instituição conectada':'Manual'))),
-      h('span',{className:'p-ledger-date'},pDate(r.date)),pChip(r.status),h('strong',{className:r.kind==='income'?'good-text':'bad-text'},(r.kind==='income'?'+':'−')+fmt(r.amount)),h('span',{className:'p-row-arrow'},h(Icon,{name:'chevron-right',size:16})));
-   }):h('div',{className:'p-empty-list'},'Não há movimentações para estes filtros. Adicione uma previsão ou altere a pesquisa.')),
+   h('div',{className:'p-ledger-navigation'},pMonthNavigation(app),h('span',{className:'p-count'},rows.length+' registros filtrados'))),
+   h('div',{className:'p-ledger-tools'},h('input',{className:'form-control','aria-label':'Buscar na agenda',placeholder:'Buscar nome, descrição ou categoria...',value:s.planTerm,onChange:(e:any)=>app.setState({planTerm:e.target.value})}),h(StyledSelect,{value:s.planView,options:[{value:'all',label:'Tudo'},{value:'planned',label:'Planejadas'},{value:'pending',label:'Pendentes e vencidas'},{value:'bank',label:'Movimentações do banco'},{value:'paid',label:'Realizadas'}],onChange:(v:string)=>app.setState({planView:v})})),
+   h('div',{className:'u2-view-tabs','aria-label':'Visualização do planejamento'},[{value:'agenda',label:'Agenda'},{value:'calendar',label:'Calendário'},{value:'projection',label:'Projeção diária'}].map(v=>h('button',{type:'button','aria-pressed':presentation===v.value,onClick:()=>app.setState({planPresentation:v.value})},v.label))),
+   presentation==='projection'?h('p',{className:'u2-projection-hint'},'A projeção abaixo usa o cenário financeiro completo. A busca e o filtro de registros se aplicam somente à agenda e ao calendário.'):
+   presentation==='calendar'?pCalendar(app,rows):h('div',{className:'p-ledger-list'},rows.length?pAgenda(app,rows):h('div',{className:'p-empty-list'},p.generatedAt?'Nenhum registro para estes filtros. Adicione uma previsão ou altere a pesquisa.':'Atualize para carregar sua agenda.')),
    s.bank.data.truncated?h('p',{className:'p-warning'},'O histórico de transações do banco é parcial nesta visualização. Consulte sua conta para dados mais antigos.'):null),
-   pSuggestions(app),h('details',{className:'mf-planning-projection'},h('summary',{},h(Icon,{name:'chart',size:17}),'Consultar projeção diária'),pTimeline(app)),
+   pSuggestions(app),h('details',{className:'mf-planning-projection',key:presentation,open:presentation==='projection'},h('summary',{},h(Icon,{name:'chart',size:17}),'Consultar projeção diária'),h('p',{className:'u2-projection-hint'},'Cenário completo do mês. A busca da agenda não altera esta projeção.'),h('div',{className:'p-scenario-toggle'},h('span',{},h('b',{},'Projeção conservadora'),h('small',{},'Receitas incertas ficam fora do saldo previsto por padrão.')),h('label',{},h('input',{type:'checkbox',checked:s.planIncludeEstimated,onChange:(e:any)=>app.setState({planIncludeEstimated:e.target.checked},()=>app.refreshPlanning())}),'Incluir receitas incertas')),pTimeline(app)),
    h('p',{className:'p-footnote'},'O saldo de referência vem da última informação disponível da instituição. Lançamentos já pagos e refletidos no banco não são descontados novamente. Previsões futuras são estimativas, não garantias.')
  );
 }
