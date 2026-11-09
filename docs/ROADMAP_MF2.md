@@ -256,7 +256,7 @@ Não abrir novas abas para cada card, radar, chatbot, relatório ou objetivo. N�
 
 | Marco | Rodada A | Rodada B | Gate | Evidência mais recente / próximo passo |
 | --- | --- | --- | --- | --- |
-| MF2-00 | AGUARDANDO_DECISAO | NAO_INICIADO | NAO_HOMOLOGADO | PR #16 c535cb0 U1–U3; obter checkpoint Work, CI+smoke Windows · **Rodada A: revisão estática #17, sem testes novos; decisão/execução pendentes** ([relatório](ai-context/reviews/2026-11-09-MF2-ANALYSIS.md)) |
+| MF2-00 | AGUARDANDO_DECISAO | NAO_INICIADO | NAO_HOMOLOGADO | **B1/C1 auditado estaticamente**: candidata `integration/mf2-baseline-candidate-20261109` SHA `7a01f1c`, código runtime igual #16; PRs divergentes #2/#3/#4/#5 comparados (UI/IA/CI presentes ou evoluídos; automação de prerelease Codespaces não transportada). **C0 Work local, CI no SHA exato, ASAR, EXE/smoke e decisão do integrador PENDENTES.** [Relatório B1](ai-context/reviews/2026-11-09-MF2-B1-BRANCH-AUDIT.md) · [Log B1](ai-context/logs/2026-11-09-MF2-B1-preservacao-e-g0.md). **Nenhuma homologação/execução anunciada.** |
 | MF2-01 | ANALISADO | BLOQUEADO_G0 | NAO_HOMOLOGADO | E1_CONCILIATION_REPORT, 630/632 sem comparação completa · **Rodada A: revisão estática #17, sem testes novos; decisão/execução pendentes** ([relatório](ai-context/reviews/2026-11-09-MF2-ANALYSIS.md)) |
 | MF2-02 | ANALISADO | BLOQUEADO_G1 | NAO_HOMOLOGADO | shared/finance-period-ledger.mjs já existe parcialmente · **Rodada A: revisão estática #17, sem testes novos; decisão/execução pendentes** ([relatório](ai-context/reviews/2026-11-09-MF2-ANALYSIS.md)) |
 | MF2-03 | ANALISADO | BLOQUEADO_G2 | NAO_HOMOLOGADO | U4 solicitada, ainda não publicada/comprovada · **Rodada A: revisão estática #17, sem testes novos; decisão/execução pendentes** ([relatório](ai-context/reviews/2026-11-09-MF2-ANALYSIS.md)) |
@@ -310,6 +310,14 @@ Escala de auditoria: **APROVADO / APROVADO_COM_PENDENCIAS / REPROVADO / NAO_HOMO
 
 O esforço sugerido ao Work é **Alto na primeira análise arquitetural ampla, Médio para investigações por módulo, Leve para checkpoints**. O Chat pode preparar pesquisas, priorização e prompts sem consumir Work. Consultar [WORK_PROMPT](ai-context/WORK_PROMPT.md).
 
+
+## Checkpoint MF2-00 / B1 — análise das branches antigas (09/11/2026)
+
+**Preparação analítica, não execução:** [Matriz por arquivo, PR e comportamento](ai-context/reviews/2026-11-09-MF2-B1-BRANCH-AUDIT.md). Branch baseline candidata `integration/mf2-baseline-candidate-20261109`, SHA `7a01f1cc344e88188bc5eeea59bf2324335a051e`. Publicada em PR documental derivado da candidata sem alterar código fonte, testes ou CI. **B1 permanece NAO_INICIADO e G0 NAO_HOMOLOGADO até execução verificável.**
+
+- **#2:** Inteligência UI incorporada/evoluída; documentação histórica isolada não importada. **#3:** OAuth/vault presentes (blobs idênticos), política demo e cliente evoluídos; fluxo Codespaces→GitHub prerelease não incluído. **#4:** CircleCI substituído por preflight+Windows+ASAR. **#5:** CI e auth presentes/evoluídos, publicação prerelease antiga pendente de decisão.
+- **Preservação do Work:** workspace anterior inacessível aqui; recuperar branch/SHA/`git status` antes de qualquer promoção. U4/21 operações de IA não comprovadas. **CI no SHA candidato:** nenhum status registrado; êxitos de #5/#15 não são do candidato.
+- **Ordem mínima G0:** C0 checkpoint Work → C1 review e decisão de arquivar ferramentas de prerelease → C2a preflight Linux no SHA exato → C2b build Windows autorizado → C2c smoke Electron com fixtures, hashes e backup descartável → C3 revisão do integrador e PRs superseded condicionais → C4 homologação explícita de G0. Sem merge automático nem cutover.
 
 ## Anexo documental de 09/11/2026 — consolidação e benchmark aprofundado (Rodada A)
 
