@@ -1,0 +1,54 @@
+# Registro de frentes ativas e prevenção de conflitos
+
+Última leitura via GitHub: 09/11/2026. **Work em execução não é inspecionável aqui**; itens marcados como "desconhecido" devem ser reconciliados com a sessão antes de qualquer escrita.
+
+## Matriz de coordenação
+
+| Frente | Quem/onde | Branch / PR | Estado conhecido | Área protegida |
+| --- | --- | --- | --- | --- |
+| Redesign U1–U3 | Work/chat anterior | design/despezzas-d1-d4 / #16 | Publicado na branch; Windows não homologado | src/app.ts, app/*css, src/plan-view.ts, tests U1–U3 |
+| Cloud/sync | PRs empilhados | safety/cloud-migration-preflight-20261107 / #1, mais integração #6 | Implementação em Preview; E1 ainda não homologada | electron/cloud-*, mobile-push/src/finance-*, shared/finance-* |
+| Inteligência | PRs #2/#3/#7/#8 e empilhados | Atravessa a linha da PR #16 | Contratos de demonstração; novos trabalhos de Work **desconhecidos** | src/intelligence-*, electron/ai-*, shared/ai-* |
+| Homologação Windows | CircleCI/Work | PR #15 / #16 | #15 verde; #16 sem job CircleCI comprovado | .circleci/*, scripts/renderer-provenance.cjs |
+| Documentação de continuidade | Chat arquiteto | docs/mf2-multi-agent-context-20261109 / #17 | PR draft documental; roadmap ampliado, requer revisão e integração | docs/ROADMAP_MF2.md e docs/ai-context/** |
+| Work "Meu Financeiro - Definitivo" | Outra sessão ativa | **Branch, commit local e alterações não publicadas desconhecidos** | Consultar checkpoint do Work; não assumir U4 ou operadores 21 ações publicados | **Nenhum arquivo é seguro para edição concorrente até verificar** |
+
+## Linha de PRs existente (não achatar às cegas)
+
+- #1 safety/cloud-migration-preflight-20261107 → base main.
+- #2 feat/inteligencia-interface-e1 → base main, protótipo separado.
+- #3 feat/inteligencia-e2-chatgpt-shared → base #1.
+- #4 ci/circleci-windows-manual → base main.
+- #5 ci/circleci-inteligencia-e1-e2 → base #3.
+- #6 integration/v0.9.5-beta.1-inteligencia-circleci → base #1.
+- #7 feat/inteligencia-e3-contexto-memoria-uso → base #6.
+- #8 feat/inteligencia-e4-contexto-financeiro-sintetico → base #7.
+- #9 fix/category-overlay-b00-b01 → base #8.
+- #10 feat/transaction-category-edit-b02 → base #9.
+- #11 feat/ui-daily-redesign-b07 → base #10.
+- #12 fix/ui03-audit-f01-f07 → base #11.
+- #13 fix/ui03-provenance-f08 → base #12.
+- #14 fix/ui03-visual-smoke-f05-f06 → base #13.
+- #15 fix/asar-windows-nested-paths → base #14.
+- #16 design/despezzas-d1-d4 → base #15.
+
+PRs representam uma **pilha de dependências**. Marcar como merged somente após consultar o GitHub. Evitar cherry-picks redundantes que duplicariam commits ou funcionalidades.
+
+## Rodada de análise em curso
+
+O roadmap agora explicita **Rodada A antes de Rodada B**. O próximo novo Work deve entregar diagnóstico e ideias documentadas, não iniciar reescrita de funcionalidades. O PR #17 guarda contexto e propostas; não colidir com a branch de código. Caso a sessão Work anterior esteja avançando, primeiro coletar o checkpoint e preservar suas mudanças.
+
+**Atualização por agente:** toda alteração posterior precisa registrar progresso no ROADMAP_MF2.md da própria branch e log técnico. Para análise: registrar no roadmap como ANALISADO/PROPOSTO sem mudar execução. Integração global fica com o integrador.
+
+## Protocolo de posse de trabalho
+
+Antes de iniciar, agente registra no PR ou log:
+- identificador da entrega; branch; base SHA; arquivos previstos; dependências; quem integra; status.
+- disponibilidade de outro agente para alterar os mesmos arquivos; caso desconhecida, **não realizar escrita concorrente**.
+- em caso de mesmo arquivo, combinar divisão por fases ou uma branch de integração sequencial.
+
+Um único integrador é responsável por CURRENT_STATE e atualizações dos gates. As demais frentes apenas registram logs próprios e links para seus PRs. A documentação foi aberta em branch separada para não tocar no Work.
+
+## Próximo checkpoint a pedir ao Work ativo
+
+Perguntar sem alterar nada: tarefa atual; branch e SHA; alterações locais não commitadas; U4 e IA realmente implementadas; últimos testes executados; riscos; arquivos em uso; próxima ação. Publicar código e logs em PR apropriado **somente após o agente concluir sua execução em andamento**, sem interrompê-la.
