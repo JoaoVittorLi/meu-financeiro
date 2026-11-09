@@ -10,7 +10,7 @@
 | Cloud/sync | PRs empilhados | safety/cloud-migration-preflight-20261107 / #1, mais integração #6 | Implementação em Preview; E1 ainda não homologada | electron/cloud-*, mobile-push/src/finance-*, shared/finance-* |
 | Inteligência | PRs #2/#3/#7/#8 e empilhados | Atravessa a linha da PR #16 | Contratos de demonstração; novos trabalhos de Work **desconhecidos** | src/intelligence-*, electron/ai-*, shared/ai-* |
 | Homologação Windows | CircleCI/Work | PR #15 / #16 | #15 verde; #16 sem job CircleCI comprovado | .circleci/*, scripts/renderer-provenance.cjs |
-| Documentação de continuidade | Chat arquiteto | docs/mf2-multi-agent-context-20261109 | PR de documentação separado; requer integração | docs/ROADMAP_MF2.md e docs/ai-context/** |
+| Documentação de continuidade | Chat arquiteto | docs/mf2-multi-agent-context-20261109 / #17 | PR draft documental; roadmap ampliado, requer revisão e integração | docs/ROADMAP_MF2.md e docs/ai-context/** |
 | Work "Meu Financeiro - Definitivo" | Outra sessão ativa | **Branch, commit local e alterações não publicadas desconhecidos** | Consultar checkpoint do Work; não assumir U4 ou operadores 21 ações publicados | **Nenhum arquivo é seguro para edição concorrente até verificar** |
 
 ## Linha de PRs existente (não achatar às cegas)
@@ -33,6 +33,12 @@
 - #16 design/despezzas-d1-d4 → base #15.
 
 PRs representam uma **pilha de dependências**. Marcar como merged somente após consultar o GitHub. Evitar cherry-picks redundantes que duplicariam commits ou funcionalidades.
+
+## Rodada de análise em curso
+
+O roadmap agora explicita **Rodada A antes de Rodada B**. O próximo novo Work deve entregar diagnóstico e ideias documentadas, não iniciar reescrita de funcionalidades. O PR #17 guarda contexto e propostas; não colidir com a branch de código. Caso a sessão Work anterior esteja avançando, primeiro coletar o checkpoint e preservar suas mudanças.
+
+**Atualização por agente:** toda alteração posterior precisa registrar progresso no ROADMAP_MF2.md da própria branch e log técnico. Para análise: registrar no roadmap como ANALISADO/PROPOSTO sem mudar execução. Integração global fica com o integrador.
 
 ## Protocolo de posse de trabalho
 

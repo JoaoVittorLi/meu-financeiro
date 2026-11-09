@@ -41,3 +41,12 @@ O material abaixo é preexistente na branch design/despezzas-d1-d4 e preserva de
 - mobile-push/test/*.test.js
 
 Os arquivos listados podem evoluir. O índice é um mapa de navegação, não uma afirmação de completude ou execução dos testes.
+
+## Documentação estratégica ampliada (PR #17)
+
+- docs/ROADMAP_MF2.md — roadmap detalhado, duas rodadas e tabela de progresso a atualizar por PR.
+- docs/ai-context/PRODUCT_BLUEPRINT.md — jornadas, referências e UX por área, propostas iniciais.
+- docs/ai-context/ANALYSIS_PLAYBOOK.md — roteiro da primeira rodada criativa e diagnóstica.
+- docs/ai-context/IDEA_REGISTER.md — hipóteses/propostas ainda não aprovadas.
+- docs/ai-context/ROADMAP_UPDATE_RULES.md — atualização obrigatória contínua.
+- docs/ai-context/reviews/ — análises datadas.

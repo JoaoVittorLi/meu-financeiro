@@ -9,19 +9,31 @@
 - **Integrador:** único responsável pela atualização de CURRENT_STATE e conclusão dos gates após validação e merge apropriado.
 - **Usuário:** autoriza operações sensíveis (custos, Production, cutover, publicação estável, migrações reais).
 
+## Duas rodadas de governança
+
+**Rodada A (ANÁLISE):** auditar GitHub, UX, paridade, arquitetura, benchmark e ideias; documentar recomendações e trade-offs em ANALYSIS_PLAYBOOK/IDEA_REGISTER, criar review Markdown. **Não** efetuar implementação do produto. Registrar no roadmap somente progresso de análise e decisões propostas.
+
+**Rodada B (EXECUÇÃO):** começa após aprovação do escopo de uma missão. Implementa uma fatia vertical, testa, grava log e **atualiza ROADMAP_MF2.md no mesmo PR**. Status de integração/publicação continuam sob responsabilidade do integrador.
+
+**Criatividade disciplinada:** o Work pode sugerir melhorias de qualquer tamanho na Rodada A, desde que apresentem problema real, impacto, risco, custo, dados, dependências, alternativas e recomendação. Ideias não viram escopo por entusiasmo. Decisões aprovadas recebem ID e rastreabilidade.
+
 ## Fluxo de mudanças
 
 **Antes:** inspecionar GitHub e histórico de PRs, ler documentação, estabelecer SHA base, listar arquivos, consultar ACTIVE_WORK e reservar ownership; separar contratos.
 
 **Durante:** trabalhar em branch dedicada, evitar sobreposição; alterações de schema aditivas; não contornar testes. Manter decisões complexas em ADR.
 
-**Depois:** executar os testes realmente disponíveis; publicar código e doc no mesmo PR; log estruturado; informar SHA/testes e o que não foi verificado. Auditor avalia. Integrador registra integração aprovada.
+**Depois:** executar os testes realmente disponíveis; publicar código + log estruturado + **ROADMAP_MF2.md atualizado** no mesmo PR; informar SHA/testes e o que não foi verificado. Auditor avalia. Integrador registra integração aprovada. Se a tarefa for análise, publicar relatório/ideias e **status de análise do roadmap**, nunca execução fictícia.
 
 ## Regra de posse: um writer por arquivo compartilhado
 
 Não editar simultaneamente src/app.ts, electron/main.cjs, electron/preload.cjs, shared/*, mobile-push/src/worker.js ou outras superfícies de integração por dois agentes sem acordo explícito. Se houver sobreposição, serializar mudanças ou introduzir uma branch de integração e resolver conflitos com testes.
 
 **Documentação global:** somente integrador altera CURRENT_STATE e GAPS_AND_GATES; agentes de feature podem atualizar ACTIVE_WORK de forma coordenada e criar logs próprios. Revisar HEAD antes de escrever documentos globais.
+
+## Obrigação de atualização do roadmap
+
+Não basta escrever logs em docs/ai-context/logs/. **Cada mudança relevante que altera código, UX, requisitos, testes ou status deve atualizar o quadro de progresso em docs/ROADMAP_MF2.md na própria branch**, com link ao PR, SHA, status, evidência e próximo passo. Cada decisão que altera escopo ou ordem inclui ADR e rastreio em IDEA_REGISTER. O relatório do Work não substitui o roadmap. O integrador valida o estado global após o merge; outros agentes propõem atualização no PR. Ver [ROADMAP_UPDATE_RULES](ROADMAP_UPDATE_RULES.md).
 
 ## Log Markdown obrigatório
 
@@ -49,6 +61,10 @@ NAO_INICIADO → EM_DESENVOLVIMENTO → EM_TESTE → VALIDADO → INTEGRADO → 
 - Publicado = artefato/deploy identificado para usuários.
 - Homologado = testes exigidos para gate aprovados no ambiente correspondente.
 - Não observado = desconhecido; nunca converter em sucesso ou fracasso por palpite.
+
+## Regra sobre PRs e documentos compartilhados
+
+Para vários agentes, não criar branches independentes todas reescrevendo ROADMAP_MF2.md sobre bases antigas. Antes de cada PR, consultar a última versão integrada, rebase/merge sem sobrescrever outras áreas e atualizar apenas as linhas relacionadas. A concorrência deve ser resolvida pelo integrador, sem apagar mudanças válidas. Não transformar STATUS aprovado em PUBLICADO por inferência.
 
 ## Quando outra IA assumir
 

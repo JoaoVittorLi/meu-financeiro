@@ -7,11 +7,12 @@
 1. Confira o SHA atual e a branch onde você está; **não suponha que o Work de outra conversa tenha feito push**.
 2. Leia [CURRENT_STATE](CURRENT_STATE.md) (o que é fato, o que é apenas relato e o que falta comprovar).
 3. Leia [ACTIVE_WORK](ACTIVE_WORK.md) (frentes, responsáveis, PRs e conflitos potenciais).
-4. Leia [ROADMAP_MF2](../ROADMAP_MF2.md) (escopo fechado e ordem de dependências).
+4. Leia [ROADMAP_MF2](../ROADMAP_MF2.md) (escopo fechado, estado de cada marco, Rodadas A/B e atualização obrigatória do progresso).
 5. Leia [ARCHITECTURE](ARCHITECTURE.md) e [GAPS_AND_GATES](GAPS_AND_GATES.md).
-6. Para assumir a execução, siga [HANDOFF_NEXT_AGENT](HANDOFF_NEXT_AGENT.md), [TESTING_AND_RELEASE](TESTING_AND_RELEASE.md) e [WORK_PROMPT](WORK_PROMPT.md).
-7. Consulte os [documentos-fonte](SOURCE_INDEX.md) correspondentes à tarefa e os [logs](logs/).
-8. Após cada alteração, **publique código + log Markdown na mesma branch/PR**; atualize o estado global somente após integração validada.
+6. **Antes de qualquer execução, realizar a Rodada A de análise** conforme [ANALYSIS_PLAYBOOK](ANALYSIS_PLAYBOOK.md): diagnóstico amplo, criatividade, sugestões e decisão; somente depois iniciar Rodada B autorizada.
+7. Para assumir a execução, siga [HANDOFF_NEXT_AGENT](HANDOFF_NEXT_AGENT.md), [TESTING_AND_RELEASE](TESTING_AND_RELEASE.md) e [WORK_PROMPT](WORK_PROMPT.md).
+8. Consulte os [documentos-fonte](SOURCE_INDEX.md) correspondentes à tarefa e os [logs](logs/).
+9. Após **cada alteração**, publique **código + log Markdown + atualização do ROADMAP_MF2.md** na mesma branch/PR. Siga [ROADMAP_UPDATE_RULES](ROADMAP_UPDATE_RULES.md); o integrador confirma o estado global somente após integração validada.
 
 ## Hierarquia de verdade — não confundir
 
@@ -23,6 +24,12 @@
 - **CURRENT_STATE**: resumo derivado das fontes acima; pode ficar defasado e deve ser atualizado por evidência.
 
 Uma entrega pode estar **implementada** e continuar **não homologada**. Um PR draft não equivale a código em main. Um Worker build não equivale a instalador Windows.
+
+## Regra de operação em duas rodadas
+
+**Rodada A = analisar, criticar, propor e recomendar**. Criatividade ampla é bem-vinda, mas não autoriza implementar nem promover ideias ao escopo sem decisão. **Rodada B = executar** somente fatias aprovadas com testes e logs. Uma nova IA deve começar pela Rodada A e verificar se Work anterior tem código local não publicado. Nunca usar um erro de CI como desculpa para alterar o produto fora da missão.
+
+**Regra de sincronização contínua:** cada feature/fix atualiza ROADMAP_MF2.md **no PR da mudança**; log de entrega + teste; CURRENT_STATE.md apenas pelo integrador após aprovação. Se o roadmap ficar desatualizado, a entrega está incompleta. Ver [ROADMAP_UPDATE_RULES](ROADMAP_UPDATE_RULES.md).
 
 ## Compromissos do produto
 
@@ -39,7 +46,12 @@ Uma entrega pode estar **implementada** e continuar **não homologada**. Um PR d
 | --- | --- |
 | [CURRENT_STATE](CURRENT_STATE.md) | Snapshot factual e pendências |
 | [ACTIVE_WORK](ACTIVE_WORK.md) | Frentes paralelas, ownership e handoffs |
-| [ROADMAP_MF2](../ROADMAP_MF2.md) | Produto, escopo e dependências MF2-00…10 |
+| [ROADMAP_MF2](../ROADMAP_MF2.md) | Produto, escopo, detalhes MF2-00…10 e quadro de progresso obrigatório |
+| [ANALYSIS_PLAYBOOK](ANALYSIS_PLAYBOOK.md) | Rodada A: auditoria ampla, benchmark e criatividade antes de executar |
+| [PRODUCT_BLUEPRINT](PRODUCT_BLUEPRINT.md) | Fluxos e referências de experiência premium, com exemplos por área |
+| [IDEA_REGISTER](IDEA_REGISTER.md) | Propostas criativas para avaliação, não escopo aprovado |
+| [ROADMAP_UPDATE_RULES](ROADMAP_UPDATE_RULES.md) | Quando e como atualizar roadmap + logs + evidências |
+| [reviews](reviews/) | Relatórios de análise antes de implementar |
 | [ARCHITECTURE](ARCHITECTURE.md) | Sistemas existentes, módulos, invariantes e evolução |
 | [GAPS_AND_GATES](GAPS_AND_GATES.md) | Problemas herdados, critérios de liberação |
 | [HANDOFF_NEXT_AGENT](HANDOFF_NEXT_AGENT.md) | Instruções para substituir o Work atual com segurança |
