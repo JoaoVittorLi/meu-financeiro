@@ -51,7 +51,7 @@ test('F01 saldo desconhecido, parcial, zero real e total conhecido',()=>{
  assert.match(bankBalanceLabel(partial),/^Parcial · R\$ 159\.32$/);
  assert.equal(bankBalanceLabel(bankBalanceCoverage([account(0)])),'R$ 0.00');
  assert.equal(bankBalanceLabel(bankBalanceCoverage([account(100),account(-31)])),'R$ 0.69');
- assert.match(app,/displayValue:balanceCoverage\?bankBalanceLabel\(balanceCoverage\)/);
+ assert.match(app,/coverage\?bankBalanceLabel\(coverage\)/);
  const Stat=compile(cut('function Stat(p:any)','function prettyMonth('),'Stat',{h,fmt,Icon:()=>null});
  const card=Stat({amount:0,displayValue:'Saldo indisponível',label:'Saldo bancário',hint:'2 ausentes'});
  assert.ok(JSON.stringify(card).includes('Saldo indisponível'));
