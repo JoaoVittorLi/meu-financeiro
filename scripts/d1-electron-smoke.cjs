@@ -189,7 +189,10 @@ async function visualMatrix(cdp){
     format:'png',captureBeyondViewport:false,fromSurface:true
    });
    assert(shot.data&&shot.data.length>150,'Captura PNG vazia');
-   fs.writeFileSync(path.join(output,name),Buffer.from(shot.data,'base64'));
+   const png=Buffer.from(shot.data,'base64');
+   assert(png.length>100&&png.subarray(0,8).equals(Buffer.from('89504e470d0a1a0a','hex')),
+    'CDP não entregou uma imagem PNG íntegra');
+   fs.writeFileSync(path.join(output,name),png);
    rows.push({page:label,width:cfg.width,height:cfg.height,theme:cfg.theme,
      reduced:state.reduced,scrollWidth:state.scrollWidth,screenshot:name});
   }
@@ -252,4 +255,4 @@ async function smoke(){
  }
 }
 if(require.main===module)smoke().catch(e=>{console.error('FAIL REAL ELECTRON D1.2:',e);process.exitCode=1});
-module.exports={availablePort,createSyntheticProfile,awaitTarget,checkNavigation};
+module.exports={availablePort,createSyntheticProfile,awaitTarget,checkNavigation,visualMatrix};
