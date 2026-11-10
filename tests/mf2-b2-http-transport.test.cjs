@@ -140,3 +140,14 @@ test('response tampering and unsafe comparator are refused, no writes',async()=>
  }});
  await assert.rejects(diagnose(faulty),code('invalid_response'));
 });
+test('client actively cancels slow response reader when timeout expires',async()=>{
+ let cancelled=0;
+ const pending=new ReadableStream({
+   pull(){return new Promise(()=>{})},
+   cancel(){cancelled++}
+ });
+ const h=setup({fetchImpl:async()=>new Response(pending,{status:200,headers:{'content-type':'application/json'}})});
+ await assert.rejects(diagnose(h.client,'syn-http-slow-body01'),code('timeout'));
+ await new Promise(resolve=>setImmediate(resolve));
+ assert.equal(cancelled,1);
+});

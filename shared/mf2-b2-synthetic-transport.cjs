@@ -23,23 +23,10 @@ const safeJsonSize=v=>{
 };
 const digest=v=>createHash('sha256').update(JSON.stringify(v)).digest('hex');
 const sign=(secret,value)=>createHmac('sha256',secret).update(value).digest('hex');
+const {checkSnapshot}=require('./mf2-b2-synthetic-schema.mjs');
 function assertSyntheticSnapshot(snapshot){
-  if(!record(snapshot)||snapshot.metadata?.snapshotKind!=='synthetic')reject('non_synthetic_snapshot');
-  const rules={
-    accounts:r=>SYNTH_ID.test(r.account_id)&&SYNTH_ID.test(r.item_id),
-    transactions:r=>SYNTH_ID.test(r.account_id)&&SYNTH_ID.test(r.external_id)&&FIXTURE_TEXT.test(r.description),
-    manualTransactions:r=>r.profile==='real'&&SYNTH_ID.test(r.id)&&FIXTURE_TEXT.test(r.description),
-    overlays:r=>SYNTH_ID.test(r.account_id)&&SYNTH_ID.test(r.external_id)&&
-      (r.title==null||FIXTURE_TEXT.test(r.title))
-  };
-  for(const [field,validate] of Object.entries(rules)){
-    const rows=snapshot[field]??[];
-    if(!Array.isArray(rows)||rows.length>2000)reject('invalid_synthetic_rows');
-    for(const row of rows)if(!record(row)||!validate(row))reject('non_synthetic_record');
-  }
-  if(!Array.isArray(snapshot.accounts)||!Array.isArray(snapshot.transactions))reject('missing_fixture_collection');
-  safeJsonSize(snapshot);
-  return true;
+  try{return checkSnapshot(snapshot)}
+  catch(e){reject(e&&typeof e.code==='string'?e.code:'non_synthetic_snapshot')}
 }
 // This is a MOCK session format, NEVER a production credential or Access JWT.
 function issueSyntheticSession({secret,owner,expiresAt}){

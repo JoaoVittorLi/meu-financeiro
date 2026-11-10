@@ -20,19 +20,27 @@ function response(status,body){return new Response(JSON.stringify(body),{status,
 function errResponse(code){return response(statusFor[code]||400,{contract:CONTRACT,version:1,ok:false,error:{code}});}
 function validateOrigin(origin){if(origin!==ORIGIN)reject('invalid_origin');}
 function validateContentType(headers){if(!/^application\/json(?:\s*;\s*charset=utf-8)?$/i.test(headers.get('content-type')||''))reject('invalid_content_type');}
-async function readJsonLimited(message){
+async function readJsonLimited(message,signal){
   const declared=message.headers.get('content-length');
   if(declared!==null&&(!/^\d+$/.test(declared)||Number(declared)>MAX_BYTES))reject('payload_too_large');
   const reader=message.body?.getReader();
   if(!reader)reject('invalid_json');
   let size=0;const chunks=[];
+  let rejectAbort;
+  const stopped=new Promise((_,reject)=>{rejectAbort=()=>reject(new ProtocolError('timeout'))});
+  const onAbort=()=>{
+    // Abort must actively cancel a delayed response stream, not only reject a race.
+    try{Promise.resolve(reader.cancel('timeout')).catch(()=>{})}catch{}
+    rejectAbort();
+  };
+  if(signal){signal.addEventListener('abort',onAbort,{once:true});if(signal.aborted)onAbort()}
   try{
-    while(true){const {done,value}=await reader.read();if(done)break;
+    while(true){const {done,value}=await Promise.race([reader.read(),stopped]);if(done)break;
       if(!(value instanceof Uint8Array))reject('invalid_json');
       size+=value.byteLength;if(size>MAX_BYTES)reject('payload_too_large');
       chunks.push(value);
     }
-  }finally{reader.releaseLock()}
+  }finally{signal?.removeEventListener('abort',onAbort);try{reader.releaseLock()}catch{}}
   const combined=new Uint8Array(size);let offset=0;
   for(const c of chunks){combined.set(c,offset);offset+=c.byteLength}
   try{return JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(combined))}
@@ -86,7 +94,7 @@ function createSyntheticHttpClient({fetchImpl,session,origin=ORIGIN,timeoutMs=LI
       if(!(reply instanceof Response))reject('invalid_response');
       if(reply.redirected||(reply.url&&new URL(reply.url).origin!==origin)||reply.status>=300&&reply.status<400)reject('redirect_rejected');
       validateContentType(reply.headers);
-      const body=await Promise.race([readJsonLimited(reply),deadline]);
+      const body=await Promise.race([readJsonLimited(reply,controller.signal),deadline]);
       if(!okKeys(body,['contract','version','ok','result','error'])||body.contract!==CONTRACT||body.version!==1)reject('invalid_response');
       if(!reply.ok){
         const code=body.error?.code;
