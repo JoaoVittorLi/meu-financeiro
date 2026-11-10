@@ -157,3 +157,8 @@ test('invalid nonce and corrupted response cannot be accepted',async()=>{
   const incorrect=createSyntheticClient({session:'mock',send:async()=>({ok:true})});
   await assert.rejects(call(incorrect,'syn-response1'),isCode('invalid_response'));
 });
+test('even a well-flagged comparator cannot leak synthetic raw IDs',async()=>{
+  const {client}=harness({reconcile:(a,b)=>({...fakeComparator(a,b),
+    debugAccountId:'SYNTH-ACCOUNT'})});
+  await assert.rejects(call(client),isCode('unsafe_diagnostic'));
+});
