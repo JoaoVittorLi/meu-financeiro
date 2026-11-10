@@ -38,6 +38,8 @@ No build beta.6, `automaticBackup()` (em `electron/recovery.cjs`) retornava `{cr
 - O cache de integridade considera metadados de arquivo: corrupção externa com todos os metadados preservados exige nova inicialização para garantir rechecagem. Não equivale a garantia criptográfica.
 - Backups do perfil real devem ser testados apenas pelo usuário após cópia de segurança prévia, nunca em CI; os testes usam `os.tmpdir()`.
 
+**Versionamento para entrega segura:** Desktop Windows e Worker/PWA metadados `0.9.5-beta.7` (somente `version` nos dois `package.json` e respectivos lockfiles; nenhum componente PWA alterado), para que os novos artefatos Windows não reutilizem os nomes da beta.6 de recuperação. O build beta.7 NÃO EXISTE ainda e os lockfiles requerem `npm ci` oficial no novo SHA. `tests/e1-build-contract.test.cjs` já exige que as duas versões sejam idênticas. Sem deploy PWA.
+
 ## Próximo gate operacional
 
 1. CircleCI projeto `JoaoVittorLi/meu-financeiro` → Trigger Pipeline. **Config Branch = Checkout Branch = `feat/mf2-desktop-first-20261110`**, `run_preflight=true`, `run_windows_build=false`. Conferir `CIRCLE_SHA1` igual ao **HEAD final** deste PR, job `preflight_linux` e resultados por etapa.
