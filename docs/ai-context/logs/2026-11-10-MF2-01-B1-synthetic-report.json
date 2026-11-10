@@ -1,0 +1,149 @@
+{
+  "ok": true,
+  "contract": "mf2-reconciliation-b1-v1",
+  "stage": "read_only_dry_run",
+  "sources": {
+    "windows": {
+      "accounts": 1,
+      "bank": 630,
+      "manual": 0,
+      "overlays": 0
+    },
+    "cloud": {
+      "accounts": 1,
+      "bank": 632,
+      "manual": 0,
+      "overlays": 0
+    }
+  },
+  "comparable": {
+    "accounts": {
+      "compared": 1,
+      "equivalent": 0
+    },
+    "bank": {
+      "compared": 630,
+      "equivalent": 628
+    },
+    "manual": {
+      "compared": 0,
+      "equivalent": 0
+    },
+    "overlay": {
+      "checked": false,
+      "equivalent": 0
+    }
+  },
+  "coverage": {
+    "windows": {
+      "historyComplete": null,
+      "overlayCoverage": "complete",
+      "lastFetched": null,
+      "snapshotKind": "synthetic"
+    },
+    "cloud": {
+      "historyComplete": null,
+      "overlayCoverage": "unavailable",
+      "lastFetched": 630,
+      "snapshotKind": "cloud_staging"
+    }
+  },
+  "flowClassification": {
+    "windows": {
+      "bankIncome": 0,
+      "bankExpense": 630,
+      "bankZero": 0,
+      "pendingBankIncome": 0,
+      "pendingBankExpense": 0,
+      "pendingBankZero": 0,
+      "unclassifiedBankStatus": 0,
+      "manualIncome": 0,
+      "manualExpense": 0,
+      "explicitTransfers": 0,
+      "linkedManualReferences": 0,
+      "ledgerTotalsCombined": false
+    },
+    "cloud": {
+      "bankIncome": 0,
+      "bankExpense": 631,
+      "bankZero": 0,
+      "pendingBankIncome": 0,
+      "pendingBankExpense": 1,
+      "pendingBankZero": 0,
+      "unclassifiedBankStatus": 0,
+      "manualIncome": 0,
+      "manualExpense": 0,
+      "explicitTransfers": 0,
+      "linkedManualReferences": 0,
+      "ledgerTotalsCombined": false
+    }
+  },
+  "summary": {
+    "state": "requires_manual_review",
+    "issues": 5,
+    "byType": {
+      "incomplete": 2,
+      "only_one_source": 2,
+      "status_difference": 1
+    },
+    "omittedIssues": 0,
+    "bankCountDelta": 2,
+    "historicalHypotheses": [
+      "different_time_window_or_provider_refresh",
+      "cloud_staging_preserved_prior_fetches",
+      "identity_or_status_difference_not_yet_proven"
+    ]
+  },
+  "differences": [
+    {
+      "type": "incomplete",
+      "entity": "account",
+      "reference": "R000001",
+      "field": "balance_cents",
+      "side": "both",
+      "reason": "balance_unknown_not_zero",
+      "action": "manual_review"
+    },
+    {
+      "type": "status_difference",
+      "entity": "bank",
+      "reference": "R000012",
+      "field": "status",
+      "side": "both",
+      "reason": "same_identity_different_value",
+      "action": "manual_review"
+    },
+    {
+      "type": "incomplete",
+      "entity": "bank",
+      "reference": "R000022",
+      "field": "category",
+      "side": "both",
+      "reason": "required_field_missing",
+      "action": "manual_review"
+    },
+    {
+      "type": "only_one_source",
+      "entity": "bank",
+      "reference": "R000632",
+      "field": "identity",
+      "side": "cloud",
+      "reason": "not_present_in_other_snapshot",
+      "action": "check_history_window"
+    },
+    {
+      "type": "only_one_source",
+      "entity": "bank",
+      "reference": "R000633",
+      "field": "identity",
+      "side": "cloud",
+      "reason": "not_present_in_other_snapshot",
+      "action": "check_history_window"
+    }
+  ],
+  "financialSyncEnabled": false,
+  "cloudCutoverAllowed": false,
+  "databaseChanged": false,
+  "automaticSettlementEnabled": false,
+  "personalDataIncluded": false
+}
