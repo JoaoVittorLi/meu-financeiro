@@ -2,7 +2,7 @@
 
 Última leitura via GitHub: 09/11/2026. **Work em execução não é inspecionável aqui**; itens marcados como "desconhecido" devem ser reconciliados com a sessão antes de qualquer escrita.
 
-**Atualização técnica — 10/11/2026:** Executor PR #28 agora possui quatro regressões reais adicionais de identidade bancária (lotes com duplicados, contas duplicadas, vínculo indevido entre conexões e ID compartilhado entre contas distintas). **7/7 PASS** com Node 22.16.0 e SQLite real extraído do ASAR beta.7 + código D1.2 exato, sem CI/GUI novo. Staging `feat/mf2-beta8-premium-staging-20261110` SHA `1f8daab6c961e128251afd5c2cbb26b857f4bc27`: **somente os dois CSS do Argon** somados à D1.2 de código, sem versão/beta.8, CI ou merge. PR #27 CSS-only continua fonte; PR #26 segue sob ownership do Arquiteto; A-D3 não publicada nesta verificação. Priorizar testes de regressão e smoke real antes de qualquer promoção.
+**Atualização técnica — 10/11/2026:** Executor PR #28 agora possui quatro regressões reais adicionais de identidade bancária (lotes com duplicados, contas duplicadas, vínculo indevido entre conexões e ID compartilhado entre contas distintas). **7/7 PASS** com Node 22.16.0 e SQLite real extraído do ASAR beta.7 + código D1.2 exato, sem CI/GUI novo. Staging `feat/mf2-beta8-premium-staging-20261110` SHA `HEAD da branch (consultar GitHub; staging ainda não homologado)`: **somente os dois CSS do Argon** somados à D1.2 de código, sem versão/beta.8, CI ou merge. PR #27 CSS-only continua fonte; PR #26 segue sob ownership do Arquiteto; A-D3 não publicada nesta verificação. Priorizar testes de regressão e smoke real antes de qualquer promoção.
 
 ## Checkpoint atual — Desktop First, 10/11/2026 (prevalece sobre o histórico abaixo)
 
