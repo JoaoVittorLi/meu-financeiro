@@ -15,7 +15,7 @@ const date=v=>{
 const upper=v=>{const s=text(v);return s&&s.trim()?s.trim().toUpperCase():null;};
 const lower=v=>{const s=text(v);return s&&s.trim()?s.trim().toLowerCase():null;};
 const sort=(a,b)=>a<b?-1:a>b?1:0;
-const order=(a,b)=>sort(a.ref,b.ref)||sort(a.type,b.type)||sort(a.field||'',b.field||'');
+const order=(a,b)=>sort(a.reference,b.reference)||sort(a.type,b.type)||sort(a.field||'',b.field||'');
 const safeCount=v=>Number.isSafeInteger(v)&&v>=0&&v<=MAX_ROWS?v:null;
 function items(snapshot,name){
   if(!snapshot||typeof snapshot!=='object'||Array.isArray(snapshot))
@@ -198,6 +198,22 @@ function refMap(a,b){
   }
   return new Map([...refs].sort().map((x,i)=>[x,'R'+String(i+1).padStart(6,'0')]));
 }
+function flowCounts(snapshot){
+  const bank=[...snapshot.transactions.map.values()];
+  const manual=[...snapshot.manual.map.values()];
+  const edits=[...snapshot.overlays.map.values()];
+  return {
+    bankIncome:bank.filter(r=>r.amount_cents!==null&&r.amount_cents>0).length,
+    bankExpense:bank.filter(r=>r.amount_cents!==null&&r.amount_cents<0).length,
+    bankZero:bank.filter(r=>r.amount_cents===0).length,
+    manualIncome:manual.filter(r=>r.kind==='income').length,
+    manualExpense:manual.filter(r=>r.kind==='expense').length,
+    explicitTransfers:edits.filter(r=>r.nature==='transfer').length,
+    linkedManualReferences:edits.filter(r=>r.manual_id!==null).length,
+    // Classification counts, not additive income/expense totals.
+    ledgerTotalsCombined:false
+  };
+}
 function summarize(issues){
   const byType={};
   for(const i of issues)byType[i.type]=(byType[i.type]||0)+1;
@@ -242,6 +258,7 @@ function reconcileSnapshots(windows,cloud){
     sources:{windows:a.counts,cloud:b.counts},
     comparable:{accounts:account,bank,manual,overlay},
     coverage:metadata,
+    flowClassification:{windows:flowCounts(a),cloud:flowCounts(b)},
     summary:{state,issues:reportIssues.length,byType:differences,
       omittedIssues:Math.max(0,reportIssues.length-MAX_ITEMS),
       bankCountDelta:b.counts.bank-a.counts.bank,
