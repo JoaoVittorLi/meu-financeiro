@@ -48,5 +48,5 @@ test('F03/F06 visual styles retain category labels, small-width demo notice and 
  assert.match(style,/@media\(max-width:560px\)\{\.donut-legend\{grid-template-columns:minmax\(0,1fr\)\}\}/);
  assert.match(style,/\.demo-strip\{display:block;line-height:1\.55/);
  assert.match(style,/\.mf-single-calendar\{max-height:calc\(100vh - 20px\);overflow-y:auto\}/);
- assert.match(ai,/\.mf-ai-tabbar\{flex-wrap:wrap;overflow-x:visible/);
+ assert.match(ai,/\.mf-ai-tabbar\s*\{\s*flex-wrap:\s*wrap;\s*overflow-x:\s*visible\s*;/);
 });
