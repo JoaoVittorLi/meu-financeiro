@@ -39,3 +39,14 @@ test('D1.2 — same account ID from another Pluggy item cannot hijack prior owne
   assert.equal(after.transactions[0].id,'original');
   assert.deepEqual(db.integrity(),['ok']);
 }));
+test('D1.2 — same external transaction ID in distinct accounts remains valid',()=>fixture(db=>{
+  const otherAccount='33333333-3333-4333-8333-333333333333';
+  const result=db.ingestBank(ITEM_A,batch([acc([tx('shared')]),acc([tx('shared')],otherAccount,'SYNTHETIC SECOND ACCOUNT')]));
+  assert.equal(result.newCount,2);
+  assert.equal(result.totalCount,2);
+  const bank=db.bankOverview();
+  assert.equal(bank.totalTransactions,2);
+  assert.equal(bank.transactions.filter(t=>t.id==='shared').length,2);
+  assert.equal(bank.accounts.length,2);
+  assert.deepEqual(db.integrity(),['ok']);
+}));
