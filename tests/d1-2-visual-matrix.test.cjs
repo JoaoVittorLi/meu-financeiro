@@ -4,9 +4,10 @@ const {test}=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),os=require('node:os'),path=require('node:path');
 const {visualMatrix,SMOKE_VIEWS,SMOKE_PRESETS}=require('../scripts/d1-electron-smoke.cjs');
 const png=Buffer.concat([Buffer.from('89504e470d0a1a0a','hex'),Buffer.alloc(350,0)]);
-function fakeCDP({overflow=false,invalidImage=false}={}){
+function fakeCDP({overflow=false,invalidImage=false,scrollbarWidth=0,
+ viewportWidthDelta=0,delayedViewportChecks=0}={}){
  let viewport={width:1366,height:768},motion='no-preference',theme='light';
- const calls={screenshots:0,navigations:0};
+ const calls={screenshots:0,navigations:0,viewportChecks:0};
  const send=async(method,params={})=>{
   if(method==='Page.enable')return {};
   if(method==='Emulation.setDeviceMetricsOverride'){viewport=params;return {};}
@@ -17,14 +18,23 @@ function fakeCDP({overflow=false,invalidImage=false}={}){
   }
   if(method==='Runtime.evaluate'){
    const expr=params.expression;
+   if(expr.includes('return {width:window.innerWidth')){
+    calls.viewportChecks++;
+    const lag=calls.viewportChecks<=delayedViewportChecks?100:0;
+    return {result:{value:{width:viewport.width+viewportWidthDelta-lag,
+     height:viewport.height,clientWidth:viewport.width+viewportWidthDelta-scrollbarWidth-lag}}};
+   }
    if(expr.includes('window.MFAppearance.set('))return {result:{value:theme}};
    const token=expr.match(/const label=("(?:[^"\\]|\\.)*");/);
    assert(token,'Expected actual DOM navigation expression');
    const label=JSON.parse(token[1]);
    calls.navigations++;
    return {result:{value:{
-    title:label,selected:'page',width:viewport.width,
-    scrollWidth:viewport.width+(overflow?75:0),theme,reduced:motion==='reduce'
+    title:label,selected:'page',
+    viewportWidth:viewport.width+viewportWidthDelta,viewportHeight:viewport.height,
+    contentWidth:viewport.width+viewportWidthDelta-scrollbarWidth,
+    scrollWidth:viewport.width+viewportWidthDelta-scrollbarWidth+(overflow?75:0),
+    theme,reduced:motion==='reduce'
    }}};
   }
   if(method==='Page.captureScreenshot'){
@@ -67,6 +77,30 @@ test('D1.3 — 32 capturas válidas cobrem duas resoluções, temas, movimento e
  assert.deepEqual(new Set(manifest.map(x=>x.page)),new Set(SMOKE_VIEWS));
  assert.deepEqual(new Set(manifest.map(x=>x.theme+'/'+x.reduced)),
   new Set(SMOKE_PRESETS.map(x=>x.theme+'/'+(x.motion==='reduce'))));
+}));
+test('D1.4 — scrollbar clássica de 17px não reduz artificialmente o viewport emulado',()=>isolated(async dir=>{
+ const result=await visualMatrix(fakeCDP({scrollbarWidth:17}));
+ assert.equal(result.count,32);
+ const rows=JSON.parse(fs.readFileSync(path.join(dir,'visual-matrix.json'),'utf8'));
+ assert.equal(rows.length,32);
+ for(const row of rows){
+  assert.equal(row.viewportWidth,row.width);
+  assert.equal(row.viewportHeight,row.height);
+  assert.equal(row.contentWidth,row.width-17);
+  assert.equal(row.scrollWidth,row.contentWidth);
+ }
+}));
+test('D1.4 — aguarda a aplicação assíncrona das métricas CDP antes de capturar',()=>isolated(async dir=>{
+ const cdp=fakeCDP({delayedViewportChecks:3});
+ const result=await visualMatrix(cdp);
+ assert.equal(result.count,32);
+ assert(cdp.calls.viewportChecks>=7,'Aguardou a aplicação inicial e os outros três presets');
+}));
+test('D1.4 — viewport genuinamente incorreto reprova com diagnóstico e sem manifesto',()=>isolated(async dir=>{
+ const cdp=fakeCDP({viewportWidthDelta:-120});
+ await assert.rejects(()=>visualMatrix(cdp),/Viewport emulado não aplicado: esperado 1366x768, observado 1246x768/);
+ assert.equal(cdp.calls.screenshots,0);
+ assert.equal(fs.existsSync(path.join(dir,'visual-matrix.json')),false);
 }));
 test('D1.2 — overflow horizontal reprova matriz, não publica resultado de sucesso',()=>isolated(async dir=>{
  await assert.rejects(()=>visualMatrix(fakeCDP({overflow:true})),/Overflow horizontal global/);

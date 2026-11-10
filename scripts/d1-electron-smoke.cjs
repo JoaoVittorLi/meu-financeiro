@@ -107,6 +107,22 @@ async function evaluate(cdp,body){
  if(response.exceptionDetails)throw Error('Renderer: '+(response.exceptionDetails.text||JSON.stringify(response.exceptionDetails)));
  return response.result&&response.result.value;
 }
+// CDP's device override controls the viewport. documentElement.clientWidth
+// excludes the classic vertical scrollbar on Windows and is NOT the viewport.
+async function waitForEmulatedViewport(cdp,cfg,{attempts=20,intervalMs=100}={}){
+ let actual=null;
+ for(let attempt=0;attempt<attempts;attempt++){
+  actual=await evaluate(cdp,
+   'return {width:window.innerWidth,height:window.innerHeight,'+
+   'clientWidth:document.documentElement.clientWidth}');
+  if(actual&&Math.abs(actual.width-cfg.width)<=2&&Math.abs(actual.height-cfg.height)<=2)
+   return actual;
+  if(attempt+1<attempts)await delay(intervalMs);
+ }
+ throw Error('Viewport emulado não aplicado: esperado '+cfg.width+'x'+cfg.height+
+  ', observado '+(actual?.width??'?')+'x'+(actual?.height??'?')+
+  ' (conteúdo '+(actual?.clientWidth??'?')+'px).');
+}
 async function start(profile){
  const port=await availablePort(),running=launch(profile,port);
  try{
@@ -167,6 +183,9 @@ async function visualMatrix(cdp){
    {name:'prefers-reduced-motion',value:cfg.motion},
    {name:'prefers-color-scheme',value:cfg.theme}
   ]});
+  // Wait for Chromium to apply device metrics; do not assume the CDP ack
+  // means the renderer has already completed a layout pass.
+  await waitForEmulatedViewport(cdp,cfg);
   const appearance=await evaluate(cdp,
    'window.MFAppearance.set('+JSON.stringify(cfg.theme)+');return document.documentElement.dataset.theme');
   assert.equal(appearance,cfg.theme,'Tema do aplicativo não foi aplicado');
@@ -177,7 +196,8 @@ async function visualMatrix(cdp){
     'if(!button)throw Error("Navegação ausente: "+label);button.click();'+
     'await new Promise(r=>setTimeout(r,180));'+
     'return {title:document.querySelector(".mf-workspace-bar strong")?.textContent,'+
-    'selected:button.getAttribute("aria-current"),width:document.documentElement.clientWidth,'+
+    'selected:button.getAttribute("aria-current"),viewportWidth:window.innerWidth,'+
+    'viewportHeight:window.innerHeight,contentWidth:document.documentElement.clientWidth,'+
     'scrollWidth:document.documentElement.scrollWidth,'+
     'theme:document.documentElement.dataset.theme,'+
     'reduced:matchMedia("(prefers-reduced-motion: reduce)").matches};');
@@ -185,9 +205,14 @@ async function visualMatrix(cdp){
    assert.equal(state.selected,'page','Navegação não atualizou aria-current');
    assert.equal(state.theme,cfg.theme,'Tema foi perdido na navegação');
    assert.equal(state.reduced,cfg.motion==='reduce','Preferência de movimento ignorada');
-   assert(state.width>=cfg.width-2,'Viewport inesperadamente menor que o planejado');
-   assert(state.scrollWidth<=state.width+2,
-    'Overflow horizontal global em '+label+' '+cfg.width+': '+state.scrollWidth+'/'+state.width);
+   assert(Math.abs(state.viewportWidth-cfg.width)<=2&&Math.abs(state.viewportHeight-cfg.height)<=2,
+    'Viewport emulado divergente em '+label+': esperado '+cfg.width+'x'+cfg.height+
+    ', observado '+state.viewportWidth+'x'+state.viewportHeight);
+   assert(Number.isFinite(state.contentWidth)&&state.contentWidth>0&&
+    state.contentWidth<=state.viewportWidth+2,
+    'Largura de conteúdo inválida em '+label+': '+state.contentWidth+'/'+state.viewportWidth);
+   assert(state.scrollWidth<=state.contentWidth+2,
+    'Overflow horizontal global em '+label+' '+cfg.width+': '+state.scrollWidth+'/'+state.contentWidth);
    const safe=({ 'Visão geral':'overview','Movimentações':'transactions',
       'Planejamento':'planning','Orçamentos':'budgets',
       'Minhas contas':'accounts','Simular compra':'simulator',
@@ -203,7 +228,8 @@ async function visualMatrix(cdp){
     'CDP não entregou uma imagem PNG íntegra');
    fs.writeFileSync(path.join(output,name),png);
    rows.push({page:label,width:cfg.width,height:cfg.height,theme:cfg.theme,
-     reduced:state.reduced,scrollWidth:state.scrollWidth,screenshot:name});
+     reduced:state.reduced,viewportWidth:state.viewportWidth,viewportHeight:state.viewportHeight,
+     contentWidth:state.contentWidth,scrollWidth:state.scrollWidth,screenshot:name});
   }
  }
  fs.writeFileSync(path.join(output,'visual-matrix.json'),JSON.stringify(rows,null,2)+'\n');
@@ -240,7 +266,7 @@ async function smoke(){
    'return await window.financeDesktop.planEdit({id:'+JSON.stringify(id)+',title:"SYNTHETIC BILL EDITED"})');
   await checkNavigation(running.cdp);
   const visuals=await visualMatrix(running.cdp);
-  assert.equal(visuals.count,16,'Matriz visual incompleta');
+  assert.equal(visuals.count,SMOKE_VIEWS.length*SMOKE_PRESETS.length,'Matriz visual incompleta');
   const copies=await evaluate(running.cdp,'return await window.financeDesktop.backupStatus()');
   assert(copies.copies>0,'Backup automático não foi gerado');
   await closeCleanly(running);running=null;
@@ -264,4 +290,4 @@ async function smoke(){
  }
 }
 if(require.main===module)smoke().catch(e=>{console.error('FAIL REAL ELECTRON D1.2:',e);process.exitCode=1});
-module.exports={availablePort,createSyntheticProfile,awaitTarget,checkNavigation,visualMatrix,SMOKE_VIEWS,SMOKE_PRESETS};
+module.exports={availablePort,createSyntheticProfile,awaitTarget,checkNavigation,visualMatrix,waitForEmulatedViewport,SMOKE_VIEWS,SMOKE_PRESETS};

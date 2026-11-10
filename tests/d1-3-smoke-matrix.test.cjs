@@ -20,6 +20,13 @@ test('D1.3 — matriz visual cobre dois tamanhos, temas claro/escuro e movimento
  assert.deepEqual([...new Set(SMOKE_PRESETS.map(x=>x.motion))].sort(),
   ['no-preference','reduce']);
 });
+test('D1.4 — smoke completo exige todas as 32 imagens após os testes IPC',()=>{
+ const smoke=fs.readFileSync(path.join(__dirname,'../scripts/d1-electron-smoke.cjs'),'utf8');
+ assert.match(smoke,/assert\.equal\(visuals\.count,SMOKE_VIEWS\.length\*SMOKE_PRESETS\.length/);
+ assert.match(smoke,/window\.innerWidth/);
+ assert.match(smoke,/window\.innerHeight/);
+ assert.match(smoke,/waitForEmulatedViewport\(cdp,cfg\)/);
+});
 test('D1.3 — Windows valida presença das 32 capturas e seu manifesto',()=>{
  const ps1=fs.readFileSync(path.join(__dirname,'../.circleci/build-windows.ps1'),'utf8');
  assert.match(ps1,/test:electron-smoke/);
