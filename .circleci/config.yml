@@ -126,7 +126,7 @@ jobs:
             test "$(node --version)" = 'v22.23.4' || { echo 'Node fora da versão fixada'; exit 1; }
             test "$(npm --version)" = '10.9.9' || { echo 'npm fora da versão fixada'; exit 1; }
             echo "Toolchain: $(node --version), npm $(npm --version)"
-            npm install --no-audit --no-fund --package-lock=false
+            npm ci --no-audit --no-fund
             npm run test:types
             npm run test:db
             npm run compile
@@ -139,7 +139,7 @@ jobs:
             cd mobile-push
             test "$(node --version)" = 'v22.23.4' || exit 1
             test "$(npm --version)" = '10.9.9' || exit 1
-            npm install --no-audit --no-fund --package-lock=false
+            npm ci --no-audit --no-fund
             npm test
             npx --no-install wrangler deploy --dry-run --outdir /tmp/mf-e4-preview
           no_output_timeout: 20m
