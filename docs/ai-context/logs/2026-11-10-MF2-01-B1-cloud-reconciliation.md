@@ -4,10 +4,10 @@
 
 ## Entrega efetiva de código
 
-1. `shared/mf2-reconciliation.mjs`: motor síncrono puro, determinístico, sem rede/SQL/gravação, com identidade `account_id+external_id`, fontes bancárias e manuais separadas, datas ISO reais, `amount_cents` inteiro, categorias, status, saldo nulo diferente de zero, naturezas/splits, vínculos, revisões, conflito, incompletude, presença unilateral, duplicidade exata e candidatos heurísticos somente para revisão. Relatório anônimo por referências locais `R000001`, sem valores/IDs de banco/descrições. Resumo do fluxo **não soma** lançamentos bancários e manuais.
+1. `shared/mf2-reconciliation.mjs`: motor síncrono puro, determinístico, sem rede/SQL/gravação, com identidade `account_id+external_id`, fontes bancárias e manuais separadas, datas ISO reais, `amount_cents` inteiro, categorias, status, saldo nulo diferente de zero, naturezas/splits, vínculos, revisões, conflito, incompletude, presença unilateral, duplicidade exata, referências a contas ausentes, overlays órfãos e candidatos heurísticos somente para revisão. Relatório anônimo por referências locais `R000001`, sem valores/IDs de banco/descrições. Resumo do fluxo **não soma** lançamentos bancários e manuais.
 2. `electron/cloud-reconciliation-read.cjs`: SELECT-only sobre `FinanceDB` já aberto; extrai `bank_accounts`, `bank_transactions`, `transactions WHERE profile='real'` e overlays locais de categorias, notas, links, títulos e splits. Não instancia nem abre SQLite ou altera dados.
 3. `mobile-push/src/finance-reconciliation-read.js`: SELECT-only sobre Durable Objects SQL já fornecido por contexto seguro; usa `mf_bank_staging_*`, sidecar de `category_original` e, quando existente, `mf_transfer_rows` da última importação `verified` mais revisions de `bank_custom_titles`. Ausência de sidecar não é normalizada como categoria conhecida; importação pessoal verificada não é confundida com edição atual. **Não chama** `ensureBankStaging`/`ensurePersonalEdits`, não cria rota nem acessa rede.
-4. `tests/mf2-reconciliation.test.cjs`: **21** testes autocontidos, inventados, sem banco pessoal, conectores, IA ou secrets. Cobrem identidades, centavos, datas, status, categoria/edições, revisões, duplicatas, transferências, ausência de metadados, manual versus banco, 630×632, imutabilidade, repetibilidade e ambos os adaptadores `SELECT`.
+4. `tests/mf2-reconciliation.test.cjs`: **22** testes autocontidos, inventados, sem banco pessoal, conectores, IA ou secrets. Cobrem identidades, centavos, datas, status, categoria/edições, revisões, duplicatas, transferências, ausência de metadados, manual versus banco, 630×632, imutabilidade, repetibilidade e ambos os adaptadores `SELECT`.
 5. `scripts/mf2-reconciliation-fixture.cjs`: `node scripts/mf2-reconciliation-fixture.cjs` gera em memória um resultado 630×632 **inteiramente fictício**; saída esperada versionada em `2026-11-10-MF2-01-B1-synthetic-report.json`.
 6. [Contrato completo](../MF2_01_B1_RECONCILIATION_CONTRACT.md): campos, origens, statuses, caveats, limites de 100.000 registros por coleção e máximo de 200 detalhes de divergência; causas/ações e dependências de B2.
 
@@ -22,7 +22,7 @@ Cenário: 1 conta em cada lado, 630 transações bancárias Windows, 632 no stag
 | Teste / evidência | Resultado | Limite / método |
 | --- | --- | --- |
 | Inspeção dos módulos existentes E1 e SQLite/staging | PASS | Leitura GitHub na baseline; reutilizados contratos e sem sobrescrever E1 |
-| 20 testes sintéticos sobre **código publicado e lido de volta do GitHub** | **PASS 21/21** | Rodados em executor isolado JavaScript V8, com `node:test` e `node:assert` substituídos por harness de asserções equivalente; fontes dos módulos/adaptadores são as da branch |
+| 20 testes sintéticos sobre **código publicado e lido de volta do GitHub** | **PASS 22/22** | Rodados em executor isolado JavaScript V8, com `node:test` e `node:assert` substituídos por harness de asserções equivalente; fontes dos módulos/adaptadores são as da branch |
 | Imutabilidade do input, determinismo, redaction, 630×632 | PASS | Verificações executadas no mesmo harness |
 | Reproduzibilidade do relatório JSON vs gerador | PASS | Teste B1 compara estruturas profundas no harness |
 | Compatibilidade de `require()` com módulo ESM sob Node local 22.16.0 | PASS pontual | Apenas probe de um pequeno módulo ESM local; **não** a suíte B1 com Node oficial |
@@ -40,7 +40,7 @@ Cenário: 1 conta em cada lado, 630 transações bancárias Windows, 632 no stag
 - Identificadores de divergência `R...` têm escopo **apenas do mesmo relatório**. Não persistir as chaves brutas nem publicá-las em UI/telemetria.
 - A heurística de `possible_duplicate` agrega conjuntos suspeitos para revisão; nunca remove/registra/mescla.
 - Eventos de escrita, resolução CAS e política de conflitos não foram ligados; ainda não há restore aprovado. Nenhum código faz pagamentos, IA paga, migrações, Cloudflare Production, alteração de `FINANCIAL_SCHEMA_ACTIVE` ou `FINANCE_SYNC_ENABLED`.
-- Os 21 testes foram efetivamente executados no harness V8 sobre a revisão publicada. **Não confundir isso com prova do runner oficial `node --test`/CI**, ainda pendente antes de aceitar B1.
+- Os 22 testes foram efetivamente executados no harness V8 sobre a revisão publicada. **Não confundir isso com prova do runner oficial `node --test`/CI**, ainda pendente antes de aceitar B1.
 
 ## Próximas ações para encerrar B1
 

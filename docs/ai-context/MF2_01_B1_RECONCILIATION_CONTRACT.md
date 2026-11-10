@@ -43,7 +43,7 @@ Uma transação bancária continua **separada** de transação manual: não são
 
 A referência `R000001` etc. é um **apelido determinístico por comparação**, calculado a partir da ordenação privada das chaves; não é ID externo nem chave persistente entre comparações com universos diferentes. As identidades brutas permanecem somente nas entradas confiáveis da função. Identidades inválidas são sinalizadas como `INVALID-<lado>-<ordinal>`.
 
-**Divergências:** `only_one_source`, `financial_difference` (data/centavos), `status_difference`, `category_difference`, `attribute_difference`, `account_identity_difference`, `incomplete`, `duplicate_identity`, `possible_duplicate` (agrupamento heurístico para **revisão**, não deduplicação), `personal_edit_difference` e `revision_conflict`. A interpretação requer julgamento; campos não observáveis não equivalem a valores nulos/zero.
+**Divergências:** `only_one_source`, `financial_difference` (data/centavos), `status_difference`, `category_difference`, `attribute_difference`, `account_identity_difference`, `incomplete`, `duplicate_identity`, `possible_duplicate` (agrupamento heurístico para **revisão**, não deduplicação), `personal_edit_difference` `revision_conflict`, `missing_account_reference` e `orphan_personal_overlay`. A interpretação requer julgamento; campos não observáveis não equivalem a valores nulos/zero.
 
 ## 4. Investigação 630 × 632 e limites
 
