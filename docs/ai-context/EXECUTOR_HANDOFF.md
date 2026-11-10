@@ -14,6 +14,12 @@ Repositório privado `JoaoVittorLi/meu-financeiro`. Aplicativo financeiro Window
 
 `feat/mf2-beta8-premium-staging-20261110`, [PR #31](https://github.com/JoaoVittorLi/meu-financeiro/pull/31) draft, base funcional `feat/mf2-d1-2-functional-tests-20261110` / PR #28. HEAD **dinâmico**: consulte GitHub ao iniciar qualquer ação. Código da correção mais recente em `c109d905a4120b5820130e310e3dd36210781db6`; SHA anterior `dd30ddbd94d16b1cd415ff61b3dd4bd94ad2065b`. Os commits documentais posteriores alteram o HEAD sem alterar o código.
 
+## HOTFIX D1.4 — ALINHAMENTO DA MATRIZ DE SCREENSHOTS (10/11/2026)
+
+- **Código corrigido:** `eb705603600b821a59a5950c56b4e12c2769bfa9` na branch `feat/mf2-beta8-premium-staging-20261110`. Ajustados exclusivamente `tests/d1-2-visual-matrix.test.cjs` e `tests/d1-2-electron-contract.test.cjs` para exigir **32** (8 módulos × 4 presets), em vez dos **16** de D1.2. Contagem derivada das constantes do smoke, validação do manifesto e unicidade de PNGs; o contrato CI verifica `$expectedScreenshots=32`, arquivos e registros. **Nenhuma mudança** de smoke, PowerShell, CSS Argon, `electron/db.cjs`, finanças, main ou deploy.
+- **Testes desta sessão:** V8 parse OK de ambos os JS; 4/4 callbacks do teste de contrato Electron executados em V8 sobre conteúdo GitHub com dependências Node simuladas, PASS. **Não foi rodado `node --test` real** porque não existe checkout npm local neste agente; smoke GUI, suíte completa, TypeScript/F08/ASAR/Windows/CI não foram repetidos.
+- **Próximo gate:** verificar HEAD atualizado e executar a única pipeline CircleCI Linux→Windows; se falhar, corrigir o erro comprovado sem voltar a 16. Ver `docs/ai-context/logs/2026-11-10-MF2-D1-4-screenshot-matrix-hotfix.md`.
+
 ## CHECKPOINT D1.4 — INTEGRAÇÃO PREMIUM FINAL (10/11/2026; prevalece sobre D1.3)
 
 - **PR de integração:** [#34](https://github.com/JoaoVittorLi/meu-financeiro/pull/34), **merged/closed** contra staging após *fast-forward* autorizado, de `09b48637b106c9c8937873adf2469dc19440a950` até o commit de código integrado `0a320d467dda50ce0d1509b61d3fc071081792ef`; o [PR #31](https://github.com/JoaoVittorLi/meu-financeiro/pull/31) continua draft. **O HEAD pode avançar após este checkpoint documental; consultar o GitHub.** `main` não modificada nesta missão.
