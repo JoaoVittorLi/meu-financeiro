@@ -71,9 +71,9 @@ Assert-Success 'Verificação do npm'
 if ($npmVersion -ne $npmVersionExpected) { throw "npm incorreto: $npmVersion; esperado $npmVersionExpected" }
 Write-Host "Node verificado: $nodeVersion | npm: $npmVersion"
 
-Write-Host 'Instalando dependências do projeto (sem lockfile; não modifica Git)...'
-& $npmExecutable install --no-audit --no-fund --package-lock=false
-Assert-Success 'npm install'
+Write-Host 'Instalando dependências reproduzíveis com o lockfile versionado...'
+& $npmExecutable ci --no-audit --no-fund
+Assert-Success 'npm ci'
 
 Write-Host 'Verificação de tipos TypeScript...'
 & $npmExecutable run test:types
