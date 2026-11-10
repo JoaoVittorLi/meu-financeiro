@@ -65,3 +65,67 @@ test('emojis em categorias preservados após atualização e nova abertura',()=>
  assert.throws(()=>db.upsertCategory({name:'Texto',color:'#884bff',emoji:'not emoji'}),/emoji/);
  db.close();fs.rmSync(f.root,{recursive:true,force:true});
 });
+
+test('D1.1 — cópia diária preexistente corrompida não é considerada válida nem sobrescrita',async()=>{
+ const f=fixture();const db=new FinanceDB(f.file);
+ try{
+  db.save('real',dataset('protegido'));
+  fs.mkdirSync(f.backups,{recursive:true});
+  const file=path.join(f.backups,'meu-financeiro-2026-11-10.sqlite');
+  const corrupted=Buffer.from('NOT A FINANCE SQLITE BACKUP');
+  fs.writeFileSync(file,corrupted);
+  await assert.rejects(()=>automaticBackup(db,f.backups,{now:new Date('2026-11-10T12:00:00.000Z')}));
+  assert.deepEqual(fs.readFileSync(file),corrupted);
+  assert.equal(db.load('real').transactions[0].id,'t-protegido');
+  assert.deepEqual(db.integrity(),['ok']);
+ }finally{db.close();fs.rmSync(f.root,{recursive:true,force:true});}
+});
+
+test('D1.1 — backup parcial inválido não é publicado nem elimina a cópia anterior íntegra',async()=>{
+ const f=fixture();const db=new FinanceDB(f.file);
+ try{
+  db.save('real',dataset('anterior'));
+  const previous=await automaticBackup(db,f.backups,{now:new Date('2026-11-09T12:00:00.000Z')});
+  assert.equal(previous.created,true);
+  assert.equal(validateBackupFile(previous.file).ok,true);
+  const broken={async backupTo(destination){
+    fs.writeFileSync(destination,'NOT A VALID SQLITE FILE');
+    return {ok:true,path:destination};
+  }};
+  await assert.rejects(()=>automaticBackup(broken,f.backups,{now:new Date('2026-11-10T12:00:00.000Z')}));
+  assert.equal(fs.existsSync(path.join(f.backups,'meu-financeiro-2026-11-10.sqlite')),false);
+  assert.equal(validateBackupFile(previous.file).ok,true);
+  assert.equal(listAutoBackups(f.backups).length,1);
+  assert.equal(fs.readdirSync(f.backups).some(name=>name.includes('.partial-')),false);
+  assert.equal(db.load('real').transactions[0].id,'t-anterior');
+ }finally{db.close();fs.rmSync(f.root,{recursive:true,force:true});}
+});
+
+test('D1.1 — cópia diária alterada depois da validação é rejeitada na próxima verificação',async()=>{
+ const f=fixture();const db=new FinanceDB(f.file);
+ try{
+  db.save('real',dataset('integro'));
+  const date=new Date('2026-11-10T12:00:00.000Z');
+  const saved=await automaticBackup(db,f.backups,{now:date});
+  assert.equal(saved.created,true);
+  assert.equal((await automaticBackup(db,f.backups,{now:date})).created,false);
+  const corrupted=Buffer.alloc(128,0x41);
+  fs.writeFileSync(saved.file,corrupted);
+  await assert.rejects(()=>automaticBackup(db,f.backups,{now:date}));
+  assert.deepEqual(fs.readFileSync(saved.file),corrupted);
+  assert.equal(db.load('real').transactions[0].id,'t-integro');
+  assert.deepEqual(db.integrity(),['ok']);
+ }finally{db.close();fs.rmSync(f.root,{recursive:true,force:true});}
+});
+
+test('D1.1 — validação do backup WAL não deixa auxiliares .partial após sucesso',async()=>{
+ const f=fixture();const db=new FinanceDB(f.file);
+ try{
+  db.save('real',dataset('wal-limpo'));
+  const saved=await automaticBackup(db,f.backups,{now:new Date('2026-11-11T12:00:00.000Z')});
+  assert.equal(saved.created,true);
+  assert.equal(validateBackupFile(saved.file).ok,true);
+  assert.equal(fs.readdirSync(f.backups).filter(name=>name.includes('.partial-')).length,0);
+  assert.equal(db.load('real').transactions[0].id,'t-wal-limpo');
+ }finally{db.close();fs.rmSync(f.root,{recursive:true,force:true});}
+});

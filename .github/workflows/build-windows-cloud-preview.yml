@@ -1,0 +1,56 @@
+name: Meu Financeiro Windows — prévia de migração protegida
+# Automatic Windows builds now happen once in unified-preview-gate.yml
+# along with the PWA tests from the same commit. Keep this as manual fallback.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  portable-migration-preview:
+    runs-on: windows-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Instalar dependências
+        shell: pwsh
+        run: npm install --no-audit --no-fund
+      - name: Conferir SQLite e tipos da aplicação
+        shell: pwsh
+        run: |
+          npm run test:db
+          if ($LASTEXITCODE -ne 0) { throw "SQLite tests failed" }
+          npm run test:types
+          if ($LASTEXITCODE -ne 0) { throw "TypeScript failed" }
+      - name: Compilar interface Windows
+        shell: pwsh
+        run: |
+          npm run compile
+          if ($LASTEXITCODE -ne 0) { throw "Compile failed" }
+      - name: Gerar somente executável portátil, sem instalar nem publicar release
+        shell: pwsh
+        run: |
+          npx electron-builder --win portable --x64 --publish never
+          if ($LASTEXITCODE -ne 0) { throw "Portable packaging failed" }
+      - name: Verificar pacote e SHA-256
+        shell: pwsh
+        run: |
+          $exes = @(Get-ChildItem -Path release -Filter 'MeuFinanceiro-Portable-*.exe' -File)
+          if ($exes.Count -ne 1) { throw "Expected exactly one portable EXE" }
+          $exes | Get-FileHash -Algorithm SHA256 |
+            ForEach-Object { "$($_.Hash)  $(Split-Path $_.Path -Leaf)" } |
+            Set-Content -Path release/SHA256.txt -Encoding utf8
+          Get-Content release/SHA256.txt
+      - name: Disponibilizar prévia por 14 dias, sem lançamento público
+        uses: actions/upload-artifact@v4
+        with:
+          name: MeuFinanceiro-Windows-Previa-Migracao
+          path: |
+            release/MeuFinanceiro-Portable-*.exe
+            release/SHA256.txt
+          if-no-files-found: error
+          retention-days: 14

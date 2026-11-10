@@ -1,0 +1,118 @@
+# One-shot preview build: ordinary commits never consume Actions minutes; change the trigger marker only after quota is renewed.
+name: Meu Financeiro - paridade Windows e PWA (Preview)
+on:
+  workflow_dispatch:
+  # Trigger only when this marker is intentionally changed after budget renewal.
+  push:
+    branches:
+      - safety/cloud-migration-preflight-20261107
+    paths:
+      - .ci/request-preview-build.txt
+
+permissions:
+  contents: read
+
+# Both Preview clients must originate from the same source commit.
+# This workflow does NOT deploy Production, merge main or enable cloud cutover.
+jobs:
+  parity-and-security:
+    if: github.ref == 'refs/heads/safety/cloud-migration-preflight-20261107'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Dependencies (desktop)
+        run: npm install --no-audit --no-fund
+      - name: Windows financial-engine and shared contract tests
+        run: npm run test:db
+      - name: TypeScript contract
+        run: npm run test:types
+      - name: Dependencies (Worker/PWA)
+        working-directory: mobile-push
+        run: npm install --no-audit --no-fund
+      - name: Worker, bank parity and PWA tests
+        working-directory: mobile-push
+        run: npm test
+      - name: Bundle Cloudflare Preview without publishing
+        working-directory: mobile-push
+        run: npx wrangler deploy --dry-run --outdir /tmp/mf-preview-bundle
+      - name: Single source revision and paired Windows/PWA version
+        run: |
+          echo "Source SHA: $GITHUB_SHA"
+          test -f shared/bank-parity.mjs
+          node -e "const win=require('./package.json'); const pwa=require('./mobile-push/package.json'); if(win.version!==pwa.version){console.error('Version mismatch');process.exit(1)} console.log('Windows and PWA '+win.version)"
+  preview-windows:
+    needs: parity-and-security
+    permissions:
+      contents: write
+    runs-on: windows-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install and compile Windows
+        shell: pwsh
+        run: |
+          npm install --no-audit --no-fund
+          if ($LASTEXITCODE -ne 0) { throw "Installation failed" }
+          npm run compile
+          if ($LASTEXITCODE -ne 0) { throw "Compile failed" }
+
+      - name: Verify Windows SQLite, compile and package portable plus installer
+        shell: pwsh
+        run: |
+          npm run test:db
+          if ($LASTEXITCODE -ne 0) { throw "Windows SQLite tests failed" }
+          npm run compile
+          if ($LASTEXITCODE -ne 0) { throw "Compile failed" }
+          npx electron-builder --win portable nsis --x64 --publish never
+          if ($LASTEXITCODE -ne 0) { throw "Build failed" }
+          $portable = @(Get-ChildItem release -Filter 'MeuFinanceiro-Portable-*.exe' -File)
+          $installer = @(Get-ChildItem release -Filter 'MeuFinanceiro-Instalador-*.exe' -File)
+          if ($portable.Count -ne 1 -or $installer.Count -ne 1) {
+            throw "Expected one portable and one installer EXE"
+          }
+          @("Source commit: $env:GITHUB_SHA","Preview only: NOT approved for cloud cutover") |
+            Set-Content release/BUILD-COMMIT.txt -Encoding utf8
+          @($portable[0],$installer[0]) | ForEach-Object {
+            $hash = (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+            "$hash  $($_.Name)"
+          } | Set-Content release/SHA256.txt -Encoding utf8
+          Get-Content release/SHA256.txt
+      - name: Attach both EXEs from this exact commit
+        uses: actions/upload-artifact@v4
+        with:
+          name: MeuFinanceiro-Preview-Windows-Mesmo-Commit
+          path: |
+            release/MeuFinanceiro-Portable-*.exe
+            release/MeuFinanceiro-Instalador-*.exe
+            release/SHA256.txt
+            release/BUILD-COMMIT.txt
+          retention-days: 14
+          if-no-files-found: error
+      - name: Publish private GitHub prerelease for direct EXE downloads
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = 'preview-' + $env:GITHUB_SHA.Substring(0,12)
+          $repo = $env:GITHUB_REPOSITORY
+          $assets = @((Get-ChildItem release -Filter 'MeuFinanceiro-Portable-*.exe' -File).FullName)
+          $assets += @((Get-ChildItem release -Filter 'MeuFinanceiro-Instalador-*.exe' -File).FullName)
+          $assets += (Resolve-Path 'release/SHA256.txt').Path
+          $assets += (Resolve-Path 'release/BUILD-COMMIT.txt').Path
+          if ($assets.Count -ne 4) { throw "Invalid release asset count" }
+          gh release view $tag --repo $repo *> $null
+          if ($LASTEXITCODE -eq 0) {
+            throw "Release $tag already exists; never overwrite a previous preview"
+          }
+          gh release create $tag @assets --repo $repo --target $env:GITHUB_SHA --title "Meu Financeiro Preview $($env:GITHUB_SHA.Substring(0,12))" --notes "Windows Preview da PR #1; mesmo commit para testes Windows e PWA. E1 ainda exige homologação; faça backup do SQLite antes de usar. Nenhum cutover ou deploy de produção." --prerelease
+          if ($LASTEXITCODE -ne 0) { throw "Release upload failed" }
+          gh release view $tag --repo $repo --json tagName --jq '.tagName'
+          if ($LASTEXITCODE -ne 0) { throw "Release verification failed" }
+          Write-Host "Publish completed. Asset URLs: github.com/$repo/releases/download/$tag/<filename>"

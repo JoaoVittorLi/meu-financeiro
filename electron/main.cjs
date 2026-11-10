@@ -3,11 +3,23 @@ const {app,BrowserWindow,session,ipcMain,dialog,shell,safeStorage}=require('elec
 const path=require('node:path');
 const fs=require('node:fs');
 const {FinanceDB}=require('./db.cjs');
+const {prepareCloudMigration,migrationLocalStatus}=require('./cloud-onboarding.cjs');
+const {uploadPersonalQuarantine,CONSENT,loadMarker,markerFile}=require('./cloud-personal-uploader.cjs');
+const {syncPersonalSafeFields,summary:cloudSafeSyncSummary}=require('./cloud-personal-safe-sync.cjs');
+const {compareLocalBankWithPreview}=require('./cloud-bank-parity.cjs');
+const {auditE1Windows}=require('./cloud-e1-audit.cjs');
+const {PREVIEW_ORIGIN,checkPreviewIdentity,testPreviewQuarantine}=require('./cloud-preview-identity.cjs');
+const {pairViaSystemBrowser,cancelBrowserPairing}=require('./cloud-system-browser.cjs');
 const {PlanningStore}=require('./planning.cjs');
 const {automaticBackup,restoreBackup,listAutoBackups,validateBackupFile}=require('./recovery.cjs');
 const {PluggyVault}=require('./pluggy-vault.cjs');
 const {PluggyClient}=require('./pluggy.cjs');
-let planner=null, db=null, mainWindow=null, vault=null, syncing=false, restoring=false, autoBackupBusy=false, backupTimer=null;
+const {AIAuthVault}=require('./ai-vault.cjs');
+const {AIPersonalStore}=require('./ai-personal.cjs');
+const {ChatGPTSignIn}=require('./ai-auth.cjs');
+const {ChatGPTDemoClient}=require('./ai-client.cjs');
+const {buildSyntheticFinancialContext}=require('../shared/ai-financial-context.mjs');
+let planner=null, db=null, mainWindow=null, vault=null, syncing=false, restoring=false, autoBackupBusy=false, cloudPreparationBusy=false, backupTimer=null, cloudPersonalTimer=null, cloudPersonalBusy=false, cloudAuthPromise=null,cloudAccessAssertion=null;
 function backupsDirectory(){return path.join(app.getPath('userData'),'copias-de-seguranca');}
 async function ensureAutomaticBackup(){
   if(!db||restoring||syncing||autoBackupBusy)return;
@@ -26,6 +38,98 @@ function requireAppSender(event){
    !url.startsWith('file://') || !url.endsWith('/app/index.html') ||
    event.sender!==mainWindow?.webContents) throw new Error('Origem da requisição negada.');
 }
+// The browser-based Access login stays in an isolated Chromium partition.
+// Cookies remain there, not in the application's local file:// renderer.
+// This verifies only the preview health endpoint. No financial upload occurs.
+function cloudPreviewSession(){
+  const ses=session.fromPartition('persist:mf-cloud-preview');
+  ses.setPermissionRequestHandler((_wc,_permission,callback)=>callback(false));
+  ses.setPermissionCheckHandler(()=>false);
+  return ses;
+}
+async function previewIdentityStatus(){
+  const ses=cloudPreviewSession();
+  return checkPreviewIdentity((url,init)=>ses.fetch(url,init));
+}
+function secureCloudFetch(ses){
+  return async(url,options={})=>{
+    if(typeof url!=='string'||!url.startsWith(PREVIEW_ORIGIN+'/'))
+      throw new Error('Origem de nuvem não autorizada.');
+    // On Windows restart the HttpOnly CF_Authorization cookie persists in
+    // the isolated profile, while process memory does not.
+    let assertion=cloudAccessAssertion;
+    if(!assertion){
+      const candidates=await ses.cookies.get({url:PREVIEW_ORIGIN,name:'CF_Authorization'});
+      assertion=candidates.find(x=>x.name==='CF_Authorization')?.value||null;
+    }
+    return ses.fetch(url,{
+      ...options,headers:{
+        ...(options.headers||{}),
+        ...(assertion?{'Cf-Access-Jwt-Assertion':assertion}:{})
+      }
+    });
+  };
+}
+async function tickCloudPersonal(){
+  if(!db||cloudPersonalBusy||syncing||restoring||autoBackupBusy||
+     cloudPreparationBusy)return;
+  // Never replicate from an unapproved local database: the owner must have
+  // completed the original 17-table transfer and retained its marker.
+  let marker;
+  try{marker=loadMarker(app.getPath('userData'));}catch{return;}
+  if(!marker)return;
+  cloudPersonalBusy=true;
+  try{
+    const ses=cloudPreviewSession();
+    const client=secureCloudFetch(ses);
+    const identity=await checkPreviewIdentity(client);
+    if(!identity.connected)return;
+    const result=await syncPersonalSafeFields(db,client,{
+      maxChanges:100,maxOutbound:20
+    });
+    if((result.inboundApplied||result.outboundConfirmed)&&
+       mainWindow&&!mainWindow.isDestroyed()){
+      mainWindow.webContents.send('cloud:personal-updated',{
+        inbound:result.inboundApplied,outbound:result.outboundConfirmed,
+        conflicts:result.conflicts
+      });
+    }
+  }catch{
+    // Keep the local data and pending edits untouched until the next retry.
+    // Never log token, personal notes or transaction values.
+  }finally{cloudPersonalBusy=false;}
+}
+async function connectPreviewIdentity(){
+  const ses=cloudPreviewSession();
+  const existing=await checkPreviewIdentity(secureCloudFetch(ses));
+  if(existing.connected)return existing;
+  if(cloudAuthPromise)return cloudAuthPromise;
+  cloudAuthPromise=pairViaSystemBrowser({
+    openBrowser:url=>shell.openExternal(url),
+    acceptSession:async({accessAssertion,pilotSession})=>{
+      // The browser-to-localhost pairing never exposes tokens in renderer
+      // IPC or URLs. Session cookies stay in an isolated Chromium profile.
+      await ses.cookies.set({url:PREVIEW_ORIGIN,
+        name:'CF_Authorization',value:accessAssertion,
+        secure:true,httpOnly:true,sameSite:'no_restriction',path:'/'});
+      await ses.cookies.set({url:PREVIEW_ORIGIN,
+        name:'mf_push_session',value:pilotSession,
+        secure:true,httpOnly:true,sameSite:'strict',path:'/'});
+      cloudAccessAssertion=accessAssertion;
+      const confirmed=await checkPreviewIdentity(secureCloudFetch(ses));
+      if(!confirmed.connected){
+        cloudAccessAssertion=null;
+        await Promise.allSettled([
+          ses.cookies.remove(PREVIEW_ORIGIN,'CF_Authorization'),
+          ses.cookies.remove(PREVIEW_ORIGIN,'mf_push_session')
+        ]);
+      }
+      return confirmed;
+    }
+  }).finally(()=>{cloudAuthPromise=null;});
+  return cloudAuthPromise;
+}
+
 function createWindow(){
  mainWindow=new BrowserWindow({
    width:1500,height:940,minWidth:1000,minHeight:680,
@@ -43,12 +147,27 @@ function createWindow(){
  mainWindow.webContents.on('will-navigate',(event)=>event.preventDefault());
  mainWindow.loadFile(path.resolve(__dirname,'../app/index.html'));
 }
+// Preview portable and installed version share one local finance database.
+// Prevent concurrent Electron instances from writing to the same SQLite file.
+const isPrimaryInstance=app.requestSingleInstanceLock();
+if(!isPrimaryInstance)app.quit();
+app.on('second-instance',()=>{
+  if(mainWindow&&!mainWindow.isDestroyed()){
+    if(mainWindow.isMinimized())mainWindow.restore();
+    mainWindow.focus();
+  }
+});
 app.whenReady().then(()=>{
+ if(!isPrimaryInstance)return;
  app.setAppUserModelId('app.local.meufinanceiro');
  const filename=path.join(app.getPath('userData'),'meu-financeiro.sqlite');
  db=new FinanceDB(filename);
  planner=new PlanningStore(db);
  vault=new PluggyVault(app.getPath('userData'),safeStorage);
+ const aiVault=new AIAuthVault(app.getPath('userData'),safeStorage);
+ const aiAuth=new ChatGPTSignIn({vault:aiVault,openExternal:url=>shell.openExternal(url)});
+ const aiPersonal=new AIPersonalStore(app.getPath('userData'),safeStorage);
+ const aiDemo=new ChatGPTDemoClient({auth:aiAuth,personalStore:aiPersonal});
  session.defaultSession.setPermissionRequestHandler((_wc,_permission,callback)=>callback(false));
  ipcMain.handle('finance:load',(event,profile)=>{requireAppSender(event);return db.load(profile);});
  ipcMain.handle('finance:save',(event,profile,data)=>{requireAppSender(event);return db.save(profile,data);});
@@ -58,6 +177,95 @@ app.whenReady().then(()=>{
    const result=await dialog.showSaveDialog(mainWindow,{title:'Salvar cópia do banco de dados',defaultPath:'MeuFinanceiro-backup-'+new Date().toISOString().slice(0,10)+'.sqlite',filters:[{name:'Banco SQLite',extensions:['sqlite']}]});
    if(result.canceled||!result.filePath)return {cancelled:true};
    return db.backupTo(result.filePath);
+ });
+ ipcMain.handle('cloud:access-status',async(event)=>{
+   requireAppSender(event);
+   return previewIdentityStatus();
+ });
+ ipcMain.handle('cloud:access-connect',async(event)=>{
+   requireAppSender(event);
+   if(restoring||cloudPreparationBusy)
+     throw new Error('Conclua a operação local antes de entrar na nuvem.');
+   return connectPreviewIdentity();
+ });
+ ipcMain.handle('cloud:quarantine-demo',async(event)=>{
+   requireAppSender(event);
+   if(restoring||syncing||cloudPreparationBusy)
+     throw new Error('Outra operação financeira está em andamento.');
+   const ses=cloudPreviewSession();
+   const identity=await checkPreviewIdentity(secureCloudFetch(ses));
+   if(!identity.connected)return {ok:false,reason:'login_required',
+     realRecordsSent:0,financialSyncEnabled:false};
+   return testPreviewQuarantine(secureCloudFetch(ses));
+ });
+ ipcMain.handle('cloud:transfer-personal',async(event)=>{
+   requireAppSender(event);
+   if(syncing||restoring||autoBackupBusy||cloudPreparationBusy)
+     throw new Error('Existe outra operação em andamento.');
+   // This is an explicit data transfer consent, NOT consent for cloud cutover.
+   // It is the only way real personal records may leave the desktop.
+   const prompt=await dialog.showMessageBox(mainWindow,{
+     type:'warning',title:'Conferir migração pessoal protegida',
+     message:'Autoriza copiar suas personalizações financeiras para a quarentena privada da Cloudflare?',
+     detail:'Envia categorias, regras, orçamentos, transações manuais, títulos, notas, divisões, planejamentos e identificadores vinculados. O backup SQLite permanecerá no seu computador. Os dados ficarão guardados no ambiente de testes protegido, para conferência. O Itaú não será consultado por este envio. A sincronização financeira NÃO será ativada nesta etapa.',
+     buttons:['Cancelar','Autorizo o envio para conferência'],
+     defaultId:0,cancelId:0,noLink:true
+   });
+   if(prompt.response!==1)
+     return {cancelled:true,financialSyncEnabled:false,recordsSent:0};
+   const ses=cloudPreviewSession();
+   const identity=await checkPreviewIdentity(secureCloudFetch(ses));
+   if(!identity.connected)
+     throw new Error('Faça login no Preview protegido antes de enviar os dados.');
+   cloudPreparationBusy=true;
+   try{
+     return await prepareCloudMigration({
+       finance:db,backupFolder:backupsDirectory(),
+       onValidatedSnapshot:(snapshot)=>uploadPersonalQuarantine(
+         snapshot,secureCloudFetch(ses),
+         app.getPath('userData'),{consent:CONSENT}
+       )
+     });
+   }finally{cloudPreparationBusy=false;}
+ });
+ ipcMain.handle('cloud:bank-parity',async(event)=>{
+   requireAppSender(event);
+   if(restoring||syncing||cloudPreparationBusy||autoBackupBusy)
+     return {ok:false,reason:'local_operation_in_progress',financialSyncEnabled:false};
+   const ses=cloudPreviewSession();
+   const client=secureCloudFetch(ses);
+   const identity=await checkPreviewIdentity(client);
+   if(!identity.connected)return {ok:false,reason:'cloud_login_required',financialSyncEnabled:false};
+   return compareLocalBankWithPreview(db,client);
+ });
+ ipcMain.handle('cloud:e1-audit',async(event)=>{
+   requireAppSender(event);
+   if(restoring||syncing||cloudPreparationBusy||autoBackupBusy||cloudPersonalBusy)
+     return {ok:false,reason:'local_operation_in_progress',financialSyncEnabled:false};
+   const ses=cloudPreviewSession();
+   const client=secureCloudFetch(ses);
+   const identity=await checkPreviewIdentity(client);
+   if(!identity.connected)
+     return {ok:false,reason:'cloud_login_required',financialSyncEnabled:false};
+   return auditE1Windows(db,client,app.getPath('userData'));
+ });
+ ipcMain.handle('cloud:personal-sync-status',(event)=>{
+   requireAppSender(event);
+   return cloudSafeSyncSummary(db.db);
+ });
+ ipcMain.handle('cloud:migration-status',(event)=>{
+   requireAppSender(event);
+   return migrationLocalStatus(backupsDirectory());
+ });
+ ipcMain.handle('cloud:prepare-migration',async(event)=>{
+   requireAppSender(event);
+   if(syncing||restoring||autoBackupBusy||cloudPreparationBusy)
+     throw new Error('Há outra operação em andamento. Conclua-a antes de preparar a nuvem.');
+   cloudPreparationBusy=true;
+   try{
+     // One click, no SQLite file picker or file upload.
+     return await prepareCloudMigration({finance:db,backupFolder:backupsDirectory()});
+   }finally{cloudPreparationBusy=false;}
  });
  ipcMain.handle('finance:backup-status',(event)=>{
    requireAppSender(event);
@@ -69,7 +277,7 @@ app.whenReady().then(()=>{
  });
  ipcMain.handle('finance:restore',async(event)=>{
    requireAppSender(event);
-   if(syncing||restoring||autoBackupBusy)throw new Error('Conclua a sincronização ou cópia em andamento antes de restaurar.');
+   if(syncing||restoring||autoBackupBusy||cloudPreparationBusy)throw new Error('Conclua a sincronização ou cópia em andamento antes de restaurar.');
    const picked=await dialog.showOpenDialog(mainWindow,{title:'Escolher cópia de segurança do Meu Financeiro',properties:['openFile'],filters:[{name:'Cópia completa',extensions:['sqlite']}]});
    if(picked.canceled||!picked.filePaths?.[0])return {cancelled:true};
    // Confirma formato e integridade antes de mostrar qualquer opção destrutiva.
@@ -83,6 +291,8 @@ app.whenReady().then(()=>{
      const result=await restoreBackup(db,picked.filePaths[0],filename,backupsDirectory());
      db=result.db;
      planner=new PlanningStore(db);
+     // Restoring an older snapshot requires a new cloud comparison/approval.
+     fs.rmSync(markerFile(app.getPath('userData')),{force:true});
      const state={ok:true};
      mainWindow.webContents.reload();
      return state;
@@ -174,13 +384,62 @@ app.whenReady().then(()=>{
  ipcMain.handle('plan:reject',(event,payload)=>{requireAppSender(event);planner.reject(payload);return planner.overview();});
  ipcMain.handle('plan:rename',(event,payload)=>{requireAppSender(event);planner.renameBank(payload);return {overview:planner.overview(),data:titledBankData()};});
  ipcMain.handle('plan:history',(event,id)=>{requireAppSender(event);return planner.history(id);});
+ // ChatGPT OAuth and fictitious-only tests; strictly isolated from finances.
+ ipcMain.handle('ai:status',(event)=>{requireAppSender(event);return aiAuth.status();});
+ ipcMain.handle('ai:capabilities',(event)=>{requireAppSender(event);return aiDemo.capabilities();});
+ ipcMain.handle('ai:financial-context-demo',(event,source)=>{
+   requireAppSender(event);
+   // Synthetic-only, non-network, read-only. Never reach FinanceDB, Pluggy or OpenAI.
+   return buildSyntheticFinancialContext(source);
+ });
+ ipcMain.handle('ai:memory-list',async(event)=>{
+   requireAppSender(event);
+   return aiPersonal.list(await aiDemo.personalSubject());
+ });
+ ipcMain.handle('ai:memory-add',async(event,input)=>{
+   requireAppSender(event);
+   if(!input||typeof input!=='object'||Array.isArray(input)||typeof input.kind!=='string'||typeof input.text!=='string')
+     throw new Error('Memória inválida.');
+   return aiPersonal.add(await aiDemo.personalSubject(),{kind:input.kind,text:input.text});
+ });
+ ipcMain.handle('ai:memory-remove',async(event,id)=>{
+   requireAppSender(event);
+   return aiPersonal.remove(await aiDemo.personalSubject(),id);
+ });
+ ipcMain.handle('ai:memory-clear',async(event)=>{
+   requireAppSender(event);
+   return aiPersonal.clearMemories(await aiDemo.personalSubject());
+ });
+ ipcMain.handle('ai:usage-summary',async(event)=>{
+   requireAppSender(event);
+   return aiPersonal.summary(await aiDemo.personalSubject());
+ });
+ ipcMain.handle('ai:context-preview',(event,input)=>{
+   requireAppSender(event);
+   if(!input||typeof input!=='object'||typeof input.caseId!=='string'||
+     !['auto','low','medium'].includes(input.effort)||typeof input.useSavedMemories!=='boolean')
+     throw new Error('Parâmetros de prévia de contexto inválidos.');
+   return aiDemo.contextPreview(input);
+ });
+ ipcMain.handle('ai:connect',(event)=>{requireAppSender(event);return aiAuth.connect();});
+ ipcMain.handle('ai:disconnect',(event)=>{requireAppSender(event);return aiAuth.disconnect();});
+ ipcMain.handle('ai:model-available',(event)=>{requireAppSender(event);return aiDemo.modelAvailable();});
+ ipcMain.handle('ai:run-demo',(event,input)=>{
+   requireAppSender(event);
+   if(!input||typeof input!=='object'||typeof input.caseId!=='string'||input.caseId.length>36||!['auto','low','medium'].includes(input.effort)||input.creditsDisabledConfirmed!==true||typeof input.useSavedMemories!=='boolean')
+     throw new Error('Confirmação e parâmetros de teste inválidos.');
+   return aiDemo.testDemo({caseId:input.caseId,effort:input.effort,creditsDisabledConfirmed:true,useSavedMemories:input.useSavedMemories,
+     onDelta:delta=>{if(mainWindow&&!mainWindow.isDestroyed())mainWindow.webContents.send('ai:delta',{delta});}});
+ });
  ipcMain.handle('finance:open-data-folder',async(event)=>{
    requireAppSender(event);return shell.openPath(app.getPath('userData'));
  });
  createWindow();
  void ensureAutomaticBackup();
  backupTimer=setInterval(()=>void ensureAutomaticBackup(),60*60*1000);
+ cloudPersonalTimer=setInterval(()=>void tickCloudPersonal(),60*1000);
+ void tickCloudPersonal();
  app.on('activate',()=>{if(BrowserWindow.getAllWindows().length===0)createWindow();});
 }).catch(error=>{dialog.showErrorBox('Erro ao iniciar Meu Financeiro','Não foi possível abrir o banco de dados: '+error.message);app.quit();});
 app.on('window-all-closed',()=>{if(process.platform!=='darwin')app.quit();});
-app.on('before-quit',()=>{if(backupTimer)clearInterval(backupTimer);if(db){db.close();db=null;}});
+app.on('before-quit',()=>{if(backupTimer)clearInterval(backupTimer);if(cloudPersonalTimer)clearInterval(cloudPersonalTimer);cancelBrowserPairing();if(db){db.close();db=null;}});

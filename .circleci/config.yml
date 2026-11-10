@@ -1,0 +1,73 @@
+# CircleCI | Meu Financeiro desktop Windows
+# Só executa o job Windows quando a pipeline receber run_windows_build=true.
+# Pushes e PRs normais usam o default false e não consomem créditos de runner.
+version: 2.1
+
+parameters:
+  run_preflight:
+    type: boolean
+    default: false
+  run_windows_build:
+    type: boolean
+    default: false
+
+jobs:
+  preflight_linux:
+    docker:
+      # Docker Hub official node:22.23.4-bookworm, index digest verificado (Linux/amd64 via CircleCI).
+      - image: node:22.23.4-bookworm@sha256:e273cf2a19c7334c03f52e2ca933ecdfc3fbfaad49db7b8bc8c3edd9ac34e9c7
+    steps:
+      - checkout
+      - run:
+          name: "Preflight | TypeScript, SQLite, auditoria E1 e regressões IA"
+          command: |
+            export ELECTRON_SKIP_BINARY_DOWNLOAD=1
+            test "$(node --version)" = 'v22.23.4' || { echo 'Node fora da versão fixada'; exit 1; }
+            test "$(npm --version)" = '10.9.9' || { echo 'npm fora da versão fixada'; exit 1; }
+            echo "Toolchain: $(node --version), npm $(npm --version)"
+            npm ci --no-audit --no-fund
+            npm run test:types
+            npm run test:db
+            npm run compile
+            node scripts/renderer-provenance.cjs check-bundle
+            npm run test:asar
+          no_output_timeout: 20m
+      - run:
+          name: "Preflight | Worker/PWA + bundle Cloudflare sem publicar"
+          command: |
+            cd mobile-push
+            test "$(node --version)" = 'v22.23.4' || exit 1
+            test "$(npm --version)" = '10.9.9' || exit 1
+            npm ci --no-audit --no-fund
+            npm test
+            npx --no-install wrangler deploy --dry-run --outdir /tmp/mf-e4-preview
+          no_output_timeout: 20m
+  build_windows:
+    machine:
+      image: "windows-server-2022-gui:current"
+    resource_class: windows.medium
+    steps:
+      - checkout
+      - run:
+          name: "Windows Server 2022 | Node 22 | testes e instaladores x64"
+          command: "powershell.exe -NoProfile -ExecutionPolicy Bypass -File .circleci/build-windows.ps1"
+          no_output_timeout: 25m
+      - store_artifacts:
+          path: circleci-artifacts
+          destination: MeuFinanceiro-Windows
+
+workflows:
+  preflight_on_demand:
+    when:
+      and:
+        - << pipeline.parameters.run_preflight >>
+        - not: << pipeline.parameters.run_windows_build >>
+    jobs:
+      - preflight_linux
+  windows_on_demand:
+    when: << pipeline.parameters.run_windows_build >>
+    jobs:
+      - preflight_linux
+      - build_windows:
+          requires:
+            - preflight_linux

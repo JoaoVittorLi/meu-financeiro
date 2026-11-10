@@ -1,0 +1,34 @@
+# GitHub-hosted Actions are intentionally manual on this preview branch while quota is exhausted.
+name: Diagnosticar certificados publicos Access (sem tokens)
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  public-jwks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Conferir endpoint publico da propria Cloudflare
+        shell: bash
+        run: |
+          node --input-type=module <<'JS'
+          const url='https://green-grass-c1e7.cloudflareaccess.com/cdn-cgi/access/certs';
+          let result={checked:'Access public certificates',credentialsUsed:false};
+          try{
+            const response=await fetch(url,{redirect:'manual',headers:{Accept:'application/json'}});
+            result.httpStatus=response.status;
+            result.contentType=response.headers.get('content-type');
+            result.redirected=response.status>=300&&response.status<400;
+            if(response.ok){
+              const body=await response.json().catch(()=>null);
+              result.json=!!body;
+              result.keysCount=Array.isArray(body?.keys)?body.keys.length:null;
+              result.rsaKeys=Array.isArray(body?.keys)?body.keys.filter(k=>k.kty==='RSA'&&k.alg==='RS256'&&typeof k.kid==='string').length:null;
+            }
+          }catch(error){
+            result.networkError=error?.cause?.code||error?.name||'FETCH_FAILED';
+          }
+          console.log(JSON.stringify(result));
+          JS

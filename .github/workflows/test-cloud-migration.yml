@@ -1,0 +1,22 @@
+# GitHub-hosted Actions are intentionally manual on this preview branch while quota is exhausted.
+name: Validar preflight da migracao cloud
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  schema-preflight:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Instalar dependencias
+        run: npm install --no-audit --no-fund
+      - name: Testar schema de migracao e regressao SQLite
+        run: npm run test:db
+      - name: Verificar tipos da aplicacao
+        run: npm run test:types
