@@ -6,7 +6,7 @@ Este arquivo especifica comandos **presentes no repo** e a diferença entre evid
 
 Na raiz do projeto, ambiente de desenvolvimento controlado:
 
-1. npm install --no-audit --no-fund --package-lock=false  (CI atual; depende da rede, sem lockfile)
+1. npm ci --no-audit --no-fund  (branch B3 do PR #19: arquivos package-lock.json versionados; CI verde nesta revisão ainda pendente)
 2. npm run test:types
 3. npm run test:db
 4. npm run compile
@@ -14,15 +14,15 @@ Na raiz do projeto, ambiente de desenvolvimento controlado:
 6. npm run test:asar
 7. npm run dist:windows  (somente Windows/ambiente suportado; compila/testa/empacota)
 
-**Atenção:** npm run test:db cobre testes Node; npm run test:asar verifica ASAR; checagem visual real exige navegador/Electron. Não confundir contagem relatada com execução atual. A falta de lockfile é lacuna de reprodutibilidade a corrigir controladamente.
+**Atenção:** npm run test:db cobre testes Node; npm run test:asar verifica ASAR; checagem visual real exige navegador/Electron. Não confundir contagem relatada com execução atual. Os dois lockfiles foram publicados no PR #19 na B3.3, mas a reprodutibilidade continua pendente até validar instalações npm ci e preflight Linux no SHA novo.
 
 ## Worker/PWA
 
 Em mobile-push/:
 
-1. npm install --no-audit --no-fund --package-lock=false
+1. npm ci --no-audit --no-fund  (branch B3 do PR #19; ainda requer execução/validação no SHA novo)
 2. npm test
-3. npx wrangler deploy --dry-run --outdir /tmp/mf-e4-preview  (não publicar)
+3. npx --no-install wrangler deploy --dry-run --outdir /tmp/mf-e4-preview  (não publicar; usar CLI fixada no lock)
 
 Os 129 testes PWA reportados na PR #16 são regressões. Não demonstram a U4 completa nem login financeiro verdadeiro.
 
@@ -66,7 +66,7 @@ Uma única revisão de origem/contrato validado para Windows e PWA; versão sem�
 
 Relatar separadamente: comando executado, SHA, ambiente, status e link; artifact encontrado, hash confirmado; Windows instalado/testado; PWA em Preview autenticado/testado; Cloudflare Production publicado; migração real autorizada. Para qualquer coluna não verificada, usar **NÃO VERIFICADO**, sem inferência.
 
-## B3 — Fixação de toolchain em andamento (10/11/2026)
+## B3 — Registro histórico parcial (10/11/2026; atualizar conforme B3.3 abaixo)
 
 O preflight Linux da **candidata original** `7a01f1c` foi observado como `success` no [CircleCI](https://app.circleci.com/workflow/4a8c3a15-4101-4333-95c7-8351fd2f37a4/job/32ffc3e0-4838-4994-befe-a50069d2d993), **antes** da B3. Essa execução não valida as mudanças da B3.
 
@@ -80,3 +80,12 @@ A branch B3 fixa Node `22.23.4`, npm `10.9.9`, Linux Docker `node:22.23.4-bookwo
 4. Fazer push, verificar SHA e executar CircleCI preflight na branch B3 (`run_preflight=true`, `run_windows_build=false`) **sem Windows**. Só após sucesso considerar B3 concluída e autorizar B4. Documentar resultados em ROADMAP+log, não publicar em main.
 
 **Rollback:** reverter o(s) commit(s) da B3 na branch de trabalho ou voltar à candidata original `7a01f1c` sem mover o ref da candidata; validar preflight original; nenhum dado financeiro é migrado. Não apagar lockfiles após serem homologados.
+
+
+## B3.3 — Lockfiles autênticos incorporados, preflight do novo SHA pendente (10/11/2026)
+
+O bootstrap Linux `lockfile_bootstrap` do PR #19 [passou no CircleCI](https://app.circleci.com/workflow/5251af99-07fb-44a7-93ea-f25be9a4bf1d/job/bdd7f7cd-1a9c-4a09-9647-6fd19b7f3ced) no SHA `ff51444538e4c745d064f4820f680ec8b617719c`. O proprietário forneceu os dois arquivos JSON completos, a metadata e hashes de SHA256; os bytes dos dois arquivos reconstruídos do conteúdo fornecido foram verificados localmente e publicados intactos em `package-lock.json` e `mobile-push/package-lock.json`. A prova inclui conferência de hashes de blob Git após commit. [Log e SHA256 completos](logs/2026-11-10-MF2-B3-reprodutibilidade.md).
+
+Neste PR, as **duas instalações Linux e a instalação Windows** usam agora `npm ci --no-audit --no-fund` com lockfiles reais. O script Windows preserva os testes, SHA256 e ASAR/provenance. O Worker usa `npx --no-install wrangler`; a resolução travada foi `wrangler 4.160.0`, enquanto o pacote direto permanece `^4.102.0`. Há uma dependência Git `@electron/node-gyp` com SHA fixado: se houver falha SSH real, diagnosticar e corrigir **somente transporte para o repositório oficial via HTTPS no runner**, sem alterar o SHA ou o lockfile às cegas.
+
+**Estado de prova:** instalações `npm ci` e suíte completa **não executadas aqui** por falta de ambiente com dependências/rede; preflight CircleCI no SHA novo **não acionado/comprovado**. O bootstrap antigo **não valida** a integração `npm ci`. Para próxima execução CircleCI, selecionar Config/Checkout `fix/mf2-c11-reproducible-build-20261110` e `run_preflight=true`, `run_windows_build=false`, `run_lockfile_bootstrap=false`, conferir SHA e registrar a saída individual do job. **Não executar Windows**. O bootstrap temporário permanece inativo (`default=false`) até confirmar o preflight, quando deverá ser removido ou mantido com justificativa explícita. G0 permanece `NAO_HOMOLOGADO`.
