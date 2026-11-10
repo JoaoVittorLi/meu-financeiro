@@ -34,17 +34,25 @@ No build beta.6, `automaticBackup()` (em `electron/recovery.cjs`) retornava `{cr
 ## Fluxos e riscos residuais
 
 - A suíte existente `tests/planning.test.cjs` cobre criação, vencimentos, estado, vínculos, recorrência, persistência; `tests/budgets-v094.test.cjs` cobre limites zero/ausente, categorias e transações; `tests/operations-u2.test.cjs` e `tests/decisions-u3.test.cjs` cobrem contratos de UI. **Essas suítes não foram reexecutadas aqui; preflight oficial exigido**.
-- Não foi alterado `electron/main.cjs`, `src/app.ts`, `app/**`, `mobile-push/**`, conexão Pluggy, planejamento financeiro, mutações bancárias ou dados reais.
+- Não foi alterado `electron/main.cjs`, código U4/Argon, componentes visuais, `mobile-push/**`, conexão Pluggy, planejamento financeiro, mutações bancárias ou dados reais. **Exceção pontual do hotfix:** apenas 3 rótulos de versão em `src/app.ts` e as 3 strings equivalentes do renderer compilado `app/app.js` foram trocadas para beta.7, sem mudança de layout, estado ou fluxo.
 - O cache de integridade considera metadados de arquivo: corrupção externa com todos os metadados preservados exige nova inicialização para garantir rechecagem. Não equivale a garantia criptográfica.
 - Backups do perfil real devem ser testados apenas pelo usuário após cópia de segurança prévia, nunca em CI; os testes usam `os.tmpdir()`.
 
 **Versionamento para entrega segura:** Desktop Windows e Worker/PWA metadados `0.9.5-beta.7` (somente `version` nos dois `package.json` e respectivos lockfiles; nenhum componente PWA alterado), para que os novos artefatos Windows não reutilizem os nomes da beta.6 de recuperação. O build beta.7 NÃO EXISTE ainda e os lockfiles requerem `npm ci` oficial no novo SHA. `tests/e1-build-contract.test.cjs` já exige que as duas versões sejam idênticas. Sem deploy PWA.
 
-## Próximo gate operacional
+## Preflight com falha e hotfix direcionado — 10/11/2026
 
-1. CircleCI projeto `JoaoVittorLi/meu-financeiro` → Trigger Pipeline. **Config Branch = Checkout Branch = `feat/mf2-desktop-first-20261110`**, `run_preflight=true`, `run_windows_build=false`. Conferir `CIRCLE_SHA1` igual ao **HEAD final** deste PR, job `preflight_linux` e resultados por etapa.
-2. Se falhar, corrigir no mesmo PR #22 e refazer preflight novo SHA; não desabilitar teste nem alterar finanças.
-3. Se verde, na mesma branch/SHA executar `run_windows_build=true`, `run_preflight=false`; workflow `windows_on_demand` executa Linux e Windows. Baixar instalador, Portable e `SHA256.txt`, confirmar SHA/versão e checksums, sem substituir a beta.6 de recuperação até smoke seguro.
-4. Smoke Windows em usuário isolado, com dados fictícios; só então aprovar utilização diária ou novo milestone. **Sem merge, release, Cloudflare Production, cutover, U4 ou escrita financeira pessoal.**
+**CI anterior FAILURE:** [job `preflight_linux`](https://app.circleci.com/workflow/deedfb3d-ad88-49a8-a077-84cb28727e21/job/51ed38aa-fb31-4da0-b15b-0e24f539416d) no SHA `14cb66fffaea1b6c1a5a3b1bd7b520051ea0959c`. O proprietário trouxe o resumo dos **4 testes quebrados**:
 
-**Conclusão:** defeito real corrigido com testes publicados; execução Node isolada 4/4 PASS e validação integral oficial PENDENTE. D1.1 não homologada, versão beta.6 de recuperação preservada.
+- 3 verificações de rótulo de versão comparavam `v0.9.5-beta.7` com `v0.9.5-beta.6`. O teste roda **antes de `npm run compile`** na configuração CircleCI, então apenas compilar ao final não corrigia o teste no checkout. Código fonte `src/app.ts` e JS compilado versionado `app/app.js` tinham três rótulos antigos em cada. Foram alinhados com a versão já definida nos dois manifestos, alterando **somente estas strings**, sem mudar U4 ou visual.
+- 1 falha `tests/recovery.test.cjs` linha 99: `fs.readdirSync(...).some(name=>name.includes('.partial-'))` retornou `true`, apesar de `automaticBackup` já rejeitar corretamente um arquivo parcial inválido. **Causa concreta:** ao abrir staging SQLite com `PRAGMA quick_check` em modo WAL, Node `DatabaseSync` cria arquivos auxiliares temporários `-wal` e `-shm`; o `finally` original removia somente `.partial-UUID.sqlite`, deixando os auxiliares. Correção mínima em `electron/recovery.cjs`: limpar os 3 caminhos com `fs.rmSync(...,{force:true})` no `finally`. A política de validação/restauração e backups anteriores permanece intacta. Adicionada uma 4ª regressão específica para backup WAL íntegro sem arquivo auxiliar parcial residual.
+
+**Reprodução Node real v22.16.0, `node:sqlite` e fixtures sintéticas em `tmpdir`:** rotina original em modo WAL falhou **3 PASS / 1 FAIL** com exatamente `true !== false`; após o patch, **5/5 PASS**, incluindo a regressão extra para sidecars. Arquivo de evidência `/mnt/data/mf2-d1-repro/after-wal-hotfix-5-tests.tap` no ambiente desta sessão. Essas são **rotinas espelhadas**, não `npm run test:db` do repo. Verificação do GitHub: rótulos beta.7 em `src/app.ts` 3/3 e `app/app.js` 3/3, sem beta.6 remanescente; `package.json` e `mobile-push/package.json` beta.7. Os testes oficiais da branch após hotfix **ainda não foram executados**; não afirmar CI verde até novo workflow.
+
+### Uma única pipeline para beta.7 (regra permanente)
+
+Quando esta versão candidata estiver pronta, no CircleCI → Trigger Pipeline, selecionar **Config Branch = Checkout Branch = `feat/mf2-desktop-first-20261110`**, `run_preflight=false`, `run_windows_build=true`. O workflow `windows_on_demand` executa **`preflight_linux` → `build_windows`** automaticamente. Não disparar preflight separado antes do Windows e não remover testes, ASAR/proveniência, Worker/PWA/Wrangler dry-run nem manifestos SHA256. Conferir `CIRCLE_SHA1` no SHA **final desta branch** e registrar resultados/artefatos.
+
+Caso CI falhe, corrigir problema comprovado no PR #22 e gerar nova candidata — **sem instalar beta.7 falha**. Se CI verde, baixar e conferir instalador, portátil e `SHA256.txt` e realizar smoke Windows em usuário isolado; beta.6 de recuperação preservada. Sem merge, release nem deploy Production.
+
+**Conclusão:** defeitos do preflight com causas reproduzidas e hotfixes publicados; execução Node WAL isolada 5/5 PASS após correção; novo CI oficial Linux+Windows PENDENTE. D1.1 não homologada, beta.6 de recuperação preservada. D1.1 não homologada, versão beta.6 de recuperação preservada.
