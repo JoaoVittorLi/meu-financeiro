@@ -87,8 +87,17 @@ function createSyntheticServer({secret,owner,cloudFixture,reconcile,now=()=>Date
       let report;
       try{report=reconcile(structuredClone(input.windowsFixture),structuredClone(cloudFixture));}
       catch{reject('diagnostic_failed');}
-      if(!record(report)||report.databaseChanged!==false||report.financialSyncEnabled!==false||
-         report.cloudCutoverAllowed!==false||report.personalDataIncluded!==false)reject('unsafe_diagnostic');
+      if(!record(report)||report.contract!=='mf2-reconciliation-b1-v1'||
+         report.stage!=='read_only_dry_run'||report.databaseChanged!==false||
+         report.financialSyncEnabled!==false||report.cloudCutoverAllowed!==false||
+         report.personalDataIncluded!==false||report.automaticSettlementEnabled!==false)
+        reject('unsafe_diagnostic');
+      const printed=safeJsonSize(report);
+      // A mocked comparator must not be able to leak synthetic raw identifiers.
+      for(const row of [...input.windowsFixture.accounts,...cloudFixture.accounts])
+        if(printed.includes(row.account_id)||printed.includes(row.item_id))reject('unsafe_diagnostic');
+      for(const row of [...input.windowsFixture.transactions,...cloudFixture.transactions])
+        if(printed.includes(row.external_id)||printed.includes(row.description))reject('unsafe_diagnostic');
       const result={contract:CONTRACT,version:VERSION,requestId:input.requestId,
         mode:'synthetic_read_only',readOnly:true,financialSyncEnabled:false,
         diagnostic:report,diagnosticDigest:digest(report)};
