@@ -22,6 +22,10 @@
 
 **Gate operacional próximo:** CircleCI com **UMA única pipeline** no SHA final da candidata: Config/Checkout Branch `feat/mf2-beta8-premium-staging-20261110`, `run_preflight=false`, `run_windows_build=true`. Fluxo `preflight_linux` → `build_windows`, este último exige smoke GUI real, persistência, 16 PNGs e checks de provenance ASAR/NSIS/SHA. Se falhar, corrigir o PR #31 antes de distribuir. Se passar, conferir hashes físicos e artefatos, **sem afirmar homologação de instalação Windows pessoal nem merge/release automático**.
 
+### D1.2 — ajuste do teste de exclusão de categorias (10/11/2026)
+
+**Rodada B: EM_TESTE; GATE: NAO_HOMOLOGADO.** O pré-flight Linux falhou no SHA `dd30ddbd94d16b1cd415ff61b3dd4bd94ad2065b` porque `tests/categories.test.cjs` esperava excluir uma categoria ainda vinculada a orçamento explícito de R$ 0. No [PR #31](https://github.com/JoaoVittorLi/meu-financeiro/pull/31), commit de código `c109d905a4120b5820130e310e3dd36210781db6`, foi alterada **somente a expectativa do teste**: movimentação bloqueia; orçamento zero bloqueia e permanece; remoção explícita do orçamento libera exclusão. Categorias padrão permanecem protegidas e `electron/db.cjs` não foi alterado. Evidência local limitada: sintaxe JS analisada em V8, mais **6/6 PASS** num harness SQL SQLite isolado com as consultas do método (Node 22.16.0). **NÃO executados:** `node --test tests/categories.test.cjs tests/d1-2-desktop-integration.test.cjs` sobre checkout integral, suíte, Electron real ou nova pipeline CI. Outra possível falha do preflight não foi descartada, pois o log completo CircleCI não estava acessível. Próximo responsável: Executor — validar suíte no checkout real e usar somente uma pipeline Linux→Windows após correção; registrar hashes e arquivos gerados. Ver log `docs/ai-context/logs/2026-11-10-MF2-D1-2-beta8-category-zero-test-fix.md`.
+
 ---
 
 ## 1. Objetivo do 2.0
