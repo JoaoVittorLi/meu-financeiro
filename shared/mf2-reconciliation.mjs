@@ -199,7 +199,10 @@ function refMap(a,b){
   return new Map([...refs].sort().map((x,i)=>[x,'R'+String(i+1).padStart(6,'0')]));
 }
 function flowCounts(snapshot){
-  const bank=[...snapshot.transactions.map.values()];
+  // Explicit own transfers and ignored bank rows MUST NOT be classified as
+  // revenue/expense merely from their positive/negative bank amount sign.
+  const bank=[...snapshot.transactions.map].filter(([k])=>
+    !['transfer','ignore'].includes(snapshot.overlays.map.get(k)?.nature)).map(([,r])=>r);
   const manual=[...snapshot.manual.map.values()];
   const edits=[...snapshot.overlays.map.values()];
   return {
