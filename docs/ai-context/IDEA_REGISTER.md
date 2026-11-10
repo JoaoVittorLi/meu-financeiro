@@ -69,3 +69,16 @@ Fonte: [Análise completa da Rodada A](reviews/2026-11-09-MF2-ANALYSIS.md), benc
 Em escala qualitativa 0–3 (**impacto / frequência / confiabilidade / reutilização / esforço**, onde esforço alto = 3), exemplos: IDEA-19 = **3/3/3/3/1**; IDEA-20 = **3/3/3/3/2**; IDEA-21 = **3/3/3/2/2**; IDEA-23 = **3/2/3/3/3**; IDEA-29 = **1/1/0/1/3**. Escala orienta conversa, não substitui validação. 
 **Reutilização para não inflar escopo:** IDEA-19+25 partilham proveniência; IDEA-20+26 partilham simulação determinística; IDEA-21+24 partilham eventos; IDEA-22 não exige outra base de dados.
 **Antes de aceitar:** decidir explicitamente qual melhoria substitui experiência antiga, qual cabe no marco já aprovado, quais métricas de usabilidade servirão de aceite e quem coordena a branch/contrato.
+
+## Ideias complementares propostas — Auditoria Argon 360° (10/11/2026)
+
+**Status:** propostas registradas no roadmap já existente, **não são autorização de implementação** nem de novo módulo. Todas devem reutilizar contratos/motores já presentes e passar pelo Chat Arquiteto antes de escopo B.
+
+| ID | Proposta | Marcos | Benefício e proteção | Estado |
+| --- | --- | --- | --- | --- |
+| IDEA-31 | **Conciliação manual/bancária assistida:** mostrar sugestões com motivos, confiança e vínculo existente, sem auto-liquidar e sem duplicar movimentações; exigir revisão explícita | MF2-01 | Reduz lançamentos duplicados; somente após identidade/centavos/status conferidos e sinal de cobertura | PROPOSTA |
+| IDEA-32 | **Indicadores fixos × variáveis** no dashboard e orçamento, baseados em classificação editável, recorrência verificável e origem por fonte | MF2-04 / MF2-07 | Ajuda gestão do mês sem rotular gastos por IA especulativa ou somar banco+manual | PROPOSTA |
+| IDEA-33 | **Livre para Gastar e comparação Pix × parcelamento** no Planejamento/Laboratório compartilhado com hipóteses, juros, vencimentos, incerteza e saldo seguro | MF2-06 | Decisão antes de pagar sem sugerir que estimativa seja saldo real; **não realiza Pix/pagamento** | PROPOSTA |
+| IDEA-34 | **Ações IA com prévia Antes → Depois, confirmação, trilha de auditoria e desfazer condicionado por revisão/CAS** | MF2-09 | Controle humano, rollback seguro quando possível, recusa se a base mudou; nunca faz pagamento ou negociação de ativos | PROPOSTA |
+
+**Próximo passo:** o Arquiteto valida o encaixe na experiência existente; o Executor NÃO implementa essas propostas na B1.1/B2 por antecipação. Para colaboração Argon, seguir [ARGON_COLLABORATION_POLICY](ARGON_COLLABORATION_POLICY.md).
