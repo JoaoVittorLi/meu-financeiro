@@ -10,8 +10,92 @@ parameters:
   run_windows_build:
     type: boolean
     default: false
+  run_lockfile_bootstrap:
+    type: boolean
+    default: false
 
 jobs:
+  lockfile_bootstrap:
+    # Linux-only temporary bootstrap: no app tests, deploy, Windows or publishing.
+    docker:
+      - image: node:22.23.4-bookworm@sha256:e273cf2a19c7334c03f52e2ca933ecdfc3fbfaad49db7b8bc8c3edd9ac34e9c7
+    steps:
+      - checkout
+      - run:
+          name: "Bootstrap | gerar, validar e identificar dois lockfiles npm"
+          command: |
+            set -euo pipefail
+            expected_branch='fix/mf2-c11-reproducible-build-20261110'
+            test "${CIRCLE_BRANCH:-}" = "$expected_branch" || { echo 'ERRO: branch inesperada'; exit 1; }
+            commit_sha="$(git rev-parse HEAD)"
+            test -n "${CIRCLE_SHA1:-}" && test "$commit_sha" = "$CIRCLE_SHA1" || { echo 'ERRO: SHA de checkout diferente do CircleCI'; exit 1; }
+            test "$(node --version)" = 'v22.23.4' || { echo 'ERRO: versão Node incorreta'; exit 1; }
+            test "$(npm --version)" = '10.9.9' || { echo 'ERRO: versão npm incorreta'; exit 1; }
+            echo "Bootstrap B3.2 | branch=$CIRCLE_BRANCH | commit=$commit_sha"
+            echo "Toolchain: $(node --version) | npm $(npm --version)"
+            export npm_config_registry='https://registry.npmjs.org/'
+            npm install --package-lock-only --ignore-scripts --no-audit --no-fund --registry=https://registry.npmjs.org/
+            (
+              cd mobile-push
+              npm install --package-lock-only --ignore-scripts --no-audit --no-fund --registry=https://registry.npmjs.org/
+            )
+            git diff --quiet -- package.json mobile-push/package.json || { echo 'ERRO: manifestos npm sofreram alteração'; exit 1; }
+            node <<'NODE'
+            const fs = require('node:fs');
+            const assert = require('node:assert/strict');
+            const targets = ['.', 'mobile-push'];
+            for (const dir of targets) {
+              const prefix = dir === '.' ? '' : dir + '/';
+              const manifest = JSON.parse(fs.readFileSync(prefix + 'package.json', 'utf8'));
+              const lock = JSON.parse(fs.readFileSync(prefix + 'package-lock.json', 'utf8'));
+              assert.equal(lock.lockfileVersion, 3, prefix + 'lockfileVersion deve ser 3');
+              assert.equal(lock.name, manifest.name, prefix + 'nome divergente');
+              assert.equal(lock.version, manifest.version, prefix + 'versão divergente');
+              assert.ok(lock.packages && typeof lock.packages === 'object', prefix + 'packages ausente');
+              assert.ok(Object.keys(lock.packages).length > 1, prefix + 'sem árvore de dependências');
+              const root = lock.packages[''];
+              assert.ok(root, prefix + 'nó root ausente');
+              assert.equal(root.name, manifest.name, prefix + 'nome root divergente');
+              assert.equal(root.version, manifest.version, prefix + 'versão root divergente');
+              for (const kind of ['dependencies', 'devDependencies', 'optionalDependencies']) {
+                assert.deepEqual(root[kind] || {}, manifest[kind] || {}, prefix + kind + ' divergente');
+              }
+              let tarballs = 0;
+              let weakIntegrity = 0;
+              for (const [location, entry] of Object.entries(lock.packages)) {
+                if (!location || entry.link === true || entry.inBundle === true) continue;
+                assert.ok(entry.version, prefix + location + ' sem version');
+                assert.ok(entry.resolved, prefix + location + ' sem resolved');
+                assert.ok(entry.integrity, prefix + location + ' sem integrity');
+                const resolved = new URL(entry.resolved);
+                assert.equal(resolved.protocol, 'https:', prefix + location + ' não usa HTTPS');
+                assert.equal(resolved.hostname, 'registry.npmjs.org', prefix + location + ' fora do registry esperado');
+                assert.match(entry.integrity, /^sha(1|256|384|512)-[A-Za-z0-9+/=]+(?:$| )/, prefix + location + ' integrity inválida');
+                if (entry.integrity.startsWith('sha1-')) weakIntegrity++;
+                tarballs++;
+              }
+              assert.ok(tarballs > 0, prefix + 'sem dependências de registry validadas');
+              console.log(prefix + 'package-lock.json: lockfileVersion=3, dependências registry=' + tarballs + ', integrities SHA1=' + weakIntegrity);
+            }
+            NODE
+            out='circleci-artifacts/lockfile-bootstrap'
+            mkdir -p "$out"
+            cp package-lock.json "$out/desktop-package-lock.json"
+            cp mobile-push/package-lock.json "$out/mobile-push-package-lock.json"
+            printf 'repository=JoaoVittorLi/meu-financeiro\nbranch=%s\ncommit=%s\nnode=22.23.4\nnpm=10.9.9\nregistry=https://registry.npmjs.org/\n' "$CIRCLE_BRANCH" "$commit_sha" > "$out/METADATA.txt"
+            (
+              cd "$out"
+              sha256sum desktop-package-lock.json mobile-push-package-lock.json > SHA256SUMS.txt
+              sha256sum --check SHA256SUMS.txt
+            )
+            echo 'Arquivos de artefato:'
+            ls -lh "$out"
+            echo "Bootstrap concluído no commit $commit_sha; artefatos não são versionados automaticamente."
+          no_output_timeout: 20m
+      - store_artifacts:
+          path: circleci-artifacts/lockfile-bootstrap
+          destination: MF2-B3-Lockfile-Bootstrap
+
   preflight_linux:
     docker:
       # Docker Hub official node:22.23.4-bookworm, index digest verificado (Linux/amd64 via CircleCI).
@@ -62,12 +146,24 @@ workflows:
       and:
         - << pipeline.parameters.run_preflight >>
         - not: << pipeline.parameters.run_windows_build >>
+        - not: << pipeline.parameters.run_lockfile_bootstrap >>
     jobs:
       - preflight_linux
   windows_on_demand:
-    when: << pipeline.parameters.run_windows_build >>
+    when:
+      and:
+        - << pipeline.parameters.run_windows_build >>
+        - not: << pipeline.parameters.run_lockfile_bootstrap >>
     jobs:
       - preflight_linux
       - build_windows:
           requires:
             - preflight_linux
+  lockfile_bootstrap_on_demand:
+    when:
+      and:
+        - << pipeline.parameters.run_lockfile_bootstrap >>
+        - not: << pipeline.parameters.run_preflight >>
+        - not: << pipeline.parameters.run_windows_build >>
+    jobs:
+      - lockfile_bootstrap
