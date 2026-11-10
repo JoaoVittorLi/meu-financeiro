@@ -1,15 +1,1499 @@
-/* U3 — budgets, accounts and purchase decisions. Shared tokens keep both themes aligned. */
-.u3-shell{--u3-accent:#397b69;--u3-accent-bg:#eaf5f0}.u3-shell[data-theme="dark"],[data-theme="dark"] .u3-shell{--u3-accent:#78c8af;--u3-accent-bg:#1e302b}
-.u3-shell>.topbar,.u3-shell>.section,.u3-shell>.footer{max-width:1500px;margin-left:auto;margin-right:auto}.u3-shell .topbar{margin-bottom:24px}.u3-shell .topbar h1{font-size:29px;letter-spacing:-.9px;font-weight:600}.u3-shell .topbar p{font-size:13px}.u3-shell .section{gap:18px}.u3-shell h2{letter-spacing:-.25px}.u3-section-heading,.u3-panel-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}.u3-section-heading h2{font-size:20px;font-weight:600;margin:0 0 6px}.u3-section-heading p,.u3-panel-heading p{font-size:12px;color:var(--muted);line-height:1.6;margin:0}.u3-section-heading .primary-button{font-size:12px}.u3-panel-heading h2{font-size:15px;font-weight:600;margin:0 0 6px}.u3-empty{font-size:12px;color:var(--muted);line-height:1.7;padding:24px;border:1px dashed var(--border);border-radius:10px;text-align:center}
-/* Budget control room. */
-.u3-budgets .mf-budget-heading{margin:0}.u3-budgets .mf-budget-heading p{font-size:13px}.u3-budgets>.mf-source-compact{margin:0;width:fit-content}.u3-budgets .mf-budget-context{font-size:12px;margin:0;color:var(--muted)}.u3-budgets .mf-budget-summary{border:0;border-radius:0;overflow:visible;background:transparent;gap:14px}.u3-budgets .mf-budget-summary>div{border:1px solid var(--border);border-radius:14px;padding:20px;background:var(--surface)}.u3-budgets .mf-budget-summary small{font-size:11px;line-height:1.6}.u3-budgets .mf-budget-summary strong{font-size:25px;font-weight:600;letter-spacing:-.5px;margin:10px 0 5px}.u3-budget-insight{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:24px;padding:22px;border:1px solid var(--border);border-radius:14px;background:var(--surface)}.u3-coverage{display:flex;align-items:center;gap:20px;min-width:0}.u3-coverage-ring{width:104px;height:104px;min-width:104px;border-radius:50%;position:relative;display:grid;place-items:center}.u3-coverage-ring:before{content:'';position:absolute;inset:8px;background:var(--surface);border-radius:50%}.u3-coverage-ring strong{position:relative;font-size:25px;letter-spacing:-.5px;font-weight:600}.u3-coverage h2{font-size:15px;font-weight:600;margin:0 0 8px}.u3-coverage p{font-size:12px;line-height:1.7;color:var(--muted);margin:0 0 6px}.u3-coverage small{font-size:10px;color:var(--muted);line-height:1.6}.u3-budget-actions{display:grid;gap:8px}.u3-insight-action{display:flex;align-items:center;gap:12px;border:1px solid var(--border);border-radius:9px;background:var(--surface);color:var(--text);padding:12px 14px;text-align:left;cursor:pointer;font-family:inherit}.u3-insight-action[aria-pressed="true"],.u3-insight-action:hover{background:var(--surface2)}.u3-insight-action>svg{color:var(--muted);flex-shrink:0}.u3-insight-action>span{flex:1;min-width:0;display:grid;gap:4px}.u3-insight-action b{font-size:12px;font-weight:500}.u3-insight-action small{font-size:10px;color:var(--muted);line-height:1.5}.u3-insight-action>strong{font-size:22px;font-weight:600;font-variant-numeric:tabular-nums}.u3-budgets .mf-budget-contract{margin:0;font-size:11px;line-height:1.6;color:var(--muted)}.u3-budget-toolbar{display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap}.u3-budget-toolbar .search-box{width:260px;min-height:36px}.u3-budget-toolbar .search-box input{font-size:12px}.u3-budget-list-heading{display:flex;align-items:center;justify-content:space-between;gap:12px}.u3-budget-list-heading h2{font-size:15px;font-weight:600;margin:0}.u3-budget-list-heading>span{font-size:11px;color:var(--muted)}
-.u3-budgets .budget-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.u3-budgets .mf-budget-group-title{grid-column:1/-1;font-size:11px;font-weight:500;margin:5px 0 0;color:var(--muted)}.u3-budgets .mf-budget-card{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:18px;padding:20px;border-radius:14px;min-width:0;background:var(--surface)}.u3-budgets .budget-item-top{display:flex;align-items:center;gap:12px;min-width:0}.u3-budgets .budget-item-top h3{font-size:13px;font-weight:500;overflow-wrap:anywhere}.u3-budgets .budget-item-top .u3-budget-state{font-size:10px;line-height:1.6;color:var(--muted)}.u3-budgets .budget-item-top .cat-symbol{width:35px;height:35px;border-radius:10px;font-size:18px;flex-shrink:0}.u3-budgets .mf-budget-money{text-align:right;display:flex;flex-direction:column;gap:4px}.u3-budgets .mf-budget-money strong{font-size:22px;font-weight:600;letter-spacing:-.4px;overflow-wrap:anywhere}.u3-budgets .mf-budget-money>span{font-size:10px}.u3-budgets .mf-budget-limit,.u3-budgets .mf-no-budget,.u3-budgets .mf-income-share{grid-column:1/-1;width:100%;min-width:0}.u3-budgets .mf-budget-limit-head{font-size:11px;margin-bottom:10px;gap:8px;flex-wrap:wrap}.u3-budgets .mf-budget-limit-head strong{font-size:11px;font-weight:500}.u3-budgets .progress-track{height:5px}.u3-budgets .mf-budget-limit>small,.u3-budgets .mf-income-share>small{font-size:11px;margin-top:9px;display:block}.u3-budgets .budget-item-bottom{grid-column:1/-1;justify-self:end;margin:0;padding:0;border:0}.u3-budgets .small-link{font-size:11px;font-weight:500}.u3-budgets .mf-budget-exceeded{border-color:var(--border);border-left:3px solid var(--red)}.u3-budgets .mf-budget-near{border-left:3px solid var(--warning)}.u3-budgets .mf-no-budget{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:11px}.u3-budgets .mf-budget-limit-actions{gap:12px}.u3-budgets .mf-budget-disclaimer{font-size:10px;line-height:1.8;color:var(--muted)}.u3-budgets .mf-budget-quiet{margin:0}.u3-budgets .mf-budget-quiet-trigger{font-size:12px}
-/* Accounts: honest balance coverage and separate processing/review counters. */
-.u3-accounts .u3-account-summary{display:grid;grid-template-columns:minmax(0,1.3fr) repeat(3,minmax(0,1fr));gap:14px;margin:0}.u3-accounts .u3-account-summary>.card,.u3-accounts .u3-account-summary>.u3-account-signal{padding:20px;border:1px solid var(--border);border-radius:14px;background:var(--surface);text-align:left;box-shadow:none;min-width:0}.u3-accounts .u3-account-summary>.mf-account-total{background:var(--surface2)}.u3-account-summary small{font-size:11px;color:var(--muted);line-height:1.6;display:block}.u3-accounts .u3-account-summary strong{font-size:26px;line-height:1.4;font-weight:600;letter-spacing:-.6px;margin:9px 0;display:block;overflow-wrap:anywhere}.u3-accounts .u3-account-summary p{font-size:10px;line-height:1.7;color:var(--muted);margin:0}.u3-clickable-card{font-family:inherit;color:var(--text);cursor:pointer}.u3-clickable-card[aria-pressed="true"]{outline:1px solid var(--text);outline-offset:2px}.u3-account-toolbar{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin:4px 0}.u3-account-toolbar>span{font-size:10px;color:var(--muted)}.u3-accounts .mf-bank-account-heading h2{font-size:15px;font-weight:600}.u3-accounts .mf-bank-account-heading small{font-size:11px}.u3-accounts .bank-account-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.u3-accounts .u3-account-card{padding:22px;border-radius:14px;min-width:0;box-shadow:none;display:flex;flex-direction:column;gap:0}.u3-account-card-head{display:flex;align-items:center;gap:11px;flex-wrap:wrap;margin-bottom:23px}.u3-account-card-head>div{min-width:0;flex:1}.u3-accounts .u3-account-card-head .bank-account-icon{display:grid;place-items:center;width:36px;height:36px;border-radius:10px;flex-shrink:0;margin:0}.u3-account-card-head h3{font-size:13px;font-weight:500;margin:0 0 5px;overflow-wrap:anywhere}.u3-account-card-head small{font-size:10px;color:var(--muted)}.u3-reference-badge{font-size:10px!important;border:1px solid var(--border);border-radius:6px;padding:4px 7px;color:var(--muted);background:var(--surface2)}.u3-reference-badge.is-stale{color:var(--warning)}.u3-reference-badge.is-recent{color:var(--u3-accent)}.u3-accounts .u3-account-card>.u3-balance-label{font-size:11px;color:var(--muted)}.u3-accounts .u3-account-card>strong{font-size:30px;font-weight:600;letter-spacing:-.7px;line-height:1.3;margin:8px 0;overflow-wrap:anywhere}.u3-accounts .u3-account-card>.u3-reference-date{font-size:10px;color:var(--muted);margin-bottom:18px}.u3-account-counts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;border-top:1px solid var(--border);padding:17px 0}.u3-account-counts>div{display:grid;gap:5px}.u3-account-counts b{font-size:16px;font-weight:500}.u3-account-counts small{font-size:10px;color:var(--muted);line-height:1.6}.u3-account-open{display:flex;align-items:center;justify-content:space-between;width:100%;border:0;border-top:1px solid var(--border);background:transparent;color:var(--text);font-family:inherit;font-size:12px;cursor:pointer;padding:15px 0 0;margin-top:auto;text-align:left}.u3-connection-alert{display:flex;align-items:center;gap:12px;flex-wrap:wrap;border:1px solid var(--border);border-radius:10px;background:var(--surface2);padding:14px 18px;font-size:12px;line-height:1.7}.u3-connection-alert>span{flex:1}.u3-connection-alert .mf-small-link{margin:0}.u3-accounts .mf-bank-integrations{border:1px solid var(--border);border-radius:14px;background:var(--surface);padding:18px 20px}.u3-accounts .mf-bank-integrations>summary{font-size:12px;cursor:pointer}.u3-accounts .bank-grid{margin-top:18px}.u3-accounts .mf-bank-route{background:var(--surface);box-shadow:none;border-radius:14px;padding:20px}.u3-accounts .mf-bank-route h2{font-size:14px}.u3-accounts .mf-bank-route p{font-size:11px}.u3-empty-accounts{padding:28px;background:var(--surface);border-radius:14px}.u3-empty-accounts h2{font-size:17px}.u3-empty-accounts p{font-size:12px;color:var(--muted);line-height:1.7}
-/* Scenario workbench. */
-.u3-simulator .u3-sim-heading{display:flex;align-items:center;justify-content:space-between;gap:18px;background:transparent;border:0;padding:0;box-shadow:none;border-radius:0}.u3-sim-heading h2{font-size:20px;font-weight:600;margin:0 0 6px}.u3-sim-heading p{font-size:12px;line-height:1.6;color:var(--muted);margin:0}.u3-source-badge{font-size:11px;line-height:1.6;padding:6px 10px;border:1px solid var(--border);border-radius:7px;color:var(--muted);background:var(--surface);white-space:nowrap}.u3-simulator .assistant-grid{grid-template-columns:minmax(300px,.8fr) minmax(0,1.4fr);align-items:start;gap:20px}.u3-simulator .sim-form-card,.u3-simulator .result-card,.u3-simulator .empty-result{padding:22px;border-radius:14px;background:var(--surface);box-shadow:none;border:1px solid var(--border);min-width:0}.u3-simulator .sim-form-card .card-heading{margin-bottom:24px}.u3-simulator .sim-form-card .micro-label{font-size:9px;letter-spacing:1px;color:var(--muted);display:block;margin-bottom:8px}.u3-simulator .sim-form-card h2{font-size:16px;font-weight:600}.u3-simulator .sim-form-card .card-heading p{font-size:11px}.u3-simulator .field>span{font-size:12px;font-weight:500}.u3-simulator .form-control{font-size:13px}.u3-simulator .field>small{font-size:10px;line-height:1.6}.u3-simulator .sim-form-card .action-large{min-height:40px;border-radius:8px;font-size:12px;margin-top:4px}.u3-sim-note{font-size:11px;color:var(--muted);line-height:1.7;margin:10px 0}.u3-reserve-note{display:flex;align-items:center;gap:10px;padding:14px;border:1px solid var(--border);border-radius:9px;margin:18px 0;background:var(--surface2)}.u3-reserve-note>div{flex:1;display:grid;gap:5px}.u3-reserve-note small{font-size:10px;color:var(--muted)}.u3-reserve-note strong{font-size:15px;font-weight:500}.u3-reserve-note .mf-small-link{margin:0;font-size:11px}.u3-simulator .mf-sim-premises{font-size:11px;line-height:1.7;margin-top:15px;color:var(--muted)}.u3-simulator .mf-sim-premises summary{cursor:pointer}.u3-simulator .sim-example-title{font-size:10px}.u3-simulator .quick-choice{font-size:11px;min-height:34px}.u3-simulator .empty-result{min-height:350px}.u3-simulator .empty-result-icon{background:var(--surface2);color:var(--muted);width:50px;height:50px;border-radius:12px}.u3-simulator .empty-result h2{font-size:22px;margin:20px 0 10px}.u3-simulator .empty-result p{font-size:12px;line-height:1.8;max-width:47ch}.u3-result-guide{display:flex;gap:20px;flex-wrap:wrap;justify-content:center;margin-top:20px}.u3-result-guide span{display:flex;flex-direction:column;gap:8px;font-size:10px;color:var(--muted)}.u3-result-guide b{font-size:12px;color:var(--text);font-weight:500}.u3-simulator .result-column{gap:16px;min-width:0}.u3-simulator .result-badge{border-radius:10px;padding:16px;gap:12px}.u3-simulator .result-badge h2{font-size:17px;font-weight:600}.u3-simulator .result-badge p{font-size:12px;line-height:1.7}.u3-simulator .result-metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;padding:18px;background:var(--surface2);border-radius:10px}.u3-simulator .result-metrics strong{font-size:23px;letter-spacing:-.4px;overflow-wrap:anywhere}.u3-simulator .result-metrics span{font-size:10px}.u3-simulator .mf-scenario-alert{font-size:11px;line-height:1.7}.u3-cost-strip{display:flex;gap:14px;flex-wrap:wrap;justify-content:space-between;border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:13px 0;font-size:10px;color:var(--muted);line-height:1.8}.u3-cost-strip b{display:block;font-size:13px;font-weight:500;color:var(--text)}.u3-scenario-chart{margin:20px 0 12px}.u3-scenario-chart figcaption{font-size:12px;font-weight:500;margin-bottom:15px}.u3-scenario-chart svg{display:block;width:100%;height:auto;max-height:240px;overflow:visible}.u3-chart-grid{stroke:var(--border);stroke-width:1;stroke-dasharray:3 4}.u3-chart-label{fill:var(--muted);font-size:10px;font-family:inherit}.u3-chart-base{fill:none;stroke:var(--subtle);stroke-width:2;stroke-dasharray:5 4}.u3-chart-purchase{fill:none;stroke:var(--u3-accent);stroke-width:2.5;stroke-linejoin:round;stroke-linecap:round}.u3-chart-dot{fill:var(--u3-accent)}.u3-chart-legend{display:flex;align-items:center;gap:16px;flex-wrap:wrap;font-size:10px;color:var(--muted);line-height:1.8;margin:12px 0}.u3-chart-legend span{display:flex;gap:6px;align-items:center}.u3-chart-legend i{height:6px;width:6px;background:var(--u3-accent);border-radius:50%}.u3-chart-legend .is-baseline{background:var(--subtle)}.u3-chart-legend small{font-size:10px}.u3-monthly-data{font-size:11px;color:var(--muted);margin:18px 0}.u3-monthly-data summary{cursor:pointer}.u3-comparison{border:1px solid var(--border);border-radius:14px;background:var(--surface);padding:20px;min-width:0}.u3-comparison .u3-panel-heading{margin-bottom:18px}.u3-comparison .mf-small-link{font-size:11px;margin:0}.u3-comparison-scroll{overflow:auto}.u3-comparison table,.u3-monthly-data table{border-collapse:collapse;width:100%;font-size:11px}.u3-comparison th,.u3-comparison td,.u3-monthly-data th,.u3-monthly-data td{padding:11px 10px;border-bottom:1px solid var(--border);text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;font-weight:400}.u3-comparison th:first-child,.u3-monthly-data th:first-child{text-align:left;color:var(--muted)}.u3-comparison thead,.u3-monthly-data thead{background:var(--surface2);color:var(--muted)}.u3-comparison caption,.u3-monthly-data caption{font-size:10px;line-height:1.7;text-align:left;margin:14px 0}.u3-comparison .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}.u3-comparison-context{display:flex;gap:12px;flex-wrap:wrap;font-size:10px;color:var(--muted);line-height:1.8;margin-top:12px}.u3-comparison-delta{font-size:12px;line-height:1.7;margin:14px 0 5px;font-weight:500}.u3-comparison>.u3-sim-note{display:block;font-size:10px}.u3-save-scenario{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.u3-save-scenario button{font-size:12px}.u3-save-scenario small{font-size:10px;color:var(--muted);line-height:1.7}.u3-simulator .mf-plan-from-sim{font-size:12px}.u3-simulator .disclaimer{font-size:10px;line-height:1.8}.u3-simulator .info-box{font-size:11px;line-height:1.7;margin:0}.u3-shell button:focus-visible,.u3-shell summary:focus-visible{outline:2px solid var(--text);outline-offset:3px}
-@media(max-width:1200px){.u3-budget-insight{grid-template-columns:1fr;gap:18px}.u3-budget-actions{grid-template-columns:repeat(2,minmax(0,1fr))}.u3-accounts .u3-account-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.u3-simulator .assistant-grid{grid-template-columns:minmax(280px,.8fr) minmax(0,1.2fr)}.u3-budgets .mf-budget-card{grid-template-columns:minmax(0,1fr)}.u3-budgets .mf-budget-money{text-align:left}.u3-budgets .mf-budget-limit,.u3-budgets .mf-no-budget,.u3-budgets .mf-income-share,.u3-budgets .budget-item-bottom{grid-column:auto}.u3-budget-actions .u3-insight-action{gap:9px}.u3-budget-actions .u3-insight-action>svg:last-child{display:none}}
-@media(max-width:1000px){.u3-simulator .assistant-grid{grid-template-columns:minmax(0,1fr)}.u3-accounts .bank-account-grid{grid-template-columns:minmax(0,1fr)}.u3-sim-heading{flex-wrap:wrap}.u3-source-badge{white-space:normal}.u3-simulator .empty-result{min-height:260px}}
-@media(max-width:650px){.u3-shell .topbar h1{font-size:26px}.u3-budget-insight{padding:18px}.u3-coverage{gap:15px}.u3-coverage-ring{width:84px;height:84px;min-width:84px}.u3-coverage-ring strong{font-size:22px}.u3-coverage h2{font-size:13px}.u3-budget-actions{grid-template-columns:1fr}.u3-budgets .budget-grid{grid-template-columns:1fr}.u3-budget-toolbar .search-box{width:100%}.u3-budgets .mf-budget-summary>div{padding:15px}.u3-budgets .mf-budget-summary strong{font-size:22px}.u3-budgets .mf-budget-summary{gap:10px}.u3-accounts .u3-account-summary{gap:10px}.u3-accounts .u3-account-summary>.card,.u3-accounts .u3-account-summary>.u3-account-signal{padding:15px}.u3-accounts .u3-account-summary strong{font-size:22px}.u3-accounts .u3-account-summary small{font-size:10px}.u3-accounts .u3-account-card{padding:18px}.u3-accounts .u3-account-card>strong{font-size:27px}.u3-reference-badge{margin-left:47px}.u3-account-card-head{margin-bottom:18px}.u3-account-toolbar{gap:12px}.u3-simulator .sim-form-card,.u3-simulator .result-card,.u3-simulator .empty-result,.u3-comparison{padding:18px}.u3-result-guide{gap:14px}.u3-simulator .result-metrics{gap:16px;padding:15px}.u3-simulator .result-metrics strong{font-size:21px}.u3-simulator .result-badge h2{font-size:16px}.u3-simulator .result-badge{align-items:flex-start}.u3-sim-heading h2{font-size:19px}.u3-insight-action>strong{font-size:20px}}
+/* U3 / A-D4 (A-D4.1 + A-D4.2): Orçamentos e Minhas Contas Desktop Premium & Motion Design (1366x768 & 1920x1080).
+   Base original: commit a4d88ced28c59b21520f4d67a51373cd71bdc8a2 (app/decisions.css SHA256 fe7bdc4a...)
+   Base incremental A-D4.1: SHA256 a5c75a39e50127fb0cc64a9b55aba1f9ac77fc79383ebe1a971a5705f646d1db
+   Preserva 100% dos seletores de Orçamentos (.u3-budgets), Contas (.u3-accounts) e Simulador (.u3-simulator). */
+.u3-shell {
+  --u3-accent: #1f7a63;
+  --u3-accent-strong: #155e4b;
+  --u3-accent-bg: #e6f4ef;
+  --u3-accent-border: rgba(31, 122, 99, 0.28);
+  --u3-focus-ring: rgba(23, 106, 207, 0.16);
+  --u3-selected-bg: rgba(31, 122, 99, 0.07);
+  --u3-near-tint: rgba(245, 158, 11, 0.07);
+  --u3-exceeded-tint: rgba(201, 42, 60, 0.07);
+  --u3-card-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 6px 20px -6px rgba(15, 23, 42, 0.06);
+  --u3-card-shadow-hover: 0 6px 16px rgba(15, 23, 42, 0.08), 0 14px 28px -8px rgba(15, 23, 42, 0.11);
+  --u3-radius-panel: 15px;
+  --u3-radius-card: 14px;
+  --u3-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --u3-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --u3-dur-micro: 140ms;
+  --u3-dur-panel: 250ms;
+  --u3-dur-bar: 340ms;
+}
 
-.u3-budgets .mf-budget-money strong{white-space:nowrap}.u3-accounts .u3-account-card-head h3{line-height:1.5}.u3-simulator .sim-form-card{min-height:0}.u3-simulator .result-metrics>div{background:transparent;border:0;border-radius:0;padding:0}.u3-simulator .result-metrics{margin:20px 0}
+.u3-shell[data-theme="dark"],
+[data-theme="dark"] .u3-shell {
+  --u3-accent: #66d4b6;
+  --u3-accent-strong: #8be2ca;
+  --u3-accent-bg: rgba(102, 212, 182, 0.12);
+  --u3-accent-border: rgba(102, 212, 182, 0.32);
+  --u3-focus-ring: rgba(102, 212, 182, 0.18);
+  --u3-selected-bg: rgba(102, 212, 182, 0.10);
+  --u3-near-tint: rgba(245, 188, 99, 0.10);
+  --u3-exceeded-tint: rgba(255, 122, 136, 0.10);
+  --u3-card-shadow: 0 2px 6px rgba(0, 0, 0, 0.28), 0 10px 26px -8px rgba(0, 0, 0, 0.38);
+  --u3-card-shadow-hover: 0 8px 20px rgba(0, 0, 0, 0.44), 0 18px 36px -8px rgba(0, 0, 0, 0.54);
+}
+
+/* ==========================================================================
+   KEYFRAMES — MOTION DESIGN FUNCIONAL PARA DECISÕES, ORÇAMENTOS E CONTAS
+   ========================================================================== */
+@keyframes u3CardReveal {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes u3ValuePulse {
+  from {
+    opacity: 0.45;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes u3BarGrow {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes u3RingScale {
+  from {
+    opacity: 0;
+    transform: scale(0.90);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes u3DisclosureSlide {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes u3DrawerSlideIn {
+  from {
+    opacity: 0.6;
+    transform: translateX(22px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes u3ExceededPulse {
+  0%, 100% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(1.14);
+  }
+}
+
+/* ==========================================================================
+   ESTRUTURA BASE DA SHELL U3
+   ========================================================================== */
+.u3-shell > .topbar,
+.u3-shell > .section,
+.u3-shell > .footer {
+  max-width: 1520px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.u3-shell .topbar {
+  margin-bottom: 20px;
+}
+
+.u3-shell .topbar h1 {
+  font-size: clamp(24px, 2.1vw, 29px);
+  letter-spacing: -0.85px;
+  font-weight: 650;
+  line-height: 1.2;
+}
+
+.u3-shell .topbar p {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.u3-shell .section {
+  gap: 18px;
+}
+
+.u3-shell h2 {
+  letter-spacing: -0.25px;
+}
+
+.u3-section-heading,
+.u3-panel-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.u3-section-heading h2 {
+  font-size: 20px;
+  font-weight: 650;
+  margin: 0 0 6px;
+  color: var(--text);
+}
+
+.u3-section-heading p,
+.u3-panel-heading p {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.u3-section-heading .primary-button {
+  font-size: 12px;
+}
+
+.u3-panel-heading h2 {
+  font-size: 15px;
+  font-weight: 650;
+  margin: 0 0 6px;
+  color: var(--text);
+}
+
+.u3-empty {
+  font-size: 12.5px;
+  color: var(--muted);
+  line-height: 1.7;
+  padding: 28px 24px;
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  background: var(--surface2);
+  text-align: center;
+  animation: u3CardReveal var(--u3-dur-panel) var(--u3-ease-out) both;
+}
+
+/* ==========================================================================
+   A-D4.1 — ORÇAMENTOS PREMIUM: CENTRAL DE CONTROLE E PRESSÃO ORÇAMENTÁRIA
+   ========================================================================== */
+.u3-budgets .mf-budget-heading {
+  margin: 0;
+  animation: u3CardReveal var(--u3-dur-panel) var(--u3-ease-out) both;
+}
+
+.u3-budgets .mf-budget-heading p {
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.u3-budgets > .mf-source-compact {
+  margin: 0;
+  width: fit-content;
+}
+
+.u3-budgets .mf-budget-context {
+  font-size: 12px;
+  margin: 0;
+  padding: 9px 14px;
+  border-radius: 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  animation: u3CardReveal var(--u3-dur-panel) var(--u3-ease-out) 25ms both;
+}
+
+/* 4 Cards Superiores de Resumo de Orçamentos (.mf-budget-summary) */
+.u3-budgets .mf-budget-summary {
+  border: 0;
+  border-radius: 0;
+  overflow: visible;
+  background: transparent;
+  gap: 14px;
+}
+
+.u3-budgets .mf-budget-summary > div {
+  position: relative;
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--border);
+  border-radius: var(--u3-radius-card);
+  padding: 18px 20px;
+  background: var(--surface);
+  box-shadow: var(--u3-card-shadow);
+  animation: u3CardReveal var(--u3-dur-panel) var(--u3-ease-out) both;
+  transition: transform var(--u3-dur-micro) var(--u3-ease-out),
+              box-shadow var(--u3-dur-micro) var(--u3-ease-out),
+              border-color var(--u3-dur-micro) var(--u3-ease-out);
+}
+
+.u3-budgets .mf-budget-summary > div:nth-child(1) {
+  border-top-color: var(--u3-accent);
+  animation-delay: 20ms;
+}
+
+.u3-budgets .mf-budget-summary > div:nth-child(2) {
+  border-top-color: var(--subtle);
+  animation-delay: 50ms;
+}
+
+.u3-budgets .mf-budget-summary > div:nth-child(3) {
+  border-top-color: var(--green);
+  animation-delay: 80ms;
+}
+
+.u3-budgets .mf-budget-summary > div:nth-child(4) {
+  border-top-color: var(--warning);
+  animation-delay: 110ms;
+}
+
+.u3-budgets .mf-budget-summary > div:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--u3-card-shadow-hover);
+  border-color: var(--subtle);
+}
+
+.u3-budgets .mf-budget-summary small {
+  font-size: 11px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+.u3-budgets .mf-budget-summary strong {
+  display: block;
+  font-size: clamp(21px, 1.95vw, 25px);
+  font-weight: 650;
+  letter-spacing: -0.55px;
+  margin: 8px 0 5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  animation: u3ValuePulse 190ms var(--u3-ease-out);
+}
+
+/* Painel de Cobertura & Filtros Acionáveis (.u3-budget-insight) */
+.u3-budget-insight {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: 22px;
+  padding: 20px 22px;
+  border: 1px solid var(--border);
+  border-radius: var(--u3-radius-panel);
+  background: linear-gradient(165deg, var(--surface) 0%, var(--surface2) 100%);
+  box-shadow: var(--u3-card-shadow);
+  animation: u3CardReveal var(--u3-dur-panel) var(--u3-ease-out) 90ms both;
+}
+
+.u3-coverage {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  min-width: 0;
+}
+
+.u3-coverage-ring {
+  width: 104px;
+  height: 104px;
+  min-width: 104px;
+  border-radius: 50%;
+  position: relative;
+  display: grid;
+  place-items: center;
+  box-shadow: inset 0 0 0 1px var(--border), var(--u3-card-shadow);
+  animation: u3RingScale 300ms var(--u3-ease-spring) 120ms both;
+  transition: transform var(--u3-dur-micro) var(--u3-ease-spring);
+}
+
+.u3-coverage-ring:hover {
+  transform: scale(1.03);
+}
+
+.u3-coverage-ring:before {
+  content: '';
+  position: absolute;
+  inset: 9px;
+  background: var(--surface);
+  border-radius: 50%;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.u3-coverage-ring strong {
+  position: relative;
+  font-size: 24px;
+  letter-spacing: -0.55px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+.u3-coverage h2 {
+  font-size: 15.5px;
+  font-weight: 650;
+  margin: 0 0 6px;
+  color: var(--text);
+}
+
+.u3-coverage p {
+  font-size: 12px;
+  line-height: 1.65;
+  color: var(--muted);
+  margin: 0 0 6px;
+}
+
+.u3-coverage small {
+  font-size: 10.5px;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+/* Botões de Filtro Acionáveis de Situação (.u3-budget-actions / .u3-insight-action) */
+.u3-budget-actions {
+  display: grid;
+  gap: 8px;
+}
+
+.u3-insight-action {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  padding: 11px 14px;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+  transition: transform var(--u3-dur-micro) var(--u3-ease-out),
+              background var(--u3-dur-micro) var(--u3-ease-out),
+              border-color var(--u3-dur-micro) var(--u3-ease-out),
+              box-shadow var(--u3-dur-micro) var(--u3-ease-out);
+}
+
+.u3-insight-action:hover {
+  background: var(--surface2);
+  border-color: var(--subtle);
+  transform: translateX(2px);
+}
+
+.u3-insight-action:active {
+  transform: scale(0.985);
+}
+
+.u3-insight-action[aria-pressed="true"] {
+  background: var(--u3-selected-bg);
+  border-color: var(--u3-accent);
+  box-shadow: inset 3px 0 0 var(--u3-accent), var(--u3-card-shadow);
+}
+
+.u3-insight-action > svg {
+  color: var(--muted);
+  flex-shrink: 0;
+  transition: transform var(--u3-dur-micro) var(--u3-ease-spring),
+              color var(--u3-dur-micro) ease;
+}
+
+.u3-insight-action:hover > svg,
+.u3-insight-action[aria-pressed="true"] > svg {
+  color: var(--u3-accent);
+  transform: scale(1.08);
+}
+
+.u3-insight-action > span {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.u3-insight-action b {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.u3-insight-action small {
+  font-size: 10.5px;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.u3-insight-action > strong {
+  font-size: 21px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+.u3-budgets .mf-budget-contract {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+/* Barra de Busca e Alternador Despesas/Receitas (.u3-budget-toolbar) */
+.u3-budget-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 4px 0;
+}
+
+.u3-budget-toolbar .search-box {
+  width: 280px;
+  min-height: 38px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  transition: border-color var(--u3-dur-micro) var(--u3-ease-out),
+              box-shadow var(--u3-dur-micro) var(--u3-ease-out);
+}
+
+.u3-budget-toolbar .search-box:hover {
+  border-color: var(--subtle);
+}
+
+.u3-budget-toolbar .search-box:focus-within {
+  border-color: var(--focus, var(--u3-accent));
+  box-shadow: 0 0 0 3px var(--u3-focus-ring);
+}
+
+.u3-budget-toolbar .search-box input {
+  font-size: 12.5px;
+}
+
+.u3-budgets .mf-budget-switch button {
+  transition: background var(--u3-dur-micro) var(--u3-ease-out),
+              color var(--u3-dur-micro) var(--u3-ease-out),
+              box-shadow var(--u3-dur-micro) var(--u3-ease-out),
+              transform 120ms var(--u3-ease-out);
+}
+
+.u3-budgets .mf-budget-switch button:active {
+  transform: scale(0.96);
+}
+
+.u3-budget-list-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.u3-budget-list-heading h2 {
+  font-size: 15.5px;
+  font-weight: 650;
+  margin: 0;
+  color: var(--text);
+}
+
+.u3-budget-list-heading > span {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ==========================================================================
+   MAPA TÉRMICO DE CARDS DE ORÇAMENTO (.budget-grid & .mf-budget-card)
+   ========================================================================== */
+.u3-budgets .budget-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.u3-budgets .mf-budget-group-title {
+  grid-column: 1 / -1;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.45px;
+  margin: 8px 0 2px;
+  padding: 6px 10px;
+  border-radius: 7px;
+  background: var(--surface2);
+  border-left: 3px solid var(--u3-accent);
+  color: var(--muted);
+}
+
+/* Spotlight sutil entre os cards da grade */
+.u3-budgets .budget-grid:hover .mf-budget-card:not(:hover):not(:focus-within) {
+  opacity: 0.82;
+}
+
+.u3-budgets .mf-budget-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 16px;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-left: 3.5px solid var(--u3-accent);
+  border-radius: var(--u3-radius-card);
+  min-width: 0;
+  background: var(--surface);
+  box-shadow: var(--u3-card-shadow);
+  animation: u3CardReveal var(--u3-dur-panel) var(--u3-ease-out) both;
+  transition: transform var(--u3-dur-micro) var(--u3-ease-out),
+              box-shadow var(--u3-dur-micro) var(--u3-ease-out),
+              border-color var(--u3-dur-micro) var(--u3-ease-out),
+              opacity var(--u3-dur-micro) var(--u3-ease-out),
+              background var(--u3-dur-micro) var(--u3-ease-out);
+}
+
+.u3-budgets .mf-budget-card:hover,
+.u3-budgets .mf-budget-card:focus-within {
+  transform: translateY(-2px);
+  box-shadow: var(--u3-card-shadow-hover);
+  border-color: var(--subtle);
+  border-left-color: var(--u3-accent);
+}
+
+/* Estados Térmicos de Pressão Orçamentária: Estouro, Atenção (>=90%) e Sem Limite */
+.u3-budgets .mf-budget-exceeded {
+  border-color: var(--border);
+  border-left: 3.5px solid var(--red);
+  background: linear-gradient(90deg, var(--u3-exceeded-tint) 0%, var(--surface) 48%);
+}
+
+.u3-budgets .mf-budget-exceeded:hover,
+.u3-budgets .mf-budget-exceeded:focus-within {
+  border-left-color: var(--red);
+}
+
+.u3-budgets .mf-budget-near {
+  border-color: var(--border);
+  border-left: 3.5px solid var(--warning);
+  background: linear-gradient(90deg, var(--u3-near-tint) 0%, var(--surface) 44%);
+}
+
+.u3-budgets .mf-budget-near:hover,
+.u3-budgets .mf-budget-near:focus-within {
+  border-left-color: var(--warning);
+}
+
+.u3-budgets .mf-budget-unlimited {
+  border-left: 3.5px solid var(--border);
+  background: var(--surface);
+}
+
+.u3-budgets .mf-budget-unlimited:hover,
+.u3-budgets .mf-budget-unlimited:focus-within {
+  border-left-color: var(--subtle);
+}
+
+/* Topo do Card: Ícone, Nome e Estado */
+.u3-budgets .budget-item-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.u3-budgets .budget-item-top .cat-symbol {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  font-size: 18px;
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+  transition: transform var(--u3-dur-micro) var(--u3-ease-spring);
+}
+
+.u3-budgets .mf-budget-card:hover .budget-item-top .cat-symbol {
+  transform: scale(1.07);
+}
+
+.u3-budgets .budget-item-top h3 {
+  font-size: 13.5px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+  color: var(--text);
+  margin: 0;
+}
+
+.u3-budgets .budget-item-top .u3-budget-state {
+  font-size: 10.5px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+/* Valores Monetários do Card */
+.u3-budgets .mf-budget-money {
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.u3-budgets .mf-budget-money strong {
+  font-size: 21px;
+  font-weight: 650;
+  letter-spacing: -0.45px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow-wrap: anywhere;
+  color: var(--text);
+  animation: u3ValuePulse 190ms var(--u3-ease-out);
+}
+
+.u3-budgets .mf-budget-money > span {
+  font-size: 10.5px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Barra de Progresso Proporcional e Metadados de Limite */
+.u3-budgets .mf-budget-limit,
+.u3-budgets .mf-no-budget,
+.u3-budgets .mf-income-share {
+  grid-column: 1 / -1;
+  width: 100%;
+  min-width: 0;
+}
+
+.u3-budgets .mf-budget-limit-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 11px;
+  margin-bottom: 8px;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.u3-budgets .mf-budget-limit-head strong {
+  font-size: 11.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.u3-budgets .progress-track {
+  height: 7px;
+  border-radius: 999px;
+  background: var(--surface3);
+  overflow: hidden;
+}
+
+.u3-budgets .mf-budget-card .progress-bar {
+  height: 100%;
+  border-radius: 999px;
+  transform-origin: left center;
+  animation: u3BarGrow var(--u3-dur-bar) var(--u3-ease-out) 100ms both;
+  transition: width 240ms var(--u3-ease-out), background-color 180ms ease;
+}
+
+.u3-budgets .mf-budget-exceeded .progress-bar {
+  animation: u3BarGrow var(--u3-dur-bar) var(--u3-ease-out) 100ms both,
+             u3ExceededPulse 2.4s ease-in-out infinite;
+}
+
+.u3-budgets .mf-budget-limit > small,
+.u3-budgets .mf-income-share > small {
+  font-size: 11px;
+  line-height: 1.5;
+  margin-top: 8px;
+  display: block;
+}
+
+/* Rodapé e Ações Rápidas do Card de Orçamento */
+.u3-budgets .budget-item-bottom {
+  grid-column: 1 / -1;
+  justify-self: end;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.u3-budgets .small-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 5px 10px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text);
+  text-decoration: none;
+  transition: background var(--u3-dur-micro) var(--u3-ease-out),
+              border-color var(--u3-dur-micro) var(--u3-ease-out),
+              transform 120ms var(--u3-ease-out);
+}
+
+.u3-budgets .small-link:hover {
+  background: var(--surface3);
+  border-color: var(--subtle);
+  color: var(--text);
+  transform: translateY(-1px);
+}
+
+.u3-budgets .small-link:active {
+  transform: scale(0.96);
+}
+
+.u3-budgets .mf-no-budget {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 11.5px;
+  padding: 10px 12px;
+  border-radius: 9px;
+  background: var(--surface2);
+  border: 1px dashed var(--border);
+}
+
+.u3-budgets .mf-budget-limit-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.u3-budgets .mf-budget-disclaimer {
+  font-size: 10.5px;
+  line-height: 1.75;
+  color: var(--muted);
+}
+
+/* Divulgação Progressiva de Categorias Silenciosas (.mf-budget-quiet) */
+.u3-budgets .mf-budget-quiet {
+  margin: 4px 0 0;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.u3-budgets .mf-budget-quiet-trigger {
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--text);
+}
+
+.u3-budgets .mf-budget-quiet[open] .budget-grid {
+  margin-top: 14px;
+  animation: u3DisclosureSlide 200ms var(--u3-ease-out);
+}
+
+/* Editor Lateral de Limite de Orçamento (.mf-budget-editor) */
+.mf-budget-edit-backdrop .mf-budget-editor {
+  animation: u3DrawerSlideIn 240ms var(--u3-ease-out);
+}
+
+/* ==========================================================================
+   A-D4.2 — MINHAS CONTAS PREMIUM: INTEGRIDADE DE SALDOS E SINAIS DE REFERÊNCIA
+   ========================================================================== */
+.u3-accounts .u3-account-summary {
+  display: grid;
+  grid-template-columns: minmax(240px, 1.32fr) repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin: 0;
+  align-items: stretch;
+}
+
+.u3-accounts .u3-account-summary > .card,
+.u3-accounts .u3-account-summary > .u3-account-signal {
+  position: relative;
+  padding: 18px 20px;
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--border);
+  border-radius: var(--u3-radius-card);
+  background: var(--surface);
+  text-align: left;
+  box-shadow: var(--u3-card-shadow);
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  animation: u3CardReveal var(--u3-dur-panel) var(--u3-ease-out) both;
+  transition: transform var(--u3-dur-micro) var(--u3-ease-out),
+              box-shadow var(--u3-dur-micro) var(--u3-ease-out),
+              border-color var(--u3-dur-micro) var(--u3-ease-out),
+              background var(--u3-dur-micro) var(--u3-ease-out);
+}
+
+.u3-accounts .u3-account-summary > :nth-child(1) { animation-delay: 20ms; }
+.u3-accounts .u3-account-summary > :nth-child(2) {
+  border-top-color: var(--subtle);
+  animation-delay: 50ms;
+}
+.u3-accounts .u3-account-summary > :nth-child(3) {
+  border-top-color: var(--green);
+  animation-delay: 80ms;
+}
+.u3-accounts .u3-account-summary > :nth-child(4) {
+  border-top-color: var(--warning);
+  animation-delay: 110ms;
+}
+
+.u3-accounts .u3-account-summary > .mf-account-total {
+  background: linear-gradient(160deg, var(--surface) 0%, var(--surface2) 100%);
+  border-top: 3px solid var(--u3-accent);
+}
+
+.u3-accounts .u3-account-summary > .card:hover,
+.u3-accounts .u3-account-summary > .u3-account-signal:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--u3-card-shadow-hover);
+  border-color: var(--subtle);
+}
+
+.u3-account-summary small {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--muted);
+  line-height: 1.5;
+  display: block;
+}
+
+.u3-accounts .u3-account-summary strong {
+  font-size: clamp(22px, 2vw, 27px);
+  line-height: 1.25;
+  font-weight: 650;
+  letter-spacing: -0.6px;
+  font-variant-numeric: tabular-nums;
+  margin: 8px 0;
+  display: block;
+  overflow-wrap: anywhere;
+  color: var(--text);
+  animation: u3ValuePulse 190ms var(--u3-ease-out);
+}
+
+.u3-accounts .u3-account-summary p {
+  font-size: 10.5px;
+  line-height: 1.55;
+  color: var(--muted);
+  margin: 0;
+}
+
+/* Sinais Clicáveis de Filtro de Referência (.u3-clickable-card) */
+.u3-clickable-card {
+  font-family: inherit;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.u3-clickable-card:active {
+  transform: scale(0.985);
+}
+
+.u3-clickable-card[aria-pressed="true"] {
+  background: var(--u3-selected-bg) !important;
+  border-color: var(--u3-accent) !important;
+  box-shadow: 0 0 0 1px var(--u3-accent), var(--u3-card-shadow-hover) !important;
+  outline: none;
+}
+
+/* Barra de Contexto e Cabeçalho da Grade de Contas (.u3-account-toolbar) */
+.u3-account-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin: 6px 0 2px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  animation: u3CardReveal var(--u3-dur-panel) var(--u3-ease-out) 90ms both;
+}
+
+.u3-account-toolbar > span {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.u3-accounts .mf-bank-account-heading h2 {
+  font-size: 15.5px;
+  font-weight: 650;
+  color: var(--text);
+  margin: 0;
+}
+
+.u3-accounts .mf-bank-account-heading small {
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+/* ==========================================================================
+   GRADE DE CONTAS BANCÁRIAS E MANUAIS (.bank-account-grid & .u3-account-card)
+   ========================================================================== */
+.u3-accounts .bank-account-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+/* Spotlight Focus entre cards de contas */
+.u3-accounts .bank-account-grid:hover .u3-account-card:not(:hover):not(:focus-within) {
+  opacity: 0.84;
+}
+
+.u3-accounts .u3-account-card {
+  position: relative;
+  padding: 22px;
+  border: 1px solid var(--border);
+  border-left: 3.5px solid var(--border);
+  border-radius: var(--u3-radius-panel);
+  background: var(--surface);
+  min-width: 0;
+  box-shadow: var(--u3-card-shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  animation: u3CardReveal var(--u3-dur-panel) var(--u3-ease-out) 110ms both;
+  transition: transform var(--u3-dur-micro) var(--u3-ease-out),
+              box-shadow var(--u3-dur-micro) var(--u3-ease-out),
+              border-color var(--u3-dur-micro) var(--u3-ease-out),
+              opacity var(--u3-dur-micro) var(--u3-ease-out),
+              background var(--u3-dur-micro) var(--u3-ease-out);
+}
+
+/* Codificação Visual Honesta da Qualidade da Referência via :has() */
+.u3-accounts .u3-account-card:has(.u3-reference-badge.is-recent) {
+  border-left-color: var(--u3-accent);
+}
+
+.u3-accounts .u3-account-card:has(.u3-reference-badge.is-stale) {
+  border-left-color: var(--warning);
+  background: linear-gradient(120deg, var(--u3-near-tint) 0%, var(--surface) 42%);
+}
+
+.u3-accounts .u3-account-card:hover,
+.u3-accounts .u3-account-card:focus-within {
+  transform: translateY(-2px);
+  box-shadow: var(--u3-card-shadow-hover);
+  border-color: var(--subtle);
+}
+
+.u3-accounts .u3-account-card:has(.u3-reference-badge.is-recent):hover,
+.u3-accounts .u3-account-card:has(.u3-reference-badge.is-recent):focus-within {
+  border-left-color: var(--u3-accent);
+}
+
+.u3-accounts .u3-account-card:has(.u3-reference-badge.is-stale):hover,
+.u3-accounts .u3-account-card:has(.u3-reference-badge.is-stale):focus-within {
+  border-left-color: var(--warning);
+}
+
+/* Cabeçalho do Card da Instituição (.u3-account-card-head) */
+.u3-account-card-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.u3-account-card-head > div {
+  min-width: 0;
+  flex: 1;
+}
+
+.u3-accounts .u3-account-card-head .bank-account-icon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  flex-shrink: 0;
+  margin: 0;
+  transition: transform var(--u3-dur-micro) var(--u3-ease-spring),
+              border-color var(--u3-dur-micro) ease;
+}
+
+.u3-accounts .u3-account-card:hover .bank-account-icon {
+  transform: scale(1.06);
+  border-color: var(--subtle);
+}
+
+.u3-accounts .u3-account-card-head h3,
+.u3-account-card-head h3 {
+  font-size: 13.5px;
+  font-weight: 600;
+  margin: 0 0 4px;
+  overflow-wrap: anywhere;
+  line-height: 1.45;
+  color: var(--text);
+}
+
+.u3-account-card-head small {
+  font-size: 10.5px;
+  color: var(--muted);
+}
+
+/* Badge de Frescor/Validade da Referência (.u3-reference-badge) */
+.u3-reference-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10.5px !important;
+  font-weight: 600;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 4px 9px;
+  color: var(--muted);
+  background: var(--surface2);
+  white-space: nowrap;
+}
+
+.u3-reference-badge::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+
+.u3-reference-badge.is-stale {
+  color: var(--warning);
+  background: var(--warning-bg);
+  border-color: transparent;
+}
+
+.u3-reference-badge.is-recent {
+  color: var(--u3-accent);
+  background: var(--u3-accent-bg);
+  border-color: var(--u3-accent-border);
+}
+
+/* Saldo Informado vs. Ausente e Data da Posição */
+.u3-accounts .u3-account-card > .u3-balance-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.u3-accounts .u3-account-card > strong {
+  font-size: clamp(24px, 2.2vw, 30px);
+  font-weight: 700;
+  letter-spacing: -0.75px;
+  line-height: 1.25;
+  font-variant-numeric: tabular-nums;
+  margin: 6px 0 8px;
+  overflow-wrap: anywhere;
+  color: var(--text);
+  animation: u3ValuePulse 200ms var(--u3-ease-out);
+}
+
+.u3-accounts .u3-account-card > .u3-reference-date {
+  font-size: 10.5px;
+  color: var(--muted);
+  margin-bottom: 16px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 3 Contadores Operacionais por Conta (.u3-account-counts) */
+.u3-account-counts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  border-top: 1px solid var(--border);
+  padding: 14px 0;
+}
+
+.u3-account-counts > div {
+  display: grid;
+  gap: 3px;
+  padding: 8px 10px;
+  border-radius: 9px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  transition: border-color var(--u3-dur-micro) ease;
+}
+
+.u3-account-counts > div:hover {
+  border-color: var(--subtle);
+}
+
+.u3-account-counts b {
+  font-size: 15px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+.u3-account-counts small {
+  font-size: 10px;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+/* Botão de Abertura do Extrato Filtrado da Conta (.u3-account-open) */
+.u3-account-open {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: calc(100% + 16px);
+  margin-inline: -8px;
+  border: 0;
+  border-top: 1px solid var(--border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 12px 8px 4px;
+  margin-top: auto;
+  text-align: left;
+  transition: color var(--u3-dur-micro) ease,
+              background var(--u3-dur-micro) ease,
+              padding-inline var(--u3-dur-micro) var(--u3-ease-out);
+}
+
+.u3-account-open:hover {
+  color: var(--u3-accent);
+  background: var(--surface2);
+  padding-inline: 12px;
+}
+
+/* Alertas de Conexão, Estado Vazio e Integrações (.u3-connection-alert & .mf-bank-integrations) */
+.u3-connection-alert {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  border: 1px solid var(--border);
+  border-left: 3.5px solid var(--warning);
+  border-radius: 12px;
+  background: var(--surface2);
+  padding: 14px 18px;
+  font-size: 12px;
+  line-height: 1.65;
+  box-shadow: var(--u3-card-shadow);
+  animation: u3CardReveal var(--u3-dur-panel) var(--u3-ease-out) both;
+}
+
+.u3-connection-alert > span {
+  flex: 1;
+}
+
+.u3-connection-alert .mf-small-link {
+  margin: 0;
+}
+
+.u3-accounts .mf-bank-integrations {
+  border: 1px solid var(--border);
+  border-radius: var(--u3-radius-panel);
+  background: var(--surface);
+  padding: 18px 22px;
+  box-shadow: var(--u3-card-shadow);
+  transition: border-color var(--u3-dur-micro) ease;
+}
+
+.u3-accounts .mf-bank-integrations:hover {
+  border-color: var(--subtle);
+}
+
+.u3-accounts .mf-bank-integrations > summary {
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.u3-accounts .mf-bank-integrations[open] > .bank-grid {
+  animation: u3DisclosureSlide 200ms var(--u3-ease-out);
+}
+
+.u3-accounts .bank-grid {
+  margin-top: 18px;
+}
+
+.u3-accounts .mf-bank-route {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  box-shadow: none;
+  border-radius: 13px;
+  padding: 20px;
+  transition: transform var(--u3-dur-micro) var(--u3-ease-out),
+              border-color var(--u3-dur-micro) ease,
+              box-shadow var(--u3-dur-micro) ease;
+}
+
+.u3-accounts .mf-bank-route:hover {
+  transform: translateY(-2px);
+  border-color: var(--subtle);
+  box-shadow: var(--u3-card-shadow);
+}
+
+.u3-accounts .mf-bank-route h2 {
+  font-size: 14.5px;
+  font-weight: 650;
+}
+
+.u3-accounts .mf-bank-route p {
+  font-size: 11.5px;
+  line-height: 1.6;
+}
+
+.u3-empty-accounts {
+  padding: 28px;
+  background: var(--surface);
+  border: 1px dashed var(--border);
+  border-radius: var(--u3-radius-panel);
+  animation: u3CardReveal var(--u3-dur-panel) var(--u3-ease-out) both;
+}
+
+.u3-empty-accounts h2 {
+  font-size: 17px;
+  font-weight: 650;
+}
+
+.u3-empty-accounts p {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+/* ==========================================================================
+   SIMULADOR (.u3-simulator) — PRESERVADO 100% PARA A MISSÃO A-D5
+   ========================================================================== */
+.u3-simulator .u3-sim-heading{display:flex;align-items:center;justify-content:space-between;gap:18px;background:transparent;border:0;padding:0;box-shadow:none;border-radius:0}.u3-sim-heading h2{font-size:20px;font-weight:600;margin:0 0 6px}.u3-sim-heading p{font-size:12px;line-height:1.6;color:var(--muted);margin:0}.u3-source-badge{font-size:11px;line-height:1.6;padding:6px 10px;border:1px solid var(--border);border-radius:7px;color:var(--muted);background:var(--surface);white-space:nowrap}.u3-simulator .assistant-grid{grid-template-columns:minmax(300px,.8fr) minmax(0,1.4fr);align-items:start;gap:20px}.u3-simulator .sim-form-card,.u3-simulator .result-card,.u3-simulator .empty-result{padding:22px;border-radius:14px;background:var(--surface);box-shadow:none;border:1px solid var(--border);min-width:0}.u3-simulator .sim-form-card{min-height:0}.u3-simulator .sim-form-card .card-heading{margin-bottom:24px}.u3-simulator .sim-form-card .micro-label{font-size:9px;letter-spacing:1px;color:var(--muted);display:block;margin-bottom:8px}.u3-simulator .sim-form-card h2{font-size:16px;font-weight:600}.u3-simulator .sim-form-card .card-heading p{font-size:11px}.u3-simulator .field>span{font-size:12px;font-weight:500}.u3-simulator .form-control{font-size:13px}.u3-simulator .field>small{font-size:10px;line-height:1.6}.u3-simulator .sim-form-card .action-large{min-height:40px;border-radius:8px;font-size:12px;margin-top:4px}.u3-sim-note{font-size:11px;color:var(--muted);line-height:1.7;margin:10px 0}.u3-reserve-note{display:flex;align-items:center;gap:10px;padding:14px;border:1px solid var(--border);border-radius:9px;margin:18px 0;background:var(--surface2)}.u3-reserve-note>div{flex:1;display:grid;gap:5px}.u3-reserve-note small{font-size:10px;color:var(--muted)}.u3-reserve-note strong{font-size:15px;font-weight:500}.u3-reserve-note .mf-small-link{margin:0;font-size:11px}.u3-simulator .mf-sim-premises{font-size:11px;line-height:1.7;margin-top:15px;color:var(--muted)}.u3-simulator .mf-sim-premises summary{cursor:pointer}.u3-simulator .sim-example-title{font-size:10px}.u3-simulator .quick-choice{font-size:11px;min-height:34px}.u3-simulator .empty-result{min-height:350px}.u3-simulator .empty-result-icon{background:var(--surface2);color:var(--muted);width:50px;height:50px;border-radius:12px}.u3-simulator .empty-result h2{font-size:22px;margin:20px 0 10px}.u3-simulator .empty-result p{font-size:12px;line-height:1.8;max-width:47ch}.u3-result-guide{display:flex;gap:20px;flex-wrap:wrap;justify-content:center;margin-top:20px}.u3-result-guide span{display:flex;flex-direction:column;gap:8px;font-size:10px;color:var(--muted)}.u3-result-guide b{font-size:12px;color:var(--text);font-weight:500}.u3-simulator .result-column{gap:16px;min-width:0}.u3-simulator .result-badge{border-radius:10px;padding:16px;gap:12px}.u3-simulator .result-badge h2{font-size:17px;font-weight:600}.u3-simulator .result-badge p{font-size:12px;line-height:1.7}.u3-simulator .result-metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;padding:18px;background:var(--surface2);border-radius:10px;margin:20px 0}.u3-simulator .result-metrics>div{background:transparent;border:0;border-radius:0;padding:0}.u3-simulator .result-metrics strong{font-size:23px;letter-spacing:-.4px;overflow-wrap:anywhere}.u3-simulator .result-metrics span{font-size:10px}.u3-simulator .mf-scenario-alert{font-size:11px;line-height:1.7}.u3-cost-strip{display:flex;gap:14px;flex-wrap:wrap;justify-content:space-between;border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:13px 0;font-size:10px;color:var(--muted);line-height:1.8}.u3-cost-strip b{display:block;font-size:13px;font-weight:500;color:var(--text)}.u3-scenario-chart{margin:20px 0 12px}.u3-scenario-chart figcaption{font-size:12px;font-weight:500;margin-bottom:15px}.u3-scenario-chart svg{display:block;width:100%;height:auto;max-height:240px;overflow:visible}.u3-chart-grid{stroke:var(--border);stroke-width:1;stroke-dasharray:3 4}.u3-chart-label{fill:var(--muted);font-size:10px;font-family:inherit}.u3-chart-base{fill:none;stroke:var(--subtle);stroke-width:2;stroke-dasharray:5 4}.u3-chart-purchase{fill:none;stroke:var(--u3-accent);stroke-width:2.5;stroke-linejoin:round;stroke-linecap:round}.u3-chart-dot{fill:var(--u3-accent)}.u3-chart-legend{display:flex;align-items:center;gap:16px;flex-wrap:wrap;font-size:10px;color:var(--muted);line-height:1.8;margin:12px 0}.u3-chart-legend span{display:flex;gap:6px;align-items:center}.u3-chart-legend i{height:6px;width:6px;background:var(--u3-accent);border-radius:50%}.u3-chart-legend .is-baseline{background:var(--subtle)}.u3-chart-legend small{font-size:10px}.u3-monthly-data{font-size:11px;color:var(--muted);margin:18px 0}.u3-monthly-data summary{cursor:pointer}.u3-comparison{border:1px solid var(--border);border-radius:14px;background:var(--surface);padding:20px;min-width:0}.u3-comparison .u3-panel-heading{margin-bottom:18px}.u3-comparison .mf-small-link{font-size:11px;margin:0}.u3-comparison-scroll{overflow:auto}.u3-comparison table,.u3-monthly-data table{border-collapse:collapse;width:100%;font-size:11px}.u3-comparison th,.u3-comparison td,.u3-monthly-data th,.u3-monthly-data td{padding:11px 10px;border-bottom:1px solid var(--border);text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;font-weight:400}.u3-comparison th:first-child,.u3-monthly-data th:first-child{text-align:left;color:var(--muted)}.u3-comparison thead,.u3-monthly-data thead{background:var(--surface2);color:var(--muted)}.u3-comparison caption,.u3-monthly-data caption{font-size:10px;line-height:1.7;text-align:left;margin:14px 0}.u3-comparison .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}.u3-comparison-context{display:flex;gap:12px;flex-wrap:wrap;font-size:10px;color:var(--muted);line-height:1.8;margin-top:12px}.u3-comparison-delta{font-size:12px;line-height:1.7;margin:14px 0 5px;font-weight:500}.u3-comparison>.u3-sim-note{display:block;font-size:10px}.u3-save-scenario{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.u3-save-scenario button{font-size:12px}.u3-save-scenario small{font-size:10px;color:var(--muted);line-height:1.7}.u3-simulator .mf-plan-from-sim{font-size:12px}.u3-simulator .disclaimer{font-size:10px;line-height:1.8}.u3-simulator .info-box{font-size:11px;line-height:1.7;margin:0}.u3-shell button:focus-visible,.u3-shell summary:focus-visible{outline:2px solid var(--focus, var(--text));outline-offset:3px}
+
+/* ==========================================================================
+   RESPONSIVIDADE CALIBRADA: 1366x768, 1200px, 1020px e 650px
+   ========================================================================== */
+@media (max-width: 1400px) {
+  .u3-budgets .mf-budget-summary > div,
+  .u3-accounts .u3-account-summary > .card,
+  .u3-accounts .u3-account-summary > .u3-account-signal {
+    padding: 16px 18px;
+  }
+  .u3-budget-insight {
+    padding: 18px 20px;
+    gap: 18px;
+  }
+  .u3-budgets .mf-budget-card,
+  .u3-accounts .u3-account-card {
+    padding: 18px 20px;
+  }
+}
+
+@media (max-width: 1200px) {
+  .u3-simulator .assistant-grid {
+    grid-template-columns: minmax(280px, 0.8fr) minmax(0, 1.2fr);
+  }
+  .u3-budget-actions .u3-insight-action {
+    gap: 9px;
+  }
+  .u3-budget-actions .u3-insight-action > svg:last-child {
+    display: none;
+  }
+}
+
+@media (max-width: 1020px) {
+  .u3-budget-insight {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+  .u3-budget-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .u3-accounts .u3-account-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .u3-budgets .mf-budget-card {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .u3-budgets .mf-budget-money {
+    text-align: left;
+  }
+  .u3-budgets .mf-budget-limit,
+  .u3-budgets .mf-no-budget,
+  .u3-budgets .mf-income-share,
+  .u3-budgets .budget-item-bottom {
+    grid-column: auto;
+  }
+  .u3-simulator .assistant-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .u3-accounts .bank-account-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .u3-sim-heading {
+    flex-wrap: wrap;
+  }
+  .u3-source-badge {
+    white-space: normal;
+  }
+  .u3-simulator .empty-result {
+    min-height: 260px;
+  }
+}
+
+@media (max-width: 650px) {
+  .u3-shell .topbar h1 {
+    font-size: 26px;
+  }
+  .u3-budget-insight {
+    padding: 18px;
+  }
+  .u3-coverage {
+    gap: 15px;
+  }
+  .u3-coverage-ring {
+    width: 84px;
+    height: 84px;
+    min-width: 84px;
+  }
+  .u3-coverage-ring strong {
+    font-size: 22px;
+  }
+  .u3-coverage h2 {
+    font-size: 13px;
+  }
+  .u3-budget-actions {
+    grid-template-columns: 1fr;
+  }
+  .u3-budgets .budget-grid {
+    grid-template-columns: 1fr;
+  }
+  .u3-budget-toolbar .search-box {
+    width: 100%;
+  }
+  .u3-budgets .mf-budget-summary > div {
+    padding: 15px;
+  }
+  .u3-budgets .mf-budget-summary strong {
+    font-size: 22px;
+  }
+  .u3-budgets .mf-budget-summary {
+    gap: 10px;
+  }
+  .u3-accounts .u3-account-summary {
+    gap: 10px;
+  }
+  .u3-accounts .u3-account-summary > .card,
+  .u3-accounts .u3-account-summary > .u3-account-signal {
+    padding: 15px;
+  }
+  .u3-accounts .u3-account-summary strong {
+    font-size: 22px;
+  }
+  .u3-accounts .u3-account-summary small {
+    font-size: 10px;
+  }
+  .u3-accounts .u3-account-card {
+    padding: 18px;
+  }
+  .u3-accounts .u3-account-card > strong {
+    font-size: 27px;
+  }
+  .u3-reference-badge {
+    margin-left: 47px;
+  }
+  .u3-account-card-head {
+    margin-bottom: 18px;
+  }
+  .u3-account-toolbar {
+    gap: 12px;
+  }
+  .u3-simulator .sim-form-card,
+  .u3-simulator .result-card,
+  .u3-simulator .empty-result,
+  .u3-comparison {
+    padding: 18px;
+  }
+  .u3-result-guide {
+    gap: 14px;
+  }
+  .u3-simulator .result-metrics {
+    gap: 16px;
+    padding: 15px;
+  }
+  .u3-simulator .result-metrics strong {
+    font-size: 21px;
+  }
+  .u3-simulator .result-badge h2 {
+    font-size: 16px;
+  }
+  .u3-simulator .result-badge {
+    align-items: flex-start;
+  }
+  .u3-sim-heading h2 {
+    font-size: 19px;
+  }
+  .u3-insight-action > strong {
+    font-size: 20px;
+  }
+}
+
+/* ==========================================================================
+   ACESSIBILIDADE ESTRITA — PREFERS-REDUCED-MOTION (COBERTURA INTEGRAL A-D4)
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  .u3-shell *,
+  .u3-shell *::before,
+  .u3-shell *::after,
+  .mf-budget-edit-backdrop .mf-budget-editor {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .u3-budgets .mf-budget-summary > div:hover,
+  .u3-coverage-ring:hover,
+  .u3-insight-action:hover,
+  .u3-insight-action:active,
+  .u3-insight-action:hover > svg,
+  .u3-insight-action[aria-pressed="true"] > svg,
+  .u3-budgets .mf-budget-switch button:active,
+  .u3-budgets .mf-budget-card:hover,
+  .u3-budgets .mf-budget-card:focus-within,
+  .u3-budgets .mf-budget-card:hover .budget-item-top .cat-symbol,
+  .u3-budgets .small-link:hover,
+  .u3-budgets .small-link:active,
+  .u3-accounts .u3-account-summary > .card:hover,
+  .u3-accounts .u3-account-summary > .u3-account-signal:hover,
+  .u3-clickable-card:active,
+  .u3-accounts .u3-account-card:hover,
+  .u3-accounts .u3-account-card:focus-within,
+  .u3-accounts .u3-account-card:hover .bank-account-icon,
+  .u3-accounts .mf-bank-route:hover {
+    transform: none !important;
+  }
+
+  .u3-budgets .budget-grid:hover .mf-budget-card:not(:hover):not(:focus-within),
+  .u3-accounts .bank-account-grid:hover .u3-account-card:not(:hover):not(:focus-within) {
+    opacity: 1 !important;
+  }
+}
