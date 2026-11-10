@@ -1,4 +1,4 @@
-/* U3 / A-D4 (A-D4.1 + A-D4.2): Orçamentos e Minhas Contas Desktop Premium & Motion Design (1366x768 & 1920x1080).
+/* U3 / A-D4 & A-D5.1: Orçamentos, Minhas Contas e Simulador Desktop Premium & Motion Design (1366x768 & 1920x1080).
    Base original: commit a4d88ced28c59b21520f4d67a51373cd71bdc8a2 (app/decisions.css SHA256 fe7bdc4a...)
    Base incremental A-D4.1: SHA256 a5c75a39e50127fb0cc64a9b55aba1f9ac77fc79383ebe1a971a5705f646d1db
    Preserva 100% dos seletores de Orçamentos (.u3-budgets), Contas (.u3-accounts) e Simulador (.u3-simulator). */
@@ -1286,9 +1286,768 @@
 }
 
 /* ==========================================================================
-   SIMULADOR (.u3-simulator) — PRESERVADO 100% PARA A MISSÃO A-D5
+   A-D5.1 — SIMULADOR PREMIUM: BANCADA DE DECISÃO, IMPACTO E COMPARAÇÃO A/B
    ========================================================================== */
-.u3-simulator .u3-sim-heading{display:flex;align-items:center;justify-content:space-between;gap:18px;background:transparent;border:0;padding:0;box-shadow:none;border-radius:0}.u3-sim-heading h2{font-size:20px;font-weight:600;margin:0 0 6px}.u3-sim-heading p{font-size:12px;line-height:1.6;color:var(--muted);margin:0}.u3-source-badge{font-size:11px;line-height:1.6;padding:6px 10px;border:1px solid var(--border);border-radius:7px;color:var(--muted);background:var(--surface);white-space:nowrap}.u3-simulator .assistant-grid{grid-template-columns:minmax(300px,.8fr) minmax(0,1.4fr);align-items:start;gap:20px}.u3-simulator .sim-form-card,.u3-simulator .result-card,.u3-simulator .empty-result{padding:22px;border-radius:14px;background:var(--surface);box-shadow:none;border:1px solid var(--border);min-width:0}.u3-simulator .sim-form-card{min-height:0}.u3-simulator .sim-form-card .card-heading{margin-bottom:24px}.u3-simulator .sim-form-card .micro-label{font-size:9px;letter-spacing:1px;color:var(--muted);display:block;margin-bottom:8px}.u3-simulator .sim-form-card h2{font-size:16px;font-weight:600}.u3-simulator .sim-form-card .card-heading p{font-size:11px}.u3-simulator .field>span{font-size:12px;font-weight:500}.u3-simulator .form-control{font-size:13px}.u3-simulator .field>small{font-size:10px;line-height:1.6}.u3-simulator .sim-form-card .action-large{min-height:40px;border-radius:8px;font-size:12px;margin-top:4px}.u3-sim-note{font-size:11px;color:var(--muted);line-height:1.7;margin:10px 0}.u3-reserve-note{display:flex;align-items:center;gap:10px;padding:14px;border:1px solid var(--border);border-radius:9px;margin:18px 0;background:var(--surface2)}.u3-reserve-note>div{flex:1;display:grid;gap:5px}.u3-reserve-note small{font-size:10px;color:var(--muted)}.u3-reserve-note strong{font-size:15px;font-weight:500}.u3-reserve-note .mf-small-link{margin:0;font-size:11px}.u3-simulator .mf-sim-premises{font-size:11px;line-height:1.7;margin-top:15px;color:var(--muted)}.u3-simulator .mf-sim-premises summary{cursor:pointer}.u3-simulator .sim-example-title{font-size:10px}.u3-simulator .quick-choice{font-size:11px;min-height:34px}.u3-simulator .empty-result{min-height:350px}.u3-simulator .empty-result-icon{background:var(--surface2);color:var(--muted);width:50px;height:50px;border-radius:12px}.u3-simulator .empty-result h2{font-size:22px;margin:20px 0 10px}.u3-simulator .empty-result p{font-size:12px;line-height:1.8;max-width:47ch}.u3-result-guide{display:flex;gap:20px;flex-wrap:wrap;justify-content:center;margin-top:20px}.u3-result-guide span{display:flex;flex-direction:column;gap:8px;font-size:10px;color:var(--muted)}.u3-result-guide b{font-size:12px;color:var(--text);font-weight:500}.u3-simulator .result-column{gap:16px;min-width:0}.u3-simulator .result-badge{border-radius:10px;padding:16px;gap:12px}.u3-simulator .result-badge h2{font-size:17px;font-weight:600}.u3-simulator .result-badge p{font-size:12px;line-height:1.7}.u3-simulator .result-metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;padding:18px;background:var(--surface2);border-radius:10px;margin:20px 0}.u3-simulator .result-metrics>div{background:transparent;border:0;border-radius:0;padding:0}.u3-simulator .result-metrics strong{font-size:23px;letter-spacing:-.4px;overflow-wrap:anywhere}.u3-simulator .result-metrics span{font-size:10px}.u3-simulator .mf-scenario-alert{font-size:11px;line-height:1.7}.u3-cost-strip{display:flex;gap:14px;flex-wrap:wrap;justify-content:space-between;border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:13px 0;font-size:10px;color:var(--muted);line-height:1.8}.u3-cost-strip b{display:block;font-size:13px;font-weight:500;color:var(--text)}.u3-scenario-chart{margin:20px 0 12px}.u3-scenario-chart figcaption{font-size:12px;font-weight:500;margin-bottom:15px}.u3-scenario-chart svg{display:block;width:100%;height:auto;max-height:240px;overflow:visible}.u3-chart-grid{stroke:var(--border);stroke-width:1;stroke-dasharray:3 4}.u3-chart-label{fill:var(--muted);font-size:10px;font-family:inherit}.u3-chart-base{fill:none;stroke:var(--subtle);stroke-width:2;stroke-dasharray:5 4}.u3-chart-purchase{fill:none;stroke:var(--u3-accent);stroke-width:2.5;stroke-linejoin:round;stroke-linecap:round}.u3-chart-dot{fill:var(--u3-accent)}.u3-chart-legend{display:flex;align-items:center;gap:16px;flex-wrap:wrap;font-size:10px;color:var(--muted);line-height:1.8;margin:12px 0}.u3-chart-legend span{display:flex;gap:6px;align-items:center}.u3-chart-legend i{height:6px;width:6px;background:var(--u3-accent);border-radius:50%}.u3-chart-legend .is-baseline{background:var(--subtle)}.u3-chart-legend small{font-size:10px}.u3-monthly-data{font-size:11px;color:var(--muted);margin:18px 0}.u3-monthly-data summary{cursor:pointer}.u3-comparison{border:1px solid var(--border);border-radius:14px;background:var(--surface);padding:20px;min-width:0}.u3-comparison .u3-panel-heading{margin-bottom:18px}.u3-comparison .mf-small-link{font-size:11px;margin:0}.u3-comparison-scroll{overflow:auto}.u3-comparison table,.u3-monthly-data table{border-collapse:collapse;width:100%;font-size:11px}.u3-comparison th,.u3-comparison td,.u3-monthly-data th,.u3-monthly-data td{padding:11px 10px;border-bottom:1px solid var(--border);text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;font-weight:400}.u3-comparison th:first-child,.u3-monthly-data th:first-child{text-align:left;color:var(--muted)}.u3-comparison thead,.u3-monthly-data thead{background:var(--surface2);color:var(--muted)}.u3-comparison caption,.u3-monthly-data caption{font-size:10px;line-height:1.7;text-align:left;margin:14px 0}.u3-comparison .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}.u3-comparison-context{display:flex;gap:12px;flex-wrap:wrap;font-size:10px;color:var(--muted);line-height:1.8;margin-top:12px}.u3-comparison-delta{font-size:12px;line-height:1.7;margin:14px 0 5px;font-weight:500}.u3-comparison>.u3-sim-note{display:block;font-size:10px}.u3-save-scenario{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.u3-save-scenario button{font-size:12px}.u3-save-scenario small{font-size:10px;color:var(--muted);line-height:1.7}.u3-simulator .mf-plan-from-sim{font-size:12px}.u3-simulator .disclaimer{font-size:10px;line-height:1.8}.u3-simulator .info-box{font-size:11px;line-height:1.7;margin:0}.u3-shell button:focus-visible,.u3-shell summary:focus-visible{outline:2px solid var(--focus, var(--text));outline-offset:3px}
+@keyframes u3ChartReveal {
+  from {
+    clip-path: inset(-12px 100% -12px -12px);
+    opacity: 0.35;
+  }
+  to {
+    clip-path: inset(-12px -12px -12px -12px);
+    opacity: 1;
+  }
+}
+
+.u3-simulator .u3-sim-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  box-shadow: none;
+  border-radius: 0;
+  animation: u3CardReveal var(--u3-dur-panel) var(--u3-ease-out) both;
+}
+
+.u3-sim-heading h2 {
+  font-size: clamp(19px, 1.8vw, 21px);
+  font-weight: 650;
+  letter-spacing: -0.35px;
+  margin: 0 0 5px;
+  color: var(--text);
+}
+
+.u3-sim-heading p {
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--muted);
+  margin: 0;
+}
+
+.u3-source-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.5;
+  padding: 6px 12px;
+  border: 1px solid var(--u3-accent-border);
+  border-radius: 999px;
+  color: var(--u3-accent);
+  background: var(--u3-accent-bg);
+  white-space: nowrap;
+}
+
+.u3-source-badge::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+
+.u3-simulator .assistant-grid {
+  grid-template-columns: minmax(300px, 0.82fr) minmax(0, 1.38fr);
+  align-items: start;
+  gap: 20px;
+}
+
+.u3-simulator .sim-form-card,
+.u3-simulator .result-card,
+.u3-simulator .empty-result {
+  padding: 22px;
+  border-radius: var(--u3-radius-panel);
+  background: var(--surface);
+  box-shadow: var(--u3-card-shadow);
+  border: 1px solid var(--border);
+  min-width: 0;
+  animation: u3CardReveal var(--u3-dur-panel) var(--u3-ease-out) 40ms both;
+  transition: border-color var(--u3-dur-micro) var(--u3-ease-out),
+              box-shadow var(--u3-dur-micro) var(--u3-ease-out);
+}
+
+.u3-simulator .sim-form-card {
+  min-height: 0;
+  border-top: 3px solid var(--u3-accent);
+}
+
+.u3-simulator .result-card {
+  animation-delay: 85ms;
+}
+
+.u3-simulator .sim-form-card .card-heading {
+  margin-bottom: 20px;
+}
+
+.u3-simulator .sim-form-card .micro-label {
+  font-size: 9.5px;
+  font-weight: 650;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--u3-accent);
+  display: block;
+  margin-bottom: 6px;
+}
+
+.u3-simulator .sim-form-card h2 {
+  font-size: 16px;
+  font-weight: 650;
+  color: var(--text);
+}
+
+.u3-simulator .sim-form-card .card-heading p {
+  font-size: 11.5px;
+  line-height: 1.55;
+}
+
+.u3-simulator .field > span {
+  font-size: 12px;
+  font-weight: 550;
+  color: var(--text);
+}
+
+.u3-simulator .form-control {
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  border-radius: 10px;
+  transition: border-color var(--u3-dur-micro) var(--u3-ease-out),
+              box-shadow var(--u3-dur-micro) var(--u3-ease-out),
+              background var(--u3-dur-micro) var(--u3-ease-out);
+}
+
+.u3-simulator .form-control:hover {
+  border-color: var(--subtle);
+}
+
+.u3-simulator .form-control:focus-visible {
+  border-color: var(--focus, var(--u3-accent));
+  box-shadow: 0 0 0 3px var(--u3-focus-ring);
+}
+
+.u3-simulator .field > small {
+  font-size: 10.5px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+.u3-simulator .sim-form-card .action-large {
+  min-height: 42px;
+  border-radius: 10px;
+  font-size: 12.5px;
+  font-weight: 600;
+  margin-top: 6px;
+  transition: transform 120ms var(--u3-ease-out),
+              filter var(--u3-dur-micro) ease,
+              box-shadow var(--u3-dur-micro) ease;
+}
+
+.u3-simulator .sim-form-card .action-large:active {
+  transform: scale(0.98);
+}
+
+.u3-sim-note {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.65;
+  margin: 10px 0;
+}
+
+/* Bloco de Reserva Conhecida e Premissas (.u3-reserve-note & .mf-sim-premises) */
+.u3-reserve-note {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--u3-accent);
+  border-radius: 11px;
+  margin: 16px 0;
+  background: linear-gradient(155deg, var(--surface2) 0%, var(--surface) 100%);
+  transition: border-color var(--u3-dur-micro) ease;
+}
+
+.u3-reserve-note:hover {
+  border-color: var(--subtle);
+  border-left-color: var(--u3-accent);
+}
+
+.u3-reserve-note > div {
+  flex: 1;
+  display: grid;
+  gap: 4px;
+}
+
+.u3-reserve-note small {
+  font-size: 10.5px;
+  color: var(--muted);
+}
+
+.u3-reserve-note strong {
+  font-size: 15.5px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+.u3-reserve-note .mf-small-link {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.u3-simulator .mf-sim-premises {
+  font-size: 11px;
+  line-height: 1.65;
+  margin-top: 14px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+
+.u3-simulator .mf-sim-premises summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.u3-simulator .mf-sim-premises[open] p {
+  margin-top: 8px;
+  animation: u3DisclosureSlide 180ms var(--u3-ease-out);
+}
+
+.u3-simulator .sim-example-title {
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--muted);
+}
+
+.u3-simulator .quick-choice {
+  font-size: 11px;
+  font-weight: 550;
+  min-height: 34px;
+  border-radius: 8px;
+  transition: transform 120ms var(--u3-ease-out),
+              background var(--u3-dur-micro) ease,
+              border-color var(--u3-dur-micro) ease,
+              color var(--u3-dur-micro) ease;
+}
+
+.u3-simulator .quick-choice:hover {
+  transform: translateY(-1px);
+  border-color: var(--subtle);
+  background: var(--surface2);
+  color: var(--text);
+}
+
+.u3-simulator .quick-choice:active {
+  transform: scale(0.96);
+}
+
+/* Estado Inicial / Guia da Bancada de Simulação (.empty-result & .u3-result-guide) */
+.u3-simulator .empty-result {
+  min-height: 350px;
+  background: linear-gradient(165deg, var(--surface) 0%, var(--surface2) 100%);
+}
+
+.u3-simulator .empty-result-icon {
+  background: var(--u3-accent-bg);
+  color: var(--u3-accent);
+  border: 1px solid var(--u3-accent-border);
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  animation: u3RingScale 300ms var(--u3-ease-spring) 80ms both;
+}
+
+.u3-simulator .empty-result h2 {
+  font-size: 21px;
+  font-weight: 650;
+  letter-spacing: -0.35px;
+  margin: 18px 0 8px;
+}
+
+.u3-simulator .empty-result p {
+  font-size: 12.5px;
+  line-height: 1.75;
+  max-width: 48ch;
+}
+
+.u3-result-guide {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 22px;
+}
+
+.u3-result-guide span {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 12px 14px;
+  border-radius: 11px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  font-size: 10.5px;
+  color: var(--muted);
+  text-align: left;
+  min-width: 155px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+  transition: transform var(--u3-dur-micro) var(--u3-ease-out),
+              border-color var(--u3-dur-micro) ease;
+}
+
+.u3-result-guide span:hover {
+  transform: translateY(-2px);
+  border-color: var(--subtle);
+}
+
+.u3-result-guide b {
+  font-size: 12px;
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* Coluna de Resultados, Veredito e Métricas (.result-column, .result-badge, .result-metrics) */
+.u3-simulator .result-column {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.u3-simulator .result-badge {
+  border-radius: 12px;
+  padding: 16px 18px;
+  gap: 12px;
+  border: 1px solid var(--border);
+  border-left: 3.5px solid var(--u3-accent);
+  animation: u3CardReveal 220ms var(--u3-ease-out) both;
+}
+
+.u3-simulator .result-badge h2 {
+  font-size: 16.5px;
+  font-weight: 650;
+  letter-spacing: -0.25px;
+}
+
+.u3-simulator .result-badge p {
+  font-size: 12px;
+  line-height: 1.65;
+}
+
+.u3-simulator .result-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  padding: 14px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  margin: 18px 0;
+}
+
+.u3-simulator .result-metrics > div {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+  transition: transform var(--u3-dur-micro) var(--u3-ease-out),
+              border-color var(--u3-dur-micro) ease;
+}
+
+.u3-simulator .result-metrics > div:hover {
+  transform: translateY(-1px);
+  border-color: var(--subtle);
+}
+
+.u3-simulator .result-metrics strong {
+  display: block;
+  font-size: clamp(20px, 1.9vw, 24px);
+  font-weight: 700;
+  letter-spacing: -0.45px;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+  color: var(--text);
+  margin-top: 6px;
+  animation: u3ValuePulse 190ms var(--u3-ease-out);
+}
+
+.u3-simulator .result-metrics span {
+  font-size: 10.5px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.u3-simulator .mf-scenario-alert {
+  font-size: 11.5px;
+  line-height: 1.65;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border-left: 3px solid var(--warning);
+}
+
+/* Faixa de Decomposição de Custo (.u3-cost-strip) */
+.u3-cost-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 12px;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 0;
+  font-size: 10.5px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.u3-cost-strip > span,
+.u3-cost-strip > div {
+  padding: 8px 10px;
+  border-radius: 9px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+}
+
+.u3-cost-strip b {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  margin-top: 2px;
+}
+
+/* Gráfico SVG de 12 Fechamentos Mensais (.u3-scenario-chart) */
+.u3-scenario-chart {
+  margin: 20px 0 12px;
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+}
+
+.u3-scenario-chart figcaption {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 14px;
+}
+
+.u3-scenario-chart svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 245px;
+  overflow: visible;
+}
+
+.u3-chart-grid {
+  stroke: var(--border);
+  stroke-width: 1;
+  stroke-dasharray: 3 4;
+}
+
+.u3-chart-label {
+  fill: var(--muted);
+  font-size: 10px;
+  font-family: inherit;
+  font-variant-numeric: tabular-nums;
+}
+
+.u3-chart-base {
+  fill: none;
+  stroke: var(--subtle);
+  stroke-width: 2;
+  stroke-dasharray: 5 4;
+  animation: u3CardReveal 260ms var(--u3-ease-out) 60ms both;
+}
+
+.u3-chart-purchase {
+  fill: none;
+  stroke: var(--u3-accent);
+  stroke-width: 2.75;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  animation: u3ChartReveal 340ms var(--u3-ease-out) both;
+}
+
+.u3-chart-dot {
+  fill: var(--u3-accent);
+  stroke: var(--surface);
+  stroke-width: 2;
+  cursor: pointer;
+  transition: r 140ms var(--u3-ease-spring), stroke-width 140ms ease;
+}
+
+.u3-chart-dot:hover {
+  r: 5.5px;
+  stroke-width: 2.5px;
+}
+
+.u3-chart-legend {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-size: 10.5px;
+  color: var(--muted);
+  line-height: 1.7;
+  margin: 12px 0 4px;
+}
+
+.u3-chart-legend span {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  font-weight: 500;
+}
+
+.u3-chart-legend i {
+  height: 7px;
+  width: 7px;
+  background: var(--u3-accent);
+  border-radius: 50%;
+}
+
+.u3-chart-legend .is-baseline {
+  background: var(--subtle);
+}
+
+.u3-chart-legend small {
+  font-size: 10px;
+}
+
+/* Tabela Mensal Expansível e Bancada de Comparação A/B (.u3-monthly-data & .u3-comparison) */
+.u3-monthly-data {
+  font-size: 11px;
+  color: var(--muted);
+  margin: 16px 0;
+}
+
+.u3-monthly-data summary {
+  cursor: pointer;
+  width: fit-content;
+  font-weight: 600;
+  color: var(--text);
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  transition: background var(--u3-dur-micro) ease, border-color var(--u3-dur-micro) ease;
+}
+
+.u3-monthly-data summary:hover {
+  background: var(--surface3);
+  border-color: var(--subtle);
+}
+
+.u3-monthly-data[open] table {
+  margin-top: 10px;
+  animation: u3DisclosureSlide 200ms var(--u3-ease-out);
+}
+
+.u3-comparison {
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--u3-accent);
+  border-radius: var(--u3-radius-panel);
+  background: var(--surface);
+  padding: 22px;
+  min-width: 0;
+  box-shadow: var(--u3-card-shadow);
+  animation: u3CardReveal var(--u3-dur-panel) var(--u3-ease-out) 110ms both;
+}
+
+.u3-comparison .u3-panel-heading {
+  margin-bottom: 16px;
+}
+
+.u3-comparison .mf-small-link {
+  font-size: 11px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.u3-comparison-scroll {
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.u3-comparison table,
+.u3-monthly-data table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 11.5px;
+}
+
+.u3-comparison th,
+.u3-comparison td,
+.u3-monthly-data th,
+.u3-monthly-data td {
+  padding: 11px 12px;
+  border-bottom: 1px solid var(--border);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  font-weight: 450;
+  color: var(--text);
+  transition: background 120ms ease;
+}
+
+.u3-comparison th:first-child,
+.u3-monthly-data th:first-child,
+.u3-comparison td:first-child,
+.u3-monthly-data td:first-child {
+  text-align: left;
+  color: var(--muted);
+  font-weight: 550;
+}
+
+.u3-comparison thead,
+.u3-monthly-data thead {
+  background: var(--surface2);
+  color: var(--muted);
+}
+
+.u3-comparison thead th,
+.u3-monthly-data thead th {
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+}
+
+.u3-comparison tbody tr:hover td,
+.u3-monthly-data tbody tr:hover td {
+  background: var(--surface2);
+}
+
+.u3-comparison tbody tr:hover td:first-child,
+.u3-monthly-data tbody tr:hover td:first-child {
+  box-shadow: inset 3px 0 0 var(--u3-accent);
+  color: var(--text);
+}
+
+.u3-comparison caption,
+.u3-monthly-data caption {
+  font-size: 10.5px;
+  line-height: 1.65;
+  text-align: left;
+  margin: 10px 12px;
+  color: var(--muted);
+}
+
+.u3-comparison .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.u3-comparison-context {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 10.5px;
+  color: var(--muted);
+  line-height: 1.7;
+  margin-top: 12px;
+}
+
+.u3-comparison-delta {
+  font-size: 12.5px;
+  line-height: 1.65;
+  margin: 14px 0 6px;
+  padding: 10px 14px;
+  border-radius: 9px;
+  background: var(--u3-accent-bg);
+  border: 1px solid var(--u3-accent-border);
+  color: var(--text);
+  font-weight: 600;
+  animation: u3ValuePulse 200ms var(--u3-ease-out);
+}
+
+.u3-comparison > .u3-sim-note {
+  display: block;
+  font-size: 10.5px;
+}
+
+.u3-save-scenario {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  margin-top: 12px;
+}
+
+.u3-save-scenario button {
+  font-size: 12px;
+  font-weight: 600;
+  transition: transform 120ms var(--u3-ease-out),
+              background var(--u3-dur-micro) ease,
+              border-color var(--u3-dur-micro) ease;
+}
+
+.u3-save-scenario button:active {
+  transform: scale(0.97);
+}
+
+.u3-save-scenario small {
+  font-size: 10.5px;
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+.u3-simulator .mf-plan-from-sim {
+  font-size: 12px;
+  font-weight: 600;
+  transition: transform 120ms var(--u3-ease-out),
+              background var(--u3-dur-micro) ease;
+}
+
+.u3-simulator .mf-plan-from-sim:active {
+  transform: scale(0.97);
+}
+
+.u3-simulator .disclaimer {
+  font-size: 10.5px;
+  line-height: 1.75;
+  color: var(--muted);
+}
+
+.u3-simulator .info-box {
+  font-size: 11px;
+  line-height: 1.65;
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+}
+
+.u3-shell button:focus-visible,
+.u3-shell summary:focus-visible {
+  outline: 2px solid var(--focus, var(--text));
+  outline-offset: 3px;
+}
 
 /* ==========================================================================
    RESPONSIVIDADE CALIBRADA: 1366x768, 1200px, 1020px e 650px
@@ -1488,8 +2247,19 @@
   .u3-accounts .u3-account-card:hover,
   .u3-accounts .u3-account-card:focus-within,
   .u3-accounts .u3-account-card:hover .bank-account-icon,
-  .u3-accounts .mf-bank-route:hover {
+  .u3-accounts .mf-bank-route:hover,
+  .u3-simulator .sim-form-card .action-large:active,
+  .u3-simulator .quick-choice:hover,
+  .u3-simulator .quick-choice:active,
+  .u3-result-guide span:hover,
+  .u3-simulator .result-metrics > div:hover,
+  .u3-save-scenario button:active,
+  .u3-simulator .mf-plan-from-sim:active {
     transform: none !important;
+  }
+
+  .u3-chart-purchase {
+    clip-path: none !important;
   }
 
   .u3-budgets .budget-grid:hover .mf-budget-card:not(:hover):not(:focus-within),
