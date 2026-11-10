@@ -8,6 +8,16 @@ const {DatabaseSync} = require('node:sqlite');
 const {FinanceDB} = require('./db.cjs');
 
 const REQUIRED = ['profiles', 'transactions', 'budgets', 'financial_settings'];
+const verifiedDailyBackups=new Map();
+// The automatic backup timer runs hourly. Check complete SQLite integrity only
+// when a daily file is first observed or its metadata has changed.
+function verifyExistingDailyBackup(filename){
+  const stat=fs.statSync(filename);
+  const previous=verifiedDailyBackups.get(filename);
+  if(previous&&previous.size===stat.size&&previous.mtimeMs===stat.mtimeMs&&previous.ino===stat.ino)return;
+  validateBackupFile(filename);
+  verifiedDailyBackups.set(filename,{size:stat.size,mtimeMs:stat.mtimeMs,ino:stat.ino});
+}
 function validateBackupFile(filename){
   const info = fs.statSync(filename);
   if (!info.isFile() || info.size < 100 || info.size > 512 * 1024 * 1024) throw new Error('Cópia de segurança inválida ou grande demais.');
@@ -40,7 +50,7 @@ async function automaticBackup(db,folder,{now=new Date(),keep=7}={}){
   // Never report an existing daily backup as valid before checking its
   // SQLite format, schema and integrity. Preserve suspicious files for review.
   if(fs.existsSync(file)){
-    validateBackupFile(file);
+    verifyExistingDailyBackup(file);
     return {created:false,file};
   }
   const partial=file+'.partial-'+randomUUID();
@@ -50,7 +60,12 @@ async function automaticBackup(db,folder,{now=new Date(),keep=7}={}){
     // or trigger retention deletion of older valid backups.
     validateBackupFile(partial+'.sqlite');
     fs.renameSync(partial+'.sqlite',file);
-    for(const entry of listAutoBackups(folder).slice(keep))fs.rmSync(path.join(folder,entry.name),{force:true});
+    const stat=fs.statSync(file);
+    verifiedDailyBackups.set(file,{size:stat.size,mtimeMs:stat.mtimeMs,ino:stat.ino});
+    for(const entry of listAutoBackups(folder).slice(keep)){
+      fs.rmSync(path.join(folder,entry.name),{force:true});
+      verifiedDailyBackups.delete(path.join(folder,entry.name));
+    }
     return {created:true,file};
   }finally{fs.rmSync(partial+'.sqlite',{force:true});}
 }
