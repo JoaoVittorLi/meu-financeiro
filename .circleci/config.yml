@@ -14,14 +14,18 @@ parameters:
 jobs:
   preflight_linux:
     docker:
-      - image: node:22-bookworm
+      # Docker Hub official node:22.23.4-bookworm, index digest verificado (Linux/amd64 via CircleCI).
+      - image: node:22.23.4-bookworm@sha256:e273cf2a19c7334c03f52e2ca933ecdfc3fbfaad49db7b8bc8c3edd9ac34e9c7
     steps:
       - checkout
       - run:
           name: "Preflight | TypeScript, SQLite, auditoria E1 e regressões IA"
           command: |
             export ELECTRON_SKIP_BINARY_DOWNLOAD=1
-            npm install --no-audit --no-fund --package-lock=false
+            test "$(node --version)" = 'v22.23.4' || { echo 'Node fora da versão fixada'; exit 1; }
+            test "$(npm --version)" = '10.9.9' || { echo 'npm fora da versão fixada'; exit 1; }
+            echo "Toolchain: $(node --version), npm $(npm --version)"
+            npm ci --no-audit --no-fund
             npm run test:types
             npm run test:db
             npm run compile
@@ -32,9 +36,11 @@ jobs:
           name: "Preflight | Worker/PWA + bundle Cloudflare sem publicar"
           command: |
             cd mobile-push
-            npm install --no-audit --no-fund --package-lock=false
+            test "$(node --version)" = 'v22.23.4' || exit 1
+            test "$(npm --version)" = '10.9.9' || exit 1
+            npm ci --no-audit --no-fund
             npm test
-            npx wrangler deploy --dry-run --outdir /tmp/mf-e4-preview
+            npx --no-install wrangler deploy --dry-run --outdir /tmp/mf-e4-preview
           no_output_timeout: 20m
   build_windows:
     machine:

@@ -37,13 +37,16 @@ Write-Host 'Build manual CircleCI, sem deploy e sem GitHub Releases.'
 $toolRoot = Join-Path $env:TEMP 'mf-circleci-node22'
 New-Item -ItemType Directory -Path $toolRoot -Force | Out-Null
 $checksumFile = Join-Path $toolRoot 'SHASUMS256.txt'
-$nodeDist = 'https://nodejs.org/dist/latest-v22.x/'
-Write-Host 'Obtendo lista oficial de versões e hashes Node.js 22...'
+$nodeVersionExpected = '22.23.4'
+$npmVersionExpected = '10.9.9'
+$nodeDist = "https://nodejs.org/dist/v$nodeVersionExpected/"
+$expectedZipName = "node-v$nodeVersionExpected-win-x64.zip"
+Write-Host 'Obtendo os hashes oficiais do Node.js $nodeVersionExpected...'
 Invoke-WebRequest -UseBasicParsing -Uri ($nodeDist + 'SHASUMS256.txt') -OutFile $checksumFile
 $validLine = $null
 foreach ($line in (Get-Content -LiteralPath $checksumFile)) {
   $match = [regex]::Match($line.Trim(), '^(?<hash>[a-fA-F0-9]{64})\s+(?<name>node-v22\.\d+\.\d+-win-x64\.zip)$')
-  if ($match.Success) { $validLine = $match; break }
+  if ($match.Success -and $match.Groups['name'].Value -eq $expectedZipName) { $validLine = $match; break }
 }
 if ($null -eq $validLine) { throw 'Não foi encontrado o ZIP oficial do Node.js 22 Windows x64.' }
 $zipName = $validLine.Groups['name'].Value
@@ -62,12 +65,15 @@ if (!(Test-Path -LiteralPath $nodeExecutable) -or !(Test-Path -LiteralPath $npmE
 $env:PATH = "$nodeDirectory;$env:PATH"
 $nodeVersion = (& $nodeExecutable --version).Trim()
 Assert-Success 'Verificação do Node.js'
-if ($nodeVersion -notmatch '^v22\.') { throw "Node.js incorreto: $nodeVersion" }
-Write-Host "Node verificado: $nodeVersion"
+if ($nodeVersion -ne "v$nodeVersionExpected") { throw "Node.js incorreto: $nodeVersion; esperado v$nodeVersionExpected" }
+$npmVersion = (& $npmExecutable --version).Trim()
+Assert-Success 'Verificação do npm'
+if ($npmVersion -ne $npmVersionExpected) { throw "npm incorreto: $npmVersion; esperado $npmVersionExpected" }
+Write-Host "Node verificado: $nodeVersion | npm: $npmVersion"
 
-Write-Host 'Instalando dependências do projeto (sem lockfile; não modifica Git)...'
-& $npmExecutable install --no-audit --no-fund --package-lock=false
-Assert-Success 'npm install'
+Write-Host 'Instalando dependências reproduzíveis com o lockfile versionado...'
+& $npmExecutable ci --no-audit --no-fund
+Assert-Success 'npm ci'
 
 Write-Host 'Verificação de tipos TypeScript...'
 & $npmExecutable run test:types
