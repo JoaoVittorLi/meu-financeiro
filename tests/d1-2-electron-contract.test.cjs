@@ -48,7 +48,10 @@ test('D1.2 — o CI conserva screenshots sintéticos e instaladores em artefatos
  const smoke=read('scripts/d1-electron-smoke.cjs');
  assert.match(win,/MF_SMOKE_OUTPUT_DIR/);
  assert.match(win,/visual-matrix\.json/);
- assert.match(win,/Count -ne 16/);
+ assert.match(win,/\$expectedScreenshots\s*=\s*32/);
+ assert.match(win,/\$matrix\.Count\s+-ne\s+\$expectedScreenshots/);
+ assert.match(win,/\$images\.Count\s+-ne\s+\$expectedScreenshots/);
+ assert.match(win,/\$uniqueScreenshots\.Count\s+-ne\s+\$expectedScreenshots/);
  assert.match(config,/path: circleci-smoke-artifacts\s+destination: MeuFinanceiro-Desktop-Smoke/);
  assert.match(config,/path: circleci-artifacts\s+destination: MeuFinanceiro-Windows/);
  assert.match(smoke,/Page\.captureScreenshot/);

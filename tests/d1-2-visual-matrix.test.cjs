@@ -2,7 +2,7 @@
 // Mocked CDP protocol assertions complement (never replace) the real GUI smoke.
 const {test}=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),os=require('node:os'),path=require('node:path');
-const {visualMatrix}=require('../scripts/d1-electron-smoke.cjs');
+const {visualMatrix,SMOKE_VIEWS,SMOKE_PRESETS}=require('../scripts/d1-electron-smoke.cjs');
 const png=Buffer.concat([Buffer.from('89504e470d0a1a0a','hex'),Buffer.alloc(350,0)]);
 function fakeCDP({overflow=false,invalidImage=false}={}){
  let viewport={width:1366,height:768},motion='no-preference',theme='light';
@@ -45,21 +45,28 @@ async function isolated(fn){
   fs.rmSync(dir,{recursive:true,force:true});
  }
 }
-test('D1.2 — 16 capturas válidas cobrem duas resoluções, temas, movimento e 4 áreas',()=>isolated(async dir=>{
+test('D1.3 — 32 capturas válidas cobrem duas resoluções, temas, movimento e 8 áreas',()=>isolated(async dir=>{
+ const expectedScreenshots=SMOKE_VIEWS.length*SMOKE_PRESETS.length;
+ assert.equal(expectedScreenshots,32,'A matriz Premium exige 8 áreas × 4 configurações');
  const cdp=fakeCDP(),result=await visualMatrix(cdp);
- assert.equal(result.count,16);
- assert.equal(cdp.calls.navigations,16);
- assert.equal(cdp.calls.screenshots,16);
+ assert.equal(result.count,expectedScreenshots);
+ assert.equal(cdp.calls.navigations,expectedScreenshots);
+ assert.equal(cdp.calls.screenshots,expectedScreenshots);
  const shots=fs.readdirSync(dir).filter(f=>f.endsWith('.png'));
- assert.equal(shots.length,16);
+ assert.equal(shots.length,expectedScreenshots);
+ assert.equal(new Set(shots).size,expectedScreenshots,'Nomes PNG devem ser únicos');
  for(const shot of shots)assert(fs.readFileSync(path.join(dir,shot)).subarray(0,8).equals(png.subarray(0,8)));
  const manifest=JSON.parse(fs.readFileSync(path.join(dir,'visual-matrix.json'),'utf8'));
- assert.equal(manifest.length,16);
+ assert.equal(manifest.length,expectedScreenshots);
+ assert.deepEqual(new Set(manifest.map(x=>x.screenshot)),new Set(shots),'Manifesto deve listar todos os PNGs');
+ assert.deepEqual(new Set(manifest.map(x=>x.width+'x'+x.height)),new Set(['1366x768','1920x1080']));
  assert.deepEqual(new Set(manifest.map(x=>x.width)),new Set([1366,1920]));
  assert.deepEqual(new Set(manifest.map(x=>x.theme)),new Set(['light','dark']));
  assert(manifest.some(x=>x.reduced===true));
  assert(manifest.some(x=>x.reduced===false));
- assert.deepEqual(new Set(manifest.map(x=>x.page)),new Set(['Visão geral','Movimentações','Planejamento','Orçamentos']));
+ assert.deepEqual(new Set(manifest.map(x=>x.page)),new Set(SMOKE_VIEWS));
+ assert.deepEqual(new Set(manifest.map(x=>x.theme+'/'+x.reduced)),
+  new Set(SMOKE_PRESETS.map(x=>x.theme+'/'+(x.motion==='reduce'))));
 }));
 test('D1.2 — overflow horizontal reprova matriz, não publica resultado de sucesso',()=>isolated(async dir=>{
  await assert.rejects(()=>visualMatrix(fakeCDP({overflow:true})),/Overflow horizontal global/);
