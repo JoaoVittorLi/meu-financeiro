@@ -214,12 +214,21 @@ function flowCounts(snapshot){
   // revenue/expense merely from their positive/negative bank amount sign.
   const bank=[...snapshot.transactions.map].filter(([k])=>
     !['transfer','ignore'].includes(snapshot.overlays.map.get(k)?.nature)).map(([,r])=>r);
+  const posted=bank.filter(r=>r.status==='POSTED');
+  const pending=bank.filter(r=>r.status==='PENDING');
+  // Unknown provider statuses are *not* assumed settled or pending.
+  const unknown=bank.filter(r=>r.status!=='POSTED'&&r.status!=='PENDING');
   const manual=[...snapshot.manual.map.values()];
   const edits=[...snapshot.overlays.map.values()];
   return {
-    bankIncome:bank.filter(r=>r.amount_cents!==null&&r.amount_cents>0).length,
-    bankExpense:bank.filter(r=>r.amount_cents!==null&&r.amount_cents<0).length,
-    bankZero:bank.filter(r=>r.amount_cents===0).length,
+    // Confirmed flow only; pending amounts never enter these counters.
+    bankIncome:posted.filter(r=>r.amount_cents!==null&&r.amount_cents>0).length,
+    bankExpense:posted.filter(r=>r.amount_cents!==null&&r.amount_cents<0).length,
+    bankZero:posted.filter(r=>r.amount_cents===0).length,
+    pendingBankIncome:pending.filter(r=>r.amount_cents!==null&&r.amount_cents>0).length,
+    pendingBankExpense:pending.filter(r=>r.amount_cents!==null&&r.amount_cents<0).length,
+    pendingBankZero:pending.filter(r=>r.amount_cents===0).length,
+    unclassifiedBankStatus:unknown.length,
     manualIncome:manual.filter(r=>r.kind==='income').length,
     manualExpense:manual.filter(r=>r.kind==='expense').length,
     explicitTransfers:edits.filter(r=>r.nature==='transfer').length,
