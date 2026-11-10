@@ -656,12 +656,20 @@ class FinanceDB {
    if(typeof itemId!=='string'||!itemId.trim()||!payload||!Array.isArray(payload.data))throw new Error('Lote bancário inválido.');
    const item=payload.item||{},now=new Date().toISOString();
    // Valida tudo antes de iniciar a transação: nenhuma importação parcial.
+   const seenAccounts=new Set();
    const entries=payload.data.map(({account,transactions})=>{
      if(!account||typeof account.id!=='string'||typeof account.name!=='string'||!Array.isArray(transactions))throw new Error('Conta bancária inválida.');
+     if(seenAccounts.has(account.id))throw new Error('Conta bancária duplicada no mesmo lote.');
+     seenAccounts.add(account.id);
+     const owner=this.db.prepare('SELECT item_id FROM bank_accounts WHERE account_id=?').get(account.id);
+     if(owner&&owner.item_id!==itemId)throw new Error('Esta conta bancária já está vinculada a outra conexão.');
+     const seenTransactions=new Set();
      const balance=account.balance==null?null:Math.round(Number(account.balance)*100);
      if(balance!==null&&!Number.isSafeInteger(balance))throw new Error('Saldo inválido.');
      const clean=transactions.map(t=>{
        if(!t||typeof t.id!=='string'||!t.id||!Number.isFinite(Number(t.amount))||typeof t.description!=='string'||!/^\d{4}-\d{2}-\d{2}/.test(t.date||''))throw new Error('Transação bancária inválida.');
+       if(seenTransactions.has(t.id))throw new Error('Movimentação bancária duplicada no mesmo lote.');
+       seenTransactions.add(t.id);
        const amount=Math.round(Number(t.amount)*100);
        if(!Number.isSafeInteger(amount))throw new Error('Valor bancário inválido.');
        return {id:t.id,date:t.date.slice(0,10),description:t.description.slice(0,180),amount,status:String(t.status||'UNKNOWN').slice(0,30),category:String(t.category||'Outros').slice(0,70)};
