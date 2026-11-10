@@ -1,0 +1,21 @@
+'use strict';
+const test=require('node:test');
+const assert=require('node:assert/strict');
+const {runHttpDemo}=require('../scripts/mf2-b2-http-demo.cjs');
+test('HTTP loopback with real B1 comparator yields anonymous deterministic 1x2 report',async()=>{
+ const a=await runHttpDemo(),b=await runHttpDemo();
+ assert.deepEqual(a,b);
+ assert.equal(a.contract,'mf2-reconciliation-b1-v1');
+ assert.equal(a.sources.windows.bank,1);
+ assert.equal(a.sources.cloud.bank,2);
+ assert.equal(a.summary.bankCountDelta,1);
+ assert.equal(a.summary.byType.only_one_source,1);
+ assert.equal(a.flowClassification.windows.bankExpense,1);
+ assert.equal(a.flowClassification.cloud.pendingBankExpense,1);
+ assert.equal(a.databaseChanged,false);
+ assert.equal(a.cloudCutoverAllowed,false);
+ assert.equal(a.financialSyncEnabled,false);
+ assert.equal(a.personalDataIncluded,false);
+ assert.ok(a.differences.every(x=>/^R\d{6}$/.test(x.reference)));
+ assert.doesNotMatch(JSON.stringify(a),/SYNTH-ACCOUNT|SYNTH-TX001|SYNTH-TX002|SYNTHETIC: breakfast/);
+});
