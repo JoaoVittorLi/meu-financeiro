@@ -61,21 +61,38 @@ jobs:
                 assert.deepEqual(root[kind] || {}, manifest[kind] || {}, prefix + kind + ' divergente');
               }
               let tarballs = 0;
+              let gitPinned = 0;
               let weakIntegrity = 0;
               for (const [location, entry] of Object.entries(lock.packages)) {
                 if (!location || entry.link === true || entry.inBundle === true) continue;
                 assert.ok(entry.version, prefix + location + ' sem version');
                 assert.ok(entry.resolved, prefix + location + ' sem resolved');
+                // npm lockfile v3 allows Git dependencies: resolved is git+ssh/git+https#COMMIT.
+                // Allow ONLY the known Electron source and require an immutable 40-char SHA.
+                const electronGit = location === 'node_modules/@electron/node-gyp' &&
+                  /^(?:git\+ssh:\/\/git@github\.com[/:]|git\+https:\/\/github\.com\/)electron\/node-gyp(?:\.git)?#([a-f0-9]{40})$/i.exec(entry.resolved);
+                if (electronGit) {
+                  const commit = electronGit[1].toLowerCase();
+                  if (entry.integrity) {
+                    const shaMatches = /^[a-f0-9]{40}$/i.test(entry.integrity) &&
+                      entry.integrity.toLowerCase() === commit;
+                    const sriValid = /^sha(1|256|384|512)-[A-Za-z0-9+/=]+(?:$| )/.test(entry.integrity);
+                    assert.ok(shaMatches || sriValid, prefix + location + ' integrity Git inválida');
+                  }
+                  gitPinned++;
+                  continue;
+                }
+                // All other sources must be HTTPS registry tarballs with SRI.
                 assert.ok(entry.integrity, prefix + location + ' sem integrity');
                 const resolved = new URL(entry.resolved);
-                assert.equal(resolved.protocol, 'https:', prefix + location + ' não usa HTTPS');
+                assert.equal(resolved.protocol, 'https:', prefix + location + ' origem não autorizada');
                 assert.equal(resolved.hostname, 'registry.npmjs.org', prefix + location + ' fora do registry esperado');
                 assert.match(entry.integrity, /^sha(1|256|384|512)-[A-Za-z0-9+/=]+(?:$| )/, prefix + location + ' integrity inválida');
                 if (entry.integrity.startsWith('sha1-')) weakIntegrity++;
                 tarballs++;
               }
               assert.ok(tarballs > 0, prefix + 'sem dependências de registry validadas');
-              console.log(prefix + 'package-lock.json: lockfileVersion=3, dependências registry=' + tarballs + ', integrities SHA1=' + weakIntegrity);
+              console.log(prefix + 'package-lock.json: registry tarballs=' + tarballs + ', Git pinned=' + gitPinned + ', integrities SHA1=' + weakIntegrity);
             }
             NODE
             out='circleci-artifacts/lockfile-bootstrap'
