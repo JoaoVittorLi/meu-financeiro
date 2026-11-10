@@ -138,6 +138,67 @@ async function checkNavigation(cdp){
   assert.equal(result.visible,true,'Navegação não exibiu '+label);
  }
 }
+async function visualMatrix(cdp){
+ // Real browser evidence, rather than asserting CSS tokens exist.
+ // Views are generated exclusively from the temporary synthetic profile.
+ const output=process.env.MF_SMOKE_OUTPUT_DIR||
+  fs.mkdtempSync(path.join(os.tmpdir(),'mf-d1-synthetic-visual-'));
+ fs.mkdirSync(output,{recursive:true});
+ const cases=[
+  {width:1366,height:768,theme:'light',motion:'no-preference'},
+  {width:1366,height:768,theme:'dark',motion:'reduce'},
+  {width:1920,height:1080,theme:'light',motion:'reduce'},
+  {width:1920,height:1080,theme:'dark',motion:'no-preference'}
+ ];
+ const pages=['Visão geral','Movimentações','Planejamento','Orçamentos'];
+ await cdp.send('Page.enable');
+ const rows=[];
+ for(const cfg of cases){
+  await cdp.send('Emulation.setDeviceMetricsOverride',{
+   width:cfg.width,height:cfg.height,deviceScaleFactor:1,mobile:false
+  });
+  await cdp.send('Emulation.setEmulatedMedia',{features:[
+   {name:'prefers-reduced-motion',value:cfg.motion},
+   {name:'prefers-color-scheme',value:cfg.theme}
+  ]});
+  const appearance=await evaluate(cdp,
+   'window.MFAppearance.set('+JSON.stringify(cfg.theme)+');return document.documentElement.dataset.theme');
+  assert.equal(appearance,cfg.theme,'Tema do aplicativo não foi aplicado');
+  for(const label of pages){
+   const state=await evaluate(cdp,
+    'const label='+JSON.stringify(label)+';'+
+    'const button=[...document.querySelectorAll("button.nav-item")].find(b=>b.getAttribute("aria-label")===label);'+
+    'if(!button)throw Error("Navegação ausente: "+label);button.click();'+
+    'await new Promise(r=>setTimeout(r,180));'+
+    'return {title:document.querySelector(".mf-workspace-bar strong")?.textContent,'+
+    'selected:button.getAttribute("aria-current"),width:document.documentElement.clientWidth,'+
+    'scrollWidth:document.documentElement.scrollWidth,'+
+    'theme:document.documentElement.dataset.theme,'+
+    'reduced:matchMedia("(prefers-reduced-motion: reduce)").matches};');
+   assert.equal(state.title,label,'Breadcrumb divergente do destino');
+   assert.equal(state.selected,'page','Navegação não atualizou aria-current');
+   assert.equal(state.theme,cfg.theme,'Tema foi perdido na navegação');
+   assert.equal(state.reduced,cfg.motion==='reduce','Preferência de movimento ignorada');
+   assert(state.width>=cfg.width-2,'Viewport inesperadamente menor que o planejado');
+   assert(state.scrollWidth<=state.width+2,
+    'Overflow horizontal global em '+label+' '+cfg.width+': '+state.scrollWidth+'/'+state.width);
+   const safe=({ 'Visão geral':'overview','Movimentações':'transactions',
+      'Planejamento':'planning','Orçamentos':'budgets'})[label];
+   const name=[cfg.width+'x'+cfg.height,cfg.theme,cfg.motion,safe].join('-')+'.png';
+   const shot=await cdp.send('Page.captureScreenshot',{
+    format:'png',captureBeyondViewport:false,fromSurface:true
+   });
+   assert(shot.data&&shot.data.length>150,'Captura PNG vazia');
+   fs.writeFileSync(path.join(output,name),Buffer.from(shot.data,'base64'));
+   rows.push({page:label,width:cfg.width,height:cfg.height,theme:cfg.theme,
+     reduced:state.reduced,scrollWidth:state.scrollWidth,screenshot:name});
+  }
+ }
+ fs.writeFileSync(path.join(output,'visual-matrix.json'),JSON.stringify(rows,null,2)+'\n');
+ assert.equal(rows.length,cases.length*pages.length);
+ return {count:rows.length,output};
+}
+
 async function smoke(){
  const profile=fs.mkdtempSync(path.join(os.tmpdir(),'mf-d1-electron-'));
  let running=null;
@@ -166,6 +227,8 @@ async function smoke(){
   await evaluate(running.cdp,
    'return await window.financeDesktop.planEdit({id:'+JSON.stringify(id)+',title:"SYNTHETIC BILL EDITED"})');
   await checkNavigation(running.cdp);
+  const visuals=await visualMatrix(running.cdp);
+  assert.equal(visuals.count,16,'Matriz visual incompleta');
   const copies=await evaluate(running.cdp,'return await window.financeDesktop.backupStatus()');
   assert(copies.copies>0,'Backup automático não foi gerado');
   await closeCleanly(running);running=null;
