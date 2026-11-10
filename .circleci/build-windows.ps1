@@ -79,6 +79,26 @@ Write-Host 'Verificação de tipos TypeScript...'
 & $npmExecutable run test:types
 Assert-Success 'npm run test:types'
 
+# D1.2: execute Electron real (GUI), renderer DOM, IPC and SQLite entirely in
+# a disposable userData path before packaging. This fails closed on error.
+# The current Linux preflight still validates all Node/SQLite suites.
+& $npmExecutable run compile
+Assert-Success 'Compilação pré-smoke Electron D1.2'
+# Preserve only synthetic screenshots as separate CircleCI artifacts.
+$env:MF_SMOKE_OUTPUT_DIR = Join-Path $root 'circleci-smoke-artifacts'
+if (Test-Path -LiteralPath $env:MF_SMOKE_OUTPUT_DIR) {
+  Remove-Item -LiteralPath $env:MF_SMOKE_OUTPUT_DIR -Recurse -Force
+}
+New-Item -ItemType Directory -Path $env:MF_SMOKE_OUTPUT_DIR | Out-Null
+& $npmExecutable run test:electron-smoke
+Assert-Success 'Smoke Electron D1.2 real e isolado'
+if (!(Test-Path -LiteralPath (Join-Path $env:MF_SMOKE_OUTPUT_DIR 'visual-matrix.json'))) {
+  throw 'Matriz de smoke Electron não foi gravada.'
+}
+if (@(Get-ChildItem -LiteralPath $env:MF_SMOKE_OUTPUT_DIR -File -Filter '*.png').Count -ne 16) {
+  throw 'Smoke Electron: esperadas 16 capturas de interface sintética.'
+}
+
 Write-Host 'Executando comando oficial: npm run dist:windows...'
 # dist:windows executa compilação TypeScript, testes Node/SQLite e electron-builder NSIS + portable.
 # Nunca bypassar os testes em caso de erro.

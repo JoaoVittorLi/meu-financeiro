@@ -3,6 +3,7 @@ const {app,BrowserWindow,session,ipcMain,dialog,shell,safeStorage}=require('elec
 const path=require('node:path');
 const fs=require('node:fs');
 const {FinanceDB}=require('./db.cjs');
+const {isolateSmokeProfile}=require('./smoke-profile.cjs');
 const {prepareCloudMigration,migrationLocalStatus}=require('./cloud-onboarding.cjs');
 const {uploadPersonalQuarantine,CONSENT,loadMarker,markerFile}=require('./cloud-personal-uploader.cjs');
 const {syncPersonalSafeFields,summary:cloudSafeSyncSummary}=require('./cloud-personal-safe-sync.cjs');
@@ -29,8 +30,6 @@ async function ensureAutomaticBackup(){
   finally{autoBackupBusy=false;}
 }
 
-if(!app.requestSingleInstanceLock())app.quit();
-else app.on('second-instance',()=>{if(mainWindow){if(mainWindow.isMinimized())mainWindow.restore();mainWindow.focus();}});
 function requireAppSender(event){
  if(restoring)throw new Error('A restauração dos seus dados está em andamento.');
  const url=event.senderFrame?.url || '';
@@ -147,6 +146,9 @@ function createWindow(){
  mainWindow.webContents.on('will-navigate',(event)=>event.preventDefault());
  mainWindow.loadFile(path.resolve(__dirname,'../app/index.html'));
 }
+// The userData path must be isolated BEFORE the single-instance lock and
+// before FinanceDB or vault initialization. Unavailable in packaged builds.
+const smokeProfileActive=isolateSmokeProfile(app);
 // Preview portable and installed version share one local finance database.
 // Prevent concurrent Electron instances from writing to the same SQLite file.
 const isPrimaryInstance=app.requestSingleInstanceLock();
@@ -169,6 +171,12 @@ app.whenReady().then(()=>{
  const aiPersonal=new AIPersonalStore(app.getPath('userData'),safeStorage);
  const aiDemo=new ChatGPTDemoClient({auth:aiAuth,personalStore:aiPersonal});
  session.defaultSession.setPermissionRequestHandler((_wc,_permission,callback)=>callback(false));
+ if(smokeProfileActive){
+   // Smoke tests contain invented entries only; forbid outbound HTTP even if
+   // a feature unexpectedly attempts to reach Cloudflare/Pluggy/OpenAI.
+   for(const ses of [session.defaultSession,session.fromPartition('persist:mf-cloud-preview')])
+     ses.webRequest.onBeforeRequest({urls:['http://*/*','https://*/*']},(_details,done)=>done({cancel:true}));
+ }
  ipcMain.handle('finance:load',(event,profile)=>{requireAppSender(event);return db.load(profile);});
  ipcMain.handle('finance:save',(event,profile,data)=>{requireAppSender(event);return db.save(profile,data);});
  ipcMain.handle('finance:info',(event)=>{requireAppSender(event);return {engine:'sqlite',path:filename,appVersion:app.getVersion(),integrity:db.integrity()};});
