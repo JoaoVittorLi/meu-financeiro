@@ -8,6 +8,7 @@
     "compile": "tsc --project tsconfig.json",
     "test:db": "node --test tests/*.test.cjs",
     "test:asar": "node --test tests/renderer-asar.integration.cjs",
+    "test:electron-smoke": "node scripts/d1-electron-smoke.cjs",
     "test:types": "tsc --project tsconfig.json --noEmit",
     "test": "npm run compile && npm run test:db",
     "start": "npm run compile && electron .",

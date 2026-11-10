@@ -79,6 +79,14 @@ Write-Host 'Verificação de tipos TypeScript...'
 & $npmExecutable run test:types
 Assert-Success 'npm run test:types'
 
+# D1.2: execute Electron real (GUI), renderer DOM, IPC and SQLite entirely in
+# a disposable userData path before packaging. This fails closed on error.
+# The current Linux preflight still validates all Node/SQLite suites.
+& $npmExecutable run compile
+Assert-Success 'Compilação pré-smoke Electron D1.2'
+& $npmExecutable run test:electron-smoke
+Assert-Success 'Smoke Electron D1.2 real e isolado'
+
 Write-Host 'Executando comando oficial: npm run dist:windows...'
 # dist:windows executa compilação TypeScript, testes Node/SQLite e electron-builder NSIS + portable.
 # Nunca bypassar os testes em caso de erro.
