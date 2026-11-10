@@ -27,6 +27,9 @@ jobs:
             echo "Toolchain: $(node --version), npm $(npm --version)"
             npm ci --no-audit --no-fund
             npm run test:types
+            # B1.1: explicit proof of new dry-run reconciliation tests (also in test:db).
+            node --test tests/mf2-reconciliation.test.cjs
+            node scripts/mf2-reconciliation-fixture.cjs > /tmp/mf2-b1-synthetic-report.json
             npm run test:db
             npm run compile
             node scripts/renderer-provenance.cjs check-bundle
