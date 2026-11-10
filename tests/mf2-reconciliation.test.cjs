@@ -226,7 +226,7 @@ test('B1 source-classified income/expense/transfer counters never sum manual and
       nature:'transfer',manual_id:'MAN-1'}]});
   const r=run(a,clone(a));
   assert.deepEqual(r.flowClassification.windows,{
-    bankIncome:1,bankExpense:1,bankZero:1,manualIncome:1,manualExpense:1,
+    bankIncome:1,bankExpense:0,bankZero:1,manualIncome:1,manualExpense:1,
     explicitTransfers:1,linkedManualReferences:1,ledgerTotalsCombined:false
   });
   assert.equal(r.financialSyncEnabled,false);
@@ -256,4 +256,18 @@ test('B1 committed example is reproducible byte-for-byte by offline CLI',()=>{
   assert.equal(expected.summary.issues,5);
   assert.equal(expected.summary.bankCountDelta,2);
   assert.ok(expected.differences.every(x=>/^R\d{6}$/.test(x.reference)));
+});
+
+test('B1 ignored or own-transfer bank transactions never become revenue/expense counts',()=>{
+  const a=snapshot({
+    transactions:[bank('OUT',{amount_cents:-500}),bank('IN',{amount_cents:700})],
+    overlays:[
+      {account_id:'FAKE-ACCOUNT',external_id:'OUT',nature:'transfer'},
+      {account_id:'FAKE-ACCOUNT',external_id:'IN',nature:'ignore'}
+    ]});
+  const r=run(a,a);
+  assert.equal(r.flowClassification.windows.bankIncome,0);
+  assert.equal(r.flowClassification.windows.bankExpense,0);
+  assert.equal(r.flowClassification.windows.explicitTransfers,1);
+  assert.equal(r.flowClassification.windows.ledgerTotalsCombined,false);
 });
