@@ -23,7 +23,7 @@ function styledSelect(){
 test('B01 portal selector stays above detail drawer and AI overlay',()=>{
  const layer=Number(css.match(/--mf-z-select-portal:\s*(\d+)/)?.[1]);
  const drawer=Number(css.match(/\.mf-drawer-backdrop\{[^}]*z-index:\s*(\d+)/)?.[1]);
- const ai=Number(aiCss.match(/\.mf-ai-backdrop\{[^}]*z-index:\s*(\d+)/)?.[1]);
+ const ai=Number(aiCss.match(/\.mf-ai-backdrop\s*\{[^}]*z-index:\s*(\d+)/)?.[1]);
  assert.ok(Number.isFinite(layer)&&layer>drawer&&layer>ai,{layer,drawer,ai});
  assert.match(css,/\.mf-select-popover\{z-index:var\(--mf-z-select-portal\)/);
  assert.match(src,/ReactDOM\.createPortal\(/);
