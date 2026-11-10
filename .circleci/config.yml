@@ -55,6 +55,10 @@ jobs:
       - store_artifacts:
           path: circleci-artifacts
           destination: MeuFinanceiro-Windows
+      # Synthetic-only screenshots created by the mandatory Windows GUI smoke.
+      - store_artifacts:
+          path: circleci-smoke-artifacts
+          destination: MeuFinanceiro-Desktop-Smoke
 
 workflows:
   preflight_on_demand:
