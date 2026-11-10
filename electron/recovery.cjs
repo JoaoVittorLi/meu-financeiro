@@ -37,10 +37,18 @@ async function automaticBackup(db,folder,{now=new Date(),keep=7}={}){
   fs.mkdirSync(folder,{recursive:true,mode:0o700});
   const day=now.toISOString().slice(0,10);
   const file=path.join(folder,`meu-financeiro-${day}.sqlite`);
-  if(fs.existsSync(file))return {created:false,file};
+  // Never report an existing daily backup as valid before checking its
+  // SQLite format, schema and integrity. Preserve suspicious files for review.
+  if(fs.existsSync(file)){
+    validateBackupFile(file);
+    return {created:false,file};
+  }
   const partial=file+'.partial-'+randomUUID();
   try{
     await db.backupTo(partial+'.sqlite');
+    // A failed or incomplete backup must not be published under the daily name
+    // or trigger retention deletion of older valid backups.
+    validateBackupFile(partial+'.sqlite');
     fs.renameSync(partial+'.sqlite',file);
     for(const entry of listAutoBackups(folder).slice(keep))fs.rmSync(path.join(folder,entry.name),{force:true});
     return {created:true,file};
