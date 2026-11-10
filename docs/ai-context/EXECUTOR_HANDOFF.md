@@ -8,11 +8,20 @@ Repositório privado `JoaoVittorLi/meu-financeiro`. Aplicativo financeiro Window
 
 ## MISSÃO ATUAL
 
-D1.3: estabilizar a candidata `0.9.5-beta.8` enquanto o Argon conclui A-D6. Corrigir falhas demonstráveis, ampliar smoke/contratos e preparar integração A-D5/A-D6 **sem mesclar CSS ainda, sem CircleCI, sem EXE, sem release e sem mexer na main**. Prévia da integração Premium somente após pacote A-D6 aprovado pelo Arquiteto.
+**D1.4 — INTEGRAÇÃO A-D1–A-D6 CONCLUÍDA em staging, homologação pendente.** A beta.8 Premium Final está pronta para sua única pipeline CircleCI Linux → Windows. NÃO tratar código integrado como executável aprovado. Validar testes do checkout, smoke Electron real com 32 capturas, persistência/backup/restauração, dois EXEs e SHA-256. Sem alterar `main`, Cloudflare, dados reais ou gerar release automaticamente.
 
 ## BRANCH ATIVA
 
 `feat/mf2-beta8-premium-staging-20261110`, [PR #31](https://github.com/JoaoVittorLi/meu-financeiro/pull/31) draft, base funcional `feat/mf2-d1-2-functional-tests-20261110` / PR #28. HEAD **dinâmico**: consulte GitHub ao iniciar qualquer ação. Código da correção mais recente em `c109d905a4120b5820130e310e3dd36210781db6`; SHA anterior `dd30ddbd94d16b1cd415ff61b3dd4bd94ad2065b`. Os commits documentais posteriores alteram o HEAD sem alterar o código.
+
+## CHECKPOINT D1.4 — INTEGRAÇÃO PREMIUM FINAL (10/11/2026; prevalece sobre D1.3)
+
+- **PR de integração:** [#34](https://github.com/JoaoVittorLi/meu-financeiro/pull/34), **merged/closed** contra staging após *fast-forward* autorizado, de `09b48637b106c9c8937873adf2469dc19440a950` até o commit de código integrado `0a320d467dda50ce0d1509b61d3fc071081792ef`; o [PR #31](https://github.com/JoaoVittorLi/meu-financeiro/pull/31) continua draft. **O HEAD pode avançar após este checkpoint documental; consultar o GitHub.** `main` não modificada nesta missão.
+- **Alterações 6 caminhos:** `app/decisions.css`, `app/intelligence.css`, `app/refinement.css`; regex de contratos em `tests/category-overlay.test.cjs`, `tests/ui-daily-redesign.test.cjs`, `tests/ui03-browser-regressions.test.cjs`. Nenhum algoritmo de SQLite/Pluggy/IA/Planejamento alterado pela integração.
+- **Prova de preservação:** blobs idênticos entre D1.3 e D1.4 para `electron/db.cjs`, `tests/categories.test.cjs`, `scripts/d1-electron-smoke.cjs`, `.circleci/build-windows.ps1`, `tests/d1-3-smoke-matrix.test.cjs`, `package.json`. Orçamento R$ 0 bloqueia exclusão e o smoke continua preparado para 32 PNGs, mas NÃO rodaram em Electron real neste SHA.
+- **Verificação desta sessão:** 7/7 verificações de contrato em **V8 isolado** com textos do Github; NÃO é `npm run test:db` ou `node --test`. Evidência do Arquiteto em snapshot beta.6 + overlays Premium: 222/222 PASS de `test:db`, `test:types` PASS, F08 PASS, ASAR NÃO executado. **NÃO transportar estas aprovações para o HEAD beta.8 integrado.**
+- **Bloqueio real:** não há clone completo em disco nem GitHub DNS pelo terminal desta sessão; Node 22.16.0/TS global 5.8.3 disponíveis, mas sem pacote Electron/`@electron/asar`, não se pode executar suite completa, F08, ASAR, GUI nem fabricar EXEs. Status GitHub do commit integrado: **nenhum CI** na consulta. Não registrar FAIL ou PASS de teste não iniciado.
+- **Próxima ação:** uma pipeline CircleCI com branch config/checkout `feat/mf2-beta8-premium-staging-20261110`, `run_preflight=false`, `run_windows_build=true`. Runner Linux executa a suíte real; Windows executa smoke GUI e valida os artifacts. Se falhar, corrigir defeito reproduzido na mesma branch, sem atalhos ou build redundante. Conferir instalador, portátil, SHA256.txt, matriz 32 PNGs e restauração com banco sintético antes da homologação final. Logs detalhados: `docs/ai-context/logs/2026-11-10-MF2-D1-4-premium-final-integration.md`.
 
 ## CHECKPOINT D1.3 — PREMIUM FINAL (10/11/2026)
 
@@ -48,7 +57,7 @@ Argon: proprietário de `app/overview.css`, `app/operations.css`, `app/decisions
 
 1. Reconsultar HEAD do PR #31 e `tests/categories.test.cjs`; não reaplicar patch se presente.
 2. Em checkout integral Node 22 com dependências, executar `node --test tests/categories.test.cjs tests/d1-2-desktop-integration.test.cjs`; registrar resultado verdadeiro. Se houver falhas novas, corrigir na mesma branch com regressão.
-3. Executar suíte financeira relevante (`npm run test:db`, `npm run test:types`, `npm run compile`, provenance); aguardar aceite do Arquiteto para o pacote A-D6 e integrar seu CSS sem regressão. Somente com autorização, solicitar uma pipeline `windows_on_demand` Config/Checkout `feat/mf2-beta8-premium-staging-20261110`, `run_preflight=false`, `run_windows_build=true` (preflight_linux → build_windows).
+3. A-D6 já aprovada e integrada: executar suíte financeira real (`npm run test:db`, `npm run test:types`, `npm run compile`, F08, ASAR) no runner e validar o fluxo `windows_on_demand` Config/Checkout `feat/mf2-beta8-premium-staging-20261110`, `run_preflight=false`, `run_windows_build=true` (preflight_linux → build_windows).
 4. Após a pipeline autorizada, verificar jobs, 32 PNGs (se produzidos), NSIS, Portable, SHA256 e smoke; não realizar merge, release ou deploy Production.
 
 ## INSTRUÇÕES DE RECUPERAÇÃO
