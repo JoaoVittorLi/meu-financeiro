@@ -157,10 +157,9 @@ function detectLikelyDuplicates(normal,side,issues){
   }
   for(const refs of fingerprints.values()){
     if(refs.length<2)continue;
-    for(const k of refs.sort()){
-      issues.push(issue('possible_duplicate','bank',k,'identity',side,
-        'same_account_day_cents_description_different_external_ids'));
-    }
+    // Report a single ambiguous cluster, never assume these are duplicates.
+    issues.push(issue('possible_duplicate','bank',refs.sort()[0],'identity',side,
+      'same_account_day_cents_description_different_external_ids'));
   }
 }
 function attachOverlays(a,b,issues){
@@ -191,9 +190,10 @@ function attachOverlays(a,b,issues){
 function refMap(a,b){
   const refs=new Set();
   for(const x of [a,b]){
-    for(const kind of ['accounts','transactions','manual','overlays']){
-      for(const k of x[kind].map.keys())refs.add(kind+':'+k);
-      for(const k of x[kind].duplicates)refs.add(kind+':'+k);
+    for(const [storageKind,reportKind] of [['accounts','account'],['transactions','bank'],
+      ['manual','manual'],['overlays','overlay']]){
+      for(const k of x[storageKind].map.keys())refs.add(reportKind+':'+k);
+      for(const k of x[storageKind].duplicates)refs.add(reportKind+':'+k);
     }
   }
   return new Map([...refs].sort().map((x,i)=>[x,'R'+String(i+1).padStart(6,'0')]));
