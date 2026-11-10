@@ -2,6 +2,20 @@
 
 **Status:** B2-A PROTÓTIPO OFFLINE SINTÉTICO IMPLEMENTADO E TESTADO; B2-B/C COM TRANSPORTE REAL APENAS DESENHO, NÃO AUTORIZADOS. **Origem:** B1.1 PR #20 no SHA `530ba91d0913e6b8857dc4db922141b84cb00893`. **Branch B2:** `feat/mf2-01-b2-protected-transport`, autorizada pelo proprietário para exclusivamente fixtures/read-only. **Argon necessário? AUDITORIA** dirigida **antes** de qualquer canal remoto de dados sensíveis/escrita. **G0/G1: NAO_HOMOLOGADOS**.
 
+## B2-B0 — contrato HTTP sintético implementado no PR #21
+
+**Status:** protótipo `Request`/`Response`/fetch **injetável**, executado localmente com Node v22.16.0 e fixtures inventadas; **nenhum endpoint Worker registrado, nenhuma conexão de rede real**. B2-B1 continua condicionado à autorização. `Argon necessário? NÃO` para B0 sintética; **AUDITORIA** para B2-B1 Preview, antes de conectar dados.
+
+**Implementação:**
+- `shared/mf2-b2-http-transport.cjs` cria `createSyntheticHttpHandler({server,enabled})` e `createSyntheticHttpClient({fetchImpl,session,origin,timeoutMs,enabled})`. Ambos `enabled=false` por padrão. O cliente **exige** `fetchImpl` injetado; não tem fallback para `globalThis.fetch`. URL fixa `https://mf2-b2-synthetic.invalid/__mf2_synthetic__/reconcile/v1`; qualquer origem real é recusada. Loopback em memória com `createInjectedLoopbackFetch`.
+- `POST` obrigatório, `Authorization: Synthetic <mock-token>`, Origin e `x-mf2-test-mode: synthetic-only` validados; sessão fake HMAC/expiração/owner e anti-replay delegados ao motor B2-A. Corpo JSON sem sessão/credencial, sem chaves extras; no-store e nosniff.
+- Cliente usa `redirect:'manual'`, `credentials:'omit'`, `AbortController`, limite de timeout 1–30.000 ms, rejeição de status 3xx, URL/redirecionamento estranho, MIME inválido, corpos truncados/malformados/maiores que 256 KiB; valida o envelope de resposta, código/status de erro e digest B2-A. O SHA256 **não autentica** a origem.
+- `scripts/mf2-b2-http-demo.cjs` injeta o motor B1 real e duas fixtures inventadas (1×2, POSTED/PENDING); `tests/mf2-b2-http-b1-integration.test.cjs` cobre determinismo, contagens, fluxo e ausência de dados brutos. Somente demonstrar PASS no checkout Node após executar os dois.
+
+**Status de testes:** 19/19 testes HTTP PASS no Node v22.16.0 local, em conjunto 38/38 com os 19 testes B2-A; **integração B1 por HTTP ainda não executada no Node oficial**. O motor B1 real foi executado isoladamente em V8 sobre as fixtures reais do demo (1×2, uma diferença, POSTED/PENDING, sem escrita); isto não equivale a teste integrado HTTP.
+
+**Fase B2-B1 proposta, NÃO AUTORIZADA:** implementar sandbox Preview **com linhas exclusivamente sintéticas** e feature-flag default-OFF, somente após decisão do Arquiteto e auditoria Argon direcionada. Gates: Access + sessão dupla ligadas ao owner; proteção contra BOLA/IDOR; origem/redirect/CSRF/CORS; rate limit/replay durável; limites contra DoS; versionamento e auditoria sem PII; provedor de fixtures 100% inventadas sem acesso a staging do usuário; nenhum segredo ou bank ID em resposta/log; CI e smoke sob sessão autorizada; rollback via flag-off e confirmação de que não houve escrita. **Não** reutilizar sessões fake no Preview, nem montar handler B0 como endpoint real sem nova implementação/autorização.
+
 ## Protótipo B2-A já publicado — código, não endpoint
 
 - `shared/mf2-b2-synthetic-transport.cjs`: cliente/servidor em memória, sessão **mock** HMAC temporizada, owner fictício e escopo `synthetic:diagnose`, nonce requestId, anti-replay em `Set` efêmero, validadores de versão/payload/fixture sintética, proteção contra resultado com ID bruto, digest SHA256 não autenticador, flags fail-closed. Nenhum `fetch`, HTTP, SQL, Pluggy ou Cloudflare real. Sessão mock **não** é Cloudflare Access.
