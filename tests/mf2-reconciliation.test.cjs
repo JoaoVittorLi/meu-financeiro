@@ -226,7 +226,9 @@ test('B1 source-classified income/expense/transfer counters never sum manual and
       nature:'transfer',manual_id:'MAN-1'}]});
   const r=run(a,clone(a));
   assert.deepEqual(r.flowClassification.windows,{
-    bankIncome:1,bankExpense:0,bankZero:1,manualIncome:1,manualExpense:1,
+    bankIncome:1,bankExpense:0,bankZero:1,
+    pendingBankIncome:0,pendingBankExpense:0,pendingBankZero:0,unclassifiedBankStatus:0,
+    manualIncome:1,manualExpense:1,
     explicitTransfers:1,linkedManualReferences:1,ledgerTotalsCombined:false
   });
   assert.equal(r.financialSyncEnabled,false);
@@ -282,4 +284,38 @@ test('B1 missing bank account and orphan personal overlay are review-only confli
   assert.equal(report.databaseChanged,false);
   assert.equal(report.summary.state,'requires_manual_review');
   assert.ok(report.differences.every(x=>/^R\d{6}$/.test(x.reference)));
+});
+
+test('B1.1 posted vs pending vs unknown bank statuses classify independently',()=>{
+  const a=snapshot({transactions:[
+    bank('POSTED-IN',{status:'POSTED',amount_cents:1001}),
+    bank('POSTED-OUT',{status:'POSTED',amount_cents:-2003}),
+    bank('PENDING-IN',{status:'PENDING',amount_cents:999}),
+    bank('PENDING-OUT',{status:'PENDING',amount_cents:-100}),
+    bank('PENDING-ZERO',{status:'PENDING',amount_cents:0}),
+    bank('UNKNOWN',{status:'PROCESSING',amount_cents:25})
+  ]});
+  const flow=run(a,a).flowClassification.windows;
+  assert.equal(flow.bankIncome,1);
+  assert.equal(flow.bankExpense,1);
+  assert.equal(flow.pendingBankIncome,1);
+  assert.equal(flow.pendingBankExpense,1);
+  assert.equal(flow.pendingBankZero,1);
+  assert.equal(flow.unclassifiedBankStatus,1);
+  assert.equal(flow.ledgerTotalsCombined,false);
+});
+test('B1.1 pending own transfer and ignored transactions excluded from both flows',()=>{
+  const a=snapshot({transactions:[
+    bank('T',{status:'PENDING',amount_cents:-600}),
+    bank('I',{status:'POSTED',amount_cents:600})
+  ],overlays:[
+    {account_id:'FAKE-ACCOUNT',external_id:'T',nature:'transfer'},
+    {account_id:'FAKE-ACCOUNT',external_id:'I',nature:'ignore'}
+  ]});
+  const flow=run(a,a).flowClassification.windows;
+  assert.equal(flow.bankIncome,0);
+  assert.equal(flow.bankExpense,0);
+  assert.equal(flow.pendingBankIncome,0);
+  assert.equal(flow.pendingBankExpense,0);
+  assert.equal(flow.explicitTransfers,1);
 });
