@@ -67,7 +67,12 @@ async function automaticBackup(db,folder,{now=new Date(),keep=7}={}){
       verifiedDailyBackups.delete(path.join(folder,entry.name));
     }
     return {created:true,file};
-  }finally{fs.rmSync(partial+'.sqlite',{force:true});}
+  }finally{
+    // PRAGMA quick_check may create WAL/SHM companions for a temporary
+    // SQLite backup in WAL mode. Remove ALL temporary files, not just .sqlite.
+    for(const suffix of ['', '-wal', '-shm'])
+      fs.rmSync(partial+'.sqlite'+suffix,{force:true});
+  }
 }
 async function restoreBackup(currentDb,source,activeFile,folder){
   const id=randomUUID();

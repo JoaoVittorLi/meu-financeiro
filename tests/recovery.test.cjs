@@ -117,3 +117,15 @@ test('D1.1 — cópia diária alterada depois da validação é rejeitada na pr�
   assert.deepEqual(db.integrity(),['ok']);
  }finally{db.close();fs.rmSync(f.root,{recursive:true,force:true});}
 });
+
+test('D1.1 — validação do backup WAL não deixa auxiliares .partial após sucesso',async()=>{
+ const f=fixture();const db=new FinanceDB(f.file);
+ try{
+  db.save('real',dataset('wal-limpo'));
+  const saved=await automaticBackup(db,f.backups,{now:new Date('2026-11-11T12:00:00.000Z')});
+  assert.equal(saved.created,true);
+  assert.equal(validateBackupFile(saved.file).ok,true);
+  assert.equal(fs.readdirSync(f.backups).filter(name=>name.includes('.partial-')).length,0);
+  assert.equal(db.load('real').transactions[0].id,'t-wal-limpo');
+ }finally{db.close();fs.rmSync(f.root,{recursive:true,force:true});}
+});
