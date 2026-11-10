@@ -35,7 +35,7 @@ Uma transação bancária continua **separada** de transação manual: não são
 - `contract: "mf2-reconciliation-b1-v1"`, `stage: "read_only_dry_run"`, `ok: true`.
 - `sources.windows/cloud`: contagens separadas de contas, transações bancárias, manuais e overlays.
 - `comparable`: quantidade observada e equivalente por entidade; overlays explicitam `checked`.
-- `flowClassification`: contagem de entradas/saídas bancárias por sinal, manuais por `kind`, transferências **explicitamente marcadas** e vínculos manuais; `ledgerTotalsCombined=false`.
+- `flowClassification`: contagem de entradas/saídas bancárias por sinal, manuais por `kind`, transferências **explicitamente marcadas** e vínculos manuais, excluindo transferências próprias e registros ignorados dos contadores de receita/despesa; `ledgerTotalsCombined=false`.
 - `summary.state`: `requires_manual_review`, `consistent_observed_scope_only` ou `consistent_observed_scope`. **Nenhum** desses status é aprovação de cutover; cobertura histórica e saldos as-of permanecem gates separados.
 - `summary.byType`, `issues`, `bankCountDelta`, `historicalHypotheses`, `omittedIssues` e `differences[]` (limitado a 200 achados, com contagens globais).
 - Cada diferença informa `type`, `entity`, `reference`, `field`, `side`, `reason` e `action`. **Não** contém valores, IDs bancários, texto de lançamento ou saldos.
