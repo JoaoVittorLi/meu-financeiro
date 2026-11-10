@@ -60,5 +60,9 @@
     "portable": {
       "artifactName": "MeuFinanceiro-Portable-${version}-${arch}.${ext}"
     }
+  },
+  "engines": {
+    "node": "22.23.4",
+    "npm": "10.9.9"
   }
 }

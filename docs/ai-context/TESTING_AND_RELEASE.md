@@ -65,3 +65,18 @@ Uma única revisão de origem/contrato validado para Windows e PWA; versão sem�
 ## Matriz de evidência
 
 Relatar separadamente: comando executado, SHA, ambiente, status e link; artifact encontrado, hash confirmado; Windows instalado/testado; PWA em Preview autenticado/testado; Cloudflare Production publicado; migração real autorizada. Para qualquer coluna não verificada, usar **NÃO VERIFICADO**, sem inferência.
+
+## B3 — Fixação de toolchain em andamento (10/11/2026)
+
+O preflight Linux da **candidata original** `7a01f1c` foi observado como `success` no [CircleCI](https://app.circleci.com/workflow/4a8c3a15-4101-4333-95c7-8351fd2f37a4/job/32ffc3e0-4838-4994-befe-a50069d2d993), **antes** da B3. Essa execução não valida as mudanças da B3.
+
+A branch B3 fixa Node `22.23.4`, npm `10.9.9`, Linux Docker `node:22.23.4-bookworm@sha256:e273cf2a19c7334c03f52e2ca933ecdfc3fbfaad49db7b8bc8c3edd9ac34e9c7` (índice da imagem oficial) e Windows `https://nodejs.org/dist/v22.23.4/` com SHASUMS256 e verificação de versão. Wrangler dry-run usa `npx --no-install` para não buscar CLI substituta.
+
+**Importante: C11 ainda não foi resolvido nesta branch.** O ambiente de autoria não possui acesso ao registry npm, logo **não foi possível gerar ou verificar** `package-lock.json` da raiz e `mobile-push/package-lock.json`. Por isso **não foi feito o switch prematuro para `npm ci`**, que falharia imediatamente. O CI ainda usa instalação sem lockfile. A etapa final deve ser feita por um executor com rede, preferencialmente Work, na mesma branch após inspecionar HEAD e ownership:
+
+1. Com Node 22.23.4/npm 10.9.9, gerar lockfiles sem modificar as versões diretas: na raiz `npm install --package-lock-only --ignore-scripts --no-audit --no-fund`; em `mobile-push/`, repetir. Registrar resoluções e alertas; não copiar lockfiles de outras branches sem verificar.
+2. Com ambas as dependências fixadas, trocar **ambos** `npm install --package-lock=false` do Linux e o Windows para `npm ci --no-audit --no-fund` (Linux com `ELECTRON_SKIP_BINARY_DOWNLOAD=1`); preservar etapa Windows que baixa Electron. Não executar instalador Windows nesta missão.
+3. Executar `npm ci` em ambas, `npm run test:types`, `npm run test:db`, `npm run compile`, `node scripts/renderer-provenance.cjs check-bundle`, `npm run test:asar`, PWA `npm test` e `npx --no-install wrangler deploy --dry-run --outdir /tmp/mf-e4-preview`.
+4. Fazer push, verificar SHA e executar CircleCI preflight na branch B3 (`run_preflight=true`, `run_windows_build=false`) **sem Windows**. Só após sucesso considerar B3 concluída e autorizar B4. Documentar resultados em ROADMAP+log, não publicar em main.
+
+**Rollback:** reverter o(s) commit(s) da B3 na branch de trabalho ou voltar à candidata original `7a01f1c` sem mover o ref da candidata; validar preflight original; nenhum dado financeiro é migrado. Não apagar lockfiles após serem homologados.
