@@ -12,6 +12,18 @@
 
 **Premium staging sem merge:** branch `feat/mf2-beta8-premium-staging-20261110` @ `HEAD da branch (consultar GitHub; staging ainda não homologado)` reúne funcional D1.2 com os blobs originais `app/overview.css` A-D1 e `app/operations.css` A-D2. Diff contra base funcional: **somente 2 CSS**, sem motores/serviços modificados. Essa branch ainda não inclui atualizações documentais subsequentes, não tem CI/EXE, e **não foi promovida ao PR #28**; A-D3 incremental ainda não encontrada como PR/branch `ad3`. Versão mantida `0.9.5-beta.7` nos manifestos, beta.8 reservada até candidata funcional visualmente testada. Beta.6 e beta.7 de recuperação inalteradas. Cloudflare/PWA congelados na frente Desktop First.
 
+## Checkpoint vigente — Beta.8 candidata D1.2 + Premium (10/11/2026)
+
+**Estado: CANDIDATA PARA CI, NÃO HOMOLOGADA / NÃO DISTRIBUÍDA.** [PR draft #31](https://github.com/JoaoVittorLi/meu-financeiro/pull/31), branch `feat/mf2-beta8-premium-staging-20261110`, versão `0.9.5-beta.8` consistente em `package.json`, `package-lock.json`, `mobile-push/package.json`, `mobile-push/package-lock.json` e nos três rótulos correspondentes de `src/app.ts` e `app/app.js`. **Não houve deploy PWA:** apenas metadados de versão foram sincronizados por contrato. Cloudflare/PWA Production congelados.
+
+**D0 beta.6**: preflight Linux e build Windows aprovados e 2 EXEs com SHA-256 conferidos, sem homologação de uso pessoal. **D1.1 beta.7**: PR #22 SHA `8734a34db8ec9b5592d666cc14fea9a5b8a826b4`, preflight Linux e Windows SUCCESS, 2 EXEs com SHA-256 verificados, **smoke nativo instalado pendente**; versões antigas preservadas como recuperação. **D1.2 funcional**: PR #28, proteção de orçamento R$0, rejeição atômica de duplicatas de extrato e conflito de ownership bancário, lock Electron único e smoke de perfil isolado; **8/8 testes SQLite direcionados PASS** no runtime local Node v22.16.0 (`/mnt/data/d1-2-beta8-sqlite-8-verified.tap`); suíte Node/CI completos da beta.8 ainda não executados. Novo teste `tests/d1-2-category-rename-links.test.cjs` preserva renomeação cascata por orçamentos, regras, overrides, splits e planejamento.
+
+**Premium A-D1–A-D4 incorporados somente na candidata:** PR #23 `app/overview.css` (blob `e47e8d0206c193dca127a802e1b77691212638f3`); PRs #25/#29 `app/operations.css` A-D2 + A-D3 incremental (`fc1ac6f79ebfa9b350298f6b76e6ef0eee21a04d`); PR #30 `app/decisions.css` A-D4 (`1d1d9b706b0a0a79b0dfce1df04bf418e6b6a5f3`). `tests/d1-2-premium-css-contract.test.cjs` publicado; lógica de suas três asserções executada em V8 sobre CSS reais do GitHub **3/3 PASS com filesystem simulado**. **Não é teste visual Electron.** O Simulador A-D5 não foi integrado (não é dependência para a beta.8).
+
+**Gate operacional próximo:** CircleCI com **UMA única pipeline** no SHA final da candidata: Config/Checkout Branch `feat/mf2-beta8-premium-staging-20261110`, `run_preflight=false`, `run_windows_build=true`. Fluxo `preflight_linux` → `build_windows`, este último exige smoke GUI real, persistência, 16 PNGs e checks de provenance ASAR/NSIS/SHA. Se falhar, corrigir o PR #31 antes de distribuir. Se passar, conferir hashes físicos e artefatos, **sem afirmar homologação de instalação Windows pessoal nem merge/release automático**.
+
+---
+
 ## 1. Objetivo do 2.0
 
 Construir uma plataforma pessoal de **controle + previsão + decisão + automação assistida**, com dados financeiros confiáveis, sincronização entre Windows/PWA, design diferenciado e IA que compreenda o contexto real e prepare alterações sob controle do usuário.

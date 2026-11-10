@@ -4,6 +4,10 @@
 
 **Atualização técnica — 10/11/2026:** Executor PR #28 agora possui quatro regressões reais adicionais de identidade bancária (lotes com duplicados, contas duplicadas, vínculo indevido entre conexões e ID compartilhado entre contas distintas). **7/7 PASS** com Node 22.16.0 e SQLite real extraído do ASAR beta.7 + código D1.2 exato, sem CI/GUI novo. Staging `feat/mf2-beta8-premium-staging-20261110` SHA `HEAD da branch (consultar GitHub; staging ainda não homologado)`: **somente os dois CSS do Argon** somados à D1.2 de código, sem versão/beta.8, CI ou merge. PR #27 CSS-only continua fonte; PR #26 segue sob ownership do Arquiteto; A-D3 não publicada nesta verificação. Priorizar testes de regressão e smoke real antes de qualquer promoção.
 
+## Checkpoint candidato para execução CircleCI — 10/11/2026
+
+**Executor PR #31 (draft)**: `feat/mf2-beta8-premium-staging-20261110`, candidata `0.9.5-beta.8` com D1.2 funcional do PR #28 e **CSS A-D1/A-D2/A-D3/A-D4** dos PRs #23/#25/#29/#30. Argon continua dono de `app/overview.css`, `app/operations.css`, `app/decisions.css`; staging usa os blobs publicados sem reescrever o trabalho visual. **PR #26 do Arquiteto não deve ser mesclado em duplicidade**; PRs #19 e #22 recuperáveis e intocados. Beta.8 **sem CI, sem EXE**, 8/8 testes SQLite locais direcionados e 3/3 checagens de contrato CSS com dados simulados; smoke nativo Electron precisa da única pipeline Windows com Linux prévio. Worker/PWA sem novas funções e sem deploy.
+
 ## Checkpoint atual — Desktop First, 10/11/2026 (prevalece sobre o histórico abaixo)
 
 | Frente | Branch / PR | Situação comprovada | Arquivos sob ownership / conflito |
