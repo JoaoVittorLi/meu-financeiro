@@ -248,3 +248,12 @@ test('B1 anonymized references resolve stably and never use UNRESOLVED for valid
   assert.ok(r.differences.every(x=>/^R\d{6}$/.test(x.reference)));
   assert.doesNotMatch(JSON.stringify(r),/UNRESOLVED|FAKE-OTHER|FAKE-TX/);
 });
+
+test('B1 committed example is reproducible byte-for-byte by offline CLI',()=>{
+  const {buildSyntheticB1Report}=require('../scripts/mf2-reconciliation-fixture.cjs');
+  const expected=require('../docs/ai-context/logs/2026-11-10-MF2-01-B1-synthetic-report.json');
+  assert.deepEqual(buildSyntheticB1Report(),expected);
+  assert.equal(expected.summary.issues,5);
+  assert.equal(expected.summary.bankCountDelta,2);
+  assert.ok(expected.differences.every(x=>/^R\d{6}$/.test(x.reference)));
+});
