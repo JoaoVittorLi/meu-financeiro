@@ -217,3 +217,25 @@ test('B1 adapters compose to one deterministic reconciliation without side effec
   assert.equal(r.summary.state,'consistent_observed_scope_only');
   secure(r);
 });
+
+test('B1 source-classified income/expense/transfer counters never sum manual and bank',()=>{
+  const a=snapshot({transactions:[bank('SPEND'),bank('PAY',{amount_cents:2500}),
+      bank('ZERO',{amount_cents:0})],
+    manualTransactions:[manual(),manual('INCOME',{kind:'income'})],
+    overlays:[{account_id:'FAKE-ACCOUNT',external_id:'SPEND',
+      nature:'transfer',manual_id:'MAN-1'}]});
+  const r=run(a,clone(a));
+  assert.deepEqual(r.flowClassification.windows,{
+    bankIncome:1,bankExpense:1,bankZero:1,manualIncome:1,manualExpense:1,
+    explicitTransfers:1,linkedManualReferences:1,ledgerTotalsCombined:false
+  });
+  assert.equal(r.financialSyncEnabled,false);
+});
+test('B1 discrepancies have stable ordering even if input rows are rearranged',()=>{
+  const a=snapshot({transactions:[bank('B'),bank('A')]});
+  const b=snapshot({transactions:[bank('A',{amount_cents:-1200}),bank('B',{status:'PENDING'})]});
+  const baseline=run(a,b);
+  const shuffled=run({...a,transactions:[...a.transactions].reverse()},
+    {...b,transactions:[...b.transactions].reverse()});
+  assert.deepEqual(baseline,shuffled);
+});
