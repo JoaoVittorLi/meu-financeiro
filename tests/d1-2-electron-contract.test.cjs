@@ -41,3 +41,20 @@ test('D1.2 — smoke tests DOM navigation and persist/restart through preload IP
  assert.match(source,/validateBackupFile\(/);
  assert.match(source,/process\.exitCode=1/);
 });
+
+test('D1.2 — o CI conserva screenshots sintéticos e instaladores em artefatos diferentes',()=>{
+ const win=read('.circleci/build-windows.ps1');
+ const config=read('.circleci/config.yml');
+ const smoke=read('scripts/d1-electron-smoke.cjs');
+ assert.match(win,/MF_SMOKE_OUTPUT_DIR/);
+ assert.match(win,/visual-matrix\.json/);
+ assert.match(win,/Count -ne 16/);
+ assert.match(config,/path: circleci-smoke-artifacts\s+destination: MeuFinanceiro-Desktop-Smoke/);
+ assert.match(config,/path: circleci-artifacts\s+destination: MeuFinanceiro-Windows/);
+ assert.match(smoke,/Page\.captureScreenshot/);
+ assert.match(smoke,/prefers-reduced-motion/);
+ assert.match(smoke,/1366,height:768/);
+ assert.match(smoke,/1920,height:1080/);
+ assert.match(smoke,/Overflow horizontal global/);
+ assert.match(smoke,/89504e470d0a1a0a/);
+});
