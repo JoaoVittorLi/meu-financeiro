@@ -1,6 +1,14 @@
 # MF2-01 / B2 — Proposta de transporte autenticado e conciliação protegida
 
-**Status:** DESENHO TÉCNICO, não implementado, não homologado. **Origem:** B1.1 em PR #20. **Argon necessário? AUDITORIA** dirigida **antes** de qualquer canal remoto de dados detalhados/escrita. Não criar branch B2 até autorização do Chat Arquiteto. **G0/G1: NAO_HOMOLOGADOS**.
+**Status:** B2-A PROTÓTIPO OFFLINE SINTÉTICO IMPLEMENTADO E TESTADO; B2-B/C COM TRANSPORTE REAL APENAS DESENHO, NÃO AUTORIZADOS. **Origem:** B1.1 PR #20 no SHA `530ba91d0913e6b8857dc4db922141b84cb00893`. **Branch B2:** `feat/mf2-01-b2-protected-transport`, autorizada pelo proprietário para exclusivamente fixtures/read-only. **Argon necessário? AUDITORIA** dirigida **antes** de qualquer canal remoto de dados sensíveis/escrita. **G0/G1: NAO_HOMOLOGADOS**.
+
+## Protótipo B2-A já publicado — código, não endpoint
+
+- `shared/mf2-b2-synthetic-transport.cjs`: cliente/servidor em memória, sessão **mock** HMAC temporizada, owner fictício e escopo `synthetic:diagnose`, nonce requestId, anti-replay em `Set` efêmero, validadores de versão/payload/fixture sintética, proteção contra resultado com ID bruto, digest SHA256 não autenticador, flags fail-closed. Nenhum `fetch`, HTTP, SQL, Pluggy ou Cloudflare real. Sessão mock **não** é Cloudflare Access.
+- `tests/mf2-b2-synthetic-transport.test.cjs`: `node --test` **19/19 PASS** em Node **v22.16.0 local**. `tests/mf2-b2-b1-integration.test.cjs`: dois testes adicionais usando B1 real no repo, **pendentes de execução** em checkout completo. `scripts/mf2-b2-synthetic-demo.cjs` executa a conciliação B1 real com transações 100% inventadas, **sem execução comprovada nesta sessão**.
+- [Log B2-A](logs/2026-11-10-MF2-01-B2-synthetic-prototype.md) detalha comandos, limites e pendências. **O código B2-A não é um endpoint Preview nem uma implementação de autenticação de dispositivos em produção**.
+
+**Escopo ainda reservado:** as fases B2-B/C abaixo exigem autorização distinta, desenho de segurança, auditoria Argon e teste no CircleCI antes de qualquer dado real ou transporte de detalhes financeiros.
 
 ## 1. Objetivo, limites e ativos existentes
 
@@ -134,4 +142,4 @@ Rollback de uma operação futura deve usar `expectedRevision`/CAS, nunca sobres
 4. Definir prova de consistência e cobertura histórica, CAS e restore antes de avançar escrita.
 5. Manter PR #20 draft e B2 em branch nova somente após autorização; sem deploy Production, cutover ou migração.
 
-**Este arquivo não implementa endpoint, chamada remota, persistência ou sincronização.**
+**O protótipo B2-A foi implementado em arquivos de código citados acima; este documento, entretanto, não cria endpoint, chamada remota real, persistência ou sincronização.**
