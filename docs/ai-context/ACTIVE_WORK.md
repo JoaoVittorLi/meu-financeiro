@@ -2,7 +2,20 @@
 
 Última leitura via GitHub: 09/11/2026. **Work em execução não é inspecionável aqui**; itens marcados como "desconhecido" devem ser reconciliados com a sessão antes de qualquer escrita.
 
-## Matriz de coordenação
+## Checkpoint atual — Desktop First, 10/11/2026 (prevalece sobre o histórico abaixo)
+
+| Frente | Branch / PR | Situação comprovada | Arquivos sob ownership / conflito |
+| --- | --- | --- | --- |
+| D0 beta.6 | `fix/mf2-c11-reproducible-build-20261110` / PR #19 | Linux/Windows SUCCESS, 2 EXEs íntegros; sem smoke Windows | Base de recuperação congelada |
+| D1.1 beta.7 | `feat/mf2-desktop-first-20261110` / PR #22 · SHA `8734a34d` | Linux/Windows SUCCESS, 2 EXEs e hashes verificados; instalação NÃO homologada | Base funcional congelada da D1.2 |
+| D1.2 funcional | `feat/mf2-d1-2-functional-tests-20261110` / PR #28 | Correção de orçamento zero; único single-instance lock; perfil de teste e smoke Electron versionados; CI D1.2 pendente | `electron/db.cjs`, `electron/main.cjs`, `electron/smoke-profile.cjs`, `scripts/d1-electron-smoke.cjs`, testes e CI Windows (sem CSS) |
+| A-D1 / A-D2 Premium | PR #23 e PR #25; candidata CSS-only PR #27 | Só `overview.css` + `operations.css` com blobs idênticos; não integrado, Electron visual pendente | Argon dono do CSS; D1.2 NÃO alterar CSS |
+| A-D3 | Branch/PR ainda não verificados nesta rodada | Alterará `app/operations.css`; deve herdar integralmente A-D2, sem substituição regressiva | Argon dono de `app/operations.css` |
+| Cloudflare/PWA | Branches separadas | Congeladas para Desktop First (sem deploy/migração/cutover nesta frente) | `mobile-push/**`, `electron/cloud-*`, segredos/dados reais fora de escopo |
+
+**Workflow futuro:** não rodar CI a cada commit. Quando D1.2 for candidata funcional (prevista beta.8), uma única pipeline `run_preflight=false`/`run_windows_build=true`, que exige preflight Linux seguido de teste Electron real e build Windows; não declarar homologação antes do smoke real.
+
+## Matriz de coordenação (histórico anterior)
 
 | Frente | Quem/onde | Branch / PR | Estado conhecido | Área protegida |
 | --- | --- | --- | --- | --- |
