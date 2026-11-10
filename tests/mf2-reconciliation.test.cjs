@@ -271,3 +271,15 @@ test('B1 ignored or own-transfer bank transactions never become revenue/expense 
   assert.equal(r.flowClassification.windows.explicitTransfers,1);
   assert.equal(r.flowClassification.windows.ledgerTotalsCombined,false);
 });
+
+test('B1 missing bank account and orphan personal overlay are review-only conflicts',()=>{
+  const incomplete=snapshot({accounts:[]});
+  const remote=snapshot({accounts:[],overlays:[{
+    account_id:'FAKE-ACCOUNT',external_id:'NO-SUCH-BANK-TX',category:'Lazer'}]});
+  const report=run(incomplete,remote);
+  assert.equal(count(report,'missing_account_reference'),2);
+  assert.equal(count(report,'orphan_personal_overlay'),1);
+  assert.equal(report.databaseChanged,false);
+  assert.equal(report.summary.state,'requires_manual_review');
+  assert.ok(report.differences.every(x=>/^R\d{6}$/.test(x.reference)));
+});
