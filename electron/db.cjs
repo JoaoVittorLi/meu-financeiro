@@ -369,7 +369,7 @@ class FinanceDB {
    if(row.built_in)throw new Error('Categorias padrão não podem ser excluídas.');
    const usages=[
      this.db.prepare('SELECT 1 FROM transactions WHERE category=? LIMIT 1').get(row.name),
-     this.db.prepare('SELECT 1 FROM budgets WHERE category=? AND amount_cents>0 LIMIT 1').get(row.name),
+     this.db.prepare('SELECT 1 FROM budgets WHERE category=? LIMIT 1').get(row.name),
      this.db.prepare('SELECT 1 FROM category_rules WHERE category=? LIMIT 1').get(row.name),
      this.db.prepare('SELECT 1 FROM bank_category_overrides WHERE category=? LIMIT 1').get(row.name),
      this.db.prepare('SELECT 1 FROM bank_transaction_splits WHERE category=? LIMIT 1').get(row.name),
