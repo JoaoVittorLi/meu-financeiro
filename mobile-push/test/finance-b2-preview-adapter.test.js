@@ -160,3 +160,13 @@ test('pilot-only Access result never authorizes Worker-ready adapter',async()=>{
   authorizeAccess:async()=>({ok:true,mode:'pilot_only'})});
  await err(await setup({...guards}).handle(req()),403,'access_required');
 });
+
+test('isolated synthetic handler never calls global fetch, Pluggy or Durable Object',async()=>{
+ const oldFetch=globalThis.fetch;let externalCalls=0;
+ globalThis.fetch=async()=>{externalCalls++;throw Error('FORBIDDEN external network')};
+ try{
+   const h=setup();const r=await h.handle(req({requestId:'syn-preview-no-network'}));
+   assert.equal(r.status,200);assert.equal(externalCalls,0);
+   const j=await r.json();assert.equal(j.financialSyncEnabled,false);
+ }finally{globalThis.fetch=oldFetch}
+});
