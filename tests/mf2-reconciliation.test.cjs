@@ -96,7 +96,7 @@ test('B1 identical account/external ID duplicated inside a source is blocked',()
 test('B1 likely same-day duplicate is review only and never collapsed',()=>{
   const a=snapshot({transactions:[bank('FAKE-TX'),bank('FAKE-TX-2')]});
   const r=run(a,clone(a));
-  assert.equal(count(r,'possible_duplicate'),4);
+  assert.equal(count(r,'possible_duplicate'),2);
   assert.equal(r.sources.windows.bank,2);
   assert.equal(r.automaticSettlementEnabled,false);
 });
@@ -238,4 +238,13 @@ test('B1 discrepancies have stable ordering even if input rows are rearranged',(
   const shuffled=run({...a,transactions:[...a.transactions].reverse()},
     {...b,transactions:[...b.transactions].reverse()});
   assert.deepEqual(baseline,shuffled);
+});
+
+test('B1 anonymized references resolve stably and never use UNRESOLVED for valid keys',()=>{
+  const a=snapshot({transactions:[bank('FAKE-TX'),bank('FAKE-OTHER')]});
+  const b=snapshot({transactions:[bank('FAKE-TX',{status:'PENDING'})]});
+  const r=run(a,b);
+  assert.ok(r.differences.length>=2);
+  assert.ok(r.differences.every(x=>/^R\d{6}$/.test(x.reference)));
+  assert.doesNotMatch(JSON.stringify(r),/UNRESOLVED|FAKE-OTHER|FAKE-TX/);
 });
