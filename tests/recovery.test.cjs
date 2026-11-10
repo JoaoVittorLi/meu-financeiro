@@ -100,3 +100,20 @@ test('D1.1 — backup parcial inválido não é publicado nem elimina a cópia a
   assert.equal(db.load('real').transactions[0].id,'t-anterior');
  }finally{db.close();fs.rmSync(f.root,{recursive:true,force:true});}
 });
+
+test('D1.1 — cópia diária alterada depois da validação é rejeitada na próxima verificação',async()=>{
+ const f=fixture();const db=new FinanceDB(f.file);
+ try{
+  db.save('real',dataset('integro'));
+  const date=new Date('2026-11-10T12:00:00.000Z');
+  const saved=await automaticBackup(db,f.backups,{now:date});
+  assert.equal(saved.created,true);
+  assert.equal((await automaticBackup(db,f.backups,{now:date})).created,false);
+  const corrupted=Buffer.alloc(128,0x41);
+  fs.writeFileSync(saved.file,corrupted);
+  await assert.rejects(()=>automaticBackup(db,f.backups,{now:date}));
+  assert.deepEqual(fs.readFileSync(saved.file),corrupted);
+  assert.equal(db.load('real').transactions[0].id,'t-integro');
+  assert.deepEqual(db.integrity(),['ok']);
+ }finally{db.close();fs.rmSync(f.root,{recursive:true,force:true});}
+});
