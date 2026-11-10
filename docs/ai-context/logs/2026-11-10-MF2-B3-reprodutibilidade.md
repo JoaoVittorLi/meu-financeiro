@@ -62,3 +62,39 @@ Terminar geração e revisão dos dois lockfiles num Work com rede, converter as
 **Ação exata para destravar:** em ambiente Linux de rede e toolchain Node `22.23.4`/npm `10.9.9`, checkout **do mesmo branch PR #19** e conferir HEAD atual; em raiz e `mobile-push/` rodar `npm install --package-lock-only --ignore-scripts --no-audit --no-fund`, inspecionar `lockfileVersion`, dependências, `resolved` e `integrity`; então trocar três instalações do pipeline (`npm ci --no-audit --no-fund`), testar `npm ci` de ambos e suíte integral, **commitar no PR #19**. Disparar **somente Linux** em CircleCI com Config=Checkout=`fix/mf2-c11-reproducible-build-20261110`, `run_preflight=true`, `run_windows_build=false`, comprovar status no SHA novo. Aguardar auditoria; **não iniciar B4**.
 
 **Rastreabilidade:** esta seção e alteração correspondente no ROADMAP são **documentação de bloqueio, não implementação da B3.1**. Qualquer novo commit documental incrementa HEAD do PR, mas não representa lockfiles concluídos/testes verdes. **B3 permanece PARCIAL / G0 NAO_HOMOLOGADO**.
+
+
+## B3.2 — bootstrap temporário de lockfiles no CircleCI Linux (configuração publicada)
+
+**Referência inicial confirmada:** branch `fix/mf2-c11-reproducible-build-20261110`, HEAD antes de editar `98bc5f01a2fa543bf187a92f1d00e5e1ace57c34`; base candidata original `7a01f1cc344e88188bc5eeea59bf2324335a051e` mantida. **Commit da alteração em `.circleci/config.yml`:** `7ff410670ccf6a81662c25ecc207cad207931733`. O HEAD do PR continuará avançando somente com esta documentação; para disparo, usar **HEAD atual** mostrado no PR #19 e conferir `CIRCLE_SHA1`.
+
+**Implementação somente CI:** foi criado parâmetro booleano `run_lockfile_bootstrap` com padrão `false`, job `lockfile_bootstrap`, workflow `lockfile_bootstrap_on_demand`, preservando `preflight_on_demand` e `windows_on_demand`. Os dois workflows antigos recebem guarda `not: run_lockfile_bootstrap` para evitar simultaneidade; o novo somente roda se `run_lockfile_bootstrap=true`, `run_preflight=false`, `run_windows_build=false`. Nenhum `build_windows` faz parte do workflow bootstrap.
+
+**Ambiente e execução esperada:** mesma imagem Linux digest pinada do preflight `node:22.23.4-bookworm@sha256:e273cf2a19c7334c03f52e2ca933ecdfc3fbfaad49db7b8bc8c3edd9ac34e9c7`; o job verifica `node --version=v22.23.4`, `npm --version=10.9.9`, `CIRCLE_BRANCH` e `git rev-parse HEAD=CIRCLE_SHA1`, e usa somente `https://registry.npmjs.org/`. Executa, separadamente, o comando `npm install --package-lock-only --ignore-scripts --no-audit --no-fund --registry=https://registry.npmjs.org/` na raiz e em `mobile-push/`. Não roda pós-instalação, testes, Wrangler, deploy, Electron nem Windows. Reprova se alterar os manifestos `package.json`.
+
+**Validação embarcada dos dois locks:** JSON `lockfileVersion=3`, nome e versão consistentes com os manifests e o nó raiz, dependências diretas `dependencies/devDependencies/optionalDependencies` idênticas às de cada manifesto, árvore não vazia e entradas de pacotes de registry (fora links/bundled) com `version`, `resolved` HTTPS em `registry.npmjs.org` e `integrity` em formato SRI; registra quantas entradas usam SHA1 para auditoria posterior. Falha de validação impede a preparação dos artefatos.
+
+**Artefatos esperados, ainda NÃO GERADOS por execução comprovada:**
+- `MF2-B3-Lockfile-Bootstrap/desktop-package-lock.json` — oriundo da raiz do projeto;
+- `MF2-B3-Lockfile-Bootstrap/mobile-push-package-lock.json` — oriundo de `mobile-push/`;
+- `MF2-B3-Lockfile-Bootstrap/SHA256SUMS.txt` — SHA256 dos dois arquivos;
+- `MF2-B3-Lockfile-Bootstrap/METADATA.txt` — repositório, branch, commit, Node, npm e URL do registry.
+
+O step `store_artifacts` publica somente a pasta `circleci-artifacts/lockfile-bootstrap`. Ele não commita os arquivos nem aciona outros jobs. **Artefatos só são confiáveis após job `success` e conferência dos hashes.**
+
+### Validação estática realizada
+
+A configuração publicada foi analisada por parser **PyYAML 6.0.3** em cópia temporária; verificados: três parâmetros com `default=false`, três jobs, três workflows, imagem fixada idêntica, dois comandos de geração, `checkout/run/store_artifacts`, exclusividade do workflow bootstrap, preservação do preflight e Windows. Extraído o script `run.command` e aplicado `bash -n`, e extraído o heredoc Node e aplicado `node --check`: **PASS**. **Não foi executado `circleci config validate` via CLI autenticada, nem o job real**, portanto a validação de schema CircleCI e a conclusão operacional permanecem pendentes; confirmar na UI antes da execução. O YAML foi comparado com a versão publicada após o commit.
+
+### Disparo manual exato e inspeção
+
+1. Abrir [CircleCI Pipelines](https://app.circleci.com/) no projeto **`JoaoVittorLi/meu-financeiro`**, selecionar **Trigger Pipeline**.
+2. Selecionar **Config branch** = `fix/mf2-c11-reproducible-build-20261110` e **Checkout branch** = **a mesma branch**; confirmar o SHA atual do PR #19. Não selecionar `main` nem a candidata original.
+3. Informar **`run_lockfile_bootstrap=true`**, **`run_preflight=false`** e **`run_windows_build=false`**.
+4. Conferir que aparece **somente** `lockfile_bootstrap_on_demand` → `lockfile_bootstrap`; se aparecer job Windows ou preflight, não prosseguir e revisar seleção de parâmetros.
+5. Abrir o job, confirmar `CIRCLE_BRANCH`, commit `CIRCLE_SHA1` e impressão de validação de ambos os locks; baixar os quatro arquivos da aba **Artifacts**; verificar `sha256sum --check SHA256SUMS.txt` na pasta dos arquivos baixados, comparar `METADATA.txt` ao SHA do job.
+6. Se o job falhar, registrar URL, primeira mensagem relevante e corrigir a causa mínima em PR #19 (sem contornar validação). Se o job passar, anexar URL/commit/artefatos no PR #19 para permitir a integração.
+
+**Após obter os artefatos autênticos:** revisar integridades, dependências transitivas e eventuais SHA1/avisos, copiar para `package-lock.json` e `mobile-push/package-lock.json` (nomes originais), migrar instalações Linux/Windows para `npm ci` e provar em executor com rede que os dois `npm ci`, TypeScript, SQLite, renderer, ASAR, Worker/PWA e Wrangler dry-run passam. Gerar SHA novo, executar **somente preflight Linux** nesse SHA com `run_preflight=true`, `run_windows_build=false`, `run_lockfile_bootstrap=false`. Depois remover bootstrap temporário, ou justificar/documentar explicitamente se desabilitado, mantendo `default=false`. Nenhuma validação do SHA antigo substitui o novo.
+
+**Resultado atual:** B3.2 **CONFIG PUBLICADA / EXECUÇÃO CIRCLECI E LOCKFILES PENDENTES**. Ferramentas conectadas nesta sessão não permitem disparar CircleCI nem ler artefatos privados do job; não há pipeline ou lockfiles desta missão para reportar. B3 permanece `EM_TESTE`, `G0=NAO_HOMOLOGADO`. Nenhum build Windows, release, merge, Cloudflare Production ou migração financeira executado.
