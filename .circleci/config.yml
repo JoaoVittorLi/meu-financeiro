@@ -40,7 +40,7 @@ jobs:
               npm install --package-lock-only --ignore-scripts --no-audit --no-fund --registry=https://registry.npmjs.org/
             )
             git diff --quiet -- package.json mobile-push/package.json || { echo 'ERRO: manifestos npm sofreram alteração'; exit 1; }
-            node <<'NODE'
+            node \<<'NODE'
             const fs = require('node:fs');
             const assert = require('node:assert/strict');
             const targets = ['.', 'mobile-push'];
