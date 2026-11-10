@@ -126,3 +126,22 @@ A configuração publicada foi analisada por parser **PyYAML 6.0.3** em cópia t
 **Resultado:** `B3.2` segue **EM_TESTE**, pendente de novo acionamento CircleCI; **nenhum job verde, lockfile autenticado ou artefato validado na revisão corrigida foi apresentado**. O sucesso/falha futura poderá revelar outro pacote legítimo ou risco novo; não afrouxar validação indiscriminadamente. Se `npm ci` posteriormente falhar por acesso SSH, diagnosticar transporte e preferir remediação pontual para HTTPS, sem reescrever lockfiles às cegas.
 
 **Próxima ação manual:** disparar `lockfile_bootstrap_on_demand` no **HEAD atual do PR #19**, com Config=Checkout=`fix/mf2-c11-reproducible-build-20261110`, `run_lockfile_bootstrap=true`, `run_preflight=false`, `run_windows_build=false`. Obter e conferir [job/artifacts], `METADATA.txt`, `SHA256SUMS.txt` e os dois lockfiles; só então incorporá-los, mudar instalações para `npm ci`, testar Linux em novo SHA, remover bootstrap temporário e submeter auditoria B3. **Não iniciar build Windows, merge, release ou Production. G0 NAO_HOMOLOGADO.**
+
+
+## B3.2.3 — bootstrap CircleCI SUCCESS no SHA corrigido, aguardando artefatos (10/11/2026)
+
+**Evidência oficial posterior à falha anterior:** o GitHub registra `ci/circleci: lockfile_bootstrap` com **state=success** e descrição `Your tests passed on CircleCI!` no SHA exato **`ff51444538e4c745d064f4820f680ec8b617719c`**. Status `pending` às **2026-11-10T15:19:08Z** e `success` às **2026-11-10T15:19:26Z**. [Job CircleCI — SUCCESS](https://app.circleci.com/workflow/5251af99-07fb-44a7-93ea-f25be9a4bf1d/job/bdd7f7cd-1a9c-4a09-9647-6fd19b7f3ced). O HEAD remoto desse branch correspondia ao SHA executado no momento da conferência; a candidata original continua congelada em `7a01f1cc344e88188bc5eeea59bf2324335a051e`.
+
+**O que o job verde comprova:** a configuração no SHA citado seleciona o workflow Linux `lockfile_bootstrap_on_demand`; o step verifica Node **22.23.4**, npm **10.9.9**, checkout/branch e gera, no registry oficial, os dois arquivos npm `--package-lock-only --ignore-scripts`. O comando do job verifica estrutura `lockfileVersion=3`, dependências declaradas, integridade de tarballs e a exceção Git estrita para `@electron/node-gyp`; copia ambos, produz `SHA256SUMS.txt`, verifica hashes localmente e prepara `METADATA.txt` com SHA/branch. O job contém `store_artifacts`; o status de sucesso corrobora a execução desses passos, mas **não substitui a inspeção/download independente dos arquivos efetivamente publicados**.
+
+**Limite de acesso:** a página autenticada de Artifacts do CircleCI não está disponível através dos conectores desta sessão; tentativa de abrir o job externamente não permitiu recuperar os arquivos. **Nenhum dos quatro artefatos foi baixado nem conferido fora do runner**, portanto ainda não há lockfiles disponíveis para commit. Não atribuir `npm ci` aprovado ou conteúdo/hash determinado sem obter seus bytes. O [PR #19](https://github.com/JoaoVittorLi/meu-financeiro/pull/19) ainda **não contém** `package-lock.json` raiz ou `mobile-push/package-lock.json`; os três pontos de instalação continuam em `npm install --package-lock=false`.
+
+**Artefatos que o usuário deve baixar em [Artifacts do job](https://app.circleci.com/workflow/5251af99-07fb-44a7-93ea-f25be9a4bf1d/job/bdd7f7cd-1a9c-4a09-9647-6fd19b7f3ced):**
+1. `MF2-B3-Lockfile-Bootstrap/desktop-package-lock.json`;
+2. `MF2-B3-Lockfile-Bootstrap/mobile-push-package-lock.json`;
+3. `MF2-B3-Lockfile-Bootstrap/SHA256SUMS.txt`;
+4. `MF2-B3-Lockfile-Bootstrap/METADATA.txt`.
+
+**Próxima ação exata:** disponibilizar nesta conversa os quatro arquivos ou seu ZIP fiel, sem renomeações, para conferir SHA256 e `METADATA` (commit `ff51444538e4c745d064f4820f680ec8b617719c`, branch exata) e revisar conteúdo/URLs/integrity. Em seguida, incorporar os dois locks autênticos no PR #19 em seus caminhos originais, mudar as instalações Linux e Windows para `npm ci`, executar os testes de desktop/SQLite/renderer/ASAR e Worker/PWA/Wrangler dry-run, rodar **somente preflight Linux** no novo SHA e finalmente remover bootstrap temporário (ou deixar desativado com decisão explícita). Nova auditoria antes de B4.
+
+**Status desta verificação:** `bootstrap Linux=SUCCESS`, **`artefatos externamente verificados=NÃO`**, `lockfiles versionados=NÃO`, `npm ci=PENDENTE`, `preflight B3 novo SHA=PENDENTE`, `G0=NAO_HOMOLOGADO`. Não houve Windows, merge, release, Cloudflare Production nem migração financeira.
