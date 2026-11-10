@@ -256,7 +256,7 @@ Não abrir novas abas para cada card, radar, chatbot, relatório ou objetivo. N�
 
 | Marco | Rodada A | Rodada B | Gate | Evidência mais recente / próximo passo |
 | --- | --- | --- | --- | --- |
-| MF2-00 | AGUARDANDO_DECISAO | NAO_INICIADO | NAO_HOMOLOGADO | **B1/C1 auditado estaticamente**: candidata `integration/mf2-baseline-candidate-20261109` SHA `7a01f1c`, código runtime igual #16; PRs divergentes #2/#3/#4/#5 comparados (UI/IA/CI presentes ou evoluídos; automação de prerelease Codespaces não transportada). **C0 Work local, CI no SHA exato, ASAR, EXE/smoke e decisão do integrador PENDENTES.** [Relatório B1](ai-context/reviews/2026-11-09-MF2-B1-BRANCH-AUDIT.md) · [Log B1](ai-context/logs/2026-11-09-MF2-B1-preservacao-e-g0.md). **Nenhuma homologação/execução anunciada.** |
+| MF2-00 | AGUARDANDO_DECISAO | NAO_INICIADO | NAO_HOMOLOGADO | **B2/C0/C2a 10/11/2026, PR #18**: candidata `7a01f1cc344e88188bc5eeea59bf2324335a051e` inalterada; PRs relevantes sem novos HEADs; Work anterior inacessível (sem recuperação); **preflight CircleCI não acionado por ausência de integração autenticada**, sem pipeline B2 e sem testes TypeScript/SQLite/renderer/ASAR/PWA/Wrangler; check Cloudflare Workers sucesso ≠ preflight; C11: Node móvel, npm sem lockfiles, correção proposta em PR posterior (novo SHA/reteste). Próximo: Config=Checkout=candidata, `run_preflight=true`, `run_windows_build=false`, comprovar SHA e logs. [Log B2](ai-context/logs/2026-11-10-MF2-B2-checkpoint-e-preflight-linux.md) · [Matriz B1](ai-context/reviews/2026-11-09-MF2-B1-BRANCH-AUDIT.md). **G0 NÃO HOMOLOGADO; Windows não autorizado nesta rodada.** |
 | MF2-01 | ANALISADO | BLOQUEADO_G0 | NAO_HOMOLOGADO | E1_CONCILIATION_REPORT, 630/632 sem comparação completa · **Rodada A: revisão estática #17, sem testes novos; decisão/execução pendentes** ([relatório](ai-context/reviews/2026-11-09-MF2-ANALYSIS.md)) |
 | MF2-02 | ANALISADO | BLOQUEADO_G1 | NAO_HOMOLOGADO | shared/finance-period-ledger.mjs já existe parcialmente · **Rodada A: revisão estática #17, sem testes novos; decisão/execução pendentes** ([relatório](ai-context/reviews/2026-11-09-MF2-ANALYSIS.md)) |
 | MF2-03 | ANALISADO | BLOQUEADO_G2 | NAO_HOMOLOGADO | U4 solicitada, ainda não publicada/comprovada · **Rodada A: revisão estática #17, sem testes novos; decisão/execução pendentes** ([relatório](ai-context/reviews/2026-11-09-MF2-ANALYSIS.md)) |
@@ -310,6 +310,12 @@ Escala de auditoria: **APROVADO / APROVADO_COM_PENDENCIAS / REPROVADO / NAO_HOMO
 
 O esforço sugerido ao Work é **Alto na primeira análise arquitetural ampla, Médio para investigações por módulo, Leve para checkpoints**. O Chat pode preparar pesquisas, priorização e prompts sem consumir Work. Consultar [WORK_PROMPT](ai-context/WORK_PROMPT.md).
 
+
+## Checkpoint MF2-00 / B2 — verificação remota de 10/11/2026
+
+**Status verificável:** C0 = Work anterior indisponível; C2a = impedido por indisponibilidade de acionamento autenticado CircleCI; C11 = risco documentado sem alteração de código; G0 = **NAO_HOMOLOGADO**. A candidata técnica `integration/mf2-baseline-candidate-20261109` permanece no SHA congelado `7a01f1cc344e88188bc5eeea59bf2324335a051e`; nenhum teste do aplicativo foi executado nesta revisão. O check `Workers Builds: meu-financeiro-push` foi sucesso, mas **não corresponde** ao preflight CircleCI. Sem link de pipeline B2 porque **nenhuma pipeline B2 foi acionada ou validada**. [Log detalhado, comandos, resultados individuais e próxima ação](ai-context/logs/2026-11-10-MF2-B2-checkpoint-e-preflight-linux.md).
+
+**Próxima ação sem alterar candidato:** no CircleCI selecionar Config e Checkout na candidata e `run_preflight=true`, `run_windows_build=false`; verificar SHA no job e anexar resultado real. Após preflight verde, decidir pin/lockfile em missão separada (novo SHA, novo preflight) e somente então solicitar autorização para Windows. Não promover Rodada B nem G0 sem evidência.
 
 ## Checkpoint MF2-00 / B1 — análise das branches antigas (09/11/2026)
 
