@@ -42,3 +42,16 @@ D0 beta.6: Linux/Windows PASS, instalador e portátil verificados, sem smoke fí
 - **Próximo estágio recomendado:** revisar/finalizar testes D1.2, obter A-D3 incremental, decidir integração visual, somente depois preparar beta.8 e executar **uma única** pipeline `run_preflight=false`, `run_windows_build=true`. Build Windows somente se Linux e smoke GUI passarem. Versionamento beta.8 reservado, NÃO aplicado.
 
 **Estado:** D1.2 EM_DESENVOLVIMENTO · G0 NAO_HOMOLOGADO · beta.6/beta.7 recuperáveis.
+
+## Checkpoint de consolidação automatizada — 10/11/2026
+
+**Contribuição funcional desta rodada, sem alterar os dados ou CSS do Argon:**
+
+1. `scripts/d1-electron-smoke.cjs`: acrescentada função `visualMatrix` executada depois da navegação, abrangendo **16 screenshots** (4 áreas: Visão Geral, Movimentações, Planejamento e Orçamentos; viewport 1366×768 ou 1920×1080; claro/escuro e `prefers-reduced-motion: reduce`/normal). O CDP deve confirmar aba ativa, breadcrumb, tema ativo, media query de movimento reduzido, largura do viewport, inexistência de overflow horizontal global e PNG não-vazio com assinatura válida. Falha real de qualquer contrato aborta o job com erro; manifesto JSON só existe após conclusão da matriz.
+2. `tests/d1-2-visual-matrix.test.cjs`: 3 regressões publicadas, com CDP sintético: 16 capturas/manifesto, overflow bloqueado, PNG inválido bloqueado. **Não** são screenshots de Electron real.
+3. `.circleci/build-windows.ps1`: no próximo build Windows **obrigar 16 PNGs e `visual-matrix.json`**; arquivos ficam em `circleci-smoke-artifacts`, separados dos arquivos `circleci-artifacts` com exatamente 2 executáveis e SHA256.txt. `.circleci/config.yml`: publicar matriz sintética em **Artifacts → MeuFinanceiro-Desktop-Smoke**, separada de **MeuFinanceiro-Windows**, sem remover qualquer teste ou gate de proveniência.
+4. Verificação GitHub: A-D3 não localizada como PR ou branch com nome `ad3` nesta rodada, assim PR #27 CSS-only A-D1/A-D2 preservado; nenhum CSS alterado, nenhuma integração cega, não há novo EXE beta.8.
+
+**Testes realmente executados nesta rodada:** 3/3 da função `visualMatrix` **exata** publicada no blob GitHub `e295401f1479969b0044ff6c5c3fd84a2c126db9`, extraída e executada no runtime V8 com `CDP`, `fs` e `Buffer` sintéticos: 16 capturas/16 navegações/manifesto gerados; overflow global rejeitado; imagem inválida rejeitada. Essa prova é **unidade de lógica com simulações**, não garante importação Node, GUI Electron ou teste no Windows. **Três testes do novo arquivo `tests/d1-2-visual-matrix.test.cjs` ainda não foram executados por Node no checkout completo.** Os 4/4 testes locais anteriores de isolamento de perfil/SQL com Node 22.16.0 permanecem como evidência específica anterior, sem reexecução nesta rodada. **Sem CircleCI da D1.2**; não promover para VALIDADO ou PUBLICADO.
+
+**Próximo gate:** manter D1.2 como EM_DESENVOLVIMENTO enquanto A-D3 estiver indisponível e a suíte completa não tiver sido rodada; quando candidata beta.8 relevante estiver pronta, executar **uma única** pipeline `run_preflight=false` / `run_windows_build=true` no SHA final. O CI executará Linux → smoke Electron Windows → empacotamento com proveniência e hash. Conferir PNGs e erros visuais antes de declarar homologação. Preservar beta.6/beta.7. Sem operação com dados pessoais.
