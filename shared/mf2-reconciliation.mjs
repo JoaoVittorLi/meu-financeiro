@@ -105,6 +105,17 @@ function normalizeSnapshot(input,side,issues){
     manualShape,side,'manual',issues);
   const o=indexed(raw.overlays,r=>[id(r.account_id),id(r.external_id)],
     overlayShape,side,'overlay',issues);
+  // Referential integrity is reported, never repaired or automatically linked.
+  for(const [k,r] of t.map){
+    if(!a.map.has(key([r.account_id])))
+      issues.push(issue('missing_account_reference','bank',k,'account_id',side,
+        'transaction_account_not_in_snapshot'));
+  }
+  for(const k of o.map.keys()){
+    if(!t.map.has(k))
+      issues.push(issue('orphan_personal_overlay','overlay',k,'identity',side,
+        'overlay_transaction_not_in_snapshot'));
+  }
   return {accounts:a,transactions:t,manual:m,overlays:o,
     metadata:raw.metadata,counts:{
       accounts:raw.accounts.length,bank:raw.transactions.length,
