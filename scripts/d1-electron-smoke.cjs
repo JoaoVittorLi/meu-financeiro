@@ -12,6 +12,17 @@ const project=path.resolve(__dirname,'..');
 const ITEM='11111111-1111-4111-8111-111111111111';
 const ACCOUNT='22222222-2222-4222-8222-222222222222';
 const settings={opening:0,income:0,fixed:0,existing:0,reserve:0};
+// Single source of truth for all eight Windows areas and the visual QA matrix.
+const SMOKE_VIEWS=Object.freeze([
+ 'Visão geral','Movimentações','Planejamento','Orçamentos',
+ 'Minhas contas','Simular compra','Inteligência','Configurações'
+]);
+const SMOKE_PRESETS=Object.freeze([
+ {width:1366,height:768,theme:'light',motion:'no-preference'},
+ {width:1366,height:768,theme:'dark',motion:'reduce'},
+ {width:1920,height:1080,theme:'light',motion:'reduce'},
+ {width:1920,height:1080,theme:'dark',motion:'no-preference'}
+]);
 const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function availablePort(){
  const server=net.createServer();
@@ -126,7 +137,7 @@ async function closeCleanly(running){
  try{running.cdp.socket.close()}catch{}
 }
 async function checkNavigation(cdp){
- const pages=['Visão geral','Movimentações','Planejamento','Orçamentos','Minhas contas','Simular compra','Configurações'];
+ const pages=SMOKE_VIEWS;
  for(const label of pages){
   const result=await evaluate(cdp,
    'const label='+JSON.stringify(label)+';'+
@@ -144,13 +155,8 @@ async function visualMatrix(cdp){
  const output=process.env.MF_SMOKE_OUTPUT_DIR||
   fs.mkdtempSync(path.join(os.tmpdir(),'mf-d1-synthetic-visual-'));
  fs.mkdirSync(output,{recursive:true});
- const cases=[
-  {width:1366,height:768,theme:'light',motion:'no-preference'},
-  {width:1366,height:768,theme:'dark',motion:'reduce'},
-  {width:1920,height:1080,theme:'light',motion:'reduce'},
-  {width:1920,height:1080,theme:'dark',motion:'no-preference'}
- ];
- const pages=['Visão geral','Movimentações','Planejamento','Orçamentos'];
+ const cases=SMOKE_PRESETS;
+ const pages=SMOKE_VIEWS;
  await cdp.send('Page.enable');
  const rows=[];
  for(const cfg of cases){
@@ -183,7 +189,10 @@ async function visualMatrix(cdp){
    assert(state.scrollWidth<=state.width+2,
     'Overflow horizontal global em '+label+' '+cfg.width+': '+state.scrollWidth+'/'+state.width);
    const safe=({ 'Visão geral':'overview','Movimentações':'transactions',
-      'Planejamento':'planning','Orçamentos':'budgets'})[label];
+      'Planejamento':'planning','Orçamentos':'budgets',
+      'Minhas contas':'accounts','Simular compra':'simulator',
+      'Inteligência':'intelligence','Configurações':'settings'})[label];
+   assert(safe,'Área desconhecida na matriz: '+label);
    const name=[cfg.width+'x'+cfg.height,cfg.theme,cfg.motion,safe].join('-')+'.png';
    const shot=await cdp.send('Page.captureScreenshot',{
     format:'png',captureBeyondViewport:false,fromSurface:true
@@ -255,4 +264,4 @@ async function smoke(){
  }
 }
 if(require.main===module)smoke().catch(e=>{console.error('FAIL REAL ELECTRON D1.2:',e);process.exitCode=1});
-module.exports={availablePort,createSyntheticProfile,awaitTarget,checkNavigation,visualMatrix};
+module.exports={availablePort,createSyntheticProfile,awaitTarget,checkNavigation,visualMatrix,SMOKE_VIEWS,SMOKE_PRESETS};

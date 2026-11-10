@@ -95,8 +95,21 @@ Assert-Success 'Smoke Electron D1.2 real e isolado'
 if (!(Test-Path -LiteralPath (Join-Path $env:MF_SMOKE_OUTPUT_DIR 'visual-matrix.json'))) {
   throw 'Matriz de smoke Electron não foi gravada.'
 }
-if (@(Get-ChildItem -LiteralPath $env:MF_SMOKE_OUTPUT_DIR -File -Filter '*.png').Count -ne 16) {
-  throw 'Smoke Electron: esperadas 16 capturas de interface sintética.'
+$matrixFile = Join-Path $env:MF_SMOKE_OUTPUT_DIR 'visual-matrix.json'
+$matrix = @(Get-Content -LiteralPath $matrixFile -Raw | ConvertFrom-Json)
+$images = @(Get-ChildItem -LiteralPath $env:MF_SMOKE_OUTPUT_DIR -File -Filter '*.png')
+$expectedScreenshots = 32  # 8 áreas x 4 combinações de resolução/tema/movimento
+if ($matrix.Count -ne $expectedScreenshots -or $images.Count -ne $expectedScreenshots) {
+  throw "Smoke Electron: esperadas $expectedScreenshots capturas e entradas no manifesto; encontrados $($images.Count) PNGs e $($matrix.Count) registros."
+}
+$uniqueScreenshots = @($matrix | Select-Object -ExpandProperty screenshot -Unique)
+if ($uniqueScreenshots.Count -ne $expectedScreenshots) {
+  throw 'Smoke Electron: nomes duplicados na matriz visual.'
+}
+foreach ($entry in $matrix) {
+  if (!(Test-Path -LiteralPath (Join-Path $env:MF_SMOKE_OUTPUT_DIR $entry.screenshot))) {
+    throw "Smoke Electron: imagem ausente no manifesto: $($entry.screenshot)"
+  }
 }
 
 Write-Host 'Executando comando oficial: npm run dist:windows...'
