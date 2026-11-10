@@ -57,3 +57,20 @@ D0 beta.6: Linux/Windows PASS, instalador e portátil verificados, sem smoke fí
 **Próximo gate:** manter D1.2 como EM_DESENVOLVIMENTO enquanto A-D3 estiver indisponível e a suíte completa não tiver sido rodada; quando candidata beta.8 relevante estiver pronta, executar **uma única** pipeline `run_preflight=false` / `run_windows_build=true` no SHA final. O CI executará Linux → smoke Electron Windows → empacotamento com proveniência e hash. Conferir PNGs e erros visuais antes de declarar homologação. Preservar beta.6/beta.7. Sem operação com dados pessoais.
 
 **Regressão de configuração adicional:** `tests/d1-2-electron-contract.test.cjs` ganhou contrato que garante 16 PNGs exigidos no Windows, manifesto da matriz, publicação dos screenshots separada dos instaladores, PNG válido, ambas as resoluções e preferência de movimento. Código publicado, **teste Node no checkout ainda não executado**; a bateria de lógica 3/3 V8 citada acima é distinta desse teste.
+
+## Regressões financeiras reais sobre ASAR aprovado — 10/11/2026
+
+**Proveniência independente:** o usuário enviou o portátil beta.7, SHA-256 `a9bb6e461f11f1a7488680e0506e6e6091f3f0fd4c4580b319c9d8844e810723`. O ASAR extraído do instalador portátil possui SHA-256 `75105078e54def5aab7993a4cc2ab4c498ee05f62eaf8c42e21670a44f228d70`, correspondente ao manifesto CircleCI de beta.7. Foram extraídos `electron/db.cjs`, `electron/planning.cjs`, `electron/recovery.cjs` e dependências; a compilação Electron/GUI não foi executada.
+
+**Três falhas concretas reproduzidas ANTES do patch:**
+1. Duas linhas com `external_id` idêntico na mesma conta/lote eram aceitas; segundo valor substituía o primeiro e `totalCount` contava 2 apesar de haver só uma linha financeira.
+2. Duas entradas com o mesmo `account.id` no mesmo lote eram aceitas; nome/saldo podiam depender da ordem e mascarar divergências.
+3. `account.id` já pertencente a outro `bank_items.item_id` era aceito; a importação atualizava os dados da conta pertencente à primeira conexão, sem mudar a coluna `item_id`, misturando origens.
+
+**Correção mínima em `electron/db.cjs` (PR #28):** validação pré-transação com `seenAccounts`, `seenTransactions` por conta e consulta de propriedade `bank_accounts.item_id` por `account_id`. Em qualquer lote suspeito lança erro ANTES do `BEGIN IMMEDIATE`. Nenhum dado do fornecedor foi sobrescrito. A regra permite `external_id` repetido quando os `account_id` diferem. O ajuste anterior da proteção de orçamento explícito R$ 0 permanece incorporado.
+
+**4 regressões em `tests/d1-2-bank-batch-integrity.test.cjs`:** duplicidade na conta, duplicidade da conta, conflito de conexão e duplicidade de ID entre contas distintas (válida). O blob GitHub do teste publicado é idêntico ao arquivo executado localmente (`30bfc1c6c5cdf97f46917a02d399abacb4e3dbda`); o blob `electron/db.cjs` corrigido remoto também coincide com o módulo executado (`fbf70e193719f21d3c44ad107cd080bf2de3ea4b`). **Resultado da mesma suíte antes do patch: 0/3 PASS**, após patch, com cenário de compatibilidade adicional: **4/4 PASS**.
+
+**Bateria consolidada real em Node v22.16.0 / `node:sqlite`: 7/7 PASS** — quatro testes exatos do blob remoto, mais três cenários do teste `tests/d1-2-desktop-integration.test.cjs` recriados com as mesmas operações/asserções (formatação não idêntica): orçamento zero após reinício, perfil real/demo + banco/categorias/vínculo após reinício e parcelas+backup/restore com cópia inválida. TAP reproduzível na sessão: `/mnt/data/d1-2-consolidated-sqlite-7.tap`. **Não alegar execução completa do `npm run test:db`** nem testes de UI Electron; ambos ficam para gate beta.8.
+
+**Candidata Premium de staging:** branch `feat/mf2-beta8-premium-staging-20261110`, SHA `1f8daab6c961e128251afd5c2cbb26b857f4bc27`, descendente do commit de código funcional D1.2 `7a57cdd979ad764914c93a1a136b3dc0a443aa14`; diff só de `app/overview.css` e `app/operations.css` dos PRs #23/#25 via PR #27. **Não incorporar A-D3 por antecipação**, não promover CSS sem smoke real. Branch de staging não é PR/release nem sucessora imediata da versão beta.7. Não gerar beta.8 ainda.
