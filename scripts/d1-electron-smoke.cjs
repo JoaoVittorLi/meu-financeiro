@@ -101,7 +101,16 @@ async function start(profile){
  try{
   const endpoint=await awaitTarget(port,running.child),cdp=await connect(endpoint);
   await cdp.send('Runtime.enable');
-  return {...running,cdp};
+  // A Chrome tab exists before React and preload have finished loading.
+  // Assert actual bridge + DOM readiness instead of relying on a sleep.
+  for(let i=0;i<80;i++){
+   try{
+    const ready=await evaluate(cdp,'return !!(window.financeDesktop && document.querySelector(\"button.nav-item[aria-label=\\\"Visão geral\\\"]\"))');
+    if(ready)return {...running,cdp};
+   }catch{}
+   await delay(250);
+  }
+  throw Error('Renderer/preload não ficaram prontos em 20 s');
  }catch(error){
   running.child.kill();
   throw Error(error.message+'; Electron output: '+running.logs());
@@ -124,7 +133,7 @@ async function checkNavigation(cdp){
    'const find=()=>[...document.querySelectorAll("button.nav-item")].find(b=>b.getAttribute("aria-label")===label);'+
    'const b=find();if(!b)throw Error("Botão ausente: "+label);b.click();'+
    'await new Promise(r=>setTimeout(r,120));'+
-   'return {selected:find()?.getAttribute("aria-current"),visible:document.body.innerText.includes(label)};');
+   'return {selected:find()?.getAttribute("aria-current"),visible:document.querySelector(".mf-workspace-bar strong")?.textContent===label};');
   assert.equal(result.selected,'page','Navegação não selecionou '+label);
   assert.equal(result.visible,true,'Navegação não exibiu '+label);
  }
