@@ -10,7 +10,9 @@ const LIMIT_MS=5000;
 const okKeys=(v,fields)=>v&&typeof v==='object'&&!Array.isArray(v)&&Object.keys(v).every(x=>fields.includes(x));
 const reject=code=>{throw new ProtocolError(code)};
 const commonHeaders={'content-type':'application/json; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff'};
-const statusFor={unauthorized:401,session_expired:401,forbidden:403,replay_detected:409,
+const statusFor={feature_disabled:503,invalid_origin:403,invalid_path:404,
+  method_not_allowed:405,invalid_content_type:415,internal_error:500,
+  unauthorized:401,session_expired:401,forbidden:403,replay_detected:409,
   replay_capacity_reached:429,unsupported_version:426,payload_too_large:413,
   non_synthetic_snapshot:422,non_synthetic_record:422,invalid_synthetic_rows:422,
   missing_fixture_collection:422,diagnostic_failed:422,unsafe_diagnostic:422};

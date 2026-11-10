@@ -77,17 +77,17 @@ test('incompatible protocol versions are rejected by handler with 426',async()=>
 test('reject path, query, different origin and forbidden method',async()=>{
  const h=setup();const raw=req(h.session);
  const query=new Request(ORIGIN+PATH+'?id=123',{method:'POST',headers:raw.headers,body:JSON.stringify(body(h.session))});
- assert.equal((await h.handler(query)).status,400);
+ assert.equal((await h.handler(query)).status,404);
  const off=new Request('https://other.invalid'+PATH,{method:'POST',headers:raw.headers,body:JSON.stringify(body(h.session))});
- assert.equal((await h.handler(off)).status,400);
+ assert.equal((await h.handler(off)).status,403);
  const get=new Request(ORIGIN+PATH,{method:'GET',headers:raw.headers});
- assert.equal((await h.handler(get)).status,400);
+ assert.equal((await h.handler(get)).status,405);
 });
 test('reject missing origin or synthetic gate headers and invalid MIME',async()=>{
  const h=setup();const noGate=req(h.session,{}, {headers:{'x-mf2-test-mode':'wrong'}});
- assert.equal((await h.handler(noGate)).status,400);
+ assert.equal((await h.handler(noGate)).status,403);
  const mime=req(h.session,{}, {headers:{'content-type':'text/plain'}});
- assert.equal((await h.handler(mime)).status,400);
+ assert.equal((await h.handler(mime)).status,415);
 });
 test('request JSON with unexpected fields or write commands is blocked',async()=>{
  const h=setup();const res=await h.handler(req(h.session,{write:true}));

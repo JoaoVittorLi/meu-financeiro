@@ -16,7 +16,7 @@
 | `node --check shared/mf2-b2-http-transport.cjs` | PASS | Node v22.16.0 local |
 | `node --test tests/mf2-b2-http-transport.test.cjs` | **19/19 PASS** | Runner Node real v22.16.0; testes HTTP loopback |
 | `node --test tests/mf2-b2-http-transport.test.cjs tests/mf2-b2-synthetic-transport.test.cjs` | **38/38 PASS** | Node real v22.16.0, duração 393 ms; nenhum dado real |
-| Integridade de 4 blobs Git de arquivos locais testados/publicados | PASS | `shared/mf2-b2-http-transport.cjs` `c3c41defe03d6103897e0c3eab3b21397161cbc9`, `tests/mf2-b2-http-transport.test.cjs` `3ea1cbadd8236f7525ff2c6d28a56b7a7ece3f84`; CLI/teste B1 publicados byte a byte |
+| Integridade de 4 blobs Git de arquivos locais testados/publicados | PASS | `shared/mf2-b2-http-transport.cjs` `11623e425ce7f396caf96be287345edd8dffc158`, `tests/mf2-b2-http-transport.test.cjs` `46ab6985563abcbe0504cd4afea57f398a99515d`; CLI/teste B1 publicados byte a byte |
 | Motor B1 real com fixtures 1×2 do demo | PASS em V8 | `only_one_source=1`, fluxo POSTED/PENDING e flags false; **não é HTTP integrado Node** |
 | `node --test tests/mf2-b2-http-b1-integration.test.cjs` | NÃO EXECUTADO | Depende do checkout completo da branch B1 |
 | `node scripts/mf2-b2-http-demo.cjs` | NÃO EXECUTADO | Mesmo motivo |
@@ -29,3 +29,5 @@
 **Pipeline final exigida:** CircleCI → Trigger Pipeline, Config Branch = Checkout Branch = `feat/mf2-01-b2-protected-transport`, `run_preflight=true`, `run_windows_build=false`. `preflight_on_demand` → `preflight_linux`. Conferir `CIRCLE_SHA1` igual ao HEAD publicado e logs das etapas B1 explícita, `npm run test:db` (inclui novos testes B2-B0), TypeScript, compile, ASAR, Worker e Wrangler dry-run. **Nenhum build Windows**.
 
 **Próxima decisão:** avaliar resultados do SHA final do PR #21; em seguida, se P0/P1 ausentes, autorizar **B2-B1 Preview protegido com fixtures exclusivamente sintéticas** após auditoria Argon dirigida. Sem merge, release, migração, fonte cloud canônica ou G1 homologado.
+
+**Ajuste P2 de semântica HTTP:** códigos coerentes agora incluem `503 feature_disabled`, `403 invalid_origin`, `404 invalid_path`, `405 method_not_allowed`, `415 invalid_content_type` e `500 internal_error`. Novos testes de status efetivamente reexecutados após patch: **38/38 PASS** sob Node v22.16.0 local. Blobs atuais comprovados pelos hashes Git acima; preflight CircleCI do novo SHA ainda pendente.
