@@ -1,6 +1,6 @@
-/* U2 / A-D2: Movimentações Desktop Premium & Motion Design (1366x768 & 1920x1080).
-   Base: commit a4d88ced28c59b21520f4d67a51373cd71bdc8a2 (app/operations.css original SHA256 f4058abe...)
-   Preserva 100% dos seletores de Movimentações (.u2-transactions) e Planejamento (.u2-planning). */
+/* U2 / A-D2 & A-D3: Movimentações e Planejamento Desktop Premium & Motion Design (1366x768 & 1920x1080).
+   Base A-D2 (app/operations.css): commit a49d05065a86aa04f2c7c82f9cd2e45b7fb93ad3 (PR #25, SHA256 fe818b45...)
+   Preserva 100% da A-D2 (.u2-transactions) e evolui Planejamento (.u2-planning) na A-D3. */
 .u2-shell {
   --u2-accent: #1f7a63;
   --u2-accent-strong: #155e4b;
@@ -17,6 +17,7 @@
   --u2-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   --u2-dur-micro: 140ms;
   --u2-dur-panel: 250ms;
+  --u2-dur-chart: 320ms;
 }
 
 [data-theme="dark"] .u2-shell {
@@ -32,7 +33,7 @@
 }
 
 /* ==========================================================================
-   KEYFRAMES — MOTION DESIGN FUNCIONAL PARA OPERAÇÕES (120ms a 300ms)
+   KEYFRAMES — MOTION DESIGN FUNCIONAL PARA OPERAÇÕES E PLANEJAMENTO (120ms a 320ms)
    ========================================================================== */
 @keyframes u2CardReveal {
   from {
@@ -86,6 +87,39 @@
   to {
     opacity: 1;
     transform: translateX(0);
+  }
+}
+
+@keyframes u2ViewSwitch {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes u2SelectedDayReveal {
+  from {
+    opacity: 0;
+    transform: translateX(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes u2ProjectionReveal {
+  from {
+    clip-path: inset(-10px 100% -10px -10px);
+    opacity: 0.35;
+  }
+  to {
+    clip-path: inset(-10px -10px -10px -10px);
+    opacity: 1;
   }
 }
 
@@ -640,18 +674,22 @@
   transform: scale(0.95);
 }
 
-/* Drawer Contextual de Detalhes da Movimentação */
-.mf-detail-drawer {
+/* Drawer Contextual de Detalhes da Movimentação e Modal de Planejamento */
+.mf-detail-drawer,
+.p-editor-backdrop .p-plan-modal {
   animation: u2DrawerSlideIn 240ms var(--u2-ease-out);
 }
 
 /* ==========================================================================
-   PLANEJAMENTO (.u2-planning) — PRESERVADO 100% PARA A MISSÃO A-D3
+   A-D3 — PLANEJAMENTO PREMIUM: RADAR 7 DIAS, AGENDA, CALENDÁRIO & PROJEÇÃO
    ========================================================================== */
 .u2-planning {
+  display: flex;
+  flex-direction: column;
   gap: 18px;
 }
 
+/* Hero e Ações Superiores de Planejamento */
 .u2-planning .p-hero {
   padding: 0 0 4px;
   background: transparent;
@@ -659,159 +697,273 @@
   box-shadow: none;
   gap: 16px;
   align-items: center;
+  animation: u2CardReveal var(--u2-dur-panel) var(--u2-ease-out) both;
+}
+
+.u2-planning .p-hero .micro-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  color: var(--u2-accent);
+  text-transform: uppercase;
 }
 
 .u2-planning .p-hero h2 {
-  font-size: 21px;
-  font-weight: 600;
+  font-size: clamp(19px, 1.8vw, 22px);
+  font-weight: 650;
   letter-spacing: -0.5px;
-  margin: 6px 0;
+  margin: 4px 0 6px;
+  color: var(--text);
 }
 
 .u2-planning .p-hero p {
-  font-size: 12px;
+  font-size: 12.5px;
+  line-height: 1.55;
   color: var(--muted);
+  margin: 0;
 }
 
 .u2-planning .p-hero-actions {
+  display: flex;
+  align-items: center;
   gap: 8px;
 }
 
 .u2-planning .p-hero-actions button {
   font-size: 12px;
+  font-weight: 550;
+  transition: transform 120ms var(--u2-ease-out),
+              box-shadow var(--u2-dur-micro) var(--u2-ease-out),
+              background var(--u2-dur-micro) var(--u2-ease-out),
+              border-color var(--u2-dur-micro) var(--u2-ease-out);
 }
 
-.u2-planning .micro-label {
-  font-size: 10px;
-  letter-spacing: 1px;
-  color: var(--muted);
+.u2-planning .p-hero-actions button:active {
+  transform: scale(0.97);
 }
 
+/* Painel Radar dos Próximos 7 Dias (.p-upcoming) */
 .u2-planning .p-upcoming {
-  padding: 18px 20px;
-  background: var(--surface);
+  padding: 18px 22px;
+  background: linear-gradient(165deg, var(--surface) 0%, var(--surface2) 100%);
   border: 1px solid var(--border);
-  border-radius: 14px;
-  box-shadow: none;
+  border-top: 3px solid var(--u2-accent);
+  border-radius: var(--u2-radius-panel);
+  box-shadow: var(--u2-card-shadow);
+  animation: u2CardReveal var(--u2-dur-panel) var(--u2-ease-out) 35ms both;
 }
 
 .u2-planning .p-upcoming .p-section-heading {
-  margin-bottom: 8px;
+  margin-bottom: 12px;
+  align-items: baseline;
 }
 
 .u2-planning .p-section-heading h2 {
-  font-size: 15px;
-  font-weight: 600;
-  letter-spacing: -0.2px;
+  font-size: 15.5px;
+  font-weight: 650;
+  letter-spacing: -0.25px;
+  color: var(--text);
 }
 
 .u2-planning .p-section-heading p {
-  font-size: 11px;
+  font-size: 11.5px;
   line-height: 1.6;
   color: var(--muted);
 }
 
 .u2-planning .p-upcoming .p-section-heading > strong {
-  font-size: 20px;
-  font-weight: 600;
+  font-size: clamp(18px, 1.7vw, 22px);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.45px;
+  color: var(--text);
+  animation: u2ValueRefresh 200ms var(--u2-ease-out);
 }
 
 .u2-planning .p-upcoming-list {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(215px, 1fr));
+  gap: 10px;
 }
 
 .u2-planning .p-upcoming-row {
+  position: relative;
   border: 1px solid var(--border);
-  background: var(--surface2);
-  border-radius: 9px;
-  padding: 10px 12px;
+  background: var(--surface);
+  border-radius: 11px;
+  padding: 12px 14px;
   gap: 10px;
   min-width: 0;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+  transition: transform var(--u2-dur-micro) var(--u2-ease-out),
+              border-color var(--u2-dur-micro) var(--u2-ease-out),
+              box-shadow var(--u2-dur-micro) var(--u2-ease-out),
+              background var(--u2-dur-micro) var(--u2-ease-out);
+}
+
+.u2-planning .p-upcoming-row:hover {
+  transform: translateY(-2px);
+  border-color: var(--subtle);
+  box-shadow: var(--u2-card-shadow-hover), inset 3px 0 0 var(--u2-accent);
 }
 
 .u2-planning .p-upcoming-row b {
-  font-size: 11px;
-  font-weight: 500;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
 }
 
 .u2-planning .p-upcoming-row small {
-  font-size: 10px;
+  font-size: 10.5px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
 }
 
 .u2-planning .p-upcoming-row > strong {
-  font-size: 12px;
-  font-weight: 500;
+  font-size: 13px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
+  color: var(--text);
 }
 
 .u2-planning .p-upcoming-empty {
-  padding: 5px 0;
+  padding: 8px 12px;
   margin: 0;
   font-size: 12px;
   line-height: 1.6;
   color: var(--muted);
+  border-radius: 9px;
+  background: var(--surface);
+  border: 1px dashed var(--border);
 }
 
+/* Resumo Mensal e Alertas de Projeção/Saldo (.p-summary & .p-warning) */
 .u2-planning .p-summary {
   margin: 0;
   border: 0;
   background: transparent;
   overflow: visible;
-  align-items: start;
+  align-items: stretch;
   gap: 14px;
 }
 
 .u2-planning .p-warning {
   font-size: 12px;
-  line-height: 1.6;
-  border-radius: 9px;
+  line-height: 1.65;
+  padding: 12px 16px;
+  border-radius: 11px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--warning);
+  background: var(--surface2);
+  color: var(--text);
+  box-shadow: var(--u2-card-shadow);
+  animation: u2BannerSlideIn 220ms var(--u2-ease-out) both;
 }
 
+/* ==========================================================================
+   PAINEL PRINCIPAL DO LEDGER DE PLANEJAMENTO (AGENDA / CALENDÁRIO / PROJEÇÃO)
+   ========================================================================== */
 .u2-planning .p-ledger {
   border: 1px solid var(--border);
   background: var(--surface);
-  border-radius: 14px;
-  box-shadow: none;
-  padding: 20px;
+  border-radius: var(--u2-radius-panel);
+  box-shadow: var(--u2-card-shadow);
+  padding: 22px;
   min-width: 0;
+  animation: u2CardReveal 280ms var(--u2-ease-out) 100ms both;
 }
 
 .u2-planning .p-ledger > .p-section-heading {
-  margin-bottom: 18px;
-  align-items: flex-start;
+  margin-bottom: 16px;
+  align-items: center;
 }
 
 .u2-planning .p-ledger-navigation {
-  gap: 9px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .u2-planning .p-month-arrows {
-  gap: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px;
+  border-radius: 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+}
+
+.u2-planning .p-month-arrows button {
+  transition: background var(--u2-dur-micro) var(--u2-ease-out),
+              color var(--u2-dur-micro) var(--u2-ease-out),
+              transform 120ms var(--u2-ease-out);
+}
+
+.u2-planning .p-month-arrows button:hover {
+  background: var(--surface);
+  color: var(--text);
+}
+
+.u2-planning .p-month-arrows button:active {
+  transform: scale(0.92);
 }
 
 .u2-planning .p-month-arrows strong {
-  font-size: 12px;
-  min-width: 100px;
+  font-size: 12.5px;
+  font-weight: 600;
+  min-width: 112px;
   text-align: center;
+  color: var(--text);
 }
 
 .u2-planning .p-count {
-  font-size: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
 }
 
+/* Barra de Busca e Filtros da Agenda (.p-ledger-tools) */
 .u2-planning .p-ledger-tools {
   margin-bottom: 14px;
   gap: 10px;
 }
 
 .u2-planning .p-ledger-tools .form-control {
-  font-size: 12px;
+  font-size: 12.5px;
+  border-radius: 10px;
+  transition: border-color var(--u2-dur-micro) var(--u2-ease-out),
+              box-shadow var(--u2-dur-micro) var(--u2-ease-out);
+}
+
+.u2-planning .p-ledger-tools .form-control:hover {
+  border-color: var(--subtle);
+}
+
+.u2-planning .p-ledger-tools .form-control:focus-visible {
+  border-color: var(--focus, var(--u2-accent));
+  box-shadow: 0 0 0 3px var(--u2-focus-ring);
 }
 
 .u2-planning .p-ledger > .u2-view-tabs {
   margin-bottom: 18px;
+}
+
+/* ==========================================================================
+   VISÃO 1: AGENDA CRONOLÓGICA COM STICKY DAY HEADERS & SPOTLIGHT FOCUS
+   ========================================================================== */
+.u2-planning .u2-agenda {
+  width: 100%;
+  min-width: 0;
+  animation: u2ViewSwitch 230ms var(--u2-ease-out);
 }
 
 .u2-planning .p-ledger-list {
@@ -821,73 +973,116 @@
   overflow: visible;
 }
 
-.u2-day-group h3 {
-  font-size: 11px;
-  font-weight: 500;
-  display: flex;
-  gap: 12px;
-  justify-content: space-between;
-  margin: 0;
-  background: var(--surface2);
-  padding: 10px 12px;
-  border-radius: 6px;
-  color: var(--muted);
-}
-
-.u2-day-group h3 > span {
-  font-weight: 400;
+.u2-day-group {
+  animation: u2CardReveal 220ms var(--u2-ease-out) both;
 }
 
 .u2-day-group + .u2-day-group {
   margin-top: 16px;
 }
 
+.u2-day-group h3 {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  font-size: 11.5px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  justify-content: space-between;
+  margin: 0 0 2px;
+  background: var(--u2-header-glass);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  padding: 9px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--u2-accent);
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.u2-day-group h3 > span {
+  font-weight: 500;
+  color: var(--muted);
+}
+
+/* Spotlight Focus nas linhas de cada dia da Agenda */
+.u2-day-group:hover .p-ledger-row:not(:hover):not(:focus-visible) {
+  opacity: 0.74;
+}
+
 .u2-planning .p-ledger-row {
   border: 0;
   border-bottom: 1px solid var(--border);
-  border-radius: 0;
+  border-radius: 9px;
   background: transparent;
   box-shadow: none;
-  padding: 14px 5px;
-  grid-template-columns: 36px minmax(130px, 1fr) 85px 80px minmax(105px, auto) 18px;
+  padding: 13px 10px;
+  grid-template-columns: 36px minmax(130px, 1fr) 88px 86px minmax(110px, auto) 18px;
   gap: 12px;
   text-align: left;
   width: 100%;
   min-width: 0;
+  align-items: center;
+  transition: background var(--u2-dur-micro) var(--u2-ease-out),
+              opacity var(--u2-dur-micro) var(--u2-ease-out),
+              transform var(--u2-dur-micro) var(--u2-ease-out),
+              box-shadow var(--u2-dur-micro) var(--u2-ease-out);
 }
 
-.u2-planning .p-ledger-row:hover {
+.u2-planning .p-ledger-row:hover,
+.u2-planning .p-ledger-row:focus-visible {
   background: var(--surface2);
+  transform: translateX(2px);
+  box-shadow: inset 3px 0 0 var(--u2-accent);
 }
 
 .u2-planning .p-ledger-icon {
   width: 34px;
   height: 34px;
   border-radius: 10px;
-  font-size: 17px;
+  font-size: 16px;
+  border: 1px solid var(--border);
+  transition: transform var(--u2-dur-micro) var(--u2-ease-spring),
+              background var(--u2-dur-micro) ease;
+}
+
+.u2-planning .p-ledger-row:hover .p-ledger-icon {
+  transform: scale(1.07);
+  background: var(--surface);
 }
 
 .u2-planning .p-ledger-name strong {
-  font-size: 12px;
-  font-weight: 500;
-  line-height: 1.5;
+  font-size: 12.5px;
+  font-weight: 550;
+  line-height: 1.45;
+  color: var(--text);
 }
 
 .u2-planning .p-ledger-name small {
-  font-size: 10px;
-  line-height: 1.6;
+  font-size: 10.5px;
+  line-height: 1.55;
   overflow-wrap: anywhere;
+  color: var(--muted);
 }
 
 .u2-planning .p-ledger-date {
   font-size: 11px;
+  font-variant-numeric: tabular-nums;
   color: var(--muted);
 }
 
 .u2-planning .p-chip {
-  font-size: 10px;
-  padding: 4px 7px;
+  font-size: 10.5px;
+  font-weight: 550;
+  padding: 4px 8px;
+  border-radius: 7px;
   justify-self: start;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  transition: border-color var(--u2-dur-micro) ease, background var(--u2-dur-micro) ease;
 }
 
 .u2-planning .p-ledger-row .p-chip {
@@ -898,131 +1093,238 @@
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 4px;
+  gap: 3px;
   white-space: nowrap;
 }
 
 .u2-ledger-amount strong {
-  font-size: 12px;
-  font-weight: 500;
+  font-size: 12.5px;
+  font-weight: 650;
   font-variant-numeric: tabular-nums;
+  color: var(--text);
 }
 
 .u2-ledger-amount small {
   font-size: 10px;
   color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.u2-planning .p-row-arrow {
+  transition: transform var(--u2-dur-micro) var(--u2-ease-out),
+              color var(--u2-dur-micro) ease;
+}
+
+.u2-planning .p-ledger-row:hover .p-row-arrow {
+  transform: translateX(3px);
+  color: var(--text);
 }
 
 .u2-planning .p-empty-list {
-  padding: 28px 14px;
+  padding: 32px 16px;
   text-align: center;
-  font-size: 12px;
+  font-size: 12.5px;
   color: var(--muted);
+  border-radius: 12px;
+  border: 1px dashed var(--border);
+  background: var(--surface2);
+  margin: 8px 0;
 }
 
+/* ==========================================================================
+   VISÃO 2: CALENDÁRIO MENSAL INTERATIVO (HEATMAP DE DENSIDADE DE VENCIMENTOS)
+   ========================================================================== */
 .u2-calendar-week,
 .u2-calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 5px;
+  gap: 6px;
 }
 
 .u2-calendar-week {
-  font-size: 10px;
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
   color: var(--muted);
   text-align: center;
   margin: 14px 0 8px;
 }
 
+.u2-calendar-grid {
+  animation: u2ViewSwitch 240ms var(--u2-ease-out);
+}
+
 .u2-calendar-grid button {
-  min-height: 66px;
+  position: relative;
+  min-height: 72px;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 8px;
+  justify-content: space-between;
+  gap: 6px;
   border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 10px;
+  border-radius: 10px;
+  padding: 10px 11px;
   background: var(--surface);
   color: var(--text);
   cursor: pointer;
   font-family: inherit;
+  text-align: left;
+  transition: transform var(--u2-dur-micro) var(--u2-ease-out),
+              border-color var(--u2-dur-micro) var(--u2-ease-out),
+              background var(--u2-dur-micro) var(--u2-ease-out),
+              box-shadow var(--u2-dur-micro) var(--u2-ease-out);
+}
+
+/* Sinalizador visual nos dias que possuem compromissos (button:has(small)) */
+.u2-calendar-grid button:has(small) {
+  border-bottom: 2.5px solid var(--u2-accent-border);
+  background: linear-gradient(180deg, var(--surface) 0%, var(--surface2) 100%);
+}
+
+.u2-calendar-grid button:hover {
+  transform: translateY(-2px);
+  border-color: var(--subtle);
+  background: var(--surface2);
+  box-shadow: var(--u2-card-shadow);
+}
+
+.u2-calendar-grid button:active {
+  transform: scale(0.98);
 }
 
 .u2-calendar-grid button[aria-pressed="true"] {
-  background: var(--surface2);
-  border-color: var(--text);
+  background: var(--u2-selected-row);
+  border-color: var(--u2-accent);
+  box-shadow: 0 0 0 1px var(--u2-accent), var(--u2-card-shadow);
 }
 
 .u2-calendar-grid b {
-  font-size: 12px;
-  font-weight: 500;
+  font-size: 12.5px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+
+.u2-calendar-grid button[aria-pressed="true"] b {
+  color: var(--u2-accent);
 }
 
 .u2-calendar-grid small {
   font-size: 10px;
+  font-weight: 500;
+  line-height: 1.35;
   color: var(--muted);
+  font-variant-numeric: tabular-nums;
 }
 
 .u2-calendar-selected {
-  font-size: 13px;
-  font-weight: 500;
-  margin: 20px 0 14px;
+  font-size: 13.5px;
+  font-weight: 600;
+  margin: 20px 0 12px;
+  padding: 10px 14px;
+  border-radius: 9px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--u2-accent);
+  animation: u2SelectedDayReveal 200ms var(--u2-ease-out);
 }
 
+/* ==========================================================================
+   VISÃO 3: PROJEÇÃO DIÁRIA DE FLUXO DE CAIXA E CENÁRIOS (.mf-planning-projection)
+   ========================================================================== */
 .u2-projection-hint {
   font-size: 12px;
-  line-height: 1.7;
+  line-height: 1.65;
   color: var(--muted);
+  padding: 10px 14px;
+  border-radius: 9px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  animation: u2ViewSwitch 220ms var(--u2-ease-out);
 }
 
 .u2-planning .mf-planning-projection {
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: var(--u2-radius-panel);
   background: var(--surface);
-  padding: 18px 20px;
+  padding: 18px 22px;
+  box-shadow: var(--u2-card-shadow);
+  animation: u2CardReveal 280ms var(--u2-ease-out) 130ms both;
+  transition: border-color var(--u2-dur-micro) ease, box-shadow var(--u2-dur-micro) ease;
+}
+
+.u2-planning .mf-planning-projection:hover {
+  border-color: var(--subtle);
 }
 
 .u2-planning .mf-planning-projection > summary {
-  font-size: 13px;
-  font-weight: 500;
+  font-size: 13.5px;
+  font-weight: 600;
+  transition: color var(--u2-dur-micro) ease;
+}
+
+.u2-planning .mf-planning-projection[open] > .p-timeline-panel {
+  animation: u2DisclosureSlide 220ms var(--u2-ease-out);
+}
+
+.u2-planning .mf-planning-projection svg,
+.u2-planning .p-timeline-panel svg {
+  animation: u2ProjectionReveal var(--u2-dur-chart) var(--u2-ease-out) both;
 }
 
 .u2-planning .p-scenario-toggle {
-  margin: 18px 0;
-  padding: 14px;
+  margin: 16px 0;
+  padding: 14px 16px;
   border: 1px solid var(--border);
-  border-radius: 9px;
+  border-left: 3px solid var(--u2-accent);
+  border-radius: 11px;
   background: var(--surface2);
+  transition: border-color var(--u2-dur-micro) ease, background var(--u2-dur-micro) ease;
+}
+
+.u2-planning .p-scenario-toggle:hover {
+  border-color: var(--subtle);
+  border-left-color: var(--u2-accent);
 }
 
 .u2-planning .p-scenario-toggle b {
-  font-size: 12px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text);
 }
 
 .u2-planning .p-scenario-toggle small,
 .u2-planning .p-scenario-toggle label {
-  font-size: 11px;
+  font-size: 11.5px;
   line-height: 1.6;
+  color: var(--muted);
+  cursor: pointer;
 }
 
 .u2-planning .p-footnote {
-  font-size: 10px;
-  line-height: 1.8;
+  font-size: 10.5px;
+  line-height: 1.75;
   margin: 0;
+  color: var(--muted);
 }
 
-.u2-planning .u2-agenda {
-  width: 100%;
-  min-width: 0;
+/* Cards de Sugestão de Vínculo Bancário no Planejamento (.p-suggestion-card) */
+.u2-planning .p-suggestion-card {
+  transition: transform var(--u2-dur-micro) var(--u2-ease-out),
+              box-shadow var(--u2-dur-micro) var(--u2-ease-out),
+              border-color var(--u2-dur-micro) var(--u2-ease-out);
 }
 
-.u2-planning .p-hero .micro-label {
-  display: block;
+.u2-planning .p-suggestion-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--subtle);
+  box-shadow: var(--u2-card-shadow);
 }
 
 /* ==========================================================================
-   RESPONSIVIDADE CALIBRADA: 1366x768, 1020px e 650px
+   RESPONSIVIDADE CALIBRADA: 1366x768, 1150px, 1020px e 650px
    ========================================================================== */
 @media (max-width: 1400px) {
   .u2-metrics {
@@ -1033,6 +1335,10 @@
   }
   .u2-transactions table td {
     padding: 12px 13px;
+  }
+  .u2-planning .p-ledger,
+  .u2-planning .p-upcoming {
+    padding: 18px 20px;
   }
 }
 
@@ -1144,13 +1450,14 @@
 }
 
 /* ==========================================================================
-   ACESSIBILIDADE ESTRITA — PREFERS-REDUCED-MOTION (COBERTURA INTEGRAL U2)
+   ACESSIBILIDADE ESTRITA — PREFERS-REDUCED-MOTION (COBERTURA INTEGRAL A-D2 & A-D3)
    ========================================================================== */
 @media (prefers-reduced-motion: reduce) {
   .u2-shell *,
   .u2-shell *::before,
   .u2-shell *::after,
-  .mf-detail-drawer {
+  .mf-detail-drawer,
+  .p-editor-backdrop .p-plan-modal {
     animation: none !important;
     transition: none !important;
   }
@@ -1161,7 +1468,26 @@
   .u2-transactions .toolbar-actions .ghost-button:active,
   .u2-transactions .mf-check:checked,
   .u2-transactions table tbody tr:hover .mf-row-emoji,
-  .u2-transactions .mf-quick-review:active {
+  .u2-transactions .mf-quick-review:active,
+  .u2-planning .p-hero-actions button:active,
+  .u2-planning .p-upcoming-row:hover,
+  .u2-planning .p-month-arrows button:active,
+  .u2-planning .p-ledger-row:hover,
+  .u2-planning .p-ledger-row:focus-visible,
+  .u2-planning .p-ledger-row:hover .p-ledger-icon,
+  .u2-planning .p-ledger-row:hover .p-row-arrow,
+  .u2-calendar-grid button:hover,
+  .u2-calendar-grid button:active,
+  .u2-planning .p-suggestion-card:hover {
     transform: none !important;
+  }
+
+  .u2-planning .mf-planning-projection svg,
+  .u2-planning .p-timeline-panel svg {
+    clip-path: none !important;
+  }
+
+  .u2-day-group:hover .p-ledger-row:not(:hover):not(:focus-visible) {
+    opacity: 1 !important;
   }
 }
