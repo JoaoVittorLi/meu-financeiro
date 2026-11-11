@@ -6,6 +6,14 @@
 
 Repositório privado `JoaoVittorLi/meu-financeiro`. Aplicativo financeiro Windows Electron + React/TypeScript + SQLite local; PWA/Cloudflare em frentes separadas, congeladas na missão Desktop First. Prioridade: integridade de centavos, contas e IDs, backup/restore, UI Premium e executável Windows validado.
 
+## CHECKPOINT U5.1.1 — CORREÇÕES DIRIGIDAS / GATES OFICIAIS PENDENTES (11/11/2026)
+
+- **PR #37**, branch `feat/mf2-u5-1-movements-productivity-20261111`, **código P2-01/P2-02:** `2fa9abd3cc4ffe29f4235c2eb60556ce0db8f8f3`. Base PR #36 preservada.
+- **Natureza financeira:** popover agora usa `effectiveNature`; `income`/`expense` manualmente sobrescritas determinam categorias compatíveis mesmo se sinal invertido; `transfer`/`ignore` não são convertidas implicitamente e exigem revisão avançada. Exatamente `accountId+externalId` no override bancário.
+- **Histórico parcial:** cartões, revisão e tabela anunciam que totais bancários se referem às 2.500 linhas carregadas quando `truncated=true`, e mostram `totalTransactions` real. `dailyTotals` do backend não modificado.
+- **Testes:** 6/6 cenários de semântica executados em V8 com fonte real e dados sintéticos; novos testes oficiais de natureza + `tests/u5-1-history-limits.test.cjs` com `FinanceDB` real 2501 registros **escritos e NÃO EXECUTADOS**. Não rodou checkout `npm ci`, TypeScript, SQLite integração, compile, F08, ASAR nem Electron; logo `#37` continua draft e **NÃO HOMOLOGADO**.
+- **Autorização para U5.2:** iniciar branch derivada do HEAD desta fase, PR draft com base #37. Não executar CircleCI Windows, não mergear, não alterar Argon/IA, cloud, schema ou mecanismos de cálculo. Após U5.2 enviar checkpoint ao Arquiteto.
+
 ## CHECKPOINT U5.1 — PR #37 ISOLADO / REVISÃO DO ARQUITETO (11/11/2026)
 
 **Estado GitHub:** PR #37 [Movimentações Premium](https://github.com/JoaoVittorLi/meu-financeiro/pull/37) draft na branch `feat/mf2-u5-1-movements-productivity-20261111`; base **PR #36 / D1.5.1**, commit base `87fb449c0232d80aebd7c50ad547197e34d3c806`. Código funcional U5.1 `10b9695305b0d2836f599b34971433955f64ea3b`. PR #36 permanece independente; não mesclar automaticamente nem alterar main.

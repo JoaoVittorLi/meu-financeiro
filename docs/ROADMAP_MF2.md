@@ -6,6 +6,16 @@
 
 > **Regra permanente, vinculante para todas as IAs:** **cada mudança relevante DEVE atualizar este roadmap no mesmo PR da implementação**, além do log Markdown específico. Nunca concluir uma entrega apenas com código. Quem não integra pode atualizar o progresso **proposto em sua branch**; somente o integrador confirma o progresso global, gates e publicação.
 
+## U5.1.1 — fechamento dirigido de Movimentações (11/11/2026)
+
+**Status:** correções publicadas no PR #37, `2fa9abd3cc4ffe29f4235c2eb60556ce0db8f8f3`; **PRONTO PARA REVISÃO DE CÓDIGO, NÃO HOMOLOGADO**. Código preserva correções financeiras D1.5.1 do PR #36; nenhuma alteração ao esquema SQLite, dados pessoais, main, Argon, cloud ou builds Windows.
+
+- **P2-01:** `quickCategoryContext` usa `effectiveNature(tx)` (inclusive natureza manualmente sobrescrita), em vez de inferir apenas do sinal. Para `transfer`/`ignore`, a seleção rápida não grava categorias até revisão explícita da natureza no drawer; popover explica o motivo. Isso **não altera a natureza** nem o extrato Pluggy. `tests/u5-1-inline-category.test.cjs` ganhou dois testes com auto, sinal invertido, transfer e ignore.
+- **P2-02:** `renderTransactions` alerta perto dos próprios cartões, detalha `N de totalTransactions` carregadas e qualifica os números bancários, revisão e resultados como **subconjunto carregado** quando `bank.data.truncated`; remove o texto enganoso `resumo inclui todos os resultados`. Agregados diários globais de `FinanceDB.bankOverview` não foram alterados. `tests/u5-1-history-limits.test.cjs` contém regressão com **2.501 registros artificiais** em `FinanceDB` real, garantindo corte em 2.500, `truncated=true`, persistência do registro adicional e saldo `null` intacto; teste versionado, NÃO EXECUTADO nesta sessão.
+- **Evidência executada:** 6/6 cenários do método real `quickCategoryContext/Choices/choose` em V8, com anotações TypeScript eliminadas exclusivamente no harness; **não** é suite Node oficial ou Electron. Conjunto de 12+7 cenários U5.1 anteriores permanece como evidência V8 anterior.
+- **Gates pendentes:** `npm ci`, `npm run test:types`, `npm run test:db`, `npm run compile`, F08, `npm run test:asar`, D1.5.1 e testes U5.1, Electron GUI/tema/foco/1366/1920 e backup sintético. Checkout privado integral/toolchain pin não disponíveis aqui. Não homologar/mergear sem gates; não disparar CircleCI Windows.
+- **Próxima etapa autorizada pelo Arquiteto:** branch empilhada **U5.2** a partir do HEAD documentado U5.1.1, PR draft tendo #37 como base; iniciar Planejamento + Simular Compra sem modificar a Inteligência ou motor financeiro. Registrar dependências e riscos.
+
 ## U5.1 — Movimentações Premium e produtividade (11/11/2026)
 
 **Status: IMPLEMENTAÇÃO PUBLICADA, TESTES OFICIAIS E HOMOLOGAÇÃO PENDENTES.** [PR #37](https://github.com/JoaoVittorLi/meu-financeiro/pull/37), *draft*, branch `feat/mf2-u5-1-movements-productivity-20261111`; **base PR #36** na branch `fix/mf2-d1-5-premium-interactions-20261111`, SHA herdado `87fb449c0232d80aebd7c50ad547197e34d3c806`. Commit funcional U5.1: `10b9695305b0d2836f599b34971433955f64ea3b`. **Não integrar PR #37 à main ou staging sem decisão do Arquiteto e sem os gates P1-01/P1-02.** Nada de CircleCI Windows ou EXE nesta entrega.
