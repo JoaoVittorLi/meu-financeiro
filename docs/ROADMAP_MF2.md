@@ -6,6 +6,46 @@
 
 > **Regra permanente, vinculante para todas as IAs:** **cada mudança relevante DEVE atualizar este roadmap no mesmo PR da implementação**, além do log Markdown específico. Nunca concluir uma entrega apenas com código. Quem não integra pode atualizar o progresso **proposto em sua branch**; somente o integrador confirma o progresso global, gates e publicação.
 
+## Roadmap amigável por resultado — atualização de 11/11/2026
+
+O acompanhamento detalhado de produto passa a ter um documento principal em linguagem clara: **[Roadmap de produto — o que resolve e o que melhora](ROADMAP_PRODUTO_MF2.md)**. A tabela abaixo oferece o resumo executivo. **Este arquivo técnico permanece integralmente preservado** para histórico de PRs, auditorias, testes, riscos e dependências; os códigos antigos são aliases internos e não mais os nomes públicos das entregas.
+
+| Entrega pública | Códigos legados | Estado verificável | Benefício principal |
+|---|---|---|---|
+| **Cartões com destaque intuitivo** | V1.1 | Código e testes em fixture publicados; QA Electron pendente | Zoom suave, topo colorido e moldura que revela a cor sem pintar o fundo |
+| **Telas alinhadas, sem sobreposições** | V1.2 / A-D7 parcial | Correções e revisão visual pendentes | Sem cards sobrepostos, textos cortados ou espaços sem padrão |
+| **Dinheiro confiável e alterações protegidas** | D1.5.1 + U5.1.1 + U5.2.1 | Implementado; regressões oficiais pendentes | Centavos, conciliação, filtros, calendário e simulações coerentes |
+| **Conferência completa do aplicativo** | INT1.2/INT1.3 | Preflight após correções e GUI Electron ainda pendentes | Um único resultado de testes no mesmo commit, oito áreas conferidas |
+| **Meu Financeiro Windows — Prévia completa** | Antigo R1 | Próximo marco, ainda sem build autorizado | Aplicativo instalável com Premium e nova aba Inteligência |
+| **Movimentações fáceis de corrigir** | U5.1 + BUG-01 | Núcleo codificado; refinamentos e QA pendentes | Menos cliques para localizar, classificar, editar e revisar |
+| **Orçamentos que avisam antes do limite** | U5.3 | Planejado | Identificar risco e realocar limites com consciência |
+| **Contas, dívidas e patrimônio num só lugar** | U5.4 | Planejado | Saber o que possui, o que deve e o que está disponível |
+| **Configurações simples e privadas** | U5.3 | Planejado | Ajustar aparência, dados e segurança sem jargões |
+| **Quanto posso gastar com segurança?** | F1 | Planejado | Dinheiro livre explicado, não confundido com saldo bruto |
+| **Planejamento que mostra o futuro** | F1 / U5.2 | Calendário melhorado; decisões futuras planejadas | Prever compromissos e períodos difíceis |
+| **À vista, parcelado ou antecipar?** | F2 | Comparador atual existe; expansão planejada | Comparar alternativas brasileiras com hipóteses claras |
+| **Metas e reservas com progresso** | F2/extensão | Planejado | Visualizar objetivos sem comprometer contas |
+| **Radar financeiro útil de verdade** | I1-C | Planejado | Alertas reais com origem e contexto, sem ficção |
+| **Converse com seu dinheiro** | I2-A | Interface entregue; motor conversacional real pendente | Perguntas respondidas com dados permitidos |
+| **Peça mudanças à IA e aprove** | I2-B | Prévia sem gravação existe; execução pendente | Alterar apenas após revisão e confirmação |
+| **Assistente proativo e controlável** | I2-C/I3 | Planejado | Recomendações úteis sem alarmismo ou alterações ocultas |
+| **Um visual coerente nas oito áreas** | A-D7 | Parcialmente modernizado | Expurgar legado inadequado e manter preferências válidas |
+| **Identidade oficial Meu Financeiro** | ID1 | **Adiada pelo proprietário** | Marca única quando houver aprovação visual |
+| **Dados protegidos e recuperáveis** | Confiabilidade | Bases existentes; melhorias pendentes | Recuperação e privacidade previsíveis |
+| **Windows e celular com as mesmas informações** | Paridade PWA | Sincronização parcial comprovada; paridade pendente | Continuidade de uso e conflitos explícitos |
+| **Meu Financeiro 1.0 — versão estável** | Marco final | Planejado | Produto validado e previsível para uso cotidiano |
+
+### Regras de sincronização das duas visões
+
+1. **Este roadmap tem 22 entregas orientadas a benefício**, organizadas em seis etapas no documento de produto. A ordem representa dependências e prioridade, **não prazos prometidos**.
+2. O marco imediato continua sendo a **Prévia Windows completa** após alinhamento/colisões e gates da integração #36 → #37 → #38 → #39; não esperar I1-C, I2-A, marca MF ou equivalência PWA.
+3. Auditoria Argon/Antigravity: **16 bugs/dívidas**, **88 componentes**, **24 iniciativas**, **85 imagens** e nota histórica 7,48/10 com alvo hipotético 9,46/10. Preservar índices e criticidade; o conteúdo exato de BUG-06 e BUG-08 a BUG-16 depende de recuperar o relatório original, não deve ser inventado.
+4. **Status distintos:** implementado em fonte ≠ teste isolado ≠ gate oficial ≠ Electron homologado ≠ instalador distribuído.
+5. Cada nova entrega deve atualizar **também** `docs/ROADMAP_PRODUTO_MF2.md`, incluindo problema resolvido, benefício percebido, critério de aceitação e evidência verificável.
+
+---
+
+
 ## V1.1 — hover premium / borda progressiva e escala sem preenchimento (11/11/2026)
 
 **STATUS: IMPLEMENTAÇÃO PUBLICADA NO PR #39; QA DE NAVEGADOR SINTÉTICO REALIZADA; HOMOLOGAÇÃO ELECTRON PENDENTE.** Quatro indicadores da Visão Geral (saldo, receitas, despesas e resultado): topo preservado; no hover/foco, expansão de moldura semântica com `conic-gradient`/mask e `scale(1.022)` em 230–235ms, mantendo fundo e leitura. `prefers-reduced-motion` mantém moldura sem escala. Resultado usa verde para positivo, vermelho para negativo, teal para zero. Apenas `app/premium-interactions.css` e a acessibilidade/classes visuais em `src/app.ts` alterados, além de regressões e documentação. Regras financeiras e Inteligência I1-B.1 intactas.
