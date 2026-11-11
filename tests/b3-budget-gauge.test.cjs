@@ -65,7 +65,7 @@ test('B3 — accepts integer cents and does not round cents before progress',()=
 // Render the actual production renderBudgets() method with synthetic state.
 // No mocked JSX/template reimplementation: the class method comes from src/app.ts.
 const renderStart=src.indexOf(' renderBudgets(){');
-const renderEnd=src.indexOf('\n  renderAssistant(',renderStart);
+const renderEnd=src.indexOf('\n renderAssistant(',renderStart);
 assert(renderStart>=0&&renderEnd>renderStart,'Production renderBudgets boundary missing');
 const method=src.slice(renderStart,renderEnd);
 const h=(type,props,...children)=>({type,props:{...(props||{}),children}});
