@@ -83,7 +83,7 @@ test('V1.2 — BUG-02 respeita superfície e contraste do tema claro sem afetar 
  assert.doesNotMatch(scoped,/background:\s*(?:rgba\(25,22,34|#(?:0[0-9a-f]{5}|1[0-9a-f]{5}))/i);
  const links=[...html.matchAll(/href="([^"]+\.css)"/g)].map(x=>x[1]);
  assert.equal(links.at(-1),'premium-interactions.css');
- assert.match(premium,/--mf-v1-border-progress:\s*360deg/);
+ assert.match(premium,/--mf-border-sweep:\s*360deg/);
  assert.match(premium,/scale\(1\.022\)/);
 });
 test('V1.2 — patches são CSS puro, delimitadores balanceados e sem mudanças em dados',()=>{
