@@ -6,6 +6,21 @@
 
 > **Regra permanente, vinculante para todas as IAs:** **cada mudança relevante DEVE atualizar este roadmap no mesmo PR da implementação**, além do log Markdown específico. Nunca concluir uma entrega apenas com código. Quem não integra pode atualizar o progresso **proposto em sua branch**; somente o integrador confirma o progresso global, gates e publicação.
 
+## Complemento arquitetural — roadmap pós-ARGON + identidade MF (11/11/2026)
+
+**Rodada A: ANALISADO/PROPOSTO · Rodada B: NÃO INICIADA nesta frente documental · Gate: NÃO HOMOLOGADO por este documento.** O Arquiteto consolidou a auditoria ARGON/Antigravity do Windows beta.8, os problemas de hover apontados pelo proprietário e as novas referências do logotipo MF (monograma esmeralda/menta com marinho). **Plano integral com mudanças e aceites por módulo/etapa:** [2026-11-11-ARGON-ROADMAP-PREMIUM-BRAND-INTELLIGENCE.md](ai-context/reviews/2026-11-11-ARGON-ROADMAP-PREMIUM-BRAND-INTELLIGENCE.md).
+
+**Baseline do planejamento:** PR #31 draft, SHA `d513c2be3f9b0cd018aed0b71f46ce8747a6556c`, com preflight Linux e build Windows em **success** no CircleCI. Isso não prova homologação de cada fluxo nem das mudanças futuras. **Status anteriores abaixo são históricos** e não devem prevalecer sobre CI no SHA indicado.
+
+**Ordem de trabalho proposta:** G0 conferência/errata → D1.5-F edição/exclusão manual → D1.5-V contraste de drawers e gráficos → A-D7 hover Premium/legado → ID1 logotipo, ícones Windows e PWA Preview → U5 fluidez operacional → I1 Inteligência local real + redesign → F1 dashboards de decisão → I2 chat contextual → F2 simulador financeiro brasileiro → I3 ações de IA com confirmação → P1-PWA paridade e R1 homologação por SHA. **I1 tem prioridade de pesquisa de produto em paralelo** à estabilização, sem colisões de código.
+
+**Regras:** o plano novo é proposta, não implementação; não migrar cores pessoais indiscriminadamente; IA atual de demonstração não deve virar análise "real" fictícia; `buildLocalBriefing` relatada pelo Argon não foi encontrada no SHA conferido e requer revalidação; a nova marca exige fonte vetorial original aprovado antes de exportar assets. Corrigir errata do Argon (métricas e metadados inconsistentes) e confirmar visibilidade atual do GitHub (reportada public pelo conector, embora docs digam privado).
+
+**Ownership:** Argon responde por identidade/motion/conceitos; Executor por implementação, SQLite/regressões, empacotamento; Antigravity testa EXE em perfil isolado e worktree própria; Arquiteto aprova integração. Esta atualização é somente de documentação, em branch própria, sem `main`, EXE, Cloudflare ou dados reais alterados.
+
+---
+
+
 ## Hotfix D1.4.3 — JSON visual interpretado como 1 objeto no PowerShell (10/11/2026)
 
 **Rodada B: EM_TESTE; gate NAO_HOMOLOGADO.** No [PR #31](https://github.com/JoaoVittorLi/meu-financeiro/pull/31), branch `feat/mf2-beta8-premium-staging-20261110`, o CI Windows capturou **32 arquivos PNG**, mas a verificação em `.circleci/build-windows.ps1` alegou haver **1 entrada** no manifesto. A causa está na construção PowerShell `$matrix = @(Get-Content -Raw ... | ConvertFrom-Json)`: em Windows PowerShell, `ConvertFrom-Json` pode emitir um array como um único objeto de pipeline e o `@(...)` o encapsula novamente. **Não foi identificada falha de gravação ou corrida:** `scripts/d1-electron-smoke.cjs` acumula `rows.push()` e escreve um único `JSON.stringify(rows,null,2)` após as 32 capturas. Documentação PowerShell confirma a semântica de arrays na pipeline. 
