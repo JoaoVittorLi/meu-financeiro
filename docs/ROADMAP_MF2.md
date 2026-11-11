@@ -6,6 +6,17 @@
 
 > **Regra permanente, vinculante para todas as IAs:** **cada mudança relevante DEVE atualizar este roadmap no mesmo PR da implementação**, além do log Markdown específico. Nunca concluir uma entrega apenas com código. Quem não integra pode atualizar o progresso **proposto em sua branch**; somente o integrador confirma o progresso global, gates e publicação.
 
+## Decisão operacional — ARGON assume integralmente a Inteligência 2.0 (11/11/2026)
+
+**Rodada A: APROVADO PARA EXECUÇÃO ISOLADA · Rodada B: NÃO HOMOLOGADA.** Em paralelo ao fechamento D1.5.1 do Executor 2, o **Argon é dono do design E DO CÓDIGO** de ambas as superfícies de Inteligência: chat lateral leve em todas as áreas e aba principal, além do futuro fluxo de análise e ações com prévia explícita **Permitir / Negar** (começando por categorização). O Executor mantém finanças não-IA, correções D1.5.1 e próximo EXE; **não devem editar os mesmos arquivos**.
+
+**Missão detalhada, ownership, etapas I1-A/I1-B/I2-A/I2-B/I3, requisitos de segurança e QA:** [ARGON — Remake integral da Inteligência](ai-context/reviews/2026-11-11-ARGON-MISSION-INTELLIGENCE-REMAKE.md). Baseline: PR #31 SHA `d513c2be`, PR #36 SHA `71eb60d`; Argon começa em branch/worktree isolado; src/app.ts, electron/db.cjs, app/premium-interactions.css e demais CSS do Executor ficam protegidos até integração coordenada. Nenhuma IA pode alterar dados bancários brutos nem realizar mutação sem confirmação/validação real. O fluxo de chat atual só prepara rascunhos; não declarar que já existe chat financeiro funcional.
+
+**O próximo EXE Windows da D1.5.1 não depende da Inteligência nova.** Não executar deploy PWA/Production nem integrar código de IA na staging sem gate separado.
+
+---
+
+
 ## Decisão pós-revisão PR #36 — D1.5.1 e próximo executável Windows (11/11/2026)
 
 **Rodada A: ANALISADO; Rodada B: CORREÇÕES DIRIGIDAS (PR #36 draft); Gate: NÃO HOMOLOGADO.** O Arquiteto conferiu diff dos 12 arquivos D1.5 no SHA `71eb60d141a9346a9bf9d4744ab05d132101701d`. A implementação de hover, drawer e editor manual é aproveitável; dois riscos financeiros exigem fechamento **antes** de distribuir o próximo EXE: **(1)** `parseMoney` pode arredondar silenciosamente valores com mais de duas casas digitados no editor; **(2)** `isManualLinked` consulta apenas a UI, enquanto `FinanceDB.save()` executa `pruneInvalidManualLinks()` no SQLite e pode remover um vínculo quando a UI está desatualizada. Não declarados falha de compilação ou defeito Electron sem execução.
