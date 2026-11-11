@@ -6,6 +6,17 @@
 
 > **Regra permanente, vinculante para todas as IAs:** **cada mudança relevante DEVE atualizar este roadmap no mesmo PR da implementação**, além do log Markdown específico. Nunca concluir uma entrega apenas com código. Quem não integra pode atualizar o progresso **proposto em sua branch**; somente o integrador confirma o progresso global, gates e publicação.
 
+## Decisão pós-revisão PR #36 — D1.5.1 e próximo executável Windows (11/11/2026)
+
+**Rodada A: ANALISADO; Rodada B: CORREÇÕES DIRIGIDAS (PR #36 draft); Gate: NÃO HOMOLOGADO.** O Arquiteto conferiu diff dos 12 arquivos D1.5 no SHA `71eb60d141a9346a9bf9d4744ab05d132101701d`. A implementação de hover, drawer e editor manual é aproveitável; dois riscos financeiros exigem fechamento **antes** de distribuir o próximo EXE: **(1)** `parseMoney` pode arredondar silenciosamente valores com mais de duas casas digitados no editor; **(2)** `isManualLinked` consulta apenas a UI, enquanto `FinanceDB.save()` executa `pruneInvalidManualLinks()` no SQLite e pode remover um vínculo quando a UI está desatualizada. Não declarados falha de compilação ou defeito Electron sem execução.
+
+**Missão imediata:** D1.5.1 no **mesmo PR #36** — validar precisão BRL, proteger vínculos na transação de persistência sem quebrar restaurações, testes SQLite reais, `test:db`/`test:types`/compile/F08/ASAR e smoke Windows com hover/drawer/manual/backup. Depois, **uma** pipeline CircleCI Linux→Windows e validar NSIS, Portable, SHA256 e instalação isolada. **Não atrasar o próximo EXE** para esperar nova identidade MF, emojis, demais novidades de Inteligência ou PWA. Os CI verdes no commit pai beta.8 não homologam D1.5.
+
+**[Parecer completo, riscos e responsabilidade por agente](ai-context/reviews/2026-11-11-D1-5-PR36-ARCHITECT-DECISION.md)** · ver PR #36 (revisão de Arquiteto) · PR #35 (documentação). **Estado factual do código permanece no PR #36; este documento não implementa nem libera release.**
+
+---
+
+
 ## Complemento arquitetural — roadmap pós-ARGON + identidade MF (11/11/2026)
 
 **Rodada A: ANALISADO/PROPOSTO · Rodada B: NÃO INICIADA nesta frente documental · Gate: NÃO HOMOLOGADO por este documento.** O Arquiteto consolidou a auditoria ARGON/Antigravity do Windows beta.8, os problemas de hover apontados pelo proprietário e as novas referências do logotipo MF (monograma esmeralda/menta com marinho). **Plano integral com mudanças e aceites por módulo/etapa:** [2026-11-11-ARGON-ROADMAP-PREMIUM-BRAND-INTELLIGENCE.md](ai-context/reviews/2026-11-11-ARGON-ROADMAP-PREMIUM-BRAND-INTELLIGENCE.md).
