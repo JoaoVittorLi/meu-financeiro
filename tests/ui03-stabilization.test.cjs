@@ -117,7 +117,7 @@ test('F05/F06 calendários fecham por Escape, devolvem foco e cabem em 320px',()
 test('F07 impede duplo clique e serializa respostas de IPC entre contas',async()=>{
  const deferred=[];
  const desktop={bankCategorize:args=>new Promise((resolve,reject)=>deferred.push({args,resolve,reject}))};
- const Subject=compile('class Subject{'+cut('async setBankCategory(tx:BankTx,category:string){','changeManualCategory(id:string,category:string){')+'}',
+ const Subject=compile('class Subject{'+cut('async setBankCategory(tx:BankTx,category:string):Promise<boolean>{','async changeManualCategory(id:string,category:string):Promise<boolean>{')+'}',
   'Subject',{desktop});
  const instance=new Subject();instance.categorySavingKeys=new Set();
  instance.categorySaveQueue=Promise.resolve();instance.state={mode:'real',bank:{data:{transactions:[]}},categorySaving:[]};
