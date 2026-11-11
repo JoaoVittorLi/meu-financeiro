@@ -5,11 +5,11 @@ const { DatabaseSync, backup } = require('node:sqlite');
 const fs = require('node:fs');
 const path = require('node:path');
 const DEFAULT_CATEGORIES = [
-  ['Moradia','#884bff'],['Alimentação','#bc80ff'],['Transporte','#db6ff5'],
-  ['Saúde','#7549d8'],['Lazer','#a58cf4'],['Educação','#5b4da5'],
-  ['Assinaturas','#4a386f'],['Compras','#7555bd'],['Contas','#c090e5'],
-  ['Outros','#3f375a'],['Salário','#27c498'],
-  ['Transferências','#7967ba'],['Rendimentos','#2fa48c'],['Reembolsos','#54a9b4']
+  ['Moradia','#3e9a85'],['Alimentação','#d6934b'],['Transporte','#4489ba'],
+  ['Saúde','#cb6d76'],['Lazer','#2aa898'],['Educação','#4c7fb2'],
+  ['Assinaturas','#718096'],['Compras','#b5874f'],['Contas','#5d86a1'],
+  ['Outros','#87929c'],['Salário','#279c72'],
+  ['Transferências','#538faf'],['Rendimentos','#40ac89'],['Reembolsos','#55a6b0']
 ];
 const CAT = DEFAULT_CATEGORIES.map(([name])=>name);
 const DEFAULT_EMOJIS = Object.freeze({
@@ -279,7 +279,7 @@ class FinanceDB {
    const legacy=this.db.prepare(`SELECT category AS name FROM transactions UNION SELECT category AS name FROM budgets`);
    for(const {name} of legacy.all()){
      if(typeof name==='string'&&name.trim()&&name.length<=50)
-       this.db.prepare('INSERT OR IGNORE INTO categories(name,color,built_in) VALUES (?, ?,0)').run(name,'#884bff');
+       this.db.prepare('INSERT OR IGNORE INTO categories(name,color,built_in) VALUES (?, ?,0)').run(name,'#87929c');
    }
    this.db.prepare('INSERT OR IGNORE INTO app_meta(key,value) VALUES (?,?)').run('schema_version','1');
    // Os zeros de versões antigas eram criados por padrão e significavam 'sem limite'.
@@ -312,7 +312,7 @@ class FinanceDB {
      const existingCategories=new Set(this.listCategories().categories.map(x=>x.name));
      for(const name of new Set([...value.transactions.map(t=>t.category),...Object.keys(value.budgets)])){
        if(!existingCategories.has(name)){
-         this.db.prepare('INSERT OR IGNORE INTO categories(name,color,built_in) VALUES (?, ?,0)').run(categoryName(name),'#884bff');
+         this.db.prepare('INSERT OR IGNORE INTO categories(name,color,built_in) VALUES (?, ?,0)').run(categoryName(name),'#87929c');
          existingCategories.add(name);
        }
      }
