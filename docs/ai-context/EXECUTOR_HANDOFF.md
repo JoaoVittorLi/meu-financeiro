@@ -6,6 +6,16 @@
 
 Repositório privado `JoaoVittorLi/meu-financeiro`. Aplicativo financeiro Windows Electron + React/TypeScript + SQLite local; PWA/Cloudflare em frentes separadas, congeladas na missão Desktop First. Prioridade: integridade de centavos, contas e IDs, backup/restore, UI Premium e executável Windows validado.
 
+## CHECKPOINT U5.2 — PR #38 / PLANEJAMENTO E SIMULADOR (11/11/2026)
+
+**PR [#38](https://github.com/JoaoVittorLi/meu-financeiro/pull/38)** draft, branch `feat/mf2-u5-2-planning-simulator-20261111` com base PR #37 `feat/mf2-u5-1-movements-productivity-20261111` no SHA `5a4963133795182e5d73344c1ad6df0a78fa0bfb`. Commit funcional U5.2: `e6dfca89a549c257577a3317e4669b98cac9b23a`. Stacking **#36 → #37 → #38**, nenhuma integração realizada.
+
+- **Planejamento:** única projeção diária na aba selecionável, não `details` duplicado; calendário com contagens e entradas/saídas de linhas filtradas já deduplicadas, identifica realizado/previsto/incerto, tooltip e setas/Home/End, mantém foco. Cálculos, saldo indisponível, centavos e motor `plan` intactos; apresentação nunca se identifica como saldo garantido. Estilos isolados em `app/planning-productivity.css`.
+- **Simulador:** input alterado não apaga resultado; último cálculo rotulado stale, ação Recalcular, erro independente, referência A salva congelada, B só comparado quando confirmado no input atual, corrida protegida pelo token `simRequest`, nenhum motor financeiro novo.
+- **Testes novos:** `tests/u5-2-planning.test.cjs` (7) e `tests/u5-2-simulator.test.cjs` (10). Contratos de `tests/operations-u2.test.cjs` e `tests/decisions-u3.test.cjs` atualizados ao novo comportamento. **11/11 cenários sintéticos em V8 PASS** com métodos reais TS adaptados só na sintaxe; não Node test runner, TypeScript real, SQLite, Electron.
+- **Pendências:** executar `npm ci`, `test:types`, `compile`, `test:db`, F08, ASAR, regressões D1.5.1/U5.1.1, QA Electron visual/teclado/densidade em perfil descartável. **Não executados** no ambiente atual; nenhum binário. Não mexer em `src/intelligence-view.ts`, `src/intelligence-integration.ts`, `app/intelligence.css`; não CircleCI Windows, PWA/Cloudflare, SQL DDL, dados reais ou main.
+- **Ação Arquiteto:** revisar PR #37 U5.1.1 (correções P2-01/P2-02) e #38 U5.2, exigir gates oficiais e capturas reais antes de integrar, coordenar Argon isolado. Ver [log U5.2](docs/ai-context/logs/2026-11-11-MF2-U5-2-planning-simulator.md).
+
 ## CHECKPOINT U5.1.1 — CORREÇÕES DIRIGIDAS / GATES OFICIAIS PENDENTES (11/11/2026)
 
 - **PR #37**, branch `feat/mf2-u5-1-movements-productivity-20261111`, **código P2-01/P2-02:** `2fa9abd3cc4ffe29f4235c2eb60556ce0db8f8f3`. Base PR #36 preservada.
