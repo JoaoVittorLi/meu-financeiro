@@ -14,6 +14,16 @@ Repositório privado `JoaoVittorLi/meu-financeiro`. Aplicativo financeiro Window
 
 `feat/mf2-beta8-premium-staging-20261110`, [PR #31](https://github.com/JoaoVittorLi/meu-financeiro/pull/31) draft, base funcional `feat/mf2-d1-2-functional-tests-20261110` / PR #28. HEAD **dinâmico**: consulte GitHub ao iniciar qualquer ação. Código da correção mais recente em `c109d905a4120b5820130e310e3dd36210781db6`; SHA anterior `dd30ddbd94d16b1cd415ff61b3dd4bd94ad2065b`. Os commits documentais posteriores alteram o HEAD sem alterar o código.
 
+## MISSÃO D1.5 — CÓDIGO PREMIUM/EDIT MANUAL EM PR DRAFT (11/11/2026)
+
+- **PR:** [#36](https://github.com/JoaoVittorLi/meu-financeiro/pull/36), branch `fix/mf2-d1-5-premium-interactions-20261111` derivada de `d513c2be3f9b0cd018aed0b71f46ce8747a6556c`; código até `aefdcf9c75794534971ee3b3465c59df77229a70` (HEAD dinâmico após docs). **Não integrado em staging nem `main`**. A beta.8 anterior registrou CI Linux+Windows SUCCESS no SHA pai, mas **nenhum CI D1.5** está aprovado.
+- **D1.5-A/B:** `app/premium-interactions.css` carregado após Argon, hovers/foco/reduced-motion por tipo de card e sem cursor falso; drawer com superfície temática clara/escura; SVG planejamento sem cores roxas fixas; paleta inicial `electron/db.cjs` e `src/app.ts` menta/azul/âmbar/vermelho neutros, com SQL `INSERT OR IGNORE` preservando dados existentes. Não atualizar cores/emoji do usuário por migração automática.
+- **D1.5-C:** métodos `openManualDetail`, `saveManualDetail`, `removeEntry`, `isManualLinked` e `manualDraft` na UI; validar data real, centavos positivos, categoria; bloquear exclusão ou alteração de valor/data em registro com `linkedManualId`. Save só fecha drawer após `updateData` confirmado. Extratos bancários seguem intocados. `SingleDatePicker` suporta `disabled`.
+- **Testes existentes/new:** `tests/d1-5-manual-edit.test.cjs` (13), `tests/d1-5-interactions.test.cjs` (11), `tests/d1-5-category-palette.test.cjs` (4), `tests/transaction-category-edit.test.cjs` atualizado. **24/24 casos diretos em V8 com módulos simulados** + renderização sintética do método drawer PASS, **não** equivale a Node Test Runner/SQLite/Windows. Novos 4 casos de integração SQLite e a compilação oficial não executados aqui.
+- **Próximo gate:** Arquiteto e Executor validam PR #36 com `npm ci`, `test:db`, `test:types`, compile, F08, ASAR, smoke GUI 32 PNGs + capturas de hover/teclado/tema + editar/excluir persistente em SQLite sintético. Confirmar contraste e ausência de overlap. Se verde, integrar em staging e preparar uma única pipeline CircleCI para NSIS+Portable+SHA256. **Não disparar releases nem Cloudflare**.
+- **Risco residual:** iconografia emoji/cores persistidas antigas não migradas; captura real do Windows e CSS layout/tooltip em gráficos não verificadas. O retorno à staging é descartar/cherry-pick reversível do PR isolado, nunca restaurar dados do usuário.
+- **Log:** `docs/ai-context/logs/2026-11-11-MF2-D1-5-premium-functional.md`.
+
 ## HOTFIX D1.4.3 — CONTAGEM DO MANIFESTO VISUAL (10/11/2026)
 
 - **Causa raiz:** o Windows PowerShell encapsulava o array JSON retornado por `ConvertFrom-Json` em `@(...)`, resultando em `$matrix.Count = 1` mesmo com 32 imagens. O smoke já escrevia o array de 32 registros corretamente; não há indício de corrida em `fs.writeFileSync`.
