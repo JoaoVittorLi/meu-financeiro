@@ -1681,7 +1681,7 @@ class App extends React.Component<any,State>{
              h('small',{},share===0&&spent>0?'Menos de 1% das receitas':share+'% das receitas')):
            gauge?null:hasLimit?h('div',{className:'mf-budget-limit'},
              h('div',{className:'mf-budget-limit-head'},
-               h('span',{},'Limite '+fmt(limit)),h('strong',{className:spent>limit?'bad-text':''},limit===0&&spent>0?'Acima do limite':pct+'% utilizado')),
+               h('span',{},'Limite '+fmt(limit)),h('strong',{className:spent>limit?'bad-text':''},limit===0?(spent>0?'Acima do limite':'Limite zero definido'):pct+'% utilizado')),
              limit>0?h('div',{className:'progress-track'},h('div',{className:'progress-bar',style:{width:Math.min(pct,100)+'%'}})):null,
              h('small',{},spent>limit?'Ultrapassou em '+fmt(spent-limit):status==='near'?'Próximo do limite · restam '+fmt(limit-spent):limit===0?'Limite zero definido':'Restam '+fmt(limit-spent))):
            h('div',{className:'mf-no-budget'},h('span',{},'Sem limite definido'),
