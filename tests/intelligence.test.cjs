@@ -39,7 +39,7 @@ test('divisão exige igualdade exata e preserva valor original',()=>{
   assert.deepEqual(db.bankOverview().transactions.find(x=>x.id===PURCHASE).splits,[]);
   db.close();
 });
-test('vínculo manual é explícito, exclusivo, preservado durante saves e removido ao excluir',()=>{
+test('vínculo manual é explícito, exclusivo, preservado e só removido após desvinculação',()=>{
   const db=base();db.save('real',manual());
   const key={accountId:ACCOUNT,externalId:PURCHASE};
   db.linkManualTransaction({...key,manualId:'local_1'});
@@ -47,6 +47,9 @@ test('vínculo manual é explícito, exclusivo, preservado durante saves e remov
   db.save('real',manual());
   assert.equal(db.bankOverview().transactions.find(x=>x.id===PURCHASE).linkedManualId,'local_1');
   assert.throws(()=>db.linkManualTransaction({accountId:ACCOUNT,externalId:PAYMENT,manualId:'local_1'}),/Valores ou tipos diferentes/);
+  assert.throws(()=>db.save('real',{...manual(),transactions:[]}),/Desvincule antes/);
+  assert.equal(db.bankOverview().transactions.find(x=>x.id===PURCHASE).linkedManualId,'local_1');
+  db.linkManualTransaction({...key,manualId:null});
   db.save('real',{...manual(),transactions:[]});
   assert.equal(db.bankOverview().transactions.find(x=>x.id===PURCHASE).linkedManualId,null);
   db.close();
@@ -87,11 +90,15 @@ test('mudanças no banco reabrem a revisão e evitam conciliação desatualizada
   assert.equal(after.merchant,'iFood');
   db.close();
 });
-test('editar a data de um lançamento manual desfaz vínculos inconsistentes',()=>{
+test('editar a data de um lançamento vinculado exige desvinculação explícita',()=>{
   const db=base();db.save('real',manual());
   const key={accountId:ACCOUNT,externalId:PURCHASE};
   db.linkManualTransaction({...key,manualId:'local_1'});
   const changed=manual();changed.transactions[0].date='2026-10-20';
+  assert.throws(()=>db.save('real',changed),/Desvincule antes/);
+  assert.equal(db.load('real').transactions[0].date,'2026-11-06','Rollback preserves the original manual date');
+  assert.equal(db.bankOverview().transactions.find(x=>x.id===PURCHASE).linkedManualId,'local_1');
+  db.linkManualTransaction({...key,manualId:null});
   db.save('real',changed);
   assert.equal(db.bankOverview().transactions.find(x=>x.id===PURCHASE).linkedManualId,null);
   assert.equal(db.load('real').transactions[0].date,'2026-10-20');db.close();
