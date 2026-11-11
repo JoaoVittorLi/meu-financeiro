@@ -46,7 +46,7 @@ const CATS = ['Moradia','Alimentação','Transporte','Saúde','Lazer','Educaçã
 const COLORS = ['#3e9a85','#d6934b','#4489ba','#cb6d76','#2aa898','#4c7fb2','#718096','#b5874f','#5d86a1','#87929c'];
 const BUILTIN_EMOJIS=['🏠','🍽️','🚗','💊','🎮','📚','📺','🛍️','🧾','✨','💰'];
 const EMOJI_OPTIONS=['🏠','🏡','🔑','🪴','🍽️','🍔','🍕','🥗','🥑','☕','🍿','🛒','🛍️','🚗','🚕','🚌','🚲','⛽','✈️','🧳','💊','🩺','💅','🧴','🧘','🎮','🎬','🎵','🎧','📚','🎓','💻','📱','📺','📷','🎨','🎟️','⚽','🏋️','🏆','🐶','🐱','🐾','💰','💸','💳','🏦','📈','🪙','🧾','💡','⚡','💧','📦','🎁','❤️','🌸','🌿','⭐','✨','🎯','🔧'];
-const COLOR_OPTIONS=['#3e9a85','#bc80ff','#d66ef3','#f063a4','#f97373','#f99d5a','#eab653','#80b96a','#38bf95','#3ab9c7','#5b9cf6','#6c79ef','#a48bc8','#be9aa3','#727a98','#d2a178'];
+const COLOR_OPTIONS=['#3e9a85','#d6934b','#4489ba','#cb6d76','#2aa898','#4c7fb2','#718096','#b5874f','#5d86a1','#87929c','#279c72','#538faf','#40ac89','#55a6b0','#e0ae5b','#bd786a'];
 const DEFAULT_CATEGORY_INFOS:CategoryInfo[]=[...CATS,'Salário','Transferências','Rendimentos','Reembolsos'].map((name,i)=>({name,color:COLORS[i%COLORS.length],emoji:BUILTIN_EMOJIS[i]||'✨',builtIn:1,kind:['Salário','Rendimentos','Reembolsos'].includes(name)?'income':['Outros','Transferências'].includes(name)?'both':'expense'}));
 const emptyRule=():RuleEditor=>({id:null,pattern:'',matchMode:'contains',category:'Alimentação',scope:'both',priority:'100'});
 function fold(value:string){return String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleUpperCase('pt-BR').replace(/\s+/g,' ').trim();}
