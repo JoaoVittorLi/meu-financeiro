@@ -6,6 +6,12 @@
 
 > **Regra permanente, vinculante para todas as IAs:** **cada mudança relevante DEVE atualizar este roadmap no mesmo PR da implementação**, além do log Markdown específico. Nunca concluir uma entrega apenas com código. Quem não integra pode atualizar o progresso **proposto em sua branch**; somente o integrador confirma o progresso global, gates e publicação.
 
+## INT1.2 — correções dirigidas do preflight Linux (11/11/2026)
+
+**STATUS: CANDIDATA DE CORREÇÃO PUBLICADA NO PR #39; NOVO PREFLIGHT OFICIAL PENDENTE; WINDOWS BLOQUEADO.** Após preflight Linux com FAIL (12 falhas/375 testes informadas pelo proprietário), corrigidos: ordem compile→`test:db` para evitar renderer JS antigo, quarentena de diferenças no baseline de sincronização segura, teclado do popover de categorias, texto de histórico parcial, ordem CSS e renderização de simulação nula. Testes antigos de vínculo bancário passaram a exigir a desvinculação explícita segundo a D1.5.1; mantida a guarda SQLite. Novo caso de regressão de sync inicial/retry e extrator F07 alinhado ao TS atual.
+
+**Comprovação:** código e testes publicados, mas a suíte no **novo HEAD não foi executada oficialmente**. A execução anterior falhou e não comprova regressão pós-fix. É obrigatório executar `preflight_on_demand` com `run_preflight=true`, `run_windows_build=false` e conferir logs por etapa. A função `pLedgerRow` existe no fonte; investigar apenas se persistir FAIL com novo bundle. Não homologar Windows, não gerar EXE, não acionar Production. [Log de correção](ai-context/logs/2026-11-11-MF2-INT1-2-preflight-fixes.md).
+
 ## U5.2.1 — regressões dirigidas: conversão segura e natureza no calendário (11/11/2026)
 
 **Status: IMPLEMENTADA NO PR #38, GATES OFICIAIS NÃO EXECUTADOS, NÃO HOMOLOGADA.** Commit funcional `d2032bd305aee0203c491c49c0d644d3ac1c696e` na branch `feat/mf2-u5-2-planning-simulator-20261111`, baseada no PR #37 (HEAD `5a4963133795182e5d73344c1ad6df0a78fa0bfb`). **Sequência:** PR #36 → PR #37 → PR #38; sem merge.
