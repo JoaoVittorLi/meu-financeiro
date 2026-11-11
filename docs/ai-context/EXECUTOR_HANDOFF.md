@@ -6,6 +6,15 @@
 
 Repositório privado `JoaoVittorLi/meu-financeiro`. Aplicativo financeiro Windows Electron + React/TypeScript + SQLite local; PWA/Cloudflare em frentes separadas, congeladas na missão Desktop First. Prioridade: integridade de centavos, contas e IDs, backup/restore, UI Premium e executável Windows validado.
 
+## CHECKPOINT D1.5.1 — CORREÇÕES FINANCEIRAS PUBLICADAS / GATES WINDOWS ABERTOS (11/11/2026)
+
+- **PR #36 draft:** branch `fix/mf2-d1-5-premium-interactions-20261111`, commit financeiro `1bd18db6d1393825fab04a1623ce3a9c03a849cf`, documentação posterior altera HEAD. Base PR #31 staging `d513c2be3f9b0cd018aed0b71f46ce8747a6556c` possui CircleCI Linux/Windows SUCCESS, **D1.5.1 ainda NÃO homologada**.
+- **P1-01:** `parsePositiveBRLInput` usado em `saveEntry` e `saveManualDetail`; formato BRL (até 2 decimais), limite de 100 bilhões de centavos, negativos/zero/3 casas e notação ambígua rejeitados com mensagem clara. Não alterar import CSV nem `parseMoney` legado sem regressões específicas.
+- **P1-02:** guarda em `FinanceDB.save` dentro de `BEGIN IMMEDIATE`, lendo `bank_manual_links` do SQLite e bloqueando delete/mudança de data, valor ou kind do registro manual vinculado, mesmo sem vínculo no snapshot UI. Rejeição faz rollback integral. Descrição/categoria possíveis. `pruneInvalidManualLinks` e restauração SQLite autorizada intactas.
+- **Provas reais desta sessão:** V8 com mocks 18/18 callbacks parser/editor; Node 22.16.0 com SQLite real em **reprodução isolada** dos SQLs 6/6 PASS. Os 10 testes de banco real da árvore completa **foram escritos mas não executados**. Sem checkout do repo, sem npm ci/TS/F08/ASAR/GUI/CircleCI nem EXEs neste HEAD. Ver `docs/ai-context/logs/2026-11-11-MF2-D1-5-1-financial-gates.md`.
+- **Próximo Executor:** executar CI único Linux→Windows na revisão final D1.5.1, revisar falhas reais, comparar 32 PNGs/manifesto, validar estados de hover e drawers, persistência, backup/restauração com perfil sintético, então conferir 2 binários + SHA256, URLs diretas e status para proprietário. No CircleCI, Config/Checkout Branch = `fix/mf2-d1-5-premium-interactions-20261111`, `run_preflight=false` e `run_windows_build=true`. **Não repetir auditoria geral nem mexer na main ou cloud.**
+- **Arquitetura:** decisão `docs/mf2-argon-brand-roadmap-20261111`, arquivo `docs/ai-context/reviews/2026-11-11-D1-5-PR36-ARCHITECT-DECISION.md` no PR #35. Entregas futuras (marca MF, IA, A-D7, PWA) NÃO bloquear esta homologação.
+
 ## MISSÃO ATUAL
 
 **D1.4 — INTEGRAÇÃO A-D1–A-D6 CONCLUÍDA em staging, homologação pendente.** A beta.8 Premium Final está pronta para sua única pipeline CircleCI Linux → Windows. NÃO tratar código integrado como executável aprovado. Validar testes do checkout, smoke Electron real com 32 capturas, persistência/backup/restauração, dois EXEs e SHA-256. Sem alterar `main`, Cloudflare, dados reais ou gerar release automaticamente.
