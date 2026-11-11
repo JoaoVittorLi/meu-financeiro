@@ -124,3 +124,96 @@
     transform:none!important;
   }
 }
+
+
+/* V1.1 — semantic border reveal + scale-up. Only the four Overview KPI cards.
+   Preserve the existing surface/background, content and top stripe at rest.
+   Registered angle animates the outline clockwise without painting the fill. */
+@property --mf-v1-border-progress {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+.u1-shell .u1-overview > .stats-grid > :is(.u1-balance,.u1-metric) {
+  --mf-v1-border-tone: var(--u1-accent);
+  isolation: isolate;
+  z-index: 0;
+  transform-origin: center center;
+  /* The initial reveal keyframes must release transform after entry. */
+  animation-fill-mode: backwards;
+  transition: transform 230ms var(--mf-hover-ease),
+              box-shadow 230ms var(--mf-hover-ease),
+              border-color 230ms ease;
+}
+.u1-shell .u1-overview > .stats-grid > .u1-metric.income {
+  --mf-v1-border-tone: var(--green);
+}
+.u1-shell .u1-overview > .stats-grid > .u1-metric.expense {
+  --mf-v1-border-tone: var(--red);
+}
+.u1-shell .u1-overview > .stats-grid > .u1-metric.net {
+  --mf-v1-border-tone: var(--u1-accent);
+  border-top-color: var(--mf-v1-border-tone);
+}
+.u1-shell .u1-overview > .stats-grid > .u1-metric.net.is-positive {
+  --mf-v1-border-tone: var(--green);
+}
+.u1-shell .u1-overview > .stats-grid > .u1-metric.net.is-negative {
+  --mf-v1-border-tone: var(--red);
+}
+/* A narrow gradient ring: the content-box mask excludes every interior pixel. */
+.u1-shell .u1-overview > .stats-grid > :is(.u1-balance,.u1-metric)::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  box-sizing: border-box;
+  padding: 2px;
+  pointer-events: none;
+  --mf-v1-border-progress: 0deg;
+  background: conic-gradient(from -90deg,
+    var(--mf-v1-border-tone) 0deg var(--mf-v1-border-progress),
+    transparent var(--mf-v1-border-progress) 360deg);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  transition: --mf-v1-border-progress 235ms var(--mf-hover-ease);
+}
+@media (hover:hover) and (pointer:fine) {
+  .u1-shell .u1-overview > .stats-grid > :is(.u1-balance,.u1-metric):hover {
+    transform: translate3d(0,-2px,0) scale(1.022);
+    box-shadow: var(--u1-card-shadow-hover);
+    border-color: var(--border);
+    border-top-color: var(--mf-v1-border-tone);
+    z-index: 1;
+  }
+  .u1-shell .u1-overview > .stats-grid > :is(.u1-balance,.u1-metric):hover::after {
+    --mf-v1-border-progress: 360deg;
+  }
+}
+/* The cards are keyboard-focusable groups; inner controls also highlight
+   the balance card. Focus is visible without requiring pointer hover. */
+.u1-shell .u1-overview > .stats-grid > :is(.u1-balance,.u1-metric):is(:focus-visible,:focus-within) {
+  transform: translate3d(0,-2px,0) scale(1.022);
+  box-shadow: var(--u1-card-shadow-hover);
+  border-color: var(--border);
+  border-top-color: var(--mf-v1-border-tone);
+  outline: 2px solid var(--mf-v1-border-tone);
+  outline-offset: 2px;
+  z-index: 1;
+}
+.u1-shell .u1-overview > .stats-grid > :is(.u1-balance,.u1-metric):is(:focus-visible,:focus-within)::after {
+  --mf-v1-border-progress: 360deg;
+}
+@media (prefers-reduced-motion:reduce) {
+  .u1-shell .u1-overview > .stats-grid > :is(.u1-balance,.u1-metric),
+  .u1-shell .u1-overview > .stats-grid > :is(.u1-balance,.u1-metric):is(:hover,:focus-visible,:focus-within) {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+  }
+  .u1-shell .u1-overview > .stats-grid > :is(.u1-balance,.u1-metric)::after {
+    transition: none !important;
+  }
+}
