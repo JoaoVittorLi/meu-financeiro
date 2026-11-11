@@ -6,6 +6,20 @@
 
 > **Regra permanente, vinculante para todas as IAs:** **cada mudança relevante DEVE atualizar este roadmap no mesmo PR da implementação**, além do log Markdown específico. Nunca concluir uma entrega apenas com código. Quem não integra pode atualizar o progresso **proposto em sua branch**; somente o integrador confirma o progresso global, gates e publicação.
 
+## Roadmap coordenado Executor 2 × Argon — melhorias estimadas (11/11/2026)
+
+**DOCUMENTADO, NÃO HOMOLOGADO.** Ver a [versão detalhada com entregas por agente, dependências, esforços, ganhos-alvo e critérios de aceite](ai-context/reviews/2026-11-11-ROADMAP-EXECUTOR2-ARGON-MELHORIAS-ESTIMADAS.md). Metas como redução de cliques/tempo são **hipóteses a medir**, não resultados já obtidos. Estimativas de dias úteis exigem checkout e ferramentas operacionais; **não são promessas de prazo**.
+
+**Estado verificado:** PR #31 beta.8 draft SHA `d513c2be` (CI Linux/Windows verde nesse SHA); PR #36 D1.5.1 draft SHA `87fb449c` (validação BRL e guardas SQLite codificadas; gates oficiais pendentes); PR #37 U5.1 draft SHA `10b96953` (popover de categorização, filtros e teclado **já codificados**; suites oficiais/GUI pendentes); Argon I1-A reportou só mapeamento, sem commit/PR confirmado. PR #37 ainda **não incluiu roadmap/handoff/log entre os arquivos alterados**, exigência para finalização.
+
+**Executor:** fechar testes D1.5.1 e U5.1 → U5.2 Planejamento/Simular Compra → U5.3 Orçamentos/Configurações → U5.4/F1 Visão Geral/Contas e cards determinísticos → F2 simulações financeiras brasileiras → integrar marca MF e homologar release quando autorizado.  
+**Argon:** desbloquear commit/PR da I1-A → chat lateral compacto e funcional → aba Inteligência com histórico compartilhado → radar local real → chat contextual → ações **Permitir/Negar** com categorização auditável → ferramentas adicionais; em paralelo, produzir assets originais e guidelines ID1/A-D7 sem tocar arquivos do Executor.
+
+**Decisão de release mantida:** proprietário quer aguardar mais atualizações; **não executar CircleCI Windows nem gerar EXE agora**. Candidata de avaliação sugerida após U5.1 + U5.2 e gates D1.5.1, sem esperar toda a IA/PWA. PR de documentação não altera código, `main` ou Production.
+
+---
+
+
 ## Decisão operacional — ARGON assume integralmente a Inteligência 2.0 (11/11/2026)
 
 **Rodada A: APROVADO PARA EXECUÇÃO ISOLADA · Rodada B: NÃO HOMOLOGADA.** Em paralelo ao fechamento D1.5.1 do Executor 2, o **Argon é dono do design E DO CÓDIGO** de ambas as superfícies de Inteligência: chat lateral leve em todas as áreas e aba principal, além do futuro fluxo de análise e ações com prévia explícita **Permitir / Negar** (começando por categorização). O Executor mantém finanças não-IA, correções D1.5.1 e próximo EXE; **não devem editar os mesmos arquivos**.
