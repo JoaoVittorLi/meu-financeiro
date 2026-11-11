@@ -59,3 +59,21 @@
 GitHub review de arquiteto, evento `COMMENT` (revisão formal `REQUEST_CHANGES` foi recusada pelo GitHub porque a conta que comenta é também autora do PR). A restrição de API não reduz a obrigatoriedade das correções aqui descritas.
 
 **Documento aprovado para direcionamento operacional; PR #36 ainda não aprovado para release.**
+
+## Adendo — D1.5.1 corrigida no código, EXE adiado pelo proprietário (11/11/2026)
+
+**HEAD revisado:** `87fb449c0232d80aebd7c50ad547197e34d3c806` no PR #36 (commit funcional `1bd18db6d1393825fab04a1623ce3a9c03a849cf`). **Decisão atual:** aprovada com ressalvas para preparar homologação. **Não executar CircleCI/Windows nem gerar EXE agora**, pois o proprietário optou por acompanhar mais atualizações antes de pedir instalador. Esta decisão posterior substitui a solicitação anterior de pipeline imediata.
+
+### Alterações conferidas
+- P1-01: `parsePositiveBRLInput` em `src/app.ts` aplica BRL estrito e é usado para criação e edição, preservando o parser legado para CSV.
+- P1-02: `electron/db.cjs` adiciona `assertLinkedManualChangesAllowed` dentro da transação de `save('real')`, consultando links do SQLite autoritativo antes de apagar/reinserir lançamentos manuais. Bloqueia exclusão, mudança de data, valor e tipo de lançamento conciliado; descrição/categoria permitidas. A rota de restauração JSON genérica poderá exigir desvinculação explícita, uma ressalva de UX que deve ser testada.
+- Novos testes escritos: cinco de entrada monetária e dez de `FinanceDB` integral. **Não foi executada a nova suíte integral da classe FinanceDB**. O Executor relatou 18/18 V8 simulado e 6/6 reproduções SQLite isoladas em Node 22.16.0, diferentes de usar a toolchain oficial Node 22.23.4/npm 10.9.9.
+- Preflight Linux/Windows/F08/ASAR/GUI/screenshots/NSIS/Portable/hash continuam **NÃO EXECUTADOS** neste HEAD; status GitHub sem CI no SHA. Não confundir com CI anterior da beta.8.
+
+### Próximos passos sem gerar EXE
+1. Manter PR #36 em draft, sem merge e sem iniciar pipeline. Permitir testes oficiais locais somente em ambiente apropriado.
+2. Argon avança no remake integral da Inteligência em branch isolada; não misturar seus arquivos à D1.5.1. Identidade MF e demais melhorias Premium seguem planejamento independente.
+3. Se outras pequenas atualizações forem incluídas antes do instalador, avaliar escopo/custo de regressão e evitar acumular mudanças contábeis não relacionadas.
+4. Após autorização expressa do proprietário para a candidata Windows: conferir HEAD, executar uma pipeline `run_preflight=false`, `run_windows_build=true`, exigir provas de todos os gates e só entregar links binários verificados.
+
+**Registro paralelo:** [comentário de coordenação no PR #36](https://github.com/JoaoVittorLi/meu-financeiro/pull/36#issuecomment-6795886305).
