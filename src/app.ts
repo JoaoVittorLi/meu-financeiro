@@ -337,6 +337,26 @@ function budgetPresentationOrder(a:any,b:any){
  return band(a)-band(b)||(ratio(b)-ratio(a))||b.total-a.total||a.info.name.localeCompare(b.info.name,'pt-BR');
 }
 // U3 presentation: derive signals from canonical snapshots without writing financial records.
+/* B3 visual-only: financial amounts still come from the selected month's snapshot.
+   Each consumption percentage interpolates to ONE uniform color (not a rainbow arc). */
+const B3_COLOR_STOPS: readonly (readonly [number,number,number,number])[]=[
+ [0,35,184,112],[10,35,184,112],[25,161,203,70],[50,240,204,57],
+ [70,241,149,58],[90,235,105,80],[99,224,72,79],[100,211,55,70]
+];
+function budgetB3Color(percentage:number):string{
+ const p=Math.max(0,Math.min(100,Number.isFinite(percentage)?percentage:100));
+ let upper=1;
+ while(upper<B3_COLOR_STOPS.length-1&&p>B3_COLOR_STOPS[upper][0])upper++;
+ const a=B3_COLOR_STOPS[upper-1],b=B3_COLOR_STOPS[upper];
+ const t=b[0]===a[0]?0:(p-a[0])/(b[0]-a[0]);
+ const channel=(i:number)=>Math.round(a[i]+(b[i]-a[i])*t);
+ return 'rgb('+channel(1)+', '+channel(2)+', '+channel(3)+')';
+}
+function budgetB3Visual(spentCents:number,limitCents:number){
+ if(!Number.isFinite(spentCents)||!Number.isFinite(limitCents)||limitCents<=0)return null;
+ const raw=Math.max(0,spentCents/limitCents*100),fill=Math.min(100,raw);
+ return {percent:Math.round(raw),fill,color:budgetB3Color(fill)};
+}
 function u3BudgetSignals(entries:{total:number;hasLimit:boolean;limit:number}[],total:number){
  const limited=entries.filter(x=>x.hasLimit),spent=limited.reduce((n,x)=>n+x.total,0);
  return {exceeded:limited.filter(x=>x.total>x.limit).length,near:limited.filter(x=>x.limit>0&&x.total<=x.limit&&x.total/x.limit>=.9).length,unlimited:entries.filter(x=>!x.hasLimit&&x.total>0).length,covered:total>0?Math.round(Math.min(1,spent/total)*100):null,spent,limit:limited.reduce((n,x)=>n+x.limit,0)};
@@ -1638,18 +1658,31 @@ class App extends React.Component<any,State>{
          const pct=hasLimit&&limit>0?Math.round(spent/limit*100):hasLimit?(spent>0?100:0):0;
          const share=total>0?Math.round(spent/total*100):0;
          const status=!hasLimit?'unlimited':spent>limit?'exceeded':limit>0&&spent/limit>=.9?'near':'within';
-         const row=h(Card,{className:'budget-item mf-budget-card mf-budget-'+status,key:info.name},
+         const gauge=mode==='expense'&&hasLimit&&limit>0?budgetB3Visual(spent,limit):null;
+         const remaining=limit-spent;
+         const row=h(Card,{className:'budget-item mf-budget-card mf-budget-'+status+(gauge?' mf-budget-card-b3':''),key:info.name},
            h('div',{className:'budget-item-top'},h('span',{className:'cat-symbol',style:{background:info.color+'28',color:info.color}},info.emoji||'✨'),
              h('div',{},h('h3',{},info.name),h('small',{className:'u3-budget-state'},mode==='income'?'Recebimentos do mês':status==='exceeded'?'Acima do limite':status==='near'?'Próximo do limite':status==='unlimited'?'Sem limite':'Dentro do limite'))),
+           gauge?h('div',{className:'mf-budget-b3',role:'group','aria-label':'Orçamento de '+info.name+': '+gauge.percent+'% utilizado; gasto '+fmt(spent)+' de '+fmt(limit)+(remaining<0?'; excedido em '+fmt(-remaining):'; restante '+fmt(remaining))},
+             h('div',{className:'mf-budget-b3-dial',style:{'--mf-budget-b3-color':gauge.color}},
+               h('svg',{className:'mf-budget-b3-svg',viewBox:'0 0 200 110','aria-hidden':true,focusable:'false'},
+                 h('path',{className:'mf-budget-b3-track',d:'M 14 96 A 86 86 0 0 1 186 96',pathLength:100}),
+                 gauge.fill>0?h('path',{className:'mf-budget-b3-fill',d:'M 14 96 A 86 86 0 0 1 186 96',pathLength:100,strokeDasharray:gauge.fill+' 100'}):null),
+               h('strong',{className:'mf-budget-b3-percent'},gauge.percent+'%'),
+               h('span',{className:'mf-budget-b3-caption'},'do limite utilizado')),
+             h('div',{className:'mf-budget-b3-values'},
+               h('div',{},h('small',{},'Gasto atual'),h('strong',{},fmt(spent))),
+               h('div',{},h('small',{},'Limite configurado'),h('strong',{},fmt(limit)))),
+             h('p',{className:'mf-budget-b3-remaining'+(remaining<0?' is-exceeded':'')},remaining<0?'Limite ultrapassado · excesso de '+fmt(-remaining):'Restam '+fmt(remaining))):
            h('div',{className:'mf-budget-money'},h('strong',{},fmt(spent)),
              h('span',{},mode==='expense'?'gasto até agora':'recebido no período')),
            mode==='income'?h('div',{className:'mf-income-share'},
              h('div',{className:'progress-track'},h('div',{className:'progress-bar',style:{background:info.color,width:(spent>0?Math.max(2,Math.min(share,100)):0)+'%'}})),
              h('small',{},share===0&&spent>0?'Menos de 1% das receitas':share+'% das receitas')):
-           hasLimit?h('div',{className:'mf-budget-limit'},
+           gauge?null:hasLimit?h('div',{className:'mf-budget-limit'},
              h('div',{className:'mf-budget-limit-head'},
                h('span',{},'Limite '+fmt(limit)),h('strong',{className:spent>limit?'bad-text':''},limit===0&&spent>0?'Acima do limite':pct+'% utilizado')),
-             h('div',{className:'progress-track'},h('div',{className:'progress-bar',style:{width:Math.min(pct,100)+'%'}})),
+             limit>0?h('div',{className:'progress-track'},h('div',{className:'progress-bar',style:{width:Math.min(pct,100)+'%'}})):null,
              h('small',{},spent>limit?'Ultrapassou em '+fmt(spent-limit):status==='near'?'Próximo do limite · restam '+fmt(limit-spent):limit===0?'Limite zero definido':'Restam '+fmt(limit-spent))):
            h('div',{className:'mf-no-budget'},h('span',{},'Sem limite definido'),
              h('div',{className:'mf-budget-limit-actions'},suggestLimit(info.name)?h('button',{type:'button',className:'small-link',title:'Sugestão: média dos últimos três meses com 10% de margem, arredondada para R$ 10. Você confirma antes de salvar.',onClick:()=>this.setState({editModal:{type:'budget',key:info.name,title:'Limite sugerido · '+info.name,value:moneyString(suggestLimit(info.name)!)}})},'Sugerir '+fmt(suggestLimit(info.name)!)):null,
