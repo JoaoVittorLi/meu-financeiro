@@ -180,7 +180,7 @@ test('U5.2.1 — transferências entre contas e lançamentos ignorados visíveis
   setState(p){Object.assign(this.state,p)}},rows);
  const selected=walk(calendarTree,x=>x.props?.['data-plan-day']==='2026-12-31')[0];
  assert.match(selected.props['aria-label'],/4 não contabilizados/);
- const ledger=evaluate('function pLedgerRow(app:any)','function pAgenda(app:any','pLedgerRow',
+ const ledger=evaluate('function pLedgerRow(','function pAgenda(','pLedgerRow',
   {h,fmt,pDate,pChip:status=>h('span',{},status),Icon:()=>null});
  const demo={getCategories:()=>[],openPlanBankDetail(){}};
  const own=JSON.stringify(ledger(demo,rows.find(r=>r.kind==='transfer')));
