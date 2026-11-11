@@ -130,6 +130,20 @@ function bankSnapshot(bank:BankState,month:string){return bankTotalsInRange(bank
 const fmt = (n:number)=> (n/100).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 const moneyString = (n:number)=> (n/100).toFixed(2).replace('.',',');
 function parseMoney(v:string):number { let s = String(v||'').trim().replace(/R\$|\s/g,''); if (!s) return 0; if (s.includes(',')) s=s.replace(/\./g,'').replace(',','.'); else if ((s.match(/\./g)||[]).length>1) s=s.replace(/\./g,''); const x=Number(s); return Number.isFinite(x)?Math.round(x*100):NaN; }
+/** BRL typed by a person: reject ambiguous separators and fractions of a cent.
+ * Keep parseMoney() unchanged for legacy CSV, backups, budgets and other flows.
+ */
+function parsePositiveBRLInput(value:string):number {
+ const input=String(value??'').trim().replace(/^R\$\s*/,'');
+ // Dot may only group 3 digits; comma is the only decimal separator.
+ if(!/^(?:0|[1-9]\d*|[1-9]\d{0,2}(?:\.\d{3})+)(?:,\d{1,2})?$/.test(input))return NaN;
+ const [integer,fraction='']=input.split(',');
+ const whole=Number(integer.replace(/\./g,''));
+ if(!Number.isSafeInteger(whole))return NaN;
+ const cents=whole*100+Number(fraction.padEnd(2,'0'));
+ // Coin-safe, and within FinanceDB.isCents() persistence boundary.
+ return Number.isSafeInteger(cents)&&cents>0&&cents<=100_000_000_000?cents:NaN;
+}
 function iso(d:Date):string { return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 function shiftMonth(ym:string,offset:number):string { const d=new Date(Number(ym.slice(0,4)),Number(ym.slice(5,7))-1+offset,1);return iso(d).slice(0,7); }
 const nowYM=iso(new Date()).slice(0,7);
@@ -661,12 +675,12 @@ class App extends React.Component<any,State>{
   const original=this.state.data.transactions.find(t=>t.id===id);
   const draft=this.state.manualDraft;
   if(!original||!draft)return false;
-  const description=draft.description.trim(),amount=parseMoney(draft.value);
+  const description=draft.description.trim(),amount=parsePositiveBRLInput(draft.value);
   if(!description||description.length>150){this.flash('Informe uma descrição de até 150 caracteres.');return false;}
   if(!/^\d{4}-\d{2}-\d{2}$/.test(draft.date)||iso(fromISO(draft.date))!==draft.date){
    this.flash('Informe uma data válida, inclusive dia e mês.');return false;
   }
-  if(!Number.isSafeInteger(amount)||amount<=0){this.flash('Informe um valor positivo válido em centavos.');return false;}
+  if(!Number.isSafeInteger(amount)||amount<=0){this.flash('Valor inválido. Use reais e no máximo duas casas decimais (ex.: 1.234,56).');return false;}
   const allowed=this.getCategories().some(c=>c.name===draft.category&&
    (original.kind==='income'?c.kind!=='expense':c.kind!=='income'));
   if(!allowed&&draft.category!==original.category){this.flash('Selecione uma categoria compatível.');return false;}
@@ -959,7 +973,7 @@ class App extends React.Component<any,State>{
  }
 
  monthData(){return snapshot(this.state.data,this.state.month);}
- async saveEntry(){const f=this.state.entry,v=parseMoney(f.value);if(!f.description.trim())return this.flash('Informe uma descrição.');if(!/^\d{4}-\d{2}-\d{2}$/.test(f.date)||iso(fromISO(f.date))!==f.date)return this.flash('Informe uma data válida.');if(!Number.isFinite(v)||v<=0)return this.flash('Informe um valor maior que zero.');const t:Tx={id:'tx-'+Date.now()+'-'+Math.random().toString(36).slice(2,7),date:f.date,description:f.description.trim().slice(0,150),category:f.category,kind:f.kind,amount:v,origin:'manual'};if(await this.updateData({...this.state.data,transactions:[...this.state.data.transactions,t]},'Lançamento registrado.'))this.setState({showEntry:false,entryCategoryTouched:false,entry:{...f,description:'',value:''}});}
+ async saveEntry(){const f=this.state.entry,v=parsePositiveBRLInput(f.value);if(!f.description.trim())return this.flash('Informe uma descrição.');if(!/^\d{4}-\d{2}-\d{2}$/.test(f.date)||iso(fromISO(f.date))!==f.date)return this.flash('Informe uma data válida.');if(!Number.isSafeInteger(v)||v<=0)return this.flash('Valor inválido. Use reais e no máximo duas casas decimais (ex.: 1.234,56).');const t:Tx={id:'tx-'+Date.now()+'-'+Math.random().toString(36).slice(2,7),date:f.date,description:f.description.trim().slice(0,150),category:f.category,kind:f.kind,amount:v,origin:'manual'};if(await this.updateData({...this.state.data,transactions:[...this.state.data.transactions,t]},'Lançamento registrado.'))this.setState({showEntry:false,entryCategoryTouched:false,entry:{...f,description:'',value:''}});}
  async removeEntry(id:string){
   const found=this.state.data.transactions.find(t=>t.id===id);
   if(!found||this.state.busy||this.writeInProgress)return false;

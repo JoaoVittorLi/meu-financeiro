@@ -300,10 +300,29 @@ class FinanceDB {
    const transactions=this.db.prepare('SELECT id,date,description,kind,amount_cents AS amount,category,origin FROM transactions WHERE profile=? ORDER BY date,id').all(profile).map(x=>({...x}));
    return {version:5,transactions,budgets,settings};
  }
+ /** Guard against stale renderer snapshots; this checks authoritative SQLite links.
+  * Called within BEGIN IMMEDIATE before replacing manual rows.
+  */
+ assertLinkedManualChangesAllowed(incoming){
+   const nextById=new Map(incoming.map(t=>[t.id,t]));
+   const linked=this.db.prepare(`
+     SELECT t.id,t.date,t.kind,t.amount_cents AS amount
+     FROM bank_manual_links l
+     JOIN transactions t ON t.profile='real' AND t.id=l.manual_id
+   `).all();
+   for(const prior of linked){
+     const next=nextById.get(prior.id);
+     if(!next || next.date!==prior.date || next.amount!==prior.amount || next.kind!==prior.kind){
+       throw new Error('Lançamento vinculado a movimentação bancária. Desvincule antes de alterar data, valor, tipo ou excluir.');
+     }
+   }
+ }
  save(profile,payload){
    checkProfile(profile);const value=validate(payload);
    this.db.exec('BEGIN IMMEDIATE');
    try{
+     // Verify authoritative bank links BEFORE deleting local rows.
+     if(profile==='real')this.assertLinkedManualChangesAllowed(value.transactions);
      this.db.prepare('INSERT OR IGNORE INTO profiles(profile) VALUES (?)').run(profile);
      this.db.prepare('DELETE FROM transactions WHERE profile=?').run(profile);
      this.db.prepare('DELETE FROM budgets WHERE profile=?').run(profile);

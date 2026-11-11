@@ -16,6 +16,7 @@ const methods=[
 ].join('\n');
 const parse=between('function parseMoney(v:string):number','function shiftMonth')
  .replace('parseMoney(v:string):number','parseMoney(v)')
+ .replace('parsePositiveBRLInput(value:string):number','parsePositiveBRLInput(value)')
  .replace('iso(d:Date):string','iso(d)');
 const from=between('function fromISO(value:string):Date','function advanceDate')
  .replace('fromISO(value:string):Date','fromISO(value)');
