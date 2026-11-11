@@ -6,6 +6,18 @@
 
 Repositório privado `JoaoVittorLi/meu-financeiro`. Aplicativo financeiro Windows Electron + React/TypeScript + SQLite local; PWA/Cloudflare em frentes separadas, congeladas na missão Desktop First. Prioridade: integridade de centavos, contas e IDs, backup/restore, UI Premium e executável Windows validado.
 
+## CHECKPOINT U5.2.1 — CORREÇÕES NO PR #38, HOMOLOGAÇÃO PENDENTE (11/11/2026)
+
+**Branch/PR:** `feat/mf2-u5-2-planning-simulator-20261111` / [#38](https://github.com/JoaoVittorLi/meu-financeiro/pull/38), draft e com base no PR #37. **Commit funcional:** `d2032bd305aee0203c491c49c0d644d3ac1c696e`; documentação posterior. Dependências #36 → #37 → #38 preservadas.
+
+**P1:** ação de converter simulação em compromisso `planSimulatedPurchase` valida de novo `canPlanSimulatedPurchase` (mesma guarda do botão). Resultados stale, erro, cálculo em andamento ou snapshot de premissas divergente **não podem abrir compromisso**, embora o valor anterior permaneça como referência visual. Recalcular primeiro. Regras de centavos, parcelas, data e confirmação mantidas.
+
+**P2:** `pFilterTransactions` usa `effectiveNature` para transações bancárias na agenda/calendário; `transfer`/`ignore` são mostradas como fora do fluxo, excluídas das entradas e saídas efetivas de `pCalendarDayInfo`, mas incluídas na contagem de linhas e badge neutro. Sem alterações em Pluggy, natureza gravada, SQLite ou cálculos de projeção.
+
+**Testes versionados:** 7 novos cenários em `tests/u5-2-simulator.test.cjs`, 2 em `tests/u5-2-planning.test.cjs`, 1 em `tests/decisions-u3.test.cjs`; contratos existentes de calendário adaptados. **Executados isoladamente:** 8/8 V8 método de conversão e 10/10 V8 natureza/calendário com dados sintéticos e TS adaptado; **não** são Node test runner do checkout. **NÃO EXECUTADOS:** npm ci, TypeScript, Node/SQLite completo e todas regressões D1.5.1/U5.1/U5.1.1/U5.2, compile, F08, ASAR, Electron e GUI. Checkout ausente, Node 22.16.0/npm 10.9.2 no terminal, vs pins 22.23.4/10.9.9. Sem CI Windows.
+
+**Ação Arquiteto:** revisar P1/P2 no PR #38; obter checkout/toolchain fixada e rodar gates (compilar antes de testes VM), QA sintético e validar dados; não mergear ou abrir novas features até aprovação. [Log](docs/ai-context/logs/2026-11-11-MF2-U5-2-1-regression-gates.md).
+
 ## CHECKPOINT U5.2 — PR #38 / PLANEJAMENTO E SIMULADOR (11/11/2026)
 
 **PR [#38](https://github.com/JoaoVittorLi/meu-financeiro/pull/38)** draft, branch `feat/mf2-u5-2-planning-simulator-20261111` com base PR #37 `feat/mf2-u5-1-movements-productivity-20261111` no SHA `5a4963133795182e5d73344c1ad6df0a78fa0bfb`. Commit funcional U5.2: `e6dfca89a549c257577a3317e4669b98cac9b23a`. Stacking **#36 → #37 → #38**, nenhuma integração realizada.
