@@ -64,10 +64,10 @@
 }
 @media (hover:hover) and (pointer:fine){
   /* Quiet depth for informational surfaces; never signal an inactive click target. */
-  .u1-shell .u1-metric:hover,
-  .u2-shell .u2-metric:hover,
-  .u3-budgets .mf-budget-summary > div:hover,
-  .u3-accounts .u3-account-summary > .card:hover,
+  .u1-shell .u1-metric:hover:not(.mf-border-reveal),
+  .u2-shell .u2-metric:hover:not(.mf-border-reveal),
+  .u3-budgets .mf-budget-summary > div:hover:not(.mf-border-reveal),
+  .u3-accounts .u3-account-summary > .card:hover:not(.mf-border-reveal),
   .u3-simulator .result-metrics > div:hover{
     transform:translate3d(0,-2px,0) scale(1.008);
     box-shadow:var(--mf-hover-shadow);
@@ -123,4 +123,109 @@
   .u2-planning .p-upcoming-row:hover{
     transform:none!important;
   }
+}
+
+
+/* V1.3 — shared semantic outline; replaces the inset gradient of V1.1.
+   A single 3px pseudo border renders the top AND the revealed perimeter.
+   The existing top border becomes transparent; background/content unchanged. */
+@property --mf-border-sweep {syntax:"<angle>";inherits:false;initial-value:0deg}
+.mf-border-reveal {--mf-border-tone:var(--subtle)}
+:is(.u1-shell .u1-overview > .stats-grid,
+    .u2-shell .u2-metrics,
+    .u3-budgets .mf-budget-summary,
+    .u3-accounts .u3-account-summary) > .mf-border-reveal {
+  position:relative;isolation:isolate;z-index:0;
+  border-color:var(--border);border-top-color:transparent;
+  transform-origin:center center;
+  animation-fill-mode:backwards;
+  transition:transform 230ms var(--mf-hover-ease),box-shadow 230ms var(--mf-hover-ease);
+}
+.mf-border-reveal.mf-tone-income,
+.mf-border-reveal.mf-tone-net.is-positive {--mf-border-tone:var(--green)}
+.mf-border-reveal.mf-tone-expense,
+.mf-border-reveal.mf-tone-net.is-negative {--mf-border-tone:var(--red)}
+.mf-border-reveal.mf-tone-balance,
+.mf-border-reveal.mf-tone-net.is-neutral {
+  --mf-border-tone:var(--u1-accent,var(--u2-accent,var(--u3-accent,var(--subtle))));
+}
+.mf-border-reveal.mf-tone-neutral {--mf-border-tone:var(--subtle)}
+.mf-border-reveal.mf-tone-warning {--mf-border-tone:var(--warning)}
+/* Two additive masks affect the SAME border pixels; no second inner ring. */
+:is(.u1-shell .u1-overview > .stats-grid,
+    .u2-shell .u2-metrics,
+    .u3-budgets .mf-budget-summary,
+    .u3-accounts .u3-account-summary) > .mf-border-reveal::after {
+  content:"";position:absolute;inset:-1px;box-sizing:border-box;
+  border:3px solid var(--mf-border-tone);border-radius:inherit;
+  pointer-events:none;--mf-border-sweep:0deg;
+  -webkit-mask-image:
+    linear-gradient(to bottom,#000 0 3px,transparent 3px),
+    conic-gradient(from 45deg,#000 0deg var(--mf-border-sweep),transparent var(--mf-border-sweep) 360deg);
+  mask-image:
+    linear-gradient(to bottom,#000 0 3px,transparent 3px),
+    conic-gradient(from 45deg,#000 0deg var(--mf-border-sweep),transparent var(--mf-border-sweep) 360deg);
+  transition:--mf-border-sweep 240ms var(--mf-hover-ease);
+}
+@media (hover:hover) and (pointer:fine) {
+:is(.u1-shell .u1-overview > .stats-grid,
+    .u2-shell .u2-metrics,
+    .u3-budgets .mf-budget-summary,
+    .u3-accounts .u3-account-summary) > .mf-border-reveal:hover {
+  transform:translate3d(0,-2px,0) scale(1.022);
+  box-shadow:var(--mf-hover-shadow);z-index:1;
+}
+:is(.u1-shell .u1-overview > .stats-grid,
+    .u2-shell .u2-metrics,
+    .u3-budgets .mf-budget-summary,
+    .u3-accounts .u3-account-summary) > .mf-border-reveal:hover::after {--mf-border-sweep:360deg}
+}
+/* A full 3px color frame provides focus without a second outline. */
+:is(.u1-shell .u1-overview > .stats-grid,
+    .u2-shell .u2-metrics,
+    .u3-budgets .mf-budget-summary,
+    .u3-accounts .u3-account-summary) > .mf-border-reveal:is(:focus-visible,:focus-within) {
+  transform:translate3d(0,-2px,0) scale(1.022);
+  box-shadow:var(--mf-hover-shadow);
+  outline:none;z-index:1;
+}
+:is(.u1-shell .u1-overview > .stats-grid,
+    .u2-shell .u2-metrics,
+    .u3-budgets .mf-budget-summary,
+    .u3-accounts .u3-account-summary) > .mf-border-reveal:is(:focus-visible,:focus-within)::after {--mf-border-sweep:360deg}
+@media (prefers-reduced-motion:reduce) {
+:is(.u1-shell .u1-overview > .stats-grid,
+    .u2-shell .u2-metrics,
+    .u3-budgets .mf-budget-summary,
+    .u3-accounts .u3-account-summary) > .mf-border-reveal {animation:none!important;transition:none!important}
+:is(.u1-shell .u1-overview > .stats-grid,
+    .u2-shell .u2-metrics,
+    .u3-budgets .mf-budget-summary,
+    .u3-accounts .u3-account-summary) > .mf-border-reveal:is(:hover,:focus-visible,:focus-within) {transform:none!important}
+:is(.u1-shell .u1-overview > .stats-grid,
+    .u2-shell .u2-metrics,
+    .u3-budgets .mf-budget-summary,
+    .u3-accounts .u3-account-summary) > .mf-border-reveal::after {transition:none!important}
+}
+
+/* V1.2 / BUG-02 — detail drawer contrast and internal spacing.
+   Repair the earlier refinement layer's padding:20px 0 without changing its
+   theme-aware surfaces or the V1.1 KPI reveal. */
+.mf-detail-drawer .mf-detail-scroll {
+  min-width: 0;
+  min-height: 0;
+}
+.mf-detail-drawer .mf-detail-section {
+  padding: 16px 18px;
+  min-width: 0;
+  background: var(--surface2);
+  color: var(--text);
+}
+.mf-detail-drawer .mf-detail-section :is(p,b,strong,label) {
+  overflow-wrap: anywhere;
+}
+.mf-detail-drawer .mf-detail-hero {
+  min-width: 0;
+  background: radial-gradient(ellipse at 50% 0%,var(--mf-hover-glow),transparent 75%),var(--surface2);
+  color: var(--text);
 }

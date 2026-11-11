@@ -337,6 +337,26 @@ function budgetPresentationOrder(a:any,b:any){
  return band(a)-band(b)||(ratio(b)-ratio(a))||b.total-a.total||a.info.name.localeCompare(b.info.name,'pt-BR');
 }
 // U3 presentation: derive signals from canonical snapshots without writing financial records.
+/* B3 visual-only: financial amounts still come from the selected month's snapshot.
+   Each consumption percentage interpolates to ONE uniform color (not a rainbow arc). */
+const B3_COLOR_STOPS: readonly (readonly [number,number,number,number])[]=[
+ [0,35,184,112],[10,35,184,112],[25,161,203,70],[50,240,204,57],
+ [70,241,149,58],[90,235,105,80],[99,224,72,79],[100,211,55,70]
+];
+function budgetB3Color(percentage:number):string{
+ const p=Math.max(0,Math.min(100,Number.isFinite(percentage)?percentage:100));
+ let upper=1;
+ while(upper<B3_COLOR_STOPS.length-1&&p>B3_COLOR_STOPS[upper][0])upper++;
+ const a=B3_COLOR_STOPS[upper-1],b=B3_COLOR_STOPS[upper];
+ const t=b[0]===a[0]?0:(p-a[0])/(b[0]-a[0]);
+ const channel=(i:number)=>Math.round(a[i]+(b[i]-a[i])*t);
+ return 'rgb('+channel(1)+', '+channel(2)+', '+channel(3)+')';
+}
+function budgetB3Visual(spentCents:number,limitCents:number){
+ if(!Number.isFinite(spentCents)||!Number.isFinite(limitCents)||limitCents<=0)return null;
+ const raw=Math.max(0,spentCents/limitCents*100),fill=Math.min(100,raw);
+ return {percent:Math.round(raw),fill,color:budgetB3Color(fill)};
+}
 function u3BudgetSignals(entries:{total:number;hasLimit:boolean;limit:number}[],total:number){
  const limited=entries.filter(x=>x.hasLimit),spent=limited.reduce((n,x)=>n+x.total,0);
  return {exceeded:limited.filter(x=>x.total>x.limit).length,near:limited.filter(x=>x.limit>0&&x.total<=x.limit&&x.total/x.limit>=.9).length,unlimited:entries.filter(x=>!x.hasLimit&&x.total>0).length,covered:total>0?Math.round(Math.min(1,spent/total)*100):null,spent,limit:limited.reduce((n,x)=>n+x.limit,0)};
@@ -833,11 +853,12 @@ class App extends React.Component<any,State>{
     if((e.key==='ArrowDown'||e.key==='ArrowUp')&&choices.length){
       e.preventDefault();e.stopPropagation();
       const delta=e.key==='ArrowDown'?1:-1;
-      this.setState({quickCategoryIndex:(index+delta+choices.length)%choices.length});
+      this.setState((prev:State)=>({quickCategoryIndex:(prev.quickCategoryIndex+delta+choices.length)%choices.length}));
       this.quickCategorySearchInput?.focus();return;
     }
-    if(e.key==='Enter'&&e.target===this.quickCategorySearchInput&&choices[index]){
-      e.preventDefault();e.stopPropagation();void this.chooseQuickCategory(choices[index].name);
+    const selected=choices[Math.min(this.state.quickCategoryIndex,choices.length-1)];
+    if(e.key==='Enter'&&e.target===this.quickCategorySearchInput&&selected){
+      e.preventDefault();e.stopPropagation();void this.chooseQuickCategory(selected.name);
     }
   };
   return ReactDOM.createPortal(h('div',{className:'u5-category-layer'},
@@ -1340,12 +1361,12 @@ class App extends React.Component<any,State>{
  const openBudget=()=>{this.setState({month});this.navigate('budgets');};
  const palette=['#8066d5','#329b89','#d29844','#5a8fc9','#c7759c'];
  const categoryColor=(name:string,index:number)=>{const info=this.getCategories().find(c=>c.name===name);return info&&(!info.builtIn||info.color.toLowerCase()!=='#3e9a85')?info.color:palette[index];};
- const metric=(label:string,value:number,icon:string,hint:string,tone:string)=>h('section',{className:'u1-metric '+tone},h('div',{className:'u1-metric-label'},h(Icon,{name:icon,size:16}),label),h('strong',{},money(value)),h('small',{},hint));
+ const metric=(label:string,value:number,icon:string,hint:string,tone:string)=>h('section',{className:'u1-metric mf-border-reveal mf-tone-'+(tone==='net'?'net':tone)+' '+tone+(tone==='net'?(value>0?' is-positive':value<0?' is-negative':' is-neutral'):''),role:'group',tabIndex:0,'aria-label':label+' · '+money(value)},h('div',{className:'u1-metric-label'},h(Icon,{name:icon,size:16}),label),h('strong',{},money(value)),h('small',{},hint));
  return h('div',{className:'overview-content u1-overview '+(hidden?'u1-values-hidden':'')},
   h('div',{className:'u1-context'},this.renderSourcePicker(),h('span',{},date(start)+' — '+date(end)+' · '+(useBank?'Movimentos confirmados'+(bank.data.truncated?' · histórico parcial':''):'Registros manuais'))),
   state.bankMessage&&bank.config.configured?h('div',{className:'sync-feedback',role:'status'},state.bankMessage):null,
   h('div',{className:'stats-grid'},
-   h('section',{className:'u1-balance'},h('div',{className:'u1-balance-label'},h('span',{},useBank?'Saldo nas contas':'Saldo manual'),h('button',{type:'button',className:'u1-icon-button','aria-label':hidden?'Mostrar valores':'Ocultar valores','aria-pressed':hidden,onClick:()=>this.setState({overviewHideValues:!hidden})},h(Icon,{name:hidden?'eye-off':'eye',size:18}))),
+   h('section',{className:'u1-balance mf-border-reveal mf-tone-balance',role:'group',tabIndex:0,'aria-label':useBank?'Saldo nas contas':'Saldo manual'},h('div',{className:'u1-balance-label'},h('span',{},useBank?'Saldo nas contas':'Saldo manual'),h('button',{type:'button',className:'u1-icon-button','aria-label':hidden?'Mostrar valores':'Ocultar valores','aria-pressed':hidden,onClick:()=>this.setState({overviewHideValues:!hidden})},h(Icon,{name:hidden?'eye-off':'eye',size:18}))),
     h('strong',{className:'u1-balance-value'},hidden?'••••':coverage?bankBalanceLabel(coverage):money(s.balance)),
     h('details',{className:'u1-balance-info'},h('summary',{},h('span',{className:'u1-status-dot '+(coverage?.missingCount?'is-partial':'')}),coverage?.missingCount?'Saldo parcial · conferir':useBank?'Referência das instituições':'Como é calculado'),h('p',{},coverage?'Saldos disponíveis de '+coverage.knownCount+' de '+coverage.totalCount+' conta(s). Não representa dinheiro livre. A consulta pode ser mais recente que o saldo informado.':'Saldo inicial mais receitas menos despesas manuais. Não somado ao banco.'))),
    metric('Receitas',s.income,'trend','No período selecionado','income'),metric('Despesas',s.expense,'down','No período selecionado','expense'),metric('Resultado',s.net,'chart','Receitas menos despesas','net')),
@@ -1415,13 +1436,13 @@ class App extends React.Component<any,State>{
      h('div',{className:'u2-metrics'},[
        {label:'Entradas confirmadas',value:fmt(summary.income),detail:'Receitas · '+(source==='bank'?(partialBank?'banco · linhas carregadas':'banco'):'manual'),kind:'income'},
        {label:'Saídas confirmadas',value:fmt(summary.expense),detail:'Despesas · '+(source==='bank'?(partialBank?'banco · linhas carregadas':'banco'):'manual'),kind:'expense'},
-       {label:'Resultado dos registros',value:fmt(summary.net),detail:'Entradas menos saídas · não é saldo disponível'+(source==='bank'&&partialBank?' · histórico parcial':''),kind:''},
-       {label:source==='bank'?'Pendentes no banco':'Registros manuais',value:String(source==='bank'?summary.pending:summary.count),detail:source==='bank'?summary.review+' a conferir · revisão independente do pagamento':'Valores separados das contas conectadas',kind:''}
-     ].map(x=>h('article',{className:'u2-metric '+x.kind,key:x.label},h('span',{},x.label),h('strong',{},x.value),h('small',{},x.detail)))),
+       {label:'Resultado dos registros',value:fmt(summary.net),detail:'Entradas menos saídas · não é saldo disponível'+(source==='bank'&&partialBank?' · histórico parcial':''),kind:'',tone:'net',semantic:summary.net>0?'is-positive':summary.net<0?'is-negative':'is-neutral'},
+       {label:source==='bank'?'Pendentes no banco':'Registros manuais',value:String(source==='bank'?summary.pending:summary.count),detail:source==='bank'?summary.review+' a conferir · revisão independente do pagamento':'Valores separados das contas conectadas',kind:'',tone:source==='bank'?'warning':'balance'}
+     ].map(x=>h('article',{className:'u2-metric mf-border-reveal mf-tone-'+(x.tone||x.kind||'neutral')+' '+x.kind+(x.semantic?' '+x.semantic:''),role:'group',tabIndex:0,key:x.label},h('span',{},x.label),h('strong',{},x.value),h('small',{},x.detail)))),
      partialBank?h('p',{className:'u5-history-limited',role:'status'},
         'Histórico bancário parcial: '+this.state.bank.data.transactions.length+' de '+
         this.state.bank.data.totalTransactions+
-        ' movimentações carregadas. Os resumos bancários e a revisão nesta tela abrangem apenas as linhas carregadas; não representam o histórico completo.'):null,
+        ' movimentações carregadas. Os resumos bancários e a revisão nesta tela abrangem somente as linhas carregadas; não representam o histórico completo.'):null,
      h('div',{className:'u2-scope'},
        h('span',{},'Resumo: '+(source==='bank'?'contas conectadas':'lançamentos manuais')+
          ' · '+summary.count+' registros'+(summary.excluded?' · '+summary.excluded+' transferência(s)/desconsiderada(s) fora dos valores':'')),
@@ -1610,10 +1631,10 @@ class App extends React.Component<any,State>{
      this.renderSourcePicker(),
      h('p',{className:'mf-budget-context'},prettyMonth(this.state.month)+' · '+(mode==='expense'?'Gastos do mês e limites cadastrados por categoria':'Composição das receitas recebidas, sem incluir transferências próprias confirmadas')),
      mode==='expense'?h('div',{className:'mf-budget-summary mf-budget-summary-four'},
-       h('div',{},h('small',{},'Gasto nas categorias com limite'),h('strong',{},fmt(spentLimited))),
-       h('div',{},h('small',{},'Limites cadastrados'),h('strong',{},limited.length?fmt(limitTotal):'Sem limites')),
-       h('div',{},h('small',{},margin<0?'Excesso nos limites':'Margem nos limites'),h('strong',{className:margin<0?'bad-text':''},limited.length?fmt(Math.abs(margin)):'Sem limites'),h('small',{},'Não representa saldo disponível')),
-       h('div',{},h('small',{},'Gasto fora dos limites'),h('strong',{},fmt(Math.max(0,total-spentLimited))))):
+       h('div',{className:'mf-border-reveal mf-tone-expense',role:'group',tabIndex:0},h('small',{},'Gasto nas categorias com limite'),h('strong',{},fmt(spentLimited))),
+       h('div',{className:'mf-border-reveal mf-tone-balance',role:'group',tabIndex:0},h('small',{},'Limites cadastrados'),h('strong',{},limited.length?fmt(limitTotal):'Sem limites')),
+       h('div',{className:'mf-border-reveal mf-tone-net '+(limited.length?(margin<0?'is-negative':'is-positive'):'is-neutral'),role:'group',tabIndex:0},h('small',{},margin<0?'Excesso nos limites':'Margem nos limites'),h('strong',{className:margin<0?'bad-text':''},limited.length?fmt(Math.abs(margin)):'Sem limites'),h('small',{},'Não representa saldo disponível')),
+       h('div',{className:'mf-border-reveal mf-tone-warning',role:'group',tabIndex:0},h('small',{},'Gasto fora dos limites'),h('strong',{},fmt(Math.max(0,total-spentLimited))))):
      h('div',{className:'mf-budget-summary'},
        h('div',{},h('small',{},'Total recebido no período'),h('strong',{},fmt(total))),
        h('div',{},h('small',{},'Origens com recebimentos'),h('strong',{},String(entries.filter(x=>x.total>0).length))),
@@ -1637,18 +1658,31 @@ class App extends React.Component<any,State>{
          const pct=hasLimit&&limit>0?Math.round(spent/limit*100):hasLimit?(spent>0?100:0):0;
          const share=total>0?Math.round(spent/total*100):0;
          const status=!hasLimit?'unlimited':spent>limit?'exceeded':limit>0&&spent/limit>=.9?'near':'within';
-         const row=h(Card,{className:'budget-item mf-budget-card mf-budget-'+status,key:info.name},
+         const gauge=mode==='expense'&&hasLimit&&limit>0?budgetB3Visual(spent,limit):null;
+         const remaining=limit-spent;
+         const row=h(Card,{className:'budget-item mf-budget-card mf-budget-'+status+(gauge?' mf-budget-card-b3':''),key:info.name},
            h('div',{className:'budget-item-top'},h('span',{className:'cat-symbol',style:{background:info.color+'28',color:info.color}},info.emoji||'✨'),
              h('div',{},h('h3',{},info.name),h('small',{className:'u3-budget-state'},mode==='income'?'Recebimentos do mês':status==='exceeded'?'Acima do limite':status==='near'?'Próximo do limite':status==='unlimited'?'Sem limite':'Dentro do limite'))),
+           gauge?h('div',{className:'mf-budget-b3',role:'group','aria-label':'Orçamento de '+info.name+': '+gauge.percent+'% utilizado; gasto '+fmt(spent)+' de '+fmt(limit)+(remaining<0?'; excedido em '+fmt(-remaining):'; restante '+fmt(remaining))},
+             h('div',{className:'mf-budget-b3-dial',style:{'--mf-budget-b3-color':gauge.color}},
+               h('svg',{className:'mf-budget-b3-svg',viewBox:'0 0 200 110','aria-hidden':true,focusable:'false'},
+                 h('path',{className:'mf-budget-b3-track',d:'M 14 96 A 86 86 0 0 1 186 96',pathLength:100}),
+                 gauge.fill>0?h('path',{className:'mf-budget-b3-fill',d:'M 14 96 A 86 86 0 0 1 186 96',pathLength:100,strokeDasharray:gauge.fill+' 100'}):null),
+               h('strong',{className:'mf-budget-b3-percent'},gauge.percent+'%'),
+               h('span',{className:'mf-budget-b3-caption'},'do limite utilizado')),
+             h('div',{className:'mf-budget-b3-values'},
+               h('div',{},h('small',{},'Gasto atual'),h('strong',{},fmt(spent))),
+               h('div',{},h('small',{},'Limite configurado'),h('strong',{},fmt(limit)))),
+             h('p',{className:'mf-budget-b3-remaining'+(remaining<0?' is-exceeded':'')},remaining<0?'Limite ultrapassado · excesso de '+fmt(-remaining):'Restam '+fmt(remaining))):
            h('div',{className:'mf-budget-money'},h('strong',{},fmt(spent)),
              h('span',{},mode==='expense'?'gasto até agora':'recebido no período')),
            mode==='income'?h('div',{className:'mf-income-share'},
              h('div',{className:'progress-track'},h('div',{className:'progress-bar',style:{background:info.color,width:(spent>0?Math.max(2,Math.min(share,100)):0)+'%'}})),
              h('small',{},share===0&&spent>0?'Menos de 1% das receitas':share+'% das receitas')):
-           hasLimit?h('div',{className:'mf-budget-limit'},
+           gauge?null:hasLimit?h('div',{className:'mf-budget-limit'},
              h('div',{className:'mf-budget-limit-head'},
-               h('span',{},'Limite '+fmt(limit)),h('strong',{className:spent>limit?'bad-text':''},limit===0&&spent>0?'Acima do limite':pct+'% utilizado')),
-             h('div',{className:'progress-track'},h('div',{className:'progress-bar',style:{width:Math.min(pct,100)+'%'}})),
+               h('span',{},'Limite '+fmt(limit)),h('strong',{className:spent>limit?'bad-text':''},limit===0?(spent>0?'Acima do limite':'Limite zero definido'):pct+'% utilizado')),
+             limit>0?h('div',{className:'progress-track'},h('div',{className:'progress-bar',style:{width:Math.min(pct,100)+'%'}})):null,
              h('small',{},spent>limit?'Ultrapassou em '+fmt(spent-limit):status==='near'?'Próximo do limite · restam '+fmt(limit-spent):limit===0?'Limite zero definido':'Restam '+fmt(limit-spent))):
            h('div',{className:'mf-no-budget'},h('span',{},'Sem limite definido'),
              h('div',{className:'mf-budget-limit-actions'},suggestLimit(info.name)?h('button',{type:'button',className:'small-link',title:'Sugestão: média dos últimos três meses com 10% de margem, arredondada para R$ 10. Você confirma antes de salvar.',onClick:()=>this.setState({editModal:{type:'budget',key:info.name,title:'Limite sugerido · '+info.name,value:moneyString(suggestLimit(info.name)!)}})},'Sugerir '+fmt(suggestLimit(info.name)!)):null,
@@ -1719,7 +1753,8 @@ class App extends React.Component<any,State>{
    b&&!sameEngine?h('p',{className:'u3-sim-note'},'As opções usam motores diferentes. Compare apenas os custos; os saldos não são equivalentes.'):null,
    h('small',{className:'u3-sim-note'},'Cada projeção usa os dados disponíveis no momento da análise. A parcela pode variar por centavos; confira o cronograma.'));
  }
- renderResult(out:any){if(out.error)return h(Card,{className:'result-error'},h(Icon,{name:'alert'}),out.error);
+ renderResult(out:any){if(!out)return null;
+  if(out.error)return h(Card,{className:'result-error'},h(Icon,{name:'alert'}),out.error);
   if(out.engine==='planning'){
     const info:any={risk:['Saldo negativo previsto','As parcelas podem levar o saldo abaixo de zero.','danger'],caution:['Sua reserva fica comprometida','A projeção cai abaixo da reserva definida.','caution'],unknown:['Dados insuficientes ou antigos','Confira suas contas e compromissos antes de decidir.','unknown'],estimate:['Cenário projetado','Os compromissos cadastrados cabem na projeção, mas isso não garante a compra.','caution']};
     const [title,subtitle,cls]=info[out.risk]||info.unknown;
@@ -1762,10 +1797,10 @@ class App extends React.Component<any,State>{
    return h('div',{className:'section bank-page u3-accounts'},
      h('div',{className:'u3-section-heading'},h('div',{},h('h2',{},'Seu dinheiro, conta por conta.'),h('p',{},'Saldos recebidos e qualidade da referência em um só lugar.')),h('button',{type:'button',className:'primary-button',disabled:!c.configured||this.state.bankBusy,onClick:()=>this.syncBank()},h(Icon,{name:'refresh',size:16}),this.state.bankBusy?'Atualizando…':'Atualizar contas')),
      h('div',{className:'mf-accounts-summary u3-account-summary'},
-       h(Card,{className:'mf-account-total'},h('small',{},'Saldo bancário de referência'),h('strong',{},bankBalanceLabel(coverage)),h('p',{},'Não somado aos registros manuais')),
-       h(Card,{className:'mf-account-count'},h('small',{},'Contas com saldo informado'),h('strong',{},coverage.knownCount+' de '+accounts.length),h('p',{},coverage.missingCount?coverage.missingCount+' saldo(s) indisponível(is)':'Zero informado é diferente de saldo ausente')),
-       h(Card,{className:'u3-account-signal'},h('small',{},'Referência de até 24h'),h('strong',{},signals.filter(x=>x.reference.status==='recent').length+' conta(s)'),h('p',{},'O horário não garante saldo em tempo real')),
-       h('button',{type:'button',className:'u3-account-signal u3-clickable-card','aria-pressed':this.state.accountFocus==='attention',onClick:()=>this.setState({accountFocus:this.state.accountFocus==='attention'?'all':'attention'})},h('small',{},'Conferir referência'),h('strong',{},attention.length+' conta(s)'),h('p',{},'Saldo ausente, antigo ou sem horário'))),
+       h(Card,{className:'mf-account-total mf-border-reveal mf-tone-balance'},h('small',{},'Saldo bancário de referência'),h('strong',{},bankBalanceLabel(coverage)),h('p',{},'Não somado aos registros manuais')),
+       h(Card,{className:'mf-account-count mf-border-reveal mf-tone-neutral'},h('small',{},'Contas com saldo informado'),h('strong',{},coverage.knownCount+' de '+accounts.length),h('p',{},coverage.missingCount?coverage.missingCount+' saldo(s) indisponível(is)':'Zero informado é diferente de saldo ausente')),
+       h(Card,{className:'u3-account-signal mf-border-reveal mf-tone-income'},h('small',{},'Referência de até 24h'),h('strong',{},signals.filter(x=>x.reference.status==='recent').length+' conta(s)'),h('p',{},'O horário não garante saldo em tempo real')),
+       h('button',{type:'button',className:'u3-account-signal u3-clickable-card mf-border-reveal mf-tone-warning','aria-pressed':this.state.accountFocus==='attention',onClick:()=>this.setState({accountFocus:this.state.accountFocus==='attention'?'all':'attention'})},h('small',{},'Conferir referência'),h('strong',{},attention.length+' conta(s)'),h('p',{},'Saldo ausente, antigo ou sem horário'))),
      issues.length?h('div',{className:'u3-connection-alert',role:'status'},h(Icon,{name:'alert',size:18}),h('span',{},issues.length+' conexão(ões) precisam de conferência. Os valores abaixo podem estar desatualizados.'),h('button',{type:'button',className:'mf-small-link',onClick:()=>this.setState({bankIntegrationsOpen:true})},'Ver conexão')):null,
      accounts.length?h('section',{className:'mf-accounts-first'},h('div',{className:'mf-bank-account-heading'},h('h2',{},'Saldos por conta'),h('small',{},'Atualização: '+(b.data.last?.completedAt?new Date(b.data.last.completedAt).toLocaleString('pt-BR'):'não informada'))),
       h('div',{className:'u3-account-toolbar'},h('div',{className:'u2-view-tabs','aria-label':'Filtro de contas'},[{value:'all',label:'Todas as contas'},{value:'attention',label:'Conferir referência'}].map(x=>h('button',{type:'button','aria-pressed':(this.state.accountFocus||'all')===x.value,onClick:()=>this.setState({accountFocus:x.value})},x.label))),h('span',{},'Contadores do histórico carregado · todos os períodos')),

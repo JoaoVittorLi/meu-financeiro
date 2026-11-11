@@ -16,11 +16,12 @@ test('D1.5 — premium interactions CSS is loaded after every existing page styl
  assert(links.includes('overview.css')&&links.includes('operations.css')&&
   links.includes('decisions.css')&&links.includes('refinement.css')&&links.includes('intelligence.css'));
 });
-test('D1.5 — hovering a metric uses movement, depth and mint stroke (not gray --subtle)',()=>{
+test('D1.5 — generic hover remains on non-semantic surfaces; KPI cards use semantic shared frame',()=>{
  assert.match(css,/--mf-hover-stroke:rgba\(8,126,73/);
  assert.match(css,/--mf-hover-shadow:/);
  assert.match(css,/\.u1-shell \.u1-metric:hover/);
- assert.match(css,/\.u2-shell \.u2-metric:hover/);
+ assert.match(css,/\.u2-shell \.u2-metric:hover:not\(\.mf-border-reveal\)/);
+ assert.match(css,/\.u1-shell \.u1-metric:hover:not\(\.mf-border-reveal\)/);
  assert.match(css,/translate3d\(0,-2px,0\) scale\(1\.008\)/);
  assert.match(css,/translate3d\(0,-3px,0\) scale\(1\.01\)/);
 });

@@ -76,6 +76,12 @@ function seedMirror(sql,baseline){
      const fields=Object.fromEntries(spec.fields.map(k=>[k,entry.fields[k]]));
      if(Object.values(fields).some(v=>v===undefined))
        throw new Error('Campos do baseline incompletos.');
+     // An existing local row may differ from the imported cloud snapshot.
+     // Do not treat this preexisting difference as a new outbound edit:
+     // require explicit reconciliation rather than silently pushing it.
+     if(!equal(recordFields(table,local),fields)){
+       rememberConflict(sql,table,key,'PREEXISTING_LOCAL_EDIT');
+     }
      updateMirror(sql,table,key,0,fields);
    }
   }
