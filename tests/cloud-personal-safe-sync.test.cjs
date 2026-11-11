@@ -73,6 +73,22 @@ async function createFixture(){
  }};
 }
 
+test('primeiro espelhamento não publica diferenças locais anteriores nem repete envio no retry',async()=>{
+  const fx=await createFixture();
+  try{
+    const {server,finance,fakeFetch,edits}=fx;
+    const initial=edits.personalEditChanges(server,{since:0});
+    assert.equal(initial.changes.length,0,'No remote edits before initial sync');
+    const first=await syncPersonalSafeFields(finance,fakeFetch);
+    assert.equal(first.outboundConfirmed,0,'Baseline mismatch must not become an unsolicited write');
+    assert.equal(edits.personalEditChanges(server,{since:0}).changes.length,0);
+    const retry=await syncPersonalSafeFields(finance,fakeFetch);
+    assert.equal(retry.outboundConfirmed,0,'Repeated sync must be idempotent without new local edits');
+    assert.equal(edits.personalEditChanges(server,{since:0}).changes.length,0);
+    assert.deepEqual(finance.integrity(),['ok']);
+  }finally{fx.cleanup();}
+});
+
 test('cloud edits flow to Windows; local safe edits sync back without changing money or settlement',async()=>{
  const fx=await createFixture();
  try{
