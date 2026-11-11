@@ -6,6 +6,26 @@
 
 Repositório privado `JoaoVittorLi/meu-financeiro`. Aplicativo financeiro Windows Electron + React/TypeScript + SQLite local; PWA/Cloudflare em frentes separadas, congeladas na missão Desktop First. Prioridade: integridade de centavos, contas e IDs, backup/restore, UI Premium e executável Windows validado.
 
+## CHECKPOINT U5.1.1 — CORREÇÕES DIRIGIDAS / GATES OFICIAIS PENDENTES (11/11/2026)
+
+- **PR #37**, branch `feat/mf2-u5-1-movements-productivity-20261111`, **código P2-01/P2-02:** `2fa9abd3cc4ffe29f4235c2eb60556ce0db8f8f3`. Base PR #36 preservada.
+- **Natureza financeira:** popover agora usa `effectiveNature`; `income`/`expense` manualmente sobrescritas determinam categorias compatíveis mesmo se sinal invertido; `transfer`/`ignore` não são convertidas implicitamente e exigem revisão avançada. Exatamente `accountId+externalId` no override bancário.
+- **Histórico parcial:** cartões, revisão e tabela anunciam que totais bancários se referem às 2.500 linhas carregadas quando `truncated=true`, e mostram `totalTransactions` real. `dailyTotals` do backend não modificado.
+- **Testes:** 6/6 cenários de semântica executados em V8 com fonte real e dados sintéticos; novos testes oficiais de natureza + `tests/u5-1-history-limits.test.cjs` com `FinanceDB` real 2501 registros **escritos e NÃO EXECUTADOS**. Não rodou checkout `npm ci`, TypeScript, SQLite integração, compile, F08, ASAR nem Electron; logo `#37` continua draft e **NÃO HOMOLOGADO**.
+- **Autorização para U5.2:** iniciar branch derivada do HEAD desta fase, PR draft com base #37. Não executar CircleCI Windows, não mergear, não alterar Argon/IA, cloud, schema ou mecanismos de cálculo. Após U5.2 enviar checkpoint ao Arquiteto.
+
+## CHECKPOINT U5.1 — PR #37 ISOLADO / REVISÃO DO ARQUITETO (11/11/2026)
+
+**Estado GitHub:** PR #37 [Movimentações Premium](https://github.com/JoaoVittorLi/meu-financeiro/pull/37) draft na branch `feat/mf2-u5-1-movements-productivity-20261111`; base **PR #36 / D1.5.1**, commit base `87fb449c0232d80aebd7c50ad547197e34d3c806`. Código funcional U5.1 `10b9695305b0d2836f599b34971433955f64ea3b`. PR #36 permanece independente; não mesclar automaticamente nem alterar main.
+
+**Entregue:** (A) categoria inline em popover com busca, seleção acessível, lock contra duplo clique, feedback e gravação correta por origem: manual→`updateData`, banco→`bankCategorize(accountId,externalId)`; (B) filtros de categoria, receita/despesa, revisão e ordenação com painel expansível/chips/remover/limpar tudo; reutiliza busca/período/origem/conta e preserva resumos separados; (C) Enter/Escape/setas, retorno de foco, revisão rápida com lock composto e CSS Premium isolado. Drawer segue disponível no nome da movimentação.
+
+**Arquivos:** `src/app.ts`, `app/index.html`, `app/movements-productivity.css`, `tests/transaction-category-edit.test.cjs`, `tests/u5-1-filters.test.cjs`, `tests/u5-1-inline-category.test.cjs`, `tests/u5-1-category-sqlite.test.cjs`. **Não tocados:** `electron/db.cjs` (P1-02 SQLite), `parsePositiveBRLInput` (P1-01), IA/Argon, schema, produção ou build. O PR é dependente dos gates de D1.5.1.
+
+**Provas reais desta sessão:** 12/12 cenários comportamentais da função TS de filtros e 7/7 dos métodos TS de categorização/popover, ambos executados em V8 com tipos apagados no harness e mocks para IPC, usando dados sintéticos. **Os 19 testes adicionados ao repo são automatizados, mas ainda não foram executados no Node Runner com checkout integral; inclusive os 4 de SQLite `FinanceDB` real precisam ser executados.** Não rodou `npm ci`, TypeScript, tests/db completo, compile, F08, ASAR, screenshots, Electron nem CI Windows.
+
+**Ação Arquiteto:** revisar PR #37 e suas diferenças contra a base PR #36, executar em checkout com Node/npm pin `npm ci`, `npm run test:types`, `npm run test:db`, `npm run compile`, `node scripts/renderer-provenance.cjs check-bundle`, `npm run test:asar`, regressões D1.5.1 e QA Electron com perfil descartável e dados sintéticos. Inspecionar mudança de categoria, erros, teclado, foco, filtros e tema em 1366×768 e 1920×1080. Só autorizar integração após todos os gates. **Proprietário adiou EXE; não acionar CircleCI Windows.** Ver [log U5.1](docs/ai-context/logs/2026-11-11-MF2-U5-1-movements-productivity.md).
+
 ## CHECKPOINT D1.5.1 — CORREÇÕES FINANCEIRAS PUBLICADAS / GATES WINDOWS ABERTOS (11/11/2026)
 
 - **PR #36 draft:** branch `fix/mf2-d1-5-premium-interactions-20261111`, commit financeiro `1bd18db6d1393825fab04a1623ce3a9c03a849cf`, documentação posterior altera HEAD. Base PR #31 staging `d513c2be3f9b0cd018aed0b71f46ce8747a6556c` possui CircleCI Linux/Windows SUCCESS, **D1.5.1 ainda NÃO homologada**.

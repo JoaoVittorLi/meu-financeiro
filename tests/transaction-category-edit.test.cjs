@@ -32,25 +32,32 @@ test('B02 category is a native accessible button with explicit category and hand
  assert.match(css,/\.mf-category-edit:focus-visible/);
 });
 
-test('B02 bank and manual route to existing identity-aware drawer without writing in row',()=>{
- const method=cut('openCategoryFromRow(origin:', 'async updateBankInfo()');
- const Subject=evaluated('class Subject{'+method+'}','Subject');
- const app=new Subject(),opened=[];
- app.openBankDetail=tx=>opened.push({origin:'bank',tx});
- app.openManualDetail=tx=>opened.push({origin:'manual',tx});
+test('U5.1 bank and manual category buttons open their identity-aware popover without changing balances',()=>{
+ const h=(tag,props,...children)=>({tag,props,children});
+ const method=cut(' openCategoryFromRow(origin:', ' closeQuickCategory(');
+ const Subject=evaluated('class Subject{'+method+'}','Subject',{window:{innerWidth:1366,innerHeight:768}});
+ const app=new Subject();
+ app.state={quickCategory:null,busy:false,detailBusy:false};
+ app.quickCategoryWrite=false;
+ app.setState=(patch,callback)=>{Object.assign(app.state,patch);if(callback)callback();};
+ app.closeQuickCategory=()=>{app.state.quickCategory=null;};
+ const trigger={focus(){},getBoundingClientRect:()=>({left:120,top:220,bottom:250})};
+ const event={currentTarget:trigger};
  const first={accountId:'account-A',id:'external-1',description:'Pagamento'};
  const second={accountId:'account-B',id:'external-1',description:'Pagamento'};
  const manual={id:'local-1',description:'Pagamento'};
- app.openCategoryFromRow('bank',first);
- app.openCategoryFromRow('bank',second);
- app.openCategoryFromRow('manual',manual);
- assert.deepEqual(opened,[{origin:'bank',tx:first},{origin:'bank',tx:second},{origin:'manual',tx:manual}]);
- assert.equal(app.focusCategoryOnDetailOpen,true);
+ app.openCategoryFromRow('bank',first,event);
+ assert.equal(app.state.quickCategory.accountId,'account-A');
+ app.openCategoryFromRow('bank',second,event);
+ assert.equal(app.state.quickCategory.accountId,'account-B');
+ app.openCategoryFromRow('manual',manual,event);
+ assert.equal(app.state.quickCategory.origin,'manual');
+ assert.equal(app.state.quickCategory.id,'local-1');
+ assert.match(src,/onClick:\(e:any\)=>this\.openCategoryFromRow\(t\.origin,t\.raw as BankTx\|Tx,e\)/);
  assert.doesNotMatch(method,/bankCategorize\(|updateData\(|bankBatch\(/);
- assert.match(src,/onClick:\(\)=>this\.openCategoryFromRow\(t\.origin,t\.raw as BankTx\|Tx\)/);
 });
 
-test('B02 opening from category focuses its editor; standard detail retains normal focus',()=>{
+test('B02 advanced drawer retains focus restoration for keyboard navigation',()=>{
  const focus=[];
  const category={focus:()=>focus.push('category')};
  const generic={focus:()=>focus.push('generic')};

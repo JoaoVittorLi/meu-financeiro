@@ -29,7 +29,8 @@ type RuleEditor = {id:number|null;pattern:string;matchMode:'contains'|'starts'|'
 type BankState = {config:BankConfig;data:{accounts:BankAccount[];transactions:BankTx[];items:{itemId:string;institution:string;status:string;consentExpiresAt:string|null;lastSyncAt:string|null}[];last:{completedAt:string;newCount:number;totalCount:number}|null;totalTransactions?:number;truncated?:boolean;aliases?:{id:number;pattern:string;displayName:string}[];dailyTotals?:{date:string;income:number;expense:number;categories:{name:string;total:number}[];incomeCategories?:{name:string;total:number}[]}[];suspectedDuplicates?:{pairKey:string;accountIdA:string;externalIdA:string;accountIdB:string;externalIdB:string;description:string;amount:number;date:string;accountName:string}[]}};
 const EMPTY_BANK:BankState={config:{configured:false,clientId:'',itemIds:[],secure:false},data:{accounts:[],transactions:[],items:[],last:null}};
 type E1Report = {ok:boolean;reason?:string;stage?:string;verifiedCount?:number;pendingCount?:number;mismatchCount?:number;checks?:Record<string,{status:'verified'|'mismatch'|'pending';reason:string}>;counts?:{bankWindows:number;bankCloud:number;accountsWindows:number;accountsCloud:number;personalOriginalRows:number;overlayEditsCloud:number;missingBankRefsCloud:number;missingPlanningAccountsCloud:number};e1Completed?:boolean;cloudCutoverAllowed?:boolean;monthDeltas?:{ok:boolean;stage:string;totalDifferenceMonths?:number;limitedResults:boolean;items:{month:string;windowsCount:number;cloudCount:number;difference:number;status:string}[]}};
-type State = { budgetFocus?:'all'|'attention'|'unlimited';budgetSearch?:string;accountFocus?:'all'|'attention';bankIntegrationsOpen?:boolean;simSaved?:{result:any;input:Sim};simBusy?:boolean; txSummarySource?:'bank'|'manual';planPresentation?:'agenda'|'calendar'|'projection'; overviewHideValues?:boolean;overviewChart?:string; intelligenceContextSnapshot?:any;intelligenceDraftScope?:any;settingsSection?:string; fatal?:string; booting?:boolean; mode:'real'|'demo'; data:Data; page:string; month:string; showEntry:boolean; entry:{date:string;description:string;kind:Kind;category:string;value:string}; sim:Sim; outcome:any; query:string; toast:string; budgetEdit:string; busy:boolean; editModal:null|{type:'budget'|'setting';key:string;title:string;value:string};bank:BankState;bankForm:{clientId:string;clientSecret:string;itemIds:string};bankBusy:boolean;bankMessage:string;bankFilter:string;txSource:'all'|'bank'|'manual';txReviewOnly:boolean;txOrganize:boolean;categoryMoreEmojis:boolean;quickAddOpen:boolean;dashboardSource:'bank'|'manual';sourceDetailsOpen:boolean;budgetTab:'expense'|'income';showAllBudgetCategories:boolean;
+type QuickCategoryTarget = {origin:'bank'|'manual';id:string;accountId?:string;left:number;top:number;width:number};
+type State = { txAdvancedOpen?:boolean;txCategoryFilter?:string;txKindFilter?:'all'|'income'|'expense';txReviewFilter?:'all'|'pending'|'reviewed';txSort?:'date_desc'|'date_asc'|'amount_desc'|'amount_asc';quickCategory:QuickCategoryTarget|null;quickCategoryQuery:string;quickCategoryIndex:number;quickCategoryBusy:boolean;quickCategoryError:string; budgetFocus?:'all'|'attention'|'unlimited';budgetSearch?:string;accountFocus?:'all'|'attention';bankIntegrationsOpen?:boolean;simSaved?:{result:any;input:Sim};simBusy?:boolean; txSummarySource?:'bank'|'manual';planPresentation?:'agenda'|'calendar'|'projection'; overviewHideValues?:boolean;overviewChart?:string; intelligenceContextSnapshot?:any;intelligenceDraftScope?:any;settingsSection?:string; fatal?:string; booting?:boolean; mode:'real'|'demo'; data:Data; page:string; month:string; showEntry:boolean; entry:{date:string;description:string;kind:Kind;category:string;value:string}; sim:Sim; outcome:any; query:string; toast:string; budgetEdit:string; busy:boolean; editModal:null|{type:'budget'|'setting';key:string;title:string;value:string};bank:BankState;bankForm:{clientId:string;clientSecret:string;itemIds:string};bankBusy:boolean;bankMessage:string;bankFilter:string;txSource:'all'|'bank'|'manual';txReviewOnly:boolean;txOrganize:boolean;categoryMoreEmojis:boolean;quickAddOpen:boolean;dashboardSource:'bank'|'manual';sourceDetailsOpen:boolean;budgetTab:'expense'|'income';showAllBudgetCategories:boolean;
  categories:CategoryInfo[];rules:RuleInfo[];categoryEditor:CategoryEditor;ruleEditor:RuleEditor;ruleTest:string;categoryMessage:string;entryCategoryTouched:boolean;bankConfigOpen:boolean;overviewPeriod:PeriodMode;customStart:string;customEnd:string;backupInfo:{copies:number;last:string|null};detail:DetailSelection;detailDraft:DetailDraft;manualDraft:null|{description:string;date:string;value:string;category:string};detailBusy:boolean;categorySaving:string[];txSelected:string[];txBatchCategory:string; planning:PlanOverview;planMonth:string;planDay:string;planSelected:string|null;planOpen:boolean;planForm:PlanForm;planBusy:boolean;planView:string;planTerm:string;planIncludeEstimated:boolean;planBankTitle:string;planMatchQuery:string;planHistory:{action:string;details:string;at:string}[];cloudStage:string;cloudBusy:boolean;cloudMessage:string;cloudIdentityConnected:boolean;cloudQuarantineVerified:boolean;cloudPersonalTransferred:boolean;cloudParityBusy:boolean;cloudParityMessage:string;cloudE1Report:E1Report|null; intelligenceTab:'today'|'chat'|'actions';intelligenceDraft:string;intelligencePreparedQuestion:string;intelligencePanelOpen:boolean;intelligenceContext:string;intelligenceExpandedAction:string|null; aiStatus:{connected:boolean;secure:boolean;email?:string|null;scopeGranted?:boolean};aiBusy:boolean;aiError:string;aiDemoCase:string;aiEffort:'auto'|'low'|'medium';aiCreditsConfirmed:boolean;aiResult:any;aiStreaming:string;aiCapabilities:any;aiMemories:any[];aiMemoryDraft:string;aiMemoryKind:string;aiMemoryBusy:boolean;aiMemoryError:string;aiUseMemories:boolean;aiPreview:any;aiUsageStats:any;aiFinancialDemoSource:'bank'|'manual';aiFinancialDemo:any;aiFinancialDemoBusy:boolean;aiFinancialDemoError:string };
 // Bridge com o processo principal Electron. No preview web, mantém o armazenamento legado.
 interface DesktopBridge {load:(mode:'real'|'demo')=>Promise<Data|null>;save:(mode:'real'|'demo',data:Data)=>Promise<any>;info:()=>Promise<any>;backupSQLite:()=>Promise<{cancelled?:boolean;ok?:boolean}>;cloudMigrationStatus:()=>Promise<{stage:string;cloudConnected:boolean;financialSyncEnabled:boolean;backupPresent:boolean;latestBackupAt:string|null}>;prepareCloudMigration:()=>Promise<{stage:string;checkedTables:number;checkedRecords:number;recordsSent:number;backupVerified:boolean;personalTablesReady:number;personalRecordsReady:number}>;cloudAccessStatus:()=>Promise<{connected:boolean;stage?:string;reason?:string;financialSyncEnabled:boolean;recordsTransferred:number}>;connectCloudAccess:()=>Promise<{connected:boolean;stage?:string;reason?:string;financialSyncEnabled:boolean;recordsTransferred:number}>;previewQuarantineDemo:()=>Promise<{ok:boolean;stage?:string;reason?:string;personalTables?:number;fictionalRecords?:number;realRecordsSent:number;financialSyncEnabled:boolean}>;transferPersonalCloud:()=>Promise<{cancelled?:boolean;stage?:string;recordsSent?:number;personalTablesReady?:number;personalRecordsReady?:number;backupVerified?:boolean;financialSyncEnabled:boolean}>;cloudPersonalSyncStatus?:()=>Promise<{cursor:number;conflicts:number;financialSyncEnabled:boolean}>;cloudBankParity?:()=>Promise<{ok:boolean;reason?:string;localCount?:number;cloudCount?:number;exactIdentities?:boolean;exactDatesAndCents?:boolean;exactDescriptionsAndStatuses?:boolean;matched?:boolean;financialSyncEnabled:boolean}>;cloudE1Audit?:()=>Promise<E1Report>;onCloudPersonalUpdated?:(callback:(data:{inbound:number;conflicts:number})=>void)=>(()=>void);restoreSQLite:()=>Promise<{cancelled?:boolean;ok?:boolean}>;backupStatus:()=>Promise<{copies:number;last:string|null}>;openBackupsFolder:()=>Promise<string>;openDataFolder:()=>Promise<string>;bankStatus:()=>Promise<BankState>;bankConfigure:(c:any)=>Promise<BankState>;bankSync:()=>Promise<BankState & {newCount:number;totalCount:number}>;bankForget:()=>Promise<BankState>;importCategoryPack?:()=>Promise<any>;categoriesStatus:()=>Promise<{categories:CategoryInfo[];rules:RuleInfo[]}>;
@@ -62,18 +63,42 @@ function effectiveNature(t:BankTx):'income'|'expense'|'transfer'|'ignore' {
  return t.nature&&t.nature!=='auto'?t.nature:(t.amount>=0?'income':'expense');
 }
 function transactionViewRows(state:State){
-   const review=state.txReviewOnly;
-   const rows=(state.mode==='demo'?[]:state.bank.data.transactions||[]);
-   const manual=state.data.transactions;
-   const term=fold(state.query);
-   const filters=(t:{date:string;description:string;category:string;account:string;merchant?:string})=>
-     (review||(t.date>=dateSpan(state.overviewPeriod,state.customStart,state.customEnd).start&&t.date<=dateSpan(state.overviewPeriod,state.customStart,state.customEnd).end))&&
-     (!term||[t.description,t.category,t.account,t.merchant||''].some(v=>fold(v).includes(term)));
-   type Row={key:string;origin:'bank'|'manual';date:string;description:string;merchant:string;category:string;amount:number;account:string;status:string;raw:BankTx|Tx};
-   const bankRows:Row[]=rows.filter(t=>!review||!t.reviewed).map(t=>({key:t.accountId+'|'+t.id,origin:'bank',date:t.date,description:t.description,merchant:t.customTitle||t.merchant||'',category:t.category,amount:t.amount,account:t.accountName,status:t.status,raw:t}));
-   const manualRows:Row[]=review?[]:manual.map(t=>({key:'manual|'+t.id,origin:'manual',date:t.date,description:t.description,merchant:'',category:t.category,amount:t.kind==='income'?t.amount:-t.amount,account:'Adicionado por você',status:'POSTED',raw:t}));
-   const filtered=bankRows.concat(manualRows).filter(t=>(!state.bankFilter||(t.origin==='bank'&&(t.raw as BankTx).accountId===state.bankFilter))&&(review||state.txSource==='all'||t.origin===state.txSource)&&filters(t)).sort((a,b)=>b.date.localeCompare(a.date)||a.key.localeCompare(b.key));
-   return filtered;
+ const review=state.txReviewOnly;
+ const span=dateSpan(state.overviewPeriod,state.customStart,state.customEnd);
+ const banks=(state.mode==='demo'?[]:state.bank.data.transactions||[]);
+ const manual=state.data.transactions;
+ const term=fold(state.query);
+ type Row={key:string;origin:'bank'|'manual';date:string;description:string;merchant:string;category:string;amount:number;account:string;status:string;raw:BankTx|Tx};
+ const bankRows:Row[]=banks.filter(t=>!review||!t.reviewed).map(t=>({
+  key:t.accountId+'|'+t.id,origin:'bank',date:t.date,description:t.description,
+  merchant:t.customTitle||t.merchant||'',category:t.category,amount:t.amount,
+  account:t.accountName,status:t.status,raw:t
+ }));
+ const manualRows:Row[]=review?[]:manual.map(t=>({
+  key:'manual|'+t.id,origin:'manual',date:t.date,description:t.description,
+  merchant:'',category:t.category,amount:t.kind==='income'?t.amount:-t.amount,
+  account:'Adicionado por você',status:'POSTED',raw:t
+ }));
+ const kindOf=(t:Row):string=>t.origin==='manual'?(t.raw as Tx).kind:effectiveNature(t.raw as BankTx);
+ const filtered=bankRows.concat(manualRows).filter(t=>
+  (review||(t.date>=span.start&&t.date<=span.end))&&
+  (!term||[t.description,t.category,t.account,t.merchant].some(v=>fold(v).includes(term)))&&
+  (!state.bankFilter||(t.origin==='bank'&&(t.raw as BankTx).accountId===state.bankFilter))&&
+  (review||state.txSource==='all'||!state.txSource||t.origin===state.txSource)&&
+  (!state.txCategoryFilter||t.category===state.txCategoryFilter)&&
+  (!state.txKindFilter||state.txKindFilter==='all'||kindOf(t)===state.txKindFilter)&&
+  (review||!state.txReviewFilter||state.txReviewFilter==='all'||
+   (t.origin==='bank'&&((state.txReviewFilter==='reviewed')===!!(t.raw as BankTx).reviewed)))
+ );
+ const tie=(a:Row,b:Row)=>a.key.localeCompare(b.key);
+ const mode=state.txSort||'date_desc';
+ filtered.sort((a,b)=>{
+  if(mode==='date_asc')return a.date.localeCompare(b.date)||tie(a,b);
+  if(mode==='amount_desc')return Math.abs(b.amount)-Math.abs(a.amount)||b.date.localeCompare(a.date)||tie(a,b);
+  if(mode==='amount_asc')return Math.abs(a.amount)-Math.abs(b.amount)||b.date.localeCompare(a.date)||tie(a,b);
+  return b.date.localeCompare(a.date)||tie(a,b);
+ });
+ return filtered;
 }
 function transactionViewSummary(rows:ReturnType<typeof transactionViewRows>,source:string){
  const chosen=rows.filter(t=>t.origin===source);let income=0,expense=0,pending=0,review=0,excluded=0;
@@ -370,8 +395,8 @@ function Donut(p:any){
 }
 
 // B02: accessible category action per row, opening the already existing editor.
-function TransactionCategoryButton(p:{category:string;emoji?:string;label:string;onClick:()=>void}){
- return h('button',{type:'button',className:'category-tag mf-category-edit',title:'Editar categoria','aria-label':p.label,onClick:p.onClick},
+function TransactionCategoryButton(p:{category:string;emoji?:string;label:string;expanded?:boolean;disabled?:boolean;onClick:(event:any)=>void}){
+ return h('button',{type:'button',className:'category-tag mf-category-edit',title:'Alterar categoria sem abrir detalhes','aria-label':p.label,'aria-haspopup':'dialog','aria-expanded':!!p.expanded,disabled:p.disabled,onClick:p.onClick},
   h('span',{},(p.emoji||'✨')+' '+p.category),h('span',{className:'mf-category-edit-mark','aria-hidden':'true'},'✎'));
 }
 type Choice = {value:string;label:string};
@@ -504,11 +529,14 @@ class PeriodPicker extends React.Component<any,any>{
 }
 
 class App extends React.Component<any,State>{
- private fileInput:any; private csvInput:any; private timeout:any; private writeInProgress=false; private autoSyncTimer:any=null; private unsubscribePersonalCloud:(()=>void)|null=null; private unsubscribeAI:(()=>void)|null=null; private lastSyncAttempt=0; private focusReturn:any=null; private focusCategoryOnDetailOpen=false; private categorySavingKeys=new Set<string>(); private categorySaveQueue:Promise<any>=Promise.resolve();
+ private fileInput:any; private csvInput:any; private timeout:any; private writeInProgress=false; private autoSyncTimer:any=null; private unsubscribePersonalCloud:(()=>void)|null=null; private unsubscribeAI:(()=>void)|null=null; private lastSyncAttempt=0; private focusReturn:any=null; private focusCategoryOnDetailOpen=false; private quickCategoryAnchor:HTMLElement|null=null; private quickCategorySearchInput:HTMLElement|null=null; private quickCategoryWrite=false; private reviewSavingKeys=new Set<string>(); private categorySavingKeys=new Set<string>(); private categorySaveQueue:Promise<any>=Promise.resolve();
  private simRequest=0;
- constructor(props:any){super(props);const mode:'real'|'demo'='real';this.state={mode,data:desktop?starter():load(mode),page:'overview',month:nowYM,showEntry:false,entry:{date:iso(new Date()),description:'',kind:'expense',category:'Outros',value:''},sim:{value:'',installments:'6',interest:'0'},outcome:null,query:'',toast:'',budgetEdit:'',busy:!!desktop,booting:!!desktop,editModal:null,bank:EMPTY_BANK,bankForm:{clientId:'',clientSecret:'',itemIds:''},bankBusy:false,bankMessage:'',bankFilter:'',txSource:'all',txReviewOnly:false,txOrganize:false,categoryMoreEmojis:false,quickAddOpen:false,dashboardSource:'bank',sourceDetailsOpen:false,budgetTab:'expense',showAllBudgetCategories:false,categories:DEFAULT_CATEGORY_INFOS,rules:[],categoryEditor:{previousName:'',name:'',color:'#3e9a85',emoji:'✨',kind:'expense'},ruleEditor:emptyRule(),ruleTest:'IFOOD',categoryMessage:'',entryCategoryTouched:false,bankConfigOpen:false,overviewPeriod:'month',customStart:iso(new Date()),customEnd:iso(new Date()),backupInfo:{copies:0,last:null},detail:null,detailDraft:{merchant:'',note:'',nature:'auto',reviewed:false,aliasPattern:'',splitParts:[]},manualDraft:null,detailBusy:false,categorySaving:[],txSelected:[],txBatchCategory:'Alimentação',planning:EMPTY_PLANNING,planMonth:nowYM,planDay:iso(new Date()),planSelected:null,planOpen:false,planForm:freshPlanForm(),planBusy:false,planView:'all',planTerm:'',planIncludeEstimated:false,planBankTitle:'',planMatchQuery:'',planHistory:[],cloudStage:'not_started',cloudBusy:false,cloudMessage:'',cloudIdentityConnected:false,cloudQuarantineVerified:false,cloudPersonalTransferred:false,cloudParityBusy:false,cloudParityMessage:'',cloudE1Report:null,intelligenceTab:'today',intelligenceDraft:'',intelligencePreparedQuestion:'',intelligencePanelOpen:false,intelligenceContext:'overview',intelligenceExpandedAction:null,aiStatus:{connected:false,secure:false},aiBusy:false,aiError:'',aiDemoCase:'budget',aiEffort:'auto',aiCreditsConfirmed:false,aiResult:null,aiStreaming:'',aiCapabilities:null,aiMemories:[],aiMemoryDraft:'',aiMemoryKind:'preference',aiMemoryBusy:false,aiMemoryError:'',aiUseMemories:false,aiPreview:null,aiUsageStats:null,aiFinancialDemoSource:'bank',aiFinancialDemo:null,aiFinancialDemoBusy:false,aiFinancialDemoError:''};}
+ constructor(props:any){super(props);const mode:'real'|'demo'='real';this.state={mode,data:desktop?starter():load(mode),page:'overview',month:nowYM,showEntry:false,entry:{date:iso(new Date()),description:'',kind:'expense',category:'Outros',value:''},sim:{value:'',installments:'6',interest:'0'},outcome:null,query:'',toast:'',budgetEdit:'',busy:!!desktop,booting:!!desktop,editModal:null,bank:EMPTY_BANK,bankForm:{clientId:'',clientSecret:'',itemIds:''},bankBusy:false,bankMessage:'',bankFilter:'',txSource:'all',txReviewOnly:false,txOrganize:false,txAdvancedOpen:false,txCategoryFilter:'',txKindFilter:'all',txReviewFilter:'all',txSort:'date_desc',quickCategory:null,quickCategoryQuery:'',quickCategoryIndex:0,quickCategoryBusy:false,quickCategoryError:'',categoryMoreEmojis:false,quickAddOpen:false,dashboardSource:'bank',sourceDetailsOpen:false,budgetTab:'expense',showAllBudgetCategories:false,categories:DEFAULT_CATEGORY_INFOS,rules:[],categoryEditor:{previousName:'',name:'',color:'#3e9a85',emoji:'✨',kind:'expense'},ruleEditor:emptyRule(),ruleTest:'IFOOD',categoryMessage:'',entryCategoryTouched:false,bankConfigOpen:false,overviewPeriod:'month',customStart:iso(new Date()),customEnd:iso(new Date()),backupInfo:{copies:0,last:null},detail:null,detailDraft:{merchant:'',note:'',nature:'auto',reviewed:false,aliasPattern:'',splitParts:[]},manualDraft:null,detailBusy:false,categorySaving:[],txSelected:[],txBatchCategory:'Alimentação',planning:EMPTY_PLANNING,planMonth:nowYM,planDay:iso(new Date()),planSelected:null,planOpen:false,planForm:freshPlanForm(),planBusy:false,planView:'all',planTerm:'',planIncludeEstimated:false,planBankTitle:'',planMatchQuery:'',planHistory:[],cloudStage:'not_started',cloudBusy:false,cloudMessage:'',cloudIdentityConnected:false,cloudQuarantineVerified:false,cloudPersonalTransferred:false,cloudParityBusy:false,cloudParityMessage:'',cloudE1Report:null,intelligenceTab:'today',intelligenceDraft:'',intelligencePreparedQuestion:'',intelligencePanelOpen:false,intelligenceContext:'overview',intelligenceExpandedAction:null,aiStatus:{connected:false,secure:false},aiBusy:false,aiError:'',aiDemoCase:'budget',aiEffort:'auto',aiCreditsConfirmed:false,aiResult:null,aiStreaming:'',aiCapabilities:null,aiMemories:[],aiMemoryDraft:'',aiMemoryKind:'preference',aiMemoryBusy:false,aiMemoryError:'',aiUseMemories:false,aiPreview:null,aiUsageStats:null,aiFinancialDemoSource:'bank',aiFinancialDemo:null,aiFinancialDemoBusy:false,aiFinancialDemoError:''};}
  async componentDidMount(){
    window.addEventListener('keydown',this.onGlobalKeydown);
+    window.addEventListener('resize',this.onQuickCategoryViewportChange);
+    window.addEventListener('scroll',this.onQuickCategoryViewportChange,true);
+    document.addEventListener('pointerdown',this.onQuickCategoryOutside,true);
    if(!desktop)return;
    this.unsubscribeAI=desktop.onAIDelta?.((delta:string)=>this.setState((previous:State)=>({aiStreaming:(previous.aiStreaming+delta).slice(0,12000)})))||null;
    void intelligenceRefresh(this);
@@ -562,9 +590,10 @@ class App extends React.Component<any,State>{
    try{const bank=await desktop.bankStatus();this.setState({bank,bankForm:{clientId:bank.config.clientId||'',clientSecret:'',itemIds:(bank.config.itemIds||[]).join(', ')}});return bank;}
    catch(e:any){this.setState({bankMessage:'Não foi possível consultar a integração: '+String(e?.message||e)});}
  }
- componentWillUnmount(){window.removeEventListener('keydown',this.onGlobalKeydown);this.unsubscribePersonalCloud?.();this.unsubscribeAI?.();if(this.autoSyncTimer)clearInterval(this.autoSyncTimer);if(this.timeout)clearTimeout(this.timeout);}
+ componentWillUnmount(){window.removeEventListener('keydown',this.onGlobalKeydown);window.removeEventListener('resize',this.onQuickCategoryViewportChange);window.removeEventListener('scroll',this.onQuickCategoryViewportChange,true);document.removeEventListener('pointerdown',this.onQuickCategoryOutside,true);this.unsubscribePersonalCloud?.();this.unsubscribeAI?.();if(this.autoSyncTimer)clearInterval(this.autoSyncTimer);if(this.timeout)clearTimeout(this.timeout);}
  onGlobalKeydown=(event:KeyboardEvent)=>{
-   const dialog=document.querySelector('.modal-backdrop [role="dialog"],.mf-detail-drawer,.mf-ai-drawer');
+    if(event.key==='Escape'&&this.state.quickCategory){event.preventDefault();this.closeQuickCategory();return;}
+    const dialog=document.querySelector('.modal-backdrop [role="dialog"],.mf-detail-drawer,.mf-ai-drawer');
    if(event.key==='Tab'&&dialog&&!document.querySelector('[role="listbox"],.mf-period-popover,.mf-single-calendar')){
      const controls=Array.from(dialog.querySelectorAll('button:not([disabled]),input:not([disabled]),textarea:not([disabled]),[tabindex="0"]')) as HTMLElement[];
      if(controls.length){
@@ -638,24 +667,32 @@ class App extends React.Component<any,State>{
    try{const state=await desktop.ruleDelete(id);this.setState({categories:state.categories,rules:state.rules,categoryMessage:'Regra excluída.'});await this.refreshBank();}
    catch(e:any){this.setState({categoryMessage:String(e?.message||e)});}
  }
- async setBankCategory(tx:BankTx,category:string){
-    if(!desktop||this.state.mode==='demo')return;
-    const key=tx.accountId+'|'+tx.id;
-    if(this.categorySavingKeys.has(key))return; // Ignore a second choice until the first save settles.
-    this.categorySavingKeys.add(key);
-    this.setState((prev:State)=>({categorySaving:[...prev.categorySaving,key],categoryMessage:'Salvando categoria…'}));
-    // IPC responses return a full bank snapshot. Serializing writes avoids an older
-    // response replacing a newer snapshot even across different bank accounts.
-    const job=this.categorySaveQueue.then(()=>desktop!.bankCategorize({accountId:tx.accountId,externalId:tx.id,category:category||null}))
-      .then(data=>{this.setState({bank:{...this.state.bank,data},categoryMessage:'Classificação bancária salva.'});})
-      .catch((e:any)=>{this.flash('Falha ao classificar: '+String(e?.message||e));})
-      .finally(()=>{this.categorySavingKeys.delete(key);this.setState((prev:State)=>({categorySaving:prev.categorySaving.filter(k=>k!==key)}));});
-    this.categorySaveQueue=job;
-    await job;
+ async setBankCategory(tx:BankTx,category:string):Promise<boolean>{
+  if(!desktop||this.state.mode==='demo')return false;
+  const key=tx.accountId+'|'+tx.id;
+  if(this.categorySavingKeys.has(key))return false;
+  this.categorySavingKeys.add(key);
+  this.setState((prev:State)=>({categorySaving:[...prev.categorySaving,key],categoryMessage:'Salvando categoria…'}));
+  // Full snapshots returned by IPC must be serialized to avoid stale overwrite.
+  const job=this.categorySaveQueue.then(()=>desktop!.bankCategorize({accountId:tx.accountId,externalId:tx.id,category:category||null}))
+    .then(data=>{
+      if(!data||!Array.isArray(data.transactions))throw new Error('Resposta bancária inválida.');
+      this.setState({bank:{...this.state.bank,data},categoryMessage:'Classificação bancária salva.'});
+      return true;
+    })
+    .catch((e:any)=>{this.flash('Falha ao classificar: '+String(e?.message||e));return false;})
+    .finally(()=>{this.categorySavingKeys.delete(key);this.setState((prev:State)=>({categorySaving:prev.categorySaving.filter(k=>k!==key)}));});
+  this.categorySaveQueue=job;
+  return await job;
+ }
+ async changeManualCategory(id:string,category:string):Promise<boolean>{
+  const data=this.state.data,current=data.transactions.find(t=>t.id===id);
+  if(!current)return false;
+  if(current.category===category)return true;
+  if(!this.getCategories().some(c=>c.name===category&&(c.kind==='both'||c.kind===current.kind))){
+    this.flash('Categoria incompatível com esta movimentação.');return false;
   }
- changeManualCategory(id:string,category:string){
-   const data=this.state.data;
-   this.updateData({...data,transactions:data.transactions.map(t=>t.id===id?{...t,category}:t)},'Categoria atualizada.');
+  return await this.updateData({...data,transactions:data.transactions.map(t=>t.id===id?{...t,category}:t)});
  }
  bankTxSelected(tx:BankTx){return this.state.txSelected.includes(tx.accountId+'|'+tx.id);}
  toggleSelected(tx:BankTx){const key=tx.accountId+'|'+tx.id;this.setState({txSelected:this.bankTxSelected(tx)?this.state.txSelected.filter(x=>x!==key):this.state.txSelected.length>=100?this.state.txSelected:[...this.state.txSelected,key]});}
@@ -695,10 +732,147 @@ class App extends React.Component<any,State>{
   return result;
  }
 
- openCategoryFromRow(origin:'bank'|'manual',tx:BankTx|Tx){
-  this.focusCategoryOnDetailOpen=true;
-  if(origin==='bank')this.openBankDetail(tx as BankTx);
-  else this.openManualDetail(tx as Tx);
+ openCategoryFromRow(origin:'bank'|'manual',tx:BankTx|Tx,event:any){
+  if(this.quickCategoryWrite||this.state.busy||this.state.detailBusy)return;
+  const trigger=event?.currentTarget as HTMLElement;
+  const r=trigger?.getBoundingClientRect?.();
+  if(!r)return;
+  if(this.state.quickCategory?.origin===origin&&this.state.quickCategory.id===tx.id&&
+     (origin==='manual'||this.state.quickCategory.accountId===(tx as BankTx).accountId)){
+    this.closeQuickCategory();return;
+  }
+  const width=Math.max(220,Math.min(328,window.innerWidth-24));
+  const height=Math.min(342,window.innerHeight-24);
+  const below=window.innerHeight-r.bottom;
+  this.quickCategoryAnchor=trigger;
+  this.setState({quickCategory:{origin,id:tx.id,
+    accountId:origin==='bank'?(tx as BankTx).accountId:undefined,
+    left:Math.max(12,Math.min(r.left,window.innerWidth-width-12)),
+    top:below>height+8?r.bottom+6:Math.max(12,r.top-height-6),width},
+    quickCategoryQuery:'',quickCategoryIndex:0,quickCategoryError:''},
+    ()=>this.quickCategorySearchInput?.focus());
+ }
+ closeQuickCategory(restoreFocus:boolean=true){
+  if(this.quickCategoryWrite)return;
+  const anchor=this.quickCategoryAnchor;
+  this.setState({quickCategory:null,quickCategoryQuery:'',quickCategoryIndex:0,quickCategoryError:''},
+    ()=>{if(restoreFocus&&anchor?.isConnected)anchor.focus();});
+ }
+ onQuickCategoryOutside=(event:any)=>{
+  if(!this.state.quickCategory||this.quickCategoryWrite)return;
+  if(event.target?.closest?.('.u5-category-popover')||this.quickCategoryAnchor?.contains(event.target))return;
+  this.closeQuickCategory(false);
+ };
+ onQuickCategoryViewportChange=(event:any)=>{
+  if(!this.state.quickCategory||this.quickCategoryWrite)return;
+  if(event?.type==='scroll'&&event.target?.closest?.('.u5-category-popover'))return;
+  this.closeQuickCategory(false);
+ };
+ quickCategoryContext(){
+  const target=this.state.quickCategory;
+  if(!target)return null;
+  if(target.origin==='manual'){
+    const tx=this.state.data.transactions.find(t=>t.id===target.id);
+    return tx?{category:tx.category,kind:tx.kind,description:tx.description,raw:tx}:null;
+  }
+  const tx=this.state.bank.data.transactions.find(t=>t.accountId===target.accountId&&t.id===target.id);
+  if(!tx)return null;
+  const nature=effectiveNature(tx);
+  // Category never mutates banking nature. Transfer/ignore require explicit
+  // nature review in advanced details, rather than inferred sign.
+  return {category:tx.category,kind:(nature==='income'||nature==='expense'?nature:null),
+    nature,description:tx.customTitle||tx.merchant||tx.description,raw:tx};
+ }
+ quickCategoryChoices():CategoryInfo[]{
+  const context=this.quickCategoryContext(),term=fold(this.state.quickCategoryQuery);
+  if(!context||!context.kind)return [];
+  return this.getCategories().filter(c=>(c.kind==='both'||c.kind===context.kind)&&(!term||fold(c.name).includes(term)));
+ }
+ async chooseQuickCategory(category:string):Promise<boolean>{
+  if(this.quickCategoryWrite||!this.state.quickCategory)return false;
+  const target=this.state.quickCategory,context=this.quickCategoryContext();
+  if(!context){this.setState({quickCategoryError:'Movimentação não encontrada. Atualize a lista.'});return false;}
+  if(!context.kind){this.setState({quickCategoryError:'Transferências e movimentações desconsideradas exigem revisar a natureza nos detalhes antes de categorizar.'});return false;}
+  const valid=this.getCategories().some(c=>c.name===category&&(c.kind==='both'||c.kind===context.kind));
+  if(!valid){this.setState({quickCategoryError:'Categoria incompatível com a movimentação.'});return false;}
+  if(category===context.category){this.closeQuickCategory();return true;}
+  this.quickCategoryWrite=true;
+  this.setState({quickCategoryBusy:true,quickCategoryError:''});
+  let saved=false;
+  try{
+    saved=target.origin==='bank'?
+      await this.setBankCategory(context.raw as BankTx,category):
+      await this.changeManualCategory(target.id,category);
+  }catch(e:any){
+    this.setState({quickCategoryError:'Não foi possível salvar: '+String(e?.message||e)});
+  }finally{
+    this.quickCategoryWrite=false;
+    this.setState({quickCategoryBusy:false});
+  }
+  if(!saved){
+    this.setState((state:State)=>({quickCategoryError:state.quickCategoryError||'Não foi possível salvar. A categoria anterior foi mantida.'}));
+    return false;
+  }
+  this.closeQuickCategory();
+  this.flash('Categoria atualizada.');
+  return true;
+ }
+ renderQuickCategoryPopover(){
+  const target=this.state.quickCategory,context=this.quickCategoryContext();
+  if(!target)return null;
+  const choices=this.quickCategoryChoices();
+  const index=Math.min(this.state.quickCategoryIndex,Math.max(0,choices.length-1));
+  const onKey=(e:any)=>{
+    if(e.key==='Escape'){e.preventDefault();e.stopPropagation();this.closeQuickCategory();return;}
+    if((e.key==='ArrowDown'||e.key==='ArrowUp')&&choices.length){
+      e.preventDefault();e.stopPropagation();
+      const delta=e.key==='ArrowDown'?1:-1;
+      this.setState({quickCategoryIndex:(index+delta+choices.length)%choices.length});
+      this.quickCategorySearchInput?.focus();return;
+    }
+    if(e.key==='Enter'&&e.target===this.quickCategorySearchInput&&choices[index]){
+      e.preventDefault();e.stopPropagation();void this.chooseQuickCategory(choices[index].name);
+    }
+  };
+  return ReactDOM.createPortal(h('div',{className:'u5-category-layer'},
+    h('section',{className:'u5-category-popover',role:'dialog',
+      'aria-label':'Alterar categoria da movimentação',onKeyDown:onKey,
+      style:{position:'fixed',left:target.left,top:target.top,width:target.width,
+        maxHeight:'min(360px, calc(100vh - 24px))'}},
+      h('div',{className:'u5-category-top'},
+        h('span',{className:'micro-label'},target.origin==='bank'?'CLASSIFICAÇÃO PESSOAL · BANCO':'LANÇAMENTO MANUAL'),
+        h('button',{type:'button',className:'u5-category-close','aria-label':'Fechar categorias',
+          disabled:this.state.quickCategoryBusy,onClick:()=>this.closeQuickCategory()},
+          h(Icon,{name:'close',size:16}))),
+      h('p',{className:'u5-category-current'},'Categoria atual: ',h('strong',{},context?.category||'Indisponível')),
+      h('label',{className:'u5-category-search'},h(Icon,{name:'search',size:16}),
+        h('input',{ref:(el:any)=>this.quickCategorySearchInput=el,type:'search',
+          role:'combobox','aria-label':'Buscar categoria','aria-autocomplete':'list',
+          'aria-expanded':true,'aria-controls':'u5-category-options',
+          'aria-activedescendant':choices.length?'u5-category-option-'+index:undefined,
+          placeholder:'Pesquisar categorias',value:this.state.quickCategoryQuery,
+          disabled:this.state.quickCategoryBusy,
+          onChange:(e:any)=>this.setState({quickCategoryQuery:e.target.value,quickCategoryIndex:0})})),
+      h('div',{id:'u5-category-options',role:'listbox',className:'u5-category-options',
+        'aria-label':'Categorias compatíveis'},
+        choices.length?choices.map((cat,i)=>h('button',{type:'button',
+          id:'u5-category-option-'+i,key:cat.name,role:'option',
+          'aria-selected':cat.name===context?.category,
+          className:'u5-category-choice '+(i===index?'active ':'')+
+            (cat.name===context?.category?'current':''),
+          disabled:this.state.quickCategoryBusy,
+          onMouseEnter:()=>{if(!this.state.quickCategoryBusy&&this.state.quickCategoryIndex!==i)
+            this.setState({quickCategoryIndex:i});},
+          onClick:()=>void this.chooseQuickCategory(cat.name)},
+          h('span',{},cat.name),cat.name===context?.category?
+            h(Icon,{name:'check',size:16}):null)):
+        h('p',{className:'u5-category-empty'},context&&!context.kind?'Natureza de transferência ou desconsiderada: altere nos detalhes antes de categorizar.':'Nenhuma categoria compatível encontrada.')),
+      this.state.quickCategoryError?
+        h('p',{className:'u5-category-error',role:'alert'},this.state.quickCategoryError):null,
+      h('small',{className:'u5-category-hint',role:'status'},
+        this.state.quickCategoryBusy?'Salvando categoria…':
+          '↑ ↓ para navegar · Enter para salvar · Esc para fechar')
+    )),document.body);
  }
  async updateBankInfo(){
   const sel=this.state.detail;if(!desktop||!sel||sel.origin!=='bank'||this.state.detailBusy)return;
@@ -941,7 +1115,7 @@ class App extends React.Component<any,State>{
    const span=dateSpan(this.state.overviewPeriod,this.state.customStart,this.state.customEnd);
    const newMonth=span.end.slice(0,7),useMonth=newMonth>=nowYM&&newMonth<=shiftMonth(nowYM,12);
    const enteringPlan=target==='planning'&&this.state.page!=='planning'&&useMonth;
-   this.setState({page:target,txReviewOnly:page==='review',txOrganize:page==='categories',quickAddOpen:false,
+   this.setState({page:target,txReviewOnly:page==='review',txOrganize:page==='categories',quickAddOpen:false,quickCategory:null,
       month:newMonth, ...(enteringPlan?{planMonth:newMonth,planDay:newMonth===nowYM?iso(new Date()):newMonth+'-01'}:{}),
       showEntry:false,outcome:null,simBusy:false},()=>{if(enteringPlan)void this.refreshPlanning();});
    if(target==='intelligence'||target==='settings')void intelligenceRefresh(this);
@@ -958,8 +1132,17 @@ class App extends React.Component<any,State>{
  openQuickEntry(kind:Kind){this.setState({showEntry:true,quickAddOpen:false,entryCategoryTouched:false,
    entry:{...this.state.entry,kind,category:kind==='income'?'Salário':'Outros',date:iso(new Date())}});}
  async markBankReviewed(tx:BankTx){
-   if(tx.reviewed||this.state.detailBusy)return;
+  const key=tx.accountId+'|'+tx.id;
+  if(tx.reviewed||this.state.detailBusy||this.reviewSavingKeys.has(key))return;
+  this.reviewSavingKeys.add(key);
+  try{
    await this.runBankOperation('bankBatch',{items:[{accountId:tx.accountId,externalId:tx.id}],reviewed:true},'Movimentação revisada.');
+  }finally{this.reviewSavingKeys.delete(key);}
+ }
+ clearMovementFilters(){
+  this.setState({query:'',bankFilter:'',txSource:'all',txCategoryFilter:'',
+   txKindFilter:'all',txReviewFilter:'all',txSort:'date_desc',overviewPeriod:'month',
+   txSelected:[],quickCategory:null});
  }
  renderMovements(){
    const count=this.state.bank.data.transactions.filter(t=>!t.reviewed).length;
@@ -1143,8 +1326,28 @@ class App extends React.Component<any,State>{
    const hasBank=filtered.some(t=>t.origin==='bank'),hasManual=filtered.some(t=>t.origin==='manual');
    const source=hasBank&&hasManual?(this.state.txSummarySource||'bank'):hasManual?'manual':'bank';
    const summary=transactionViewSummary(filtered,source),span=dateSpan(this.state.overviewPeriod,this.state.customStart,this.state.customEnd);
+   const partialBank=this.state.mode!=='demo'&&!!this.state.bank.data.truncated;
    const cats=this.getCategories();
    const selected=this.state.txSelected;
+   const active:{key:string;label:string;clear:()=>void}[]=[];
+   const add=(key:string,label:string,patch:Partial<State>)=>
+     active.push({key,label,clear:()=>this.setState({...patch,txSelected:[],quickCategory:null})});
+   if(this.state.query.trim())add('query','Busca: '+this.state.query.trim().slice(0,32),{query:''});
+   if(this.state.txSource!=='all'&&!review)add('origin',this.state.txSource==='bank'?'Origem: banco':'Origem: manual',{txSource:'all'});
+   if(this.state.bankFilter){
+     const account=this.state.bank.data.accounts.find(a=>a.id===this.state.bankFilter);
+     add('account','Conta: '+(account?.name||'Selecionada'),{bankFilter:''});
+   }
+   if(this.state.txCategoryFilter)add('category','Categoria: '+this.state.txCategoryFilter,{txCategoryFilter:''});
+   if(this.state.txKindFilter&&this.state.txKindFilter!=='all')
+     add('kind',this.state.txKindFilter==='income'?'Receitas':'Despesas',{txKindFilter:'all'});
+   if(!review&&this.state.txReviewFilter&&this.state.txReviewFilter!=='all')
+     add('review',this.state.txReviewFilter==='pending'?'A conferir':'Revisadas',{txReviewFilter:'all'});
+   if(this.state.txSort&&this.state.txSort!=='date_desc')
+     add('sort',this.state.txSort==='date_asc'?'Data mais antiga':
+       this.state.txSort==='amount_desc'?'Maior valor':'Menor valor',{txSort:'date_desc'});
+   if(!review&&this.state.overviewPeriod!=='month')
+     add('period','Período: '+pDate(span.start)+' a '+pDate(span.end),{overviewPeriod:'month'});
    return h('div',{className:'section mf-tx-section u2-transactions'},
      !review&&this.state.bank.data.suspectedDuplicates?.length?h(Card,{className:'mf-duplicate-banner'},
        h('div',{},h('b',{},'Possíveis movimentações repetidas ('+this.state.bank.data.suspectedDuplicates.length+')'),
@@ -1152,26 +1355,71 @@ class App extends React.Component<any,State>{
        this.state.bank.data.suspectedDuplicates.slice(0,3).map(d=>h('div',{className:'mf-duplicate-row',key:d.pairKey},
          h('span',{},d.date.split('-').reverse().join('/')+' · '+d.description+' · '+fmt(Math.abs(d.amount))),
          h('button',{className:'ghost-button',onClick:()=>this.dismissBankDuplicate(d.pairKey)},'Ignorar aviso')))):null,
-     review?h(Card,{className:'mf-review-banner'},h('div',{},h('span',{className:'micro-label'},'SUA CAIXA DE REVISÃO'),h('h2',{},count?count+' movimentações para conferir':'Tudo organizado! 🎉'),h('p',{},count?'Total em todas as contas e períodos carregados. Use os filtros abaixo para focar sua revisão.':'Novas movimentações aparecerão aqui depois da próxima atualização.')),h('button',{className:'outlined-action',onClick:()=>this.navigate('transactions')},'Ver todas as movimentações')):null,
-     h('div',{className:'u2-summary-heading'},h('div',{},h('h2',{},'Seu histórico, com contexto'),h('p',{},review?'Caixa de revisão · todos os períodos carregados':pDate(span.start)+' a '+pDate(span.end)+' · filtros aplicados ao resumo')),
+     review?h(Card,{className:'mf-review-banner'},h('div',{},h('span',{className:'micro-label'},'SUA CAIXA DE REVISÃO'),h('h2',{},count?count+' movimentações carregadas para conferir':partialBank?'Nenhuma revisão pendente entre os registros carregados':'Tudo organizado! 🎉'),h('p',{},count?'Revisão calculada sobre os registros bancários carregados, independentemente do período.':'Outros registros podem existir fora da janela carregada quando o histórico é parcial.')),h('button',{className:'outlined-action',onClick:()=>this.navigate('transactions')},'Ver todas as movimentações')):null,
+     h('div',{className:'u2-summary-heading'},h('div',{},h('h2',{},'Seu histórico, com contexto'),h('p',{},review?'Caixa de revisão · registros bancários carregados':pDate(span.start)+' a '+pDate(span.end)+' · filtros aplicados ao resumo')),
        hasBank&&hasManual?h('div',{className:'u2-view-tabs','aria-label':'Origem dos valores do resumo'},['bank','manual'].map(v=>h('button',{type:'button','aria-pressed':source===v,onClick:()=>this.setState({txSummarySource:v})},v==='bank'?'Banco':'Manual'))):null),
      h('div',{className:'u2-metrics'},[
-       {label:'Entradas confirmadas',value:fmt(summary.income),detail:'Receitas · '+(source==='bank'?'banco':'manual'),kind:'income'},
-       {label:'Saídas confirmadas',value:fmt(summary.expense),detail:'Despesas · '+(source==='bank'?'banco':'manual'),kind:'expense'},
-       {label:'Resultado dos registros',value:fmt(summary.net),detail:'Entradas menos saídas · não é saldo disponível',kind:''},
+       {label:'Entradas confirmadas',value:fmt(summary.income),detail:'Receitas · '+(source==='bank'?(partialBank?'banco · linhas carregadas':'banco'):'manual'),kind:'income'},
+       {label:'Saídas confirmadas',value:fmt(summary.expense),detail:'Despesas · '+(source==='bank'?(partialBank?'banco · linhas carregadas':'banco'):'manual'),kind:'expense'},
+       {label:'Resultado dos registros',value:fmt(summary.net),detail:'Entradas menos saídas · não é saldo disponível'+(source==='bank'&&partialBank?' · histórico parcial':''),kind:''},
        {label:source==='bank'?'Pendentes no banco':'Registros manuais',value:String(source==='bank'?summary.pending:summary.count),detail:source==='bank'?summary.review+' a conferir · revisão independente do pagamento':'Valores separados das contas conectadas',kind:''}
      ].map(x=>h('article',{className:'u2-metric '+x.kind,key:x.label},h('span',{},x.label),h('strong',{},x.value),h('small',{},x.detail)))),
-     h('div',{className:'u2-scope'},h('span',{},'Resumo: '+(source==='bank'?'contas conectadas':'lançamentos manuais')+' · '+summary.count+' registros'+(summary.excluded?' · '+summary.excluded+' transferência(s)/desconsiderada(s) fora dos valores':'')),
-       this.state.query||this.state.bankFilter||this.state.txSource!=='all'?h('button',{type:'button',className:'mf-small-link',onClick:()=>this.setState({query:'',bankFilter:'',txSource:'all',txSelected:[]})},'Limpar filtros'):null),
-     h('div',{className:'panel-toolbar'},
-       h('div',{className:'search-box'},h(Icon,{name:'search',size:18}),h('input',{value:this.state.query,'aria-label':'Buscar movimentações',placeholder:'Buscar por nome, categoria ou conta...',onChange:(e:any)=>this.setState({query:e.target.value})})),
+     partialBank?h('p',{className:'u5-history-limited',role:'status'},
+        'Histórico bancário parcial: '+this.state.bank.data.transactions.length+' de '+
+        this.state.bank.data.totalTransactions+
+        ' movimentações carregadas. Os resumos bancários e a revisão nesta tela abrangem apenas as linhas carregadas; não representam o histórico completo.'):null,
+     h('div',{className:'u2-scope'},
+       h('span',{},'Resumo: '+(source==='bank'?'contas conectadas':'lançamentos manuais')+
+         ' · '+summary.count+' registros'+(summary.excluded?' · '+summary.excluded+' transferência(s)/desconsiderada(s) fora dos valores':'')),
+       active.length?h('button',{type:'button',className:'mf-small-link',
+         onClick:()=>this.clearMovementFilters()},'Limpar todos os filtros'):null),
+     h('div',{className:'panel-toolbar u5-filter-toolbar'},
+       h('div',{className:'search-box'},h(Icon,{name:'search',size:18}),
+         h('input',{value:this.state.query,'aria-label':'Buscar movimentações',
+           placeholder:'Buscar descrição, estabelecimento ou categoria',
+           onChange:(e:any)=>this.setState({query:e.target.value,txSelected:[],quickCategory:null})})),
        h('div',{className:'toolbar-actions'},
-         !review?h(StyledSelect,{className:'form-control bank-filter',value:this.state.txSource,options:[{value:'all',label:'Todas as origens'},{value:'bank',label:'Contas conectadas'},{value:'manual',label:'Adicionadas por você'}],onChange:(v:string)=>this.setState({txSource:v,txSelected:[]})}):null,
-         this.state.bank.data.accounts.length>1||this.state.bankFilter?h(StyledSelect,{className:'form-control bank-filter',value:this.state.bankFilter,
+         !review?h(StyledSelect,{className:'form-control bank-filter',value:this.state.txSource,
+           ariaLabel:'Filtrar origem',options:[{value:'all',label:'Todas as origens'},
+             {value:'bank',label:'Contas conectadas'},{value:'manual',label:'Adicionadas por você'}],
+           onChange:(v:string)=>this.setState({txSource:v,bankFilter:v==='manual'?'':this.state.bankFilter,
+             txSelected:[],quickCategory:null})}):null,
+         this.state.bank.data.accounts.length>1||this.state.bankFilter?h(StyledSelect,{
+           className:'form-control bank-filter',value:this.state.bankFilter,ariaLabel:'Filtrar conta',
            options:[{value:'',label:'Todas as contas'},...this.state.bank.data.accounts.map(a=>({value:a.id,label:a.name}))],
-           onChange:(v:string)=>this.setState({bankFilter:v,txSelected:[]})}):null,
-         !review?h('button',{className:'ghost-button',onClick:()=>this.csvInput?.click()},h(Icon,{name:'upload',size:17}),'Importar CSV'):null,
-         null)),
+           onChange:(v:string)=>this.setState({bankFilter:v,txSource:v?'bank':this.state.txSource,
+             txSelected:[],quickCategory:null})}):null,
+         h('button',{type:'button',className:'ghost-button u5-more-filters',
+           'aria-expanded':!!this.state.txAdvancedOpen,'aria-controls':'u5-advanced-filters',
+           onClick:()=>this.setState({txAdvancedOpen:!this.state.txAdvancedOpen})},
+           h(Icon,{name:'filter',size:16}),'Filtros'+(active.length?' · '+active.length:'')),
+         !review?h('button',{type:'button',className:'ghost-button',
+           onClick:()=>this.csvInput?.click()},h(Icon,{name:'upload',size:17}),'Importar CSV'):null)),
+     this.state.txAdvancedOpen?h('div',{id:'u5-advanced-filters',className:'u5-advanced-filters',
+       'aria-label':'Filtros avançados'},
+       h(StyledSelect,{value:this.state.txCategoryFilter||'',ariaLabel:'Filtrar categoria',
+         options:[{value:'',label:'Todas as categorias'},...cats.map(c=>({value:c.name,label:c.name}))],
+         onChange:(v:string)=>this.setState({txCategoryFilter:v,txSelected:[],quickCategory:null})}),
+       h(StyledSelect,{value:this.state.txKindFilter||'all',ariaLabel:'Filtrar receitas e despesas',
+         options:[{value:'all',label:'Receitas e despesas'},{value:'income',label:'Somente receitas'},
+           {value:'expense',label:'Somente despesas'}],
+         onChange:(v:'all'|'income'|'expense')=>this.setState({txKindFilter:v,txSelected:[],quickCategory:null})}),
+       !review?h(StyledSelect,{value:this.state.txReviewFilter||'all',ariaLabel:'Filtrar situação de revisão',
+         options:[{value:'all',label:'Qualquer revisão'},{value:'pending',label:'A conferir (banco)'},
+           {value:'reviewed',label:'Revisadas (banco)'}],
+         onChange:(v:'all'|'pending'|'reviewed')=>this.setState({txReviewFilter:v,txSelected:[],quickCategory:null})}):null,
+       h(StyledSelect,{value:this.state.txSort||'date_desc',ariaLabel:'Ordenar movimentações',
+         options:[{value:'date_desc',label:'Data mais recente'},
+           {value:'date_asc',label:'Data mais antiga'},
+           {value:'amount_desc',label:'Maior valor absoluto'},
+           {value:'amount_asc',label:'Menor valor absoluto'}],
+         onChange:(v:'date_desc'|'date_asc'|'amount_desc'|'amount_asc')=>
+           this.setState({txSort:v,txSelected:[],quickCategory:null})})
+       ):null,
+     active.length?h('div',{className:'u5-filter-chips',role:'group','aria-label':'Filtros ativos'},
+       active.map(chip=>h('button',{type:'button',key:chip.key,className:'u5-filter-chip',
+         'aria-label':'Remover filtro '+chip.label,onClick:chip.clear},
+         chip.label,h(Icon,{name:'close',size:13})))):null,
      selected.length?h(Card,{className:'mf-bulk-toolbar'},
        h('b',{},selected.length+' selecionada(s)'),
        h(StyledSelect,{value:this.state.txBatchCategory,options:cats.map(c=>({value:c.name,label:c.emoji+' '+c.name})),onChange:(value:string)=>this.setState({txBatchCategory:value})}),
@@ -1179,7 +1427,7 @@ class App extends React.Component<any,State>{
        h('button',{className:'primary-button',disabled:this.state.detailBusy,onClick:()=>this.applyBankBatch({reviewed:true})},'Marcar revisadas'),
        h('button',{className:'mf-small-link',onClick:()=>this.setState({txSelected:[]})},'Limpar seleção')):null,
      h(Card,{className:'table-card'},
-       h('div',{className:'mf-table-summary'},h('span',{role:'status'},filtered.length+' resultados'+(filtered.length>500?' · exibindo os primeiros 500; resumo inclui todos os resultados':'')),review?h('span',{},'A revisar · todos os períodos'):null,this.state.bank.data.truncated?h('span',{},'Histórico do banco parcial'):null),
+       h('div',{className:'mf-table-summary'},h('span',{role:'status'},filtered.length+' resultados nos dados carregados'+(filtered.length>500?' · exibindo os primeiros 500; resumo inclui as demais linhas filtradas e carregadas':'')),review?h('span',{},'A revisar · todos os períodos carregados'):null,partialBank?h('span',{},'Histórico bancário parcial'):null),
        !review?h('details',{className:'mf-table-help'},h('summary',{},'Como editar'),h('p',{},'No nome: detalhes. Na categoria: edição. Divisões e vínculos ficam no detalhe.')):null,
        h('div',{className:'table-scroller'},h('table',{},
          h('thead',{},h('tr',{},['','Data','Movimentação','Categoria','Origem','Situação','Valor','Ação'].map((n,i)=>h('th',{key:i},n)))),
@@ -1193,11 +1441,13 @@ class App extends React.Component<any,State>{
                 bank&&v.linkedManualId?h('small',{className:'mf-linked'},'✓ Conferido com lançamento manual'):null))),
              h('td',{},h(TransactionCategoryButton,{category:t.category,emoji:category?.emoji,
                label:'Editar categoria de '+(t.merchant||t.description)+' · '+t.date.split('-').reverse().join('/')+' · '+t.account+' · '+(t.amount>=0?'+':'−')+fmt(Math.abs(t.amount)),
-               onClick:()=>this.openCategoryFromRow(t.origin,t.raw as BankTx|Tx)}),bank&&v.splits?.length?h('small',{className:'mf-muted-block'},'Dividida em '+v.splits.length+' partes'):null),
+               expanded:!!this.state.quickCategory&&this.state.quickCategory.origin===t.origin&&this.state.quickCategory.id===t.raw.id&&(t.origin==='manual'||this.state.quickCategory.accountId===(t.raw as BankTx).accountId),
+               disabled:this.state.quickCategoryBusy||this.state.busy,
+               onClick:(e:any)=>this.openCategoryFromRow(t.origin,t.raw as BankTx|Tx,e)}),bank&&v.splits?.length?h('small',{className:'mf-muted-block'},'Dividida em '+v.splits.length+' partes'):null),
              h('td',{},t.account),
              h('td',{},bank?h('span',{className:'mf-status-group'},h('span',{className:'kind-pill'},t.status==='POSTED'?'Confirmada':t.status==='PENDING'?'Pendente no banco':t.status),h('small',{className:v.reviewed?'u2-reviewed':'u2-to-review'},v.reviewed?'✓ Revisada':'A conferir'),effectiveNature(v)==='transfer'?h('small',{},'Transferência'):effectiveNature(v)==='ignore'?h('small',{},'Desconsiderada'):null):h('span',{className:'kind-pill'},'Manual')),
              h('td',{className:t.amount>=0?'good-text amount-cell':'amount-cell'},(t.amount>=0?'+':'−')+fmt(Math.abs(t.amount))),
-             h('td',{},bank&&!v.reviewed?h('button',{className:'mf-quick-review',disabled:this.state.detailBusy,onClick:()=>this.markBankReviewed(v),title:'Conferir esta movimentação sem abrir detalhes'},'✓ Revisar'):null)
+             h('td',{},bank&&!v.reviewed?h('button',{className:'mf-quick-review',disabled:this.state.detailBusy||this.reviewSavingKeys.has(v.accountId+'|'+v.id),onClick:()=>this.markBankReviewed(v),title:'Conferir esta movimentação sem abrir detalhes'},'✓ Revisar'):null)
            );
          }):h('tr',{},h('td',{colSpan:8,className:'empty-table'},review?'Não há movimentações para revisar.':'Não há movimentações neste período.')))))));
  }
@@ -1624,7 +1874,7 @@ class App extends React.Component<any,State>{
  }
  renderEditModal(){const item=this.state.editModal;if(!item)return null;return h('div',{className:'modal-backdrop '+(item.type==='budget'?'mf-budget-edit-backdrop':''),onMouseDown:(e:any)=>{if(e.target===e.currentTarget)this.setState({editModal:null});}},h('div',{className:'modal small-modal '+(item.type==='budget'?'mf-budget-editor':''),role:'dialog','aria-modal':'true','aria-label':item.type==='budget'?'Editar limite da categoria':'Editar valor'},h('div',{className:'modal-head'},h('div',{},h('small',{className:'micro-label'},'PERSONALIZAÇÃO'),h('h2',{},item.title)),h('button',{className:'close-button',type:'button','aria-label':'Fechar painel',onClick:()=>this.setState({editModal:null})},h(Icon,{name:'close',size:18}))),this.field(item.type==='budget'?'Limite da categoria (R$)':'Valor (R$)',h('input',{className:'form-control',value:item.value,inputMode:'decimal',autoFocus:true,placeholder:item.type==='budget'?'Ex.: 150,00':'0,00',onChange:(e:any)=>this.setState({editModal:{...item,value:e.target.value}})}),item.type==='budget'?'Limite vinculado à categoria, não exclusivo do mês exibido. Em branco remove o limite; R$ 0,00 mantém zero explícito.':undefined),h('div',{className:'modal-actions'},h('button',{className:'ghost-button',onClick:()=>this.setState({editModal:null})},'Cancelar'),h('button',{className:'primary-button',disabled:this.state.busy,onClick:async()=>{const saved=item.type==='budget'?await this.setBudget(item.key,item.value):await this.setSetting(item.key as keyof Settings,item.value);if(saved)this.setState({editModal:null});}},h(Icon,{name:'check',size:18}),'Salvar alteração'))));}
  renderEntryModal(){const f=this.state.entry;return h('div',{className:'modal-backdrop',onMouseDown:(e:any)=>{if(e.target===e.currentTarget)this.setState({showEntry:false});}},h('div',{className:'modal',role:'dialog','aria-modal':'true','aria-label':'Registrar movimentação'},h('div',{className:'modal-head'},h('div',{},h('small',{className:'micro-label'},'NOVO LANÇAMENTO'),h('h2',{},'Registrar movimentação')),h('button',{className:'close-button',type:'button','aria-label':'Fechar painel',onClick:()=>this.setState({showEntry:false})},h(Icon,{name:'close',size:18}))),h('div',{className:'segmented'},['expense','income'].map(k=>h('button',{key:k,className:f.kind===k?'selected':'',onClick:()=>this.setState({entry:{...f,kind:k as Kind,category:this.state.entryCategoryTouched&&this.getCategories().some(c=>c.name===f.category&&(k==='income'?c.kind!=='expense':c.kind!=='income'))?f.category:k==='income'?'Salário':'Outros'}})},k==='expense'?'Despesa':'Receita'))),this.field('Descrição',h('input',{className:'form-control',placeholder:'Ex.: supermercado',value:f.description,maxLength:150,onChange:(e:any)=>{const description=e.target.value;const category=this.state.entryCategoryTouched?f.category:(findCategoryRule(description,'manual',this.state.rules)||'Outros');this.setState({entry:{...f,description,category}});}})),h('div',{className:'two-inputs'},this.field('Valor (R$)',h('input',{className:'form-control',placeholder:'0,00',inputMode:'decimal',value:f.value,onChange:(e:any)=>this.setState({entry:{...f,value:e.target.value}})})),this.field('Data',h(SingleDatePicker,{value:f.date,onChange:(value:string)=>this.setState({entry:{...f,date:value}})}))),this.field('Categoria',h(StyledSelect,{className:'form-control',value:f.category,options:this.getCategories().filter(c=>f.kind==='income'?c.kind!=='expense':c.kind!=='income').map(c=>({value:c.name,label:(c.emoji||'✨')+'  '+c.name})),onChange:(value:string)=>this.setState({entry:{...f,category:value},entryCategoryTouched:true})})),h('div',{className:'modal-actions'},h('button',{className:'ghost-button',onClick:()=>this.setState({showEntry:false})},'Cancelar'),h('button',{className:'primary-button',onClick:()=>this.saveEntry()},h(Icon,{name:'check',size:18}),'Salvar lançamento'))));}
- render(){if(this.state.fatal)return h('main',{className:'startup-error'},h('h1',{},'Não foi possível abrir seus dados'),h('p',{},this.state.fatal),h('p',{},'Se houver arquivos importantes, não desinstale a versão anterior nem apague a pasta de dados.'));if(this.state.booting&&desktop)return h('main',{className:'startup-error'},h('h1',{},'Meu Financeiro'),h('p',{},'Preparando seus dados…'));return h('div',{className:'shell'},this.renderSide(),h('main',{className:'main-area '+(this.state.page==='overview'?'u1-shell':['transactions','planning'].includes(this.state.page)?'u2-shell':['budgets','banks','assistant'].includes(this.state.page)?'u3-shell':'')},this.renderWorkspaceBar(),this.renderTop(),this.state.mode==='demo'?h('div',{className:'demo-strip'},h(Icon,{name:'spark',size:17}),'Você está explorando dados fictícios. Nada aqui altera suas finanças pessoais.',h('button',{onClick:()=>this.toggleMode()},'Sair da demonstração')):null,({overview:this.renderOverview,planning:this.renderPlanning,transactions:this.renderMovements,budgets:this.renderBudgets,banks:this.renderBanks,categories:this.renderCategories,assistant:this.renderAssistant,settings:this.renderSettings,intelligence:()=>renderIntelligenceView(this)}[this.state.page]||this.renderOverview).call(this),h('footer',{className:'footer'},h('span',{},desktop?'Meu Financeiro v0.9.5-beta.8 · Interface U3 · Feito para você':'Meu Financeiro v0.9.5-beta.8 · Interface U3 · Feito para você'),h('span',{},this.state.cloudPersonalTransferred?'Personalizações em revisão na nuvem':'Fonte local · integração sob autorização'))),this.state.toast?h('div',{className:'toast'},h(Icon,{name:'check',size:17}),this.state.toast):null,this.state.showEntry?this.renderEntryModal():null,this.state.editModal?this.renderEditModal():null,this.state.detail?this.renderDetailDrawer():null,this.state.planOpen?this.renderPlanModal():null,this.state.planSelected?this.renderPlanDetail():null,renderIntelligencePanel(this),!this.state.intelligencePanelOpen&&!this.state.showEntry&&!this.state.editModal&&!this.state.detail&&!this.state.planOpen&&!this.state.planSelected?h('button',{type:'button',className:'mf-ai-fab','aria-label':'Perguntar à IA sobre esta página',title:'Perguntar à IA sobre esta página',onClick:()=>this.openIntelligenceContext()},h(Icon,{name:'spark',size:24})):null,h('input',{type:'file',accept:'.json,application/json',style:{display:'none'},ref:(e:any)=>this.fileInput=e,onChange:(e:any)=>{if(e.target.files?.[0])this.importJSON(e.target.files[0]);e.target.value='';}}),h('input',{type:'file',accept:'.csv,text/csv',style:{display:'none'},ref:(e:any)=>this.csvInput=e,onChange:(e:any)=>{if(e.target.files?.[0])this.importCSV(e.target.files[0]);e.target.value='';}}));}
+ render(){if(this.state.fatal)return h('main',{className:'startup-error'},h('h1',{},'Não foi possível abrir seus dados'),h('p',{},this.state.fatal),h('p',{},'Se houver arquivos importantes, não desinstale a versão anterior nem apague a pasta de dados.'));if(this.state.booting&&desktop)return h('main',{className:'startup-error'},h('h1',{},'Meu Financeiro'),h('p',{},'Preparando seus dados…'));return h('div',{className:'shell'},this.renderSide(),h('main',{className:'main-area '+(this.state.page==='overview'?'u1-shell':['transactions','planning'].includes(this.state.page)?'u2-shell':['budgets','banks','assistant'].includes(this.state.page)?'u3-shell':'')},this.renderWorkspaceBar(),this.renderTop(),this.state.mode==='demo'?h('div',{className:'demo-strip'},h(Icon,{name:'spark',size:17}),'Você está explorando dados fictícios. Nada aqui altera suas finanças pessoais.',h('button',{onClick:()=>this.toggleMode()},'Sair da demonstração')):null,({overview:this.renderOverview,planning:this.renderPlanning,transactions:this.renderMovements,budgets:this.renderBudgets,banks:this.renderBanks,categories:this.renderCategories,assistant:this.renderAssistant,settings:this.renderSettings,intelligence:()=>renderIntelligenceView(this)}[this.state.page]||this.renderOverview).call(this),h('footer',{className:'footer'},h('span',{},desktop?'Meu Financeiro v0.9.5-beta.8 · Interface U3 · Feito para você':'Meu Financeiro v0.9.5-beta.8 · Interface U3 · Feito para você'),h('span',{},this.state.cloudPersonalTransferred?'Personalizações em revisão na nuvem':'Fonte local · integração sob autorização'))),this.state.toast?h('div',{className:'toast'},h(Icon,{name:'check',size:17}),this.state.toast):null,this.state.showEntry?this.renderEntryModal():null,this.state.editModal?this.renderEditModal():null,this.state.detail?this.renderDetailDrawer():null,this.state.quickCategory?this.renderQuickCategoryPopover():null,this.state.planOpen?this.renderPlanModal():null,this.state.planSelected?this.renderPlanDetail():null,renderIntelligencePanel(this),!this.state.intelligencePanelOpen&&!this.state.showEntry&&!this.state.editModal&&!this.state.detail&&!this.state.planOpen&&!this.state.planSelected?h('button',{type:'button',className:'mf-ai-fab','aria-label':'Perguntar à IA sobre esta página',title:'Perguntar à IA sobre esta página',onClick:()=>this.openIntelligenceContext()},h(Icon,{name:'spark',size:24})):null,h('input',{type:'file',accept:'.json,application/json',style:{display:'none'},ref:(e:any)=>this.fileInput=e,onChange:(e:any)=>{if(e.target.files?.[0])this.importJSON(e.target.files[0]);e.target.value='';}}),h('input',{type:'file',accept:'.csv,text/csv',style:{display:'none'},ref:(e:any)=>this.csvInput=e,onChange:(e:any)=>{if(e.target.files?.[0])this.importCSV(e.target.files[0]);e.target.value='';}}));}
 }
 function splitCSV(line:string,separator:string){const result:string[]=[];let current='',quoted=false;for(let i=0;i<line.length;i++){const ch=line[i];if(ch==='"'){if(quoted&&line[i+1]==='"'){current+='"';i++;}else quoted=!quoted;}else if(ch===separator&&!quoted){result.push(current);current='';}else current+=ch;}result.push(current);return result;}
 function download(blob:Blob,name:string){const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1200);}
