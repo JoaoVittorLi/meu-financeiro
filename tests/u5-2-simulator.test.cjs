@@ -7,11 +7,13 @@ const helper=part('function simInputsEqual(a:Sim','type BankConfig =');
 const js=ts.transpileModule(helper,{compilerOptions:{target:ts.ScriptTarget.ES2019}}).outputText;
 const simInputsEqual=new Function(js+';return simInputsEqual;')();
 const methods=part(' setSimulation(patch:Partial<Sim>)',' field(label:string,el:any');
+const planMethods=part(' canPlanSimulatedPurchase(out:any',' async changePlanStatus(id:string');
 const renderComparison=part(' renderSimulationComparison(){',' renderResult(out:any)');
-function fixture({invoke,local=false}={}){
+function fixture({invoke,local=false,confirmPlan=true}={}){
+ const confirmations=[],messages=[];
  const calls=[],out=(input,amount)=>({principal:amount,monthly:Math.round(amount/Number(input.installments)),
    total:Math.round(amount/Number(input.installments))*Number(input.installments),
-   installments:Number(input.installments),firstDueDate:input.firstDueDate,engine:'planning'});
+   installments:Number(input.installments),firstDueDate:input.firstDueDate,engine:'planning',interest:0});
  const desktop=local?null:{planSimulate:async args=>{
    calls.push(args);
    return invoke?await invoke(args):out({installments:String(args.installments),firstDueDate:args.firstDueDate},args.amount);
@@ -21,21 +23,33 @@ function fixture({invoke,local=false}={}){
    [result.principal,result.monthly,result.total].every(Number.isSafeInteger)?
      {principal:result.principal,monthly:result.monthly,total:result.total,
        interest:result.total-result.principal,daily:result.engine==='planning',minimum:null}:null;
- const compiled=ts.transpileModule('class Subject{'+methods+renderComparison+'}',{
+ const compiled=ts.transpileModule('class Subject{'+methods+planMethods+renderComparison+'}',{
    compilerOptions:{target:ts.ScriptTarget.ES2019,module:ts.ModuleKind.None}}).outputText;
  const h=(tag,props,...children)=>({tag,props:props||{},children});
- const Subject=new Function('desktop','simulate','parseMoney','u3SimulationCost','simInputsEqual','h','fmt','bankReferenceLabel',
-    compiled+';return Subject;')(desktop,(_d,input)=>out(input,parseMoney(input.value)),
-      parseMoney,u3SimulationCost,simInputsEqual,h,c=>(c/100).toFixed(2),x=>String(x||''));
+ const Subject=new Function('desktop','simulate','parseMoney','u3SimulationCost','simInputsEqual',
+    'h','fmt','bankReferenceLabel','iso','nowYM','shiftMonth','freshPlanForm','moneyString','confirm',
+    compiled+';return Subject;')(
+      desktop,(_d,input)=>out(input,parseMoney(input.value)),parseMoney,u3SimulationCost,simInputsEqual,
+      h,c=>(c/100).toFixed(2),x=>String(x||''),
+      ()=> '2026-11-11','2026-11',(month,offset)=>{
+        const [y,m]=month.split('-').map(Number),d=new Date(y,m-1+offset,1);
+        return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+      },
+      (_kind,dueDate)=>({title:'',amount:'',dueDate,kind:'expense',category:'Outros',mode:'once',count:'1'}),
+      c=>(c/100).toFixed(2).replace('.',','),
+      message=>{confirmations.push(message);return confirmPlan;}
+    );
  const app=new Subject();
  app.state={mode:local?'demo':'real',data:{settings:{reserve:0}},sim:{
    value:'1.200,00',installments:'6',interest:'0',firstDueDate:'2026-12-20'},
    outcome:null,simCalculatedInput:null,simResultStale:false,simError:'',
    simSaved:undefined,simBusy:false};
- app.simRequest=0;app.setState=(patch,callback)=>{
+ app.simRequest=0;app.flash=message=>messages.push(message);
+ app.refreshPlanning=async()=>{};
+ app.setState=(patch,callback)=>{
   Object.assign(app.state,typeof patch==='function'?patch(app.state):patch);callback?.();
  };
- return {app,calls};
+ return {app,calls,confirmations,messages};
 }
 test('U5.2 — resultado permanece visível e marcado como desatualizado após editar valor',async()=>{
  const {app}=fixture();await app.runSim();
@@ -145,4 +159,92 @@ test('U5.2 — interface distingue resultado antigo, erro, ação Recalcular e c
  assert.match(view,/u3SimulationCost\(out\)&&!stale/);
  assert.match(methods,/simCalculatedInput:input/);
  assert.match(methods,/token!==this\.simRequest/);
+});
+
+test('U5.2.1 — tentativa direta com resultado stale não prepara compromisso nem mostra confirmação',async()=>{
+ const {app,confirmations,messages}=fixture();
+ await app.runSim();
+ const original=app.state.outcome;
+ app.setSimulation({value:'2.400,00'});
+ assert.equal(app.isSimulationStale(),true);
+ assert.equal(app.canPlanSimulatedPurchase(original),false);
+ app.planSimulatedPurchase(); // bypass disabled button
+ assert.equal(app.state.outcome,original,'Old result stays visible as a reference');
+ assert.notEqual(app.state.planOpen,true);
+ assert.deepEqual(confirmations,[]);
+ assert.match(messages.join(' '),/Recalcule a simulação/);
+});
+test('U5.2.1 — erro de cálculo bloqueia conversão mesmo com resultado antigo preservado',async()=>{
+ const {app,confirmations}=fixture();
+ await app.runSim();
+ app.setSimulation({installments:'0'});await app.runSim();
+ assert.match(app.state.simError,/parcelas/);
+ assert.equal(app.canPlanSimulatedPurchase(),false);
+ app.planSimulatedPurchase();
+ assert.deepEqual(confirmations,[]);
+ assert.notEqual(app.state.planOpen,true);
+});
+test('U5.2.1 — enquanto nova requisição está pendente, não permite converter resultado antigo',async()=>{
+ let release;const pending=new Promise(resolve=>{release=resolve});
+ let responseCount=0;
+ const {app,confirmations}=fixture({invoke:async args=>{
+   if(++responseCount===2)await pending;
+   return {engine:'planning',principal:args.amount,monthly:20000,total:args.amount,
+     interest:0,installments:args.installments,firstDueDate:args.firstDueDate};
+ }});
+ await app.runSim();const previous=app.state.outcome;
+ const next=app.runSim();
+ assert.equal(app.state.simBusy,true);
+ assert.equal(app.canPlanSimulatedPurchase(previous),false);
+ app.planSimulatedPurchase();
+ assert.deepEqual(confirmations,[]);
+ release();await next;
+ assert.equal(app.isSimulationStale(),false);
+ assert.equal(app.canPlanSimulatedPurchase(),true);
+});
+test('U5.2.1 — premissas alteradas exigem recálculo antes da conversão válida',async()=>{
+ const {app,confirmations}=fixture();
+ await app.runSim();
+ app.setSimulation({value:'2.400,00',installments:'12',firstDueDate:'2027-01-31'});
+ assert.equal(app.canPlanSimulatedPurchase(),false);
+ app.planSimulatedPurchase();
+ assert.equal(confirmations.length,0);
+ await app.runSim();
+ assert.equal(app.isSimulationStale(),false);
+ assert.equal(app.canPlanSimulatedPurchase(),true);
+ const calculated=app.state.outcome;
+ app.planSimulatedPurchase();
+ assert.equal(confirmations.length,1);
+ assert.equal(app.state.page,'planning');
+ assert.equal(app.state.planOpen,true);
+ assert.equal(app.state.planForm.dueDate,'2027-01-31');
+ assert.equal(app.state.planForm.count,'12');
+ assert.equal(app.state.planForm.mode,'installments');
+ assert.equal(app.state.planForm.amount,(calculated.total/100).toFixed(2).replace('.',','));
+ assert.equal(app.state.planForm.notes.includes('Simulação:'),true);
+ assert.equal(app.state.outcome,null);
+});
+test('U5.2.1 — confirmação recusada mantém resultado e não abre planejamento',async()=>{
+ const {app,confirmations}=fixture({confirmPlan:false});
+ await app.runSim();
+ const before=app.state.outcome;
+ app.planSimulatedPurchase();
+ assert.equal(confirmations.length,1);
+ assert.equal(app.state.outcome,before);
+ assert.notEqual(app.state.planOpen,true);
+});
+test('U5.2.1 — sem snapshot calculado correspondente não existe conversão possível',async()=>{
+ const {app,confirmations}=fixture();
+ await app.runSim();
+ app.state.simCalculatedInput=null;
+ app.state.simResultStale=false;
+ assert.equal(app.canPlanSimulatedPurchase(),false);
+ app.planSimulatedPurchase();
+ assert.equal(confirmations.length,0);
+});
+test('U5.2.1 — botão de planejamento compartilha guarda com método',()=>{
+ const view=part(' renderResult(out:any)',' renderBankQuick()');
+ assert.match(view,/disabled:out\.installments>36\|\|!this\.canPlanSimulatedPurchase\(out\)/);
+ assert.match(planMethods,/if\(!this\.canPlanSimulatedPurchase\(out\)\)/);
+ assert.match(planMethods,/simInputsEqual\(this\.state\.sim,this\.state\.simCalculatedInput\)/);
 });

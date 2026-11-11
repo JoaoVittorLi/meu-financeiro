@@ -2,6 +2,10 @@
 const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),ts=require('typescript');
 const source=fs.readFileSync(path.join(__dirname,'../src/plan-view.ts'),'utf8');
 const h=(tag,props,...children)=>({tag,props:props||{},children});
+const appSource=fs.readFileSync(path.join(__dirname,'../src/app.ts'),'utf8');
+const natureSource=appSource.slice(appSource.indexOf('function effectiveNature(t:BankTx)'),appSource.indexOf('function transactionViewRows(state:State)'));
+const natureCompiled=ts.transpileModule(natureSource,{compilerOptions:{target:ts.ScriptTarget.ES2019,module:ts.ModuleKind.None}}).outputText;
+const effectiveNature=new Function(natureCompiled+';return effectiveNature;')();
 const evaluate=(start,end,name,bindings={})=>{
  const a=source.indexOf(start),b=source.indexOf(end,a+start.length);
  assert(a>=0&&b>a,'missing production function '+start);
@@ -11,6 +15,7 @@ const evaluate=(start,end,name,bindings={})=>{
 const pDate=x=>x.split('-').reverse().join('/');
 const endOfMonth=month=>{const [y,m]=month.split('-').map(Number);return month+'-'+String(new Date(y,m,0).getDate()).padStart(2,'0')};
 const fmt=cents=>(cents/100).toFixed(2);
+const filterRows=evaluate('function pFilterTransactions(app:any)','// UI-03:','pFilterTransactions',{effectiveNature});
 const day=evaluate('function pCalendarDayInfo(rows:any[]','function pCalendar(app:any','pCalendarDayInfo');
 const calendar=evaluate('function pCalendar(app:any','// The graph marker is the slider:','pCalendar',{
  pDate,endOfMonth,pCalendarDayInfo:day,h,fmt,
@@ -31,9 +36,9 @@ test('U5.2 — calendário diferencia realizado, previsto e incerto sem recontar
  const rows=[bank('paid','2026-12-31',1500),planned('bill','2026-12-31','expense',4200),
   planned('bonus','2026-12-31','income',7500,'estimated')];
  assert.deepEqual(day(rows,'2026-12-31'),{
-  count:3,recorded:1,expected:1,estimated:1,incoming:7500,outgoing:5700
+  count:3,recorded:1,expected:1,estimated:1,excluded:0,incoming:7500,outgoing:5700
  });
- assert.deepEqual(day(rows,'2027-01-01'),{count:0,recorded:0,expected:0,estimated:0,incoming:0,outgoing:0});
+ assert.deepEqual(day(rows,'2027-01-01'),{count:0,recorded:0,expected:0,estimated:0,excluded:0,incoming:0,outgoing:0});
  assert.deepEqual(rows.map(x=>x.amount),[1500,4200,7500],'Display-only aggregation must not mutate rows');
 });
 test('U5.2 — dezembro/janeiro, limites do mês e seleção por teclado',()=>{
@@ -112,7 +117,7 @@ test('U5.2 — compromissos do mês/ano distinguem receitas confirmadas, incerta
  assert.deepEqual(items.map(x=>x.remaining),[4500,10000,7000,50000,9999,3000]);
 });
 test('U5.2 — calendário/agenda usam IDs compostos e não duplicam pagamentos vinculados',()=>{
- const filter=evaluate('function pFilterTransactions(app:any)','// UI-03:', 'pFilterTransactions');
+ const filter=filterRows;
  const entry=(id,accountId,extra={})=>({
   id,accountId,accountName:'Conta sintética',date:'2026-12-31',amount:-4500,
   status:'POSTED',category:'Outros',description:'Compra sintética '+accountId,...extra
@@ -129,4 +134,58 @@ test('U5.2 — calendário/agenda usam IDs compostos e não duplicam pagamentos 
  assert.deepEqual(rows.map(x=>x.key),['bank:account-B|same','plan:plan-a']);
  assert.equal(new Set(rows.map(x=>x.key)).size,rows.length);
  assert.equal(JSON.stringify(app.state),before);
+});
+
+test('U5.2.1 — override de natureza bancária prevalece sobre sinal; auto respeita sinal',()=>{
+ const bankTx=[
+  {id:'negative-income',accountId:'A',nature:'income',amount:-101,category:'Outros',date:'2026-12-31',status:'POSTED'},
+  {id:'positive-expense',accountId:'B',nature:'expense',amount:202,category:'Outros',date:'2026-12-31',status:'POSTED'},
+  {id:'auto-income',accountId:'A',nature:'auto',amount:303,category:'Outros',date:'2026-12-31',status:'POSTED'},
+  {id:'auto-expense',accountId:'A',nature:'auto',amount:-404,category:'Outros',date:'2026-12-31',status:'POSTED'}
+ ].map(tx=>({...tx,description:tx.id,accountName:tx.accountId}));
+ const state={mode:'real',planMonth:'2026-12',planTerm:'',planView:'all',
+  planning:{items:[]},bank:{data:{transactions:bankTx}},data:{transactions:[]}};
+ const snapshot=JSON.stringify(state),rows=filterRows({state});
+ assert.equal(rows.length,4);
+ const kinds=Object.fromEntries(rows.map(r=>[r.item.id,r.kind]));
+ assert.deepEqual(kinds,{'auto-expense':'expense','auto-income':'income','negative-income':'income','positive-expense':'expense'});
+ assert.deepEqual(day(rows,'2026-12-31'),{
+  count:4,recorded:4,expected:0,estimated:0,excluded:0,incoming:404,outgoing:606
+ });
+ assert.equal(JSON.stringify(state),snapshot,'No mutation of bank nature or raw Pluggy fields');
+});
+test('U5.2.1 — transferências entre contas e lançamentos ignorados visíveis, sem afetar totais diários',()=>{
+ const make=(id,accountId,amount,nature)=>({
+  id,accountId,amount,nature,date:'2026-12-31',description:id,accountName:accountId,
+  category:'Outros',status:'POSTED'
+ });
+ const bankTx=[
+  make('own-out','account-A',-25000,'transfer'),
+  make('own-in','account-B',25000,'transfer'),
+  make('ignored-positive','account-A',1500,'ignore'),
+  make('ignored-negative','account-B',-330,'ignore'),
+  make('purchase','account-A',-1000,'auto')
+ ];
+ const state={mode:'real',planMonth:'2026-12',planTerm:'',planView:'all',
+  planning:{items:[]},bank:{data:{transactions:bankTx}},data:{transactions:[]}};
+ const original=JSON.stringify(state),rows=filterRows({state});
+ assert.equal(rows.length,5,'Transfer/ignore remain visible in the ledger');
+ assert.equal(new Set(rows.map(x=>x.key)).size,5,'AccountId + externalId remain distinct');
+ assert.equal(rows.filter(x=>x.kind==='transfer').length,2);
+ assert.equal(rows.filter(x=>x.kind==='ignore').length,2);
+ assert.deepEqual(day(rows,'2026-12-31'),{
+  count:5,recorded:1,expected:0,estimated:0,excluded:4,incoming:0,outgoing:1000
+ });
+ const calendarTree=calendar({state:{planMonth:'2026-12',planDay:'2026-12-31'},
+  setState(p){Object.assign(this.state,p)}},rows);
+ const selected=walk(calendarTree,x=>x.props?.['data-plan-day']==='2026-12-31')[0];
+ assert.match(selected.props['aria-label'],/4 não contabilizados/);
+ const ledger=evaluate('function pLedgerRow(app:any)','function pAgenda(app:any','pLedgerRow',
+  {h,fmt,pDate,pChip:status=>h('span',{},status),Icon:()=>null});
+ const demo={getCategories:()=>[],openPlanBankDetail(){}};
+ const own=JSON.stringify(ledger(demo,rows.find(r=>r.kind==='transfer')));
+ const ignored=JSON.stringify(ledger(demo,rows.find(r=>r.kind==='ignore')));
+ assert.match(own,/Transferência própria · não contabilizada/);
+ assert.match(ignored,/Desconsiderada · não contabilizada/);
+ assert.equal(JSON.stringify(state),original,'Read-only presentation, no bank rewrite');
 });

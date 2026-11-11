@@ -26,6 +26,7 @@
 .u2-planning .u5-plan-calendar-status .recorded{color:var(--green)}
 .u2-planning .u5-plan-calendar-status .expected{color:var(--text)}
 .u2-planning .u5-plan-calendar-status .estimated{color:var(--warning)}
+.u2-planning .u5-plan-calendar-status .excluded{color:var(--muted);font-style:italic}
 .u2-planning .u5-plan-day-flow{padding-top:5px;margin-top:auto;border-top:1px solid var(--border)}
 .u2-planning .u5-plan-day-flow span{font-variant-numeric:tabular-nums}
 .u2-planning .u5-single-projection{padding:18px;border:1px solid var(--border);

@@ -1086,9 +1086,21 @@ class App extends React.Component<any,State>{
  async executePlan(action:()=>Promise<any>,message:string){if(!desktop||this.state.mode==='demo'||this.state.planBusy)return;this.setState({planBusy:true});try{await action();await this.refreshPlanning();this.setState({planBusy:false,planOpen:false});if(message)this.flash(message);}catch(e:any){this.setState({planBusy:false});this.flash('Não foi possível concluir: '+String(e?.message||e));}}
  openPlan(item?:PlanItem,kind:Kind='expense'){if(this.state.mode==='demo')return this.flash('O planejamento fica disponível nos seus dados pessoais.');const f=item?{id:item.id,title:item.title,kind:item.kind,amount:moneyString(item.amount),dueDate:item.dueDate,category:item.category,accountId:item.accountId||'',notes:item.notes||'',certainty:item.certainty,mode:'once' as const,count:'1'}:freshPlanForm(kind,this.state.planDay);this.setState({planForm:f,planOpen:true});}
  async savePlan(){const f=this.state.planForm;const v=parseMoney(f.amount);if(!Number.isSafeInteger(v)||v<=0)return this.flash('Informe um valor maior que zero.');if(!f.title.trim())return this.flash('Dê um nome ao lançamento.');const data={...f,amount:v,accountId:f.accountId||null,count:Number(f.count)};await this.executePlan(()=>f.id?desktop!.planEdit(data):desktop!.planCreate(data),f.id?'Planejamento atualizado.':'Compromisso adicionado.');}
+ canPlanSimulatedPurchase(out:any=this.state.outcome):boolean{
+   // Same gate for button and operation. Previous results remain read-only.
+   return !!desktop&&this.state.mode==='real'&&out===this.state.outcome&&
+     !!out&&!out.error&&out.engine==='planning'&&
+     !this.state.simBusy&&!this.state.simError&&!this.isSimulationStale()&&
+     !!this.state.simCalculatedInput&&
+     simInputsEqual(this.state.sim,this.state.simCalculatedInput);
+ }
  planSimulatedPurchase(){
    const out=this.state.outcome;
    if(!out||out.error||out.engine!=='planning'||this.state.mode!=='real'||!desktop)return;
+   if(!this.canPlanSimulatedPurchase(out)){
+     this.flash('O resultado anterior é apenas uma referência. Recalcule a simulação antes de planejar esta compra.');
+     return;
+   }
    const count=Number(out.installments);
    if(!Number.isInteger(count)||count<1||count>36){this.flash('O planejamento aceita até 36 parcelas. Ajuste a simulação antes de registrar.');return;}
    const first=out.firstDueDate;
@@ -1723,7 +1735,10 @@ class App extends React.Component<any,State>{
       h('div',{className:'u3-cost-strip'},h('span',{},'Valor original ',h('b',{},fmt(out.principal))),h('span',{},'Juros totais ',h('b',{},fmt(out.interest))),h('span',{},'Total ',h('b',{},fmt(out.total)))),
       h(U3ScenarioChart,{rows:out.rows}),
       h('details',{className:'u3-monthly-data'},h('summary',{},'Ver valores por mês · '+out.rows.length+' meses'),h('div',{className:'u3-comparison-scroll'},h('table',{},h('caption',{},'Fechamento mensal estimado · não representa o menor saldo diário'),h('thead',{},h('tr',{},h('th',{scope:'col'},'Mês'),h('th',{scope:'col'},'Sem compra'),h('th',{scope:'col'},'Com compra'))),h('tbody',{},out.rows.map((v:any)=>h('tr',{key:v.month},h('th',{scope:'row'},prettyMonth(v.month)),h('td',{},fmt(v.withoutPurchase)),h('td',{className:v.withPurchase<0?'bad-text':''},fmt(v.withPurchase)))))))),
-      h('button',{className:'primary-button mf-plan-from-sim',disabled:out.installments>36,onClick:()=>this.planSimulatedPurchase()},'Planejar esta compra'),
+      h('button',{type:'button',className:'primary-button mf-plan-from-sim',
+       disabled:out.installments>36||!this.canPlanSimulatedPurchase(out),
+       title:!this.canPlanSimulatedPurchase(out)?'Recalcule as premissas antes de planejar esta compra.':undefined,
+       onClick:()=>this.planSimulatedPurchase()},'Planejar esta compra'),
       out.installments>36?h('p',{className:'muted-desc'},'Para registrar o compromisso, simule até 36 parcelas.'):null,
       h('p',{className:'disclaimer'},quality==='stale'?'A última leitura do banco está antiga. Atualize as contas antes de tomar decisões. ':quality==='incomplete'?'Há contas sem saldo disponível. A projeção está incompleta. ':quality==='unverified'?'O saldo recebido pode não refletir as movimentações mais recentes. ':'',out.warning));
   }const r=out.risk;const info:any={safe:['Cenário favorável, não garantia','Seu perfil informado indica margem para acomodar a parcela.','safe'],caution:['Atenção ao orçamento','A compra reduz sua margem ou compromete uma parte relevante da renda.','caution'],risk:['Compra arriscada','A projeção pode ultrapassar a margem informada ou comprometer sua reserva.','danger'],unknown:['Dados insuficientes','Defina renda e despesas fixas em Configurações para avaliar o risco.','unknown']};const [title,subtitle,cls]=info[r];const ratios=out.hasProfile?Math.round(out.monthly/this.state.data.settings.income*100):null;return h(Card,{className:'result-card'},h('div',{className:'result-badge '+cls},h(Icon,{name:r==='safe'?'check':'alert',size:22}),h('div',{},h('h2',{},title),h('p',{},subtitle))),h('div',{className:'result-metrics'},h('div',{},h('span',{},'Parcela'),h('strong',{},fmt(out.monthly))),h('div',{},h('span',{},'Custo total'),h('strong',{},fmt(out.total))),h('div',{},h('span',{},'Juros totais'),h('strong',{},fmt(out.total-out.principal))),h('div',{},h('span',{},'Peso na renda'),h('strong',{},ratios===null?'—':ratios+'%'))),h('div',{className:'future-title'},'Projeção dos próximos meses'),h('div',{className:'future-list'},out.rows.slice(0,6).map((v:any)=>h('div',{key:v.month},h('span',{},prettyMonth(v.month)),h('b',{className:v.available<0?'bad-text':''},fmt(v.available))))),h('p',{className:'disclaimer'},'Projeção simplificada: começa no próximo mês e pressupõe os mesmos valores recorrentes informados. Não considera vencimentos diários, renda variável ou pagamentos já lançados. Não é garantia de capacidade de pagamento.'));

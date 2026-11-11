@@ -82,3 +82,28 @@ test('U3 first-due-date is offered only for daily simulations and profile mode r
  const profile=runtime().app;assert.match(JSON.stringify(profile.renderAssistant()),/cenário simplificado/);assert.doesNotMatch(JSON.stringify(profile.renderAssistant()),/Primeiro vencimento/);
  const daily=runtime({}).app;assert.match(JSON.stringify(daily.renderAssistant()),/Primeiro vencimento/);assert.doesNotMatch(JSON.stringify(daily.renderAssistant()),/começa no próximo mês/);
 });
+
+test('U5.2.1 — renderer mantém Planejar esta compra desabilitado enquanto stale, erro ou cálculo pendente',()=>{
+ const {app}=runtime({});
+ app.state.sim={value:'3.000,00',installments:'6',interest:'0',firstDueDate:'2026-12-09'};
+ app.state.simCalculatedInput={...app.state.sim};
+ app.state.simResultStale=false;
+ app.state.simError='';
+ app.state.simBusy=false;
+ app.state.outcome=result();
+ const button=()=>walk(app.renderResult(app.state.outcome),
+  n=>n.tag==='button'&&String(n.props?.className||'').includes('mf-plan-from-sim'))[0];
+ assert(button(),'Planning button must be present for a planning-engine result');
+ assert.equal(button().props.disabled,false,'Current result allows conversion');
+ app.setSimulation({value:'4.000,00'});
+ assert.equal(button().props.disabled,true,'Stale result is read-only');
+ app.state.simCalculatedInput={...app.state.sim};
+ app.state.simResultStale=false;
+ app.state.simError='Falha sintética de simulação';
+ assert.equal(button().props.disabled,true,'Error prevents conversion');
+ app.state.simError='';
+ app.state.simBusy=true;
+ assert.equal(button().props.disabled,true,'In-flight calculation prevents conversion');
+ app.state.simBusy=false;
+ assert.equal(button().props.disabled,false,'Current valid scenario is actionable');
+});

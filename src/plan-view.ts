@@ -9,7 +9,7 @@ function pFilterTransactions(app:any){
  const linked=new Set<string>();for(const i of s.planning.items)for(const l of i.links||[])if(l.status==='POSTED')linked.add(l.accountId+'|'+l.externalId);
  const allBank=s.mode==='demo'?[]:s.bank.data.transactions.filter((i:BankTx)=>i.date.slice(0,7)===month);
  // In the consolidated view, show a linked payment under its plan, not as a second purchase.
- const bank=allBank.filter((i:BankTx)=>mode==='bank'||!linked.has(i.accountId+'|'+i.id)).map((i:BankTx)=>({key:'bank:'+i.accountId+'|'+i.id,type:'bank',kind:i.amount>0?'income':'expense',date:i.date,title:i.customTitle||i.merchant||i.description,original:i.description,category:i.category,amount:Math.abs(i.amount),status:i.status==='POSTED'?'paid':'pending',item:i}));
+ const bank=allBank.filter((i:BankTx)=>mode==='bank'||!linked.has(i.accountId+'|'+i.id)).map((i:BankTx)=>({key:'bank:'+i.accountId+'|'+i.id,type:'bank',kind:effectiveNature(i),date:i.date,title:i.customTitle||i.merchant||i.description,original:i.description,category:i.category,amount:Math.abs(i.amount),status:i.status==='POSTED'?'paid':'pending',item:i}));
  const manualLinked=new Set<string>(allBank.filter((b:BankTx)=>b.status==='POSTED').map((b:BankTx)=>b.linkedManualId).filter(Boolean) as string[]);
  const manual=s.data.transactions.filter((i:Tx)=>i.date.slice(0,7)===month&&!manualLinked.has(i.id)).map((i:Tx)=>({key:'manual:'+i.id,type:'manual',kind:i.kind,date:i.date,title:i.description,original:'',category:i.category,amount:i.amount,status:'paid',item:i}));
  return [...planned,...bank,...manual].filter(x=>(mode==='all'||(mode==='planned'&&x.type==='planned')||(mode==='bank'&&x.type==='bank')||(mode==='pending'&&x.type==='planned'&&(x.status==='pending'||x.status==='overdue'))||(mode==='paid'&&x.status==='paid'))&&(!t||[x.title,x.original,x.category].join(' ').toLowerCase().includes(t))).sort((a,b)=>a.date.localeCompare(b.date)||a.key.localeCompare(b.key));
@@ -44,8 +44,8 @@ function pLedgerRow(app:any,r:any){
  const category=app.getCategories().find((c:CategoryInfo)=>c.name===r.category);
  return h('button',{type:'button',className:'p-ledger-row',key:r.key,onClick:()=>r.type==='planned'?app.openPlanDetail(r.item.id):r.type==='bank'?app.openPlanBankDetail(r.item):app.openManualDetail(r.item)},
  h('span',{className:'p-ledger-icon',style:{background:category?category.color+'25':undefined}},category?.emoji||'🧾'),
- h('span',{className:'p-ledger-name'},h('strong',{},r.title),h('small',{},r.category+' · '+(r.type==='planned'?(r.item.certainty==='estimated'?'Planejado · estimativa incerta':'Planejado · previsão confirmada'):r.type==='bank'?'Banco':'Manual')),r.original&&r.original!==r.title?h('small',{},r.original):null),
- h('span',{className:'p-ledger-date'},pDate(r.date)),pChip(r.status),h('span',{className:'u2-ledger-amount'},h('strong',{className:r.kind==='income'?'good-text':'bad-text'},(r.kind==='income'?'+':'−')+fmt(r.amount)),r.type==='planned'&&r.item.remaining>0?h('small',{},fmt(r.item.remaining)+' restante'):null),h('span',{className:'p-row-arrow'},h(Icon,{name:'chevron-right',size:16})));
+ h('span',{className:'p-ledger-name'},h('strong',{},r.title),h('small',{},r.category+' · '+(r.type==='planned'?(r.item.certainty==='estimated'?'Planejado · estimativa incerta':'Planejado · previsão confirmada'):r.type==='bank'?(r.kind==='transfer'?'Transferência própria · não contabilizada':r.kind==='ignore'?'Desconsiderada · não contabilizada':'Banco'):'Manual')),r.original&&r.original!==r.title?h('small',{},r.original):null),
+ h('span',{className:'p-ledger-date'},pDate(r.date)),pChip(r.status),h('span',{className:'u2-ledger-amount'},h('strong',{className:r.kind==='income'?'good-text':r.kind==='expense'?'bad-text':'muted'},(r.kind==='income'?'+':r.kind==='expense'?'−':'')+fmt(r.amount)),r.type==='planned'&&r.item.remaining>0?h('small',{},fmt(r.item.remaining)+' restante'):null),h('span',{className:'p-row-arrow'},h(Icon,{name:'chevron-right',size:16})));
 }
 function pAgenda(app:any,rows:any[]){
  const shown=rows.slice(0,350),groups=[...new Set(shown.map(r=>r.date))];
@@ -54,15 +54,16 @@ function pAgenda(app:any,rows:any[]){
 /** Display-only classification of canonical filtered ledger rows; NOT the balance engine. */
 function pCalendarDayInfo(rows:any[],date:string){
  const matches=rows.filter(r=>r.date===date);
- let recorded=0,expected=0,estimated=0,incoming=0,outgoing=0;
+ let recorded=0,expected=0,estimated=0,excluded=0,incoming=0,outgoing=0;
  for(const r of matches){
+  if(r.kind==='transfer'||r.kind==='ignore'){excluded++;continue;}
   if(r.type==='planned'&&r.item.certainty==='estimated'&&r.status!=='paid')estimated++;
   else if(r.status==='paid')recorded++;
   else expected++;
   if(r.kind==='income')incoming+=r.amount;
   else if(r.kind==='expense')outgoing+=r.amount;
  }
- return {count:matches.length,recorded,expected,estimated,incoming,outgoing};
+ return {count:matches.length,recorded,expected,estimated,excluded,incoming,outgoing};
 }
 function pCalendar(app:any,rows:any[]){
  const month=app.state.planMonth,first=new Date(month+'-01T12:00:00').getDay(),days=Number(endOfMonth(month).slice(-2));
@@ -84,7 +85,7 @@ function pCalendar(app:any,rows:any[]){
     Array.from({length:days},(_,i)=>{
       const date=month+'-'+String(i+1).padStart(2,'0'),info=pCalendarDayInfo(rows,date);
       const tooltip=pDate(date)+' · '+info.count+' registros · '+info.recorded+' realizados, '+
-        info.expected+' previstos, '+info.estimated+' incertos · Entradas '+fmt(info.incoming)+' / Saídas '+fmt(info.outgoing);
+        info.expected+' previstos, '+info.estimated+' incertos, '+info.excluded+' não contabilizados · Entradas '+fmt(info.incoming)+' / Saídas '+fmt(info.outgoing);
       return h('button',{type:'button',key:date,'data-plan-day':date,
         className:'u5-plan-calendar-day'+(selected===date?' is-selected':''),
         'aria-pressed':selected===date,'aria-label':tooltip,title:tooltip,
@@ -93,7 +94,8 @@ function pCalendar(app:any,rows:any[]){
         info.count?h('span',{className:'u5-plan-calendar-status'},
           info.recorded?h('span',{className:'recorded'},info.recorded+' realizado(s)'):null,
           info.expected?h('span',{className:'expected'},info.expected+' previsto(s)'):null,
-          info.estimated?h('span',{className:'estimated'},info.estimated+' incerto(s)'):null):null,
+          info.estimated?h('span',{className:'estimated'},info.estimated+' incerto(s)'):null,
+          info.excluded?h('span',{className:'excluded'},info.excluded+' fora do fluxo'):null):null,
         info.count?h('span',{className:'u5-plan-day-flow'},
           info.incoming?h('span',{className:'good-text'},'+'+fmt(info.incoming)):null,
           info.outgoing?h('span',{className:'bad-text'},'−'+fmt(info.outgoing)):null):null);
