@@ -2436,3 +2436,110 @@
     grid-template-columns: 1fr;
   }
 }
+
+
+/* V1.2 — integrated intelligence alignment. No content, AI flow or V1.1 changes.
+   The Today tab previously had no layout gap between its three sections. */
+.mf-intelligence-page .mf-ai-today {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+  align-content: start;
+}
+.mf-intelligence-page .mf-ai-card-grid {
+  align-items: stretch;
+  min-width: 0;
+}
+.mf-intelligence-page .mf-ai-example-card {
+  min-width: 0;
+  align-self: stretch;
+}
+.mf-intelligence-page .mf-ai-example-copy {
+  width: 100%;
+  min-width: 0;
+}
+.mf-intelligence-page .mf-ai-example-copy > :is(strong,p),
+.mf-intelligence-page .mf-ai-welcome > :is(h2,p),
+.mf-intelligence-page .mf-ai-action-text > :is(h3,p) {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.mf-intelligence-page .mf-ai-link {
+  max-width: 100%;
+  flex-wrap: wrap;
+  overflow-wrap: anywhere;
+  margin-top: auto;
+}
+.mf-intelligence-page .mf-ai-explainer {
+  min-width: 0;
+  align-items: flex-start;
+}
+.mf-intelligence-page .mf-ai-explainer > div {
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow-wrap: anywhere;
+}
+.mf-intelligence-page .mf-ai-explainer > svg {
+  flex: 0 0 auto;
+}
+.mf-intelligence-page .mf-ai-action-card {
+  min-width: 0;
+  flex-wrap: wrap;
+}
+.mf-intelligence-page .mf-ai-action-buttons {
+  min-width: 0;
+  max-width: 100%;
+}
+.mf-intelligence-page .mf-ai-lab-disclosure > summary {
+  min-width: 0;
+}
+.mf-intelligence-page .mf-ai-lab-disclosure > summary small {
+  min-width: 0;
+  flex: 1 1 180px;
+  overflow-wrap: anywhere;
+}
+/* The history/sidebar and chat area must shrink with available space without
+   pushing one another or swallowing long contextual messages. */
+.mf-intelligence-page .mf-ai-workbench,
+.mf-intelligence-page .mf-ai-workbench-main,
+.mf-intelligence-page .mf-ai-history-sidebar,
+.mf-intelligence-page .mf-ai-starter-grid > * {
+  min-width: 0;
+}
+.mf-intelligence-page .mf-ai-history-groups,
+.mf-ai-drawer .mf-ai-drawer-body {
+  min-height: 0;
+}
+.mf-intelligence-page .mf-ai-msg,
+.mf-ai-drawer .mf-ai-msg,
+.mf-ai-drawer .mf-ai-context-meta,
+.mf-intelligence-page .mf-ai-context-prompt {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+/* The contextual assistant is a deliberate modal overlay; only its inner
+   regions scroll. Wrapping the header keeps Nova/Expandir/Fechar operable. */
+.mf-ai-drawer.mf-ai-drawer-compact .mf-ai-drawer-head {
+  flex-wrap: wrap;
+}
+.mf-ai-drawer.mf-ai-drawer-compact .mf-ai-drawer-title-wrap {
+  min-width: 0;
+  flex: 1 1 160px;
+  overflow-wrap: anywhere;
+}
+.mf-ai-drawer.mf-ai-drawer-compact .mf-ai-drawer-head-actions {
+  min-width: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.mf-ai-drawer.mf-ai-drawer-compact .mf-ai-drawer-composer {
+  flex: 0 0 auto;
+}
+@media (max-width: 600px) {
+  .mf-intelligence-page .mf-ai-card-grid {
+    grid-template-columns: minmax(0,1fr);
+  }
+  .mf-ai-drawer.mf-ai-drawer-compact .mf-ai-drawer-head-actions {
+    justify-content: flex-start;
+  }
+}
