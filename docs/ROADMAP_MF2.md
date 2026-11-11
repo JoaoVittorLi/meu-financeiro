@@ -6,6 +6,17 @@
 
 > **Regra permanente, vinculante para todas as IAs:** **cada mudança relevante DEVE atualizar este roadmap no mesmo PR da implementação**, além do log Markdown específico. Nunca concluir uma entrega apenas com código. Quem não integra pode atualizar o progresso **proposto em sua branch**; somente o integrador confirma o progresso global, gates e publicação.
 
+## ARGON I1-A.2 — pacote aprovado em revisão dirigida, I1-B autorizada isoladamente (11/11/2026)
+
+**Código I1-A.2 aceito como PACOTE RECUPERÁVEL, NÃO INTEGRADO/NÃO HOMOLOGADO.** ZIP SHA-256 `e056add4d7a7a0975f191d6e117053ae93dddd4a1913b526b11040e6c7206ecb`, patch SHA-256 `891d297cd7a2b48379152290f6cca4cd9f854df21ad23f22e35294f6e2e282e0`; reversão reproduziu os quatro blobs originais da beta.8 `d513c2be`. **6/6 testes comportamentais isolados Node 22.16.0 + TypeScript transpileModule PASS**, com stub de Markdown; sem suíte integral, `tsc` de projeto, Electron ou CI. Três bugs da máquina de estados e busca com >8 candidatos corrigidos nos cenários testados. Nenhum comando de chat livre chama IA e nenhuma confirmação de prévia grava finanças (I2-A/I2-B futuros).
+
+**Liberação:** Argon pode desenvolver **I1-B** a partir do patch validado em workspace/branch exclusivos, com prioridade para publicar primeiro commit/PR recuperável; se continuar sem acesso de escrita, ZIP completo + patch incremental verificável por SHA e histórico entre entregas. A **integração à staging permanece bloqueada** até publicação GitHub e gates oficiais. I1-B deve unificar drawer+aba em histórico persistente, tratamento de contexto/permissões, 1366/1920, claro/escuro e testes de conversa; não tocar `src/app.ts`/`electron/db.cjs` em paralelo ao Executor. [Parecer completo](https://github.com/JoaoVittorLi/meu-financeiro/pull/35#issuecomment-6798697511).
+
+**Nenhuma autorização** de Windows CI, EXE, merge, PWA Production ou escrita financeira. A versão U5.1 PR #37 avança independentemente.
+
+---
+
+
 ## Checkpoint ARGON I1-A.1 — validação do pacote e regressões do chat (11/11/2026)
 
 **STATUS: PATCH RECUPERÁVEL, CORREÇÕES DIRIGIDAS NECESSÁRIAS; NÃO INTEGRADO.** ZIP `i1-a-1-intelligence-lateral-chat.zip` inclui quatro arquivos e patch SHA-256 `c40f99e0668c28fcd3b1cb67c340b55633da63e56de2c347f82648e279d08ee9`; revertendo o patch foram obtidos os mesmos blobs da beta.8 `d513c2be`. Correções de desambiguação, categoria, data relativa, prévia **sem gravação** e stale estão presentes. O Argon não publicou PR/commit da I1-A.1.
