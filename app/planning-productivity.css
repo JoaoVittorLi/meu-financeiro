@@ -1,0 +1,65 @@
+/* U5.2 — focused Planejamento + Simular Compra improvements.
+   Isolated from Inteligência, Argon, financial engine and global design tokens. */
+.u2-planning .u5-plan-calendar .u2-calendar-grid{
+ display:grid;grid-template-columns:repeat(7,minmax(0,1fr));align-items:stretch;gap:7px
+}
+.u2-planning .u5-plan-calendar-day{
+ display:flex;min-width:0;min-height:115px;flex-direction:column;align-items:flex-start;gap:5px;
+ padding:10px;border:1px solid var(--border);border-radius:10px;
+ background:var(--surface);color:var(--text);font:inherit;text-align:left;
+ transition:border-color .15s ease,box-shadow .15s ease
+}
+.u2-planning .u5-plan-calendar-day b{font-size:12px;font-weight:650}
+.u2-planning .u5-plan-calendar-day>small{font-size:10px;color:var(--muted)}
+.u2-planning .u5-plan-calendar-day:hover{border-color:var(--green)}
+.u2-planning .u5-plan-calendar-day.is-selected{
+ background:var(--positive-bg);border-color:var(--green);
+ box-shadow:0 0 0 1px var(--green)
+}
+.u2-planning .u5-plan-calendar-day:focus-visible{
+ outline:2px solid var(--focus);outline-offset:2px
+}
+.u2-planning .u5-plan-calendar-status,.u2-planning .u5-plan-day-flow{
+ width:100%;display:flex;flex-wrap:wrap;gap:3px 6px;align-items:center;
+ font-size:10px;line-height:1.35;overflow-wrap:anywhere
+}
+.u2-planning .u5-plan-calendar-status .recorded{color:var(--green)}
+.u2-planning .u5-plan-calendar-status .expected{color:var(--text)}
+.u2-planning .u5-plan-calendar-status .estimated{color:var(--warning)}
+.u2-planning .u5-plan-calendar-status .excluded{color:var(--muted);font-style:italic}
+.u2-planning .u5-plan-day-flow{padding-top:5px;margin-top:auto;border-top:1px solid var(--border)}
+.u2-planning .u5-plan-day-flow span{font-variant-numeric:tabular-nums}
+.u2-planning .u5-single-projection{padding:18px;border:1px solid var(--border);
+ background:var(--surface);border-radius:14px}
+.u2-planning .u5-projection-heading{display:flex;align-items:flex-start;
+ justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.u2-planning .u5-projection-heading h2{font-size:17px;margin:0}
+.u2-planning .u5-projection-heading p{margin:0;color:var(--muted);max-width:480px;font-size:12px}
+.u3-simulator .u5-sim-stale{position:relative;padding:8px;border:1px dashed var(--warning);
+ border-radius:12px;background:var(--surface2)}
+.u3-simulator .u5-sim-current{position:relative}
+.u3-simulator .u5-sim-state{margin:0 0 10px;padding:8px 10px;
+ border-radius:8px;font-size:12px;line-height:1.5}
+.u3-simulator .u5-sim-stale .u5-sim-state{color:var(--text);background:var(--warning-bg)}
+.u3-simulator .u5-sim-current .u5-sim-state{color:var(--muted);background:var(--surface2)}
+.u3-simulator .u5-sim-stale .card{opacity:.82}
+.u3-simulator .u5-sim-error{background:var(--negative-bg);color:var(--red);
+ border:1px solid var(--red);border-radius:10px;padding:12px 14px;
+ line-height:1.5;font-size:12px;margin:0 0 10px}
+.u3-simulator .u5-sim-state:focus-visible{outline:2px solid var(--focus)}
+@media(max-width:1366px){
+ .u2-planning .u5-plan-calendar .u2-calendar-grid{gap:5px}
+ .u2-planning .u5-plan-calendar-day{padding:7px;min-height:104px}
+ .u2-planning .u5-plan-calendar-status,.u2-planning .u5-plan-day-flow{font-size:9px}
+ .u2-planning .u5-single-projection{padding:12px}
+}
+@media(max-width:760px){
+ .u2-planning .u5-plan-calendar .u2-calendar-grid{gap:3px}
+ .u2-planning .u5-plan-calendar-day{padding:5px;min-height:72px}
+ .u2-planning .u5-plan-calendar-status{display:none}
+ .u2-planning .u5-plan-day-flow{font-size:9px}
+}
+@media(prefers-reduced-motion:reduce){
+ .u2-planning .u5-plan-calendar-day,.u3-simulator .u5-sim-stale,
+ .u3-simulator .u5-sim-current{transition:none!important;animation:none!important;transform:none!important}
+}

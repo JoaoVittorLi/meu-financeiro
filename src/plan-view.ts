@@ -9,7 +9,7 @@ function pFilterTransactions(app:any){
  const linked=new Set<string>();for(const i of s.planning.items)for(const l of i.links||[])if(l.status==='POSTED')linked.add(l.accountId+'|'+l.externalId);
  const allBank=s.mode==='demo'?[]:s.bank.data.transactions.filter((i:BankTx)=>i.date.slice(0,7)===month);
  // In the consolidated view, show a linked payment under its plan, not as a second purchase.
- const bank=allBank.filter((i:BankTx)=>mode==='bank'||!linked.has(i.accountId+'|'+i.id)).map((i:BankTx)=>({key:'bank:'+i.accountId+'|'+i.id,type:'bank',kind:i.amount>0?'income':'expense',date:i.date,title:i.customTitle||i.merchant||i.description,original:i.description,category:i.category,amount:Math.abs(i.amount),status:i.status==='POSTED'?'paid':'pending',item:i}));
+ const bank=allBank.filter((i:BankTx)=>mode==='bank'||!linked.has(i.accountId+'|'+i.id)).map((i:BankTx)=>({key:'bank:'+i.accountId+'|'+i.id,type:'bank',kind:effectiveNature(i),date:i.date,title:i.customTitle||i.merchant||i.description,original:i.description,category:i.category,amount:Math.abs(i.amount),status:i.status==='POSTED'?'paid':'pending',item:i}));
  const manualLinked=new Set<string>(allBank.filter((b:BankTx)=>b.status==='POSTED').map((b:BankTx)=>b.linkedManualId).filter(Boolean) as string[]);
  const manual=s.data.transactions.filter((i:Tx)=>i.date.slice(0,7)===month&&!manualLinked.has(i.id)).map((i:Tx)=>({key:'manual:'+i.id,type:'manual',kind:i.kind,date:i.date,title:i.description,original:'',category:i.category,amount:i.amount,status:'paid',item:i}));
  return [...planned,...bank,...manual].filter(x=>(mode==='all'||(mode==='planned'&&x.type==='planned')||(mode==='bank'&&x.type==='bank')||(mode==='pending'&&x.type==='planned'&&(x.status==='pending'||x.status==='overdue'))||(mode==='paid'&&x.status==='paid'))&&(!t||[x.title,x.original,x.category].join(' ').toLowerCase().includes(t))).sort((a,b)=>a.date.localeCompare(b.date)||a.key.localeCompare(b.key));
@@ -44,20 +44,65 @@ function pLedgerRow(app:any,r:any){
  const category=app.getCategories().find((c:CategoryInfo)=>c.name===r.category);
  return h('button',{type:'button',className:'p-ledger-row',key:r.key,onClick:()=>r.type==='planned'?app.openPlanDetail(r.item.id):r.type==='bank'?app.openPlanBankDetail(r.item):app.openManualDetail(r.item)},
  h('span',{className:'p-ledger-icon',style:{background:category?category.color+'25':undefined}},category?.emoji||'🧾'),
- h('span',{className:'p-ledger-name'},h('strong',{},r.title),h('small',{},r.category+' · '+(r.type==='planned'?'Planejado':r.type==='bank'?'Banco':'Manual')),r.original&&r.original!==r.title?h('small',{},r.original):null),
- h('span',{className:'p-ledger-date'},pDate(r.date)),pChip(r.status),h('span',{className:'u2-ledger-amount'},h('strong',{className:r.kind==='income'?'good-text':'bad-text'},(r.kind==='income'?'+':'−')+fmt(r.amount)),r.type==='planned'&&r.item.remaining>0?h('small',{},fmt(r.item.remaining)+' restante'):null),h('span',{className:'p-row-arrow'},h(Icon,{name:'chevron-right',size:16})));
+ h('span',{className:'p-ledger-name'},h('strong',{},r.title),h('small',{},r.category+' · '+(r.type==='planned'?(r.item.certainty==='estimated'?'Planejado · estimativa incerta':'Planejado · previsão confirmada'):r.type==='bank'?(r.kind==='transfer'?'Transferência própria · não contabilizada':r.kind==='ignore'?'Desconsiderada · não contabilizada':'Banco'):'Manual')),r.original&&r.original!==r.title?h('small',{},r.original):null),
+ h('span',{className:'p-ledger-date'},pDate(r.date)),pChip(r.status),h('span',{className:'u2-ledger-amount'},h('strong',{className:r.kind==='income'?'good-text':r.kind==='expense'?'bad-text':'muted'},(r.kind==='income'?'+':r.kind==='expense'?'−':'')+fmt(r.amount)),r.type==='planned'&&r.item.remaining>0?h('small',{},fmt(r.item.remaining)+' restante'):null),h('span',{className:'p-row-arrow'},h(Icon,{name:'chevron-right',size:16})));
 }
 function pAgenda(app:any,rows:any[]){
  const shown=rows.slice(0,350),groups=[...new Set(shown.map(r=>r.date))];
  return h('div',{className:'u2-agenda'},groups.map(date=>h('section',{className:'u2-day-group',key:date},h('h3',{},pShort(date)+' · '+pDate(date),h('span',{},rows.filter(r=>r.date===date).length+' registro(s)')),shown.filter(r=>r.date===date).map(r=>pLedgerRow(app,r)))),rows.length>350?h('p',{className:'muted-desc'},'Exibindo os primeiros 350 de '+rows.length+' registros. Refine os filtros para consultar os demais.'):null);
 }
+/** Display-only classification of canonical filtered ledger rows; NOT the balance engine. */
+function pCalendarDayInfo(rows:any[],date:string){
+ const matches=rows.filter(r=>r.date===date);
+ let recorded=0,expected=0,estimated=0,excluded=0,incoming=0,outgoing=0;
+ for(const r of matches){
+  if(r.kind==='transfer'||r.kind==='ignore'){excluded++;continue;}
+  if(r.type==='planned'&&r.item.certainty==='estimated'&&r.status!=='paid')estimated++;
+  else if(r.status==='paid')recorded++;
+  else expected++;
+  if(r.kind==='income')incoming+=r.amount;
+  else if(r.kind==='expense')outgoing+=r.amount;
+ }
+ return {count:matches.length,recorded,expected,estimated,excluded,incoming,outgoing};
+}
 function pCalendar(app:any,rows:any[]){
  const month=app.state.planMonth,first=new Date(month+'-01T12:00:00').getDay(),days=Number(endOfMonth(month).slice(-2));
  const selected=app.state.planDay,dayRows=rows.filter(r=>r.date===selected);
- return h('div',{className:'u2-calendar'},h('p',{className:'muted-desc'},'Selecione um dia para consultar os registros. Os filtros acima também se aplicam ao calendário.'),
- h('div',{className:'u2-calendar-week','aria-hidden':'true'},['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'].map(day=>h('span',{},day))),
- h('div',{className:'u2-calendar-grid','aria-label':'Dias de '+prettyMonth(month)},Array.from({length:first},(_,i)=>h('span',{key:'blank'+i})),Array.from({length:days},(_,i)=>{const date=month+'-'+String(i+1).padStart(2,'0'),count=rows.filter(r=>r.date===date).length;return h('button',{type:'button',key:date,'aria-pressed':selected===date,'aria-label':pDate(date)+' · '+count+' registro(s)',onClick:()=>app.setState({planDay:date})},h('b',{},i+1),h('small',{},count?count+' registro(s)':'—'));})),
- h('h3',{className:'u2-calendar-selected'},pDate(selected)+' · '+dayRows.length+' registro(s)'),dayRows.length?pAgenda(app,dayRows):h('p',{className:'p-empty-list'},'Nenhum registro para este dia e estes filtros.'));
+ const keyDay=(e:any,day:number)=>{
+  const delta:{[key:string]:number}={ArrowLeft:-1,ArrowRight:1,ArrowUp:-7,ArrowDown:7};
+  const destination=e.key in delta?day+delta[e.key]:e.key==='Home'?1:e.key==='End'?days:null;
+  if(destination===null)return;
+  e.preventDefault();e.stopPropagation();
+  const next=month+'-'+String(Math.max(1,Math.min(days,destination))).padStart(2,'0');
+  const grid=e.currentTarget.parentElement;
+  app.setState({planDay:next},()=>grid?.querySelector?.('[data-plan-day="'+next+'"]')?.focus?.());
+ };
+ return h('div',{className:'u2-calendar u5-plan-calendar'},
+  h('p',{className:'muted-desc'},'Valores dos registros filtrados, não do saldo projetado. Use as setas para selecionar o dia.'),
+  h('div',{className:'u2-calendar-week','aria-hidden':'true'},['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'].map(day=>h('span',{},day))),
+  h('div',{className:'u2-calendar-grid','aria-label':'Dias de '+prettyMonth(month)},
+    Array.from({length:first},(_,i)=>h('span',{key:'blank'+i,'aria-hidden':true})),
+    Array.from({length:days},(_,i)=>{
+      const date=month+'-'+String(i+1).padStart(2,'0'),info=pCalendarDayInfo(rows,date);
+      const tooltip=pDate(date)+' · '+info.count+' registros · '+info.recorded+' realizados, '+
+        info.expected+' previstos, '+info.estimated+' incertos, '+info.excluded+' não contabilizados · Entradas '+fmt(info.incoming)+' / Saídas '+fmt(info.outgoing);
+      return h('button',{type:'button',key:date,'data-plan-day':date,
+        className:'u5-plan-calendar-day'+(selected===date?' is-selected':''),
+        'aria-pressed':selected===date,'aria-label':tooltip,title:tooltip,
+        onClick:()=>app.setState({planDay:date}),onKeyDown:(e:any)=>keyDay(e,i+1)},
+        h('b',{},i+1),h('small',{},info.count?info.count+' registro(s)':'—'),
+        info.count?h('span',{className:'u5-plan-calendar-status'},
+          info.recorded?h('span',{className:'recorded'},info.recorded+' realizado(s)'):null,
+          info.expected?h('span',{className:'expected'},info.expected+' previsto(s)'):null,
+          info.estimated?h('span',{className:'estimated'},info.estimated+' incerto(s)'):null,
+          info.excluded?h('span',{className:'excluded'},info.excluded+' fora do fluxo'):null):null,
+        info.count?h('span',{className:'u5-plan-day-flow'},
+          info.incoming?h('span',{className:'good-text'},'+'+fmt(info.incoming)):null,
+          info.outgoing?h('span',{className:'bad-text'},'−'+fmt(info.outgoing)):null):null);
+    })),
+  h('h3',{className:'u2-calendar-selected'},pDate(selected)+' · '+dayRows.length+' registro(s)'),
+  dayRows.length?pAgenda(app,dayRows):h('p',{className:'p-empty-list'},'Nenhum compromisso ou registro nesta data para os filtros aplicados.')
+ );
 }
 // The graph marker is the slider: pointer/touch and keyboard select days across the full month.
 function pTimeline(app:any){
@@ -116,7 +161,7 @@ function pTimeline(app:any){
      h('div',{className:'p-chart-guide'},h('span',{},'Dia '+Number(s.planDay.slice(-2))+' de '+max),h('small',{},selected?.phase==='estimated_history'?'Valor histórico estimado, sujeito à disponibilidade dos dados':'Valores futuros são estimativas; não representam saldo garantido'))),
    h('div',{className:'p-chart-canvas'},
      rows.length?h('svg',{viewBox:'0 0 1010 280',className:'p-balance-svg p-draggable-chart',
-       role:'slider',tabindex:0,'aria-label':'Dia selecionado no gráfico de saldo · '+prettyMonth(month),
+       role:'slider',tabIndex:0,'aria-label':'Dia selecionado no gráfico de saldo · '+prettyMonth(month),
        'aria-valuemin':1,'aria-valuemax':max,'aria-valuenow':Number(s.planDay.slice(-2)),
        'aria-valuetext':pDate(s.planDay)+' · '+(selected?fmt(selected.closing):'sem valor')+' · '+deltaLabel,
        onKeyDown:keyDay,
@@ -166,9 +211,20 @@ function renderPlanningView(app:any){const s=app.state;if(s.mode==='demo')return
    h('div',{className:'p-ledger-tools'},h('input',{className:'form-control','aria-label':'Buscar na agenda',placeholder:'Buscar nome, descrição ou categoria...',value:s.planTerm,onChange:(e:any)=>app.setState({planTerm:e.target.value})}),h(StyledSelect,{value:s.planView,options:[{value:'all',label:'Tudo'},{value:'planned',label:'Planejadas'},{value:'pending',label:'Pendentes e vencidas'},{value:'bank',label:'Movimentações do banco'},{value:'paid',label:'Realizadas'}],onChange:(v:string)=>app.setState({planView:v})})),
    h('div',{className:'u2-view-tabs','aria-label':'Visualização do planejamento'},[{value:'agenda',label:'Agenda'},{value:'calendar',label:'Calendário'},{value:'projection',label:'Projeção diária'}].map(v=>h('button',{type:'button','aria-pressed':presentation===v.value,onClick:()=>app.setState({planPresentation:v.value})},v.label))),
    presentation==='projection'?h('p',{className:'u2-projection-hint'},'A projeção abaixo usa o cenário financeiro completo. A busca e o filtro de registros se aplicam somente à agenda e ao calendário.'):
-   presentation==='calendar'?pCalendar(app,rows):h('div',{className:'p-ledger-list'},rows.length?pAgenda(app,rows):h('div',{className:'p-empty-list'},p.generatedAt?'Nenhum registro para estes filtros. Adicione uma previsão ou altere a pesquisa.':'Atualize para carregar sua agenda.')),
+   presentation==='calendar'?pCalendar(app,rows):presentation==='projection'?null:h('div',{className:'p-ledger-list'},rows.length?pAgenda(app,rows):h('div',{className:'p-empty-list'},p.generatedAt?'Nenhum registro para estes filtros. Adicione uma previsão ou altere a pesquisa.':'Atualize para carregar sua agenda.')),
    s.bank.data.truncated?h('p',{className:'p-warning'},'O histórico de transações do banco é parcial nesta visualização. Consulte sua conta para dados mais antigos.'):null),
-   pSuggestions(app),h('details',{className:'mf-planning-projection',key:presentation,open:presentation==='projection'},h('summary',{},h(Icon,{name:'chart',size:17}),'Consultar projeção diária'),h('p',{className:'u2-projection-hint'},'Cenário completo do mês. A busca da agenda não altera esta projeção.'),h('div',{className:'p-scenario-toggle'},h('span',{},h('b',{},'Projeção conservadora'),h('small',{},'Receitas incertas ficam fora do saldo previsto por padrão.')),h('label',{},h('input',{type:'checkbox',checked:s.planIncludeEstimated,onChange:(e:any)=>app.setState({planIncludeEstimated:e.target.checked},()=>app.refreshPlanning())}),'Incluir receitas incertas')),pTimeline(app)),
+   pSuggestions(app),
+   presentation==='projection'?h('section',{className:'mf-planning-projection u5-single-projection',
+     'aria-label':'Projeção diária do mês'},
+     h('div',{className:'u5-projection-heading'},
+       h('h2',{},'Projeção diária · '+prettyMonth(s.planMonth)),
+       h('p',{className:'u2-projection-hint'},'Cenário completo do mês; independente dos filtros de registros.')),
+     h('div',{className:'p-scenario-toggle'},
+       h('span',{},h('b',{},'Projeção conservadora'),h('small',{},'Receitas incertas ficam fora do saldo previsto por padrão.')),
+       h('label',{},h('input',{type:'checkbox',checked:s.planIncludeEstimated,
+         onChange:(e:any)=>app.setState({planIncludeEstimated:e.target.checked},()=>app.refreshPlanning())}),
+         'Incluir receitas incertas')),
+     pTimeline(app)):null,
    h('p',{className:'p-footnote'},'O saldo de referência vem da última informação disponível da instituição. Lançamentos já pagos e refletidos no banco não são descontados novamente. Previsões futuras são estimativas, não garantias.')
  );
 }
