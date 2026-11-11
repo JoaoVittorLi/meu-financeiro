@@ -1029,7 +1029,8 @@
 }
 
 .u1-detail-grid > .u1-panel {
-  height: 100%;
+  align-self: stretch;
+  min-height: 0;
 }
 
 .u1-count {
@@ -1050,11 +1051,12 @@
 
 .u1-category-row {
   display: grid;
-  grid-template-columns: 8px minmax(100px, 1.1fr) minmax(40px, 1fr) auto 36px;
+  grid-template-columns: 8px minmax(0, 1.1fr) minmax(24px, .65fr) minmax(0, auto) 36px;
   align-items: center;
   gap: 12px;
-  width: calc(100% + 16px);
-  margin-inline: -8px;
+  width: 100%;
+  margin-inline: 0;
+  min-width: 0;
   text-align: left;
   background: transparent;
   border: 0;
@@ -1122,7 +1124,9 @@
   font-size: 13px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
-  white-space: nowrap;
+  min-width: 0;
+  text-align: right;
+  overflow-wrap: anywhere;
 }
 
 .u1-category-row small {
@@ -1147,8 +1151,9 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  width: calc(100% + 16px);
-  margin-inline: -8px;
+  width: 100%;
+  min-width: 0;
+  margin-inline: 0;
   border: 0;
   border-bottom: 1px solid var(--border);
   padding: 11px 8px;
@@ -1211,23 +1216,22 @@
 .u1-recent-copy strong {
   font-size: 13px;
   font-weight: 550;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow-wrap: anywhere;
 }
 
 .u1-recent-copy small {
   color: var(--muted);
   font-size: 10.5px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow-wrap: anywhere;
 }
 
 .u1-recent-row > strong {
   font-size: 13px;
   font-weight: 600;
-  white-space: nowrap;
+  min-width: 0;
+  max-width: 42%;
+  text-align: right;
+  overflow-wrap: anywhere;
   font-variant-numeric: tabular-nums;
 }
 
@@ -1375,7 +1379,7 @@
 
 @media (max-width: 1400px) {
   .u1-overview > .stats-grid {
-    gap: 12px;
+    gap: 16px;
   }
   .u1-balance,
   .u1-metric {
@@ -1605,5 +1609,43 @@
   .u1-category-list:hover .u1-category-row:not(:hover):not(:focus-visible),
   .u1-recent-list:hover .u1-recent-row:not(:hover):not(:focus-visible) {
     opacity: 1 !important;
+  }
+}
+
+/* V1.2 alignment: layouts follow available viewport width at 125% scaling.
+   Keep all values visible: wrap long labels/amounts instead of clipping them. */
+.u1-overview .u1-panel-head {
+  flex-wrap: wrap;
+}
+.u1-budget-summary,
+.u1-budget-caption,
+.u1-coverage,
+.u1-account-copy {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.u1-coverage {
+  flex-wrap: wrap;
+}
+.u1-category-row > *,
+.u1-recent-row > * {
+  min-width: 0;
+}
+@media (max-width: 1180px) {
+  .u1-main-grid,
+  .u1-detail-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .u1-overview > .stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .u1-category-row {
+    grid-template-columns: 8px minmax(0, 1.1fr) minmax(24px, .65fr) minmax(0, auto) 36px;
+    gap: 8px;
+  }
+}
+@media (max-width: 600px) {
+  .u1-category-row {
+    grid-template-columns: 7px minmax(0, 1fr) minmax(0, auto) 30px;
   }
 }
