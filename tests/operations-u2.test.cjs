@@ -49,7 +49,7 @@ test('U2 calendar and view controls preserve identities and do not mutate financ
  const rendered=get('renderPlanningView')(app),calendar=walk(rendered,n=>n.props?.className==='u2-calendar-grid')[0],days=walk(calendar,n=>n.tag==='button');assert.equal(days.length,30);
  const selected=days.find(n=>n.props['aria-label'].startsWith('09/11/2026'));selected.props.onClick();assert.equal(app.state.planDay,'2026-11-09');
  let opened=null;app.openPlanDetail=id=>opened=id;const row=get('pLedgerRow')(app,get('pFilterTransactions')(app)[0]);row.props.onClick();assert.equal(opened,'demo');
- const tabs=walk(rendered,n=>n.props?.className==='u2-view-tabs')[0],projection=walk(tabs,n=>n.tag==='button').find(n=>n.children.includes('Projeção diária'));projection.props.onClick();assert.equal(app.state.planPresentation,'projection');assert.equal(walk(get('renderPlanningView')(app),n=>n.tag==='details'&&n.props.className==='mf-planning-projection')[0].props.open,true);
+ const tabs=walk(rendered,n=>n.props?.className==='u2-view-tabs')[0],projection=walk(tabs,n=>n.tag==='button').find(n=>n.children.includes('Projeção diária'));projection.props.onClick();assert.equal(app.state.planPresentation,'projection');const projectionTree=get('renderPlanningView')(app);assert.equal(walk(projectionTree,n=>n.tag==='section'&&String(n.props.className||'').includes('u5-single-projection')).length,1);assert.equal(walk(projectionTree,n=>n.tag==='details'&&n.props.className==='mf-planning-projection').length,0);
  assert.equal(JSON.stringify([app.state.data,app.state.bank,app.state.planning]),before);
 });
 test('U2 unloaded planning is distinct from a loaded empty agenda',()=>{
