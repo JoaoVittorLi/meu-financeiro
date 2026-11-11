@@ -776,18 +776,23 @@ class App extends React.Component<any,State>{
     return tx?{category:tx.category,kind:tx.kind,description:tx.description,raw:tx}:null;
   }
   const tx=this.state.bank.data.transactions.find(t=>t.accountId===target.accountId&&t.id===target.id);
-  return tx?{category:tx.category,kind:(tx.amount>=0?'income':'expense') as Kind,
-    description:tx.customTitle||tx.merchant||tx.description,raw:tx}:null;
+  if(!tx)return null;
+  const nature=effectiveNature(tx);
+  // Category never mutates banking nature. Transfer/ignore require explicit
+  // nature review in advanced details, rather than inferred sign.
+  return {category:tx.category,kind:(nature==='income'||nature==='expense'?nature:null),
+    nature,description:tx.customTitle||tx.merchant||tx.description,raw:tx};
  }
  quickCategoryChoices():CategoryInfo[]{
   const context=this.quickCategoryContext(),term=fold(this.state.quickCategoryQuery);
-  if(!context)return [];
+  if(!context||!context.kind)return [];
   return this.getCategories().filter(c=>(c.kind==='both'||c.kind===context.kind)&&(!term||fold(c.name).includes(term)));
  }
  async chooseQuickCategory(category:string):Promise<boolean>{
   if(this.quickCategoryWrite||!this.state.quickCategory)return false;
   const target=this.state.quickCategory,context=this.quickCategoryContext();
   if(!context){this.setState({quickCategoryError:'Movimentação não encontrada. Atualize a lista.'});return false;}
+  if(!context.kind){this.setState({quickCategoryError:'Transferências e movimentações desconsideradas exigem revisar a natureza nos detalhes antes de categorizar.'});return false;}
   const valid=this.getCategories().some(c=>c.name===category&&(c.kind==='both'||c.kind===context.kind));
   if(!valid){this.setState({quickCategoryError:'Categoria incompatível com a movimentação.'});return false;}
   if(category===context.category){this.closeQuickCategory();return true;}
@@ -861,7 +866,7 @@ class App extends React.Component<any,State>{
           onClick:()=>void this.chooseQuickCategory(cat.name)},
           h('span',{},cat.name),cat.name===context?.category?
             h(Icon,{name:'check',size:16}):null)):
-        h('p',{className:'u5-category-empty'},'Nenhuma categoria compatível encontrada.')),
+        h('p',{className:'u5-category-empty'},context&&!context.kind?'Natureza de transferência ou desconsiderada: altere nos detalhes antes de categorizar.':'Nenhuma categoria compatível encontrada.')),
       this.state.quickCategoryError?
         h('p',{className:'u5-category-error',role:'alert'},this.state.quickCategoryError):null,
       h('small',{className:'u5-category-hint',role:'status'},
@@ -1321,6 +1326,7 @@ class App extends React.Component<any,State>{
    const hasBank=filtered.some(t=>t.origin==='bank'),hasManual=filtered.some(t=>t.origin==='manual');
    const source=hasBank&&hasManual?(this.state.txSummarySource||'bank'):hasManual?'manual':'bank';
    const summary=transactionViewSummary(filtered,source),span=dateSpan(this.state.overviewPeriod,this.state.customStart,this.state.customEnd);
+   const partialBank=this.state.mode!=='demo'&&!!this.state.bank.data.truncated;
    const cats=this.getCategories();
    const selected=this.state.txSelected;
    const active:{key:string;label:string;clear:()=>void}[]=[];
@@ -1349,15 +1355,19 @@ class App extends React.Component<any,State>{
        this.state.bank.data.suspectedDuplicates.slice(0,3).map(d=>h('div',{className:'mf-duplicate-row',key:d.pairKey},
          h('span',{},d.date.split('-').reverse().join('/')+' · '+d.description+' · '+fmt(Math.abs(d.amount))),
          h('button',{className:'ghost-button',onClick:()=>this.dismissBankDuplicate(d.pairKey)},'Ignorar aviso')))):null,
-     review?h(Card,{className:'mf-review-banner'},h('div',{},h('span',{className:'micro-label'},'SUA CAIXA DE REVISÃO'),h('h2',{},count?count+' movimentações para conferir':'Tudo organizado! 🎉'),h('p',{},count?'Total em todas as contas e períodos carregados. Use os filtros abaixo para focar sua revisão.':'Novas movimentações aparecerão aqui depois da próxima atualização.')),h('button',{className:'outlined-action',onClick:()=>this.navigate('transactions')},'Ver todas as movimentações')):null,
-     h('div',{className:'u2-summary-heading'},h('div',{},h('h2',{},'Seu histórico, com contexto'),h('p',{},review?'Caixa de revisão · todos os períodos carregados':pDate(span.start)+' a '+pDate(span.end)+' · filtros aplicados ao resumo')),
+     review?h(Card,{className:'mf-review-banner'},h('div',{},h('span',{className:'micro-label'},'SUA CAIXA DE REVISÃO'),h('h2',{},count?count+' movimentações carregadas para conferir':partialBank?'Nenhuma revisão pendente entre os registros carregados':'Tudo organizado! 🎉'),h('p',{},count?'Revisão calculada sobre os registros bancários carregados, independentemente do período.':'Outros registros podem existir fora da janela carregada quando o histórico é parcial.')),h('button',{className:'outlined-action',onClick:()=>this.navigate('transactions')},'Ver todas as movimentações')):null,
+     h('div',{className:'u2-summary-heading'},h('div',{},h('h2',{},'Seu histórico, com contexto'),h('p',{},review?'Caixa de revisão · registros bancários carregados':pDate(span.start)+' a '+pDate(span.end)+' · filtros aplicados ao resumo')),
        hasBank&&hasManual?h('div',{className:'u2-view-tabs','aria-label':'Origem dos valores do resumo'},['bank','manual'].map(v=>h('button',{type:'button','aria-pressed':source===v,onClick:()=>this.setState({txSummarySource:v})},v==='bank'?'Banco':'Manual'))):null),
      h('div',{className:'u2-metrics'},[
-       {label:'Entradas confirmadas',value:fmt(summary.income),detail:'Receitas · '+(source==='bank'?'banco':'manual'),kind:'income'},
-       {label:'Saídas confirmadas',value:fmt(summary.expense),detail:'Despesas · '+(source==='bank'?'banco':'manual'),kind:'expense'},
-       {label:'Resultado dos registros',value:fmt(summary.net),detail:'Entradas menos saídas · não é saldo disponível',kind:''},
+       {label:'Entradas confirmadas',value:fmt(summary.income),detail:'Receitas · '+(source==='bank'?(partialBank?'banco · linhas carregadas':'banco'):'manual'),kind:'income'},
+       {label:'Saídas confirmadas',value:fmt(summary.expense),detail:'Despesas · '+(source==='bank'?(partialBank?'banco · linhas carregadas':'banco'):'manual'),kind:'expense'},
+       {label:'Resultado dos registros',value:fmt(summary.net),detail:'Entradas menos saídas · não é saldo disponível'+(source==='bank'&&partialBank?' · histórico parcial':''),kind:''},
        {label:source==='bank'?'Pendentes no banco':'Registros manuais',value:String(source==='bank'?summary.pending:summary.count),detail:source==='bank'?summary.review+' a conferir · revisão independente do pagamento':'Valores separados das contas conectadas',kind:''}
      ].map(x=>h('article',{className:'u2-metric '+x.kind,key:x.label},h('span',{},x.label),h('strong',{},x.value),h('small',{},x.detail)))),
+     partialBank?h('p',{className:'u5-history-limited',role:'status'},
+        'Histórico bancário parcial: '+this.state.bank.data.transactions.length+' de '+
+        this.state.bank.data.totalTransactions+
+        ' movimentações carregadas. Os resumos bancários e a revisão nesta tela abrangem apenas as linhas carregadas; não representam o histórico completo.'):null,
      h('div',{className:'u2-scope'},
        h('span',{},'Resumo: '+(source==='bank'?'contas conectadas':'lançamentos manuais')+
          ' · '+summary.count+' registros'+(summary.excluded?' · '+summary.excluded+' transferência(s)/desconsiderada(s) fora dos valores':'')),
@@ -1417,7 +1427,7 @@ class App extends React.Component<any,State>{
        h('button',{className:'primary-button',disabled:this.state.detailBusy,onClick:()=>this.applyBankBatch({reviewed:true})},'Marcar revisadas'),
        h('button',{className:'mf-small-link',onClick:()=>this.setState({txSelected:[]})},'Limpar seleção')):null,
      h(Card,{className:'table-card'},
-       h('div',{className:'mf-table-summary'},h('span',{role:'status'},filtered.length+' resultados'+(filtered.length>500?' · exibindo os primeiros 500; resumo inclui todos os resultados':'')),review?h('span',{},'A revisar · todos os períodos'):null,this.state.bank.data.truncated?h('span',{},'Histórico do banco parcial'):null),
+       h('div',{className:'mf-table-summary'},h('span',{role:'status'},filtered.length+' resultados nos dados carregados'+(filtered.length>500?' · exibindo os primeiros 500; resumo inclui as demais linhas filtradas e carregadas':'')),review?h('span',{},'A revisar · todos os períodos carregados'):null,partialBank?h('span',{},'Histórico bancário parcial'):null),
        !review?h('details',{className:'mf-table-help'},h('summary',{},'Como editar'),h('p',{},'No nome: detalhes. Na categoria: edição. Divisões e vínculos ficam no detalhe.')):null,
        h('div',{className:'table-scroller'},h('table',{},
          h('thead',{},h('tr',{},['','Data','Movimentação','Categoria','Origem','Situação','Valor','Ação'].map((n,i)=>h('th',{key:i},n)))),

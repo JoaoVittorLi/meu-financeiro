@@ -71,3 +71,11 @@
  .u2-transactions .u5-filter-chip,.u5-category-popover,.u5-category-choice{
   animation:none!important;transition:none!important;transform:none!important}
 }
+
+/* U5.1.1: explicit partial-ledger coverage, adjacent to filtered metrics. */
+.u2-transactions .u5-history-limited{
+ margin:0;padding:12px 14px;border:1px solid var(--border);
+ border-left:3px solid var(--warning);border-radius:10px;
+ background:var(--surface2);color:var(--text);
+ font-size:12px;line-height:1.55;max-width:100%;
+}

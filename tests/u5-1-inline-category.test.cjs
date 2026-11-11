@@ -8,6 +8,9 @@ const h=(tag,props,...children)=>({tag,props:props||{},children});
 const Icon=()=>null,window={innerWidth:1366,innerHeight:768},
  document={body:{}},ReactDOM={createPortal:node=>node};
 const fold=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleUpperCase('pt-BR');
+const natureTs=src.slice(src.indexOf('function effectiveNature(t:BankTx)'),src.indexOf('function transactionViewRows(state:State)'));
+const natureCompiled=ts.transpileModule(natureTs,{compilerOptions:{target:ts.ScriptTarget.ES2019}}).outputText;
+const effectiveNature=new Function(natureCompiled+';return effectiveNature;')();
 function slice(a,b){const x=src.indexOf(a),y=src.indexOf(b,x+a.length);
  assert(x>=0&&y>x,'Missing source method '+a);return src.slice(x,y);}
 const methods=slice(' async setBankCategory(tx:BankTx', ' bankTxSelected(tx:BankTx)')+
@@ -29,8 +32,8 @@ function subject(custom={}){
  }};
  const compiled=ts.transpileModule('class Subject{'+methods+'}',{
    compilerOptions:{target:ts.ScriptTarget.ES2019,module:ts.ModuleKind.None}}).outputText;
- const Subject=new Function('desktop','window','document','h','ReactDOM','Icon','fold',
-   compiled+';return Subject;')(desktop,window,document,h,ReactDOM,Icon,fold);
+ const Subject=new Function('desktop','window','document','h','ReactDOM','Icon','fold','effectiveNature',
+   compiled+';return Subject;')(desktop,window,document,h,ReactDOM,Icon,fold,effectiveNature);
  const app=new Subject();
  app.state={mode:'real',data:personal,bank:account,query:'',bankFilter:'',txSource:'all',
    txCategoryFilter:'',txKindFilter:'all',txReviewFilter:'all',txSort:'date_desc',
@@ -174,4 +177,41 @@ test('U5.1 — limpar filtros restaura padrão sem mexer em lançamentos nem reg
  assert.deepEqual(app.state.txSelected,[]);
  assert.equal(app.state.quickCategory,null);
  assert.equal(JSON.stringify([app.state.data,app.state.bank]),before);
+});
+
+test('U5.1.1 — categoria bancária segue effectiveNature mesmo com sinal oposto',async()=>{
+ const {app,a,calls}=subject();
+ const cases=[
+   {amount:-1256,nature:'income',want:'income',allowed:'Salário',forbidden:'Transporte'},
+   {amount:1256,nature:'expense',want:'expense',allowed:'Transporte',forbidden:'Salário'},
+   {amount:-1256,nature:'auto',want:'expense',allowed:'Transporte',forbidden:'Salário'},
+   {amount:1256,nature:'auto',want:'income',allowed:'Salário',forbidden:'Transporte'}
+ ];
+ for(const item of cases){
+   app.state.bank.data.transactions[0]={...a,amount:item.amount,nature:item.nature};
+   app.state.quickCategory=null;
+   app.openCategoryFromRow('bank',app.state.bank.data.transactions[0],click());
+   assert.equal(app.quickCategoryContext().kind,item.want);
+   assert(app.quickCategoryChoices().some(c=>c.name===item.allowed));
+   assert(!app.quickCategoryChoices().some(c=>c.name===item.forbidden));
+   assert.equal(await app.chooseQuickCategory(item.forbidden),false);
+   assert.equal(calls.length,0,'No incompatible bank write');
+   app.closeQuickCategory();
+ }
+});
+test('U5.1.1 — transfer e ignore exigem revisão explícita sem modificar natureza ou extrato',async()=>{
+ for(const nature of ['transfer','ignore']){
+  const {app,a,calls}=subject();
+  app.state.bank.data.transactions[0]={...a,nature};
+  app.openCategoryFromRow('bank',app.state.bank.data.transactions[0],click());
+  assert.equal(app.quickCategoryContext().kind,null);
+  assert.equal(app.quickCategoryContext().nature,nature);
+  assert.deepEqual(app.quickCategoryChoices(),[]);
+  assert.equal(await app.chooseQuickCategory('Outros'),false);
+  assert.match(app.state.quickCategoryError,/Transferências e movimentações desconsideradas/);
+  const bank=app.state.bank.data.transactions[0];
+  assert.equal(bank.nature,nature);
+  assert.equal(bank.amount,a.amount);
+  assert.equal(calls.length,0);
+ }
 });
