@@ -6,6 +6,17 @@
 
 > **Regra permanente, vinculante para todas as IAs:** **cada mudança relevante DEVE atualizar este roadmap no mesmo PR da implementação**, além do log Markdown específico. Nunca concluir uma entrega apenas com código. Quem não integra pode atualizar o progresso **proposto em sua branch**; somente o integrador confirma o progresso global, gates e publicação.
 
+## Revisão U5.1 PR #37 — Ajustes de natureza, resumo parcial e U5.2 (11/11/2026)
+
+**Status: APROVADO COM RESSALVAS PARA TESTES OFICIAIS, NÃO HOMOLOGADO.** Conferido HEAD `d3455505cedd1f6b40d7ca71e89a299039baa6b4` do PR #37, draft, 2 commits à frente do PR #36 (`87fb449c`), 0 atrás, 10 arquivos modificados. Entrega de categorização inline/filtros/teclado codificada, **com roadmap/handoff/log já adicionados ao próprio PR**; 19 testes novos escritos, mas ainda sem execução oficial. Sem CI desse SHA. **[Parecer técnico e missão U5.2](ai-context/reviews/2026-11-11-U5-1-PR37-ARCHITECT-REVIEW-AND-U5-2.md).**
+
+**Correções dirigidas:** (1) `quickCategoryContext()` usa apenas sinal do valor bancário, enquanto filtros usam `effectiveNature()`: alinhar semântica e testar `income/expense/transfer/ignore`; (2) carregamento da lista bancária limitado a 2.500 itens em `bankOverview()`: qualquer resumo calculado sobre itens carregados deve ser explicitamente parcial quando `bank.data.truncated`, sem confundir com agregados completos do banco. Testar com dados sintéticos e não mexer em Pluggy bruto.
+
+**Próxima execução:** fechar U5.1, rodar `npm ci`, `test:types`, `test:db`, compile, F08/ASAR e QA Electron local quando ambiente permitir. Depois U5.2 (Planejamento, projeção diária, Simular Compra sem apagar resultado ao digitar) numa branch dependente de PR #37, com ownership exclusivo do Executor em `src/app.ts`/`src/plan-view.ts`. Argon continua I1-A.1/I1-B com módulos de Inteligência próprios, sem conflito. **Sem CircleCI Windows/EXE/merge/deploy até autorização do proprietário.**
+
+---
+
+
 ## Roadmap coordenado Executor 2 × Argon — melhorias estimadas (11/11/2026)
 
 **DOCUMENTADO, NÃO HOMOLOGADO.** Ver a [versão detalhada com entregas por agente, dependências, esforços, ganhos-alvo e critérios de aceite](ai-context/reviews/2026-11-11-ROADMAP-EXECUTOR2-ARGON-MELHORIAS-ESTIMADAS.md). Metas como redução de cliques/tempo são **hipóteses a medir**, não resultados já obtidos. Estimativas de dias úteis exigem checkout e ferramentas operacionais; **não são promessas de prazo**.
