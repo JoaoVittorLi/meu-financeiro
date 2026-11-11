@@ -1,0 +1,126 @@
+/* D1.5 — premium interaction tokens and color-correct transaction drawer.
+   Loaded after Argon A-D1–A-D6; no broad reset, no changes to financial data. */
+:root,[data-theme="light"]{
+  --mf-hover-stroke:rgba(8,126,73,.42);
+  --mf-hover-shadow:0 12px 28px rgba(18,56,41,.10),0 2px 8px rgba(18,56,41,.04);
+  --mf-hover-glow:rgba(8,126,73,.09);
+  --mf-hover-ease:cubic-bezier(.22,1,.36,1);
+}
+[data-theme="dark"]{
+  --mf-hover-stroke:rgba(83,216,150,.48);
+  --mf-hover-shadow:0 14px 28px rgba(0,0,0,.24),0 0 0 1px rgba(83,216,150,.05);
+  --mf-hover-glow:rgba(83,216,150,.08);
+}
+/* Correct the old hardcoded violet/near-black surface in light drawers.
+   Keep the native dark palette and the focus/semantic red-green indicators. */
+.mf-detail-drawer{
+  background:var(--surface);
+  color:var(--text);
+  border-color:var(--border);
+}
+.mf-detail-drawer .mf-detail-section{
+  background:var(--surface2);
+  border:1px solid var(--border);
+  color:var(--text);
+}
+.mf-detail-drawer .mf-detail-hero{
+  background:radial-gradient(ellipse at 50% 0%,var(--mf-hover-glow),transparent 75%),var(--surface2);
+  color:var(--text);
+  border-color:var(--border);
+}
+.mf-detail-drawer .mf-detail-hero .mf-hero-emoji{
+  background:var(--positive-bg);
+}
+.mf-detail-drawer .mf-detail-scroll{
+  scrollbar-color:var(--surface3) transparent;
+}
+.mf-detail-drawer .mf-manual-editor .field{margin:0;min-width:0}
+.mf-detail-drawer .mf-manual-editor .form-control{margin:0}
+.mf-detail-drawer .mf-manual-actions{display:flex;flex-wrap:wrap;gap:9px}
+.mf-detail-drawer .mf-manual-actions>button{flex:1 1 140px;min-width:0}
+.mf-detail-drawer .mf-danger-action{
+  background:transparent;
+  border:1px solid var(--red);
+  color:var(--red);
+}
+.mf-detail-drawer .mf-danger-action:hover{background:var(--negative-bg);border-color:var(--red)}
+.mf-detail-drawer .mf-danger-action:focus-visible{outline:2px solid var(--focus);outline-offset:3px}
+.mf-detail-drawer .mf-manual-warning{font-size:12px;color:var(--warning);background:var(--warning-bg);border-radius:10px;padding:10px 12px}
+/* Base transitions. Informational metric cards do not claim to be links. */
+.u1-shell .u1-metric,
+.u2-shell .u2-metric,
+.u3-budgets .mf-budget-summary > div,
+.u3-accounts .u3-account-summary > .card,
+.u3-simulator .result-metrics > div,
+.mf-settings-content .settings-card,
+.u3-budgets .mf-budget-card,
+.u3-accounts .u3-account-card,
+.mf-ai-example-card,
+.mf-ai-action-card,
+.u1-shell .u1-account,
+.u1-shell .u1-recent-row,
+.u2-planning .p-upcoming-row{
+  transition:transform 210ms var(--mf-hover-ease),box-shadow 210ms var(--mf-hover-ease),border-color 210ms ease,background-color 210ms ease;
+}
+@media (hover:hover) and (pointer:fine){
+  /* Quiet depth for informational surfaces; never signal an inactive click target. */
+  .u1-shell .u1-metric:hover,
+  .u2-shell .u2-metric:hover,
+  .u3-budgets .mf-budget-summary > div:hover,
+  .u3-accounts .u3-account-summary > .card:hover,
+  .u3-simulator .result-metrics > div:hover{
+    transform:translate3d(0,-2px,0) scale(1.008);
+    box-shadow:var(--mf-hover-shadow);
+    border-color:var(--mf-hover-stroke);
+  }
+  /* Actionable card surfaces and containers with keyboard-focusable controls. */
+  .u1-shell .u1-account:hover,
+  .u1-shell .u1-recent-row:hover,
+  .u2-planning .p-upcoming-row:hover,
+  .mf-settings-content .settings-card:hover,
+  .u3-budgets .mf-budget-card:not(.mf-budget-exceeded):not(.mf-budget-near):hover,
+  .u3-accounts .u3-account-card:hover,
+  .mf-ai-example-card:hover,
+  .mf-ai-action-card:hover{
+    transform:translate3d(0,-3px,0) scale(1.01);
+    box-shadow:var(--mf-hover-shadow);
+    border-color:var(--mf-hover-stroke);
+  }
+  /* Preserve semantic status strokes for exceeded/near budgets. */
+  .u3-budgets .mf-budget-card:is(.mf-budget-exceeded,.mf-budget-near):hover{
+    transform:translate3d(0,-2px,0) scale(1.008);
+    box-shadow:var(--mf-hover-shadow);
+  }
+}
+/* Keyboard users get an equally clear, stationary focus indication. */
+.u1-shell .u1-account:focus-visible,
+.u1-shell .u1-recent-row:focus-visible,
+.u2-planning .p-upcoming-row:focus-visible,
+.mf-ai-example-card:focus-within,
+.mf-ai-action-card:focus-within,
+.u3-budgets .mf-budget-card:focus-within,
+.u3-accounts .u3-account-card:focus-within,
+.mf-settings-content .settings-card:focus-within{
+  outline:2px solid var(--focus);
+  outline-offset:2px;
+}
+/* Motion does not convey functionality. Respect both reduced-motion and touch. */
+@media (prefers-reduced-motion:reduce){
+  .u1-shell .u1-metric,.u2-shell .u2-metric,
+  .u3-budgets .mf-budget-summary > div,.u3-accounts .u3-account-summary > .card,
+  .u3-simulator .result-metrics > div,.mf-settings-content .settings-card,
+  .u3-budgets .mf-budget-card,.u3-accounts .u3-account-card,
+  .mf-ai-example-card,.mf-ai-action-card,.u1-shell .u1-account,
+  .u1-shell .u1-recent-row,.u2-planning .p-upcoming-row{
+    animation:none!important;transition:none!important;
+  }
+  .u1-shell .u1-metric:hover,.u2-shell .u2-metric:hover,
+  .u3-budgets .mf-budget-summary > div:hover,.u3-accounts .u3-account-summary > .card:hover,
+  .u3-simulator .result-metrics > div:hover,.mf-settings-content .settings-card:hover,
+  .u3-budgets .mf-budget-card:hover,.u3-accounts .u3-account-card:hover,
+  .mf-ai-example-card:hover,.mf-ai-action-card:hover,
+  .u1-shell .u1-account:hover,.u1-shell .u1-recent-row:hover,
+  .u2-planning .p-upcoming-row:hover{
+    transform:none!important;
+  }
+}

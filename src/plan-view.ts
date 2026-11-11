@@ -127,13 +127,13 @@ function pTimeline(app:any){
        onTouchMove:(e:any)=>{const touch=e.touches?.[0];if(touch)selectPointer({currentTarget:e.currentTarget,clientX:touch.clientX,clientY:touch.clientY});},
        onPointerUp:(e:any)=>{if(e.currentTarget.hasPointerCapture(e.pointerId)){selectPointer(e);e.currentTarget.releasePointerCapture(e.pointerId);}},
        onPointerCancel:(e:any)=>{if(e.currentTarget.hasPointerCapture(e.pointerId))e.currentTarget.releasePointerCapture(e.pointerId);}},
-       h('defs',{},h('linearGradient',{id:'pBalanceArea',x1:'0',y1:'0',x2:'0',y2:'1'},h('stop',{offset:'0%',stopColor:'#8f51ff',stopOpacity:'.30'}),h('stop',{offset:'100%',stopColor:'#8f51ff',stopOpacity:'.01'})),h('linearGradient',{id:'pBalanceStroke',x1:'0',y1:'0',x2:'1',y2:'0'},h('stop',{offset:'0%',stopColor:'#ad7aff'}),h('stop',{offset:'100%',stopColor:'#7b5dff'}))),
+       h('defs',{},h('linearGradient',{id:'pBalanceArea',x1:'0',y1:'0',x2:'0',y2:'1'},h('stop',{offset:'0%',stopColor:'var(--green)',stopOpacity:'.30'}),h('stop',{offset:'100%',stopColor:'var(--green)',stopOpacity:'.01'})),h('linearGradient',{id:'pBalanceStroke',x1:'0',y1:'0',x2:'1',y2:'0'},h('stop',{offset:'0%',stopColor:'var(--green)'}),h('stop',{offset:'100%',stopColor:'var(--green)'}))),
        ...ticks.map((t,i)=>h('g',{key:'tick-'+i},h('line',{x1:left,y1:t.y,x2:right,y2:t.y,className:'p-chart-grid-line'}),h('text',{x:left-15,y:t.y+4,className:'p-chart-axis-label',textAnchor:'end'},Math.abs(t.value)>=100000?'R$ '+(t.value/100000).toFixed(1).replace('.',',')+' mil':'R$ '+Math.round(t.value/100)))),
        ...xLabels.map(d=>h('text',{key:'day-'+d,x:left+(d-1)*width/Math.max(1,max-1),y:264,textAnchor:'middle',className:'p-chart-axis-label'},'Dia '+d)),
        h('path',{d:areaPath,fill:'url(#pBalanceArea)'}),
        h('path',{d:pointPath,fill:'none',stroke:'url(#pBalanceStroke)',strokeWidth:3.5,strokeLinecap:'round',strokeLinejoin:'round'}),
-       pastRows.length>1?h('path',{d:historicalPath,fill:'none',stroke:'#d5bcff',strokeWidth:3.5,strokeDasharray:'7 7',strokeLinecap:'round'}):null,
-       selected?h('g',{},h('line',{x1:activeX,y1:top,x2:activeX,y2:bottom,className:'p-chart-active-line'}),h('circle',{cx:activeX,cy:activeY,r:10,fill:'#9265ff',stroke:'#e6d4ff',strokeWidth:3,className:'p-chart-drag-handle'}),h('circle',{cx:activeX,cy:activeY,r:17,fill:'#9963ff',fillOpacity:.13})):null
+       pastRows.length>1?h('path',{d:historicalPath,fill:'none',stroke:'var(--muted)',strokeWidth:3.5,strokeDasharray:'7 7',strokeLinecap:'round'}):null,
+       selected?h('g',{},h('line',{x1:activeX,y1:top,x2:activeX,y2:bottom,className:'p-chart-active-line'}),h('circle',{cx:activeX,cy:activeY,r:10,fill:'var(--green)',stroke:'var(--surface)',strokeWidth:3,className:'p-chart-drag-handle'}),h('circle',{cx:activeX,cy:activeY,r:17,fill:'var(--green)',fillOpacity:.13})):null
      ):h('div',{className:'p-chart-empty'},'Ainda não há dados para mostrar o gráfico.')),
    h('p',{className:'p-chart-instruction'},'Arraste a bolinha no gráfico ou use as setas do teclado. '+(pastRows.length?'Linha pontilhada: histórico estimado.':'')),
    timeline.historicalNotice&&month===today.slice(0,7)?h('p',{className:'p-chart-disclaimer'},timeline.historicalNotice):null,

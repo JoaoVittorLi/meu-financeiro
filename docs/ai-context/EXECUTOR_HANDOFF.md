@@ -6,6 +6,15 @@
 
 Repositório privado `JoaoVittorLi/meu-financeiro`. Aplicativo financeiro Windows Electron + React/TypeScript + SQLite local; PWA/Cloudflare em frentes separadas, congeladas na missão Desktop First. Prioridade: integridade de centavos, contas e IDs, backup/restore, UI Premium e executável Windows validado.
 
+## CHECKPOINT D1.5.1 — CORREÇÕES FINANCEIRAS PUBLICADAS / GATES WINDOWS ABERTOS (11/11/2026)
+
+- **PR #36 draft:** branch `fix/mf2-d1-5-premium-interactions-20261111`, commit financeiro `1bd18db6d1393825fab04a1623ce3a9c03a849cf`, documentação posterior altera HEAD. Base PR #31 staging `d513c2be3f9b0cd018aed0b71f46ce8747a6556c` possui CircleCI Linux/Windows SUCCESS, **D1.5.1 ainda NÃO homologada**.
+- **P1-01:** `parsePositiveBRLInput` usado em `saveEntry` e `saveManualDetail`; formato BRL (até 2 decimais), limite de 100 bilhões de centavos, negativos/zero/3 casas e notação ambígua rejeitados com mensagem clara. Não alterar import CSV nem `parseMoney` legado sem regressões específicas.
+- **P1-02:** guarda em `FinanceDB.save` dentro de `BEGIN IMMEDIATE`, lendo `bank_manual_links` do SQLite e bloqueando delete/mudança de data, valor ou kind do registro manual vinculado, mesmo sem vínculo no snapshot UI. Rejeição faz rollback integral. Descrição/categoria possíveis. `pruneInvalidManualLinks` e restauração SQLite autorizada intactas.
+- **Provas reais desta sessão:** V8 com mocks 18/18 callbacks parser/editor; Node 22.16.0 com SQLite real em **reprodução isolada** dos SQLs 6/6 PASS. Os 10 testes de banco real da árvore completa **foram escritos mas não executados**. Sem checkout do repo, sem npm ci/TS/F08/ASAR/GUI/CircleCI nem EXEs neste HEAD. Ver `docs/ai-context/logs/2026-11-11-MF2-D1-5-1-financial-gates.md`.
+- **Próximo Executor:** executar CI único Linux→Windows na revisão final D1.5.1, revisar falhas reais, comparar 32 PNGs/manifesto, validar estados de hover e drawers, persistência, backup/restauração com perfil sintético, então conferir 2 binários + SHA256, URLs diretas e status para proprietário. No CircleCI, Config/Checkout Branch = `fix/mf2-d1-5-premium-interactions-20261111`, `run_preflight=false` e `run_windows_build=true`. **Não repetir auditoria geral nem mexer na main ou cloud.**
+- **Arquitetura:** decisão `docs/mf2-argon-brand-roadmap-20261111`, arquivo `docs/ai-context/reviews/2026-11-11-D1-5-PR36-ARCHITECT-DECISION.md` no PR #35. Entregas futuras (marca MF, IA, A-D7, PWA) NÃO bloquear esta homologação.
+
 ## MISSÃO ATUAL
 
 **D1.4 — INTEGRAÇÃO A-D1–A-D6 CONCLUÍDA em staging, homologação pendente.** A beta.8 Premium Final está pronta para sua única pipeline CircleCI Linux → Windows. NÃO tratar código integrado como executável aprovado. Validar testes do checkout, smoke Electron real com 32 capturas, persistência/backup/restauração, dois EXEs e SHA-256. Sem alterar `main`, Cloudflare, dados reais ou gerar release automaticamente.
@@ -13,6 +22,16 @@ Repositório privado `JoaoVittorLi/meu-financeiro`. Aplicativo financeiro Window
 ## BRANCH ATIVA
 
 `feat/mf2-beta8-premium-staging-20261110`, [PR #31](https://github.com/JoaoVittorLi/meu-financeiro/pull/31) draft, base funcional `feat/mf2-d1-2-functional-tests-20261110` / PR #28. HEAD **dinâmico**: consulte GitHub ao iniciar qualquer ação. Código da correção mais recente em `c109d905a4120b5820130e310e3dd36210781db6`; SHA anterior `dd30ddbd94d16b1cd415ff61b3dd4bd94ad2065b`. Os commits documentais posteriores alteram o HEAD sem alterar o código.
+
+## MISSÃO D1.5 — CÓDIGO PREMIUM/EDIT MANUAL EM PR DRAFT (11/11/2026)
+
+- **PR:** [#36](https://github.com/JoaoVittorLi/meu-financeiro/pull/36), branch `fix/mf2-d1-5-premium-interactions-20261111` derivada de `d513c2be3f9b0cd018aed0b71f46ce8747a6556c`; código até `aefdcf9c75794534971ee3b3465c59df77229a70` (HEAD dinâmico após docs). **Não integrado em staging nem `main`**. A beta.8 anterior registrou CI Linux+Windows SUCCESS no SHA pai, mas **nenhum CI D1.5** está aprovado.
+- **D1.5-A/B:** `app/premium-interactions.css` carregado após Argon, hovers/foco/reduced-motion por tipo de card e sem cursor falso; drawer com superfície temática clara/escura; SVG planejamento sem cores roxas fixas; paleta inicial `electron/db.cjs` e `src/app.ts` menta/azul/âmbar/vermelho neutros, com SQL `INSERT OR IGNORE` preservando dados existentes. Não atualizar cores/emoji do usuário por migração automática.
+- **D1.5-C:** métodos `openManualDetail`, `saveManualDetail`, `removeEntry`, `isManualLinked` e `manualDraft` na UI; validar data real, centavos positivos, categoria; bloquear exclusão ou alteração de valor/data em registro com `linkedManualId`. Save só fecha drawer após `updateData` confirmado. Extratos bancários seguem intocados. `SingleDatePicker` suporta `disabled`.
+- **Testes existentes/new:** `tests/d1-5-manual-edit.test.cjs` (13), `tests/d1-5-interactions.test.cjs` (11), `tests/d1-5-category-palette.test.cjs` (4), `tests/transaction-category-edit.test.cjs` atualizado. **24/24 casos diretos em V8 com módulos simulados** + renderização sintética do método drawer PASS, **não** equivale a Node Test Runner/SQLite/Windows. Novos 4 casos de integração SQLite e a compilação oficial não executados aqui.
+- **Próximo gate:** Arquiteto e Executor validam PR #36 com `npm ci`, `test:db`, `test:types`, compile, F08, ASAR, smoke GUI 32 PNGs + capturas de hover/teclado/tema + editar/excluir persistente em SQLite sintético. Confirmar contraste e ausência de overlap. Se verde, integrar em staging e preparar uma única pipeline CircleCI para NSIS+Portable+SHA256. **Não disparar releases nem Cloudflare**.
+- **Risco residual:** iconografia emoji/cores persistidas antigas não migradas; captura real do Windows e CSS layout/tooltip em gráficos não verificadas. O retorno à staging é descartar/cherry-pick reversível do PR isolado, nunca restaurar dados do usuário.
+- **Log:** `docs/ai-context/logs/2026-11-11-MF2-D1-5-premium-functional.md`.
 
 ## HOTFIX D1.4.3 — CONTAGEM DO MANIFESTO VISUAL (10/11/2026)
 
