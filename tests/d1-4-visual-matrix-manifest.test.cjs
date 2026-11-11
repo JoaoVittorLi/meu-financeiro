@@ -77,3 +77,18 @@ test('D1.4.3 — manifesto malformado reprova',()=>fixture(({folder})=>{
  fs.writeFileSync(path.join(folder,'visual-matrix.json'),'not JSON');
  assert.throws(()=>verifyVisualMatrix(folder),SyntaxError);
 }));
+test('D1.4.3 — CLI Node retorna sucesso para manifesto completo',()=>fixture(({folder})=>{
+ const {spawnSync}=require('node:child_process');
+ const script=path.join(__dirname,'../scripts/verify-visual-matrix.cjs');
+ const run=spawnSync(process.execPath,[script,folder],{encoding:'utf8'});
+ assert.equal(run.status,0,run.stderr);
+ assert.match(run.stdout,/32 entradas JSON, 32 PNGs/);
+}));
+test('D1.4.3 — CLI Node retorna falha e impede build com JSON incorreto',()=>fixture(({folder})=>{
+ const {spawnSync}=require('node:child_process');
+ fs.writeFileSync(path.join(folder,'visual-matrix.json'),'{}');
+ const script=path.join(__dirname,'../scripts/verify-visual-matrix.cjs');
+ const run=spawnSync(process.execPath,[script,folder],{encoding:'utf8'});
+ assert.equal(run.status,1,run.stdout);
+ assert.match(run.stderr,/FAIL: matriz visual sintética inválida/);
+}));
