@@ -151,7 +151,7 @@ test('B3 — explicit zero limit has neither invented percent nor progress arc',
   assert.equal(lookup(tree,'mf-budget-b3').length,0);
   assert.equal(lookup(tree,'progress-bar').length,0);
   const t=textContent(tree);
-  assert.match(t,spent?'Acima do limite':'Limite zero definido');
+  assert(t.includes(spent?'Acima do limite':'Limite zero definido'));
   assert.doesNotMatch(t,/100% utilizado|0% utilizado/);
  }
 });
