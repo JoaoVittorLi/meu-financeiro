@@ -1720,7 +1720,8 @@ class App extends React.Component<any,State>{
    b&&!sameEngine?h('p',{className:'u3-sim-note'},'As opções usam motores diferentes. Compare apenas os custos; os saldos não são equivalentes.'):null,
    h('small',{className:'u3-sim-note'},'Cada projeção usa os dados disponíveis no momento da análise. A parcela pode variar por centavos; confira o cronograma.'));
  }
- renderResult(out:any){if(out.error)return h(Card,{className:'result-error'},h(Icon,{name:'alert'}),out.error);
+ renderResult(out:any){if(!out)return null;
+  if(out.error)return h(Card,{className:'result-error'},h(Icon,{name:'alert'}),out.error);
   if(out.engine==='planning'){
     const info:any={risk:['Saldo negativo previsto','As parcelas podem levar o saldo abaixo de zero.','danger'],caution:['Sua reserva fica comprometida','A projeção cai abaixo da reserva definida.','caution'],unknown:['Dados insuficientes ou antigos','Confira suas contas e compromissos antes de decidir.','unknown'],estimate:['Cenário projetado','Os compromissos cadastrados cabem na projeção, mas isso não garante a compra.','caution']};
     const [title,subtitle,cls]=info[out.risk]||info.unknown;
