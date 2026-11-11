@@ -6,6 +6,118 @@
 
 > **Regra permanente, vinculante para todas as IAs:** **cada mudança relevante DEVE atualizar este roadmap no mesmo PR da implementação**, além do log Markdown específico. Nunca concluir uma entrega apenas com código. Quem não integra pode atualizar o progresso **proposto em sua branch**; somente o integrador confirma o progresso global, gates e publicação.
 
+## I1-B — Review funcional, correções I1-B.1 e integração para Windows Preview (11/11/2026)
+
+**STATUS:** I1-B do Argon entregue em ZIP original SHA-256 `576376b7486cc45eaf87b9d8bfce340b3485c6638d4c11cbba45c0b3cc2abb78`, **ainda sem branch/PR GitHub**. Patches I1-A.2 + I1-B aplicam corretamente desde beta.8. Arquiteto executou **8/8 testes comportamentais originais PASS**, mas encontrou três defeitos novos: (i) metadados de `proposal`/`structuredCard` persistidos sem sanitização aninhada; (ii) resumo local somando banco+manual e incluindo pendentes; (iii) exclusão visual do histórico informa sucesso mesmo se a gravação falhar, ressuscitando conversa no reinício.
+
+**Correção disponível:** patch incremental I1-B.1 e ZIP com três patches + quatro arquivos corrigidos disponíveis na conversa ChatGPT do proprietário (não no GitHub); **11/11 testes comportamentais dirigidos PASS**, transpilação TS sem erros sintáticos. Não equivalem a `tsc` integral, SQLite, F08, ASAR ou Electron GUI. Mensagens agora não prometem cofre criptografado para histórico `localStorage`; para uso com dados sensíveis, avaliar armazenamento protegido do processo principal após o preview.
+
+**Integração:** O PR #38/U5.2.1 avançou ao SHA `d2032bd305aee0203c491c49c0d644d3ac1c696e` e os quatro blobs de Inteligência continuam idênticos à beta.8 `d513c2be`, permitindo aplicar sequencialmente os patches 01→02→03 numa branch **filha do PR #38** sem conflito textual nesses arquivos. Precisa gerar bundle por compilação real (não editar `app/app.js` manualmente) e rodar gates oficiais. Ordem de produto agora é **I1-B corrigida + D1.5.1/U5.1.1/U5.2.1 → Windows Preview** após autorização; **não começar I1-C/ID1/U5.3** antes da prévia.
+
+[Parecer no PR #35](https://github.com/JoaoVittorLi/meu-financeiro/pull/35#issuecomment-6800161967).
+
+---
+
+
+## U5.1.1 / U5.2 — Cadeia #36 → #37 → #38 e revisão dirigida (11/11/2026)
+
+**Status: IMPLEMENTADAS EM PRs DRAFT; GATES OFICIAIS NÃO EXECUTADOS; NÃO INTEGRADAS.** PR #37 U5.1.1 SHA `5a496313` sobre PR #36 `87fb449c`; PR #38 U5.2 SHA `acad34635` sobre PR #37; comparação: ahead 2 / behind 0. O código da U5.1.1 alinha categorização bancária com natureza efetiva e identifica histórico parcial de 2500 linhas; U5.2 concentra projeção, calendário e simulador com resultado preservado. Os resultados V8 relatados (6/6 + 11/11) **não** são os testes oficiais.
+
+**Correções exigidas antes de integração:** (1) em U5.2 `planSimulatedPurchase()` ainda permite preparar compromisso de `outcome` desatualizado após alterações de inputs — bloquear na UI **e** no método; (2) `pFilterTransactions()` do Planejamento usa sinal do banco, e o calendário soma entradas/saídas por `kind`, sem respeitar `nature='income'/'expense'/'transfer'/'ignore'` — alinhar classificação e tests. **Missão imediata Executor U5.2.1 exclusivamente no PR #38, mais testes e gates**; não iniciar U5.3 ou F1 até fechar P1 e provas. Argon segue I1-B isolada, sem `src/app.ts`/`electron/db.cjs`.
+
+**Ambiente de revisão não possui checkout nem toolchain pinada**: Node 22.16.0/npm 10.9.2 (projeto: Node 22.23.4/npm 10.9.9), github.com sem DNS; portanto `npm ci`, `test:types`, `test:db`, compile, F08, ASAR, Electron **não executados** neste HEAD. [Parecer técnico completo e comandos de gate](ai-context/reviews/2026-11-11-U5-1-1-U5-2-PR37-PR38-ARCHITECT-GATES.md). Proprietário continua adiando CircleCI Windows/EXE; sem merge/main/Cloudflare.
+
+---
+
+
+## ARGON I1-A.2 — pacote aprovado em revisão dirigida, I1-B autorizada isoladamente (11/11/2026)
+
+**Código I1-A.2 aceito como PACOTE RECUPERÁVEL, NÃO INTEGRADO/NÃO HOMOLOGADO.** ZIP SHA-256 `e056add4d7a7a0975f191d6e117053ae93dddd4a1913b526b11040e6c7206ecb`, patch SHA-256 `891d297cd7a2b48379152290f6cca4cd9f854df21ad23f22e35294f6e2e282e0`; reversão reproduziu os quatro blobs originais da beta.8 `d513c2be`. **6/6 testes comportamentais isolados Node 22.16.0 + TypeScript transpileModule PASS**, com stub de Markdown; sem suíte integral, `tsc` de projeto, Electron ou CI. Três bugs da máquina de estados e busca com >8 candidatos corrigidos nos cenários testados. Nenhum comando de chat livre chama IA e nenhuma confirmação de prévia grava finanças (I2-A/I2-B futuros).
+
+**Liberação:** Argon pode desenvolver **I1-B** a partir do patch validado em workspace/branch exclusivos, com prioridade para publicar primeiro commit/PR recuperável; se continuar sem acesso de escrita, ZIP completo + patch incremental verificável por SHA e histórico entre entregas. A **integração à staging permanece bloqueada** até publicação GitHub e gates oficiais. I1-B deve unificar drawer+aba em histórico persistente, tratamento de contexto/permissões, 1366/1920, claro/escuro e testes de conversa; não tocar `src/app.ts`/`electron/db.cjs` em paralelo ao Executor. [Parecer completo](https://github.com/JoaoVittorLi/meu-financeiro/pull/35#issuecomment-6798697511).
+
+**Nenhuma autorização** de Windows CI, EXE, merge, PWA Production ou escrita financeira. A versão U5.1 PR #37 avança independentemente.
+
+---
+
+
+## Checkpoint ARGON I1-A.1 — validação do pacote e regressões do chat (11/11/2026)
+
+**STATUS: PATCH RECUPERÁVEL, CORREÇÕES DIRIGIDAS NECESSÁRIAS; NÃO INTEGRADO.** ZIP `i1-a-1-intelligence-lateral-chat.zip` inclui quatro arquivos e patch SHA-256 `c40f99e0668c28fcd3b1cb67c340b55633da63e56de2c347f82648e279d08ee9`; revertendo o patch foram obtidos os mesmos blobs da beta.8 `d513c2be`. Correções de desambiguação, categoria, data relativa, prévia **sem gravação** e stale estão presentes. O Argon não publicou PR/commit da I1-A.1.
+
+**Testes direcionados executados pelo Arquiteto:** com Node 22.16.0, TypeScript `transpileModule` e stub mínimo para módulo de Markdown: **4/5 testes comportamentais do pacote PASS**; teste de `service_unavailable` falhou (retornou `unimplemented`). Três testes extras de diagnóstico **0/3 PASS**:
+- `intelligenceSubmitQuestion` limpa `aiError` antes de classificar o erro do serviço;
+- estado `chat_available` retorna mensagem falsa `Conta não autenticada` mesmo com OAuth ativo;
+- `secure:false` no estado inicial `connected:false` é confundido com indisponibilidade em vez de `oauth_disconnected`.
+- Verificar lista com mais de oito candidatos e evitar ocultar alternativas sem refinamento/paginação.
+
+**Decisão:** Argon executa **I1-A.2 — correção da máquina de estados e testes de regressão**, publica primeiro PR draft recuperável na branch própria, e só depois inicia I1-B. Testes oficiais `tsc`, Node completo, Electron continuam **NÃO EXECUTADOS**. Nenhuma escrita financeira nem inferência livre foi habilitada. [Parecer técnico](https://github.com/JoaoVittorLi/meu-financeiro/pull/35#issuecomment-6798357088). Não intervir nos arquivos Executor, não executar CircleCI Windows ou EXE.
+
+---
+
+
+## Revisão U5.1 PR #37 — Ajustes de natureza, resumo parcial e U5.2 (11/11/2026)
+
+**Status: APROVADO COM RESSALVAS PARA TESTES OFICIAIS, NÃO HOMOLOGADO.** Conferido HEAD `d3455505cedd1f6b40d7ca71e89a299039baa6b4` do PR #37, draft, 2 commits à frente do PR #36 (`87fb449c`), 0 atrás, 10 arquivos modificados. Entrega de categorização inline/filtros/teclado codificada, **com roadmap/handoff/log já adicionados ao próprio PR**; 19 testes novos escritos, mas ainda sem execução oficial. Sem CI desse SHA. **[Parecer técnico e missão U5.2](ai-context/reviews/2026-11-11-U5-1-PR37-ARCHITECT-REVIEW-AND-U5-2.md).**
+
+**Correções dirigidas:** (1) `quickCategoryContext()` usa apenas sinal do valor bancário, enquanto filtros usam `effectiveNature()`: alinhar semântica e testar `income/expense/transfer/ignore`; (2) carregamento da lista bancária limitado a 2.500 itens em `bankOverview()`: qualquer resumo calculado sobre itens carregados deve ser explicitamente parcial quando `bank.data.truncated`, sem confundir com agregados completos do banco. Testar com dados sintéticos e não mexer em Pluggy bruto.
+
+**Próxima execução:** fechar U5.1, rodar `npm ci`, `test:types`, `test:db`, compile, F08/ASAR e QA Electron local quando ambiente permitir. Depois U5.2 (Planejamento, projeção diária, Simular Compra sem apagar resultado ao digitar) numa branch dependente de PR #37, com ownership exclusivo do Executor em `src/app.ts`/`src/plan-view.ts`. Argon continua I1-A.1/I1-B com módulos de Inteligência próprios, sem conflito. **Sem CircleCI Windows/EXE/merge/deploy até autorização do proprietário.**
+
+---
+
+
+## Roadmap coordenado Executor 2 × Argon — melhorias estimadas (11/11/2026)
+
+**DOCUMENTADO, NÃO HOMOLOGADO.** Ver a [versão detalhada com entregas por agente, dependências, esforços, ganhos-alvo e critérios de aceite](ai-context/reviews/2026-11-11-ROADMAP-EXECUTOR2-ARGON-MELHORIAS-ESTIMADAS.md). Metas como redução de cliques/tempo são **hipóteses a medir**, não resultados já obtidos. Estimativas de dias úteis exigem checkout e ferramentas operacionais; **não são promessas de prazo**.
+
+**Estado verificado:** PR #31 beta.8 draft SHA `d513c2be` (CI Linux/Windows verde nesse SHA); PR #36 D1.5.1 draft SHA `87fb449c` (validação BRL e guardas SQLite codificadas; gates oficiais pendentes); PR #37 U5.1 draft SHA `10b96953` (popover de categorização, filtros e teclado **já codificados**; suites oficiais/GUI pendentes); Argon I1-A reportou só mapeamento, sem commit/PR confirmado. PR #37 ainda **não incluiu roadmap/handoff/log entre os arquivos alterados**, exigência para finalização.
+
+**Executor:** fechar testes D1.5.1 e U5.1 → U5.2 Planejamento/Simular Compra → U5.3 Orçamentos/Configurações → U5.4/F1 Visão Geral/Contas e cards determinísticos → F2 simulações financeiras brasileiras → integrar marca MF e homologar release quando autorizado.  
+**Argon:** desbloquear commit/PR da I1-A → chat lateral compacto e funcional → aba Inteligência com histórico compartilhado → radar local real → chat contextual → ações **Permitir/Negar** com categorização auditável → ferramentas adicionais; em paralelo, produzir assets originais e guidelines ID1/A-D7 sem tocar arquivos do Executor.
+
+**Decisão de release mantida:** proprietário quer aguardar mais atualizações; **não executar CircleCI Windows nem gerar EXE agora**. Candidata de avaliação sugerida após U5.1 + U5.2 e gates D1.5.1, sem esperar toda a IA/PWA. PR de documentação não altera código, `main` ou Production.
+
+---
+
+
+## Decisão operacional — ARGON assume integralmente a Inteligência 2.0 (11/11/2026)
+
+**Rodada A: APROVADO PARA EXECUÇÃO ISOLADA · Rodada B: NÃO HOMOLOGADA.** Em paralelo ao fechamento D1.5.1 do Executor 2, o **Argon é dono do design E DO CÓDIGO** de ambas as superfícies de Inteligência: chat lateral leve em todas as áreas e aba principal, além do futuro fluxo de análise e ações com prévia explícita **Permitir / Negar** (começando por categorização). O Executor mantém finanças não-IA, correções D1.5.1 e próximo EXE; **não devem editar os mesmos arquivos**.
+
+**Missão detalhada, ownership, etapas I1-A/I1-B/I2-A/I2-B/I3, requisitos de segurança e QA:** [ARGON — Remake integral da Inteligência](ai-context/reviews/2026-11-11-ARGON-MISSION-INTELLIGENCE-REMAKE.md). Baseline: PR #31 SHA `d513c2be`, PR #36 SHA `71eb60d`; Argon começa em branch/worktree isolado; src/app.ts, electron/db.cjs, app/premium-interactions.css e demais CSS do Executor ficam protegidos até integração coordenada. Nenhuma IA pode alterar dados bancários brutos nem realizar mutação sem confirmação/validação real. O fluxo de chat atual só prepara rascunhos; não declarar que já existe chat financeiro funcional.
+
+**O próximo EXE Windows da D1.5.1 não depende da Inteligência nova.** Não executar deploy PWA/Production nem integrar código de IA na staging sem gate separado.
+
+---
+
+
+## Decisão pós-revisão PR #36 — D1.5.1 e próximo executável Windows (11/11/2026)
+
+**Rodada A: ANALISADO; Rodada B: CORREÇÕES DIRIGIDAS (PR #36 draft); Gate: NÃO HOMOLOGADO.** O Arquiteto conferiu diff dos 12 arquivos D1.5 no SHA `71eb60d141a9346a9bf9d4744ab05d132101701d`. A implementação de hover, drawer e editor manual é aproveitável; dois riscos financeiros exigem fechamento **antes** de distribuir o próximo EXE: **(1)** `parseMoney` pode arredondar silenciosamente valores com mais de duas casas digitados no editor; **(2)** `isManualLinked` consulta apenas a UI, enquanto `FinanceDB.save()` executa `pruneInvalidManualLinks()` no SQLite e pode remover um vínculo quando a UI está desatualizada. Não declarados falha de compilação ou defeito Electron sem execução.
+
+**Missão imediata:** D1.5.1 no **mesmo PR #36** — validar precisão BRL, proteger vínculos na transação de persistência sem quebrar restaurações, testes SQLite reais, `test:db`/`test:types`/compile/F08/ASAR e smoke Windows com hover/drawer/manual/backup. Depois, **uma** pipeline CircleCI Linux→Windows e validar NSIS, Portable, SHA256 e instalação isolada. **Não atrasar o próximo EXE** para esperar nova identidade MF, emojis, demais novidades de Inteligência ou PWA. Os CI verdes no commit pai beta.8 não homologam D1.5.
+
+**[Parecer completo, riscos e responsabilidade por agente](ai-context/reviews/2026-11-11-D1-5-PR36-ARCHITECT-DECISION.md)** · ver PR #36 (revisão de Arquiteto) · PR #35 (documentação). **Estado factual do código permanece no PR #36; este documento não implementa nem libera release.**
+
+---
+
+
+## Complemento arquitetural — roadmap pós-ARGON + identidade MF (11/11/2026)
+
+**Rodada A: ANALISADO/PROPOSTO · Rodada B: NÃO INICIADA nesta frente documental · Gate: NÃO HOMOLOGADO por este documento.** O Arquiteto consolidou a auditoria ARGON/Antigravity do Windows beta.8, os problemas de hover apontados pelo proprietário e as novas referências do logotipo MF (monograma esmeralda/menta com marinho). **Plano integral com mudanças e aceites por módulo/etapa:** [2026-11-11-ARGON-ROADMAP-PREMIUM-BRAND-INTELLIGENCE.md](ai-context/reviews/2026-11-11-ARGON-ROADMAP-PREMIUM-BRAND-INTELLIGENCE.md).
+
+**Baseline do planejamento:** PR #31 draft, SHA `d513c2be3f9b0cd018aed0b71f46ce8747a6556c`, com preflight Linux e build Windows em **success** no CircleCI. Isso não prova homologação de cada fluxo nem das mudanças futuras. **Status anteriores abaixo são históricos** e não devem prevalecer sobre CI no SHA indicado.
+
+**Ordem de trabalho proposta:** G0 conferência/errata → D1.5-F edição/exclusão manual → D1.5-V contraste de drawers e gráficos → A-D7 hover Premium/legado → ID1 logotipo, ícones Windows e PWA Preview → U5 fluidez operacional → I1 Inteligência local real + redesign → F1 dashboards de decisão → I2 chat contextual → F2 simulador financeiro brasileiro → I3 ações de IA com confirmação → P1-PWA paridade e R1 homologação por SHA. **I1 tem prioridade de pesquisa de produto em paralelo** à estabilização, sem colisões de código.
+
+**Regras:** o plano novo é proposta, não implementação; não migrar cores pessoais indiscriminadamente; IA atual de demonstração não deve virar análise "real" fictícia; `buildLocalBriefing` relatada pelo Argon não foi encontrada no SHA conferido e requer revalidação; a nova marca exige fonte vetorial original aprovado antes de exportar assets. Corrigir errata do Argon (métricas e metadados inconsistentes) e confirmar visibilidade atual do GitHub (reportada public pelo conector, embora docs digam privado).
+
+**Ownership:** Argon responde por identidade/motion/conceitos; Executor por implementação, SQLite/regressões, empacotamento; Antigravity testa EXE em perfil isolado e worktree própria; Arquiteto aprova integração. Esta atualização é somente de documentação, em branch própria, sem `main`, EXE, Cloudflare ou dados reais alterados.
+
+---
+
+
 ## Hotfix D1.4.3 — JSON visual interpretado como 1 objeto no PowerShell (10/11/2026)
 
 **Rodada B: EM_TESTE; gate NAO_HOMOLOGADO.** No [PR #31](https://github.com/JoaoVittorLi/meu-financeiro/pull/31), branch `feat/mf2-beta8-premium-staging-20261110`, o CI Windows capturou **32 arquivos PNG**, mas a verificação em `.circleci/build-windows.ps1` alegou haver **1 entrada** no manifesto. A causa está na construção PowerShell `$matrix = @(Get-Content -Raw ... | ConvertFrom-Json)`: em Windows PowerShell, `ConvertFrom-Json` pode emitir um array como um único objeto de pipeline e o `@(...)` o encapsula novamente. **Não foi identificada falha de gravação ou corrida:** `scripts/d1-electron-smoke.cjs` acumula `rows.push()` e escreve um único `JSON.stringify(rows,null,2)` após as 32 capturas. Documentação PowerShell confirma a semântica de arrays na pipeline. 
