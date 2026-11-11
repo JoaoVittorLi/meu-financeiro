@@ -6,6 +6,21 @@
 
 > **Regra permanente, vinculante para todas as IAs:** **cada mudança relevante DEVE atualizar este roadmap no mesmo PR da implementação**, além do log Markdown específico. Nunca concluir uma entrega apenas com código. Quem não integra pode atualizar o progresso **proposto em sua branch**; somente o integrador confirma o progresso global, gates e publicação.
 
+## Checkpoint ARGON I1-A.1 — validação do pacote e regressões do chat (11/11/2026)
+
+**STATUS: PATCH RECUPERÁVEL, CORREÇÕES DIRIGIDAS NECESSÁRIAS; NÃO INTEGRADO.** ZIP `i1-a-1-intelligence-lateral-chat.zip` inclui quatro arquivos e patch SHA-256 `c40f99e0668c28fcd3b1cb67c340b55633da63e56de2c347f82648e279d08ee9`; revertendo o patch foram obtidos os mesmos blobs da beta.8 `d513c2be`. Correções de desambiguação, categoria, data relativa, prévia **sem gravação** e stale estão presentes. O Argon não publicou PR/commit da I1-A.1.
+
+**Testes direcionados executados pelo Arquiteto:** com Node 22.16.0, TypeScript `transpileModule` e stub mínimo para módulo de Markdown: **4/5 testes comportamentais do pacote PASS**; teste de `service_unavailable` falhou (retornou `unimplemented`). Três testes extras de diagnóstico **0/3 PASS**:
+- `intelligenceSubmitQuestion` limpa `aiError` antes de classificar o erro do serviço;
+- estado `chat_available` retorna mensagem falsa `Conta não autenticada` mesmo com OAuth ativo;
+- `secure:false` no estado inicial `connected:false` é confundido com indisponibilidade em vez de `oauth_disconnected`.
+- Verificar lista com mais de oito candidatos e evitar ocultar alternativas sem refinamento/paginação.
+
+**Decisão:** Argon executa **I1-A.2 — correção da máquina de estados e testes de regressão**, publica primeiro PR draft recuperável na branch própria, e só depois inicia I1-B. Testes oficiais `tsc`, Node completo, Electron continuam **NÃO EXECUTADOS**. Nenhuma escrita financeira nem inferência livre foi habilitada. [Parecer técnico](https://github.com/JoaoVittorLi/meu-financeiro/pull/35#issuecomment-6798357088). Não intervir nos arquivos Executor, não executar CircleCI Windows ou EXE.
+
+---
+
+
 ## Revisão U5.1 PR #37 — Ajustes de natureza, resumo parcial e U5.2 (11/11/2026)
 
 **Status: APROVADO COM RESSALVAS PARA TESTES OFICIAIS, NÃO HOMOLOGADO.** Conferido HEAD `d3455505cedd1f6b40d7ca71e89a299039baa6b4` do PR #37, draft, 2 commits à frente do PR #36 (`87fb449c`), 0 atrás, 10 arquivos modificados. Entrega de categorização inline/filtros/teclado codificada, **com roadmap/handoff/log já adicionados ao próprio PR**; 19 testes novos escritos, mas ainda sem execução oficial. Sem CI desse SHA. **[Parecer técnico e missão U5.2](ai-context/reviews/2026-11-11-U5-1-PR37-ARCHITECT-REVIEW-AND-U5-2.md).**
