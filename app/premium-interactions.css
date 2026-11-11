@@ -130,11 +130,11 @@
    A single 3px pseudo border renders the top AND the revealed perimeter.
    The existing top border becomes transparent; background/content unchanged. */
 @property --mf-border-sweep {syntax:"<angle>";inherits:false;initial-value:0deg}
+.mf-border-reveal {--mf-border-tone:var(--subtle)}
 :is(.u1-shell .u1-overview > .stats-grid,
     .u2-shell .u2-metrics,
     .u3-budgets .mf-budget-summary,
     .u3-accounts .u3-account-summary) > .mf-border-reveal {
-  --mf-border-tone:var(--subtle);
   position:relative;isolation:isolate;z-index:0;
   border-color:var(--border);border-top-color:transparent;
   transform-origin:center center;
