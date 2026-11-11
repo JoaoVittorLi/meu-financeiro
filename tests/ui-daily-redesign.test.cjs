@@ -137,7 +137,7 @@ test('UI03 daily information hierarchy covers all eight sections',()=>{
  assert.match(app,/renderAssistant\(includeBanner:boolean=true\)/);
  assert.match(app,/renderSettings\(\)/);
  assert.match(ai,/mf-ai-lab-disclosure/);
- assert.match(aiCss,/\.mf-ai-lab-disclosure>summary:focus-visible/);
+ assert.match(aiCss,/\.mf-ai-lab-disclosure\s*>\s*summary:focus-visible\s*\{/);
  assert.match(app,/renderTransactions\(\)/);
  assert.match(app,/renderSourcePicker\(\)/);
 });

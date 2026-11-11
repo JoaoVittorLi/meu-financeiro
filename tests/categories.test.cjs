@@ -63,10 +63,21 @@ test('renomear categoria customizada preserva manual, orçamento, regras e overr
 test('categorias em uso não são excluídas; categorias padrão são protegidas',()=>{
  const db=new FinanceDB(':memory:');db.upsertCategory({name:'Investimentos',color:'#bb44aa'});
  db.save('real',manual('Investimentos'));
- assert.throws(()=>db.deleteCategory('Investimentos'),/em uso/);
+ // Movimentação e orçamento explícito impedem a remoção.
+ assert.throws(()=>db.deleteCategory('Investimentos'),/Categoria em uso/);
+ assert.equal(db.load('real').transactions[0].category,'Investimentos');
+ assert.equal(db.load('real').budgets.Investimentos,5000);
  assert.throws(()=>db.deleteCategory('Moradia'),/padrão/);
+ // Mesmo com valor zero, o orçamento continua sendo uma configuração existente.
  db.save('real',{transactions:[],budgets:{Investimentos:0},settings});
+ assert.throws(()=>db.deleteCategory('Investimentos'),/Categoria em uso/);
+ assert.equal(db.load('real').budgets.Investimentos,0);
+ assert.equal(db.listCategories().categories.some(x=>x.name==='Investimentos'),true);
+ // Somente a remoção explícita do orçamento libera a categoria.
+ db.save('real',{transactions:[],budgets:{},settings});
  assert.equal(db.deleteCategory('Investimentos').categories.some(x=>x.name==='Investimentos'),false);
+ assert.equal(Object.hasOwn(db.load('real').budgets,'Investimentos'),false);
+ assert.deepEqual(db.integrity(),['ok']);
  db.close();
 });
 test('corrupção de regra/categoria é recusada sem afetar dados',()=>{

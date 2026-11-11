@@ -95,9 +95,11 @@ Assert-Success 'Smoke Electron D1.2 real e isolado'
 if (!(Test-Path -LiteralPath (Join-Path $env:MF_SMOKE_OUTPUT_DIR 'visual-matrix.json'))) {
   throw 'Matriz de smoke Electron não foi gravada.'
 }
-if (@(Get-ChildItem -LiteralPath $env:MF_SMOKE_OUTPUT_DIR -File -Filter '*.png').Count -ne 16) {
-  throw 'Smoke Electron: esperadas 16 capturas de interface sintética.'
-}
+# Windows PowerShell 5.1 can wrap a JSON array as one pipeline object when
+# using @(... | ConvertFrom-Json). Validate with Node 22 instead, inspecting
+# each of 32 JSON rows, the matching PNG files and their actual dimensions.
+& $nodeExecutable scripts/verify-visual-matrix.cjs $env:MF_SMOKE_OUTPUT_DIR
+Assert-Success 'Matriz Electron de 32 capturas e manifesto JSON'
 
 Write-Host 'Executando comando oficial: npm run dist:windows...'
 # dist:windows executa compilação TypeScript, testes Node/SQLite e electron-builder NSIS + portable.

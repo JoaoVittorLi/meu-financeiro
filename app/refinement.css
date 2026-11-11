@@ -126,3 +126,855 @@ button:disabled{cursor:not-allowed}.close-button{display:grid;place-items:center
 /* On narrow calendars, the day opens the full list below; cells stay legible. */
 @media(max-width:650px){.finance-main .finance-plan-calendar-day{position:relative;min-height:40px;height:40px;max-height:40px;min-width:0;padding:5px 2px;display:flex;align-items:center;justify-content:center;overflow:hidden}.finance-plan-calendar-day .finance-plan-calendar-count,.finance-plan-calendar-day .finance-plan-calendar-money{display:none}.finance-plan-calendar-day:has(.finance-plan-calendar-count)::after{content:'';position:absolute;bottom:3px;left:calc(50% - 2px);width:4px;height:4px;border-radius:50%;background:var(--green)}.finance-plan-calendar-grid{gap:3px}.finance-plan-calendar-selection .finance-item{flex-wrap:wrap}.finance-plan-calendar-selection .finance-amount{font-size:13px}.finance-plan-calendar-selection{padding:14px}}
 @media(max-width:560px){.modal .two-inputs{grid-template-columns:minmax(0,1fr);gap:0}.modal-actions>button{flex:1;justify-content:center}.modal-head h2{font-size:19px}.p-plan-modal .modal-actions{margin-top:6px}}
+
+/* ==========================================================================
+   A-D6 — REFINAMENTO GLOBAL PREMIUM: NAVEGAÇÃO, CONFIGURAÇÕES, CONTROLES,
+   POPOVERS, MODAIS E TRANSIÇÕES TRANSVERSAIS (1366x768 & 1920x1080)
+   Base: commit c4f1b657d30e3da59b4302ed3f4f68b78b0ae70f (PR #32)
+   Preserva 100% das entregas R1, R2 e A-D1 até A-D5.
+   ========================================================================== */
+:root {
+  --ad6-accent: #1f7a63;
+  --ad6-accent-strong: #155e4b;
+  --ad6-accent-bg: #e6f4ef;
+  --ad6-accent-border: rgba(31, 122, 99, 0.28);
+  --ad6-focus-ring: rgba(23, 106, 207, 0.16);
+  --ad6-selected-bg: rgba(31, 122, 99, 0.08);
+  --ad6-card-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 6px 20px -6px rgba(15, 23, 42, 0.06);
+  --ad6-card-shadow-hover: 0 6px 16px rgba(15, 23, 42, 0.08), 0 14px 28px -8px rgba(15, 23, 42, 0.11);
+  --ad6-popover-shadow: 0 12px 32px -4px rgba(15, 23, 42, 0.14), 0 4px 12px -2px rgba(15, 23, 42, 0.08);
+  --ad6-workspace-glass: rgba(255, 255, 255, 0.88);
+  --ad6-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ad6-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ad6-dur-micro: 140ms;
+  --ad6-dur-panel: 240ms;
+}
+
+[data-theme="dark"] {
+  --ad6-accent: #66d4b6;
+  --ad6-accent-strong: #8be2ca;
+  --ad6-accent-bg: rgba(102, 212, 182, 0.12);
+  --ad6-accent-border: rgba(102, 212, 182, 0.32);
+  --ad6-focus-ring: rgba(102, 212, 182, 0.18);
+  --ad6-selected-bg: rgba(102, 212, 182, 0.11);
+  --ad6-card-shadow: 0 2px 6px rgba(0, 0, 0, 0.28), 0 10px 26px -8px rgba(0, 0, 0, 0.38);
+  --ad6-card-shadow-hover: 0 8px 20px rgba(0, 0, 0, 0.44), 0 18px 36px -8px rgba(0, 0, 0, 0.54);
+  --ad6-popover-shadow: 0 16px 38px -4px rgba(0, 0, 0, 0.62), 0 6px 16px -2px rgba(0, 0, 0, 0.44);
+  --ad6-workspace-glass: rgba(26, 26, 26, 0.88);
+}
+
+/* ==========================================================================
+   KEYFRAMES GLOBAIS — NAVEGAÇÃO, POPOVERS, MODAIS, TOASTS E SEÇÕES
+   ========================================================================== */
+@keyframes ad6PageEnter {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes ad6CardReveal {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes ad6PopoverIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes ad6ModalIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes ad6ToastSlide {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes ad6ModeDotPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(8, 126, 73, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(8, 126, 73, 0);
+  }
+}
+
+/* ==========================================================================
+   1. SHELL, SIDEBAR E NAVEGAÇÃO PRINCIPAL DESKTOP PREMIUM
+   ========================================================================== */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--surface3);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--subtle);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.sidebar {
+  padding: 20px 14px 16px;
+  transition: width var(--ad6-dur-panel) var(--ad6-ease-out);
+}
+
+.brand {
+  margin: 0 10px 24px;
+  padding: 6px 8px;
+  border-radius: 12px;
+  transition: background var(--ad6-dur-micro) ease;
+}
+
+.brand-text strong {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.55px;
+}
+
+.logo-glyph {
+  border-radius: 11px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  transition: transform var(--ad6-dur-micro) var(--ad6-ease-spring),
+              box-shadow var(--ad6-dur-micro) ease;
+}
+
+.brand:hover .logo-glyph {
+  transform: scale(1.05);
+}
+
+.logo-glyph .bar {
+  transition: height 180ms var(--ad6-ease-spring);
+}
+
+.side-label,
+.mf-ai-side-label {
+  font-size: 10px;
+  font-weight: 650;
+  text-transform: uppercase;
+  letter-spacing: 0.75px;
+  color: var(--muted);
+  margin: 20px 12px 6px;
+}
+
+.sidebar nav {
+  gap: 3px;
+}
+
+.sidebar .nav-item {
+  position: relative;
+  font-size: 13px;
+  min-height: 39px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  font-weight: 450;
+  color: var(--muted);
+  transition: background var(--ad6-dur-micro) var(--ad6-ease-out),
+              color var(--ad6-dur-micro) var(--ad6-ease-out),
+              transform var(--ad6-dur-micro) var(--ad6-ease-out),
+              box-shadow var(--ad6-dur-micro) var(--ad6-ease-out);
+}
+
+.sidebar .nav-item svg {
+  transition: transform var(--ad6-dur-micro) var(--ad6-ease-spring),
+              color var(--ad6-dur-micro) ease;
+}
+
+.sidebar .nav-item:hover,
+.sidebar .nav-item:focus-visible {
+  background: var(--surface2);
+  color: var(--text);
+  transform: translateX(2px);
+}
+
+.sidebar .nav-item:hover svg {
+  transform: scale(1.08);
+  color: var(--text);
+}
+
+.sidebar .nav-item:active {
+  transform: scale(0.985);
+}
+
+.sidebar .nav-item.active {
+  background: var(--surface3);
+  color: var(--text);
+  font-weight: 600;
+  box-shadow: inset 3px 0 0 var(--ad6-accent), 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.sidebar .nav-item.active svg {
+  color: var(--ad6-accent);
+}
+
+/* Rodapé da Sidebar: Aparência, Modo Demonstração e Versão */
+.side-bottom {
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+  margin-top: auto;
+}
+
+.mf-appearance {
+  border-radius: 10px;
+  padding: 7px 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  transition: border-color var(--ad6-dur-micro) ease;
+}
+
+.mf-appearance:hover {
+  border-color: var(--subtle);
+}
+
+.mf-appearance select {
+  font-weight: 500;
+  transition: border-color var(--ad6-dur-micro) ease, box-shadow var(--ad6-dur-micro) ease;
+}
+
+.demo-btn {
+  border-radius: 10px;
+  font-weight: 550;
+  transition: background var(--ad6-dur-micro) ease,
+              border-color var(--ad6-dur-micro) ease,
+              color var(--ad6-dur-micro) ease,
+              transform 120ms var(--ad6-ease-out);
+}
+
+.demo-btn:hover {
+  background: var(--surface2);
+  border-color: var(--subtle);
+  color: var(--text);
+}
+
+.demo-btn:active {
+  transform: scale(0.98);
+}
+
+.app-version {
+  font-size: 10.5px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.2px;
+}
+
+/* ==========================================================================
+   2. WORKSPACE BAR, TOPBAR, TRANSIÇÃO ENTRE ÁREAS E BOTÕES GLOBAIS
+   ========================================================================== */
+.main-area {
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: 0 2px 12px rgba(15, 23, 42, 0.04);
+}
+
+.mf-workspace-bar {
+  position: sticky;
+  top: 0;
+  z-index: 25;
+  background: var(--ad6-workspace-glass);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  min-height: 54px;
+  transition: border-color var(--ad6-dur-micro) ease;
+}
+
+.mf-workspace-bar nav strong {
+  font-weight: 600;
+  letter-spacing: -0.15px;
+}
+
+.mf-workspace-bar .mode-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  font-weight: 600;
+  font-size: 10px;
+}
+
+.mf-workspace-bar .mode-tag i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  animation: ad6ModeDotPulse 2.6s ease-in-out infinite;
+}
+
+.mf-workspace-bar .mode-demo {
+  background: var(--warning-bg);
+  border-color: transparent;
+  color: var(--warning);
+}
+
+/* Transição suave ao alternar entre as 8 áreas do aplicativo */
+.main-area > .section,
+.main-area > .overview-content,
+.main-area > .p-main,
+.main-area > .mf-intelligence-page {
+  animation: ad6PageEnter var(--ad6-dur-panel) var(--ad6-ease-out);
+}
+
+.topbar h1 {
+  font-size: clamp(23px, 2vw, 27px);
+  font-weight: 650;
+  letter-spacing: -0.8px;
+}
+
+.topbar p {
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+/* Botões e Gatilhos Globais (.primary-button, .ghost-button, .outlined-action, .mf-refresh-button) */
+.primary-button,
+.mini-primary,
+.ghost-button,
+.outlined-action,
+.mf-refresh-button,
+.mf-quick-trigger {
+  transition: transform 120ms var(--ad6-ease-out),
+              background var(--ad6-dur-micro) var(--ad6-ease-out),
+              border-color var(--ad6-dur-micro) var(--ad6-ease-out),
+              box-shadow var(--ad6-dur-micro) var(--ad6-ease-out),
+              filter var(--ad6-dur-micro) ease;
+}
+
+.primary-button:hover,
+.mini-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.14);
+}
+
+.ghost-button:hover,
+.outlined-action:hover,
+.mf-refresh-button:hover,
+.mf-quick-trigger:hover {
+  background: var(--surface2);
+  border-color: var(--subtle);
+  transform: translateY(-1px);
+}
+
+.primary-button:active,
+.mini-primary:active,
+.ghost-button:active,
+.outlined-action:active,
+.mf-refresh-button:active,
+.mf-quick-trigger:active {
+  transform: scale(0.97);
+}
+
+/* ==========================================================================
+   3. CONTROLES CUSTOMIZADOS, POPOVERS, CALENDÁRIOS E MENUS RÁPIDOS
+   ========================================================================== */
+.mf-select-trigger,
+.mf-period-trigger,
+.mf-date-trigger,
+.mf-source-trigger {
+  transition: background var(--ad6-dur-micro) var(--ad6-ease-out),
+              border-color var(--ad6-dur-micro) var(--ad6-ease-out),
+              box-shadow var(--ad6-dur-micro) var(--ad6-ease-out),
+              transform 120ms var(--ad6-ease-out);
+}
+
+.mf-select-trigger:hover,
+.mf-period-trigger:hover,
+.mf-date-trigger:hover,
+.mf-source-trigger:hover {
+  background: var(--surface2);
+  border-color: var(--subtle);
+}
+
+.mf-select-trigger[aria-expanded="true"],
+.mf-period-trigger[aria-expanded="true"],
+.mf-date-trigger[aria-expanded="true"],
+.mf-source-trigger[aria-expanded="true"] {
+  background: var(--surface2);
+  border-color: var(--focus);
+  box-shadow: 0 0 0 3px var(--ad6-focus-ring);
+}
+
+.mf-select-popover,
+.mf-period-popover,
+.mf-single-calendar,
+.mf-source-panel,
+.mf-quick-menu {
+  border-radius: 13px;
+  border: 1px solid var(--border);
+  box-shadow: var(--ad6-popover-shadow);
+  animation: ad6PopoverIn 160ms var(--ad6-ease-out);
+}
+
+.mf-option,
+.mf-source-panel button,
+.mf-quick-menu button {
+  border-radius: 8px;
+  transition: background 120ms var(--ad6-ease-out),
+              color 120ms var(--ad6-ease-out),
+              transform 120ms var(--ad6-ease-out),
+              box-shadow 120ms var(--ad6-ease-out);
+}
+
+.mf-option:hover,
+.mf-option.is-focused,
+.mf-source-panel button:hover,
+.mf-quick-menu button:hover {
+  background: var(--surface2);
+  color: var(--text);
+  box-shadow: inset 2.5px 0 0 var(--ad6-accent);
+}
+
+.mf-option.is-selected {
+  background: var(--ad6-selected-bg);
+  font-weight: 600;
+  color: var(--text);
+  box-shadow: inset 3px 0 0 var(--ad6-accent);
+}
+
+.mf-option-check {
+  color: var(--ad6-accent);
+}
+
+.mf-period-presets button,
+.mf-custom-toggle,
+.mf-day {
+  border-radius: 8px;
+  transition: background 120ms ease, color 120ms ease, transform 120ms ease;
+}
+
+.mf-period-presets button:hover:not(.selected),
+.mf-custom-toggle:hover:not(.selected) {
+  background: var(--surface2);
+  color: var(--text);
+}
+
+.mf-day:hover:not(.selected) {
+  background: var(--surface2);
+}
+
+.mf-day:active,
+.mf-period-presets button:active {
+  transform: scale(0.95);
+}
+
+/* ==========================================================================
+   4. CONFIGURAÇÕES (SETTINGS) DESKTOP PREMIUM (.mf-settings-layout)
+   ========================================================================== */
+.mf-settings-layout {
+  display: grid;
+  grid-template-columns: 215px minmax(0, 1fr);
+  gap: 26px;
+  align-items: start;
+  min-height: 60vh;
+}
+
+.mf-settings-nav {
+  position: sticky;
+  top: 74px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 8px;
+  border-right: 0;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface2);
+  box-shadow: var(--ad6-card-shadow);
+  animation: ad6CardReveal var(--ad6-dur-panel) var(--ad6-ease-out) both;
+}
+
+.mf-settings-nav button {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  min-height: 40px;
+  padding: 9px 12px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  text-align: left;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--muted);
+  transition: background var(--ad6-dur-micro) var(--ad6-ease-out),
+              color var(--ad6-dur-micro) var(--ad6-ease-out),
+              transform var(--ad6-dur-micro) var(--ad6-ease-out),
+              box-shadow var(--ad6-dur-micro) var(--ad6-ease-out);
+}
+
+.mf-settings-nav button:hover {
+  color: var(--text);
+  background: var(--surface);
+  transform: translateX(2px);
+}
+
+.mf-settings-nav button:active {
+  transform: scale(0.98);
+}
+
+.mf-settings-nav button[aria-current="page"],
+.mf-settings-nav button.active {
+  color: var(--text);
+  font-weight: 650;
+  background: var(--surface);
+  border-color: var(--border);
+  box-shadow: inset 3px 0 0 var(--ad6-accent), 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.mf-settings-content {
+  min-width: 0;
+  max-width: 960px;
+  display: grid;
+  gap: 18px;
+}
+
+.mf-settings-content .settings-card {
+  margin: 0;
+  padding: 24px;
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--ad6-accent);
+  border-radius: 15px;
+  background: var(--surface);
+  box-shadow: var(--ad6-card-shadow);
+  animation: ad6CardReveal var(--ad6-dur-panel) var(--ad6-ease-out) 45ms both;
+  transition: border-color var(--ad6-dur-micro) ease,
+              box-shadow var(--ad6-dur-micro) ease;
+}
+
+.mf-settings-content .settings-card:hover {
+  border-color: var(--subtle);
+  border-top-color: var(--ad6-accent);
+}
+
+.mf-settings-content .settings-card h2 {
+  font-size: 17px;
+  font-weight: 650;
+  letter-spacing: -0.3px;
+  margin: 0 0 6px;
+  color: var(--text);
+}
+
+.mf-settings-content .card-heading {
+  margin-bottom: 18px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.mf-settings-content .card-heading p {
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+/* Linhas de Configuração com Row Spotlight (.setting-row) */
+.mf-settings-content .setting-row,
+.setting-row {
+  padding: 16px 10px;
+  margin-inline: -10px;
+  border-radius: 10px;
+  border-color: var(--border);
+  gap: 18px;
+  transition: background var(--ad6-dur-micro) var(--ad6-ease-out),
+              box-shadow var(--ad6-dur-micro) var(--ad6-ease-out);
+}
+
+.mf-settings-content .setting-row:hover,
+.mf-settings-content .setting-row:focus-within {
+  background: var(--surface2);
+  box-shadow: inset 3px 0 0 var(--ad6-accent);
+}
+
+.mf-settings-content .setting-row b,
+.setting-row b {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.mf-settings-content .setting-row small,
+.setting-row small {
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.setting-edit {
+  min-height: 36px;
+  padding: 7px 12px;
+  font-size: 12.5px;
+  font-weight: 600;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--text);
+  transition: background var(--ad6-dur-micro) ease,
+              border-color var(--ad6-dur-micro) ease,
+              transform 120ms var(--ad6-ease-out),
+              box-shadow var(--ad6-dur-micro) ease;
+}
+
+.setting-edit:hover {
+  background: var(--surface3);
+  border-color: var(--subtle);
+  transform: translateY(-1px);
+}
+
+.setting-edit:active {
+  transform: scale(0.97);
+}
+
+/* Cartões Interativos de Prévia de Tema (.mf-theme-previews & .mf-theme-preview) */
+.mf-theme-previews {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin: 20px 0 22px;
+}
+
+.mf-theme-preview {
+  border: 1.5px solid var(--border);
+  height: 148px;
+  position: relative;
+  border-radius: 14px;
+  overflow: hidden;
+  cursor: pointer;
+  box-shadow: var(--ad6-card-shadow);
+  transition: transform var(--ad6-dur-micro) var(--ad6-ease-out),
+              border-color var(--ad6-dur-micro) ease,
+              box-shadow var(--ad6-dur-micro) ease;
+}
+
+.mf-theme-preview:hover {
+  transform: translateY(-3px);
+  border-color: var(--ad6-accent);
+  box-shadow: var(--ad6-card-shadow-hover);
+}
+
+.mf-theme-preview[aria-pressed="true"],
+.mf-theme-preview.selected,
+.mf-theme-preview.active {
+  border-color: var(--ad6-accent);
+  box-shadow: 0 0 0 2px var(--ad6-accent-border), var(--ad6-card-shadow-hover);
+}
+
+.mf-theme-preview b {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: -0.15px;
+}
+
+/* ==========================================================================
+   5. MODAIS, DRAWERS, TOASTS, DEMO STRIP E FOOTER GLOBAL
+   ========================================================================== */
+.modal-backdrop,
+.mf-detail-backdrop {
+  background: var(--overlay);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  animation: mf-fade 160ms ease;
+}
+
+.modal {
+  border-radius: 16px;
+  padding: 24px;
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--ad6-accent);
+  box-shadow: var(--ad6-popover-shadow);
+  animation: ad6ModalIn 210ms var(--ad6-ease-out);
+}
+
+.close-button {
+  transition: background var(--ad6-dur-micro) ease,
+              color var(--ad6-dur-micro) ease,
+              border-color var(--ad6-dur-micro) ease,
+              transform 120ms var(--ad6-ease-out);
+}
+
+.close-button:hover {
+  background: var(--surface2);
+  border-color: var(--subtle);
+  color: var(--text);
+  transform: scale(1.05);
+}
+
+.close-button:active {
+  transform: scale(0.93);
+}
+
+.mf-detail-summary {
+  background: linear-gradient(155deg, var(--surface2) 0%, var(--surface) 100%);
+  border: 1px solid var(--border);
+  border-left: 3.5px solid var(--ad6-accent);
+  border-radius: 12px;
+  padding: 18px;
+}
+
+.mf-detail-summary strong {
+  font-size: 28px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.6px;
+}
+
+.toast {
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  border-left: 3.5px solid var(--ad6-accent);
+  box-shadow: var(--ad6-popover-shadow);
+  animation: ad6ToastSlide 220ms var(--ad6-ease-out);
+}
+
+.demo-strip {
+  border-radius: 11px;
+  border: 1px solid var(--border);
+  border-left: 3.5px solid var(--warning);
+  background: var(--warning-bg);
+  color: var(--warning);
+}
+
+.footer {
+  color: var(--subtle);
+  padding-top: 14px;
+  padding-bottom: 12px;
+  border-top: 1px solid var(--border);
+  font-size: 10.5px;
+  letter-spacing: 0.1px;
+}
+
+/* ==========================================================================
+   6. CALIBRAGEM DESKTOP 1366x768 & 1920x1080 + PREFERS-REDUCED-MOTION
+   ========================================================================== */
+@media (min-width: 1600px) {
+  .main-area {
+    padding: 0 38px 26px;
+  }
+  .mf-workspace-bar {
+    margin: 0 -38px 28px;
+    padding: 12px 38px;
+  }
+  .mf-settings-layout {
+    grid-template-columns: 230px minmax(0, 1fr);
+    gap: 32px;
+  }
+}
+
+@media (max-width: 1400px) and (min-width: 1101px) {
+  .sidebar {
+    width: 216px;
+    min-width: 216px;
+    padding: 18px 12px 14px;
+  }
+  .main-area {
+    padding: 0 24px 20px;
+  }
+  .mf-workspace-bar {
+    margin: 0 -24px 22px;
+    padding: 10px 24px;
+    min-height: 50px;
+  }
+  .topbar {
+    margin-bottom: 20px;
+  }
+  .mf-settings-layout {
+    grid-template-columns: 196px minmax(0, 1fr);
+    gap: 20px;
+  }
+}
+
+@media (max-width: 760px) {
+  .mf-settings-nav {
+    position: static;
+    flex-direction: row;
+    flex-wrap: wrap;
+    padding: 6px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .main-area > .section,
+  .main-area > .overview-content,
+  .main-area > .p-main,
+  .main-area > .mf-intelligence-page,
+  .mf-workspace-bar .mode-tag i,
+  .mf-select-popover,
+  .mf-period-popover,
+  .mf-single-calendar,
+  .mf-source-panel,
+  .mf-quick-menu,
+  .mf-settings-nav,
+  .mf-settings-content .settings-card,
+  .modal-backdrop,
+  .mf-detail-backdrop,
+  .modal,
+  .toast {
+    animation: none !important;
+  }
+
+  .sidebar,
+  .brand .logo-glyph,
+  .sidebar .nav-item,
+  .sidebar .nav-item svg,
+  .demo-btn,
+  .primary-button,
+  .mini-primary,
+  .ghost-button,
+  .outlined-action,
+  .mf-refresh-button,
+  .mf-quick-trigger,
+  .mf-select-trigger,
+  .mf-period-trigger,
+  .mf-date-trigger,
+  .mf-source-trigger,
+  .mf-option,
+  .mf-source-panel button,
+  .mf-quick-menu button,
+  .mf-period-presets button,
+  .mf-custom-toggle,
+  .mf-day,
+  .mf-settings-nav button,
+  .mf-settings-content .settings-card,
+  .mf-settings-content .setting-row,
+  .setting-row,
+  .setting-edit,
+  .mf-theme-preview,
+  .close-button {
+    transition: none !important;
+    transform: none !important;
+  }
+}
