@@ -6,6 +6,17 @@
 
 > **Regra permanente, vinculante para todas as IAs:** **cada mudança relevante DEVE atualizar este roadmap no mesmo PR da implementação**, além do log Markdown específico. Nunca concluir uma entrega apenas com código. Quem não integra pode atualizar o progresso **proposto em sua branch**; somente o integrador confirma o progresso global, gates e publicação.
 
+## U5.1.1 / U5.2 — Cadeia #36 → #37 → #38 e revisão dirigida (11/11/2026)
+
+**Status: IMPLEMENTADAS EM PRs DRAFT; GATES OFICIAIS NÃO EXECUTADOS; NÃO INTEGRADAS.** PR #37 U5.1.1 SHA `5a496313` sobre PR #36 `87fb449c`; PR #38 U5.2 SHA `acad34635` sobre PR #37; comparação: ahead 2 / behind 0. O código da U5.1.1 alinha categorização bancária com natureza efetiva e identifica histórico parcial de 2500 linhas; U5.2 concentra projeção, calendário e simulador com resultado preservado. Os resultados V8 relatados (6/6 + 11/11) **não** são os testes oficiais.
+
+**Correções exigidas antes de integração:** (1) em U5.2 `planSimulatedPurchase()` ainda permite preparar compromisso de `outcome` desatualizado após alterações de inputs — bloquear na UI **e** no método; (2) `pFilterTransactions()` do Planejamento usa sinal do banco, e o calendário soma entradas/saídas por `kind`, sem respeitar `nature='income'/'expense'/'transfer'/'ignore'` — alinhar classificação e tests. **Missão imediata Executor U5.2.1 exclusivamente no PR #38, mais testes e gates**; não iniciar U5.3 ou F1 até fechar P1 e provas. Argon segue I1-B isolada, sem `src/app.ts`/`electron/db.cjs`.
+
+**Ambiente de revisão não possui checkout nem toolchain pinada**: Node 22.16.0/npm 10.9.2 (projeto: Node 22.23.4/npm 10.9.9), github.com sem DNS; portanto `npm ci`, `test:types`, `test:db`, compile, F08, ASAR, Electron **não executados** neste HEAD. [Parecer técnico completo e comandos de gate](ai-context/reviews/2026-11-11-U5-1-1-U5-2-PR37-PR38-ARCHITECT-GATES.md). Proprietário continua adiando CircleCI Windows/EXE; sem merge/main/Cloudflare.
+
+---
+
+
 ## ARGON I1-A.2 — pacote aprovado em revisão dirigida, I1-B autorizada isoladamente (11/11/2026)
 
 **Código I1-A.2 aceito como PACOTE RECUPERÁVEL, NÃO INTEGRADO/NÃO HOMOLOGADO.** ZIP SHA-256 `e056add4d7a7a0975f191d6e117053ae93dddd4a1913b526b11040e6c7206ecb`, patch SHA-256 `891d297cd7a2b48379152290f6cca4cd9f854df21ad23f22e35294f6e2e282e0`; reversão reproduziu os quatro blobs originais da beta.8 `d513c2be`. **6/6 testes comportamentais isolados Node 22.16.0 + TypeScript transpileModule PASS**, com stub de Markdown; sem suíte integral, `tsc` de projeto, Electron ou CI. Três bugs da máquina de estados e busca com >8 candidatos corrigidos nos cenários testados. Nenhum comando de chat livre chama IA e nenhuma confirmação de prévia grava finanças (I2-A/I2-B futuros).
