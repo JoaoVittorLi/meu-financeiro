@@ -48,10 +48,13 @@ test('D1.2 — o CI conserva screenshots sintéticos e instaladores em artefatos
  const smoke=read('scripts/d1-electron-smoke.cjs');
  assert.match(win,/MF_SMOKE_OUTPUT_DIR/);
  assert.match(win,/visual-matrix\.json/);
- assert.match(win,/\$expectedScreenshots\s*=\s*32/);
- assert.match(win,/\$matrix\.Count\s+-ne\s+\$expectedScreenshots/);
- assert.match(win,/\$images\.Count\s+-ne\s+\$expectedScreenshots/);
- assert.match(win,/\$uniqueScreenshots\.Count\s+-ne\s+\$expectedScreenshots/);
+ assert.match(win,/& \$nodeExecutable scripts\/verify-visual-matrix\.cjs \$env:MF_SMOKE_OUTPUT_DIR/);
+ assert.match(win,/Assert-Success 'Matriz Electron de 32 capturas e manifesto JSON'/);
+ assert.doesNotMatch(win,/\$matrix\s*=\s*@\(/);
+ const verifier=read('scripts/verify-visual-matrix.cjs');
+ assert.match(verifier,/JSON\.parse\(fs\.readFileSync\(manifestPath,'utf8'\)\)/);
+ assert.match(verifier,/Array\.isArray\(rows\)/);
+ assert.match(verifier,/pngDimensions\(/);
  assert.match(config,/path: circleci-smoke-artifacts\s+destination: MeuFinanceiro-Desktop-Smoke/);
  assert.match(config,/path: circleci-artifacts\s+destination: MeuFinanceiro-Windows/);
  assert.match(smoke,/Page\.captureScreenshot/);

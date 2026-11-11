@@ -31,7 +31,10 @@ test('D1.3 — Windows valida presença das 32 capturas e seu manifesto',()=>{
  const ps1=fs.readFileSync(path.join(__dirname,'../.circleci/build-windows.ps1'),'utf8');
  assert.match(ps1,/test:electron-smoke/);
  assert.match(ps1,/visual-matrix\.json/);
- assert.match(ps1,/\$expectedScreenshots\s*=\s*32/);
- assert.match(ps1,/\$uniqueScreenshots\.Count -ne \$expectedScreenshots/);
- assert.match(ps1,/Test-Path -LiteralPath \(Join-Path \$env:MF_SMOKE_OUTPUT_DIR \$entry\.screenshot\)/);
+ assert.match(ps1,/& \$nodeExecutable scripts\/verify-visual-matrix\.cjs \$env:MF_SMOKE_OUTPUT_DIR/);
+ assert.match(ps1,/Assert-Success 'Matriz Electron de 32 capturas e manifesto JSON'/);
+ const verifier=fs.readFileSync(path.join(__dirname,'../scripts/verify-visual-matrix.cjs'),'utf8');
+ assert.match(verifier,/expected\.size,32/);
+ assert.match(verifier,/pngDimensions\(path\.join\(directory,row\.screenshot\)\)/);
+ assert.match(verifier,/assert\.deepEqual\(actualNames,seen/);
 });
