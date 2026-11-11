@@ -833,11 +833,12 @@ class App extends React.Component<any,State>{
     if((e.key==='ArrowDown'||e.key==='ArrowUp')&&choices.length){
       e.preventDefault();e.stopPropagation();
       const delta=e.key==='ArrowDown'?1:-1;
-      this.setState({quickCategoryIndex:(index+delta+choices.length)%choices.length});
+      this.setState((prev:State)=>({quickCategoryIndex:(prev.quickCategoryIndex+delta+choices.length)%choices.length}));
       this.quickCategorySearchInput?.focus();return;
     }
-    if(e.key==='Enter'&&e.target===this.quickCategorySearchInput&&choices[index]){
-      e.preventDefault();e.stopPropagation();void this.chooseQuickCategory(choices[index].name);
+    const selected=choices[Math.min(this.state.quickCategoryIndex,choices.length-1)];
+    if(e.key==='Enter'&&e.target===this.quickCategorySearchInput&&selected){
+      e.preventDefault();e.stopPropagation();void this.chooseQuickCategory(selected.name);
     }
   };
   return ReactDOM.createPortal(h('div',{className:'u5-category-layer'},
@@ -1421,7 +1422,7 @@ class App extends React.Component<any,State>{
      partialBank?h('p',{className:'u5-history-limited',role:'status'},
         'Histórico bancário parcial: '+this.state.bank.data.transactions.length+' de '+
         this.state.bank.data.totalTransactions+
-        ' movimentações carregadas. Os resumos bancários e a revisão nesta tela abrangem apenas as linhas carregadas; não representam o histórico completo.'):null,
+        ' movimentações carregadas. Os resumos bancários e a revisão nesta tela abrangem somente as linhas carregadas; não representam o histórico completo.'):null,
      h('div',{className:'u2-scope'},
        h('span',{},'Resumo: '+(source==='bank'?'contas conectadas':'lançamentos manuais')+
          ' · '+summary.count+' registros'+(summary.excluded?' · '+summary.excluded+' transferência(s)/desconsiderada(s) fora dos valores':'')),
