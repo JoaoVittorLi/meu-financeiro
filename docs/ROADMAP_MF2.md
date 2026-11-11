@@ -6,6 +6,19 @@
 
 > **Regra permanente, vinculante para todas as IAs:** **cada mudança relevante DEVE atualizar este roadmap no mesmo PR da implementação**, além do log Markdown específico. Nunca concluir uma entrega apenas com código. Quem não integra pode atualizar o progresso **proposto em sua branch**; somente o integrador confirma o progresso global, gates e publicação.
 
+## I1-B — Review funcional, correções I1-B.1 e integração para Windows Preview (11/11/2026)
+
+**STATUS:** I1-B do Argon entregue em ZIP original SHA-256 `576376b7486cc45eaf87b9d8bfce340b3485c6638d4c11cbba45c0b3cc2abb78`, **ainda sem branch/PR GitHub**. Patches I1-A.2 + I1-B aplicam corretamente desde beta.8. Arquiteto executou **8/8 testes comportamentais originais PASS**, mas encontrou três defeitos novos: (i) metadados de `proposal`/`structuredCard` persistidos sem sanitização aninhada; (ii) resumo local somando banco+manual e incluindo pendentes; (iii) exclusão visual do histórico informa sucesso mesmo se a gravação falhar, ressuscitando conversa no reinício.
+
+**Correção disponível:** patch incremental I1-B.1 e ZIP com três patches + quatro arquivos corrigidos disponíveis na conversa ChatGPT do proprietário (não no GitHub); **11/11 testes comportamentais dirigidos PASS**, transpilação TS sem erros sintáticos. Não equivalem a `tsc` integral, SQLite, F08, ASAR ou Electron GUI. Mensagens agora não prometem cofre criptografado para histórico `localStorage`; para uso com dados sensíveis, avaliar armazenamento protegido do processo principal após o preview.
+
+**Integração:** O PR #38/U5.2.1 avançou ao SHA `d2032bd305aee0203c491c49c0d644d3ac1c696e` e os quatro blobs de Inteligência continuam idênticos à beta.8 `d513c2be`, permitindo aplicar sequencialmente os patches 01→02→03 numa branch **filha do PR #38** sem conflito textual nesses arquivos. Precisa gerar bundle por compilação real (não editar `app/app.js` manualmente) e rodar gates oficiais. Ordem de produto agora é **I1-B corrigida + D1.5.1/U5.1.1/U5.2.1 → Windows Preview** após autorização; **não começar I1-C/ID1/U5.3** antes da prévia.
+
+[Parecer no PR #35](https://github.com/JoaoVittorLi/meu-financeiro/pull/35#issuecomment-6800161967).
+
+---
+
+
 ## U5.1.1 / U5.2 — Cadeia #36 → #37 → #38 e revisão dirigida (11/11/2026)
 
 **Status: IMPLEMENTADAS EM PRs DRAFT; GATES OFICIAIS NÃO EXECUTADOS; NÃO INTEGRADAS.** PR #37 U5.1.1 SHA `5a496313` sobre PR #36 `87fb449c`; PR #38 U5.2 SHA `acad34635` sobre PR #37; comparação: ahead 2 / behind 0. O código da U5.1.1 alinha categorização bancária com natureza efetiva e identifica histórico parcial de 2500 linhas; U5.2 concentra projeção, calendário e simulador com resultado preservado. Os resultados V8 relatados (6/6 + 11/11) **não** são os testes oficiais.
