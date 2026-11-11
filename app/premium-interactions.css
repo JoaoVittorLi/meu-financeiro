@@ -217,3 +217,26 @@
     transition: none !important;
   }
 }
+
+
+/* V1.2 / BUG-02 — detail drawer contrast and internal spacing.
+   Repair the earlier refinement layer's padding:20px 0 without changing its
+   theme-aware surfaces or the V1.1 KPI reveal. */
+.mf-detail-drawer .mf-detail-scroll {
+  min-width: 0;
+  min-height: 0;
+}
+.mf-detail-drawer .mf-detail-section {
+  padding: 16px 18px;
+  min-width: 0;
+  background: var(--surface2);
+  color: var(--text);
+}
+.mf-detail-drawer .mf-detail-section :is(p,b,strong,label) {
+  overflow-wrap: anywhere;
+}
+.mf-detail-drawer .mf-detail-hero {
+  min-width: 0;
+  background: radial-gradient(ellipse at 50% 0%,var(--mf-hover-glow),transparent 75%),var(--surface2);
+  color: var(--text);
+}
