@@ -63,7 +63,7 @@
   transition:transform 210ms var(--mf-hover-ease),box-shadow 210ms var(--mf-hover-ease),border-color 210ms ease,background-color 210ms ease;
 }
 @media (hover:hover) and (pointer:fine){
-  /* Quiet depth for information-only surfaces; no cursor:pointer added. */
+  /* Quiet depth for informational surfaces; never signal an inactive click target. */
   .u1-shell .u1-metric:hover,
   .u2-shell .u2-metric:hover,
   .u3-budgets .mf-budget-summary > div:hover,

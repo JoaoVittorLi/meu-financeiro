@@ -75,9 +75,12 @@ test('B02 opening from category focuses its editor; standard detail retains norm
 
 test('B02 category editor is marked for both origins and remains separate from split editing',()=>{
  assert.match(src,/this\.field\('Categoria principal',h\(StyledSelect,\{className:'mf-transaction-category-select',value:tx\.category/);
- assert.match(src,/h\('b',\{\},'Categoria do lançamento'\),h\(StyledSelect,\{className:'mf-transaction-category-select',value:manual\.category/);
+ assert.match(src,/this\.field\('Categoria do lançamento',h\(StyledSelect,\{/);
+ assert.match(src,/className:'mf-transaction-category-select',value:this\.state\.manualDraft\.category/);
  assert.match(src,/onChange:\(v:string\)=>this\.setBankCategory\(tx,v\)/);
- assert.match(src,/onChange:\(v:string\)=>this\.changeManualCategory\(manual\.id,v\)/);
+ assert.match(src,/onChange:\(v:string\)=>this\.setState\(\{manualDraft:\{\.\.\.this\.state\.manualDraft!,category:v\}\}\)/);
+ assert.match(src,/async saveManualDetail\(id:string\)/);
+ assert.match(src,/onClick:\(\)=>this\.saveManualDetail\(manual\.id\)/);
  assert.match(src,/f\.splitParts\.map\(\(part,i\)=>/);
  assert.match(src,/onChange:\(\)=>this\.toggleSelected\(v\)/);
 });
