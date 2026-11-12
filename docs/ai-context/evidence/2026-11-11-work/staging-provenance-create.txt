@@ -1,0 +1,9 @@
+(node:6) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+> meu-financeiro-desktop@0.9.5-beta.8 provenance:create
+> node scripts/renderer-provenance.cjs create
+
+Renderer documentado: fb56ddc217ae9a500f1ac6421cc9bc3ddfcb5c5b v0.9.5-beta.8; 19 arquivos.
+(node:19) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+(Use `node --trace-warnings ...` to show where the warning was created)

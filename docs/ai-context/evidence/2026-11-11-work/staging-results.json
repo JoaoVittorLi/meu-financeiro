@@ -1,0 +1,46 @@
+{
+  "baseCommit": "ce8dd04669a474957dc2d6c1107bc91d862031fc",
+  "branch": "feat/mf2-work-intelligence-staging-20261112",
+  "environment": "Linux remoto do Work; não Windows JOÃOVITOR",
+  "node": "22.23.4",
+  "npm": "10.9.9",
+  "electron": "45.2.3",
+  "baseline": {
+    "npmCi": "PASS",
+    "types": "PASS",
+    "nodeSqlite": {
+      "pass": 420,
+      "fail": 0
+    },
+    "compile": "PASS",
+    "f08": "PASS",
+    "provenanceCreate": "PASS",
+    "provenanceVerify": "PASS",
+    "asar": {
+      "pass": 1,
+      "fail": 0
+    },
+    "electronSmoke": "BLOCKED: socket Unix não permitido, antes de CDP"
+  },
+  "staging": {
+    "nodeSqlite": {
+      "pass": 431,
+      "fail": 0
+    },
+    "newTests": 11,
+    "screenshots": 0,
+    "windows": "NÃO EXECUTADO",
+    "browserPrototype": "BLOCKED: Chromium local sem socket Unix; navegador cloud não alcança localhost",
+    "types": "PASS",
+    "compile": "PASS",
+    "f08": "PASS",
+    "asar": "1/1 PASS",
+    "provenanceCreate": "PASS",
+    "provenanceVerify": "PASS",
+    "validatedCodeCommit": "fb56ddc"
+  },
+  "syntheticOnly": true,
+  "personalFinancialDataAccessed": false,
+  "installersBuilt": false,
+  "circleciWindowsTriggered": false
+}
