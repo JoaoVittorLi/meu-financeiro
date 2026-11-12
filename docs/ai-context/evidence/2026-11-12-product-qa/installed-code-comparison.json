@@ -1,0 +1,78 @@
+{
+  "classification": "CODE ONLY; no computed-hover or GUI evidence",
+  "installedFileVersion": "0.9.5-beta.8.58 (owner reference)",
+  "installedPackageVersion": "0.9.5-beta.8",
+  "candidateSha": "bc5ccb4f28c2e224614100dff41e03d0c1034fca",
+  "files": [
+    {
+      "path": "app/index.html",
+      "installed": "9fe3795a81e41e5f38471963392595fb4b7ee86c5b0a72639dfc68a3026ece84",
+      "candidate": "a501aef02f8f97d6d959159a523748f9640872cec5784da95a76ffd054057fce",
+      "same": false
+    },
+    {
+      "path": "app/decisions.css",
+      "installed": "2b11ebe231db62fdfb4933886f92ffa278c5b8dc8a52dc25522b9294f872287a",
+      "candidate": "2b11ebe231db62fdfb4933886f92ffa278c5b8dc8a52dc25522b9294f872287a",
+      "same": true
+    },
+    {
+      "path": "app/design-system.css",
+      "installed": "f86e3f2b164025b6f3fd72c5f8b4b5a16e3ecbbec1a9c75404f646b8fc4407d8",
+      "candidate": "f86e3f2b164025b6f3fd72c5f8b4b5a16e3ecbbec1a9c75404f646b8fc4407d8",
+      "same": true
+    },
+    {
+      "path": "app/intelligence-staging.css",
+      "error": "\"app\\intelligence-staging.css\" was not found in this archive"
+    },
+    {
+      "path": "app/intelligence.css",
+      "installed": "08bbbea09238390d6908e7ddd0121a328e116bbbe245b4bb7c5d5c3d39daf903",
+      "candidate": "08bbbea09238390d6908e7ddd0121a328e116bbbe245b4bb7c5d5c3d39daf903",
+      "same": true
+    },
+    {
+      "path": "app/movements-productivity.css",
+      "installed": "e271cdc6c9a78240018012507a2d672cd8dc5cb1f1c9c757a3be11ad3d4439da",
+      "candidate": "e271cdc6c9a78240018012507a2d672cd8dc5cb1f1c9c757a3be11ad3d4439da",
+      "same": true
+    },
+    {
+      "path": "app/operations.css",
+      "installed": "cb8fcf0c3677c2a259dd7ba2151bc5cc52fe9e4e5ef5e7896092ae8864a178ae",
+      "candidate": "cb8fcf0c3677c2a259dd7ba2151bc5cc52fe9e4e5ef5e7896092ae8864a178ae",
+      "same": true
+    },
+    {
+      "path": "app/overview.css",
+      "installed": "22668ee6fc6c3a72c623d29537f4b9a5051c124cac93ed336cfde05263da76eb",
+      "candidate": "22668ee6fc6c3a72c623d29537f4b9a5051c124cac93ed336cfde05263da76eb",
+      "same": true
+    },
+    {
+      "path": "app/planning-productivity.css",
+      "installed": "85c61ce5c4e7bc76643953a9c7f79c8e75b3151bdec083be91a730e9b3c8f9cf",
+      "candidate": "85c61ce5c4e7bc76643953a9c7f79c8e75b3151bdec083be91a730e9b3c8f9cf",
+      "same": true
+    },
+    {
+      "path": "app/premium-interactions.css",
+      "installed": "44dff9b824761b377eda2a4c86e583a366abeb24fef30aba3c44bc2efc1a0f08",
+      "candidate": "44dff9b824761b377eda2a4c86e583a366abeb24fef30aba3c44bc2efc1a0f08",
+      "same": true
+    },
+    {
+      "path": "app/refinement.css",
+      "installed": "6b72a09ac129b6906e11e9225370ad66115aeb5e84dad8fc57c4185bc131e6c8",
+      "candidate": "6b72a09ac129b6906e11e9225370ad66115aeb5e84dad8fc57c4185bc131e6c8",
+      "same": true
+    },
+    {
+      "path": "app/style.css",
+      "installed": "1793478e80a4d3482a78e2f127b5e10e5514fa75a7fe8539295706b108d28287",
+      "candidate": "1793478e80a4d3482a78e2f127b5e10e5514fa75a7fe8539295706b108d28287",
+      "same": true
+    }
+  ]
+}
