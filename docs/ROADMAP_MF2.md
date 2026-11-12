@@ -8,6 +8,9 @@
 ### Checkpoint da frente I — I-P0.1 (implementação isolada, não homologada)
 
 **Status proposto: EM_TESTE / PR Draft em preparação.** O Executor I publicou camada IC v1 de cards Hoje (UI-01…UI-08), IPC de leitura protegida, fatos em centavos inteiros e roteador conversacional determinístico de consultas autorizadas. UI-02 e UI-08 somente em perfil sintético; UI-06 permanece editor manual; nenhuma escrita pessoal por IA. Ver [log técnico I-P0.1](ai-context/logs/2026-11-12-I-P0-1-OPERATIONAL-ADAPTER.md) e [Issue #49](https://github.com/JoaoVittorLi/meu-financeiro/issues/49). Probes V8: adaptador 11/11, facts 6/6; Node/SQLite/TypeScript/IPC Electron, integração ao Redesign e gates de release **pendentes**, sem promoção de CURRENT_STATE.
+### Checkpoint de implementação isolada R — R0/R1 + R2 inicial (12/11/2026)
+
+**Status proposto: EM_TESTE / NÃO HOMOLOGADO.** O Executor R implementou a aba **Inteligência Hoje Premium**, consumidora dos oito contratos IC-v1 do PR #51, com estados/ações/cobertura e visual responsive claro/escuro. Chat principal e lateral recebem o roteador `intelligenceOperationalAsk` no fluxo de leitura local autorizada, com ações de navegação e resposta protegida contra alteração de sessão. UI-02 e UI-08 permanecem sintéticos; nenhum botão de escrita pessoal por IA foi habilitado. O código visual está isolado na branch R, **ainda sem backend da branch I**. Ver [log R](ai-context/logs/2026-11-12-R-PREMIUM-INTELLIGENCE.md) e [Issue #49](https://github.com/JoaoVittorLi/meu-financeiro/issues/49). Sete probes V8 focais passaram; testes completos Node/TypeScript/IPC/Electron/ASAR/F08, screenshot nativa e integração R+I seguem **pendentes**. Nenhum gate global foi promovido.
 
 
 ## Q1 — candidata integrada, execução autorizada em 12/11/2026
