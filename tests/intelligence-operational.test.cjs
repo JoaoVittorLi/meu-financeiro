@@ -102,6 +102,7 @@ test('I-P0.2: chat routes deterministic question to authorized local service',()
  assert.equal(response.intent,'compare');assert.equal(response.uiState,'ready');
  assert.equal(response.facts.deltaExpenseCents,10000);
  assert.equal(response.coverage,'partial_local');
+ assert.equal(response.actions[0].handler,'navigation:transactions');
  assert.equal(calls.length,1);assert.equal(calls[0].input.intent,'compare');
  assert.equal(response.modelCalled,false);
 });
