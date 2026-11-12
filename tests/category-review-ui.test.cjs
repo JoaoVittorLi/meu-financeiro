@@ -62,3 +62,39 @@ test('existing history persistence short-circuits during a review grant, even if
   assert.equal(f.context.intelligencePersistThreads(f.app,[{secret:'must not persist'}]),'');
  }finally{f.close();}
 });
+
+test('changing an account invalidates visible rows, selection and preview before applying filters',async()=>{
+ const f=fixture();try{
+  await authorize(f);const old=f.app.state.categoryReviewQueue.rows;
+  f.app.state.categoryReviewSelected=old.slice(0,1);f.app.state.categoryReviewPreview={id:'old'};
+  f.context.categoryReviewSetFilter(f.app,'accountId','33333333-3333-4333-8333-333333333333');
+  assert.equal(f.app.state.categoryReviewQueue,null);assert.equal(f.app.state.categoryReviewSelected.length,0);assert.equal(f.app.state.categoryReviewPreview,null);
+  assert.match(text(f.context.renderCategoryReview(f.app)),/Filtros alterados/);
+  await click(f,'Aplicar filtros');assert.equal(f.app.state.categoryReviewFiltersDirty,false);
+  assert(f.app.state.categoryReviewQueue.rows.every(r=>r.accountId==='33333333-3333-4333-8333-333333333333'));
+ }finally{f.close();}
+});
+
+test('an in-flight old filter response cannot repopulate the queue or replace a newer result',async()=>{
+ const f=fixture();try{
+  await authorize(f);const api=f.context.desktop,original=api.categoryReviewQueue,pending=[];
+  api.categoryReviewQueue=input=>new Promise(resolve=>pending.push({input,resolve}));
+  const first=f.context.categoryReviewRefresh(f.app);
+  f.context.categoryReviewSetFilter(f.app,'confidence','low');
+  pending[0].resolve(await original(pending[0].input));await first;assert.equal(f.app.state.categoryReviewQueue,null);
+  const older=f.context.categoryReviewRefresh(f.app),newer=f.context.categoryReviewRefresh(f.app);
+  pending[2].resolve({...await original(pending[2].input),marker:'new'});await newer;
+  pending[1].resolve({...await original(pending[1].input),marker:'old'});await older;
+  assert.equal(f.app.state.categoryReviewQueue.marker,'new');
+ }finally{f.close();}
+});
+
+test('page selection excludes manual classifications, splits, low confidence and pending rows; pagination clears it',async()=>{
+ const f=fixture();try{
+  await authorize(f);const rows=f.app.state.categoryReviewQueue.rows;
+  await click(f,'Selecionar elegíveis desta página');
+  assert.deepEqual(Array.from(f.app.state.categoryReviewSelected,r=>r.externalId),rows.filter(r=>r.batchEligible).map(r=>r.externalId));
+  assert(f.app.state.categoryReviewSelected.every(r=>!r.manual&&!r.hasSplits&&r.status==='POSTED'&&r.confidence!=='low'));
+  await f.context.categoryReviewRefresh(f.app);assert.equal(f.app.state.categoryReviewSelected.length,0);
+ }finally{f.close();}
+});

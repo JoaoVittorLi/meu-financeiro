@@ -245,18 +245,24 @@ class CategoryReviewService{
   if(action==='forget')return {action,decisions:this.sql.prepare('SELECT * FROM category_review_decisions ORDER BY suggestion_id').all(),preview:{title:'Apagar preferências de sugestões',summary:'Remove recusas e adiamentos armazenados. Regras ativas, categorias e auditoria financeira serão preservadas.',affected:[]}};
   throw Error('Operação não suportada.');
  }
- confirm(input,owner){
+ validateConfirmation(input,owner){
   this.requireGrant(input,owner);
   if(input.consent!==WRITE_CONSENT)throw Error('Confirme explicitamente a prévia exibida.');
   const prior=this.sql.prepare('SELECT owner,receipt FROM category_review_commands WHERE id=?').get(input.id);
   if(prior){if(prior.owner!==owner)throw Error('Comando pertence a outra origem.');const receipt=JSON.parse(prior.receipt);if(input.digest!==receipt.digest)throw Error('Prévia inválida.');return {...receipt,replayed:true};}
   const p=this.previews.get(input.id);
   if(!p||p.token!==input.token||p.owner!==owner||p.digest!==input.digest)throw Error('Prévia inválida ou expirada.');
+  if(hash(this.operation(p.action,p.payload))!==p.digest)throw Error('Prévia desatualizada. Gere uma nova prévia antes de confirmar.');
+  return null;
+ }
+ confirm(input,owner,backup=null){
+  const replay=this.validateConfirmation(input,owner);if(replay)return replay;
+  const p=this.previews.get(input.id);
   this.sql.exec('BEGIN IMMEDIATE');
   try{
    const operation=this.operation(p.action,p.payload);
    if(hash(operation)!==p.digest)throw Error('Prévia desatualizada. Gere uma nova prévia antes de confirmar.');
-   const receipt=this.execute(operation,p.id,owner);receipt.digest=p.digest;
+   const receipt=this.execute(operation,p.id,owner);receipt.digest=p.digest;if(backup)receipt.backup=backup;
    this.sql.prepare('INSERT INTO category_review_commands(id,owner,action,applied_at,receipt,undo_state) VALUES(?,?,?,?,?,?)').run(p.id,owner,p.action,new Date(this.clock()).toISOString(),JSON.stringify(receipt),['classify','reviewed','rule'].includes(p.action)?'available':'not_applicable');
    this.sql.exec('COMMIT');this.previews.delete(p.id);return receipt;
   }catch(e){this.sql.exec('ROLLBACK');throw e;}

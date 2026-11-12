@@ -1,5 +1,9 @@
 # MEU FINANCEIRO 2.0 — roadmap mestre, backlog e controle de avanço
 
+## Q1 — candidata integrada, execução autorizada em 12/11/2026
+
+Branch `qa/mf2-q1-integrated-windows-20261112`, base #47/d52df2a (contém #46). Homologação nativa com Computer Use em perfil/SQLite sintéticos; oito áreas percorridas, lançamento/planejamento/orçamento gravados e preservados após reinício. Corrigidos: seleção de lista antiga após alteração de filtro, marca recortada em 1366, cor de borda incompatível com alerta do simulador. Central recebe navegação por seção, tabela com altura limitada e cabeçalho fixo, seleção de elegíveis e paginação acima da tabela. Gate de backup verificado antes da confirmação **exclusivamente sintético**, com rollback, concorrência e restore testados. Primeira rodada Node/SQLite: 499 PASS; gate adicional de janela e gates finais/QA do código final pendentes nesta etapa. Escrita pessoal bloqueada; sem build Windows/instalador/merge. Evidências e estado final: [log Q1](ai-context/logs/2026-11-12-Q1-INTEGRATED-QA.md).
+
 **Identificador:** MF2-ROADMAP • **Revisão:** 1.2 — Rodada A documental • **Base verificada:** 09/11/2026  
 **Natureza:** especificação de produto + plano de engenharia + acompanhamento, **não** atestado de funcionalidades entregues.  
 **Contexto multiagente:** [README](ai-context/README.md) · [Estado comprovado](ai-context/CURRENT_STATE.md) · [Guia de análise](ai-context/ANALYSIS_PLAYBOOK.md) · [Catálogo de experiência](ai-context/PRODUCT_BLUEPRINT.md) · [Propostas criativas](ai-context/IDEA_REGISTER.md) · [Protocolo de atualização](ai-context/ROADMAP_UPDATE_RULES.md).

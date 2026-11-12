@@ -1640,6 +1640,9 @@
   letter-spacing: -0.25px;
 }
 
+.u3-simulator .result-badge:is(.unknown,.caution) {border-left-color:var(--warning)}
+.u3-simulator .result-badge.danger {border-left-color:var(--red)}
+
 .u3-simulator .result-badge p {
   font-size: 12px;
   line-height: 1.65;

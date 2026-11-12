@@ -28,6 +28,7 @@ button:disabled{cursor:not-allowed;opacity:.55}
 .shell{background:var(--bg);align-items:flex-start;padding:8px 8px 8px 0;gap:0;min-height:100vh}
 .sidebar{width:232px;min-width:232px;padding:24px 14px 18px;background:var(--nav);border:0;height:calc(100vh - 16px);min-height:0;top:8px}
 .brand{gap:10px;margin:0 10px 32px}.brand-text strong{font-size:16px;font-weight:650;letter-spacing:-.5px}.brand-text small{color:var(--muted);font-size:9px;letter-spacing:.8px}
+@media(min-width:761px){.sidebar .brand{gap:8px;margin-inline:8px 6px}}
 .logo-glyph{background:var(--primary);border:0;box-shadow:none;width:36px;height:36px;border-radius:10px;padding-bottom:8px;gap:3px}
 .logo-glyph .bar{background:var(--on-primary);box-shadow:none;width:5px}.logo-glyph .b1{height:9px}.logo-glyph .b2{height:15px}.logo-glyph .b3{height:22px}
 .side-label,.mf-ai-side-label{color:var(--muted);font-size:10px;font-weight:600;letter-spacing:.8px;margin:22px 12px 8px}
