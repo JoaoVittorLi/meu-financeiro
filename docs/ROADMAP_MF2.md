@@ -5,6 +5,10 @@
 **DECISÃO DO PROPRIETÁRIO / APROVADO_PARA_EXECUCAO, NÃO HOMOLOGADO.** Duas frentes sincronizadas: **R — Redesign Premium**, **I — Inteligência Operacional**. Base de código inicial PR #48 / `810a2bcb7706584474dbd2900cec536ff53edda5`, ainda Draft. Contratos e ownership no [protocolo Fast Lane](ai-context/FAST_LANE_20261112.md), [IC v1](ai-context/INTELLIGENCE_UI_CONTRACT_V1.md), [backlog de fatias verticais](ai-context/FAST_LANE_BACKLOG.md), [brief de design](ai-context/DESIGN_DIRECTION_PREMIUM.md) e [issue #49](https://github.com/JoaoVittorLi/meu-financeiro/issues/49). P0: Inteligência Hoje/Conversar conectados e revisão/categorização utilizável em sintético; depois Movimentações e Visão Geral Premium. Priorizar código útil sobre reauditoria geral. **Status das novas frentes: NÃO_INICIADO nesta publicação documental**. Nenhum merge, Windows CI, produção, gasto API ou escrita IA pessoal autorizados.
 
 
+### Checkpoint de implementação isolada R — R0/R1 + R2 inicial (12/11/2026)
+
+**Status proposto: EM_TESTE / NÃO HOMOLOGADO.** O Executor R implementou a aba **Inteligência Hoje Premium**, consumidora dos oito contratos IC-v1 do PR #51, com estados/ações/cobertura e visual responsive claro/escuro. Chat principal e lateral recebem o roteador `intelligenceOperationalAsk` no fluxo de leitura local autorizada, com ações de navegação e resposta protegida contra alteração de sessão. UI-02 e UI-08 permanecem sintéticos; nenhum botão de escrita pessoal por IA foi habilitado. O código visual está isolado na branch R, **ainda sem backend da branch I**. Ver [log R](ai-context/logs/2026-11-12-R-PREMIUM-INTELLIGENCE.md) e [Issue #49](https://github.com/JoaoVittorLi/meu-financeiro/issues/49). Sete probes V8 focais passaram; testes completos Node/TypeScript/IPC/Electron/ASAR/F08, screenshot nativa e integração R+I seguem **pendentes**. Nenhum gate global foi promovido.
+
 
 ## Q1 — candidata integrada, execução autorizada em 12/11/2026
 
