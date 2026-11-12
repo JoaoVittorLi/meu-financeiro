@@ -1,5 +1,11 @@
 # MEU FINANCEIRO 2.0 — roadmap mestre, backlog e controle de avanço
 
+## Diretriz mais recente — Fast Lane Redesign + Inteligência (12/11/2026)
+
+**DECISÃO DO PROPRIETÁRIO / APROVADO_PARA_EXECUCAO, NÃO HOMOLOGADO.** Duas frentes sincronizadas: **R — Redesign Premium**, **I — Inteligência Operacional**. Base de código inicial PR #48 / `810a2bcb7706584474dbd2900cec536ff53edda5`, ainda Draft. Contratos e ownership no [protocolo Fast Lane](ai-context/FAST_LANE_20261112.md), [IC v1](ai-context/INTELLIGENCE_UI_CONTRACT_V1.md), [backlog de fatias verticais](ai-context/FAST_LANE_BACKLOG.md), [brief de design](ai-context/DESIGN_DIRECTION_PREMIUM.md) e [issue #49](https://github.com/JoaoVittorLi/meu-financeiro/issues/49). P0: Inteligência Hoje/Conversar conectados e revisão/categorização utilizável em sintético; depois Movimentações e Visão Geral Premium. Priorizar código útil sobre reauditoria geral. **Status das novas frentes: NÃO_INICIADO nesta publicação documental**. Nenhum merge, Windows CI, produção, gasto API ou escrita IA pessoal autorizados.
+
+
+
 ## Q1 — candidata integrada, execução autorizada em 12/11/2026
 
 Smoke real IPC também verifica recusa de lote quando uma correção manual introduz divergência no padrão, além do caminho de classificação aceito sem divergência.

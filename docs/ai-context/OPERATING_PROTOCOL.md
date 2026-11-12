@@ -1,5 +1,8 @@
 # Protocolo de desenvolvimento por múltiplos chats/Work
 
+> **Exceção específica aprovada em 12/11/2026:** Fast Lane R/I segue diretamente a Rodada B focal, porque o proprietário aprovou a repriorização e já houve auditorias anteriores. A metodologia abaixo continua válida para outros escopos ou tarefas não aprovadas. Coordenação em [FAST_LANE_20261112](FAST_LANE_20261112.md), [IC v1](INTELLIGENCE_UI_CONTRACT_V1.md) e [issue #49](https://github.com/JoaoVittorLi/meu-financeiro/issues/49).
+
+
 **Objetivo:** permitir concorrência produtiva sem duplicar trabalhos, alterar dados indevidamente ou perder decisões.
 
 ## Papéis
