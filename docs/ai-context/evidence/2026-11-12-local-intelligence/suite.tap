@@ -1,0 +1,3010 @@
+(node:9432) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+> meu-financeiro-desktop@0.9.5-beta.8 test:db
+> npm run compile && node --test tests/*.test.cjs
+
+(node:26628) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:23444) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+> meu-financeiro-desktop@0.9.5-beta.8 compile
+> tsc --project tsconfig.json && node scripts/build-finance-ledger.cjs
+
+(node:19860) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:13388) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+(Use `node --trace-warnings ...` to show where the warning was created)
+TAP version 13
+# (node:19896) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: mem├│rias devem ser explicitamente aprovadas e limitadas; nunca armazenar segredos
+ok 1 - mem├│rias devem ser explicitamente aprovadas e limitadas; nunca armazenar segredos
+  ---
+  duration_ms: 75.0468
+  type: 'test'
+  ...
+# Subtest: cofre se recusa a funcionar sem criptografia, preservando o arquivo
+ok 2 - cofre se recusa a funcionar sem criptografia, preservando o arquivo
+  ---
+  duration_ms: 20.8341
+  type: 'test'
+  ...
+# Subtest: contexto sem consentimento ├® id├¬ntico ├á pergunta fict├¡cia base
+ok 3 - contexto sem consentimento ├® id├¬ntico ├á pergunta fict├¡cia base
+  ---
+  duration_ms: 1.0248
+  type: 'test'
+  ...
+# Subtest: contexto expl├¡cito cont├®m somente notas aprovadas e cabe no or├ºamento
+ok 4 - contexto expl├¡cito cont├®m somente notas aprovadas e cabe no or├ºamento
+  ---
+  duration_ms: 0.9889
+  type: 'test'
+  ...
+# Subtest: limite de mem├│rias: 12 locais, no m├íximo 8 usadas no contexto
+ok 5 - limite de mem├│rias: 12 locais, no m├íximo 8 usadas no contexto
+  ---
+  duration_ms: 440.4144
+  type: 'test'
+  ...
+# Subtest: resposta de teste tem uso registrado sem guardar conversas
+ok 6 - resposta de teste tem uso registrado sem guardar conversas
+  ---
+  duration_ms: 76.5777
+  type: 'test'
+  ...
+# Subtest: nenhuma nota pessoal ├® enviada sem opt-in do usu├írio
+ok 7 - nenhuma nota pessoal ├® enviada sem opt-in do usu├írio
+  ---
+  duration_ms: 71.9514
+  type: 'test'
+  ...
+# (node:11488) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: E4 uses one finance engine and keeps bank and manual histories separate
+ok 8 - E4 uses one finance engine and keeps bank and manual histories separate
+  ---
+  duration_ms: 68.2956
+  type: 'test'
+  ...
+# Subtest: E4 budgets, confirmed commitments and uncertain future income are distinct
+ok 9 - E4 budgets, confirmed commitments and uncertain future income are distinct
+  ---
+  duration_ms: 3.7527
+  type: 'test'
+  ...
+# Subtest: E4 is deterministic, accepts only fixed source names, exposes no raw IDs
+ok 10 - E4 is deterministic, accepts only fixed source names, exposes no raw IDs
+  ---
+  duration_ms: 5.0096
+  type: 'test'
+  ...
+# Subtest: E4 renderer and Electron use a restricted preview bridge with no inference
+ok 11 - E4 renderer and Electron use a restricted preview bridge with no inference
+  ---
+  duration_ms: 4.2822
+  type: 'test'
+  ...
+# (node:25476) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: mesma pol├¡tica de Sol Low/Medium para todos os clientes, sem fallback
+ok 12 - mesma pol├¡tica de Sol Low/Medium para todos os clientes, sem fallback
+  ---
+  duration_ms: 2.104
+  type: 'test'
+  ...
+# Subtest: cofre isolado exige prote├º├úo de credenciais e n├úo grava tokens em claro
+ok 13 - cofre isolado exige prote├º├úo de credenciais e n├úo grava tokens em claro
+  ---
+  duration_ms: 29.8969
+  type: 'test'
+  ...
+# Subtest: OIDC exige assinatura v├ílida, issuer, audience, validade e nonce corretos
+ok 14 - OIDC exige assinatura v├ílida, issuer, audience, validade e nonce corretos
+  ---
+  duration_ms: 88.4536
+  type: 'test'
+  ...
+# Subtest: streaming s├│ aprova resposta.completed e rejeita limite da assinatura
+ok 15 - streaming s├│ aprova resposta.completed e rejeita limite da assinatura
+  ---
+  duration_ms: 3.4447
+  type: 'test'
+  ...
+# Subtest: cliente envia apenas cen├írio fict├¡cio sem consulta obrigat├│ria ao cat├ílogo
+ok 16 - cliente envia apenas cen├írio fict├¡cio sem consulta obrigat├│ria ao cat├ílogo
+  ---
+  duration_ms: 2.0756
+  type: 'test'
+  ...
+# Subtest: verifica├º├úo opcional do cat├ílogo informa falha de rede sem bloquear a an├ílise direta
+ok 17 - verifica├º├úo opcional do cat├ílogo informa falha de rede sem bloquear a an├ílise direta
+  ---
+  duration_ms: 0.9638
+  type: 'test'
+  ...
+# Subtest: falha de rede durante envio ao modelo n├úo repete POST e registra uma tentativa
+ok 18 - falha de rede durante envio ao modelo n├úo repete POST e registra uma tentativa
+  ---
+  duration_ms: 0.8628
+  type: 'test'
+  ...
+# Subtest: falha de rede ao acessar sess├úo n├úo consulta APIs nem consome tentativa
+ok 19 - falha de rede ao acessar sess├úo n├úo consulta APIs nem consome tentativa
+  ---
+  duration_ms: 0.3646
+  type: 'test'
+  ...
+# Subtest: todos os tr├¬s casos fict├¡cios usam somente um POST ao modelo fixo
+ok 20 - todos os tr├¬s casos fict├¡cios usam somente um POST ao modelo fixo
+  ---
+  duration_ms: 1.4362
+  type: 'test'
+  ...
+# Subtest: modelo indispon├¡vel no POST n├úo provoca fallback nem repeti├º├úo
+ok 21 - modelo indispon├¡vel no POST n├úo provoca fallback nem repeti├º├úo
+  ---
+  duration_ms: 0.7783
+  type: 'test'
+  ...
+# (node:19224) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: WORK-AUDIT-01 split 60/40 matches authoritative ledger, total 100 and one record
+ok 22 - WORK-AUDIT-01 split 60/40 matches authoritative ledger, total 100 and one record
+  ---
+  duration_ms: 29.9501
+  type: 'test'
+  ...
+# Subtest: split absent falls back exactly to original category without rounding
+ok 23 - split absent falls back exactly to original category without rounding
+  ---
+  duration_ms: 0.8421
+  type: 'test'
+  ...
+# Subtest: split empty falls back exactly to original category without rounding
+ok 24 - split empty falls back exactly to original category without rounding
+  ---
+  duration_ms: 1.293
+  type: 'test'
+  ...
+# Subtest: split wrongSum falls back exactly to original category without rounding
+ok 25 - split wrongSum falls back exactly to original category without rounding
+  ---
+  duration_ms: 2.3625
+  type: 'test'
+  ...
+# Subtest: split fractional falls back exactly to original category without rounding
+ok 26 - split fractional falls back exactly to original category without rounding
+  ---
+  duration_ms: 0.7518
+  type: 'test'
+  ...
+# Subtest: split zero falls back exactly to original category without rounding
+ok 27 - split zero falls back exactly to original category without rounding
+  ---
+  duration_ms: 0.7401
+  type: 'test'
+  ...
+# Subtest: split negative falls back exactly to original category without rounding
+ok 28 - split negative falls back exactly to original category without rounding
+  ---
+  duration_ms: 0.6228
+  type: 'test'
+  ...
+# Subtest: split string falls back exactly to original category without rounding
+ok 29 - split string falls back exactly to original category without rounding
+  ---
+  duration_ms: 0.536
+  type: 'test'
+  ...
+# Subtest: split nullPart falls back exactly to original category without rounding
+ok 30 - split nullPart falls back exactly to original category without rounding
+  ---
+  duration_ms: 1.3292
+  type: 'test'
+  ...
+# Subtest: one-cent remainder is preserved and duplicate split categories count a transaction once
+ok 31 - one-cent remainder is preserved and duplicate split categories count a transaction once
+  ---
+  duration_ms: 1.7605
+  type: 'test'
+  ...
+# Subtest: outdated split and invalid fractional original amount never invent cents
+ok 32 - outdated split and invalid fractional original amount never invent cents
+  ---
+  duration_ms: 1.2919
+  type: 'test'
+  ...
+# Subtest: pending/transfer/ignore excluded and income not split into expenses
+ok 33 - pending/transfer/ignore excluded and income not split into expenses
+  ---
+  duration_ms: 1.2175
+  type: 'test'
+  ...
+# Subtest: manual source, demo mode and partial loaded bank cache stay separate
+ok 34 - manual source, demo mode and partial loaded bank cache stay separate
+  ---
+  duration_ms: 1.541
+  type: 'test'
+  ...
+# Subtest: multi-year loaded records remain included and original arrays are untouched
+ok 35 - multi-year loaded records remain included and original arrays are untouched
+  ---
+  duration_ms: 0.5384
+  type: 'test'
+  ...
+# Subtest: bundled engine output is identical to shared ESM and contains no duplicate maintained rules
+ok 36 - bundled engine output is identical to shared ESM and contains no duplicate maintained rules
+  ---
+  duration_ms: 82.9332
+  type: 'test'
+  ...
+# Subtest: F08 rejects a canonical ledger changed after bundling
+ok 37 - F08 rejects a canonical ledger changed after bundling
+  ---
+  duration_ms: 5431.9134
+  type: 'test'
+  ...
+# (node:21360) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: Intelig├¬ncia tem rota pr├│pria sem substituir Simular compra
+ok 38 - Intelig├¬ncia tem rota pr├│pria sem substituir Simular compra
+  ---
+  duration_ms: 5.3869
+  type: 'test'
+  ...
+# Subtest: Interface nova mant├®m Hoje, Conversar e Plano de a├º├úo como pr├®via
+ok 39 - Interface nova mant├®m Hoje, Conversar e Plano de a├º├úo como pr├®via
+  ---
+  duration_ms: 1.0194
+  type: 'test'
+  ...
+# Subtest: Pr├®via n├úo consulta o banco nem chama provedores de IA
+ok 40 - Pr├®via n├úo consulta o banco nem chama provedores de IA
+  ---
+  duration_ms: 1.6181
+  type: 'test'
+  ...
+# Subtest: Painel contextual oferece perguntas para todas as seis ├íreas
+ok 41 - Painel contextual oferece perguntas para todas as seis ├íreas
+  ---
+  duration_ms: 2.6215
+  type: 'test'
+  ...
+# Subtest: Configura├º├Áes n├úo coletam segredos no renderer
+ok 42 - Configura├º├Áes n├úo coletam segredos no renderer
+  ---
+  duration_ms: 1.3601
+  type: 'test'
+  ...
+# Subtest: I1-A.1 m├║ltiplos lan├ºamentos: nunca seleciona iFood para mercado e exige sele├º├úo expl├¡cita ordenada na ambiguidade
+ok 43 - I1-A.1 m├║ltiplos lan├ºamentos: nunca seleciona iFood para mercado e exige sele├º├úo expl├¡cita ordenada na ambiguidade
+  ---
+  duration_ms: 973.5536
+  type: 'test'
+  ...
+# Subtest: I1-A.1 identificadores iguais em contas diferentes e datas relativas (ontem / hoje)
+ok 44 - I1-A.1 identificadores iguais em contas diferentes e datas relativas (ontem / hoje)
+  ---
+  duration_ms: 287.65
+  type: 'test'
+  ...
+# Subtest: I1-A.1 rejeita categoria inexistente ou incompat├¡vel com a natureza do lan├ºamento
+ok 45 - I1-A.1 rejeita categoria inexistente ou incompat├¡vel com a natureza do lan├ºamento
+  ---
+  duration_ms: 196.0786
+  type: 'test'
+  ...
+# Subtest: I1-A.1 confirma├º├úo de pr├®via e nega├º├úo n├úo realizam escrita financeira e detectam estado desatualizado
+ok 46 - I1-A.1 confirma├º├úo de pr├®via e nega├º├úo n├úo realizam escrita financeira e detectam estado desatualizado
+  ---
+  duration_ms: 175.7985
+  type: 'test'
+  ...
+# Subtest: I1-A.2 continuidade entre drawer e aba principal e distin├º├úo dos 4 estados de conversa├º├úo (Problemas A, B e C)
+ok 47 - I1-A.2 continuidade entre drawer e aba principal e distin├º├úo dos 4 estados de conversa├º├úo (Problemas A, B e C)
+  ---
+  duration_ms: 302.5868
+  type: 'test'
+  ...
+# Subtest: I1-A.2 desambigua├º├úo extensa (> 8 candidatos): preserva todos os candidatos, orienta refinamento e permite expandir/selecionar o 10┬║ item
+ok 48 - I1-A.2 desambigua├º├úo extensa (> 8 candidatos): preserva todos os candidatos, orienta refinamento e permite expandir/selecionar o 10┬║ item
+  ---
+  duration_ms: 205.444
+  type: 'test'
+  ...
+# Subtest: I1-B hist├│rico compartilhado: persist├¬ncia segura ap├│s reinicializa├º├úo, agrupamento por data, busca, sele├º├úo e exclus├úo confirmada
+ok 49 - I1-B hist├│rico compartilhado: persist├¬ncia segura ap├│s reinicializa├º├úo, agrupamento por data, busca, sele├º├úo e exclus├úo confirmada
+  ---
+  duration_ms: 250.775
+  type: 'test'
+  ...
+# Subtest: I1-B isolamento de perfis (Pessoal vs Demonstra├º├úo) e tratamento de erro de armazenamento
+ok 50 - I1-B isolamento de perfis (Pessoal vs Demonstra├º├úo) e tratamento de erro de armazenamento
+  ---
+  duration_ms: 232.5818
+  type: 'test'
+  ...
+# Subtest: I1-B.1 recusa exclus├úo quando storage falha: n├úo confirma falso sucesso
+ok 51 - I1-B.1 recusa exclus├úo quando storage falha: n├úo confirma falso sucesso
+  ---
+  duration_ms: 345.2361
+  type: 'test'
+  ...
+# Subtest: I1-B.1 sanitiza├º├úo alcan├ºa metadados aninhados de proposta e tabela
+ok 52 - I1-B.1 sanitiza├º├úo alcan├ºa metadados aninhados de proposta e tabela
+  ---
+  duration_ms: 118.2579
+  type: 'test'
+  ...
+# Subtest: I1-B.1 resumo local evita dupla contagem banco + manual e exclui pendentes
+ok 53 - I1-B.1 resumo local evita dupla contagem banco + manual e exclui pendentes
+  ---
+  duration_ms: 128.6801
+  type: 'test'
+  ...
+# (node:29484) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: appearance follows the system until the user chooses an explicit theme, then persists it
+ok 54 - appearance follows the system until the user chooses an explicit theme, then persists it
+  ---
+  duration_ms: 1.7765
+  type: 'test'
+  ...
+# Subtest: invalid stored preference and unavailable storage preserve a usable theme
+ok 55 - invalid stored preference and unavailable storage preserve a usable theme
+  ---
+  duration_ms: 3.2681
+  type: 'test'
+  ...
+# (node:20744) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: B3 ÔÇö each target percentage yields exactly one uniform RGB color
+ok 56 - B3 ÔÇö each target percentage yields exactly one uniform RGB color
+  ---
+  duration_ms: 4.592
+  type: 'test'
+  ...
+# Subtest: B3 ÔÇö continuous interpolation without attention-threshold color jumps
+ok 57 - B3 ÔÇö continuous interpolation without attention-threshold color jumps
+  ---
+  duration_ms: 2.1906
+  type: 'test'
+  ...
+# Subtest: B3 ÔÇö raw percentage grows past 100 while only rendered arc is clamped
+ok 58 - B3 ÔÇö raw percentage grows past 100 while only rendered arc is clamped
+  ---
+  duration_ms: 0.4064
+  type: 'test'
+  ...
+# Subtest: B3 ÔÇö limit zero, missing, infinite or negative produce no invented gauge
+ok 59 - B3 ÔÇö limit zero, missing, infinite or negative produce no invented gauge
+  ---
+  duration_ms: 0.1652
+  type: 'test'
+  ...
+# Subtest: B3 ÔÇö accepts integer cents and does not round cents before progress
+ok 60 - B3 ÔÇö accepts integer cents and does not round cents before progress
+  ---
+  duration_ms: 0.2576
+  type: 'test'
+  ...
+# Subtest: B3 ÔÇö real renderBudgets at 0% has one arc and true label
+ok 61 - B3 ÔÇö real renderBudgets at 0% has one arc and true label
+  ---
+  duration_ms: 2.1948
+  type: 'test'
+  ...
+# Subtest: B3 ÔÇö real renderBudgets at 10% has one arc and true label
+ok 62 - B3 ÔÇö real renderBudgets at 10% has one arc and true label
+  ---
+  duration_ms: 0.5976
+  type: 'test'
+  ...
+# Subtest: B3 ÔÇö real renderBudgets at 25% has one arc and true label
+ok 63 - B3 ÔÇö real renderBudgets at 25% has one arc and true label
+  ---
+  duration_ms: 0.6976
+  type: 'test'
+  ...
+# Subtest: B3 ÔÇö real renderBudgets at 50% has one arc and true label
+ok 64 - B3 ÔÇö real renderBudgets at 50% has one arc and true label
+  ---
+  duration_ms: 0.8326
+  type: 'test'
+  ...
+# Subtest: B3 ÔÇö real renderBudgets at 70% has one arc and true label
+ok 65 - B3 ÔÇö real renderBudgets at 70% has one arc and true label
+  ---
+  duration_ms: 1.5128
+  type: 'test'
+  ...
+# Subtest: B3 ÔÇö real renderBudgets at 90% has one arc and true label
+ok 66 - B3 ÔÇö real renderBudgets at 90% has one arc and true label
+  ---
+  duration_ms: 0.7139
+  type: 'test'
+  ...
+# Subtest: B3 ÔÇö real renderBudgets at 99% has one arc and true label
+ok 67 - B3 ÔÇö real renderBudgets at 99% has one arc and true label
+  ---
+  duration_ms: 0.3655
+  type: 'test'
+  ...
+# Subtest: B3 ÔÇö real renderBudgets at 100% has one arc and true label
+ok 68 - B3 ÔÇö real renderBudgets at 100% has one arc and true label
+  ---
+  duration_ms: 0.676
+  type: 'test'
+  ...
+# Subtest: B3 ÔÇö real renderBudgets at 106% has one arc and true label
+ok 69 - B3 ÔÇö real renderBudgets at 106% has one arc and true label
+  ---
+  duration_ms: 1.6432
+  type: 'test'
+  ...
+# Subtest: B3 ÔÇö real renderBudgets at 150% has one arc and true label
+ok 70 - B3 ÔÇö real renderBudgets at 150% has one arc and true label
+  ---
+  duration_ms: 0.6029
+  type: 'test'
+  ...
+# Subtest: B3 ÔÇö exact cents remain accessible and real over-limit amount is shown
+ok 71 - B3 ÔÇö exact cents remain accessible and real over-limit amount is shown
+  ---
+  duration_ms: 0.3697
+  type: 'test'
+  ...
+# Subtest: B3 ÔÇö explicit zero limit has neither invented percent nor progress arc
+ok 72 - B3 ÔÇö explicit zero limit has neither invented percent nor progress arc
+  ---
+  duration_ms: 0.5622
+  type: 'test'
+  ...
+# Subtest: B3 ÔÇö expenses without a registered limit keep the original define-limit action
+ok 73 - B3 ÔÇö expenses without a registered limit keep the original define-limit action
+  ---
+  duration_ms: 0.7258
+  type: 'test'
+  ...
+# Subtest: B3 ÔÇö income categories continue using their original horizontal share bar
+ok 74 - B3 ÔÇö income categories continue using their original horizontal share bar
+  ---
+  duration_ms: 0.3764
+  type: 'test'
+  ...
+# Subtest: B3 ÔÇö the selected bank snapshot renders exactly like a manual snapshot
+ok 75 - B3 ÔÇö the selected bank snapshot renders exactly like a manual snapshot
+  ---
+  duration_ms: 0.4243
+  type: 'test'
+  ...
+# Subtest: B3 ÔÇö edit limit button still opens existing editor without writing budget data
+ok 76 - B3 ÔÇö edit limit button still opens existing editor without writing budget data
+  ---
+  duration_ms: 0.44
+  type: 'test'
+  ...
+# Subtest: B3 ÔÇö stylesheet keeps one semicircle fill and reduced motion support
+ok 77 - B3 ÔÇö stylesheet keeps one semicircle fill and reduced motion support
+  ---
+  duration_ms: 0.977
+  type: 'test'
+  ...
+# (node:21736) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:21736) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# Subtest: categorias padr├úo distinguem receitas, gastos e entradas/sa├¡das sem mudar natureza de Pix
+ok 78 - categorias padr├úo distinguem receitas, gastos e entradas/sa├¡das sem mudar natureza de Pix
+  ---
+  duration_ms: 11.6231
+  type: 'test'
+  ...
+# Subtest: tipo personalizado persiste e tipo padr├úo ├® imut├ível sem perder registros
+ok 79 - tipo personalizado persiste e tipo padr├úo ├® imut├ível sem perder registros
+  ---
+  duration_ms: 4.8459
+  type: 'test'
+  ...
+# Subtest: limite zero expl├¡cito e sem limite s├úo diferentes ap├│s salvar e reabrir
+ok 80 - limite zero expl├¡cito e sem limite s├úo diferentes ap├│s salvar e reabrir
+  ---
+  duration_ms: 486.8186
+  type: 'test'
+  ...
+# Subtest: migra├º├úo interpreta zeros legados como n├úo cadastrados e preserva limites existentes
+ok 81 - migra├º├úo interpreta zeros legados como n├úo cadastrados e preserva limites existentes
+  ---
+  duration_ms: 934.9178
+  type: 'test'
+  ...
+# (node:25588) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:25588) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# Subtest: categorias personalizadas persistem e or├ºamentos din├ómicos sobrevivem reinicializa├º├úo
+ok 82 - categorias personalizadas persistem e or├ºamentos din├ómicos sobrevivem reinicializa├º├úo
+  ---
+  duration_ms: 806.9168
+  type: 'test'
+  ...
+# Subtest: regras aplicam em banco j├í sincronizado e s├úo insens├¡veis a acentos e mai├║sculas
+ok 83 - regras aplicam em banco j├í sincronizado e s├úo insens├¡veis a acentos e mai├║sculas
+  ---
+  duration_ms: 7.3995
+  type: 'test'
+  ...
+# Subtest: menor prioridade vence e regra mais antiga desempata
+ok 84 - menor prioridade vence e regra mais antiga desempata
+  ---
+  duration_ms: 5.2949
+  type: 'test'
+  ...
+# Subtest: corre├º├úo individual prevalece sobre regra e sincroniza├º├úo repetida
+ok 85 - corre├º├úo individual prevalece sobre regra e sincroniza├º├úo repetida
+  ---
+  duration_ms: 8.1138
+  type: 'test'
+  ...
+# Subtest: renomear categoria customizada preserva manual, or├ºamento, regras e overrides
+ok 86 - renomear categoria customizada preserva manual, or├ºamento, regras e overrides
+  ---
+  duration_ms: 14.9633
+  type: 'test'
+  ...
+# Subtest: categorias em uso n├úo s├úo exclu├¡das; categorias padr├úo s├úo protegidas
+ok 87 - categorias em uso n├úo s├úo exclu├¡das; categorias padr├úo s├úo protegidas
+  ---
+  duration_ms: 8.1067
+  type: 'test'
+  ...
+# Subtest: corrup├º├úo de regra/categoria ├® recusada sem afetar dados
+ok 88 - corrup├º├úo de regra/categoria ├® recusada sem afetar dados
+  ---
+  duration_ms: 4.9954
+  type: 'test'
+  ...
+# Subtest: escopos separados para banco e lan├ºamentos manuais
+ok 89 - escopos separados para banco e lan├ºamentos manuais
+  ---
+  duration_ms: 3.1971
+  type: 'test'
+  ...
+# Subtest: restaura├º├úo JSON legada com categoria n├úo cadastrada recria categoria sem perder dados
+ok 90 - restaura├º├úo JSON legada com categoria n├úo cadastrada recria categoria sem perder dados
+  ---
+  duration_ms: 4.6941
+  type: 'test'
+  ...
+# Subtest: migra├º├úo aditiva a partir de banco anterior preserva dados, Pluggy e saldo
+ok 91 - migra├º├úo aditiva a partir de banco anterior preserva dados, Pluggy e saldo
+  ---
+  duration_ms: 1483.73
+  type: 'test'
+  ...
+# (node:19508) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: B01 portal selector stays above detail drawer and AI overlay
+ok 92 - B01 portal selector stays above detail drawer and AI overlay
+  ---
+  duration_ms: 1.7598
+  type: 'test'
+  ...
+# Subtest: B01 one Escape closes only selector and preserves second Escape for dialog
+ok 93 - B01 one Escape closes only selector and preserves second Escape for dialog
+  ---
+  duration_ms: 229.0383
+  type: 'test'
+  ...
+# Subtest: B01 keyboard ArrowDown and Enter select category exactly once
+ok 94 - B01 keyboard ArrowDown and Enter select category exactly once
+  ---
+  duration_ms: 95.1739
+  type: 'test'
+  ...
+# Subtest: B01 menu handles keydown from options in the React portal
+ok 95 - B01 menu handles keydown from options in the React portal
+  ---
+  duration_ms: 57.949
+  type: 'test'
+  ...
+# Subtest: B01 scroll in owner drawer repositions instead of losing the menu
+ok 96 - B01 scroll in owner drawer repositions instead of losing the menu
+  ---
+  duration_ms: 24.3357
+  type: 'test'
+  ...
+# (node:21384) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: Windows comparison does not transmit local rows and uses exact Preview endpoint
+ok 97 - Windows comparison does not transmit local rows and uses exact Preview endpoint
+  ---
+  duration_ms: 25.1369
+  type: 'test'
+  ...
+# Subtest: Windows rejects missing or mismatched server fingerprints
+ok 98 - Windows rejects missing or mismatched server fingerprints
+  ---
+  duration_ms: 1.8911
+  type: 'test'
+  ...
+# (node:840) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: all 22 SQLite tables have a unique migration responsibility
+ok 99 - all 22 SQLite tables have a unique migration responsibility
+  ---
+  duration_ms: 2.8015
+  type: 'test'
+  ...
+# Subtest: transfer routing preserves historical gaps, user overrides, and blocks premature cutover
+ok 100 - transfer routing preserves historical gaps, user overrides, and blocks premature cutover
+  ---
+  duration_ms: 0.4094
+  type: 'test'
+  ...
+# (node:28864) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:28864) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# Subtest: E1 audits only read access and returns status codes without raw account data
+ok 101 - E1 audits only read access and returns status codes without raw account data
+  ---
+  duration_ms: 30.3623
+  type: 'test'
+  ...
+# Subtest: bank references need a verified personal snapshot and zero missing IDs
+ok 102 - bank references need a verified personal snapshot and zero missing IDs
+  ---
+  duration_ms: 12.6446
+  type: 'test'
+  ...
+# Subtest: E1 catches category changes and undated amount mismatches without clearing local history
+ok 103 - E1 catches category changes and undated amount mismatches without clearing local history
+  ---
+  duration_ms: 14.4808
+  type: 'test'
+  ...
+# Subtest: E1 will not treat HTML login redirects or invalid audit contracts as success
+ok 104 - E1 will not treat HTML login redirects or invalid audit contracts as success
+  ---
+  duration_ms: 11.716
+  type: 'test'
+  ...
+# Subtest: E1 rejects a truly incomplete local planning schema before contacting Cloudflare
+ok 105 - E1 rejects a truly incomplete local planning schema before contacting Cloudflare
+  ---
+  duration_ms: 2.6433
+  type: 'test'
+  ...
+# Subtest: different account pair order yields identical cryptographic identity digest
+ok 106 - different account pair order yields identical cryptographic identity digest
+  ---
+  duration_ms: 0.3837
+  type: 'test'
+  ...
+# (node:31356) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:31356) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# Subtest: desktop schema audit recognizes complete v0.9.4 SQLite structure
+ok 107 - desktop schema audit recognizes complete v0.9.4 SQLite structure
+  ---
+  duration_ms: 7.5003
+  type: 'test'
+  ...
+# Subtest: preflight refuses a partially initialized desktop schema
+ok 108 - preflight refuses a partially initialized desktop schema
+  ---
+  duration_ms: 9.1274
+  type: 'test'
+  ...
+# Subtest: preflight never accepts an object without a SQLite query interface
+ok 109 - preflight never accepts an object without a SQLite query interface
+  ---
+  duration_ms: 1.2625
+  type: 'test'
+  ...
+# (node:14352) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:14352) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# Subtest: migration manifest fully maps every persisted v0.9.4 table to primary keys
+ok 110 - migration manifest fully maps every persisted v0.9.4 table to primary keys
+  ---
+  duration_ms: 2.8386
+  type: 'test'
+  ...
+# Subtest: contract matches real SQLite schema without exporting any information
+ok 111 - contract matches real SQLite schema without exporting any information
+  ---
+  duration_ms: 12.4344
+  type: 'test'
+  ...
+# Subtest: contract fails closed with missing planning tables
+ok 112 - contract fails closed with missing planning tables
+  ---
+  duration_ms: 5.376
+  type: 'test'
+  ...
+# Subtest: contract reports unexpected primary-key shape without reading records
+ok 113 - contract reports unexpected primary-key shape without reading records
+  ---
+  duration_ms: 15.6874
+  type: 'test'
+  ...
+# (node:31716) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:31716) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# Subtest: desktop backup manifest is offline, deterministic, read-only and detects record changes
+ok 114 - desktop backup manifest is offline, deterministic, read-only and detects record changes
+  ---
+  duration_ms: 1032.5649
+  type: 'test'
+  ...
+# Subtest: manifest rejects a missing file and a malformed SQLite backup
+ok 115 - manifest rejects a missing file and a malformed SQLite backup
+  ---
+  duration_ms: 6.2341
+  type: 'test'
+  ...
+# (node:18624) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:18624) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# Subtest: single-click cloud preparation performs native SQLite backup and 22-table audit without network
+ok 116 - single-click cloud preparation performs native SQLite backup and 22-table audit without network
+  ---
+  duration_ms: 997.1859
+  type: 'test'
+  ...
+# Subtest: single-click cloud preparation refuses incompatible or missing planning schema and never enables cloud
+ok 117 - single-click cloud preparation refuses incompatible or missing planning schema and never enables cloud
+  ---
+  duration_ms: 92.1394
+  type: 'test'
+  ...
+# Subtest: status ignores unrelated backups and never falsely claims cloud activation
+ok 118 - status ignores unrelated backups and never falsely claims cloud activation
+  ---
+  duration_ms: 10.5556
+  type: 'test'
+  ...
+# (node:30928) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:30928) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# Subtest: Windows bankOverview daily totals equal the shared PWA source-separated ledger
+ok 119 - Windows bankOverview daily totals equal the shared PWA source-separated ledger
+  ---
+  duration_ms: 41.6075
+  type: 'test'
+  ...
+# (node:672) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:672) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# Subtest: primeiro espelhamento n├úo publica diferen├ºas locais anteriores nem repete envio no retry
+ok 120 - primeiro espelhamento n├úo publica diferen├ºas locais anteriores nem repete envio no retry
+  ---
+  duration_ms: 1635.19
+  type: 'test'
+  ...
+# Subtest: cloud edits flow to Windows; local safe edits sync back without changing money or settlement
+ok 121 - cloud edits flow to Windows; local safe edits sync back without changing money or settlement
+  ---
+  duration_ms: 593.6207
+  type: 'test'
+  ...
+# Subtest: concurrent local and mobile edits are preserved with conflict, not silently overwritten
+ok 122 - concurrent local and mobile edits are preserved with conflict, not silently overwritten
+  ---
+  duration_ms: 608.8889
+  type: 'test'
+  ...
+# Subtest: initial baseline prevents preexisting local edits from being overwritten by the server
+ok 123 - initial baseline prevents preexisting local edits from being overwritten by the server
+  ---
+  duration_ms: 332.1483
+  type: 'test'
+  ...
+# Subtest: authentication failures never erase or overwrite local SQLite finance
+ok 124 - authentication failures never erase or overwrite local SQLite finance
+  ---
+  duration_ms: 1052.6849
+  type: 'test'
+  ...
+# (node:30344) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:30344) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# Subtest: creates full 17-table personal snapshot from immutable backup with exact values and no bank rows
+ok 125 - creates full 17-table personal snapshot from immutable backup with exact values and no bank rows
+  ---
+  duration_ms: 1210.1288
+  type: 'test'
+  ...
+# Subtest: refuses snapshot if backup misses planning tables or has invalid sqlite bytes
+ok 126 - refuses snapshot if backup misses planning tables or has invalid sqlite bytes
+  ---
+  duration_ms: 714.8791
+  type: 'test'
+  ...
+# Subtest: snapshot summary rejects malicious objects or wrong version
+ok 127 - snapshot summary rejects malicious objects or wrong version
+  ---
+  duration_ms: 0.4577
+  type: 'test'
+  ...
+# (node:29200) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:29200) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# Subtest: owner-approved desktop uploads 207 real-shaped fictional records with session cookies, replays safely, and resumes after app restart
+ok 128 - owner-approved desktop uploads 207 real-shaped fictional records with session cookies, replays safely, and resumes after app restart
+  ---
+  duration_ms: 216.6248
+  type: 'test'
+  ...
+# Subtest: without explicit owner consent the sender refuses any request, even when identity exists
+ok 129 - without explicit owner consent the sender refuses any request, even when identity exists
+  ---
+  duration_ms: 12.3354
+  type: 'test'
+  ...
+# Subtest: preview returns Access denial, never sends personal rows to another origin
+ok 130 - preview returns Access denial, never sends personal rows to another origin
+  ---
+  duration_ms: 6.9269
+  type: 'test'
+  ...
+# (node:31304) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: desktop preview identity probe sends only cookie-backed GET to pinned preview
+ok 131 - desktop preview identity probe sends only cookie-backed GET to pinned preview
+  ---
+  duration_ms: 8.9044
+  type: 'test'
+  ...
+# Subtest: login navigation limits trusted Access origins and denies browser escape
+ok 132 - login navigation limits trusted Access origins and denies browser escape
+  ---
+  duration_ms: 1.1742
+  type: 'test'
+  ...
+# Subtest: Cloudflare account sign-in popups work only for pinned HTTPS IdP domains
+ok 133 - Cloudflare account sign-in popups work only for pinned HTTPS IdP domains
+  ---
+  duration_ms: 0.6447
+  type: 'test'
+  ...
+# Subtest: Electron no longer runs Google OAuth in an embedded BrowserWindow
+ok 134 - Electron no longer runs Google OAuth in an embedded BrowserWindow
+  ---
+  duration_ms: 1.0744
+  type: 'test'
+  ...
+# Subtest: identity probe rejects Access redirect, invalid password, html login page or financial mode
+ok 135 - identity probe rejects Access redirect, invalid password, html login page or financial mode
+  ---
+  duration_ms: 1.4037
+  type: 'test'
+  ...
+# Subtest: desktop quarantined fake import uses POST with fixed no-finance body, cookies confined to Electron
+ok 136 - desktop quarantined fake import uses POST with fixed no-finance body, cookies confined to Electron
+  ---
+  duration_ms: 0.9903
+  type: 'test'
+  ...
+# Subtest: desktop quarantine probe refuses responses claiming real import or financial activation
+ok 137 - desktop quarantine probe refuses responses claiming real import or financial activation
+  ---
+  duration_ms: 4.23
+  type: 'test'
+  ...
+# (node:26108) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: system-browser flow opens exact preview URL and securely returns assertions via loopback POST
+ok 138 - system-browser flow opens exact preview URL and securely returns assertions via loopback POST
+  ---
+  duration_ms: 97.362
+  type: 'test'
+  ...
+# Subtest: invalid nonce and wrong Origin cannot pair until the valid caller confirms
+ok 139 - invalid nonce and wrong Origin cannot pair until the valid caller confirms
+  ---
+  duration_ms: 21.0276
+  type: 'test'
+  ...
+# Subtest: browser form fallback works without CORS and contains no assertions in URL
+ok 140 - browser form fallback works without CORS and contains no assertions in URL
+  ---
+  duration_ms: 9.876
+  type: 'test'
+  ...
+# Subtest: main process can cancel pairing without producing or persisting any credential
+ok 141 - main process can cancel pairing without producing or persisting any credential
+  ---
+  duration_ms: 76.0171
+  type: 'test'
+  ...
+# Subtest: system-browser callback rejects forged credentials before accepting any session
+ok 142 - system-browser callback rejects forged credentials before accepting any session
+  ---
+  duration_ms: 19.1811
+  type: 'test'
+  ...
+# (node:15476) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:15476) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# Subtest: desktop creates 207-row migration plan and sends to fake Cloudflare batch adapter with 80-row retry
+ok 143 - desktop creates 207-row migration plan and sends to fake Cloudflare batch adapter with 80-row retry
+  ---
+  duration_ms: 152.0412
+  type: 'test'
+  ...
+# Subtest: the Windows real-data sender is blocked unconditionally, regardless of any environment variable
+ok 144 - the Windows real-data sender is blocked unconditionally, regardless of any environment variable
+  ---
+  duration_ms: 0.894
+  type: 'test'
+  ...
+# Subtest: transport refuses extra large records and will not leak rows through summaries
+ok 145 - transport refuses extra large records and will not leak rows through summaries
+  ---
+  duration_ms: 8.5708
+  type: 'test'
+  ...
+# Subtest: fake adapter rejects server claiming cloud activation or returning an unverified receipt
+ok 146 - fake adapter rejects server claiming cloud activation or returning an unverified receipt
+  ---
+  duration_ms: 4.395
+  type: 'test'
+  ...
+# (node:21284) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:21284) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# Subtest: D1.2 ÔÇö duplicate bank transaction IDs in one batch are rejected atomically
+ok 147 - D1.2 ÔÇö duplicate bank transaction IDs in one batch are rejected atomically
+  ---
+  duration_ms: 679.0437
+  type: 'test'
+  ...
+# Subtest: D1.2 ÔÇö duplicate accounts in one import never silently overwrite balance
+ok 148 - D1.2 ÔÇö duplicate accounts in one import never silently overwrite balance
+  ---
+  duration_ms: 638.6737
+  type: 'test'
+  ...
+# Subtest: D1.2 ÔÇö same account ID from another Pluggy item cannot hijack prior owner
+ok 149 - D1.2 ÔÇö same account ID from another Pluggy item cannot hijack prior owner
+  ---
+  duration_ms: 320.7509
+  type: 'test'
+  ...
+# Subtest: D1.2 ÔÇö same external transaction ID in distinct accounts remains valid
+ok 150 - D1.2 ÔÇö same external transaction ID in distinct accounts remains valid
+  ---
+  duration_ms: 398.5306
+  type: 'test'
+  ...
+# (node:25704) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:25704) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# Subtest: D1.2 categoria renomeada conserva regras, decis├Áes banc├írias e split, or├ºamento e planejamento
+ok 151 - D1.2 categoria renomeada conserva regras, decis├Áes banc├írias e split, or├ºamento e planejamento
+  ---
+  duration_ms: 972.5821
+  type: 'test'
+  ...
+# (node:14080) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:14080) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# Subtest: D1.2 ÔÇö limite expl├¡cito R$0 impede exclus├úo de categoria e persiste ap├│s reiniciar
+ok 152 - D1.2 ÔÇö limite expl├¡cito R$0 impede exclus├úo de categoria e persiste ap├│s reiniciar
+  ---
+  duration_ms: 1048.458
+  type: 'test'
+  ...
+# Subtest: D1.2 ÔÇö edi├º├úo manual, v├¡nculo, saldo desconhecido e sync idempotente sobrevivem a rein├¡cio
+ok 153 - D1.2 ÔÇö edi├º├úo manual, v├¡nculo, saldo desconhecido e sync idempotente sobrevivem a rein├¡cio
+  ---
+  duration_ms: 448.2717
+  type: 'test'
+  ...
+# Subtest: D1.2 ÔÇö parcelas editadas, backup/restore e rejei├º├úo de backup inv├ílido preservam hist├│rico
+ok 154 - D1.2 ÔÇö parcelas editadas, backup/restore e rejei├º├úo de backup inv├ílido preservam hist├│rico
+  ---
+  duration_ms: 554.166
+  type: 'test'
+  ...
+# (node:30032) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: D1.2 ÔÇö one Electron instance lock after isolated profile and no profile override in packaged builds
+ok 155 - D1.2 ÔÇö one Electron instance lock after isolated profile and no profile override in packaged builds
+  ---
+  duration_ms: 2.0508
+  type: 'test'
+  ...
+# Subtest: D1.2 ÔÇö Windows pipeline executes the real Electron smoke without bypassing existing gates
+ok 156 - D1.2 ÔÇö Windows pipeline executes the real Electron smoke without bypassing existing gates
+  ---
+  duration_ms: 4.1352
+  type: 'test'
+  ...
+# Subtest: D1.2 ÔÇö smoke tests DOM navigation and persist/restart through preload IPC, not no-op success
+ok 157 - D1.2 ÔÇö smoke tests DOM navigation and persist/restart through preload IPC, not no-op success
+  ---
+  duration_ms: 0.8826
+  type: 'test'
+  ...
+# Subtest: D1.2 ÔÇö o CI conserva screenshots sint├®ticos e instaladores em artefatos diferentes
+ok 158 - D1.2 ÔÇö o CI conserva screenshots sint├®ticos e instaladores em artefatos diferentes
+  ---
+  duration_ms: 2.1756
+  type: 'test'
+  ...
+# (node:25052) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: D1.2 Premium ÔÇö A-D1 e A-D2/A-D3 preservam Vis├úo Geral, Movimenta├º├Áes e Planejamento
+ok 159 - D1.2 Premium ÔÇö A-D1 e A-D2/A-D3 preservam Vis├úo Geral, Movimenta├º├Áes e Planejamento
+  ---
+  duration_ms: 1.1997
+  type: 'test'
+  ...
+# Subtest: D1.2 Premium ÔÇö A-D4 preserva Or├ºamentos, Contas e Simulador para A-D5
+ok 160 - D1.2 Premium ÔÇö A-D4 preserva Or├ºamentos, Contas e Simulador para A-D5
+  ---
+  duration_ms: 0.735
+  type: 'test'
+  ...
+# Subtest: D1.2 Premium ÔÇö CSS premium ├® carregado, reduz anima├º├Áes e n├úo aponta para rede
+ok 161 - D1.2 Premium ÔÇö CSS premium ├® carregado, reduz anima├º├Áes e n├úo aponta para rede
+  ---
+  duration_ms: 0.7617
+  type: 'test'
+  ...
+# (node:27656) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: D1.2 ÔÇö sem sinalizador n├úo altera perfil real
+ok 162 - D1.2 ÔÇö sem sinalizador n├úo altera perfil real
+  ---
+  duration_ms: 0.9672
+  type: 'test'
+  ...
+# Subtest: D1.2 ÔÇö perfil tempor├írio em Electron de desenvolvimento ├® isolado
+ok 163 - D1.2 ÔÇö perfil tempor├írio em Electron de desenvolvimento ├® isolado
+  ---
+  duration_ms: 12.0391
+  type: 'test'
+  ...
+# Subtest: D1.2 ÔÇö nega bin├írio empacotado, caminho gen├®rico, relativo e produ├º├úo
+ok 164 - D1.2 ÔÇö nega bin├írio empacotado, caminho gen├®rico, relativo e produ├º├úo
+  ---
+  duration_ms: 7.9652
+  type: 'test'
+  ...
+# Subtest: D1.2 ÔÇö o Electron s├│ solicita single-instance lock uma vez
+ok 165 - D1.2 ÔÇö o Electron s├│ solicita single-instance lock uma vez
+  ---
+  duration_ms: 2.7399
+  type: 'test'
+  ...
+# (node:12076) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:12076) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# Subtest: D1.3 ÔÇö 32 capturas v├ílidas cobrem duas resolu├º├Áes, temas, movimento e 8 ├íreas
+ok 166 - D1.3 ÔÇö 32 capturas v├ílidas cobrem duas resolu├º├Áes, temas, movimento e 8 ├íreas
+  ---
+  duration_ms: 159.6755
+  type: 'test'
+  ...
+# Subtest: D1.4 ÔÇö scrollbar cl├íssica de 17px n├úo reduz artificialmente o viewport emulado
+ok 167 - D1.4 ÔÇö scrollbar cl├íssica de 17px n├úo reduz artificialmente o viewport emulado
+  ---
+  duration_ms: 133.7108
+  type: 'test'
+  ...
+# Subtest: D1.4 ÔÇö aguarda a aplica├º├úo ass├¡ncrona das m├®tricas CDP antes de capturar
+ok 168 - D1.4 ÔÇö aguarda a aplica├º├úo ass├¡ncrona das m├®tricas CDP antes de capturar
+  ---
+  duration_ms: 384.4464
+  type: 'test'
+  ...
+# Subtest: D1.4 ÔÇö viewport genuinamente incorreto reprova com diagn├│stico e sem manifesto
+ok 169 - D1.4 ÔÇö viewport genuinamente incorreto reprova com diagn├│stico e sem manifesto
+  ---
+  duration_ms: 2210.3642
+  type: 'test'
+  ...
+# Subtest: D1.2 ÔÇö overflow horizontal reprova matriz, n├úo publica resultado de sucesso
+ok 170 - D1.2 ÔÇö overflow horizontal reprova matriz, n├úo publica resultado de sucesso
+  ---
+  duration_ms: 3.557
+  type: 'test'
+  ...
+# Subtest: D1.2 ÔÇö captura corrompida reprova matriz e n├úo gera manifesto
+ok 171 - D1.2 ÔÇö captura corrompida reprova matriz e n├úo gera manifesto
+  ---
+  duration_ms: 2.3807
+  type: 'test'
+  ...
+# (node:17808) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:17808) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# Subtest: D1.3 ÔÇö smoke cobre todas as oito ├íreas Windows sem duplica├º├úo
+ok 172 - D1.3 ÔÇö smoke cobre todas as oito ├íreas Windows sem duplica├º├úo
+  ---
+  duration_ms: 41.6746
+  type: 'test'
+  ...
+# Subtest: D1.3 ÔÇö matriz visual cobre dois tamanhos, temas claro/escuro e movimento reduzido
+ok 173 - D1.3 ÔÇö matriz visual cobre dois tamanhos, temas claro/escuro e movimento reduzido
+  ---
+  duration_ms: 1.4189
+  type: 'test'
+  ...
+# Subtest: D1.4 ÔÇö smoke completo exige todas as 32 imagens ap├│s os testes IPC
+ok 174 - D1.4 ÔÇö smoke completo exige todas as 32 imagens ap├│s os testes IPC
+  ---
+  duration_ms: 2.1617
+  type: 'test'
+  ...
+# Subtest: D1.3 ÔÇö Windows valida presen├ºa das 32 capturas e seu manifesto
+ok 175 - D1.3 ÔÇö Windows valida presen├ºa das 32 capturas e seu manifesto
+  ---
+  duration_ms: 4.9877
+  type: 'test'
+  ...
+# (node:9856) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:9856) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# Subtest: D1.4.3 ÔÇö 32 PNGs e 32 registros JSON passam com barra de rolagem cl├íssica
+ok 176 - D1.4.3 ÔÇö 32 PNGs e 32 registros JSON passam com barra de rolagem cl├íssica
+  ---
+  duration_ms: 139.5662
+  type: 'test'
+  ...
+# Subtest: D1.4.3 ÔÇö array JSON aninhado (32 imagens, 1 registro) ├® rejeitado
+ok 177 - D1.4.3 ÔÇö array JSON aninhado (32 imagens, 1 registro) ├® rejeitado
+  ---
+  duration_ms: 120.5024
+  type: 'test'
+  ...
+# Subtest: D1.4.3 ÔÇö objeto JSON em vez de array ├® rejeitado
+ok 178 - D1.4.3 ÔÇö objeto JSON em vez de array ├® rejeitado
+  ---
+  duration_ms: 106.6842
+  type: 'test'
+  ...
+# Subtest: D1.4.3 ÔÇö entrada duplicada reprova sem reduzir a contagem
+ok 179 - D1.4.3 ÔÇö entrada duplicada reprova sem reduzir a contagem
+  ---
+  duration_ms: 80.2759
+  type: 'test'
+  ...
+# Subtest: D1.4.3 ÔÇö uma linha ausente reprova mesmo com 32 PNGs
+ok 180 - D1.4.3 ÔÇö uma linha ausente reprova mesmo com 32 PNGs
+  ---
+  duration_ms: 80.4825
+  type: 'test'
+  ...
+# Subtest: D1.4.3 ÔÇö PNG f├¡sico ausente reprova
+ok 181 - D1.4.3 ÔÇö PNG f├¡sico ausente reprova
+  ---
+  duration_ms: 84.0677
+  type: 'test'
+  ...
+# Subtest: D1.4.3 ÔÇö PNG adicional inesperado reprova
+ok 182 - D1.4.3 ÔÇö PNG adicional inesperado reprova
+  ---
+  duration_ms: 68.6443
+  type: 'test'
+  ...
+# Subtest: D1.4.3 ÔÇö assinatura PNG inv├ílida reprova
+ok 183 - D1.4.3 ÔÇö assinatura PNG inv├ílida reprova
+  ---
+  duration_ms: 60.7516
+  type: 'test'
+  ...
+# Subtest: D1.4.3 ÔÇö PNG com dimens├Áes erradas reprova
+ok 184 - D1.4.3 ÔÇö PNG com dimens├Áes erradas reprova
+  ---
+  duration_ms: 72.915
+  type: 'test'
+  ...
+# Subtest: D1.4.3 ÔÇö metadado da p├ígina incorreto reprova
+ok 185 - D1.4.3 ÔÇö metadado da p├ígina incorreto reprova
+  ---
+  duration_ms: 65.4402
+  type: 'test'
+  ...
+# Subtest: D1.4.3 ÔÇö viewport reportado errado reprova
+ok 186 - D1.4.3 ÔÇö viewport reportado errado reprova
+  ---
+  duration_ms: 53.889
+  type: 'test'
+  ...
+# Subtest: D1.4.3 ÔÇö overflow horizontal continua bloqueando o release
+ok 187 - D1.4.3 ÔÇö overflow horizontal continua bloqueando o release
+  ---
+  duration_ms: 73.8281
+  type: 'test'
+  ...
+# Subtest: D1.4.3 ÔÇö manifesto malformado reprova
+ok 188 - D1.4.3 ÔÇö manifesto malformado reprova
+  ---
+  duration_ms: 110.7746
+  type: 'test'
+  ...
+# Subtest: D1.4.3 ÔÇö CLI Node retorna sucesso para manifesto completo
+ok 189 - D1.4.3 ÔÇö CLI Node retorna sucesso para manifesto completo
+  ---
+  duration_ms: 364.6586
+  type: 'test'
+  ...
+# Subtest: D1.4.3 ÔÇö CLI Node retorna falha e impede build com JSON incorreto
+ok 190 - D1.4.3 ÔÇö CLI Node retorna falha e impede build com JSON incorreto
+  ---
+  duration_ms: 278.2714
+  type: 'test'
+  ...
+# (node:30132) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: D1.5.1 ÔÇö real brasileiro com centavos e agrupamento v├ílido
+ok 191 - D1.5.1 ÔÇö real brasileiro com centavos e agrupamento v├ílido
+  ---
+  duration_ms: 1.2613
+  type: 'test'
+  ...
+# Subtest: D1.5.1 ÔÇö tr├¬s casas, expoente, sinal, nota├º├úo internacional e separadores amb├¡guos s├úo inv├ílidos
+ok 192 - D1.5.1 ÔÇö tr├¬s casas, expoente, sinal, nota├º├úo internacional e separadores amb├¡guos s├úo inv├ílidos
+  ---
+  duration_ms: 1.0375
+  type: 'test'
+  ...
+# Subtest: D1.5.1 ÔÇö zero, negativos e limites de seguran├ºa s├úo rejeitados
+ok 193 - D1.5.1 ÔÇö zero, negativos e limites de seguran├ºa s├úo rejeitados
+  ---
+  duration_ms: 0.4946
+  type: 'test'
+  ...
+# Subtest: D1.5.1 ÔÇö ambos os caminhos humanos usam o parser estrito
+ok 194 - D1.5.1 ÔÇö ambos os caminhos humanos usam o parser estrito
+  ---
+  duration_ms: 0.4143
+  type: 'test'
+  ...
+# Subtest: D1.5.1 ÔÇö parser legado de CSV, or├ºamentos e backups n├úo foi substitu├¡do
+ok 195 - D1.5.1 ÔÇö parser legado de CSV, or├ºamentos e backups n├úo foi substitu├¡do
+  ---
+  duration_ms: 0.2607
+  type: 'test'
+  ...
+# (node:27532) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:27532) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# Subtest: D1.5.1 / SQLite ÔÇö v├¡nculo que existe s├│ no banco impede exclus├úo e rollback ├® total
+ok 196 - D1.5.1 / SQLite ÔÇö v├¡nculo que existe s├│ no banco impede exclus├úo e rollback ├® total
+  ---
+  duration_ms: 472.4915
+  type: 'test'
+  ...
+# Subtest: D1.5.1 / SQLite ÔÇö v├¡nculo real impede alterar valor mesmo com renderer desatualizado
+ok 197 - D1.5.1 / SQLite ÔÇö v├¡nculo real impede alterar valor mesmo com renderer desatualizado
+  ---
+  duration_ms: 340.6283
+  type: 'test'
+  ...
+# Subtest: D1.5.1 / SQLite ÔÇö altera├º├úo de data dentro e fora da toler├óncia tamb├®m exige desvincular
+ok 198 - D1.5.1 / SQLite ÔÇö altera├º├úo de data dentro e fora da toler├óncia tamb├®m exige desvincular
+  ---
+  duration_ms: 383.2506
+  type: 'test'
+  ...
+# Subtest: D1.5.1 / SQLite ÔÇö tipo n├úo pode ser modificado por persist├¬ncia gen├®rica
+ok 199 - D1.5.1 / SQLite ÔÇö tipo n├úo pode ser modificado por persist├¬ncia gen├®rica
+  ---
+  duration_ms: 272.395
+  type: 'test'
+  ...
+# Subtest: D1.5.1 / SQLite ÔÇö descri├º├úo/categoria s├úo edit├íveis sem alterar identidade banc├íria
+ok 200 - D1.5.1 / SQLite ÔÇö descri├º├úo/categoria s├úo edit├íveis sem alterar identidade banc├íria
+  ---
+  duration_ms: 839.8247
+  type: 'test'
+  ...
+# Subtest: D1.5.1 / SQLite ÔÇö uma nova inst├óncia l├¬ o v├¡nculo persistido e o bloqueio continua
+ok 201 - D1.5.1 / SQLite ÔÇö uma nova inst├óncia l├¬ o v├¡nculo persistido e o bloqueio continua
+  ---
+  duration_ms: 759.5759
+  type: 'test'
+  ...
+# Subtest: D1.5.1 / SQLite ÔÇö perfil demo isolado n├úo ├® bloqueado por v├¡nculos reais
+ok 202 - D1.5.1 / SQLite ÔÇö perfil demo isolado n├úo ├® bloqueado por v├¡nculos reais
+  ---
+  duration_ms: 927.2725
+  type: 'test'
+  ...
+# Subtest: D1.5.1 / SQLite ÔÇö desvincula├º├úo expl├¡cita libera a exclus├úo sem apagar o extrato
+ok 203 - D1.5.1 / SQLite ÔÇö desvincula├º├úo expl├¡cita libera a exclus├úo sem apagar o extrato
+  ---
+  duration_ms: 659.8519
+  type: 'test'
+  ...
+# Subtest: D1.5.1 / SQLite ÔÇö backup SQLite preserva v├¡nculos; abrir c├│pia permite restaura├º├úo autorizada
+ok 204 - D1.5.1 / SQLite ÔÇö backup SQLite preserva v├¡nculos; abrir c├│pia permite restaura├º├úo autorizada
+  ---
+  duration_ms: 839.1751
+  type: 'test'
+  ...
+# Subtest: D1.5.1 / SQLite ÔÇö importa├º├úo JSON destrutiva via save exige desvincula├º├úo, sem limpeza silenciosa
+ok 205 - D1.5.1 / SQLite ÔÇö importa├º├úo JSON destrutiva via save exige desvincula├º├úo, sem limpeza silenciosa
+  ---
+  duration_ms: 655.186
+  type: 'test'
+  ...
+# (node:9212) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:9212) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# Subtest: D1.5 ÔÇö novas categorias padr├úo usam paleta n├úo roxa sem mudar significado financeiro
+ok 206 - D1.5 ÔÇö novas categorias padr├úo usam paleta n├úo roxa sem mudar significado financeiro
+  ---
+  duration_ms: 3.3729
+  type: 'test'
+  ...
+# Subtest: D1.5 ÔÇö altera├º├Áes de cores j├í gravadas permanecem ap├│s reabrir banco
+ok 207 - D1.5 ÔÇö altera├º├Áes de cores j├í gravadas permanecem ap├│s reabrir banco
+  ---
+  duration_ms: 669.0469
+  type: 'test'
+  ...
+# Subtest: D1.5 ÔÇö o cat├ílogo de categorias n├úo migra dados, altera apenas INSERT OR IGNORE inicial
+ok 208 - D1.5 ÔÇö o cat├ílogo de categorias n├úo migra dados, altera apenas INSERT OR IGNORE inicial
+  ---
+  duration_ms: 6.6085
+  type: 'test'
+  ...
+# Subtest: D1.5 ÔÇö novos swatches omitiram roxos, mas o editor continua aceitando HEX personalizado
+ok 209 - D1.5 ÔÇö novos swatches omitiram roxos, mas o editor continua aceitando HEX personalizado
+  ---
+  duration_ms: 4.8839
+  type: 'test'
+  ...
+# (node:3272) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: D1.5 ÔÇö premium interactions CSS is loaded after every existing page stylesheet
+ok 210 - D1.5 ÔÇö premium interactions CSS is loaded after every existing page stylesheet
+  ---
+  duration_ms: 3.331
+  type: 'test'
+  ...
+# Subtest: D1.5 ÔÇö generic hover remains on non-semantic surfaces; KPI cards use semantic shared frame
+ok 211 - D1.5 ÔÇö generic hover remains on non-semantic surfaces; KPI cards use semantic shared frame
+  ---
+  duration_ms: 0.5966
+  type: 'test'
+  ...
+# Subtest: D1.5 ÔÇö interactions cover all eight areas without blanket .card:hover
+ok 212 - D1.5 ÔÇö interactions cover all eight areas without blanket .card:hover
+  ---
+  duration_ms: 0.4276
+  type: 'test'
+  ...
+# Subtest: D1.5 ÔÇö preserves budget warning strokes and informational card pointer semantics
+ok 213 - D1.5 ÔÇö preserves budget warning strokes and informational card pointer semantics
+  ---
+  duration_ms: 0.5372
+  type: 'test'
+  ...
+# Subtest: D1.5 ÔÇö reduced motion stops transforms and transitions while focus remains visible
+ok 214 - D1.5 ÔÇö reduced motion stops transforms and transitions while focus remains visible
+  ---
+  duration_ms: 0.18
+  type: 'test'
+  ...
+# Subtest: D1.5 ÔÇö hover effects use pointer precision and do not affect touch scrolling
+ok 215 - D1.5 ÔÇö hover effects use pointer precision and do not affect touch scrolling
+  ---
+  duration_ms: 0.1225
+  type: 'test'
+  ...
+# Subtest: D1.5 ÔÇö light and dark detail sections use current theme tokens, not legacy violet RGB
+ok 216 - D1.5 ÔÇö light and dark detail sections use current theme tokens, not legacy violet RGB
+  ---
+  duration_ms: 0.7121
+  type: 'test'
+  ...
+# Subtest: D1.5 ÔÇö expense and income use semantic color tokens, no legacy purple literals in planning SVG
+ok 217 - D1.5 ÔÇö expense and income use semantic color tokens, no legacy purple literals in planning SVG
+  ---
+  duration_ms: 0.2345
+  type: 'test'
+  ...
+# Subtest: D1.5 ÔÇö manual editor has theme-aware danger and linked warnings
+ok 218 - D1.5 ÔÇö manual editor has theme-aware danger and linked warnings
+  ---
+  duration_ms: 0.5923
+  type: 'test'
+  ...
+# Subtest: D1.5 ÔÇö linked manual calendar cannot be opened, date validation rejects rollover
+ok 219 - D1.5 ÔÇö linked manual calendar cannot be opened, date validation rejects rollover
+  ---
+  duration_ms: 0.7866
+  type: 'test'
+  ...
+# Subtest: D1.5 ÔÇö CSS selectors retain balanced rule delimiters and no external resources
+ok 220 - D1.5 ÔÇö CSS selectors retain balanced rule delimiters and no external resources
+  ---
+  duration_ms: 5.2886
+  type: 'test'
+  ...
+# (node:3824) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: D1.5 ÔÇö editar descri├º├úo, data, valor em centavos e categoria preserva ID e outros registros
+ok 221 - D1.5 ÔÇö editar descri├º├úo, data, valor em centavos e categoria preserva ID e outros registros
+  ---
+  duration_ms: 7.6289
+  type: 'test'
+  ...
+# Subtest: D1.5 ÔÇö rejeita data imposs├¡vel com calend├írio real e n├úo grava
+ok 222 - D1.5 ÔÇö rejeita data imposs├¡vel com calend├írio real e n├úo grava
+  ---
+  duration_ms: 0.6968
+  type: 'test'
+  ...
+# Subtest: D1.5 ÔÇö rejeita valor zero, negativo e n├úo num├®rico sem persistir
+ok 223 - D1.5 ÔÇö rejeita valor zero, negativo e n├úo num├®rico sem persistir
+  ---
+  duration_ms: 0.3769
+  type: 'test'
+  ...
+# Subtest: D1.5 ÔÇö rejeita descri├º├úo vazia e categoria incompat├¡vel
+ok 224 - D1.5 ÔÇö rejeita descri├º├úo vazia e categoria incompat├¡vel
+  ---
+  duration_ms: 0.3113
+  type: 'test'
+  ...
+# Subtest: D1.5 ÔÇö lan├ºamento vinculado n├úo pode alterar valor ou data
+ok 225 - D1.5 ÔÇö lan├ºamento vinculado n├úo pode alterar valor ou data
+  ---
+  duration_ms: 0.8497
+  type: 'test'
+  ...
+# Subtest: D1.5 ÔÇö vinculado permite mudar descri├º├úo/categoria sem tocar extrato
+ok 226 - D1.5 ÔÇö vinculado permite mudar descri├º├úo/categoria sem tocar extrato
+  ---
+  duration_ms: 0.4601
+  type: 'test'
+  ...
+# Subtest: D1.5 ÔÇö n├úo grava com seletor de banco, ID trocado ou estado ocupado
+ok 227 - D1.5 ÔÇö n├úo grava com seletor de banco, ID trocado ou estado ocupado
+  ---
+  duration_ms: 0.2948
+  type: 'test'
+  ...
+# Subtest: D1.5 ÔÇö falha de persist├¬ncia n├úo fecha drawer nem altera dados
+ok 228 - D1.5 ÔÇö falha de persist├¬ncia n├úo fecha drawer nem altera dados
+  ---
+  duration_ms: 0.4338
+  type: 'test'
+  ...
+# Subtest: D1.5 ÔÇö excluir lan├ºamento manual exige confirma├º├úo e preserva outras linhas
+ok 229 - D1.5 ÔÇö excluir lan├ºamento manual exige confirma├º├úo e preserva outras linhas
+  ---
+  duration_ms: 0.7708
+  type: 'test'
+  ...
+# Subtest: D1.5 ÔÇö exclus├úo vinculada bloqueada antes de qualquer confirma├º├úo
+ok 230 - D1.5 ÔÇö exclus├úo vinculada bloqueada antes de qualquer confirma├º├úo
+  ---
+  duration_ms: 0.7089
+  type: 'test'
+  ...
+# Subtest: D1.5 ÔÇö cancelar exclus├úo n├úo modifica banco e n├úo fecha drawer
+ok 231 - D1.5 ÔÇö cancelar exclus├úo n├úo modifica banco e n├úo fecha drawer
+  ---
+  duration_ms: 0.4396
+  type: 'test'
+  ...
+# Subtest: D1.5 ÔÇö erros de persist├¬ncia n├úo fingem exclus├úo conclu├¡da
+ok 232 - D1.5 ÔÇö erros de persist├¬ncia n├úo fingem exclus├úo conclu├¡da
+  ---
+  duration_ms: 0.2003
+  type: 'test'
+  ...
+# Subtest: D1.5 ÔÇö drawer vis├¡vel oferece edi├º├úo completa, cancelamento e exclus├úo, sem alterar banco
+ok 233 - D1.5 ÔÇö drawer vis├¡vel oferece edi├º├úo completa, cancelamento e exclus├úo, sem alterar banco
+  ---
+  duration_ms: 1.3597
+  type: 'test'
+  ...
+# (node:20988) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: per├¡odos r├ípidos sempre incluem a data de hoje e usam calend├írio local
+ok 234 - per├¡odos r├ípidos sempre incluem a data de hoje e usam calend├írio local
+  ---
+  duration_ms: 1.9362
+  type: 'test'
+  ...
+# Subtest: intervalos personalizados inclusivos e inv├ílidos retornam fallback seguro
+ok 235 - intervalos personalizados inclusivos e inv├ílidos retornam fallback seguro
+  ---
+  duration_ms: 0.6339
+  type: 'test'
+  ...
+# Subtest: totais por intervalo n├úo misturam origens e excluem pend├¬ncias banc├írias
+ok 236 - totais por intervalo n├úo misturam origens e excluem pend├¬ncias banc├írias
+  ---
+  duration_ms: 2.4884
+  type: 'test'
+  ...
+# Subtest: UI n├úo usa seletores ou calend├írio nativos Windows
+ok 237 - UI n├úo usa seletores ou calend├írio nativos Windows
+  ---
+  duration_ms: 0.7167
+  type: 'test'
+  ...
+# Subtest: transfer├¬ncias e valores desconsiderados n├úo entram nas receitas ou despesas; divis├úo preserva totais
+ok 238 - transfer├¬ncias e valores desconsiderados n├úo entram nas receitas ou despesas; divis├úo preserva totais
+  ---
+  duration_ms: 0.3949
+  type: 'test'
+  ...
+# (node:22480) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: U3 budget signals distinguish zero limits, no limits and no spending without inflating coverage
+ok 239 - U3 budget signals distinguish zero limits, no limits and no spending without inflating coverage
+  ---
+  duration_ms: 31.5225
+  type: 'test'
+  ...
+# Subtest: U3 budget attention filters and limit actions only change presentation until saving
+ok 240 - U3 budget attention filters and limit actions only change presentation until saving
+  ---
+  duration_ms: 78.572
+  type: 'test'
+  ...
+# Subtest: U3 account freshness uses the received timestamp, handles unknown/zero balances and scopes counters by account
+ok 241 - U3 account freshness uses the received timestamp, handles unknown/zero balances and scopes counters by account
+  ---
+  duration_ms: 4.9777
+  type: 'test'
+  ...
+# Subtest: U3 account actions filter by exact account identity and never expose connection secrets in cards
+ok 242 - U3 account actions filter by exact account identity and never expose connection secrets in cards
+  ---
+  duration_ms: 21.4892
+  type: 'test'
+  ...
+# Subtest: U3 comparison freezes A, preserves a visibly stale B on input edits and keeps finance data
+ok 243 - U3 comparison freezes A, preserves a visibly stale B on input edits and keeps finance data
+  ---
+  duration_ms: 6.5903
+  type: 'test'
+  ...
+# Subtest: U3 ignores late simulation responses after edits, navigation or a newer request
+ok 244 - U3 ignores late simulation responses after edits, navigation or a newer request
+  ---
+  duration_ms: 6.3783
+  type: 'test'
+  ...
+# Subtest: U3 chart shows canonical month-end values, handles negative balances and exposes every month in data table
+ok 245 - U3 chart shows canonical month-end values, handles negative balances and exposes every month in data table
+  ---
+  duration_ms: 12.0536
+  type: 'test'
+  ...
+# Subtest: U3 first-due-date is offered only for daily simulations and profile mode remains explicitly simplified
+ok 246 - U3 first-due-date is offered only for daily simulations and profile mode remains explicitly simplified
+  ---
+  duration_ms: 8.5806
+  type: 'test'
+  ...
+# Subtest: U5.2.1 ÔÇö renderer mant├®m Planejar esta compra desabilitado enquanto stale, erro ou c├ílculo pendente
+ok 247 - U5.2.1 ÔÇö renderer mant├®m Planejar esta compra desabilitado enquanto stale, erro ou c├ílculo pendente
+  ---
+  duration_ms: 14.0173
+  type: 'test'
+  ...
+# (node:22548) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: date-only bank references retain the calendar day and invalid dates remain unavailable
+ok 248 - date-only bank references retain the calendar day and invalid dates remain unavailable
+  ---
+  duration_ms: 24.933
+  type: 'test'
+  ...
+# Subtest: dashboard agenda shows pending expenses in due order without mutating the ledger
+ok 249 - dashboard agenda shows pending expenses in due order without mutating the ledger
+  ---
+  duration_ms: 2.375
+  type: 'test'
+  ...
+# Subtest: budget priority puts excess and near limits before remaining limited and unlimited categories
+ok 250 - budget priority puts excess and near limits before remaining limited and unlimited categories
+  ---
+  duration_ms: 0.3942
+  type: 'test'
+  ...
+# Subtest: budget ties remain deterministic and do not treat explicit zero as missing
+ok 251 - budget ties remain deterministic and do not treat explicit zero as missing
+  ---
+  duration_ms: 0.6201
+  type: 'test'
+  ...
+# (node:22296) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: settings regrouping preserves the original panels and their action handlers
+ok 252 - settings regrouping preserves the original panels and their action handlers
+  ---
+  duration_ms: 1.2099
+  type: 'test'
+  ...
+# Subtest: settings tolerate unavailable desktop sections without exposing unrelated children as panels
+ok 253 - settings tolerate unavailable desktop sections without exposing unrelated children as panels
+  ---
+  duration_ms: 1.0242
+  type: 'test'
+  ...
+# (node:4736) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: context uses the current planning/budget month instead of the unrelated bank period
+ok 254 - context uses the current planning/budget month instead of the unrelated bank period
+  ---
+  duration_ms: 0.9286
+  type: 'test'
+  ...
+# Subtest: context captures filter descriptions by value and excludes unrelated financial data and secrets
+ok 255 - context captures filter descriptions by value and excludes unrelated financial data and secrets
+  ---
+  duration_ms: 0.9649
+  type: 'test'
+  ...
+# Subtest: intelligence keyboard tabs wrap and support Home/End without intercepting unrelated keys
+ok 256 - intelligence keyboard tabs wrap and support Home/End without intercepting unrelated keys
+  ---
+  duration_ms: 0.2557
+  type: 'test'
+  ...
+# (node:24912) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:24912) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# Subtest: D1.1 ÔÇö SQLite isolado preserva perfis, or├ºamento zero, banco, categorias e planejamento ap├│s backup/restore
+ok 257 - D1.1 ÔÇö SQLite isolado preserva perfis, or├ºamento zero, banco, categorias e planejamento ap├│s backup/restore
+  ---
+  duration_ms: 1378.0028
+  type: 'test'
+  ...
+# (node:4228) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: E1 Windows IPC contract is declared and wired in all three desktop layers
+ok 258 - E1 Windows IPC contract is declared and wired in all three desktop layers
+  ---
+  duration_ms: 5.8976
+  type: 'test'
+  ...
+# Subtest: Windows and PWA beta versions are intentionally identical
+ok 259 - Windows and PWA beta versions are intentionally identical
+  ---
+  duration_ms: 8.2439
+  type: 'test'
+  ...
+# Subtest: Actions only run on opt-in marker while quota is limited
+ok 260 - Actions only run on opt-in marker while quota is limited
+  ---
+  duration_ms: 1.4062
+  type: 'test'
+  ...
+# (node:27664) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:27664) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# Subtest: actual cloud and Windows account/category hashes match, including absent provider category default
+ok 261 - actual cloud and Windows account/category hashes match, including absent provider category default
+  ---
+  duration_ms: 52.5793
+  type: 'test'
+  ...
+# (node:15808) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: E1 shows where two cloud-only transactions appeared, without leaking the records
+ok 262 - E1 shows where two cloud-only transactions appeared, without leaking the records
+  ---
+  duration_ms: 21.1436
+  type: 'test'
+  ...
+# Subtest: E1 separates amount, identity and description disagreements with unchanged counts
+ok 263 - E1 separates amount, identity and description disagreements with unchanged counts
+  ---
+  duration_ms: 2.0888
+  type: 'test'
+  ...
+# Subtest: E1 rejects malformed months and limits disclosure when historic window is long
+ok 264 - E1 rejects malformed months and limits disclosure when historic window is long
+  ---
+  duration_ms: 2.9399
+  type: 'test'
+  ...
+# (node:26296) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:26296) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# Subtest: new cross-platform purchase-quote formula equals desktop planning simulator
+ok 265 - new cross-platform purchase-quote formula equals desktop planning simulator
+  ---
+  duration_ms: 31.8297
+  type: 'test'
+  ...
+# (node:15700) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:15700) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# Subtest: live UI uses SQLite response, main/drawer share thread, history stays out of localStorage
+ok 266 - live UI uses SQLite response, main/drawer share thread, history stays out of localStorage
+  ---
+  duration_ms: 658.578
+  type: 'test'
+  ...
+# Subtest: mutation wording is not interpreted as financial write and unsupported questions are explicit
+ok 267 - mutation wording is not interpreted as financial write and unsupported questions are explicit
+  ---
+  duration_ms: 235.7962
+  type: 'test'
+  ...
+# Subtest: all eight starter questions select the intended financial query
+ok 268 - all eight starter questions select the intended financial query
+  ---
+  duration_ms: 335.5551
+  type: 'test'
+  ...
+# Subtest: a reply for an obsolete month is rejected
+ok 269 - a reply for an obsolete month is rejected
+  ---
+  duration_ms: 124.5963
+  type: 'test'
+  ...
+# (node:27084) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:27084) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# Subtest: no authorization, foreign owner, expiry and revoke block reads before accessing DB
+ok 270 - no authorization, foreign owner, expiry and revoke block reads before accessing DB
+  ---
+  duration_ms: 2.9691
+  type: 'test'
+  ...
+# Subtest: SQLite-backed food query uses actual 60/40 split and excludes pending/transfer/ignore
+ok 271 - SQLite-backed food query uses actual 60/40 split and excludes pending/transfer/ignore
+  ---
+  duration_ms: 46.6482
+  type: 'test'
+  ...
+# Subtest: single source, demo isolation and changed database produce new computed answers
+ok 272 - single source, demo isolation and changed database produce new computed answers
+  ---
+  duration_ms: 18.8371
+  type: 'test'
+  ...
+# Subtest: radar, category increases, largest expenses and review have explainable references
+ok 273 - radar, category increases, largest expenses and review have explainable references
+  ---
+  duration_ms: 25.0829
+  type: 'test'
+  ...
+# Subtest: planning permission is separate and amounts reuse remaining balance from PlanningStore
+ok 274 - planning permission is separate and amounts reuse remaining balance from PlanningStore
+  ---
+  duration_ms: 16.8812
+  type: 'test'
+  ...
+# Subtest: all query intents are read only and reject mutation intent and malformed month
+ok 275 - all query intents are read only and reject mutation intent and malformed month
+  ---
+  duration_ms: 23.0474
+  type: 'test'
+  ...
+# Subtest: actual truncated SQLite cache is explicitly labelled and never presented as full history
+ok 276 - actual truncated SQLite cache is explicitly labelled and never presented as full history
+  ---
+  duration_ms: 1450.2598
+  type: 'test'
+  ...
+# (node:19460) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:19460) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# Subtest: caixa de revis├úo guarda notas e natureza, sem alterar importa├º├úo nem perder em sync
+ok 277 - caixa de revis├úo guarda notas e natureza, sem alterar importa├º├úo nem perder em sync
+  ---
+  duration_ms: 29.1115
+  type: 'test'
+  ...
+# Subtest: divis├úo exige igualdade exata e preserva valor original
+ok 278 - divis├úo exige igualdade exata e preserva valor original
+  ---
+  duration_ms: 13.5879
+  type: 'test'
+  ...
+# Subtest: v├¡nculo manual ├® expl├¡cito, exclusivo, preservado e s├│ removido ap├│s desvincula├º├úo
+ok 279 - v├¡nculo manual ├® expl├¡cito, exclusivo, preservado e s├│ removido ap├│s desvincula├º├úo
+  ---
+  duration_ms: 22.5665
+  type: 'test'
+  ...
+# Subtest: estabelecimentos padronizados e revis├úo em lote n├úo modificam o extrato bruto
+ok 280 - estabelecimentos padronizados e revis├úo em lote n├úo modificam o extrato bruto
+  ---
+  duration_ms: 15.2984
+  type: 'test'
+  ...
+# Subtest: migra├º├úo aditiva mant├®m categorias e lan├ºamentos existentes
+ok 281 - migra├º├úo aditiva mant├®m categorias e lan├ºamentos existentes
+  ---
+  duration_ms: 12.4791
+  type: 'test'
+  ...
+# Subtest: mudan├ºas no banco reabrem a revis├úo e evitam concilia├º├úo desatualizada
+ok 282 - mudan├ºas no banco reabrem a revis├úo e evitam concilia├º├úo desatualizada
+  ---
+  duration_ms: 15.4769
+  type: 'test'
+  ...
+# Subtest: editar a data de um lan├ºamento vinculado exige desvincula├º├úo expl├¡cita
+ok 283 - editar a data de um lan├ºamento vinculado exige desvincula├º├úo expl├¡cita
+  ---
+  duration_ms: 21.1035
+  type: 'test'
+  ...
+# (node:11596) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: U2 filtered summaries separate origins, settlement, review, nature and linked manual records
+ok 284 - U2 filtered summaries separate origins, settlement, review, nature and linked manual records
+  ---
+  duration_ms: 51.2564
+  type: 'test'
+  ...
+# Subtest: U2 totals include every filtered record beyond the table limit and show payment/review independently
+ok 285 - U2 totals include every filtered record beyond the table limit and show payment/review independently
+  ---
+  duration_ms: 135.1342
+  type: 'test'
+  ...
+# Subtest: U2 monthly commitments use remaining amounts, exclude paid/cancelled/uncertain income and cross-month dates
+ok 286 - U2 monthly commitments use remaining amounts, exclude paid/cancelled/uncertain income and cross-month dates
+  ---
+  duration_ms: 4.7324
+  type: 'test'
+  ...
+# Subtest: U2 unified agenda deduplicates settled bank links by account and retains manual until settlement
+ok 287 - U2 unified agenda deduplicates settled bank links by account and retains manual until settlement
+  ---
+  duration_ms: 4.6011
+  type: 'test'
+  ...
+# Subtest: U2 calendar and view controls preserve identities and do not mutate financial data
+ok 288 - U2 calendar and view controls preserve identities and do not mutate financial data
+  ---
+  duration_ms: 29.0846
+  type: 'test'
+  ...
+# Subtest: U2 unloaded planning is distinct from a loaded empty agenda
+ok 289 - U2 unloaded planning is distinct from a loaded empty agenda
+  ---
+  duration_ms: 6.6773
+  type: 'test'
+  ...
+# (node:14760) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: U1 month-to-date compares matching calendar days, including shorter and leap months
+ok 290 - U1 month-to-date compares matching calendar days, including shorter and leap months
+  ---
+  duration_ms: 1.8793
+  type: 'test'
+  ...
+# Subtest: U1 completed months and custom windows name their actual previous interval
+ok 291 - U1 completed months and custom windows name their actual previous interval
+  ---
+  duration_ms: 0.741
+  type: 'test'
+  ...
+# Subtest: U1 coverage distinguishes no spending from uncovered spending, and clamps presentation
+ok 292 - U1 coverage distinguishes no spending from uncovered spending, and clamps presentation
+  ---
+  duration_ms: 0.2005
+  type: 'test'
+  ...
+# Subtest: U1 comparisons never manufacture percentages without a usable nonzero baseline
+ok 293 - U1 comparisons never manufacture percentages without a usable nonzero baseline
+  ---
+  duration_ms: 0.354
+  type: 'test'
+  ...
+# Subtest: U1 accumulated points are bounded and end at the exact selected interval
+ok 294 - U1 accumulated points are bounded and end at the exact selected interval
+  ---
+  duration_ms: 0.7457
+  type: 'test'
+  ...
+# Subtest: U1 shorter previous months are clamped, never reading past their explicit end
+ok 295 - U1 shorter previous months are clamped, never reading past their explicit end
+  ---
+  duration_ms: 0.9813
+  type: 'test'
+  ...
+# (node:19900) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:19900) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# Subtest: recorr├¬ncia preserva dia de origem e edi├º├úo pontual n├úo modifica demais parcelas
+ok 296 - recorr├¬ncia preserva dia de origem e edi├º├úo pontual n├úo modifica demais parcelas
+  ---
+  duration_ms: 10.988
+  type: 'test'
+  ...
+# Subtest: parcelamento distribui centavos sem erros e n├úo cria 0 reais
+ok 297 - parcelamento distribui centavos sem erros e n├úo cria 0 reais
+  ---
+  duration_ms: 6.4702
+  type: 'test'
+  ...
+# Subtest: proje├º├úo di├íria conta previsto uma vez e n├úo desconta pagamento j├í refletido no saldo
+ok 298 - proje├º├úo di├íria conta previsto uma vez e n├úo desconta pagamento j├í refletido no saldo
+  ---
+  duration_ms: 11.5997
+  type: 'test'
+  ...
+# Subtest: pagamento parcial e total s├úo ├║nicos; editar, desfazer e proibir uso em duas contas
+ok 299 - pagamento parcial e total s├úo ├║nicos; editar, desfazer e proibir uso em duas contas
+  ---
+  duration_ms: 9.0674
+  type: 'test'
+  ...
+# Subtest: valor diferente exige edi├º├úo expl├¡cita sem alterar o original, v├¡nculo incorreto pode ser desfeito
+ok 300 - valor diferente exige edi├º├úo expl├¡cita sem alterar o original, v├¡nculo incorreto pode ser desfeito
+  ---
+  duration_ms: 5.0082
+  type: 'test'
+  ...
+# Subtest: receita incerta exclu├¡da por padr├úo e alternativa pode ser exibida
+ok 301 - receita incerta exclu├¡da por padr├úo e alternativa pode ser exibida
+  ---
+  duration_ms: 5.3501
+  type: 'test'
+  ...
+# Subtest: pagamento manual s├│ depois da data, revers├¡vel, n├úo duplica em proje├º├Áes
+ok 302 - pagamento manual s├│ depois da data, revers├¡vel, n├úo duplica em proje├º├Áes
+  ---
+  duration_ms: 6.0424
+  type: 'test'
+  ...
+# Subtest: sugest├Áes usam semelhan├ºa, rejei├º├úo e exclusividade; n├úo vinculam automaticamente
+ok 303 - sugest├Áes usam semelhan├ºa, rejei├º├úo e exclusividade; n├úo vinculam automaticamente
+  ---
+  duration_ms: 4.5442
+  type: 'test'
+  ...
+# Subtest: nome personalizado nunca modifica descri├º├úo importada
+ok 304 - nome personalizado nunca modifica descri├º├úo importada
+  ---
+  duration_ms: 8.6139
+  type: 'test'
+  ...
+# Subtest: cancelamento remove previs├úo sem apagar hist├│rico, dados persistem no mesmo SQLite
+ok 305 - cancelamento remove previs├úo sem apagar hist├│rico, dados persistem no mesmo SQLite
+  ---
+  duration_ms: 5.3113
+  type: 'test'
+  ...
+# Subtest: backup e reabertura preservam planejamento, nomes personalizados e extrato original
+ok 306 - backup e reabertura preservam planejamento, nomes personalizados e extrato original
+  ---
+  duration_ms: 1320.7459
+  type: 'test'
+  ...
+# Subtest: sincroniza├º├úo que altera pagamento conciliado reabre pend├¬ncia sem duplica├º├úo
+ok 307 - sincroniza├º├úo que altera pagamento conciliado reabre pend├¬ncia sem duplica├º├úo
+  ---
+  duration_ms: 4.9237
+  type: 'test'
+  ...
+# Subtest: categoria personalizada renomeada preserva classifica├º├úo do compromisso
+ok 308 - categoria personalizada renomeada preserva classifica├º├úo do compromisso
+  ---
+  duration_ms: 4.3353
+  type: 'test'
+  ...
+# Subtest: um pagamento n├úo pode vincular compromisso e registro manual ao mesmo tempo
+ok 309 - um pagamento n├úo pode vincular compromisso e registro manual ao mesmo tempo
+  ---
+  duration_ms: 5.0249
+  type: 'test'
+  ...
+# Subtest: proje├º├úo de m├¬s futuro transporta despesas anteriores e vencidas
+ok 310 - proje├º├úo de m├¬s futuro transporta despesas anteriores e vencidas
+  ---
+  duration_ms: 4.4233
+  type: 'test'
+  ...
+# (node:17612) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:17612) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# Subtest: importa├º├úo banc├íria deduplica; n├úo altera lan├ºamentos manuais nem perfil demo
+ok 311 - importa├º├úo banc├íria deduplica; n├úo altera lan├ºamentos manuais nem perfil demo
+  ---
+  duration_ms: 17.0959
+  type: 'test'
+  ...
+# Subtest: transa├º├úo banc├íria atualizada conserva id e muda status/valor
+ok 312 - transa├º├úo banc├íria atualizada conserva id e muda status/valor
+  ---
+  duration_ms: 16.9193
+  type: 'test'
+  ...
+# Subtest: lote inv├ílido n├úo altera SQLite banc├írio nem o manual
+ok 313 - lote inv├ílido n├úo altera SQLite banc├írio nem o manual
+  ---
+  duration_ms: 9.1572
+  type: 'test'
+  ...
+# Subtest: cliente Pluggy usa auth, accounts e cursor e nunca redireciona para URLs externas
+ok 314 - cliente Pluggy usa auth, accounts e cursor e nunca redireciona para URLs externas
+  ---
+  duration_ms: 3.5582
+  type: 'test'
+  ...
+# Subtest: API n├úo prossegue com consentimento expirado e preserva banco
+ok 315 - API n├úo prossegue com consentimento expirado e preserva banco
+  ---
+  duration_ms: 5.9709
+  type: 'test'
+  ...
+# Subtest: cofre guarda somente criptografia simulada e n├úo exp├Áe segredo no status
+ok 316 - cofre guarda somente criptografia simulada e n├úo exp├Áe segredo no status
+  ---
+  duration_ms: 42.7323
+  type: 'test'
+  ...
+# (node:8796) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:8796) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# Subtest: c├│pia ├¡ntegra permite restaura├º├úo do hist├│rico, categorias e regras
+ok 317 - c├│pia ├¡ntegra permite restaura├º├úo do hist├│rico, categorias e regras
+  ---
+  duration_ms: 1368.6103
+  type: 'test'
+  ...
+# Subtest: arquivo inv├ílido ou sem tabelas n├úo substitui o banco existente
+ok 318 - arquivo inv├ílido ou sem tabelas n├úo substitui o banco existente
+  ---
+  duration_ms: 731.9163
+  type: 'test'
+  ...
+# Subtest: c├│pias autom├íticas di├írias n├úo duplicam e mant├¬m 7 datas
+ok 319 - c├│pias autom├íticas di├írias n├úo duplicam e mant├¬m 7 datas
+  ---
+  duration_ms: 1457.7456
+  type: 'test'
+  ...
+# Subtest: emojis em categorias preservados ap├│s atualiza├º├úo e nova abertura
+ok 320 - emojis em categorias preservados ap├│s atualiza├º├úo e nova abertura
+  ---
+  duration_ms: 782.2124
+  type: 'test'
+  ...
+# Subtest: D1.1 ÔÇö c├│pia di├íria preexistente corrompida n├úo ├® considerada v├ílida nem sobrescrita
+ok 321 - D1.1 ÔÇö c├│pia di├íria preexistente corrompida n├úo ├® considerada v├ílida nem sobrescrita
+  ---
+  duration_ms: 251.0943
+  type: 'test'
+  ...
+# Subtest: D1.1 ÔÇö backup parcial inv├ílido n├úo ├® publicado nem elimina a c├│pia anterior ├¡ntegra
+ok 322 - D1.1 ÔÇö backup parcial inv├ílido n├úo ├® publicado nem elimina a c├│pia anterior ├¡ntegra
+  ---
+  duration_ms: 336.3235
+  type: 'test'
+  ...
+# Subtest: D1.1 ÔÇö c├│pia di├íria alterada depois da valida├º├úo ├® rejeitada na pr├│xima verifica├º├úo
+ok 323 - D1.1 ÔÇö c├│pia di├íria alterada depois da valida├º├úo ├® rejeitada na pr├│xima verifica├º├úo
+  ---
+  duration_ms: 301.4349
+  type: 'test'
+  ...
+# Subtest: D1.1 ÔÇö valida├º├úo do backup WAL n├úo deixa auxiliares .partial ap├│s sucesso
+ok 324 - D1.1 ÔÇö valida├º├úo do backup WAL n├úo deixa auxiliares .partial ap├│s sucesso
+  ---
+  duration_ms: 305.4576
+  type: 'test'
+  ...
+# (node:7532) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:7532) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# Subtest: categorias padr├úo possuem emojis e personalizadas persistem em reinicializa├º├úo
+ok 325 - categorias padr├úo possuem emojis e personalizadas persistem em reinicializa├º├úo
+  ---
+  duration_ms: 1279.7979
+  type: 'test'
+  ...
+# Subtest: migra├º├úo de banco anterior adiciona emoji sem perder as regras ou as transa├º├Áes
+ok 326 - migra├º├úo de banco anterior adiciona emoji sem perder as regras ou as transa├º├Áes
+  ---
+  duration_ms: 1222.459
+  type: 'test'
+  ...
+# (node:4264) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: B00 records version, commit, toolchain and exact renderer asset hashes
+ok 327 - B00 records version, commit, toolchain and exact renderer asset hashes
+  ---
+  duration_ms: 121.8732
+  type: 'test'
+  ...
+# Subtest: B00 normalizes nested archive paths for Windows and POSIX readers
+ok 328 - B00 normalizes nested archive paths for Windows and POSIX readers
+  ---
+  duration_ms: 0.8135
+  type: 'test'
+  ...
+# Subtest: B00 rejects old bundles, tampered CSS and a different commit
+ok 329 - B00 rejects old bundles, tampered CSS and a different commit
+  ---
+  duration_ms: 74.4249
+  type: 'test'
+  ...
+# Subtest: B00 refuses package versions and missing frontend assets not matching manifest
+ok 330 - B00 refuses package versions and missing frontend assets not matching manifest
+  ---
+  duration_ms: 74.5524
+  type: 'test'
+  ...
+# Subtest: B00 compares every ASAR renderer byte, including package version
+ok 331 - B00 compares every ASAR renderer byte, including package version
+  ---
+  duration_ms: 94.9781
+  type: 'test'
+  ...
+# Subtest: F08 rejects stale but marker-complete renderer and changed TS source
+ok 332 - F08 rejects stale but marker-complete renderer and changed TS source
+  ---
+  duration_ms: 8269.5686
+  type: 'test'
+  ...
+# (node:22956) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:22956) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# Subtest: inicializa banco SQLite real e salva centavos corretamente
+ok 333 - inicializa banco SQLite real e salva centavos corretamente
+  ---
+  duration_ms: 1125.7894
+  type: 'test'
+  ...
+# Subtest: demonstra├º├úo jamais altera dados pessoais
+ok 334 - demonstra├º├úo jamais altera dados pessoais
+  ---
+  duration_ms: 4.6161
+  type: 'test'
+  ...
+# Subtest: opera├º├úo inv├ílida n├úo apaga dados: transa├º├úo at├┤mica e valida├º├úo
+ok 335 - opera├º├úo inv├ílida n├úo apaga dados: transa├º├úo at├┤mica e valida├º├úo
+  ---
+  duration_ms: 3.8938
+  type: 'test'
+  ...
+# Subtest: salva descri├º├Áes com aspas e comandos SQL como texto simples
+ok 336 - salva descri├º├Áes com aspas e comandos SQL como texto simples
+  ---
+  duration_ms: 3.1826
+  type: 'test'
+  ...
+# Subtest: c├│pia SQLite ├® ├¡ntegra e reabre ap├│s backup online
+ok 337 - c├│pia SQLite ├® ├¡ntegra e reabre ap├│s backup online
+  ---
+  duration_ms: 839.8748
+  type: 'test'
+  ...
+# Subtest: backup JSON da v0.3 pode ser importado com version 3
+ok 338 - backup JSON da v0.3 pode ser importado com version 3
+  ---
+  duration_ms: 2.7487
+  type: 'test'
+  ...
+# (node:18872) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:18872) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# Subtest: linha do tempo inclui todos os dias e estima hist├│rico com diferen├ºa di├íria
+ok 339 - linha do tempo inclui todos os dias e estima hist├│rico com diferen├ºa di├íria
+  ---
+  duration_ms: 7.7698
+  type: 'test'
+  ...
+# Subtest: linha do tempo futura possui 31 dias com saldo ap├│s vencimentos
+ok 340 - linha do tempo futura possui 31 dias com saldo ap├│s vencimentos
+  ---
+  duration_ms: 4.0384
+  type: 'test'
+  ...
+# Subtest: um dia sem lan├ºamento tem varia├º├úo zero; parcelas e estimativas preservam cen├írio
+ok 341 - um dia sem lan├ºamento tem varia├º├úo zero; parcelas e estimativas preservam cen├írio
+  ---
+  duration_ms: 4.1333
+  type: 'test'
+  ...
+# Subtest: n├úo altera o planejamento, rejeita meses anteriores e datas inv├ílidas
+ok 342 - n├úo altera o planejamento, rejeita meses anteriores e datas inv├ílidas
+  ---
+  duration_ms: 12.4979
+  type: 'test'
+  ...
+# (node:20260) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: B02 category is a native accessible button with explicit category and handler
+ok 343 - B02 category is a native accessible button with explicit category and handler
+  ---
+  duration_ms: 89.4218
+  type: 'test'
+  ...
+# Subtest: U5.1 bank and manual category buttons open their identity-aware popover without changing balances
+ok 344 - U5.1 bank and manual category buttons open their identity-aware popover without changing balances
+  ---
+  duration_ms: 39.3794
+  type: 'test'
+  ...
+# Subtest: B02 advanced drawer retains focus restoration for keyboard navigation
+ok 345 - B02 advanced drawer retains focus restoration for keyboard navigation
+  ---
+  duration_ms: 12.4911
+  type: 'test'
+  ...
+# Subtest: B02 category editor is marked for both origins and remains separate from split editing
+ok 346 - B02 category editor is marked for both origins and remains separate from split editing
+  ---
+  duration_ms: 0.6081
+  type: 'test'
+  ...
+# Subtest: B02 renderer labels match the current candidate version and exclude prior releases
+ok 347 - B02 renderer labels match the current candidate version and exclude prior releases
+  ---
+  duration_ms: 0.4284
+  type: 'test'
+  ...
+# (node:11260) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:11260) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# Subtest: U5.1 ÔÇö override pessoal distingue contas diferentes com mesmo externalId, extrato original intacto
+ok 348 - U5.1 ÔÇö override pessoal distingue contas diferentes com mesmo externalId, extrato original intacto
+  ---
+  duration_ms: 1224.3908
+  type: 'test'
+  ...
+# Subtest: U5.1 ÔÇö classifica├º├úo inv├ílida n├úo persiste nem altera overrides existentes
+ok 349 - U5.1 ÔÇö classifica├º├úo inv├ílida n├úo persiste nem altera overrides existentes
+  ---
+  duration_ms: 833.1452
+  type: 'test'
+  ...
+# Subtest: U5.1 ÔÇö categorias pessoais s├úo persistidas depois de reabrir banco sint├®tico
+ok 350 - U5.1 ÔÇö categorias pessoais s├úo persistidas depois de reabrir banco sint├®tico
+  ---
+  duration_ms: 648.0643
+  type: 'test'
+  ...
+# Subtest: U5.1 ÔÇö alterar categoria manual por save n├úo modifica id, centavos, data ou extrato Pluggy
+ok 351 - U5.1 ÔÇö alterar categoria manual por save n├úo modifica id, centavos, data ou extrato Pluggy
+  ---
+  duration_ms: 821.1642
+  type: 'test'
+  ...
+# (node:2756) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: U5.1 ÔÇö fontes manual/banc├írias e mesmo externalId em duas contas n├úo colidem
+ok 352 - U5.1 ÔÇö fontes manual/banc├írias e mesmo externalId em duas contas n├úo colidem
+  ---
+  duration_ms: 16.1353
+  type: 'test'
+  ...
+# Subtest: U5.1 ÔÇö pesquisa abrange estabelecimento e mant├®m acentos equivalentes
+ok 353 - U5.1 ÔÇö pesquisa abrange estabelecimento e mant├®m acentos equivalentes
+  ---
+  duration_ms: 2.7009
+  type: 'test'
+  ...
+# Subtest: U5.1 ÔÇö filtros combinados categoria, banco, receita/despesa, revis├úo s├úo interse├º├úo
+ok 354 - U5.1 ÔÇö filtros combinados categoria, banco, receita/despesa, revis├úo s├úo interse├º├úo
+  ---
+  duration_ms: 1.5672
+  type: 'test'
+  ...
+# Subtest: U5.1 ÔÇö revis├úo filtra apenas banco n├úo revisado em qualquer per├¡odo
+ok 355 - U5.1 ÔÇö revis├úo filtra apenas banco n├úo revisado em qualquer per├¡odo
+  ---
+  duration_ms: 0.4127
+  type: 'test'
+  ...
+# Subtest: U5.1 ÔÇö ordena├º├úo por valor absoluto e data preserva estabilidade de identidade
+ok 356 - U5.1 ÔÇö ordena├º├úo por valor absoluto e data preserva estabilidade de identidade
+  ---
+  duration_ms: 0.4815
+  type: 'test'
+  ...
+# Subtest: U5.1 ÔÇö nenhuma origem altera a sem├óntica receita/despesa por natureza banc├íria
+ok 357 - U5.1 ÔÇö nenhuma origem altera a sem├óntica receita/despesa por natureza banc├íria
+  ---
+  duration_ms: 0.3018
+  type: 'test'
+  ...
+# (node:15928) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:15928) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# Subtest: U5.1.1 ÔÇö SQLite real informa hist├│rico parcial com 2.501 transa├º├Áes sint├®ticas
+ok 358 - U5.1.1 ÔÇö SQLite real informa hist├│rico parcial com 2.501 transa├º├Áes sint├®ticas
+  ---
+  duration_ms: 1678.6524
+  type: 'test'
+  ...
+# Subtest: U5.1.1 ÔÇö aviso ├® junto dos cart├Áes e n├║meros indicam subconjunto carregado
+ok 359 - U5.1.1 ÔÇö aviso ├® junto dos cart├Áes e n├║meros indicam subconjunto carregado
+  ---
+  duration_ms: 0.5734
+  type: 'test'
+  ...
+# (node:21132) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: U5.1 ÔÇö categoria abre popover para banco A/B com externalId id├¬ntico e para manual
+ok 360 - U5.1 ÔÇö categoria abre popover para banco A/B com externalId id├¬ntico e para manual
+  ---
+  duration_ms: 127.3081
+  type: 'test'
+  ...
+# Subtest: U5.1 ÔÇö manual salva categoria via updateData mantendo id, data, centavos e outros dados
+ok 361 - U5.1 ÔÇö manual salva categoria via updateData mantendo id, data, centavos e outros dados
+  ---
+  duration_ms: 175.465
+  type: 'test'
+  ...
+# Subtest: U5.1 ÔÇö banco grava override pessoal com accountId+externalId, n├úo por ID isolado
+ok 362 - U5.1 ÔÇö banco grava override pessoal com accountId+externalId, n├úo por ID isolado
+  ---
+  duration_ms: 31.7889
+  type: 'test'
+  ...
+# Subtest: U5.1 ÔÇö falha banc├íria mant├®m categoria anterior, popover e erro vis├¡vel
+ok 363 - U5.1 ÔÇö falha banc├íria mant├®m categoria anterior, popover e erro vis├¡vel
+  ---
+  duration_ms: 73.9856
+  type: 'test'
+  ...
+# Subtest: U5.1 ÔÇö falha de grava├º├úo manual preserva sele├º├úo e informa erro
+ok 364 - U5.1 ÔÇö falha de grava├º├úo manual preserva sele├º├úo e informa erro
+  ---
+  duration_ms: 38.1487
+  type: 'test'
+  ...
+# Subtest: U5.1 ÔÇö cliques repetidos n├úo disparam duas grava├º├Áes banc├írias
+ok 365 - U5.1 ÔÇö cliques repetidos n├úo disparam duas grava├º├Áes banc├írias
+  ---
+  duration_ms: 24.4984
+  type: 'test'
+  ...
+# Subtest: U5.1 ÔÇö Enter confirma sele├º├úo ativa, setas navegam, Escape restaura foco
+ok 366 - U5.1 ÔÇö Enter confirma sele├º├úo ativa, setas navegam, Escape restaura foco
+  ---
+  duration_ms: 39.1298
+  type: 'test'
+  ...
+# Subtest: U5.1 ÔÇö busca sem acento, categorias compat├¡veis e op├º├úo atual
+ok 367 - U5.1 ÔÇö busca sem acento, categorias compat├¡veis e op├º├úo atual
+  ---
+  duration_ms: 67.204
+  type: 'test'
+  ...
+# Subtest: U5.1 ÔÇö limpar filtros restaura padr├úo sem mexer em lan├ºamentos nem regras financeiras
+ok 368 - U5.1 ÔÇö limpar filtros restaura padr├úo sem mexer em lan├ºamentos nem regras financeiras
+  ---
+  duration_ms: 38.0452
+  type: 'test'
+  ...
+# Subtest: U5.1.1 ÔÇö categoria banc├íria segue effectiveNature mesmo com sinal oposto
+ok 369 - U5.1.1 ÔÇö categoria banc├íria segue effectiveNature mesmo com sinal oposto
+  ---
+  duration_ms: 33.1176
+  type: 'test'
+  ...
+# Subtest: U5.1.1 ÔÇö transfer e ignore exigem revis├úo expl├¡cita sem modificar natureza ou extrato
+ok 370 - U5.1.1 ÔÇö transfer e ignore exigem revis├úo expl├¡cita sem modificar natureza ou extrato
+  ---
+  duration_ms: 52.4932
+  type: 'test'
+  ...
+# (node:22464) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: U5.2 ÔÇö calend├írio diferencia realizado, previsto e incerto sem recontar valores
+ok 371 - U5.2 ÔÇö calend├írio diferencia realizado, previsto e incerto sem recontar valores
+  ---
+  duration_ms: 2.1077
+  type: 'test'
+  ...
+# Subtest: U5.2 ÔÇö dezembro/janeiro, limites do m├¬s e sele├º├úo por teclado
+ok 372 - U5.2 ÔÇö dezembro/janeiro, limites do m├¬s e sele├º├úo por teclado
+  ---
+  duration_ms: 5.0724
+  type: 'test'
+  ...
+# Subtest: U5.2 ÔÇö categoria do dia e tooltip mostram valores exatos dos registros filtrados
+ok 373 - U5.2 ÔÇö categoria do dia e tooltip mostram valores exatos dos registros filtrados
+  ---
+  duration_ms: 1.4728
+  type: 'test'
+  ...
+# Subtest: U5.2 ÔÇö a proje├º├úo di├íria ├® uma ├║nica aba, n├úo um details duplicado
+ok 374 - U5.2 ÔÇö a proje├º├úo di├íria ├® uma ├║nica aba, n├úo um details duplicado
+  ---
+  duration_ms: 77.4752
+  type: 'test'
+  ...
+# Subtest: U5.2 ÔÇö contrato sem saldo: proje├º├úo sem linha usa travess├úo, nunca zero inventado
+ok 375 - U5.2 ÔÇö contrato sem saldo: proje├º├úo sem linha usa travess├úo, nunca zero inventado
+  ---
+  duration_ms: 0.2811
+  type: 'test'
+  ...
+# Subtest: U5.2 ÔÇö compromissos do m├¬s/ano distinguem receitas confirmadas, incertas e canceladas
+ok 376 - U5.2 ÔÇö compromissos do m├¬s/ano distinguem receitas confirmadas, incertas e canceladas
+  ---
+  duration_ms: 6.2738
+  type: 'test'
+  ...
+# Subtest: U5.2 ÔÇö calend├írio/agenda usam IDs compostos e n├úo duplicam pagamentos vinculados
+ok 377 - U5.2 ÔÇö calend├írio/agenda usam IDs compostos e n├úo duplicam pagamentos vinculados
+  ---
+  duration_ms: 11.6815
+  type: 'test'
+  ...
+# Subtest: U5.2.1 ÔÇö override de natureza banc├íria prevalece sobre sinal; auto respeita sinal
+ok 378 - U5.2.1 ÔÇö override de natureza banc├íria prevalece sobre sinal; auto respeita sinal
+  ---
+  duration_ms: 0.3683
+  type: 'test'
+  ...
+# Subtest: U5.2.1 ÔÇö transfer├¬ncias entre contas e lan├ºamentos ignorados vis├¡veis, sem afetar totais di├írios
+ok 379 - U5.2.1 ÔÇö transfer├¬ncias entre contas e lan├ºamentos ignorados vis├¡veis, sem afetar totais di├írios
+  ---
+  duration_ms: 7.7043
+  type: 'test'
+  ...
+# (node:18812) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: U5.2 ÔÇö resultado permanece vis├¡vel e marcado como desatualizado ap├│s editar valor
+ok 380 - U5.2 ÔÇö resultado permanece vis├¡vel e marcado como desatualizado ap├│s editar valor
+  ---
+  duration_ms: 100.8799
+  type: 'test'
+  ...
+# Subtest: U5.2 ÔÇö recalcular atualiza B, mant├®m refer├¬ncia A e preserva entradas em centavos
+ok 381 - U5.2 ÔÇö recalcular atualiza B, mant├®m refer├¬ncia A e preserva entradas em centavos
+  ---
+  duration_ms: 51.4203
+  type: 'test'
+  ...
+# Subtest: U5.2 ÔÇö compara├º├úo mostra B somente quando cen├írio calculado est├í atual
+ok 382 - U5.2 ÔÇö compara├º├úo mostra B somente quando cen├írio calculado est├í atual
+  ---
+  duration_ms: 40.0162
+  type: 'test'
+  ...
+# Subtest: U5.2 ÔÇö erro de valida├º├úo n├úo descarta ├║ltima simula├º├úo confirmada
+ok 383 - U5.2 ÔÇö erro de valida├º├úo n├úo descarta ├║ltima simula├º├úo confirmada
+  ---
+  duration_ms: 18.5114
+  type: 'test'
+  ...
+# Subtest: U5.2 ÔÇö falha de backend conserva resultado anterior e impede sucesso falso
+ok 384 - U5.2 ÔÇö falha de backend conserva resultado anterior e impede sucesso falso
+  ---
+  duration_ms: 58.3034
+  type: 'test'
+  ...
+# Subtest: U5.2 ÔÇö resposta da requisi├º├úo antiga n├úo substitui resultado novo
+ok 385 - U5.2 ÔÇö resposta da requisi├º├úo antiga n├úo substitui resultado novo
+  ---
+  duration_ms: 17.9935
+  type: 'test'
+  ...
+# Subtest: U5.2 ÔÇö editar durante requisi├º├úo cancela aplica├º├úo da resposta pendente
+ok 386 - U5.2 ÔÇö editar durante requisi├º├úo cancela aplica├º├úo da resposta pendente
+  ---
+  duration_ms: 26.3042
+  type: 'test'
+  ...
+# Subtest: U5.2 ÔÇö vencimento inicial e taxa seguem par├ómetros originais sem mutar motor
+ok 387 - U5.2 ÔÇö vencimento inicial e taxa seguem par├ómetros originais sem mutar motor
+  ---
+  duration_ms: 20.6402
+  type: 'test'
+  ...
+# Subtest: U5.2 ÔÇö modo local mant├®m o mesmo contrato de preserva├º├úo
+ok 388 - U5.2 ÔÇö modo local mant├®m o mesmo contrato de preserva├º├úo
+  ---
+  duration_ms: 16.614
+  type: 'test'
+  ...
+# Subtest: U5.2 ÔÇö interface distingue resultado antigo, erro, a├º├úo Recalcular e cen├írio salvo
+ok 389 - U5.2 ÔÇö interface distingue resultado antigo, erro, a├º├úo Recalcular e cen├írio salvo
+  ---
+  duration_ms: 0.6127
+  type: 'test'
+  ...
+# Subtest: U5.2.1 ÔÇö tentativa direta com resultado stale n├úo prepara compromisso nem mostra confirma├º├úo
+ok 390 - U5.2.1 ÔÇö tentativa direta com resultado stale n├úo prepara compromisso nem mostra confirma├º├úo
+  ---
+  duration_ms: 19.5453
+  type: 'test'
+  ...
+# Subtest: U5.2.1 ÔÇö erro de c├ílculo bloqueia convers├úo mesmo com resultado antigo preservado
+ok 391 - U5.2.1 ÔÇö erro de c├ílculo bloqueia convers├úo mesmo com resultado antigo preservado
+  ---
+  duration_ms: 20.0198
+  type: 'test'
+  ...
+# Subtest: U5.2.1 ÔÇö enquanto nova requisi├º├úo est├í pendente, n├úo permite converter resultado antigo
+ok 392 - U5.2.1 ÔÇö enquanto nova requisi├º├úo est├í pendente, n├úo permite converter resultado antigo
+  ---
+  duration_ms: 15.3232
+  type: 'test'
+  ...
+# Subtest: U5.2.1 ÔÇö premissas alteradas exigem rec├ílculo antes da convers├úo v├ílida
+ok 393 - U5.2.1 ÔÇö premissas alteradas exigem rec├ílculo antes da convers├úo v├ílida
+  ---
+  duration_ms: 12.3436
+  type: 'test'
+  ...
+# Subtest: U5.2.1 ÔÇö confirma├º├úo recusada mant├®m resultado e n├úo abre planejamento
+ok 394 - U5.2.1 ÔÇö confirma├º├úo recusada mant├®m resultado e n├úo abre planejamento
+  ---
+  duration_ms: 10.9815
+  type: 'test'
+  ...
+# Subtest: U5.2.1 ÔÇö sem snapshot calculado correspondente n├úo existe convers├úo poss├¡vel
+ok 395 - U5.2.1 ÔÇö sem snapshot calculado correspondente n├úo existe convers├úo poss├¡vel
+  ---
+  duration_ms: 30.0968
+  type: 'test'
+  ...
+# Subtest: U5.2.1 ÔÇö bot├úo de planejamento compartilha guarda com m├®todo
+ok 396 - U5.2.1 ÔÇö bot├úo de planejamento compartilha guarda com m├®todo
+  ---
+  duration_ms: 0.3932
+  type: 'test'
+  ...
+# (node:6224) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: UI03 design tokens pass core WCAG 2.2 AA text/background ratios
+ok 397 - UI03 design tokens pass core WCAG 2.2 AA text/background ratios
+  ---
+  duration_ms: 2.4147
+  type: 'test'
+  ...
+# Subtest: UI03 chart renders distinct local-currency ticks and accessible table
+ok 398 - UI03 chart renders distinct local-currency ticks and accessible table
+  ---
+  duration_ms: 270.8688
+  type: 'test'
+  ...
+# Subtest: UI03 donut groups after five categories but exposes all exact amounts
+ok 399 - UI03 donut groups after five categories but exposes all exact amounts
+  ---
+  duration_ms: 28.5796
+  type: 'test'
+  ...
+# Subtest: UI03 seven-day agenda is computed only from planned unpaid expenses
+ok 400 - UI03 seven-day agenda is computed only from planned unpaid expenses
+  ---
+  duration_ms: 27.1627
+  type: 'test'
+  ...
+# Subtest: UI03 planning prioritizes upcoming commitments and agenda before graph
+ok 401 - UI03 planning prioritizes upcoming commitments and agenda before graph
+  ---
+  duration_ms: 0.2414
+  type: 'test'
+  ...
+# Subtest: UI03 daily information hierarchy covers all eight sections
+ok 402 - UI03 daily information hierarchy covers all eight sections
+  ---
+  duration_ms: 0.9174
+  type: 'test'
+  ...
+# Subtest: UI03 retains B02 category button after donut and chart redesign
+ok 403 - UI03 retains B02 category button after donut and chart redesign
+  ---
+  duration_ms: 4.1838
+  type: 'test'
+  ...
+# Subtest: UI03 does not introduce new financial engines or changes to data identity
+ok 404 - UI03 does not introduce new financial engines or changes to data identity
+  ---
+  duration_ms: 0.7475
+  type: 'test'
+  ...
+# (node:12016) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: F05 browser regression: viewport scroll repositions SingleDatePicker without dismissing it
+ok 405 - F05 browser regression: viewport scroll repositions SingleDatePicker without dismissing it
+  ---
+  duration_ms: 1.3243
+  type: 'test'
+  ...
+# Subtest: F05 browser regression: viewport scroll repositions PeriodPicker without dismissing it
+ok 406 - F05 browser regression: viewport scroll repositions PeriodPicker without dismissing it
+  ---
+  duration_ms: 0.4994
+  type: 'test'
+  ...
+# Subtest: F03/F06 visual styles retain category labels, small-width demo notice and all Intelligence tabs
+ok 407 - F03/F06 visual styles retain category labels, small-width demo notice and all Intelligence tabs
+  ---
+  duration_ms: 0.4469
+  type: 'test'
+  ...
+# (node:30404) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: F01 saldo desconhecido, parcial, zero real e total conhecido
+ok 408 - F01 saldo desconhecido, parcial, zero real e total conhecido
+  ---
+  duration_ms: 124.8013
+  type: 'test'
+  ...
+# Subtest: F03 donut preserva somas e legenda leg├¡vel
+ok 409 - F03 donut preserva somas e legenda leg├¡vel
+  ---
+  duration_ms: 52.2047
+  type: 'test'
+  ...
+# Subtest: F04 bot├Áes laterais mant├¬m nomes acess├¡veis e localiza├º├úo ativa
+ok 410 - F04 bot├Áes laterais mant├¬m nomes acess├¡veis e localiza├º├úo ativa
+  ---
+  duration_ms: 24.1817
+  type: 'test'
+  ...
+# Subtest: F05/F06 calend├írios fecham por Escape, devolvem foco e cabem em 320px
+ok 411 - F05/F06 calend├írios fecham por Escape, devolvem foco e cabem em 320px
+  ---
+  duration_ms: 111.8426
+  type: 'test'
+  ...
+# Subtest: F07 impede duplo clique e serializa respostas de IPC entre contas
+ok 412 - F07 impede duplo clique e serializa respostas de IPC entre contas
+  ---
+  duration_ms: 11.4188
+  type: 'test'
+  ...
+# Subtest: F02 vers├Áes do Windows, PWA e renderer coincidem dinamicamente
+ok 413 - F02 vers├Áes do Windows, PWA e renderer coincidem dinamicamente
+  ---
+  duration_ms: 0.3462
+  type: 'test'
+  ...
+# (node:21640) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:21640) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# Subtest: simula├º├úo utiliza o mesmo fluxo di├írio e n├úo altera compromissos ou extrato
+ok 414 - simula├º├úo utiliza o mesmo fluxo di├írio e n├úo altera compromissos ou extrato
+  ---
+  duration_ms: 13.7277
+  type: 'test'
+  ...
+# Subtest: compra ├á vista e juros mensais possuem custos e vencimentos coerentes
+ok 415 - compra ├á vista e juros mensais possuem custos e vencimentos coerentes
+  ---
+  duration_ms: 9.0541
+  type: 'test'
+  ...
+# Subtest: compromissos previstos e reserva alteram alerta, sem classifica├º├úo de compra como garantida
+ok 416 - compromissos previstos e reserva alteram alerta, sem classifica├º├úo de compra como garantida
+  ---
+  duration_ms: 16.0048
+  type: 'test'
+  ...
+# Subtest: receitas incertas n├úo financiam compras no cen├írio conservador
+ok 417 - receitas incertas n├úo financiam compras no cen├írio conservador
+  ---
+  duration_ms: 20.4826
+  type: 'test'
+  ...
+# Subtest: dados de banco antigos ou incompletos sinalizam risco sem declarar compra segura
+ok 418 - dados de banco antigos ou incompletos sinalizam risco sem declarar compra segura
+  ---
+  duration_ms: 4.5471
+  type: 'test'
+  ...
+# Subtest: valida├º├úo bloqueia simula├º├Áes absurdas e per├¡odos inv├ílidos
+ok 419 - valida├º├úo bloqueia simula├º├Áes absurdas e per├¡odos inv├ílidos
+  ---
+  duration_ms: 23.0933
+  type: 'test'
+  ...
+# Subtest: agrega├º├úo di├íria usa hist├│rico acima de 2500 transa├º├Áes e respeita naturezas e divis├úo
+ok 420 - agrega├º├úo di├íria usa hist├│rico acima de 2500 transa├º├Áes e respeita naturezas e divis├úo
+  ---
+  duration_ms: 324.8523
+  type: 'test'
+  ...
+# Subtest: reconex├úo banc├íria produz aviso n├úo destrutivo de poss├¡vel duplicidade e permite ignorar
+ok 421 - reconex├úo banc├íria produz aviso n├úo destrutivo de poss├¡vel duplicidade e permite ignorar
+  ---
+  duration_ms: 27.6921
+  type: 'test'
+  ...
+# (node:25684) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:25684) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# Subtest: transfer├¬ncias s├úo categorias sem alterar natureza financeira de Pix a terceiros
+ok 422 - transfer├¬ncias s├úo categorias sem alterar natureza financeira de Pix a terceiros
+  ---
+  duration_ms: 12.6858
+  type: 'test'
+  ...
+# Subtest: rendimento ├® traduzido e outras corre├º├Áes manuais t├¬m preced├¬ncia
+ok 423 - rendimento ├® traduzido e outras corre├º├Áes manuais t├¬m preced├¬ncia
+  ---
+  duration_ms: 8.6305
+  type: 'test'
+  ...
+# Subtest: pacote AI: valida fingerprint, aplica sem tocar extrato e n├úo reaplica duplicado
+ok 424 - pacote AI: valida fingerprint, aplica sem tocar extrato e n├úo reaplica duplicado
+  ---
+  duration_ms: 6.7835
+  type: 'test'
+  ...
+# Subtest: pacote adulterado ├® rejeitado antes de alterar dados
+ok 425 - pacote adulterado ├® rejeitado antes de alterar dados
+  ---
+  duration_ms: 3.2777
+  type: 'test'
+  ...
+# (node:25592) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: V1.1 regress├úo ÔÇö superf├¡cie e topo n├úo mudam de altura com V1.3
+ok 426 - V1.1 regress├úo ÔÇö superf├¡cie e topo n├úo mudam de altura com V1.3
+  ---
+  duration_ms: 1.199
+  type: 'test'
+  ...
+# Subtest: V1.1 regress├úo ÔÇö uma ├║nica borda no mesmo per├¡metro, sem anel interno
+ok 427 - V1.1 regress├úo ÔÇö uma ├║nica borda no mesmo per├¡metro, sem anel interno
+  ---
+  duration_ms: 0.3134
+  type: 'test'
+  ...
+# Subtest: V1.1 regress├úo ÔÇö vari├íveis sem├ónticas e resultado dependente do sinal
+ok 428 - V1.1 regress├úo ÔÇö vari├íveis sem├ónticas e resultado dependente do sinal
+  ---
+  duration_ms: 0.2704
+  type: 'test'
+  ...
+# Subtest: V1.1 regress├úo ÔÇö hover Premium mantido sem reflow
+ok 429 - V1.1 regress├úo ÔÇö hover Premium mantido sem reflow
+  ---
+  duration_ms: 0.2222
+  type: 'test'
+  ...
+# Subtest: V1.1 regress├úo ÔÇö foco integrado e reduced-motion
+ok 430 - V1.1 regress├úo ÔÇö foco integrado e reduced-motion
+  ---
+  duration_ms: 0.2862
+  type: 'test'
+  ...
+# Subtest: V1.1 regress├úo ÔÇö stylesheet final e classe limitada a resumos financeiros
+ok 431 - V1.1 regress├úo ÔÇö stylesheet final e classe limitada a resumos financeiros
+  ---
+  duration_ms: 0.4937
+  type: 'test'
+  ...
+# (node:22432) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: V1.2 ÔÇö categorias n├úo avan├ºam al├®m do painel e acomodam valores longos
+ok 432 - V1.2 ÔÇö categorias n├úo avan├ºam al├®m do painel e acomodam valores longos
+  ---
+  duration_ms: 1.4818
+  type: 'test'
+  ...
+# Subtest: V1.2 ÔÇö ├║ltimas movimenta├º├Áes preservam textos e valores sem truncamento
+ok 433 - V1.2 ÔÇö ├║ltimas movimenta├º├Áes preservam textos e valores sem truncamento
+  ---
+  duration_ms: 0.5985
+  type: 'test'
+  ...
+# Subtest: V1.2 ÔÇö 125% pode redistribuir grids sem zoom artificial ou remover pain├®is
+ok 434 - V1.2 ÔÇö 125% pode redistribuir grids sem zoom artificial ou remover pain├®is
+  ---
+  duration_ms: 0.4696
+  type: 'test'
+  ...
+# Subtest: V1.2 ÔÇö fonte, cobertura e or├ºamento mant├¬m cabe├ºalhos/valores leg├¡veis
+ok 435 - V1.2 ÔÇö fonte, cobertura e or├ºamento mant├¬m cabe├ºalhos/valores leg├¡veis
+  ---
+  duration_ms: 0.4376
+  type: 'test'
+  ...
+# Subtest: V1.2 ÔÇö Hoje separa cards, banner e laborat├│rio mantendo preparar an├ílise
+ok 436 - V1.2 ÔÇö Hoje separa cards, banner e laborat├│rio mantendo preparar an├ílise
+  ---
+  duration_ms: 1.1191
+  type: 'test'
+  ...
+# Subtest: V1.2 ÔÇö chat lateral encolhe corretamente; modal mant├®m scroll interno e bot├Áes
+ok 437 - V1.2 ÔÇö chat lateral encolhe corretamente; modal mant├®m scroll interno e bot├Áes
+  ---
+  duration_ms: 0.3419
+  type: 'test'
+  ...
+# Subtest: V1.2 ÔÇö BUG-02 respeita superf├¡cie e contraste do tema claro sem afetar a V1.1
+ok 438 - V1.2 ÔÇö BUG-02 respeita superf├¡cie e contraste do tema claro sem afetar a V1.1
+  ---
+  duration_ms: 1.0247
+  type: 'test'
+  ...
+# Subtest: V1.2 ÔÇö patches s├úo CSS puro, delimitadores balanceados e sem mudan├ºas em dados
+ok 439 - V1.2 ÔÇö patches s├úo CSS puro, delimitadores balanceados e sem mudan├ºas em dados
+  ---
+  duration_ms: 0.6024
+  type: 'test'
+  ...
+# (node:14888) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: V1.3 ÔÇö a mesma borda renderiza topo e laterais; remove anel anterior
+ok 440 - V1.3 ÔÇö a mesma borda renderiza topo e laterais; remove anel anterior
+  ---
+  duration_ms: 1.932
+  type: 'test'
+  ...
+# Subtest: V1.3 ÔÇö fallback sem├óntico n├úo supera classes com especificidade mais baixa
+ok 441 - V1.3 ÔÇö fallback sem├óntico n├úo supera classes com especificidade mais baixa
+  ---
+  duration_ms: 1.0516
+  type: 'test'
+  ...
+# Subtest: V1.3 ÔÇö Movimenta├º├Áes: Sa├¡das confirmadas preserva a mesma cor de despesa
+ok 442 - V1.3 ÔÇö Movimenta├º├Áes: Sa├¡das confirmadas preserva a mesma cor de despesa
+  ---
+  duration_ms: 0.3683
+  type: 'test'
+  ...
+# Subtest: V1.3 ÔÇö Vis├úo Geral: saldo, receitas, despesas e resultado por sinal
+ok 443 - V1.3 ÔÇö Vis├úo Geral: saldo, receitas, despesas e resultado por sinal
+  ---
+  duration_ms: 0.3044
+  type: 'test'
+  ...
+# Subtest: V1.3 ÔÇö Or├ºamentos: gasto vermelho, limites teal, margem din├ómica, alerta warning
+ok 444 - V1.3 ÔÇö Or├ºamentos: gasto vermelho, limites teal, margem din├ómica, alerta warning
+  ---
+  duration_ms: 0.5523
+  type: 'test'
+  ...
+# Subtest: V1.3 ÔÇö Contas: saldo teal, contador neutro, refer├¬ncia recente verde, confer├¬ncia warning
+ok 445 - V1.3 ÔÇö Contas: saldo teal, contador neutro, refer├¬ncia recente verde, confer├¬ncia warning
+  ---
+  duration_ms: 1.0668
+  type: 'test'
+  ...
+# Subtest: V1.3 ÔÇö foco, hover restrito ao mouse e movimento reduzido preservados
+ok 446 - V1.3 ÔÇö foco, hover restrito ao mouse e movimento reduzido preservados
+  ---
+  duration_ms: 0.5508
+  type: 'test'
+  ...
+# Subtest: V1.3 ÔÇö n├úo amplia o efeito indiscriminadamente a formul├írios e IA
+ok 447 - V1.3 ÔÇö n├úo amplia o efeito indiscriminadamente a formul├írios e IA
+  ---
+  duration_ms: 0.616
+  type: 'test'
+  ...
+# (node:24088) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# {
+#   "id": "WORK-AUDIT-01",
+#   "classification": "CONFIRMADO EM TESTE LOCAL",
+#   "environment": "win32 v22.23.4; TypeScript real; dados inventados",
+#   "finding": "RESOLVED: resumo respeita divis├úo can├┤nica de despesas",
+#   "result": "PASS",
+#   "resolved": true,
+#   "input": {
+#     "amountCents": -10000,
+#     "category": "Compras",
+#     "splits": [
+#       {
+#         "category": "Alimenta├º├úo",
+#         "amount": 6000
+#       },
+#       {
+#         "category": "Transporte",
+#         "amount": 4000
+#       }
+#     ]
+#   },
+#   "actualCategories": [
+#     "Alimenta├º├úo",
+#     "Transporte"
+#   ],
+#   "expectedCategories": [
+#     "Alimenta├º├úo",
+#     "Transporte"
+#   ],
+#   "totalsMatch": true,
+#   "applicationWindowsTested": false,
+#   "financialDataChanged": false
+# }
+# Subtest: combined \#41/\#42 probe confirms canonical 60/40 distribution, no double counting
+ok 448 - combined \#41/\#42 probe confirms canonical 60/40 distribution, no double counting
+  ---
+  duration_ms: 337.7631
+  type: 'test'
+  ...
+# (node:15796) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: read adapter reuses exact deterministic synthetic context; no personal state read
+ok 449 - read adapter reuses exact deterministic synthetic context; no personal state read
+  ---
+  duration_ms: 31.8828
+  type: 'test'
+  ...
+# Subtest: adapter refuses real/unapproved payload and offers retry state
+ok 450 - adapter refuses real/unapproved payload and offers retry state
+  ---
+  duration_ms: 5.6405
+  type: 'test'
+  ...
+# Subtest: malformed cents are rejected; extra input metadata is not retained
+ok 451 - malformed cents are rejected; extra input metadata is not retained
+  ---
+  duration_ms: 1.1204
+  type: 'test'
+  ...
+# Subtest: out of order source responses cannot replace selected context
+ok 452 - out of order source responses cannot replace selected context
+  ---
+  duration_ms: 1.0797
+  type: 'test'
+  ...
+# Subtest: exit invalidates in-flight adapter response
+ok 453 - exit invalidates in-flight adapter response
+  ---
+  duration_ms: 1.204
+  type: 'test'
+  ...
+# Subtest: chat answers real deterministic fixture, rejects purchase availability and keeps history
+ok 454 - chat answers real deterministic fixture, rejects purchase availability and keeps history
+  ---
+  duration_ms: 2.0287
+  type: 'test'
+  ...
+# Subtest: allow/deny simulations are idempotent; snapshot and personal ledger never mutate
+ok 455 - allow/deny simulations are idempotent; snapshot and personal ledger never mutate
+  ---
+  duration_ms: 2.0149
+  type: 'test'
+  ...
+# Subtest: stale proposal cannot be approved after source reload or target change
+ok 456 - stale proposal cannot be approved after source reload or target change
+  ---
+  duration_ms: 1.3922
+  type: 'test'
+  ...
+# Subtest: UI buttons invoke proposal, decision and shared full/drawer conversation
+ok 457 - UI buttons invoke proposal, decision and shared full/drawer conversation
+  ---
+  duration_ms: 3.4577
+  type: 'test'
+  ...
+# Subtest: all explicit prototype interactions are local; no financial writes or external APIs
+ok 458 - all explicit prototype interactions are local; no financial writes or external APIs
+  ---
+  duration_ms: 1.0596
+  type: 'test'
+  ...
+# Subtest: preview server exposes synthetic reads and refuses writes, unknown sources and path escapes
+ok 459 - preview server exposes synthetic reads and refuses writes, unknown sources and path escapes
+  ---
+  duration_ms: 316.5571
+  type: 'test'
+  ...
+1..459
+# tests 459
+# suites 0
+# pass 459
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 14776.6131
+npm notice
+npm notice New major version of npm available! 10.9.9 -> 12.2.2
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.2
+npm notice To update run: npm install -g npm@12.2.2
+npm notice

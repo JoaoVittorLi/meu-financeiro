@@ -2647,7 +2647,7 @@ function renderIntelligenceHistorySidebar(app) {
         h('div', { className: 'mf-ai-history-groups', role: 'list' }, ...groups.map((grp) => h('div', { key: grp.label, className: 'mf-ai-history-group' }, h('span', { className: 'mf-ai-history-date-label' }, grp.label), ...grp.items.map((th) => h('div', { key: th.id, role: 'listitem', className: 'mf-ai-thread-item ' + (th.id === activeId ? 'is-active' : '') }, h('button', { type: 'button', className: 'mf-ai-thread-select', 'aria-current': th.id === activeId ? 'true' : 'false', onClick: () => intelligenceSelectThread(app, th.id) }, h('strong', {}, th.title), h('small', {}, th.scopeLabel + ' · ' + th.updatedTime + ' · ' + th.messages.length + ' msg')), h('button', { type: 'button', className: 'mf-ai-thread-delete', 'aria-label': 'Excluir conversa ' + th.title, title: 'Excluir conversa', onClick: () => intelligenceDeleteThread(app, th.id) }, '×')))))), totalThreads > 0 ? h('div', { className: 'mf-ai-history-foot' }, h('button', { type: 'button', className: 'ghost-button full', onClick: () => intelligenceClearHistory(app) }, 'Limpar histórico do perfil')) : null);
 }
 function renderIntelligenceView(app) {
-    var _a;
+    var _a, _b, _c, _d;
     if (((_a = app.state.workIntelligenceDemo) === null || _a === void 0 ? void 0 : _a.enabled) && typeof renderWorkIntelligenceDemo === 'function')
         return renderWorkIntelligenceDemo(app);
     if (typeof intelligenceEnsureHydrated === 'function')
@@ -2661,19 +2661,21 @@ function renderIntelligenceView(app) {
     let section = null;
     if (tab === 'today')
         section = h('div', { className: 'mf-ai-today' }, h('button', { type: 'button', className: 'ghost-button', onClick: () => workDemoLoad(app) }, 'Explorar nova Inteligência · dados fictícios'), h('div', { className: 'mf-ai-welcome' }, h('span', { className: 'micro-label' }, 'PAINEL CONCEITUAL · DADOS FICTÍCIOS'), h('h2', {}, 'Três assuntos para explorar.'), h('p', {}, 'Exemplos fictícios. Eles não representam alertas reais das suas contas.')), h('div', { className: 'mf-ai-card-grid' }, intelligenceExampleCard(app, 'future', 'Compromissos à frente', 'Analise pagamentos futuros antes de separar dinheiro para investir.', 'calendar', 'Avalie meus compromissos futuros antes de eu reservar dinheiro para investimentos.'), intelligenceExampleCard(app, 'budgets', 'Limites mais inteligentes', 'Compare o comportamento das categorias antes de alterar seu orçamento.', 'pie', 'Ajude-me a elaborar limites inteligentes para o próximo mês.'), intelligenceExampleCard(app, 'reserve', 'Reserva e liquidez', 'Entenda a diferença entre saldo disponível e dinheiro realmente livre.', 'shield', 'Como calcular o dinheiro realmente livre para poupar ou investir?')), h('div', { className: 'mf-ai-explainer' }, h(Icon, { name: 'shield', size: 19 }), h('div', {}, h('strong', {}, 'Insights econômicos por padrão'), h('p', {}, 'Na integração definitiva, alertas matemáticos virão do motor financeiro; o GPT-6.1 Sol será acionado apenas quando você solicitar explicação ou análise.'))));
-    else if (tab === 'chat')
+    if (tab === 'today' && ((_b = s.localFinancialAccess) === null || _b === void 0 ? void 0 : _b.token) && typeof renderLocalFinancialRadar === 'function')
+        section = renderLocalFinancialRadar(app);
+    if (tab === 'chat')
         section = h('div', { className: 'mf-ai-workbench' }, renderIntelligenceHistorySidebar(app), h('div', { className: 'mf-ai-chat-main mf-ai-workbench-main' }, h('div', { className: 'mf-ai-workbench-header' }, h('div', { className: 'mf-ai-chat-hero' }, h('span', { className: 'mf-ai-orb' }, h(Icon, { name: 'spark', size: 25 })), h('h2', {}, 'Central de conversação financeira'), h('p', {}, 'Histórico compartilhado com o chat lateral, salvo localmente quando disponível. Não cole credenciais.')), h('div', { className: 'mf-ai-workbench-badges' }, h('span', { className: 'mf-ai-conn-pill ' + convState.css }, convState.pill), h('span', { className: 'mf-ai-scope-badge' }, 'Contexto: ' + activeScope.label + ' · ' + activeScope.period))), s.intelligenceDraftScope ? h('div', { className: 'mf-ai-context-meta' }, h('span', {}, 'Rascunho de ' + s.intelligenceDraftScope.label), h('span', {}, s.intelligenceDraftScope.period)) : null, s.intelligencePreparedQuestion ? h('div', { className: 'mf-ai-prepared', role: 'status' }, h('span', { className: 'micro-label' }, 'PERGUNTA PREPARADA · NÃO ENVIADA'), h('p', {}, s.intelligencePreparedQuestion), h('small', {}, 'Este rascunho não é enviado ao Sol. Use os casos fictícios autorizados abaixo; nenhuma chamada ocorreu aqui.')) : null, messages.length === 0 ? h('div', { className: 'mf-ai-empty-thread' }, h('h3', {}, 'Comece uma análise ou prepare uma categorização supervisionada'), h('p', {}, 'Suas conversas ficam organizadas por data na coluna à esquerda e continuam disponíveis ao alternar para o chat lateral em qualquer uma das oito áreas.'), h('div', { className: 'mf-ai-starter-grid' }, ['Categorize minha compra do mercado como Alimentação.', 'Mostre um resumo estruturado das minhas movimentações carregadas.', 'Como construir uma reserva de emergência?', 'Quando faz sentido antecipar uma dívida?'].map((q, i) => h('button', { type: 'button', className: 'mf-ai-context-prompt', key: i, onClick: () => intelligenceSubmitQuestion(app, q) }, h('span', {}, q), h(Icon, { name: 'arrow', size: 14 }))))) :
-            h('div', { className: 'mf-ai-thread', role: 'log', 'aria-live': 'polite' }, ...messages.map(m => renderIntelligenceMessageItem(app, m)), s.aiBusy ? h('div', { className: 'mf-ai-msg is-assistant is-streaming', role: 'status' }, h('strong', {}, 'Assistente MF'), h('p', {}, 'Processando solicitação…')) : null), s.aiError ? h('p', { className: 'mf-ai-error', role: 'alert' }, s.aiError) : null, h('div', { className: 'mf-ai-composer' }, h('label', { className: 'mf-ai-composer-label', htmlFor: 'mf-ai-draft' }, 'Sua pergunta ou comando supervisionado'), h('textarea', { id: 'mf-ai-draft', value: s.intelligenceDraft || '', rows: 3, maxLength: 750, placeholder: 'Ex.: Categorize minha compra do mercado de ontem como Alimentação…', onChange: (e) => app.setState({ intelligenceDraft: e.target.value }), onKeyDown: (e) => { if (e.key === 'Enter' && !e.shiftKey) {
+            h('div', { className: 'mf-ai-thread', role: 'log', 'aria-live': 'polite' }, ...messages.map(m => renderIntelligenceMessageItem(app, m)), (s.aiBusy || s.localFinancialBusy) ? h('div', { className: 'mf-ai-msg is-assistant is-streaming', role: 'status' }, h('strong', {}, 'Assistente MF'), h('p', {}, 'Processando solicitação…')) : null), s.aiError ? h('p', { className: 'mf-ai-error', role: 'alert' }, s.aiError) : null, h('div', { className: 'mf-ai-composer' }, h('label', { className: 'mf-ai-composer-label', htmlFor: 'mf-ai-draft' }, 'Sua pergunta ou comando supervisionado'), h('textarea', { id: 'mf-ai-draft', value: s.intelligenceDraft || '', rows: 3, maxLength: 750, placeholder: 'Ex.: Categorize minha compra do mercado de ontem como Alimentação…', onChange: (e) => app.setState({ intelligenceDraft: e.target.value }), onKeyDown: (e) => { if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
                 if ((s.intelligenceDraft || '').trim())
                     void intelligenceSubmitQuestion(app, s.intelligenceDraft);
-            } } }), h('span', { className: 'mf-ai-compose-actions' }, h('small', {}, convState.pill + ' · armazenamento local isolado (' + (s.mode === 'demo' ? 'Demonstração' : 'Pessoal') + ')'), h('div', { className: 'mf-ai-compose-btns' }, h('button', { type: 'button', className: 'ghost-button', disabled: !(s.intelligenceDraft || '').trim(), onClick: () => app.setState({ intelligencePreparedQuestion: (s.intelligenceDraft || '').trim(), intelligenceDraft: '' }) }, 'Guardar rascunho'), h('button', { type: 'button', className: 'primary-button', disabled: !(s.intelligenceDraft || '').trim() || Boolean(s.aiBusy), onClick: () => intelligenceSubmitQuestion(app, s.intelligenceDraft) }, 'Enviar no chat', h(Icon, { name: 'arrow', size: 16 })))))));
-    else
+            } } }), h('span', { className: 'mf-ai-compose-actions' }, h('small', {}, convState.pill + (((_c = s.localFinancialAccess) === null || _c === void 0 ? void 0 : _c.token) ? ' · respostas na memória da sessão' : ' · armazenamento local isolado (' + (s.mode === 'demo' ? 'Demonstração' : 'Pessoal') + ')')), h('div', { className: 'mf-ai-compose-btns' }, h('button', { type: 'button', className: 'ghost-button', disabled: !(s.intelligenceDraft || '').trim(), onClick: () => app.setState({ intelligencePreparedQuestion: (s.intelligenceDraft || '').trim(), intelligenceDraft: '' }) }, 'Guardar rascunho'), h('button', { type: 'button', className: 'primary-button', disabled: !(s.intelligenceDraft || '').trim() || Boolean(s.aiBusy || s.localFinancialBusy), onClick: () => intelligenceSubmitQuestion(app, s.intelligenceDraft) }, 'Enviar no chat', h(Icon, { name: 'arrow', size: 16 })))))));
+    else if (tab === 'actions')
         section = h('div', { className: 'mf-ai-actions' }, h('div', { className: 'mf-ai-welcome' }, h('span', { className: 'micro-label' }, 'AÇÕES SUPERVISIONADAS E EXEMPLOS · SEM GRAVAÇÃO AUTOMÁTICA'), h('h2', {}, 'Sugestões e prévias para revisar, nunca automáticas.'), h('p', {}, 'As propostas preparadas nas suas conversas aparecem abaixo mantendo a prévia sem gravação até a entrega I2-B.')), allProposals.length ? h('div', { className: 'mf-ai-proposals-list', 'aria-label': 'Propostas supervisionadas da sessão' }, ...allProposals.map(p => renderIntelligenceActionProposalCard(app, p))) :
             h('div', { className: 'mf-ai-empty-actions' }, h('p', {}, 'Nenhuma proposta supervisionada pendente nesta conversa. Peça no chat, por exemplo: “Categorize minha compra do mercado como Alimentação”.')), [{ id: 'limits', title: 'Revisar limites de categorias', description: 'Compare médias, compromissos e uma margem de segurança.', question: 'Prepare uma proposta de limites por categoria para o próximo mês.' },
             { id: 'reserve', title: 'Planejar reserva de emergência', description: 'Estime um objetivo compatível com despesas essenciais e liquidez.', question: 'Como construir uma reserva de emergência considerando meus compromissos?' },
             { id: 'review', title: 'Revisar despesas recorrentes', description: 'Identifique cobranças repetidas antes de propor mudanças.', question: 'Como posso avaliar se meus gastos recorrentes precisam de revisão?' }].map((item) => h('div', { className: 'mf-ai-action-card', key: item.id }, h('div', { className: 'mf-ai-action-text' }, h('span', { className: 'mf-ai-status' }, 'Exemplo ilustrativo'), h('h3', {}, item.title), h('p', {}, item.description), s.intelligenceExpandedAction === item.id ? h('div', { className: 'mf-ai-action-detail' }, 'Na versão conectada, esta proposta mostrará dados utilizados, impacto esperado, validade da análise e ações de aceitar, editar ou rejeitar. Nada será aplicado automaticamente.') : null), h('div', { className: 'mf-ai-action-buttons' }, h('button', { type: 'button', className: 'ghost-button', onClick: () => app.setState({ intelligenceExpandedAction: s.intelligenceExpandedAction === item.id ? null : item.id }) }, s.intelligenceExpandedAction === item.id ? 'Recolher' : 'Ver detalhes'), h('button', { type: 'button', className: 'mf-ai-link', onClick: () => intelligencePrepare(app, item.question) }, 'Preparar análise', h(Icon, { name: 'arrow', size: 15 }))))));
-    return h('section', { className: 'section mf-intelligence-page', 'aria-label': 'Inteligência financeira' }, h('div', { className: 'mf-ai-intro' }, h('div', {}, h('span', { className: 'micro-label' }, 'INTELIGÊNCIA FINANCEIRA'), h('h2', {}, 'Seu espaço de análise e conversação'), h('p', {}, 'Hoje, conversa com histórico persistente e plano de ação supervisionado.')), h('span', { className: 'mf-ai-preview-label' }, h(Icon, { name: 'shield', size: 15 }), s.mode === 'demo' ? 'Prévia · dados fictícios' : 'Prévia · dados locais, sem inferência')), h('div', { className: 'mf-ai-tabbar', role: 'tablist', 'aria-label': 'Seções da Inteligência' }, tabs.map((item) => h('button', { type: 'button', key: item.id, role: 'tab', 'aria-selected': tab === item.id,
+    return h('section', { className: 'section mf-intelligence-page', 'aria-label': 'Inteligência financeira' }, h('div', { className: 'mf-ai-intro' }, h('div', {}, h('span', { className: 'micro-label' }, 'INTELIGÊNCIA FINANCEIRA'), h('h2', {}, 'Seu espaço de análise e conversação'), h('p', {}, ((_d = s.localFinancialAccess) === null || _d === void 0 ? void 0 : _d.token) ? 'Hoje e chat consultam os registros autorizados; respostas somente nesta sessão.' : 'Hoje, conversa com histórico persistente e plano de ação supervisionado.')), h('span', { className: 'mf-ai-preview-label' }, h(Icon, { name: 'shield', size: 15 }), s.mode === 'demo' ? 'Prévia · dados fictícios' : 'Prévia · dados locais, sem inferência')), typeof renderLocalFinancialAccess === 'function' ? renderLocalFinancialAccess(app) : null, h('div', { className: 'mf-ai-tabbar', role: 'tablist', 'aria-label': 'Seções da Inteligência' }, tabs.map((item) => h('button', { type: 'button', key: item.id, role: 'tab', 'aria-selected': tab === item.id,
         id: 'mf-ai-tab-' + item.id, 'aria-controls': 'mf-ai-section-' + item.id, tabIndex: tab === item.id ? 0 : -1, className: tab === item.id ? 'active' : '', onClick: () => app.setState({ intelligenceTab: item.id }), onKeyDown: (e) => { const next = intelligenceNextTab(item.id, e.key); if (next) {
             e.preventDefault();
             app.setState({ intelligenceTab: next }, () => { var _a; return (_a = document.getElementById('mf-ai-tab-' + next)) === null || _a === void 0 ? void 0 : _a.focus(); });
@@ -2693,10 +2695,10 @@ function renderIntelligencePanel(app) {
     const threads = Array.isArray(app.state.intelligenceThreads) ? app.state.intelligenceThreads : [];
     const activeThreadId = app.state.intelligenceActiveThreadId || '';
     const convState = typeof intelligenceConversationState === 'function' ? intelligenceConversationState(app) : { kind: 'oauth_disconnected', pill: 'Conta desconectada · modo local', badge: 'Conta desconectada', css: 'is-offline' };
-    const busy = Boolean(app.state.aiBusy || app.state.intelligenceDrawerBusy);
+    const busy = Boolean(app.state.aiBusy || app.state.localFinancialBusy || app.state.intelligenceDrawerBusy);
     const draft = String(app.state.intelligenceDraft || '');
     return h('div', { className: 'mf-ai-backdrop', role: 'presentation', onMouseDown: (e) => { if (e.target === e.currentTarget)
-            app.setState({ intelligencePanelOpen: false }); } }, h('aside', { className: 'mf-ai-drawer mf-ai-drawer-compact', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Assistente contextual de ' + info.label }, h('div', { className: 'mf-ai-drawer-head' }, h('div', { className: 'mf-ai-drawer-title-wrap' }, h('div', { className: 'mf-ai-drawer-kicker-row' }, h('span', { className: 'micro-label' }, 'COPILOTO CONTEXTUAL'), h('span', { className: 'mf-ai-conn-pill ' + convState.css }, convState.pill)), h('h2', {}, info.label)), h('div', { className: 'mf-ai-drawer-head-actions' }, h('button', { type: 'button', className: 'ghost-button mf-ai-expand-btn', 'aria-label': 'Nova conversa', title: 'Iniciar nova conversa', onClick: () => intelligenceCreateThread(app) }, 'Nova'), h('button', { type: 'button', className: 'ghost-button mf-ai-expand-btn', 'aria-label': 'Expandir na aba Inteligência', title: 'Abrir na aba Inteligência mantendo a conversa ativa', onClick: () => intelligenceOpenFullChat(app) }, 'Expandir'), h('button', { type: 'button', className: 'close-button', 'aria-label': 'Fechar assistente', onClick: () => app.setState({ intelligencePanelOpen: false }) }, '×'))), h('div', { className: 'mf-ai-context-meta mf-ai-drawer-scope' }, h('span', {}, scope.label), h('span', {}, scope.period), h('span', {}, scope.mode), ...scope.filters.map((filter) => h('span', { key: filter }, filter)), threads.length > 1 ? h('select', { className: 'mf-ai-drawer-thread-select', 'aria-label': 'Alternar conversa ativa', value: activeThreadId, onChange: (e) => intelligenceSelectThread(app, e.target.value) }, ...threads.map((t) => h('option', { key: t.id, value: t.id }, t.title + ' (' + t.messages.length + ')'))) : null), h('div', { className: 'mf-ai-drawer-body' }, messages.length === 0 ? h('div', { className: 'mf-ai-drawer-empty' }, h('p', { className: 'muted-desc' }, info.description), h('div', { className: 'mf-ai-drawer-suggestions', 'aria-label': 'Sugestões rápidas para ' + info.label }, ...info.questions.map((q, i) => h('button', { type: 'button', className: 'mf-ai-context-prompt', key: i, onClick: () => intelligenceSubmitQuestion(app, q) }, h('span', {}, q), h(Icon, { name: 'arrow', size: 15 }))))) :
+            app.setState({ intelligencePanelOpen: false }); } }, h('aside', { className: 'mf-ai-drawer mf-ai-drawer-compact', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Assistente contextual de ' + info.label }, h('div', { className: 'mf-ai-drawer-head' }, h('div', { className: 'mf-ai-drawer-title-wrap' }, h('div', { className: 'mf-ai-drawer-kicker-row' }, h('span', { className: 'micro-label' }, 'COPILOTO CONTEXTUAL'), h('span', { className: 'mf-ai-conn-pill ' + convState.css }, convState.pill)), h('h2', {}, info.label)), h('div', { className: 'mf-ai-drawer-head-actions' }, h('button', { type: 'button', className: 'ghost-button mf-ai-expand-btn', 'aria-label': 'Nova conversa', title: 'Iniciar nova conversa', onClick: () => intelligenceCreateThread(app) }, 'Nova'), h('button', { type: 'button', className: 'ghost-button mf-ai-expand-btn', 'aria-label': 'Expandir na aba Inteligência', title: 'Abrir na aba Inteligência mantendo a conversa ativa', onClick: () => intelligenceOpenFullChat(app) }, 'Expandir'), h('button', { type: 'button', className: 'close-button', 'aria-label': 'Fechar assistente', onClick: () => app.setState({ intelligencePanelOpen: false }) }, '×'))), h('div', { className: 'mf-ai-context-meta mf-ai-drawer-scope' }, h('span', {}, scope.label), h('span', {}, scope.period), h('span', {}, scope.mode), ...scope.filters.map((filter) => h('span', { key: filter }, filter)), threads.length > 1 ? h('select', { className: 'mf-ai-drawer-thread-select', 'aria-label': 'Alternar conversa ativa', value: activeThreadId, onChange: (e) => intelligenceSelectThread(app, e.target.value) }, ...threads.map((t) => h('option', { key: t.id, value: t.id }, t.title + ' (' + t.messages.length + ')'))) : null), typeof renderLocalFinancialAccess === 'function' ? renderLocalFinancialAccess(app) : null, h('div', { className: 'mf-ai-drawer-body' }, messages.length === 0 ? h('div', { className: 'mf-ai-drawer-empty' }, h('p', { className: 'muted-desc' }, info.description), h('div', { className: 'mf-ai-drawer-suggestions', 'aria-label': 'Sugestões rápidas para ' + info.label }, ...info.questions.map((q, i) => h('button', { type: 'button', className: 'mf-ai-context-prompt', key: i, onClick: () => intelligenceSubmitQuestion(app, q) }, h('span', {}, q), h(Icon, { name: 'arrow', size: 15 }))))) :
         h('div', { className: 'mf-ai-drawer-messages', role: 'log', 'aria-live': 'polite' }, ...messages.map(m => renderIntelligenceMessageItem(app, m)), busy ? h('div', { className: 'mf-ai-msg is-assistant is-streaming', role: 'status' }, h('strong', {}, 'Assistente MF'), h('p', {}, 'Processando solicitação no contexto de ' + scope.label + '…')) : null), app.state.intelligenceStorageError ? h('p', { className: 'mf-ai-error', role: 'alert' }, app.state.intelligenceStorageError) : null, app.state.aiError ? h('p', { className: 'mf-ai-error', role: 'alert' }, app.state.aiError) : null), h('form', { className: 'mf-ai-drawer-composer', onSubmit: (e) => { e.preventDefault(); if (draft.trim() && !busy)
             void intelligenceSubmitQuestion(app, draft); } }, h('label', { className: 'mf-ai-context-composer', htmlFor: 'mf-ai-drawer-input' }, h('span', { className: 'sr-only' }, 'Pergunta para o assistente'), h('textarea', { id: 'mf-ai-drawer-input', value: draft, rows: 2, maxLength: 750, disabled: busy, placeholder: 'Pergunte sobre ' + scope.label.toLowerCase() + ' ou prepare prévia de categoria…', onChange: (e) => app.setState({ intelligenceDraft: e.target.value }), onKeyDown: (e) => { if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
@@ -2962,21 +2964,23 @@ function intelligenceFoldText(value) {
     return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('pt-BR').replace(/\s+/g, ' ').trim();
 }
 function intelligenceConversationState(app) {
-    var _a, _b, _c, _d, _f, _g, _h, _j, _k, _l;
+    var _a, _b, _c, _d, _f, _g, _h, _j, _k, _l, _m;
+    if ((_a = app.state.localFinancialAccess) === null || _a === void 0 ? void 0 : _a.token)
+        return { kind: 'chat_available', pill: app.state.localFinancialAccess.expiresAt > Date.now() ? 'Leitura local · sem IA externa' : 'Leitura local expirada', badge: 'Leitura local', css: 'is-local' };
     const s = (app === null || app === void 0 ? void 0 : app.state) || {};
-    const activeError = String(s.aiError || ((_a = s.aiStatus) === null || _a === void 0 ? void 0 : _a.error) || '').trim();
+    const activeError = String(s.aiError || ((_b = s.aiStatus) === null || _b === void 0 ? void 0 : _b.error) || '').trim();
     const explicitUnavailable = Boolean(activeError ||
-        ((_b = s.aiStatus) === null || _b === void 0 ? void 0 : _b.unavailable) === true ||
-        ((_c = s.aiStatus) === null || _c === void 0 ? void 0 : _c.serviceAvailable) === false ||
-        ((_d = s.aiCapabilities) === null || _d === void 0 ? void 0 : _d.serviceAvailable) === false ||
-        (((_f = s.aiStatus) === null || _f === void 0 ? void 0 : _f.connected) === true && ((_g = s.aiStatus) === null || _g === void 0 ? void 0 : _g.secure) === false));
+        ((_c = s.aiStatus) === null || _c === void 0 ? void 0 : _c.unavailable) === true ||
+        ((_d = s.aiStatus) === null || _d === void 0 ? void 0 : _d.serviceAvailable) === false ||
+        ((_f = s.aiCapabilities) === null || _f === void 0 ? void 0 : _f.serviceAvailable) === false ||
+        (((_g = s.aiStatus) === null || _g === void 0 ? void 0 : _g.connected) === true && ((_h = s.aiStatus) === null || _h === void 0 ? void 0 : _h.secure) === false));
     if (explicitUnavailable) {
         return { kind: 'service_unavailable', pill: 'Serviço temporariamente indisponível', badge: 'Indisponível', css: 'is-error' };
     }
-    if (((_h = s.aiStatus) === null || _h === void 0 ? void 0 : _h.connected) === true) {
-        const chatDeclared = Boolean(((_j = s.aiCapabilities) === null || _j === void 0 ? void 0 : _j.conversationalInferenceEnabled) === true ||
-            ((_k = s.aiCapabilities) === null || _k === void 0 ? void 0 : _k.chatAvailable) === true ||
-            ((_l = s.aiStatus) === null || _l === void 0 ? void 0 : _l.chatAvailable) === true);
+    if (((_j = s.aiStatus) === null || _j === void 0 ? void 0 : _j.connected) === true) {
+        const chatDeclared = Boolean(((_k = s.aiCapabilities) === null || _k === void 0 ? void 0 : _k.conversationalInferenceEnabled) === true ||
+            ((_l = s.aiCapabilities) === null || _l === void 0 ? void 0 : _l.chatAvailable) === true ||
+            ((_m = s.aiStatus) === null || _m === void 0 ? void 0 : _m.chatAvailable) === true);
         if (chatDeclared) {
             return { kind: 'chat_available', pill: 'Serviço de conversação disponível · motor I2-A pendente', badge: 'Chat disponível', css: 'is-ready' };
         }
@@ -3442,11 +3446,13 @@ function intelligenceResolveActionProposal(app, proposalId, decision) {
     intelligenceSyncThreadMessages(app, updated);
 }
 async function intelligenceSubmitQuestion(app, rawQuestion) {
-    var _a, _b, _c;
+    var _a, _b, _c, _d;
+    if (((_a = app.state.localFinancialAccess) === null || _a === void 0 ? void 0 : _a.token) && typeof localFinancialSubmit === 'function')
+        return localFinancialSubmit(app, rawQuestion);
     const q = String(rawQuestion || '').trim().slice(0, 750);
     if (!q || app.state.aiBusy || app.state.intelligenceDrawerBusy)
         return;
-    const priorError = String(app.state.aiError || ((_a = app.state.aiStatus) === null || _a === void 0 ? void 0 : _a.error) || '').trim();
+    const priorError = String(app.state.aiError || ((_b = app.state.aiStatus) === null || _b === void 0 ? void 0 : _b.error) || '').trim();
     const convState = intelligenceConversationState(app);
     const scope = app.state.intelligencePanelOpen && app.state.intelligenceContextSnapshot
         ? app.state.intelligenceContextSnapshot
@@ -3495,7 +3501,7 @@ async function intelligenceSubmitQuestion(app, rawQuestion) {
     let replyStatus = 'unavailable';
     if (convState.kind === 'service_unavailable') {
         replyStatus = 'error';
-        const errReason = priorError || (((_b = app.state.aiStatus) === null || _b === void 0 ? void 0 : _b.connected) && ((_c = app.state.aiStatus) === null || _c === void 0 ? void 0 : _c.secure) === false ? 'cofre de criptografia local indisponível' : 'falha temporária de comunicação com o serviço de IA');
+        const errReason = priorError || (((_c = app.state.aiStatus) === null || _c === void 0 ? void 0 : _c.connected) && ((_d = app.state.aiStatus) === null || _d === void 0 ? void 0 : _d.secure) === false ? 'cofre de criptografia local indisponível' : 'falha temporária de comunicação com o serviço de IA');
         replyText = '**Serviço temporariamente indisponível:** Não foi possível acessar o serviço de IA neste momento (' + errReason + '). Nenhuma resposta foi simulada.';
     }
     else if (convState.kind === 'chat_available') {
@@ -3628,8 +3634,10 @@ function intelligenceLoadStoredThreads(app, mode) {
     }
 }
 function intelligencePersistThreads(app, threads, mode) {
-    var _a;
+    var _a, _b;
     if (mode === void 0) { mode = (((_a = app === null || app === void 0 ? void 0 : app.state) === null || _a === void 0 ? void 0 : _a.mode) === 'demo' ? 'demo' : 'real'); }
+    if ((_b = app.state.localFinancialAccess) === null || _b === void 0 ? void 0 : _b.token)
+        return '';
     const store = intelligenceGetStorage(app);
     if (!store)
         return 'Armazenamento local indisponível. Esta conversa não foi salva.';
@@ -3644,7 +3652,9 @@ function intelligencePersistThreads(app, threads, mode) {
     }
 }
 function intelligenceEnsureHydrated(app) {
-    var _a, _b, _c, _d, _f;
+    var _a, _b, _c, _d, _f, _g;
+    if ((_a = app.state.localFinancialAccess) === null || _a === void 0 ? void 0 : _a.token)
+        return;
     if (!app || !app.state)
         return;
     const mode = app.state.mode === 'demo' ? 'demo' : 'real';
@@ -3653,8 +3663,8 @@ function intelligenceEnsureHydrated(app) {
     const loaded = intelligenceLoadStoredThreads(app, mode);
     const existingMsgs = Array.isArray(app.state.intelligenceMessages) && app.state.intelligenceHydratedMode === undefined ? app.state.intelligenceMessages : [];
     let threads = loaded.threads;
-    let activeId = ((_a = threads[0]) === null || _a === void 0 ? void 0 : _a.id) || null;
-    let activeMsgs = ((_b = threads[0]) === null || _b === void 0 ? void 0 : _b.messages) || [];
+    let activeId = ((_b = threads[0]) === null || _b === void 0 ? void 0 : _b.id) || null;
+    let activeMsgs = ((_c = threads[0]) === null || _c === void 0 ? void 0 : _c.messages) || [];
     if (existingMsgs.length > 0 && threads.length === 0) {
         const todayIso = intelligenceReferenceToday(app) || '2026-11-11';
         const firstUser = existingMsgs.find(m => m.role === 'user');
@@ -3663,9 +3673,9 @@ function intelligenceEnsureHydrated(app) {
             title: firstUser ? firstUser.text.slice(0, 60) : 'Conversa da sessão',
             createdAtIso: todayIso,
             updatedAtIso: todayIso,
-            updatedTime: ((_c = existingMsgs[existingMsgs.length - 1]) === null || _c === void 0 ? void 0 : _c.createdAt) || intelligenceNowTime(),
-            scopeLabel: ((_d = existingMsgs[0]) === null || _d === void 0 ? void 0 : _d.scopeLabel) || 'Visão geral',
-            periodLabel: ((_f = existingMsgs[0]) === null || _f === void 0 ? void 0 : _f.periodLabel) || '',
+            updatedTime: ((_d = existingMsgs[existingMsgs.length - 1]) === null || _d === void 0 ? void 0 : _d.createdAt) || intelligenceNowTime(),
+            scopeLabel: ((_f = existingMsgs[0]) === null || _f === void 0 ? void 0 : _f.scopeLabel) || 'Visão geral',
+            periodLabel: ((_g = existingMsgs[0]) === null || _g === void 0 ? void 0 : _g.periodLabel) || '',
             mode,
             messages: existingMsgs
         };
@@ -3801,6 +3811,11 @@ function intelligenceDeleteThread(app, threadId, confirmFn) {
     return true;
 }
 function intelligenceClearHistory(app, confirmFn) {
+    var _a;
+    if ((_a = app.state.localFinancialAccess) === null || _a === void 0 ? void 0 : _a.token) {
+        app.setState({ intelligenceThreads: [], intelligenceMessages: [], intelligenceActiveThreadId: null });
+        return;
+    }
     intelligenceEnsureHydrated(app);
     const threads = Array.isArray(app.state.intelligenceThreads) ? app.state.intelligenceThreads : [];
     if (!threads.length)
@@ -3823,6 +3838,9 @@ function intelligenceClearHistory(app, confirmFn) {
     return true;
 }
 function intelligenceSwitchProfileMode(app, newMode) {
+    var _a;
+    if (((_a = app.state.localFinancialAccess) === null || _a === void 0 ? void 0 : _a.token) && typeof localFinancialDisable === 'function')
+        localFinancialDisable(app);
     const loaded = intelligenceLoadStoredThreads(app, newMode);
     const first = loaded.threads[0] || null;
     app.setState({
@@ -4116,4 +4134,121 @@ function renderWorkIntelligencePanel(app) {
     const d = app.state.workIntelligenceDemo, context = intelligenceContextFor(app.state.intelligenceContext).label;
     return h('div', { className: 'mf-ai-backdrop', onMouseDown: (e) => { if (e.target === e.currentTarget)
             app.setState({ intelligencePanelOpen: false }); } }, h('aside', { className: 'mf-ai-drawer mf-work-demo mf-work-drawer', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Demonstração contextual de ' + context, ref: workDemoPanelRef(app), onKeyDown: (e) => workDemoPanelKey(app, e) }, h('header', { className: 'mf-work-hero' }, h('div', {}, h('span', { className: 'micro-label' }, 'DEMONSTRAÇÃO · CONTEXTO AUTORIZADO'), h('h2', {}, context), h('p', {}, 'Apenas o nome da seção; os números são fictícios.')), h('div', { className: 'mf-work-actions' }, h('button', { type: 'button', className: 'ghost-button', onClick: () => app.setState({ page: 'intelligence', intelligencePanelOpen: false, workIntelligenceDemo: { ...d, tab: 'chat' } }) }, 'Expandir demonstração'), h('button', { type: 'button', className: 'close-button', 'aria-label': 'Fechar demonstração contextual', onClick: () => app.setState({ intelligencePanelOpen: false }) }, '×'))), renderWorkDemoChat(app, d, true)));
+}
+function localFinancialAPI() { return desktop; }
+function localFinancialParse(question, categories = []) {
+    const q = intelligenceFoldText(question);
+    if (/\b(categorize|altere|ajuste|crie|exclua|apague|registre|planeje)\b/.test(q))
+        return null;
+    if (/\bcompra|\bcomprar|celular|parcel|disponiv|dados falt/.test(q))
+        return { intent: 'purchase' };
+    if (/proximo mes|compromet|compromiss/.test(q))
+        return { intent: 'commitments' };
+    if (/aument|compar|mes anterior/.test(q))
+        return { intent: 'compare' };
+    if (/revis|conferir/.test(q))
+        return { intent: 'review' };
+    if (/maiores|mais caras/.test(q))
+        return { intent: 'largest' };
+    if (/orcament|limites|ultrapass|exced/.test(q))
+        return { intent: 'budgets' };
+    for (const c of categories)
+        if (q.includes(intelligenceFoldText(c.name)))
+            return { intent: 'category', category: c.name };
+    if (/alimentacao/.test(q))
+        return { intent: 'category', category: 'Alimentação' };
+    if (/assinatura/.test(q))
+        return { intent: 'category', category: 'Assinaturas' };
+    return null;
+}
+async function localFinancialEnable(app) {
+    var _a, _b;
+    const api = localFinancialAPI(), s = app.state;
+    if (s.localFinancialBusy)
+        return;
+    if (!(api === null || api === void 0 ? void 0 : api.localFinancialAuthorize)) {
+        app.setState({ localFinancialError: 'Consulta local requer a versão desktop desta candidata.' });
+        return;
+    }
+    const source = s.mode === 'demo' ? 'manual' : s.localFinancialSource || 'bank', profile = s.mode === 'demo' ? 'demo' : 'real';
+    const scope = { source, profile, planning: profile === 'real' && s.localFinancialPlanning === true, consent: 'LOCAL_FINANCIAL_READ_V1' };
+    const generation = (app.__localReadGeneration || 0) + 1;
+    app.__localReadGeneration = generation;
+    app.setState({ localFinancialBusy: true, localFinancialError: '' });
+    try {
+        const grant = await api.localFinancialAuthorize(scope);
+        if (app.__localReadGeneration !== generation || app.state.mode !== s.mode) {
+            void ((_a = api.localFinancialRevoke) === null || _a === void 0 ? void 0 : _a.call(api, grant.token));
+            return;
+        }
+        const backup = ((_b = s.localFinancialAccess) === null || _b === void 0 ? void 0 : _b.backup) || { intelligenceThreads: s.intelligenceThreads, intelligenceMessages: s.intelligenceMessages, intelligenceActiveThreadId: s.intelligenceActiveThreadId, intelligenceHydratedMode: s.intelligenceHydratedMode };
+        app.setState({ localFinancialAccess: { ...grant, backup }, localFinancialBusy: false, localFinancialRadar: null, intelligenceThreads: [], intelligenceMessages: [], intelligenceActiveThreadId: null, intelligenceDraft: '', intelligencePreparedQuestion: '', workIntelligenceDemo: s.workIntelligenceDemo ? { ...s.workIntelligenceDemo, enabled: false } : undefined }, () => void localFinancialRadar(app));
+    }
+    catch {
+        app.setState({ localFinancialBusy: false, localFinancialError: 'Não foi possível autorizar a leitura local. Nenhum dado foi consultado por esta solicitação.' });
+    }
+}
+function localFinancialDisable(app) {
+    var _a, _b;
+    const access = app.state.localFinancialAccess;
+    app.__localReadGeneration = (app.__localReadGeneration || 0) + 1;
+    app.setState({ ...access === null || access === void 0 ? void 0 : access.backup, localFinancialAccess: null, localFinancialRadar: null, localFinancialBusy: false, localFinancialError: '', intelligenceDraft: '' });
+    if (access === null || access === void 0 ? void 0 : access.token)
+        void ((_b = (_a = localFinancialAPI()) === null || _a === void 0 ? void 0 : _a.localFinancialRevoke) === null || _b === void 0 ? void 0 : _b.call(_a, access.token).catch(() => app.setState({ localFinancialError: 'A interface encerrou a leitura. A autorização do processo expira em até 15 minutos.' })));
+}
+async function localFinancialQuery(app, intent) {
+    var _a;
+    const access = app.state.localFinancialAccess;
+    if (!(access === null || access === void 0 ? void 0 : access.token) || access.profile !== (app.state.mode === 'demo' ? 'demo' : 'real'))
+        throw Error('Autorize a fonte e o perfil atuais.');
+    const month = app.state.localFinancialMonth || app.state.month;
+    const response = await localFinancialAPI().localFinancialQuery({ token: access.token, ...intent, month });
+    if ((app.state.localFinancialMonth || app.state.month) !== month)
+        throw Error('O período mudou durante a consulta. Tente novamente.');
+    if (((_a = app.state.localFinancialAccess) === null || _a === void 0 ? void 0 : _a.token) !== access.token)
+        throw Error('A autorização mudou durante a consulta.');
+    if (response.version !== 1 || response.readOnly !== true || response.inferenceCalled !== false || response.changesApplied !== false)
+        throw Error('Resposta de leitura inválida.');
+    return response;
+}
+async function localFinancialRadar(app) {
+    try {
+        const result = await localFinancialQuery(app, { intent: 'radar' });
+        app.setState({ localFinancialRadar: result, localFinancialError: '' });
+    }
+    catch (e) {
+        app.setState({ localFinancialError: String(e.message || 'Consulta indisponível.').slice(0, 180) });
+    }
+}
+async function localFinancialSubmit(app, question) {
+    var _a;
+    if (app.state.localFinancialBusy || !String(question || '').trim())
+        return;
+    const access = app.state.localFinancialAccess, q = String(question).trim().slice(0, 750), scope = intelligencePageScope(app), messages = [...intelligenceHistoryList(app)];
+    const user = { id: 'local-u-' + Date.now(), role: 'user', text: q, status: 'sent', createdAt: intelligenceNowTime(), scopeLabel: scope.label, periodLabel: app.state.localFinancialMonth || app.state.month };
+    app.setState({ localFinancialBusy: true, intelligenceDraft: '' });
+    const parsed = localFinancialParse(q, app.state.categories);
+    let reply = null, error = '';
+    try {
+        if (parsed)
+            reply = await localFinancialQuery(app, parsed);
+        else
+            error = 'Consulta ainda não reconhecida. Pergunte sobre alimentação, assinaturas, maiores despesas, orçamentos, compromissos, comparação ou revisão. Pedidos de alteração não são executados.';
+    }
+    catch (e) {
+        error = String(e.message || 'Consulta local indisponível.').slice(0, 220);
+    }
+    if (((_a = app.state.localFinancialAccess) === null || _a === void 0 ? void 0 : _a.token) !== (access === null || access === void 0 ? void 0 : access.token))
+        return;
+    const answer = { id: 'local-a-' + Date.now(), role: 'assistant', text: (reply === null || reply === void 0 ? void 0 : reply.text) || error, status: reply ? 'done' : 'error', createdAt: intelligenceNowTime(), scopeLabel: scope.label, periodLabel: user.periodLabel, structuredCard: (reply === null || reply === void 0 ? void 0 : reply.card) || null, details: reply ? JSON.stringify(reply.references) : 'Sem alteração financeira nem envio externo.' };
+    intelligenceSyncThreadMessages(app, [...messages, user, answer], scope);
+    app.setState({ localFinancialBusy: false });
+}
+function renderLocalFinancialAccess(app) {
+    const s = app.state, access = s.localFinancialAccess, active = (access === null || access === void 0 ? void 0 : access.token) && access.expiresAt > Date.now();
+    return h('section', { className: 'mf-ai-explainer', 'aria-label': 'Permissão de leitura financeira local' }, h('div', {}, h('strong', {}, active ? 'Leitura local autorizada · sem IA externa' : 'Consultar seus registros locais'), h('p', {}, 'Ao autorizar, movimentos e limites da fonte escolhida serão lidos neste computador. Respostas ficam apenas na memória desta sessão. Consultas usam o mês e a fonte abaixo, sem herdar filtros da tabela.'), !access ? h('div', { className: 'mf-ai-finance-controls' }, h('label', {}, 'Fonte', h('select', { value: s.mode === 'demo' ? 'manual' : s.localFinancialSource || 'bank', disabled: s.mode === 'demo', onChange: (e) => app.setState({ localFinancialSource: e.target.value }) }, h('option', { value: 'bank' }, 'Contas conectadas'), h('option', { value: 'manual' }, 'Lançamentos manuais'))), s.mode !== 'demo' ? h('label', {}, h('input', { type: 'checkbox', checked: s.localFinancialPlanning === true, onChange: (e) => app.setState({ localFinancialPlanning: e.target.checked }) }), 'Permitir também leitura do Planejamento') : null) : h('p', {}, 'Fonte: ' + access.source + ' · perfil ' + access.profile + ' · autorização por até 15 minutos.'), h('label', {}, 'Mês da consulta', h('input', { type: 'month', value: s.localFinancialMonth || s.month, onChange: (e) => app.setState({ localFinancialMonth: e.target.value, localFinancialRadar: null }) })), h('div', { className: 'mf-ai-proposal-actions' }, h('button', { type: 'button', className: 'primary-button', disabled: s.localFinancialBusy, onClick: () => active ? void localFinancialRadar(app) : void localFinancialEnable(app) }, active ? 'Atualizar radar' : 'Autorizar leitura local'), access ? h('button', { type: 'button', className: 'ghost-button', onClick: () => localFinancialDisable(app) }, 'Encerrar leitura e limpar respostas da sessão') : null), s.localFinancialError ? h('p', { role: 'alert' }, s.localFinancialError) : null));
+}
+function renderLocalFinancialRadar(app) {
+    const report = app.state.localFinancialRadar;
+    return h('div', { className: 'mf-ai-today' }, h('h2', {}, 'O que seus registros mostram hoje'), report ? renderIntelligenceStructuredCard(report.card) : h('p', { role: 'status' }, 'Atualize o radar para consultar o mês escolhido.'), h('div', { className: 'mf-ai-starter-grid' }, ...['Quanto gastei com alimentação neste mês?', 'Quais foram minhas maiores despesas?', 'Quais categorias ultrapassaram o orçamento?', 'Quanto tenho comprometido para o próximo mês?', 'Quais despesas aumentaram?', 'Que movimentações preciso revisar?', 'Quanto gastei em assinaturas?', 'Quais dados faltam para avaliar uma compra?'].map(q => h('button', { type: 'button', className: 'mf-ai-context-prompt', key: q, onClick: () => { app.setState({ intelligenceTab: 'chat' }); void localFinancialSubmit(app, q); } }, q))));
 }

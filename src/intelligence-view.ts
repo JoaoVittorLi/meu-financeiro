@@ -254,7 +254,8 @@ function renderIntelligenceView(app:any){
     h('div',{className:'mf-ai-explainer'},h(Icon,{name:'shield',size:19}),
       h('div',{},h('strong',{},'Insights econômicos por padrão'),
         h('p',{},'Na integração definitiva, alertas matemáticos virão do motor financeiro; o GPT-6.1 Sol será acionado apenas quando você solicitar explicação ou análise.'))));
-  else if(tab==='chat')section=h('div',{className:'mf-ai-workbench'},
+  if(tab==='today'&&s.localFinancialAccess?.token&&typeof renderLocalFinancialRadar==='function')section=renderLocalFinancialRadar(app);
+  if(tab==='chat')section=h('div',{className:'mf-ai-workbench'},
     renderIntelligenceHistorySidebar(app),
     h('div',{className:'mf-ai-chat-main mf-ai-workbench-main'},
       h('div',{className:'mf-ai-workbench-header'},
@@ -279,7 +280,7 @@ function renderIntelligenceView(app:any){
               h('span',{},q),h(Icon,{name:'arrow',size:14}))))):
       h('div',{className:'mf-ai-thread',role:'log','aria-live':'polite'},
         ...messages.map(m=>renderIntelligenceMessageItem(app,m)),
-        s.aiBusy?h('div',{className:'mf-ai-msg is-assistant is-streaming',role:'status'},
+        (s.aiBusy||s.localFinancialBusy)?h('div',{className:'mf-ai-msg is-assistant is-streaming',role:'status'},
           h('strong',{},'Assistente MF'),
           h('p',{},'Processando solicitação…')):null),
       s.aiError?h('p',{className:'mf-ai-error',role:'alert'},s.aiError):null,
@@ -287,12 +288,12 @@ function renderIntelligenceView(app:any){
         h('label',{className:'mf-ai-composer-label',htmlFor:'mf-ai-draft'},'Sua pergunta ou comando supervisionado'),
         h('textarea',{id:'mf-ai-draft',value:s.intelligenceDraft||'',rows:3,maxLength:750,placeholder:'Ex.: Categorize minha compra do mercado de ontem como Alimentação…',onChange:(e:any)=>app.setState({intelligenceDraft:e.target.value}),onKeyDown:(e:any)=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();if((s.intelligenceDraft||'').trim())void intelligenceSubmitQuestion(app,s.intelligenceDraft);}}}),
         h('span',{className:'mf-ai-compose-actions'},
-          h('small',{},convState.pill+' · armazenamento local isolado ('+(s.mode==='demo'?'Demonstração':'Pessoal')+')'),
+          h('small',{},convState.pill+(s.localFinancialAccess?.token?' · respostas na memória da sessão':' · armazenamento local isolado ('+(s.mode==='demo'?'Demonstração':'Pessoal')+')')),
           h('div',{className:'mf-ai-compose-btns'},
             h('button',{type:'button',className:'ghost-button',disabled:!(s.intelligenceDraft||'').trim(),onClick:()=>app.setState({intelligencePreparedQuestion:(s.intelligenceDraft||'').trim(),intelligenceDraft:''})},'Guardar rascunho'),
-            h('button',{type:'button',className:'primary-button',disabled:!(s.intelligenceDraft||'').trim()||Boolean(s.aiBusy),onClick:()=>intelligenceSubmitQuestion(app,s.intelligenceDraft)},
+            h('button',{type:'button',className:'primary-button',disabled:!(s.intelligenceDraft||'').trim()||Boolean(s.aiBusy||s.localFinancialBusy),onClick:()=>intelligenceSubmitQuestion(app,s.intelligenceDraft)},
               'Enviar no chat',h(Icon,{name:'arrow',size:16})))))));
-  else section=h('div',{className:'mf-ai-actions'},
+  else if(tab==='actions')section=h('div',{className:'mf-ai-actions'},
     h('div',{className:'mf-ai-welcome'},
       h('span',{className:'micro-label'},'AÇÕES SUPERVISIONADAS E EXEMPLOS · SEM GRAVAÇÃO AUTOMÁTICA'),
       h('h2',{},'Sugestões e prévias para revisar, nunca automáticas.'),
@@ -315,8 +316,9 @@ function renderIntelligenceView(app:any){
     h('div',{className:'mf-ai-intro'},
       h('div',{},h('span',{className:'micro-label'},'INTELIGÊNCIA FINANCEIRA'),
         h('h2',{},'Seu espaço de análise e conversação'),
-        h('p',{},'Hoje, conversa com histórico persistente e plano de ação supervisionado.')),
+        h('p',{},s.localFinancialAccess?.token?'Hoje e chat consultam os registros autorizados; respostas somente nesta sessão.':'Hoje, conversa com histórico persistente e plano de ação supervisionado.')),
       h('span',{className:'mf-ai-preview-label'},h(Icon,{name:'shield',size:15}),s.mode==='demo'?'Prévia · dados fictícios':'Prévia · dados locais, sem inferência')),
+    typeof renderLocalFinancialAccess==='function'?renderLocalFinancialAccess(app):null,
     h('div',{className:'mf-ai-tabbar',role:'tablist','aria-label':'Seções da Inteligência'},
       tabs.map((item:any)=>h('button',{type:'button',key:item.id,role:'tab','aria-selected':tab===item.id,
         id:'mf-ai-tab-'+item.id,'aria-controls':'mf-ai-section-'+item.id,tabIndex:tab===item.id?0:-1,className:tab===item.id?'active':'',onClick:()=>app.setState({intelligenceTab:item.id}),onKeyDown:(e:any)=>{const next=intelligenceNextTab(item.id,e.key);if(next){e.preventDefault();app.setState({intelligenceTab:next},()=>document.getElementById('mf-ai-tab-'+next)?.focus());}}},item.label))),
@@ -334,7 +336,7 @@ function renderIntelligencePanel(app:any){
   const threads:IntelligenceThread[]=Array.isArray(app.state.intelligenceThreads)?app.state.intelligenceThreads:[];
   const activeThreadId=app.state.intelligenceActiveThreadId||'';
   const convState=typeof intelligenceConversationState==='function'?intelligenceConversationState(app):{kind:'oauth_disconnected',pill:'Conta desconectada · modo local',badge:'Conta desconectada',css:'is-offline'};
-  const busy=Boolean(app.state.aiBusy||app.state.intelligenceDrawerBusy);
+  const busy=Boolean(app.state.aiBusy||app.state.localFinancialBusy||app.state.intelligenceDrawerBusy);
   const draft=String(app.state.intelligenceDraft||'');
   return h('div',{className:'mf-ai-backdrop',role:'presentation',onMouseDown:(e:any)=>{if(e.target===e.currentTarget)app.setState({intelligencePanelOpen:false});}},
     h('aside',{className:'mf-ai-drawer mf-ai-drawer-compact',role:'dialog','aria-modal':'true','aria-label':'Assistente contextual de '+info.label},
@@ -355,6 +357,7 @@ function renderIntelligencePanel(app:any){
         ...scope.filters.map((filter:string)=>h('span',{key:filter},filter)),
         threads.length>1?h('select',{className:'mf-ai-drawer-thread-select','aria-label':'Alternar conversa ativa',value:activeThreadId,onChange:(e:any)=>intelligenceSelectThread(app,e.target.value)},
           ...threads.map((t:IntelligenceThread)=>h('option',{key:t.id,value:t.id},t.title+' ('+t.messages.length+')'))):null),
+      typeof renderLocalFinancialAccess==='function'?renderLocalFinancialAccess(app):null,
       h('div',{className:'mf-ai-drawer-body'},
         messages.length===0?h('div',{className:'mf-ai-drawer-empty'},
           h('p',{className:'muted-desc'},info.description),
