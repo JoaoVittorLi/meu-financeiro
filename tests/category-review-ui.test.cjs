@@ -15,6 +15,22 @@ function fixture(){
 function nodes(tree,match,out=[]){if(tree&&typeof tree==='object'){if(match(tree))out.push(tree);for(const c of tree.children||[])nodes(c,match,out);}return out;}
 const text=n=>typeof n==='string'?n:(n?.children||[]).map(text).join('');
 const settle=()=>new Promise(resolve=>setImmediate(resolve));
+test('R3 inspection and page search preserve protected rows, and filter changes close the inspector',async()=>{
+ const f=fixture();try{
+  await authorize(f);await click(f,'Detalhes');assert(f.app.state.categoryReviewDetail);
+  f.context.categoryReviewSetFilter(f.app,'accountId','other');assert.equal(f.app.state.categoryReviewDetail,null);
+  const sections=nodes(f.context.renderCategoryReview(f.app),n=>n.props.id==='mf-review-section-0');assert.equal(sections[0].props.hidden,true);
+ }finally{f.close();}
+});
+test('R3 prepared response from an earlier account context is discarded',async()=>{
+ const f=fixture();try{
+  await authorize(f);let resolve;const original=f.context.desktop.categoryReviewPrepare;
+  f.context.desktop.categoryReviewPrepare=input=>new Promise(r=>resolve=async()=>r(await original(input)));
+  const pending=f.context.categoryReviewPrepare(f.app,'rule',{suggestionId:f.app.state.categoryReviewReport.suggestions[0].id});
+  f.context.categoryReviewSetFilter(f.app,'accountId','other');await resolve();await pending;
+  assert.equal(f.app.state.categoryReviewPreview,null);
+ }finally{f.close();}
+});
 test('history handoff applies the approved account and exact pattern then focuses the review queue',async()=>{
  const f=fixture();try{
   await authorize(f);const calls=[];f.context.document.getElementById=id=>({scrollIntoView:()=>calls.push(id),focus:()=>calls.push('focus')});
