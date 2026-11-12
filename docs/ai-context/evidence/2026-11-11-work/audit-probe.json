@@ -1,0 +1,30 @@
+{
+  "id": "WORK-AUDIT-01",
+  "classification": "CONFIRMADO EM TESTE LOCAL",
+  "environment": "Linux remoto, Node 22.23.4, TypeScript real; dados inventados",
+  "finding": "OPEN: resumo da Inteligência ignora divisão de despesas",
+  "input": {
+    "amountCents": -10000,
+    "category": "Compras",
+    "splits": [
+      {
+        "category": "Alimentação",
+        "amount": 6000
+      },
+      {
+        "category": "Transporte",
+        "amount": 4000
+      }
+    ]
+  },
+  "actualCategories": [
+    "Compras"
+  ],
+  "expectedCategories": [
+    "Alimentação",
+    "Transporte"
+  ],
+  "totalsMatch": true,
+  "applicationWindowsTested": false,
+  "financialDataChanged": false
+}

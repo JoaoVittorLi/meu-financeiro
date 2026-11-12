@@ -1,13 +1,161 @@
+/* Generated from shared/finance-period-ledger.mjs. */
+var FinancePeriodLedger=(function(){var exports={};
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.aggregateFinancePeriod = aggregateFinancePeriod;
+exports.cashflowBuckets = cashflowBuckets;
+exports.budgetProgress = budgetProgress;
+// Deterministic period ledger shared by the Windows / Cloudflare codebase.
+// Preview read models use it without altering local bank records or balances.
+// IMPORTANT: one source at a time. Never sum bank + manual histories by default.
+const iso = /^\d{4}-\d{2}-\d{2}$/;
+function validDate(d) {
+    if (typeof d !== 'string' || !iso.test(d))
+        throw new Error('Data do período inválida.');
+    const t = Date.parse(d + 'T00:00:00.000Z');
+    if (!Number.isFinite(t) || new Date(t).toISOString().slice(0, 10) !== d)
+        throw new Error('Data impossível.');
+    return t;
+}
+function cents(v) {
+    if (!Number.isSafeInteger(v) || Math.abs(v) > 100000000000)
+        throw new Error('Centavos inválidos.');
+    return v;
+}
+function add(map, key, amount) { map.set(key, (map.get(key) || 0) + amount); }
+function category(value) { return typeof value === 'string' && value.trim() ? value : 'A classificar'; }
+function sortCategories(map) { return [...map].map(([name, amountCents]) => ({ name, amountCents })).sort((a, b) => b.amountCents - a.amountCents || a.name.localeCompare(b.name, 'pt-BR')); }
+function aggregateFinancePeriod(rows, { start, end, source }) {
+    if (!Array.isArray(rows) || rows.length > 100000 || !['bank', 'manual'].includes(source))
+        throw new Error('Fonte financeira inválida.');
+    const first = validDate(start), last = validDate(end);
+    if (last < first || (last - first) / 86400000 > 730)
+        throw new Error('Intervalo financeiro inválido.');
+    let incomeCents = 0, expenseCents = 0, count = 0, excluded = 0, unclassifiedCents = 0;
+    const daily = new Map(), outCategories = new Map(), inCategories = new Map();
+    for (const row of rows) {
+        if (!row || typeof row !== 'object' || Array.isArray(row))
+            throw new Error('Registro financeiro inválido.');
+        const dt = validDate(row.date);
+        if (dt < first || dt > last)
+            continue;
+        let nature, amount;
+        if (source === 'bank') {
+            if (row.status !== 'POSTED') {
+                excluded++;
+                continue;
+            }
+            amount = Math.abs(cents(row.amountCents));
+            nature = row.nature === 'auto' || row.nature == null ?
+                (row.amountCents >= 0 ? 'income' : 'expense') : row.nature;
+            if (!['income', 'expense', 'transfer', 'ignore'].includes(nature))
+                throw new Error('Natureza inválida.');
+            if (nature === 'transfer' || nature === 'ignore') {
+                excluded++;
+                continue;
+            }
+        }
+        else {
+            if (!['income', 'expense'].includes(row.kind))
+                throw new Error('Tipo manual inválido.');
+            amount = cents(row.amountCents);
+            if (amount <= 0)
+                throw new Error('Lançamento manual inválido.');
+            nature = row.kind;
+        }
+        if (!amount) {
+            excluded++;
+            continue;
+        }
+        let today = daily.get(row.date);
+        if (!today) {
+            today = { date: row.date, incomeCents: 0, expenseCents: 0 };
+            daily.set(row.date, today);
+        }
+        count++;
+        if (nature === 'income') {
+            incomeCents += amount;
+            today.incomeCents += amount;
+            add(inCategories, category(row.category), amount);
+            if (!row.category)
+                unclassifiedCents += amount;
+        }
+        else {
+            expenseCents += amount;
+            today.expenseCents += amount;
+            const chunks = source === 'bank' && Array.isArray(row.splits) && row.splits.length ?
+                row.splits : null;
+            const validSplit = chunks && chunks.every(p => typeof p.category === 'string' && p.category && Number.isSafeInteger(p.amountCents) && p.amountCents > 0) &&
+                chunks.reduce((acc, p) => acc + p.amountCents, 0) === amount;
+            if (validSplit) {
+                for (const p of chunks)
+                    add(outCategories, p.category, p.amountCents);
+            }
+            else {
+                add(outCategories, category(row.category), amount);
+                if (!row.category)
+                    unclassifiedCents += amount;
+            }
+        }
+    }
+    return {
+        source, start, end, transactionsIncluded: count, excluded,
+        incomeCents, expenseCents, netCents: incomeCents - expenseCents,
+        unclassifiedCents, categoryCoverageComplete: unclassifiedCents === 0,
+        daily: [...daily.values()].sort((a, b) => a.date.localeCompare(b.date)),
+        expenses: sortCategories(outCategories), incomes: sortCategories(inCategories)
+    };
+}
+function cashflowBuckets(daily, start, end, bins = 7) {
+    const first = validDate(start), last = validDate(end);
+    const days = Math.round((last - first) / 86400000) + 1;
+    if (days < 1 || days > 731 || !Number.isInteger(bins) || bins < 1 || bins > 31)
+        throw new Error('Período de gráfico inválido.');
+    const count = Math.min(bins, days);
+    const map = new Map(daily.map(d => [d.date, d]));
+    const stamp = i => new Date(first + i * 86400000).toISOString().slice(0, 10);
+    return Array.from({ length: count }, (_, i) => {
+        const a = Math.floor(i * days / count), b = Math.floor((i + 1) * days / count) - 1;
+        let incomeCents = 0, expenseCents = 0;
+        for (let j = a; j <= b; j++) {
+            const d = map.get(stamp(j));
+            incomeCents += (d === null || d === void 0 ? void 0 : d.incomeCents) || 0;
+            expenseCents += (d === null || d === void 0 ? void 0 : d.expenseCents) || 0;
+        }
+        return { start: stamp(a), end: stamp(b), incomeCents, expenseCents };
+    });
+}
+function budgetProgress(budgets, expenses) {
+    if (!Array.isArray(budgets) || !Array.isArray(expenses))
+        throw new Error('Orçamento inválido.');
+    const spent = new Map(expenses.map(x => [x.name, x.amountCents]));
+    return budgets.map(item => {
+        const limitCents = cents(item.amountCents);
+        if (limitCents < 0 || typeof item.category !== 'string' || !item.category)
+            throw new Error('Limite inválido.');
+        const spentCents = spent.get(item.category) || 0;
+        return { category: item.category, limitCents, spentCents,
+            pct: limitCents > 0 ? Math.round(100 * spentCents / limitCents) : null };
+    });
+}
+
+return exports;})();
 const h = React.createElement;
+function simInputsEqual(a, b) {
+    if (!a || !b)
+        return false;
+    return a.value === b.value && a.installments === b.installments &&
+        a.interest === b.interest && (a.firstDueDate || '') === (b.firstDueDate || '');
+}
 const EMPTY_PLANNING = { items: [], suggestions: [], projection: { anchor: 0, source: 'manual', anchorDate: '', asOf: null, includeEstimatedIncome: false, rows: [], minimum: 0, negativeDays: [], uncertainIncomeExcluded: 0 }, bankTitles: [], generatedAt: '' };
 function freshPlanForm(kind = 'expense', day = iso(new Date())) { return { id: '', title: '', kind, amount: '', dueDate: day, category: kind === 'income' ? 'Salário' : 'Outros', accountId: '', notes: '', certainty: 'confirmed', mode: 'once', count: '12' }; }
 const EMPTY_BANK = { config: { configured: false, clientId: '', itemIds: [], secure: false }, data: { accounts: [], transactions: [], items: [], last: null } };
 const desktop = window.financeDesktop || null;
 const CATS = ['Moradia', 'Alimentação', 'Transporte', 'Saúde', 'Lazer', 'Educação', 'Assinaturas', 'Compras', 'Contas', 'Outros'];
-const COLORS = ['#884bff', '#bc80ff', '#db6ff5', '#7549d8', '#a58cf4', '#5b4da5', '#4a386f', '#7555bd', '#c090e5', '#3f375a'];
+const COLORS = ['#3e9a85', '#d6934b', '#4489ba', '#cb6d76', '#2aa898', '#4c7fb2', '#718096', '#b5874f', '#5d86a1', '#87929c'];
 const BUILTIN_EMOJIS = ['🏠', '🍽️', '🚗', '💊', '🎮', '📚', '📺', '🛍️', '🧾', '✨', '💰'];
 const EMOJI_OPTIONS = ['🏠', '🏡', '🔑', '🪴', '🍽️', '🍔', '🍕', '🥗', '🥑', '☕', '🍿', '🛒', '🛍️', '🚗', '🚕', '🚌', '🚲', '⛽', '✈️', '🧳', '💊', '🩺', '💅', '🧴', '🧘', '🎮', '🎬', '🎵', '🎧', '📚', '🎓', '💻', '📱', '📺', '📷', '🎨', '🎟️', '⚽', '🏋️', '🏆', '🐶', '🐱', '🐾', '💰', '💸', '💳', '🏦', '📈', '🪙', '🧾', '💡', '⚡', '💧', '📦', '🎁', '❤️', '🌸', '🌿', '⭐', '✨', '🎯', '🔧'];
-const COLOR_OPTIONS = ['#884bff', '#bc80ff', '#d66ef3', '#f063a4', '#f97373', '#f99d5a', '#eab653', '#80b96a', '#38bf95', '#3ab9c7', '#5b9cf6', '#6c79ef', '#a48bc8', '#be9aa3', '#727a98', '#d2a178'];
+const COLOR_OPTIONS = ['#3e9a85', '#d6934b', '#4489ba', '#cb6d76', '#2aa898', '#4c7fb2', '#718096', '#b5874f', '#5d86a1', '#87929c', '#279c72', '#538faf', '#40ac89', '#55a6b0', '#e0ae5b', '#bd786a'];
 const DEFAULT_CATEGORY_INFOS = [...CATS, 'Salário', 'Transferências', 'Rendimentos', 'Reembolsos'].map((name, i) => ({ name, color: COLORS[i % COLORS.length], emoji: BUILTIN_EMOJIS[i] || '✨', builtIn: 1, kind: ['Salário', 'Rendimentos', 'Reembolsos'].includes(name) ? 'income' : ['Outros', 'Transferências'].includes(name) ? 'both' : 'expense' }));
 const emptyRule = () => ({ id: null, pattern: '', matchMode: 'contains', category: 'Alimentação', scope: 'both', priority: '100' });
 function fold(value) { return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleUpperCase('pt-BR').replace(/\s+/g, ' ').trim(); }
@@ -25,14 +173,40 @@ function effectiveNature(t) {
 }
 function transactionViewRows(state) {
     const review = state.txReviewOnly;
-    const rows = (state.mode === 'demo' ? [] : state.bank.data.transactions || []);
+    const span = dateSpan(state.overviewPeriod, state.customStart, state.customEnd);
+    const banks = (state.mode === 'demo' ? [] : state.bank.data.transactions || []);
     const manual = state.data.transactions;
     const term = fold(state.query);
-    const filters = (t) => (review || (t.date >= dateSpan(state.overviewPeriod, state.customStart, state.customEnd).start && t.date <= dateSpan(state.overviewPeriod, state.customStart, state.customEnd).end)) &&
-        (!term || [t.description, t.category, t.account, t.merchant || ''].some(v => fold(v).includes(term)));
-    const bankRows = rows.filter(t => !review || !t.reviewed).map(t => ({ key: t.accountId + '|' + t.id, origin: 'bank', date: t.date, description: t.description, merchant: t.customTitle || t.merchant || '', category: t.category, amount: t.amount, account: t.accountName, status: t.status, raw: t }));
-    const manualRows = review ? [] : manual.map(t => ({ key: 'manual|' + t.id, origin: 'manual', date: t.date, description: t.description, merchant: '', category: t.category, amount: t.kind === 'income' ? t.amount : -t.amount, account: 'Adicionado por você', status: 'POSTED', raw: t }));
-    const filtered = bankRows.concat(manualRows).filter(t => (!state.bankFilter || (t.origin === 'bank' && t.raw.accountId === state.bankFilter)) && (review || state.txSource === 'all' || t.origin === state.txSource) && filters(t)).sort((a, b) => b.date.localeCompare(a.date) || a.key.localeCompare(b.key));
+    const bankRows = banks.filter(t => !review || !t.reviewed).map(t => ({
+        key: t.accountId + '|' + t.id, origin: 'bank', date: t.date, description: t.description,
+        merchant: t.customTitle || t.merchant || '', category: t.category, amount: t.amount,
+        account: t.accountName, status: t.status, raw: t
+    }));
+    const manualRows = review ? [] : manual.map(t => ({
+        key: 'manual|' + t.id, origin: 'manual', date: t.date, description: t.description,
+        merchant: '', category: t.category, amount: t.kind === 'income' ? t.amount : -t.amount,
+        account: 'Adicionado por você', status: 'POSTED', raw: t
+    }));
+    const kindOf = (t) => t.origin === 'manual' ? t.raw.kind : effectiveNature(t.raw);
+    const filtered = bankRows.concat(manualRows).filter(t => (review || (t.date >= span.start && t.date <= span.end)) &&
+        (!term || [t.description, t.category, t.account, t.merchant].some(v => fold(v).includes(term))) &&
+        (!state.bankFilter || (t.origin === 'bank' && t.raw.accountId === state.bankFilter)) &&
+        (review || state.txSource === 'all' || !state.txSource || t.origin === state.txSource) &&
+        (!state.txCategoryFilter || t.category === state.txCategoryFilter) &&
+        (!state.txKindFilter || state.txKindFilter === 'all' || kindOf(t) === state.txKindFilter) &&
+        (review || !state.txReviewFilter || state.txReviewFilter === 'all' ||
+            (t.origin === 'bank' && ((state.txReviewFilter === 'reviewed') === !!t.raw.reviewed))));
+    const tie = (a, b) => a.key.localeCompare(b.key);
+    const mode = state.txSort || 'date_desc';
+    filtered.sort((a, b) => {
+        if (mode === 'date_asc')
+            return a.date.localeCompare(b.date) || tie(a, b);
+        if (mode === 'amount_desc')
+            return Math.abs(b.amount) - Math.abs(a.amount) || b.date.localeCompare(a.date) || tie(a, b);
+        if (mode === 'amount_asc')
+            return Math.abs(a.amount) - Math.abs(b.amount) || b.date.localeCompare(a.date) || tie(a, b);
+        return b.date.localeCompare(a.date) || tie(a, b);
+    });
     return filtered;
 }
 function transactionViewSummary(rows, source) {
@@ -130,6 +304,17 @@ function parseMoney(v) { let s = String(v || '').trim().replace(/R\$|\s/g, ''); 
     s = s.replace(/\./g, '').replace(',', '.');
 else if ((s.match(/\./g) || []).length > 1)
     s = s.replace(/\./g, ''); const x = Number(s); return Number.isFinite(x) ? Math.round(x * 100) : NaN; }
+function parsePositiveBRLInput(value) {
+    const input = String(value !== null && value !== void 0 ? value : '').trim().replace(/^R\$\s*/, '');
+    if (!/^(?:0|[1-9]\d*|[1-9]\d{0,2}(?:\.\d{3})+)(?:,\d{1,2})?$/.test(input))
+        return NaN;
+    const [integer, fraction = ''] = input.split(',');
+    const whole = Number(integer.replace(/\./g, ''));
+    if (!Number.isSafeInteger(whole))
+        return NaN;
+    const cents = whole * 100 + Number(fraction.padEnd(2, '0'));
+    return Number.isSafeInteger(cents) && cents > 0 && cents <= 100000000000 ? cents : NaN;
+}
 function iso(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
 function shiftMonth(ym, offset) { const d = new Date(Number(ym.slice(0, 4)), Number(ym.slice(5, 7)) - 1 + offset, 1); return iso(d).slice(0, 7); }
 const nowYM = iso(new Date()).slice(0, 7);
@@ -339,6 +524,26 @@ function budgetPresentationOrder(a, b) {
     const ratio = (x) => x.hasLimit ? (x.limit > 0 ? x.total / x.limit : x.total > 0 ? Infinity : 0) : 0;
     return band(a) - band(b) || (ratio(b) - ratio(a)) || b.total - a.total || a.info.name.localeCompare(b.info.name, 'pt-BR');
 }
+const B3_COLOR_STOPS = [
+    [0, 35, 184, 112], [10, 35, 184, 112], [25, 161, 203, 70], [50, 240, 204, 57],
+    [70, 241, 149, 58], [90, 235, 105, 80], [99, 224, 72, 79], [100, 211, 55, 70]
+];
+function budgetB3Color(percentage) {
+    const p = Math.max(0, Math.min(100, Number.isFinite(percentage) ? percentage : 100));
+    let upper = 1;
+    while (upper < B3_COLOR_STOPS.length - 1 && p > B3_COLOR_STOPS[upper][0])
+        upper++;
+    const a = B3_COLOR_STOPS[upper - 1], b = B3_COLOR_STOPS[upper];
+    const t = b[0] === a[0] ? 0 : (p - a[0]) / (b[0] - a[0]);
+    const channel = (i) => Math.round(a[i] + (b[i] - a[i]) * t);
+    return 'rgb(' + channel(1) + ', ' + channel(2) + ', ' + channel(3) + ')';
+}
+function budgetB3Visual(spentCents, limitCents) {
+    if (!Number.isFinite(spentCents) || !Number.isFinite(limitCents) || limitCents <= 0)
+        return null;
+    const raw = Math.max(0, spentCents / limitCents * 100), fill = Math.min(100, raw);
+    return { percent: Math.round(raw), fill, color: budgetB3Color(fill) };
+}
 function u3BudgetSignals(entries, total) {
     const limited = entries.filter(x => x.hasLimit), spent = limited.reduce((n, x) => n + x.total, 0);
     return { exceeded: limited.filter(x => x.total > x.limit).length, near: limited.filter(x => x.limit > 0 && x.total <= x.limit && x.total / x.limit >= .9).length, unlimited: entries.filter(x => !x.hasLimit && x.total > 0).length, covered: total > 0 ? Math.round(Math.min(1, spent / total) * 100) : null, spent, limit: limited.reduce((n, x) => n + x.limit, 0) };
@@ -393,7 +598,7 @@ function Donut(p) {
     }) : h('p', { className: 'muted-desc' }, 'Sem despesas no período')), total && all.length > 5 ? h('details', { className: 'donut-all-categories' }, h('summary', {}, 'Ver todas as categorias (' + all.length + ')'), h('div', { className: 'donut-all-list' }, all.map(v => h('div', { key: v.name }, h('span', {}, v.name), h('strong', {}, fmt(v.total), ' · ' + (v.total / total * 100).toFixed(1).replace('.', ',') + '%')))), h('small', {}, 'Percentuais arredondados; valores em reais preservam o total.')) : null);
 }
 function TransactionCategoryButton(p) {
-    return h('button', { type: 'button', className: 'category-tag mf-category-edit', title: 'Editar categoria', 'aria-label': p.label, onClick: p.onClick }, h('span', {}, (p.emoji || '✨') + ' ' + p.category), h('span', { className: 'mf-category-edit-mark', 'aria-hidden': 'true' }, '✎'));
+    return h('button', { type: 'button', className: 'category-tag mf-category-edit', title: 'Alterar categoria sem abrir detalhes', 'aria-label': p.label, 'aria-haspopup': 'dialog', 'aria-expanded': !!p.expanded, disabled: p.disabled, onClick: p.onClick }, h('span', {}, (p.emoji || '✨') + ' ' + p.category), h('span', { className: 'mf-category-edit-mark', 'aria-hidden': 'true' }, '✎'));
 }
 class StyledSelect extends React.Component {
     constructor(props) {
@@ -507,7 +712,8 @@ class SingleDatePicker extends React.Component {
         };
         this.outside = (e) => { var _a, _b; if (this.state.open && !((_a = this.trigger) === null || _a === void 0 ? void 0 : _a.contains(e.target)) && !((_b = this.panel) === null || _b === void 0 ? void 0 : _b.contains(e.target)))
             this.close(); };
-        this.toggle = () => { var _a; const r = (_a = this.trigger) === null || _a === void 0 ? void 0 : _a.getBoundingClientRect(); if (!r)
+        this.toggle = () => { var _a; if (this.props.disabled)
+            return; const r = (_a = this.trigger) === null || _a === void 0 ? void 0 : _a.getBoundingClientRect(); if (!r)
             return; const width = Math.max(0, Math.min(326, window.innerWidth - 20)), left = Math.max(10, Math.min(r.left, window.innerWidth - width - 10)); this.setState({ open: !this.state.open, view: (this.props.value || iso(new Date())).slice(0, 7), left, top: r.bottom + Math.min(380, window.innerHeight - 20) + 6 > window.innerHeight ? Math.max(10, r.top - Math.min(380, window.innerHeight - 20) - 6) : r.bottom + 6 }, () => { var _a, _b; if (this.state.open)
             (_b = (_a = this.panel) === null || _a === void 0 ? void 0 : _a.querySelector('.mf-day.selected,.mf-day')) === null || _b === void 0 ? void 0 : _b.focus({ preventScroll: true }); }); };
         this.state = { open: false, view: (props.value || iso(new Date())).slice(0, 7), left: 0, top: 0 };
@@ -517,7 +723,7 @@ class SingleDatePicker extends React.Component {
     render() {
         var _a;
         const ym = this.state.view, [y, m] = ym.split('-').map(Number), first = new Date(y, m - 1, 1), offset = (first.getDay() + 6) % 7, count = new Date(y, m, 0).getDate();
-        return h('div', { className: 'mf-single-date' }, h('button', { ref: (e) => this.trigger = e, type: 'button', className: 'mf-date-trigger', onClick: this.toggle, onKeyDown: this.onKeyDown, 'aria-haspopup': 'dialog', 'aria-expanded': this.state.open }, h(Icon, { name: 'calendar', size: 16 }), ((_a = this.props.value) === null || _a === void 0 ? void 0 : _a.split('-').reverse().join('/')) || 'Selecionar data', h('span', { className: 'mf-caret', 'aria-hidden': 'true' }, h(Icon, { name: 'chevron-down', size: 16 }))), this.state.open ? ReactDOM.createPortal(h('div', { ref: (e) => this.panel = e, className: 'mf-single-calendar', role: 'dialog', 'aria-label': 'Selecionar data', onKeyDown: this.onKeyDown, style: { position: 'fixed', left: this.state.left, top: this.state.top, width: Math.min(326, window.innerWidth - 20) } }, h('div', { className: 'mf-calendar-nav' }, h('button', { type: 'button', onClick: () => this.setState({ view: shiftMonth(ym, -1) }) }, '‹'), h('strong', {}, prettyMonth(ym)), h('button', { type: 'button', onClick: () => this.setState({ view: shiftMonth(ym, 1) }) }, '›')), h('div', { className: 'mf-calendar-grid' }, ['S', 'T', 'Q', 'Q', 'S', 'S', 'D'].map((label, i) => h('span', { key: 'h' + i, className: 'mf-weekday' }, label)), Array.from({ length: offset }, (_, i) => h('span', { key: 'e' + i })), Array.from({ length: count }, (_, i) => { const day = ym + '-' + String(i + 1).padStart(2, '0'); return h('button', { key: day, type: 'button', 'aria-label': day, 'data-date': day, 'aria-pressed': this.props.value === day, className: 'mf-day ' + (this.props.value === day ? 'selected' : ''), onClick: () => { this.props.onChange(day); this.closeAndFocus(); } }, i + 1); })), h('button', { type: 'button', className: 'mf-today-link', onClick: () => { this.props.onChange(iso(new Date())); this.closeAndFocus(); } }, 'Hoje')), document.body) : null);
+        return h('div', { className: 'mf-single-date' }, h('button', { ref: (e) => this.trigger = e, type: 'button', className: 'mf-date-trigger', disabled: this.props.disabled, onClick: this.toggle, onKeyDown: this.onKeyDown, 'aria-haspopup': 'dialog', 'aria-expanded': this.state.open }, h(Icon, { name: 'calendar', size: 16 }), ((_a = this.props.value) === null || _a === void 0 ? void 0 : _a.split('-').reverse().join('/')) || 'Selecionar data', h('span', { className: 'mf-caret', 'aria-hidden': 'true' }, h(Icon, { name: 'chevron-down', size: 16 }))), this.state.open ? ReactDOM.createPortal(h('div', { ref: (e) => this.panel = e, className: 'mf-single-calendar', role: 'dialog', 'aria-label': 'Selecionar data', onKeyDown: this.onKeyDown, style: { position: 'fixed', left: this.state.left, top: this.state.top, width: Math.min(326, window.innerWidth - 20) } }, h('div', { className: 'mf-calendar-nav' }, h('button', { type: 'button', onClick: () => this.setState({ view: shiftMonth(ym, -1) }) }, '‹'), h('strong', {}, prettyMonth(ym)), h('button', { type: 'button', onClick: () => this.setState({ view: shiftMonth(ym, 1) }) }, '›')), h('div', { className: 'mf-calendar-grid' }, ['S', 'T', 'Q', 'Q', 'S', 'S', 'D'].map((label, i) => h('span', { key: 'h' + i, className: 'mf-weekday' }, label)), Array.from({ length: offset }, (_, i) => h('span', { key: 'e' + i })), Array.from({ length: count }, (_, i) => { const day = ym + '-' + String(i + 1).padStart(2, '0'); return h('button', { key: day, type: 'button', 'aria-label': day, 'data-date': day, 'aria-pressed': this.props.value === day, className: 'mf-day ' + (this.props.value === day ? 'selected' : ''), onClick: () => { this.props.onChange(day); this.closeAndFocus(); } }, i + 1); })), h('button', { type: 'button', className: 'mf-today-link', onClick: () => { this.props.onChange(iso(new Date())); this.closeAndFocus(); } }, 'Hoje')), document.body) : null);
     }
 }
 class PeriodPicker extends React.Component {
@@ -604,10 +810,19 @@ class App extends React.Component {
         this.lastSyncAttempt = 0;
         this.focusReturn = null;
         this.focusCategoryOnDetailOpen = false;
+        this.quickCategoryAnchor = null;
+        this.quickCategorySearchInput = null;
+        this.quickCategoryWrite = false;
+        this.reviewSavingKeys = new Set();
         this.categorySavingKeys = new Set();
         this.categorySaveQueue = Promise.resolve();
         this.simRequest = 0;
         this.onGlobalKeydown = (event) => {
+            if (event.key === 'Escape' && this.state.quickCategory) {
+                event.preventDefault();
+                this.closeQuickCategory();
+                return;
+            }
             const dialog = document.querySelector('.modal-backdrop [role="dialog"],.mf-detail-drawer,.mf-ai-drawer');
             if (event.key === 'Tab' && dialog && !document.querySelector('[role="listbox"],.mf-period-popover,.mf-single-calendar')) {
                 const controls = Array.from(dialog.querySelectorAll('button:not([disabled]),input:not([disabled]),textarea:not([disabled]),[tabindex="0"]'));
@@ -655,12 +870,31 @@ class App extends React.Component {
             if (this.state.showEntry)
                 this.setState({ showEntry: false });
         };
+        this.onQuickCategoryOutside = (event) => {
+            var _a, _b, _c;
+            if (!this.state.quickCategory || this.quickCategoryWrite)
+                return;
+            if (((_b = (_a = event.target) === null || _a === void 0 ? void 0 : _a.closest) === null || _b === void 0 ? void 0 : _b.call(_a, '.u5-category-popover')) || ((_c = this.quickCategoryAnchor) === null || _c === void 0 ? void 0 : _c.contains(event.target)))
+                return;
+            this.closeQuickCategory(false);
+        };
+        this.onQuickCategoryViewportChange = (event) => {
+            var _a, _b;
+            if (!this.state.quickCategory || this.quickCategoryWrite)
+                return;
+            if ((event === null || event === void 0 ? void 0 : event.type) === 'scroll' && ((_b = (_a = event.target) === null || _a === void 0 ? void 0 : _a.closest) === null || _b === void 0 ? void 0 : _b.call(_a, '.u5-category-popover')))
+                return;
+            this.closeQuickCategory(false);
+        };
         const mode = 'real';
-        this.state = { mode, data: desktop ? starter() : load(mode), page: 'overview', month: nowYM, showEntry: false, entry: { date: iso(new Date()), description: '', kind: 'expense', category: 'Outros', value: '' }, sim: { value: '', installments: '6', interest: '0' }, outcome: null, query: '', toast: '', budgetEdit: '', busy: !!desktop, booting: !!desktop, editModal: null, bank: EMPTY_BANK, bankForm: { clientId: '', clientSecret: '', itemIds: '' }, bankBusy: false, bankMessage: '', bankFilter: '', txSource: 'all', txReviewOnly: false, txOrganize: false, categoryMoreEmojis: false, quickAddOpen: false, dashboardSource: 'bank', sourceDetailsOpen: false, budgetTab: 'expense', showAllBudgetCategories: false, categories: DEFAULT_CATEGORY_INFOS, rules: [], categoryEditor: { previousName: '', name: '', color: '#884bff', emoji: '✨', kind: 'expense' }, ruleEditor: emptyRule(), ruleTest: 'IFOOD', categoryMessage: '', entryCategoryTouched: false, bankConfigOpen: false, overviewPeriod: 'month', customStart: iso(new Date()), customEnd: iso(new Date()), backupInfo: { copies: 0, last: null }, detail: null, detailDraft: { merchant: '', note: '', nature: 'auto', reviewed: false, aliasPattern: '', splitParts: [] }, detailBusy: false, categorySaving: [], txSelected: [], txBatchCategory: 'Alimentação', planning: EMPTY_PLANNING, planMonth: nowYM, planDay: iso(new Date()), planSelected: null, planOpen: false, planForm: freshPlanForm(), planBusy: false, planView: 'all', planTerm: '', planIncludeEstimated: false, planBankTitle: '', planMatchQuery: '', planHistory: [], cloudStage: 'not_started', cloudBusy: false, cloudMessage: '', cloudIdentityConnected: false, cloudQuarantineVerified: false, cloudPersonalTransferred: false, cloudParityBusy: false, cloudParityMessage: '', cloudE1Report: null, intelligenceTab: 'today', intelligenceDraft: '', intelligencePreparedQuestion: '', intelligencePanelOpen: false, intelligenceContext: 'overview', intelligenceExpandedAction: null, aiStatus: { connected: false, secure: false }, aiBusy: false, aiError: '', aiDemoCase: 'budget', aiEffort: 'auto', aiCreditsConfirmed: false, aiResult: null, aiStreaming: '', aiCapabilities: null, aiMemories: [], aiMemoryDraft: '', aiMemoryKind: 'preference', aiMemoryBusy: false, aiMemoryError: '', aiUseMemories: false, aiPreview: null, aiUsageStats: null, aiFinancialDemoSource: 'bank', aiFinancialDemo: null, aiFinancialDemoBusy: false, aiFinancialDemoError: '' };
+        this.state = { mode, data: desktop ? starter() : load(mode), page: 'overview', month: nowYM, showEntry: false, entry: { date: iso(new Date()), description: '', kind: 'expense', category: 'Outros', value: '' }, sim: { value: '', installments: '6', interest: '0' }, outcome: null, simCalculatedInput: null, simResultStale: false, simError: '', query: '', toast: '', budgetEdit: '', busy: !!desktop, booting: !!desktop, editModal: null, bank: EMPTY_BANK, bankForm: { clientId: '', clientSecret: '', itemIds: '' }, bankBusy: false, bankMessage: '', bankFilter: '', txSource: 'all', txReviewOnly: false, txOrganize: false, txAdvancedOpen: false, txCategoryFilter: '', txKindFilter: 'all', txReviewFilter: 'all', txSort: 'date_desc', quickCategory: null, quickCategoryQuery: '', quickCategoryIndex: 0, quickCategoryBusy: false, quickCategoryError: '', categoryMoreEmojis: false, quickAddOpen: false, dashboardSource: 'bank', sourceDetailsOpen: false, budgetTab: 'expense', showAllBudgetCategories: false, categories: DEFAULT_CATEGORY_INFOS, rules: [], categoryEditor: { previousName: '', name: '', color: '#3e9a85', emoji: '✨', kind: 'expense' }, ruleEditor: emptyRule(), ruleTest: 'IFOOD', categoryMessage: '', entryCategoryTouched: false, bankConfigOpen: false, overviewPeriod: 'month', customStart: iso(new Date()), customEnd: iso(new Date()), backupInfo: { copies: 0, last: null }, detail: null, detailDraft: { merchant: '', note: '', nature: 'auto', reviewed: false, aliasPattern: '', splitParts: [] }, manualDraft: null, detailBusy: false, categorySaving: [], txSelected: [], txBatchCategory: 'Alimentação', planning: EMPTY_PLANNING, planMonth: nowYM, planDay: iso(new Date()), planSelected: null, planOpen: false, planForm: freshPlanForm(), planBusy: false, planView: 'all', planTerm: '', planIncludeEstimated: false, planBankTitle: '', planMatchQuery: '', planHistory: [], cloudStage: 'not_started', cloudBusy: false, cloudMessage: '', cloudIdentityConnected: false, cloudQuarantineVerified: false, cloudPersonalTransferred: false, cloudParityBusy: false, cloudParityMessage: '', cloudE1Report: null, intelligenceTab: 'today', intelligenceDraft: '', intelligencePreparedQuestion: '', intelligencePanelOpen: false, intelligenceContext: 'overview', intelligenceExpandedAction: null, aiStatus: { connected: false, secure: false }, aiBusy: false, aiError: '', aiDemoCase: 'budget', aiEffort: 'auto', aiCreditsConfirmed: false, aiResult: null, aiStreaming: '', aiCapabilities: null, aiMemories: [], aiMemoryDraft: '', aiMemoryKind: 'preference', aiMemoryBusy: false, aiMemoryError: '', aiUseMemories: false, aiPreview: null, aiUsageStats: null, aiFinancialDemoSource: 'bank', aiFinancialDemo: null, aiFinancialDemoBusy: false, aiFinancialDemoError: '' };
     }
     async componentDidMount() {
         var _a, _b, _c, _d, _e;
         window.addEventListener('keydown', this.onGlobalKeydown);
+        window.addEventListener('resize', this.onQuickCategoryViewportChange);
+        window.addEventListener('scroll', this.onQuickCategoryViewportChange, true);
+        document.addEventListener('pointerdown', this.onQuickCategoryOutside, true);
         if (!desktop)
             return;
         this.unsubscribeAI = ((_a = desktop.onAIDelta) === null || _a === void 0 ? void 0 : _a.call(desktop, (delta) => this.setState((previous) => ({ aiStreaming: (previous.aiStreaming + delta).slice(0, 12000) })))) || null;
@@ -747,7 +981,7 @@ class App extends React.Component {
             this.setState({ bankMessage: 'Não foi possível consultar a integração: ' + String((e === null || e === void 0 ? void 0 : e.message) || e) });
         }
     }
-    componentWillUnmount() { var _a, _b; window.removeEventListener('keydown', this.onGlobalKeydown); (_a = this.unsubscribePersonalCloud) === null || _a === void 0 ? void 0 : _a.call(this); (_b = this.unsubscribeAI) === null || _b === void 0 ? void 0 : _b.call(this); if (this.autoSyncTimer)
+    componentWillUnmount() { var _a, _b; window.removeEventListener('keydown', this.onGlobalKeydown); window.removeEventListener('resize', this.onQuickCategoryViewportChange); window.removeEventListener('scroll', this.onQuickCategoryViewportChange, true); document.removeEventListener('pointerdown', this.onQuickCategoryOutside, true); (_a = this.unsubscribePersonalCloud) === null || _a === void 0 ? void 0 : _a.call(this); (_b = this.unsubscribeAI) === null || _b === void 0 ? void 0 : _b.call(this); if (this.autoSyncTimer)
         clearInterval(this.autoSyncTimer); if (this.timeout)
         clearTimeout(this.timeout); }
     maybeAutoSync(bank = this.state.bank) {
@@ -796,7 +1030,7 @@ class App extends React.Component {
         try {
             const state = await desktop.categorySave(value);
             const persisted = await desktop.load(this.state.mode);
-            this.setState({ categories: state.categories, rules: state.rules, categoryEditor: { previousName: '', name: '', color: '#884bff', emoji: '✨', kind: 'expense' }, categoryMessage: 'Categoria salva.', data: persisted ? safeData(persisted) : this.state.data });
+            this.setState({ categories: state.categories, rules: state.rules, categoryEditor: { previousName: '', name: '', color: '#3e9a85', emoji: '✨', kind: 'expense' }, categoryMessage: 'Categoria salva.', data: persisted ? safeData(persisted) : this.state.data });
             await this.refreshBank();
         }
         catch (e) {
@@ -842,22 +1076,35 @@ class App extends React.Component {
     }
     async setBankCategory(tx, category) {
         if (!desktop || this.state.mode === 'demo')
-            return;
+            return false;
         const key = tx.accountId + '|' + tx.id;
         if (this.categorySavingKeys.has(key))
-            return;
+            return false;
         this.categorySavingKeys.add(key);
         this.setState((prev) => ({ categorySaving: [...prev.categorySaving, key], categoryMessage: 'Salvando categoria…' }));
         const job = this.categorySaveQueue.then(() => desktop.bankCategorize({ accountId: tx.accountId, externalId: tx.id, category: category || null }))
-            .then(data => { this.setState({ bank: { ...this.state.bank, data }, categoryMessage: 'Classificação bancária salva.' }); })
-            .catch((e) => { this.flash('Falha ao classificar: ' + String((e === null || e === void 0 ? void 0 : e.message) || e)); })
+            .then(data => {
+            if (!data || !Array.isArray(data.transactions))
+                throw new Error('Resposta bancária inválida.');
+            this.setState({ bank: { ...this.state.bank, data }, categoryMessage: 'Classificação bancária salva.' });
+            return true;
+        })
+            .catch((e) => { this.flash('Falha ao classificar: ' + String((e === null || e === void 0 ? void 0 : e.message) || e)); return false; })
             .finally(() => { this.categorySavingKeys.delete(key); this.setState((prev) => ({ categorySaving: prev.categorySaving.filter(k => k !== key) })); });
         this.categorySaveQueue = job;
-        await job;
+        return await job;
     }
-    changeManualCategory(id, category) {
-        const data = this.state.data;
-        this.updateData({ ...data, transactions: data.transactions.map(t => t.id === id ? { ...t, category } : t) }, 'Categoria atualizada.');
+    async changeManualCategory(id, category) {
+        const data = this.state.data, current = data.transactions.find(t => t.id === id);
+        if (!current)
+            return false;
+        if (current.category === category)
+            return true;
+        if (!this.getCategories().some(c => c.name === category && (c.kind === 'both' || c.kind === current.kind))) {
+            this.flash('Categoria incompatível com esta movimentação.');
+            return false;
+        }
+        return await this.updateData({ ...data, transactions: data.transactions.map(t => t.id === id ? { ...t, category } : t) });
     }
     bankTxSelected(tx) { return this.state.txSelected.includes(tx.accountId + '|' + tx.id); }
     toggleSelected(tx) { const key = tx.accountId + '|' + tx.id; this.setState({ txSelected: this.bankTxSelected(tx) ? this.state.txSelected.filter(x => x !== key) : this.state.txSelected.length >= 100 ? this.state.txSelected : [...this.state.txSelected, key] }); }
@@ -865,13 +1112,199 @@ class App extends React.Component {
         var _a;
         this.setState({ detail: { origin: 'bank', id: tx.id, accountId: tx.accountId }, detailDraft: { merchant: tx.merchant || '', note: tx.note || '', nature: tx.nature || 'auto', reviewed: !!tx.reviewed, aliasPattern: tx.description.slice(0, 60), splitParts: (((_a = tx.splits) === null || _a === void 0 ? void 0 : _a.length) ? tx.splits : [{ category: tx.category, amount: Math.floor(Math.abs(tx.amount) / 2) }, { category: tx.category, amount: Math.abs(tx.amount) - Math.floor(Math.abs(tx.amount) / 2) }]).map(p => ({ category: p.category, value: moneyString(p.amount) })) } });
     }
-    openManualDetail(tx) { this.setState({ detail: { origin: 'manual', id: tx.id } }); }
-    openCategoryFromRow(origin, tx) {
-        this.focusCategoryOnDetailOpen = true;
-        if (origin === 'bank')
-            this.openBankDetail(tx);
-        else
-            this.openManualDetail(tx);
+    openManualDetail(tx) {
+        this.setState({ detail: { origin: 'manual', id: tx.id },
+            manualDraft: { description: tx.description, date: tx.date, value: moneyString(tx.amount), category: tx.category } });
+    }
+    isManualLinked(id) {
+        return this.state.bank.data.transactions.some(tx => tx.linkedManualId === id);
+    }
+    async saveManualDetail(id) {
+        const sel = this.state.detail;
+        if (!sel || sel.origin !== 'manual' || sel.id !== id || this.state.busy || this.writeInProgress)
+            return false;
+        const original = this.state.data.transactions.find(t => t.id === id);
+        const draft = this.state.manualDraft;
+        if (!original || !draft)
+            return false;
+        const description = draft.description.trim(), amount = parsePositiveBRLInput(draft.value);
+        if (!description || description.length > 150) {
+            this.flash('Informe uma descrição de até 150 caracteres.');
+            return false;
+        }
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(draft.date) || iso(fromISO(draft.date)) !== draft.date) {
+            this.flash('Informe uma data válida, inclusive dia e mês.');
+            return false;
+        }
+        if (!Number.isSafeInteger(amount) || amount <= 0) {
+            this.flash('Valor inválido. Use reais e no máximo duas casas decimais (ex.: 1.234,56).');
+            return false;
+        }
+        const allowed = this.getCategories().some(c => c.name === draft.category &&
+            (original.kind === 'income' ? c.kind !== 'expense' : c.kind !== 'income'));
+        if (!allowed && draft.category !== original.category) {
+            this.flash('Selecione uma categoria compatível.');
+            return false;
+        }
+        if (this.isManualLinked(id) && (draft.date !== original.date || amount !== original.amount)) {
+            this.flash('Desvincule este lançamento da movimentação bancária antes de mudar data ou valor.');
+            return false;
+        }
+        const result = await this.updateData({ ...this.state.data, transactions: this.state.data.transactions.map(t => t.id === id ? { ...t, description, date: draft.date, amount, category: draft.category } : t) }, 'Lançamento atualizado.');
+        if (result)
+            this.setState({ detail: null, manualDraft: null });
+        return result;
+    }
+    openCategoryFromRow(origin, tx, event) {
+        var _a, _b;
+        if (this.quickCategoryWrite || this.state.busy || this.state.detailBusy)
+            return;
+        const trigger = event === null || event === void 0 ? void 0 : event.currentTarget;
+        const r = (_a = trigger === null || trigger === void 0 ? void 0 : trigger.getBoundingClientRect) === null || _a === void 0 ? void 0 : _a.call(trigger);
+        if (!r)
+            return;
+        if (((_b = this.state.quickCategory) === null || _b === void 0 ? void 0 : _b.origin) === origin && this.state.quickCategory.id === tx.id &&
+            (origin === 'manual' || this.state.quickCategory.accountId === tx.accountId)) {
+            this.closeQuickCategory();
+            return;
+        }
+        const width = Math.max(220, Math.min(328, window.innerWidth - 24));
+        const height = Math.min(342, window.innerHeight - 24);
+        const below = window.innerHeight - r.bottom;
+        this.quickCategoryAnchor = trigger;
+        this.setState({ quickCategory: { origin, id: tx.id,
+                accountId: origin === 'bank' ? tx.accountId : undefined,
+                left: Math.max(12, Math.min(r.left, window.innerWidth - width - 12)),
+                top: below > height + 8 ? r.bottom + 6 : Math.max(12, r.top - height - 6), width },
+            quickCategoryQuery: '', quickCategoryIndex: 0, quickCategoryError: '' }, () => { var _a; return (_a = this.quickCategorySearchInput) === null || _a === void 0 ? void 0 : _a.focus(); });
+    }
+    closeQuickCategory(restoreFocus = true) {
+        if (this.quickCategoryWrite)
+            return;
+        const anchor = this.quickCategoryAnchor;
+        this.setState({ quickCategory: null, quickCategoryQuery: '', quickCategoryIndex: 0, quickCategoryError: '' }, () => { if (restoreFocus && (anchor === null || anchor === void 0 ? void 0 : anchor.isConnected))
+            anchor.focus(); });
+    }
+    quickCategoryContext() {
+        const target = this.state.quickCategory;
+        if (!target)
+            return null;
+        if (target.origin === 'manual') {
+            const tx = this.state.data.transactions.find(t => t.id === target.id);
+            return tx ? { category: tx.category, kind: tx.kind, description: tx.description, raw: tx } : null;
+        }
+        const tx = this.state.bank.data.transactions.find(t => t.accountId === target.accountId && t.id === target.id);
+        if (!tx)
+            return null;
+        const nature = effectiveNature(tx);
+        return { category: tx.category, kind: (nature === 'income' || nature === 'expense' ? nature : null),
+            nature, description: tx.customTitle || tx.merchant || tx.description, raw: tx };
+    }
+    quickCategoryChoices() {
+        const context = this.quickCategoryContext(), term = fold(this.state.quickCategoryQuery);
+        if (!context || !context.kind)
+            return [];
+        return this.getCategories().filter(c => (c.kind === 'both' || c.kind === context.kind) && (!term || fold(c.name).includes(term)));
+    }
+    async chooseQuickCategory(category) {
+        if (this.quickCategoryWrite || !this.state.quickCategory)
+            return false;
+        const target = this.state.quickCategory, context = this.quickCategoryContext();
+        if (!context) {
+            this.setState({ quickCategoryError: 'Movimentação não encontrada. Atualize a lista.' });
+            return false;
+        }
+        if (!context.kind) {
+            this.setState({ quickCategoryError: 'Transferências e movimentações desconsideradas exigem revisar a natureza nos detalhes antes de categorizar.' });
+            return false;
+        }
+        const valid = this.getCategories().some(c => c.name === category && (c.kind === 'both' || c.kind === context.kind));
+        if (!valid) {
+            this.setState({ quickCategoryError: 'Categoria incompatível com a movimentação.' });
+            return false;
+        }
+        if (category === context.category) {
+            this.closeQuickCategory();
+            return true;
+        }
+        this.quickCategoryWrite = true;
+        this.setState({ quickCategoryBusy: true, quickCategoryError: '' });
+        let saved = false;
+        try {
+            saved = target.origin === 'bank' ?
+                await this.setBankCategory(context.raw, category) :
+                await this.changeManualCategory(target.id, category);
+        }
+        catch (e) {
+            this.setState({ quickCategoryError: 'Não foi possível salvar: ' + String((e === null || e === void 0 ? void 0 : e.message) || e) });
+        }
+        finally {
+            this.quickCategoryWrite = false;
+            this.setState({ quickCategoryBusy: false });
+        }
+        if (!saved) {
+            this.setState((state) => ({ quickCategoryError: state.quickCategoryError || 'Não foi possível salvar. A categoria anterior foi mantida.' }));
+            return false;
+        }
+        this.closeQuickCategory();
+        this.flash('Categoria atualizada.');
+        return true;
+    }
+    renderQuickCategoryPopover() {
+        const target = this.state.quickCategory, context = this.quickCategoryContext();
+        if (!target)
+            return null;
+        const choices = this.quickCategoryChoices();
+        const index = Math.min(this.state.quickCategoryIndex, Math.max(0, choices.length - 1));
+        const onKey = (e) => {
+            var _a;
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                e.stopPropagation();
+                this.closeQuickCategory();
+                return;
+            }
+            if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && choices.length) {
+                e.preventDefault();
+                e.stopPropagation();
+                const delta = e.key === 'ArrowDown' ? 1 : -1;
+                this.setState((prev) => ({ quickCategoryIndex: (prev.quickCategoryIndex + delta + choices.length) % choices.length }));
+                (_a = this.quickCategorySearchInput) === null || _a === void 0 ? void 0 : _a.focus();
+                return;
+            }
+            const selected = choices[Math.min(this.state.quickCategoryIndex, choices.length - 1)];
+            if (e.key === 'Enter' && e.target === this.quickCategorySearchInput && selected) {
+                e.preventDefault();
+                e.stopPropagation();
+                void this.chooseQuickCategory(selected.name);
+            }
+        };
+        return ReactDOM.createPortal(h('div', { className: 'u5-category-layer' }, h('section', { className: 'u5-category-popover', role: 'dialog',
+            'aria-label': 'Alterar categoria da movimentação', onKeyDown: onKey,
+            style: { position: 'fixed', left: target.left, top: target.top, width: target.width,
+                maxHeight: 'min(360px, calc(100vh - 24px))' } }, h('div', { className: 'u5-category-top' }, h('span', { className: 'micro-label' }, target.origin === 'bank' ? 'CLASSIFICAÇÃO PESSOAL · BANCO' : 'LANÇAMENTO MANUAL'), h('button', { type: 'button', className: 'u5-category-close', 'aria-label': 'Fechar categorias',
+            disabled: this.state.quickCategoryBusy, onClick: () => this.closeQuickCategory() }, h(Icon, { name: 'close', size: 16 }))), h('p', { className: 'u5-category-current' }, 'Categoria atual: ', h('strong', {}, (context === null || context === void 0 ? void 0 : context.category) || 'Indisponível')), h('label', { className: 'u5-category-search' }, h(Icon, { name: 'search', size: 16 }), h('input', { ref: (el) => this.quickCategorySearchInput = el, type: 'search',
+            role: 'combobox', 'aria-label': 'Buscar categoria', 'aria-autocomplete': 'list',
+            'aria-expanded': true, 'aria-controls': 'u5-category-options',
+            'aria-activedescendant': choices.length ? 'u5-category-option-' + index : undefined,
+            placeholder: 'Pesquisar categorias', value: this.state.quickCategoryQuery,
+            disabled: this.state.quickCategoryBusy,
+            onChange: (e) => this.setState({ quickCategoryQuery: e.target.value, quickCategoryIndex: 0 }) })), h('div', { id: 'u5-category-options', role: 'listbox', className: 'u5-category-options',
+            'aria-label': 'Categorias compatíveis' }, choices.length ? choices.map((cat, i) => h('button', { type: 'button',
+            id: 'u5-category-option-' + i, key: cat.name, role: 'option',
+            'aria-selected': cat.name === (context === null || context === void 0 ? void 0 : context.category),
+            className: 'u5-category-choice ' + (i === index ? 'active ' : '') +
+                (cat.name === (context === null || context === void 0 ? void 0 : context.category) ? 'current' : ''),
+            disabled: this.state.quickCategoryBusy,
+            onMouseEnter: () => {
+                if (!this.state.quickCategoryBusy && this.state.quickCategoryIndex !== i)
+                    this.setState({ quickCategoryIndex: i });
+            },
+            onClick: () => void this.chooseQuickCategory(cat.name) }, h('span', {}, cat.name), cat.name === (context === null || context === void 0 ? void 0 : context.category) ?
+            h(Icon, { name: 'check', size: 16 }) : null)) :
+            h('p', { className: 'u5-category-empty' }, context && !context.kind ? 'Natureza de transferência ou desconsiderada: altere nos detalhes antes de categorizar.' : 'Nenhuma categoria compatível encontrada.')), this.state.quickCategoryError ?
+            h('p', { className: 'u5-category-error', role: 'alert' }, this.state.quickCategoryError) : null, h('small', { className: 'u5-category-hint', role: 'status' }, this.state.quickCategoryBusy ? 'Salvando categoria…' :
+            '↑ ↓ para navegar · Enter para salvar · Esc para fechar'))), document.body);
     }
     async updateBankInfo() {
         const sel = this.state.detail;
@@ -1225,10 +1658,21 @@ class App extends React.Component {
     async savePlan() { const f = this.state.planForm; const v = parseMoney(f.amount); if (!Number.isSafeInteger(v) || v <= 0)
         return this.flash('Informe um valor maior que zero.'); if (!f.title.trim())
         return this.flash('Dê um nome ao lançamento.'); const data = { ...f, amount: v, accountId: f.accountId || null, count: Number(f.count) }; await this.executePlan(() => f.id ? desktop.planEdit(data) : desktop.planCreate(data), f.id ? 'Planejamento atualizado.' : 'Compromisso adicionado.'); }
+    canPlanSimulatedPurchase(out = this.state.outcome) {
+        return !!desktop && this.state.mode === 'real' && out === this.state.outcome &&
+            !!out && !out.error && out.engine === 'planning' &&
+            !this.state.simBusy && !this.state.simError && !this.isSimulationStale() &&
+            !!this.state.simCalculatedInput &&
+            simInputsEqual(this.state.sim, this.state.simCalculatedInput);
+    }
     planSimulatedPurchase() {
         const out = this.state.outcome;
         if (!out || out.error || out.engine !== 'planning' || this.state.mode !== 'real' || !desktop)
             return;
+        if (!this.canPlanSimulatedPurchase(out)) {
+            this.flash('O resultado anterior é apenas uma referência. Recalcule a simulação antes de planejar esta compra.');
+            return;
+        }
         const count = Number(out.installments);
         if (!Number.isInteger(count) || count < 1 || count > 36) {
             this.flash('O planejamento aceita até 36 parcelas. Ajuste a simulação antes de registrar.');
@@ -1275,7 +1719,7 @@ class App extends React.Component {
         const span = dateSpan(this.state.overviewPeriod, this.state.customStart, this.state.customEnd);
         const newMonth = span.end.slice(0, 7), useMonth = newMonth >= nowYM && newMonth <= shiftMonth(nowYM, 12);
         const enteringPlan = target === 'planning' && this.state.page !== 'planning' && useMonth;
-        this.setState({ page: target, txReviewOnly: page === 'review', txOrganize: page === 'categories', quickAddOpen: false,
+        this.setState({ page: target, txReviewOnly: page === 'review', txOrganize: page === 'categories', quickAddOpen: false, quickCategory: null,
             month: newMonth, ...(enteringPlan ? { planMonth: newMonth, planDay: newMonth === nowYM ? iso(new Date()) : newMonth + '-01' } : {}),
             showEntry: false, outcome: null, simBusy: false }, () => { if (enteringPlan)
             void this.refreshPlanning(); });
@@ -1297,9 +1741,21 @@ class App extends React.Component {
             entry: { ...this.state.entry, kind, category: kind === 'income' ? 'Salário' : 'Outros', date: iso(new Date()) } });
     }
     async markBankReviewed(tx) {
-        if (tx.reviewed || this.state.detailBusy)
+        const key = tx.accountId + '|' + tx.id;
+        if (tx.reviewed || this.state.detailBusy || this.reviewSavingKeys.has(key))
             return;
-        await this.runBankOperation('bankBatch', { items: [{ accountId: tx.accountId, externalId: tx.id }], reviewed: true }, 'Movimentação revisada.');
+        this.reviewSavingKeys.add(key);
+        try {
+            await this.runBankOperation('bankBatch', { items: [{ accountId: tx.accountId, externalId: tx.id }], reviewed: true }, 'Movimentação revisada.');
+        }
+        finally {
+            this.reviewSavingKeys.delete(key);
+        }
+    }
+    clearMovementFilters() {
+        this.setState({ query: '', bankFilter: '', txSource: 'all', txCategoryFilter: '',
+            txKindFilter: 'all', txReviewFilter: 'all', txSort: 'date_desc', overviewPeriod: 'month',
+            txSelected: [], quickCategory: null });
     }
     renderMovements() {
         const count = this.state.bank.data.transactions.filter(t => !t.reviewed).length;
@@ -1307,13 +1763,26 @@ class App extends React.Component {
         return h('div', { className: 'movement-shell' }, h('div', { className: 'mf-tx-tabs mf-unified-tabs', role: 'group', 'aria-label': 'Seções de movimentações' }, h('button', { type: 'button', className: !review && !organized ? 'active' : '', onClick: () => this.setState({ txReviewOnly: false, txOrganize: false, txSelected: [] }) }, 'Histórico'), h('button', { type: 'button', className: review ? 'active' : '', onClick: () => this.setState({ txReviewOnly: true, txOrganize: false, txSelected: [] }) }, 'A revisar (' + count + ')'), h('button', { type: 'button', className: organized ? 'active' : '', onClick: () => this.setState({ txOrganize: true, txReviewOnly: false, txSelected: [] }) }, 'Categorias e regras')), organized ? this.renderCategories() : this.renderTransactions());
     }
     monthData() { return snapshot(this.state.data, this.state.month); }
-    async saveEntry() { const f = this.state.entry, v = parseMoney(f.value); if (!f.description.trim())
-        return this.flash('Informe uma descrição.'); if (!/^\d{4}-\d{2}-\d{2}$/.test(f.date))
-        return this.flash('Informe uma data válida.'); if (!Number.isFinite(v) || v <= 0)
-        return this.flash('Informe um valor maior que zero.'); const t = { id: 'tx-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7), date: f.date, description: f.description.trim().slice(0, 150), category: f.category, kind: f.kind, amount: v, origin: 'manual' }; if (await this.updateData({ ...this.state.data, transactions: [...this.state.data.transactions, t] }, 'Lançamento registrado.'))
+    async saveEntry() { const f = this.state.entry, v = parsePositiveBRLInput(f.value); if (!f.description.trim())
+        return this.flash('Informe uma descrição.'); if (!/^\d{4}-\d{2}-\d{2}$/.test(f.date) || iso(fromISO(f.date)) !== f.date)
+        return this.flash('Informe uma data válida.'); if (!Number.isSafeInteger(v) || v <= 0)
+        return this.flash('Valor inválido. Use reais e no máximo duas casas decimais (ex.: 1.234,56).'); const t = { id: 'tx-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7), date: f.date, description: f.description.trim().slice(0, 150), category: f.category, kind: f.kind, amount: v, origin: 'manual' }; if (await this.updateData({ ...this.state.data, transactions: [...this.state.data.transactions, t] }, 'Lançamento registrado.'))
         this.setState({ showEntry: false, entryCategoryTouched: false, entry: { ...f, description: '', value: '' } }); }
-    removeEntry(id) { if (!confirm('Excluir este lançamento?'))
-        return; this.updateData({ ...this.state.data, transactions: this.state.data.transactions.filter(t => t.id !== id) }, 'Lançamento removido.'); }
+    async removeEntry(id) {
+        const found = this.state.data.transactions.find(t => t.id === id);
+        if (!found || this.state.busy || this.writeInProgress)
+            return false;
+        if (this.isManualLinked(id)) {
+            this.flash('Este lançamento está vinculado a um extrato bancário. Desvincule antes de excluir.');
+            return false;
+        }
+        if (!confirm('Excluir permanentemente este lançamento manual? A movimentação bancária não será modificada.'))
+            return false;
+        const result = await this.updateData({ ...this.state.data, transactions: this.state.data.transactions.filter(t => t.id !== id) }, 'Lançamento removido.');
+        if (result)
+            this.setState({ detail: null, manualDraft: null });
+        return result;
+    }
     async setBudget(cat, s) {
         const value = String(s || '').trim();
         const v = value === '' ? null : parseMoney(value);
@@ -1390,27 +1859,60 @@ class App extends React.Component {
             this.flash('CSV: ' + e.message);
         }
     }
-    setSimulation(patch) { this.simRequest++; this.setState({ sim: { ...this.state.sim, ...patch }, outcome: null, simBusy: false }); }
-    saveSimulation() { const out = this.state.outcome; if (!u3SimulationCost(out))
-        return; this.setState({ simSaved: { result: JSON.parse(JSON.stringify(out)), input: { ...this.state.sim } } }); }
+    setSimulation(patch) {
+        const next = { ...this.state.sim, ...patch };
+        if (simInputsEqual(this.state.sim, next))
+            return;
+        this.simRequest++;
+        this.setState({ sim: next, simBusy: false, simError: '',
+            simResultStale: !!this.state.outcome });
+    }
+    isSimulationStale() {
+        return !!this.state.outcome &&
+            (!!this.state.simResultStale || !simInputsEqual(this.state.sim, this.state.simCalculatedInput));
+    }
+    saveSimulation() {
+        const out = this.state.outcome;
+        if (!u3SimulationCost(out) || this.isSimulationStale() || this.state.simBusy || this.state.simError)
+            return;
+        const calculated = this.state.simCalculatedInput;
+        if (!calculated)
+            return;
+        this.setState({ simSaved: { result: JSON.parse(JSON.stringify(out)), input: { ...calculated } } });
+    }
     async runSim() {
         const token = ++this.simRequest, input = { ...this.state.sim };
         const amount = parseMoney(input.value), n = Number(input.installments), rate = Number(input.interest.trim().replace(',', '.'));
-        if (!Number.isSafeInteger(amount) || amount <= 0)
-            return this.setState({ simBusy: false, outcome: { error: 'Informe um valor válido para a compra.' } });
-        if (!Number.isInteger(n) || n < 1 || n > 60 || !Number.isFinite(rate) || rate < 0 || rate > 30)
-            return this.setState({ simBusy: false, outcome: { error: 'Confira as parcelas e a taxa de juros (0 a 30% ao mês).' } });
-        if (!desktop || this.state.mode === 'demo')
-            return this.setState({ simBusy: false, outcome: simulate(this.state.data, input) });
-        this.setState({ outcome: null, simBusy: true });
+        const invalid = (message) => {
+            if (token !== this.simRequest)
+                return;
+            this.setState({ simBusy: false, simError: message, simResultStale: !!this.state.outcome });
+        };
+        if (!Number.isSafeInteger(amount) || amount <= 0) {
+            invalid('Informe um valor válido para a compra.');
+            return;
+        }
+        if (!Number.isInteger(n) || n < 1 || n > 60 || !Number.isFinite(rate) || rate < 0 || rate > 30) {
+            invalid('Confira as parcelas e a taxa de juros (0 a 30% ao mês).');
+            return;
+        }
+        this.setState({ simBusy: true, simError: '', simResultStale: !!this.state.outcome });
         try {
-            const result = await desktop.planSimulate({ amount, installments: n, monthlyRate: rate, firstDueDate: input.firstDueDate || null, includeEstimatedIncome: false });
-            if (token === this.simRequest)
-                this.setState({ outcome: result, simBusy: false });
+            const result = (!desktop || this.state.mode === 'demo') ?
+                simulate(this.state.data, input) :
+                await desktop.planSimulate({ amount, installments: n, monthlyRate: rate,
+                    firstDueDate: input.firstDueDate || null, includeEstimatedIncome: false });
+            if (token !== this.simRequest || !simInputsEqual(this.state.sim, input))
+                return;
+            if (result === null || result === void 0 ? void 0 : result.error) {
+                invalid(String(result.error));
+                return;
+            }
+            this.setState({ outcome: result, simCalculatedInput: input, simResultStale: false,
+                simBusy: false, simError: '' });
         }
         catch (e) {
-            if (token === this.simRequest)
-                this.setState({ simBusy: false, outcome: { error: 'Não foi possível simular: ' + String((e === null || e === void 0 ? void 0 : e.message) || e) } });
+            invalid('Não foi possível simular: ' + String((e === null || e === void 0 ? void 0 : e.message) || e));
         }
     }
     field(label, el, hint) { return h('label', { className: 'field' }, h('span', {}, label), el, hint ? h('small', {}, hint) : null); }
@@ -1468,9 +1970,9 @@ class App extends React.Component {
         const recent = useBank ? bank.data.transactions.filter(x => x.date >= start && x.date <= end && x.status === 'POSTED' && ['income', 'expense'].includes(effectiveNature(x))).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5).map(x => ({ key: x.accountId + '|' + x.id, title: x.customTitle || x.merchant || x.description, original: x.description, date: x.date, category: x.category, amount: Math.abs(x.amount), kind: effectiveNature(x), raw: x })) : d.transactions.filter(x => x.date >= start && x.date <= end).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5).map(x => ({ key: x.id, title: x.description, original: '', date: x.date, category: x.category, amount: x.amount, kind: x.kind, raw: x }));
         const openBudget = () => { this.setState({ month }); this.navigate('budgets'); };
         const palette = ['#8066d5', '#329b89', '#d29844', '#5a8fc9', '#c7759c'];
-        const categoryColor = (name, index) => { const info = this.getCategories().find(c => c.name === name); return info && (!info.builtIn || info.color.toLowerCase() !== '#884bff') ? info.color : palette[index]; };
-        const metric = (label, value, icon, hint, tone) => h('section', { className: 'u1-metric ' + tone }, h('div', { className: 'u1-metric-label' }, h(Icon, { name: icon, size: 16 }), label), h('strong', {}, money(value)), h('small', {}, hint));
-        return h('div', { className: 'overview-content u1-overview ' + (hidden ? 'u1-values-hidden' : '') }, h('div', { className: 'u1-context' }, this.renderSourcePicker(), h('span', {}, date(start) + ' — ' + date(end) + ' · ' + (useBank ? 'Movimentos confirmados' + (bank.data.truncated ? ' · histórico parcial' : '') : 'Registros manuais'))), state.bankMessage && bank.config.configured ? h('div', { className: 'sync-feedback', role: 'status' }, state.bankMessage) : null, h('div', { className: 'stats-grid' }, h('section', { className: 'u1-balance' }, h('div', { className: 'u1-balance-label' }, h('span', {}, useBank ? 'Saldo nas contas' : 'Saldo manual'), h('button', { type: 'button', className: 'u1-icon-button', 'aria-label': hidden ? 'Mostrar valores' : 'Ocultar valores', 'aria-pressed': hidden, onClick: () => this.setState({ overviewHideValues: !hidden }) }, h(Icon, { name: hidden ? 'eye-off' : 'eye', size: 18 }))), h('strong', { className: 'u1-balance-value' }, hidden ? '••••' : coverage ? bankBalanceLabel(coverage) : money(s.balance)), h('details', { className: 'u1-balance-info' }, h('summary', {}, h('span', { className: 'u1-status-dot ' + ((coverage === null || coverage === void 0 ? void 0 : coverage.missingCount) ? 'is-partial' : '') }), (coverage === null || coverage === void 0 ? void 0 : coverage.missingCount) ? 'Saldo parcial · conferir' : useBank ? 'Referência das instituições' : 'Como é calculado'), h('p', {}, coverage ? 'Saldos disponíveis de ' + coverage.knownCount + ' de ' + coverage.totalCount + ' conta(s). Não representa dinheiro livre. A consulta pode ser mais recente que o saldo informado.' : 'Saldo inicial mais receitas menos despesas manuais. Não somado ao banco.'))), metric('Receitas', s.income, 'trend', 'No período selecionado', 'income'), metric('Despesas', s.expense, 'down', 'No período selecionado', 'expense'), metric('Resultado', s.net, 'chart', 'Receitas menos despesas', 'net')), h('div', { className: 'u1-main-grid' }, h('div', { className: 'u1-left-stack' }, h('section', { className: 'u1-panel u1-rhythm' }, h('div', { className: 'u1-panel-head' }, h('div', {}, h('h2', {}, 'Seu ritmo de gastos'), h('p', {}, 'Entenda como suas despesas evoluíram.')), h('div', { className: 'u1-chart-tabs', role: 'group', 'aria-label': 'Visualização do período' }, ['spending', 'flow'].map(tab => h('button', { type: 'button', key: tab, 'aria-pressed': (state.overviewChart || 'spending') === tab, onClick: () => this.setState({ overviewChart: tab }) }, tab === 'spending' ? 'Acumulado' : 'Entradas e saídas')))), h('div', { className: 'u1-rhythm-summary' }, h('div', {}, h('strong', {}, money(s.expense)), h('span', {}, 'gastos no período')), h('div', { className: 'u1-comparison ' + (comparison.percent !== null && comparison.percent <= 0 ? 'is-lower' : '') }, hidden ? 'Valores ocultos' : comparison.label, h('small', {}, compareAvailable ? date(previous.start) + ' a ' + date(previous.end) + ' · mesma fonte' : 'Comparação exige histórico disponível nos dois intervalos'))), hidden ? h('div', { className: 'u1-chart-hidden' }, h(Icon, { name: 'eye-off', size: 26 }), h('p', {}, 'Mostre os valores para visualizar o gráfico.')) : (state.overviewChart || 'spending') === 'flow' ? h(Chart, { data: flowSegments(start, end, range) }) : h(OverviewSpendingChart, { rows: points, compare: compareAvailable }), h('div', { className: 'u1-chart-footer' }, h('span', {}, h('i', { className: 'u1-current-dot' }), 'Período selecionado'), compareAvailable ? h('span', {}, h('i', { className: 'u1-previous-dot' }), 'Intervalo anterior') : null, h('span', { className: 'u1-daily-average' }, 'Média diária ', h('b', {}, money(Math.round(s.expense / daysInSpan(start, end))))))), h('section', { className: 'u1-panel u1-categories' }, h('div', { className: 'u1-panel-head' }, h('div', {}, h('h2', {}, 'Para onde foi seu dinheiro'), h('p', {}, 'Categorias do período selecionado')), h('span', { className: 'u1-count' }, s.categories.length + ' categorias')), s.categories.length ? h('div', { className: 'u1-category-list' }, s.categories.slice(0, 5).map((cat, i) => h('button', { type: 'button', className: 'u1-category-row', key: cat.name, onClick: () => { this.setState({ query: cat.name, txSource: useBank ? 'bank' : 'manual', txReviewOnly: false, txOrganize: false, bankFilter: '' }); this.navigate('transactions'); } }, h('span', { className: 'u1-category-dot', style: { background: categoryColor(cat.name, i) } }), h('span', { className: 'u1-category-name' }, cat.name), h('span', { className: 'u1-category-bar' }, h('i', { style: { width: hidden ? '0%' : Math.round(cat.total / Math.max(1, s.expense) * 100) + '%', background: categoryColor(cat.name, i) } })), h('strong', {}, money(cat.total)), h('small', {}, hidden ? '••••' : Math.round(cat.total / Math.max(1, s.expense) * 100) + '%')))) : h('p', { className: 'u1-empty' }, 'Nenhuma despesa nesta fonte e período.'), s.categories.length > 5 ? h('p', { className: 'u1-microcopy' }, 'Mostrando as 5 maiores categorias. Consulte todas em Movimentações.') : null)), h('aside', { className: 'u1-side-stack' }, h('section', { className: 'mf-plan-shortcut' }, h('div', { className: 'u1-panel-head' }, h('div', {}, h('h2', {}, 'Na sua agenda'), h('p', {}, 'Hoje e próximos 7 dias · compromissos cadastrados')), h('button', { type: 'button', className: 'u1-icon-button', 'aria-label': 'Abrir Planejamento', onClick: () => this.navigate('planning') }, h(Icon, { name: 'arrow', size: 17 }))), generated ? h('div', { className: 'u1-agenda-stats' }, h('div', {}, h('strong', {}, overdue.length), h('span', {}, 'vencidos')), h('div', {}, h('strong', {}, money(upcoming.reduce((n, x) => n + x.remaining, 0))), h('span', {}, 'a pagar · inclui vencidos'))) : null, upcoming.length ? h('div', { className: 'mf-agenda-list' }, upcoming.slice(0, 3).map(item => h('button', { type: 'button', className: 'mf-agenda-row', key: item.id, onClick: () => this.openPlanDetail(item.id) }, h('span', { className: 'u1-agenda-date' }, date(item.dueDate)), h('span', { className: 'mf-agenda-copy' }, h('strong', {}, item.title), h('small', {}, item.dueDate < today ? 'Vencido' : item.dueDate === today ? 'Hoje' : item.certainty === 'estimated' ? 'Estimado' : 'A vencer')), h('strong', { className: 'mf-agenda-amount' }, money(item.remaining))))) : h('div', { className: 'u1-empty-agenda' }, h(Icon, { name: 'calendar', size: 22 }), h('div', {}, h('b', {}, generated ? 'Sem vencimentos cadastrados neste intervalo' : 'Agenda ainda não carregada'), h('p', {}, generated ? 'Isso não confirma a ausência de contas a pagar.' : 'Abra o Planejamento para conferir seus compromissos.'))), h('button', { type: 'button', className: 'u1-subtle-link', onClick: () => this.navigate('planning') }, 'Ver agenda', h(Icon, { name: 'arrow', size: 14 }))), h('section', { className: 'u1-panel u1-budget' }, h('div', { className: 'u1-panel-head' }, h('div', {}, h('h2', {}, 'Orçamento em foco'), h('p', {}, prettyMonth(month))), h('button', { type: 'button', className: 'u1-icon-button', 'aria-label': 'Abrir Orçamentos', onClick: openBudget }, h(Icon, { name: 'arrow', size: 17 }))), h('div', { className: 'u1-budget-summary' }, h('strong', {}, money(spentLimited)), h('span', {}, 'de ' + money(totalLimit) + ' em limites')), limits.length ? h('div', { className: 'u1-budget-meter ' + (spentLimited > totalLimit ? 'is-over' : ''), role: 'img', 'aria-label': hidden ? 'Valores ocultos' : used + '% dos limites utilizados' }, h('i', { style: { width: hidden ? '0%' : Math.min(100, used) + '%' } })) : null, h('p', { className: 'u1-budget-caption' }, !limits.length ? 'Você ainda não definiu limites.' : hidden ? 'Valores ocultos' : (spentLimited > totalLimit ? money(spentLimited - totalLimit) + ' acima dos limites' : money(totalLimit - spentLimited) + ' de margem nos limites')), h('div', { className: 'u1-coverage' }, h('span', {}, 'Cobertura dos gastos'), h('b', {}, hidden ? '••••' : budgetCoverage === null ? 'Sem gastos' : budgetCoverage + '%')), h('p', { className: 'u1-microcopy' }, 'Considera apenas categorias com limite. Margem não é saldo disponível.'), h('button', { type: 'button', className: 'u1-subtle-link', onClick: openBudget }, 'Gerenciar orçamento', h(Icon, { name: 'arrow', size: 14 }))))), h('div', { className: 'u1-detail-grid' }, h('section', { className: 'u1-panel u1-recent' }, h('div', { className: 'u1-panel-head' }, h('div', {}, h('h2', {}, 'Últimas movimentações'), h('p', {}, 'Confirmadas no período')), h('button', { type: 'button', className: 'u1-subtle-link', onClick: () => { this.setState({ query: '', bankFilter: '', txSource: useBank ? 'bank' : 'manual', txReviewOnly: false, txOrganize: false }); this.navigate('transactions'); } }, 'Ver tudo', h(Icon, { name: 'arrow', size: 14 }))), recent.length ? h('div', { className: 'u1-recent-list' }, recent.map(t => h('button', { type: 'button', className: 'u1-recent-row', key: t.key, onClick: () => useBank ? this.openBankDetail(t.raw) : this.openManualDetail(t.raw) }, h('span', { className: 'u1-transaction-icon ' + t.kind }, h(Icon, { name: t.kind === 'income' ? 'trend' : 'down', size: 17 })), h('span', { className: 'u1-recent-copy' }, h('strong', {}, t.title), h('small', {}, t.original && t.original !== t.title ? t.original : t.category + ' · ' + date(t.date))), h('strong', { className: t.kind === 'income' ? 'good-text' : 'bad-text' }, hidden ? '••••' : (t.kind === 'income' ? '+' : '−') + money(t.amount))))) : h('p', { className: 'u1-empty' }, 'Nenhuma movimentação confirmada neste período.')), h('section', { className: 'u1-panel u1-accounts' }, h('div', { className: 'u1-panel-head' }, h('div', {}, h('h2', {}, useBank ? 'Suas contas' : 'Fonte dos seus indicadores'), h('p', {}, useBank ? 'Saldo de referência por instituição · não depende do período acima' : 'Acompanhamento com registros adicionados por você')), h('button', { type: 'button', className: 'u1-subtle-link', onClick: () => this.navigate('banks') }, 'Ver contas', h(Icon, { name: 'arrow', size: 14 }))), useBank ? h('div', { className: 'u1-accounts-grid' }, bank.data.accounts.map(account => h('button', { type: 'button', className: 'u1-account', key: account.id, onClick: () => { this.setState({ bankFilter: account.id, query: '', txSource: 'bank', txReviewOnly: false, txOrganize: false }); this.navigate('transactions'); } }, h('span', { className: 'u1-account-icon' }, h(Icon, { name: 'bank', size: 19 })), h('span', { className: 'u1-account-copy' }, h('b', {}, account.name), h('small', {}, 'Referência: ' + bankReferenceLabel(account.updatedAt))), h('strong', {}, Number.isFinite(account.balance) ? money(account.balance) : 'Indisponível')))) : h('p', { className: 'u1-microcopy' }, 'Os registros manuais e o extrato bancário são consultados separadamente para evitar duplicidades.'))), null);
+        const categoryColor = (name, index) => { const info = this.getCategories().find(c => c.name === name); return info && (!info.builtIn || info.color.toLowerCase() !== '#3e9a85') ? info.color : palette[index]; };
+        const metric = (label, value, icon, hint, tone) => h('section', { className: 'u1-metric mf-border-reveal mf-tone-' + (tone === 'net' ? 'net' : tone) + ' ' + tone + (tone === 'net' ? (value > 0 ? ' is-positive' : value < 0 ? ' is-negative' : ' is-neutral') : ''), role: 'group', tabIndex: 0, 'aria-label': label + ' · ' + money(value) }, h('div', { className: 'u1-metric-label' }, h(Icon, { name: icon, size: 16 }), label), h('strong', {}, money(value)), h('small', {}, hint));
+        return h('div', { className: 'overview-content u1-overview ' + (hidden ? 'u1-values-hidden' : '') }, h('div', { className: 'u1-context' }, this.renderSourcePicker(), h('span', {}, date(start) + ' — ' + date(end) + ' · ' + (useBank ? 'Movimentos confirmados' + (bank.data.truncated ? ' · histórico parcial' : '') : 'Registros manuais'))), state.bankMessage && bank.config.configured ? h('div', { className: 'sync-feedback', role: 'status' }, state.bankMessage) : null, h('div', { className: 'stats-grid' }, h('section', { className: 'u1-balance mf-border-reveal mf-tone-balance', role: 'group', tabIndex: 0, 'aria-label': useBank ? 'Saldo nas contas' : 'Saldo manual' }, h('div', { className: 'u1-balance-label' }, h('span', {}, useBank ? 'Saldo nas contas' : 'Saldo manual'), h('button', { type: 'button', className: 'u1-icon-button', 'aria-label': hidden ? 'Mostrar valores' : 'Ocultar valores', 'aria-pressed': hidden, onClick: () => this.setState({ overviewHideValues: !hidden }) }, h(Icon, { name: hidden ? 'eye-off' : 'eye', size: 18 }))), h('strong', { className: 'u1-balance-value' }, hidden ? '••••' : coverage ? bankBalanceLabel(coverage) : money(s.balance)), h('details', { className: 'u1-balance-info' }, h('summary', {}, h('span', { className: 'u1-status-dot ' + ((coverage === null || coverage === void 0 ? void 0 : coverage.missingCount) ? 'is-partial' : '') }), (coverage === null || coverage === void 0 ? void 0 : coverage.missingCount) ? 'Saldo parcial · conferir' : useBank ? 'Referência das instituições' : 'Como é calculado'), h('p', {}, coverage ? 'Saldos disponíveis de ' + coverage.knownCount + ' de ' + coverage.totalCount + ' conta(s). Não representa dinheiro livre. A consulta pode ser mais recente que o saldo informado.' : 'Saldo inicial mais receitas menos despesas manuais. Não somado ao banco.'))), metric('Receitas', s.income, 'trend', 'No período selecionado', 'income'), metric('Despesas', s.expense, 'down', 'No período selecionado', 'expense'), metric('Resultado', s.net, 'chart', 'Receitas menos despesas', 'net')), h('div', { className: 'u1-main-grid' }, h('div', { className: 'u1-left-stack' }, h('section', { className: 'u1-panel u1-rhythm' }, h('div', { className: 'u1-panel-head' }, h('div', {}, h('h2', {}, 'Seu ritmo de gastos'), h('p', {}, 'Entenda como suas despesas evoluíram.')), h('div', { className: 'u1-chart-tabs', role: 'group', 'aria-label': 'Visualização do período' }, ['spending', 'flow'].map(tab => h('button', { type: 'button', key: tab, 'aria-pressed': (state.overviewChart || 'spending') === tab, onClick: () => this.setState({ overviewChart: tab }) }, tab === 'spending' ? 'Acumulado' : 'Entradas e saídas')))), h('div', { className: 'u1-rhythm-summary' }, h('div', {}, h('strong', {}, money(s.expense)), h('span', {}, 'gastos no período')), h('div', { className: 'u1-comparison ' + (comparison.percent !== null && comparison.percent <= 0 ? 'is-lower' : '') }, hidden ? 'Valores ocultos' : comparison.label, h('small', {}, compareAvailable ? date(previous.start) + ' a ' + date(previous.end) + ' · mesma fonte' : 'Comparação exige histórico disponível nos dois intervalos'))), hidden ? h('div', { className: 'u1-chart-hidden' }, h(Icon, { name: 'eye-off', size: 26 }), h('p', {}, 'Mostre os valores para visualizar o gráfico.')) : (state.overviewChart || 'spending') === 'flow' ? h(Chart, { data: flowSegments(start, end, range) }) : h(OverviewSpendingChart, { rows: points, compare: compareAvailable }), h('div', { className: 'u1-chart-footer' }, h('span', {}, h('i', { className: 'u1-current-dot' }), 'Período selecionado'), compareAvailable ? h('span', {}, h('i', { className: 'u1-previous-dot' }), 'Intervalo anterior') : null, h('span', { className: 'u1-daily-average' }, 'Média diária ', h('b', {}, money(Math.round(s.expense / daysInSpan(start, end))))))), h('section', { className: 'u1-panel u1-categories' }, h('div', { className: 'u1-panel-head' }, h('div', {}, h('h2', {}, 'Para onde foi seu dinheiro'), h('p', {}, 'Categorias do período selecionado')), h('span', { className: 'u1-count' }, s.categories.length + ' categorias')), s.categories.length ? h('div', { className: 'u1-category-list' }, s.categories.slice(0, 5).map((cat, i) => h('button', { type: 'button', className: 'u1-category-row', key: cat.name, onClick: () => { this.setState({ query: cat.name, txSource: useBank ? 'bank' : 'manual', txReviewOnly: false, txOrganize: false, bankFilter: '' }); this.navigate('transactions'); } }, h('span', { className: 'u1-category-dot', style: { background: categoryColor(cat.name, i) } }), h('span', { className: 'u1-category-name' }, cat.name), h('span', { className: 'u1-category-bar' }, h('i', { style: { width: hidden ? '0%' : Math.round(cat.total / Math.max(1, s.expense) * 100) + '%', background: categoryColor(cat.name, i) } })), h('strong', {}, money(cat.total)), h('small', {}, hidden ? '••••' : Math.round(cat.total / Math.max(1, s.expense) * 100) + '%')))) : h('p', { className: 'u1-empty' }, 'Nenhuma despesa nesta fonte e período.'), s.categories.length > 5 ? h('p', { className: 'u1-microcopy' }, 'Mostrando as 5 maiores categorias. Consulte todas em Movimentações.') : null)), h('aside', { className: 'u1-side-stack' }, h('section', { className: 'mf-plan-shortcut' }, h('div', { className: 'u1-panel-head' }, h('div', {}, h('h2', {}, 'Na sua agenda'), h('p', {}, 'Hoje e próximos 7 dias · compromissos cadastrados')), h('button', { type: 'button', className: 'u1-icon-button', 'aria-label': 'Abrir Planejamento', onClick: () => this.navigate('planning') }, h(Icon, { name: 'arrow', size: 17 }))), generated ? h('div', { className: 'u1-agenda-stats' }, h('div', {}, h('strong', {}, overdue.length), h('span', {}, 'vencidos')), h('div', {}, h('strong', {}, money(upcoming.reduce((n, x) => n + x.remaining, 0))), h('span', {}, 'a pagar · inclui vencidos'))) : null, upcoming.length ? h('div', { className: 'mf-agenda-list' }, upcoming.slice(0, 3).map(item => h('button', { type: 'button', className: 'mf-agenda-row', key: item.id, onClick: () => this.openPlanDetail(item.id) }, h('span', { className: 'u1-agenda-date' }, date(item.dueDate)), h('span', { className: 'mf-agenda-copy' }, h('strong', {}, item.title), h('small', {}, item.dueDate < today ? 'Vencido' : item.dueDate === today ? 'Hoje' : item.certainty === 'estimated' ? 'Estimado' : 'A vencer')), h('strong', { className: 'mf-agenda-amount' }, money(item.remaining))))) : h('div', { className: 'u1-empty-agenda' }, h(Icon, { name: 'calendar', size: 22 }), h('div', {}, h('b', {}, generated ? 'Sem vencimentos cadastrados neste intervalo' : 'Agenda ainda não carregada'), h('p', {}, generated ? 'Isso não confirma a ausência de contas a pagar.' : 'Abra o Planejamento para conferir seus compromissos.'))), h('button', { type: 'button', className: 'u1-subtle-link', onClick: () => this.navigate('planning') }, 'Ver agenda', h(Icon, { name: 'arrow', size: 14 }))), h('section', { className: 'u1-panel u1-budget' }, h('div', { className: 'u1-panel-head' }, h('div', {}, h('h2', {}, 'Orçamento em foco'), h('p', {}, prettyMonth(month))), h('button', { type: 'button', className: 'u1-icon-button', 'aria-label': 'Abrir Orçamentos', onClick: openBudget }, h(Icon, { name: 'arrow', size: 17 }))), h('div', { className: 'u1-budget-summary' }, h('strong', {}, money(spentLimited)), h('span', {}, 'de ' + money(totalLimit) + ' em limites')), limits.length ? h('div', { className: 'u1-budget-meter ' + (spentLimited > totalLimit ? 'is-over' : ''), role: 'img', 'aria-label': hidden ? 'Valores ocultos' : used + '% dos limites utilizados' }, h('i', { style: { width: hidden ? '0%' : Math.min(100, used) + '%' } })) : null, h('p', { className: 'u1-budget-caption' }, !limits.length ? 'Você ainda não definiu limites.' : hidden ? 'Valores ocultos' : (spentLimited > totalLimit ? money(spentLimited - totalLimit) + ' acima dos limites' : money(totalLimit - spentLimited) + ' de margem nos limites')), h('div', { className: 'u1-coverage' }, h('span', {}, 'Cobertura dos gastos'), h('b', {}, hidden ? '••••' : budgetCoverage === null ? 'Sem gastos' : budgetCoverage + '%')), h('p', { className: 'u1-microcopy' }, 'Considera apenas categorias com limite. Margem não é saldo disponível.'), h('button', { type: 'button', className: 'u1-subtle-link', onClick: openBudget }, 'Gerenciar orçamento', h(Icon, { name: 'arrow', size: 14 }))))), h('div', { className: 'u1-detail-grid' }, h('section', { className: 'u1-panel u1-recent' }, h('div', { className: 'u1-panel-head' }, h('div', {}, h('h2', {}, 'Últimas movimentações'), h('p', {}, 'Confirmadas no período')), h('button', { type: 'button', className: 'u1-subtle-link', onClick: () => { this.setState({ query: '', bankFilter: '', txSource: useBank ? 'bank' : 'manual', txReviewOnly: false, txOrganize: false }); this.navigate('transactions'); } }, 'Ver tudo', h(Icon, { name: 'arrow', size: 14 }))), recent.length ? h('div', { className: 'u1-recent-list' }, recent.map(t => h('button', { type: 'button', className: 'u1-recent-row', key: t.key, onClick: () => useBank ? this.openBankDetail(t.raw) : this.openManualDetail(t.raw) }, h('span', { className: 'u1-transaction-icon ' + t.kind }, h(Icon, { name: t.kind === 'income' ? 'trend' : 'down', size: 17 })), h('span', { className: 'u1-recent-copy' }, h('strong', {}, t.title), h('small', {}, t.original && t.original !== t.title ? t.original : t.category + ' · ' + date(t.date))), h('strong', { className: t.kind === 'income' ? 'good-text' : 'bad-text' }, hidden ? '••••' : (t.kind === 'income' ? '+' : '−') + money(t.amount))))) : h('p', { className: 'u1-empty' }, 'Nenhuma movimentação confirmada neste período.')), h('section', { className: 'u1-panel u1-accounts' }, h('div', { className: 'u1-panel-head' }, h('div', {}, h('h2', {}, useBank ? 'Suas contas' : 'Fonte dos seus indicadores'), h('p', {}, useBank ? 'Saldo de referência por instituição · não depende do período acima' : 'Acompanhamento com registros adicionados por você')), h('button', { type: 'button', className: 'u1-subtle-link', onClick: () => this.navigate('banks') }, 'Ver contas', h(Icon, { name: 'arrow', size: 14 }))), useBank ? h('div', { className: 'u1-accounts-grid' }, bank.data.accounts.map(account => h('button', { type: 'button', className: 'u1-account', key: account.id, onClick: () => { this.setState({ bankFilter: account.id, query: '', txSource: 'bank', txReviewOnly: false, txOrganize: false }); this.navigate('transactions'); } }, h('span', { className: 'u1-account-icon' }, h(Icon, { name: 'bank', size: 19 })), h('span', { className: 'u1-account-copy' }, h('b', {}, account.name), h('small', {}, 'Referência: ' + bankReferenceLabel(account.updatedAt))), h('strong', {}, Number.isFinite(account.balance) ? money(account.balance) : 'Indisponível')))) : h('p', { className: 'u1-microcopy' }, 'Os registros manuais e o extrato bancário são consultados separadamente para evitar duplicidades.'))), null);
     }
     renderTransactions() {
         var _a;
@@ -1479,21 +1981,76 @@ class App extends React.Component {
         const hasBank = filtered.some(t => t.origin === 'bank'), hasManual = filtered.some(t => t.origin === 'manual');
         const source = hasBank && hasManual ? (this.state.txSummarySource || 'bank') : hasManual ? 'manual' : 'bank';
         const summary = transactionViewSummary(filtered, source), span = dateSpan(this.state.overviewPeriod, this.state.customStart, this.state.customEnd);
+        const partialBank = this.state.mode !== 'demo' && !!this.state.bank.data.truncated;
         const cats = this.getCategories();
         const selected = this.state.txSelected;
-        return h('div', { className: 'section mf-tx-section u2-transactions' }, !review && ((_a = this.state.bank.data.suspectedDuplicates) === null || _a === void 0 ? void 0 : _a.length) ? h(Card, { className: 'mf-duplicate-banner' }, h('div', {}, h('b', {}, 'Possíveis movimentações repetidas (' + this.state.bank.data.suspectedDuplicates.length + ')'), h('p', {}, 'Encontramos registros semelhantes em conexões diferentes. Confira antes de revisar: os valores não foram removidos ou mesclados.')), this.state.bank.data.suspectedDuplicates.slice(0, 3).map(d => h('div', { className: 'mf-duplicate-row', key: d.pairKey }, h('span', {}, d.date.split('-').reverse().join('/') + ' · ' + d.description + ' · ' + fmt(Math.abs(d.amount))), h('button', { className: 'ghost-button', onClick: () => this.dismissBankDuplicate(d.pairKey) }, 'Ignorar aviso')))) : null, review ? h(Card, { className: 'mf-review-banner' }, h('div', {}, h('span', { className: 'micro-label' }, 'SUA CAIXA DE REVISÃO'), h('h2', {}, count ? count + ' movimentações para conferir' : 'Tudo organizado! 🎉'), h('p', {}, count ? 'Total em todas as contas e períodos carregados. Use os filtros abaixo para focar sua revisão.' : 'Novas movimentações aparecerão aqui depois da próxima atualização.')), h('button', { className: 'outlined-action', onClick: () => this.navigate('transactions') }, 'Ver todas as movimentações')) : null, h('div', { className: 'u2-summary-heading' }, h('div', {}, h('h2', {}, 'Seu histórico, com contexto'), h('p', {}, review ? 'Caixa de revisão · todos os períodos carregados' : pDate(span.start) + ' a ' + pDate(span.end) + ' · filtros aplicados ao resumo')), hasBank && hasManual ? h('div', { className: 'u2-view-tabs', 'aria-label': 'Origem dos valores do resumo' }, ['bank', 'manual'].map(v => h('button', { type: 'button', 'aria-pressed': source === v, onClick: () => this.setState({ txSummarySource: v }) }, v === 'bank' ? 'Banco' : 'Manual'))) : null), h('div', { className: 'u2-metrics' }, [
-            { label: 'Entradas confirmadas', value: fmt(summary.income), detail: 'Receitas · ' + (source === 'bank' ? 'banco' : 'manual'), kind: 'income' },
-            { label: 'Saídas confirmadas', value: fmt(summary.expense), detail: 'Despesas · ' + (source === 'bank' ? 'banco' : 'manual'), kind: 'expense' },
-            { label: 'Resultado dos registros', value: fmt(summary.net), detail: 'Entradas menos saídas · não é saldo disponível', kind: '' },
-            { label: source === 'bank' ? 'Pendentes no banco' : 'Registros manuais', value: String(source === 'bank' ? summary.pending : summary.count), detail: source === 'bank' ? summary.review + ' a conferir · revisão independente do pagamento' : 'Valores separados das contas conectadas', kind: '' }
-        ].map(x => h('article', { className: 'u2-metric ' + x.kind, key: x.label }, h('span', {}, x.label), h('strong', {}, x.value), h('small', {}, x.detail)))), h('div', { className: 'u2-scope' }, h('span', {}, 'Resumo: ' + (source === 'bank' ? 'contas conectadas' : 'lançamentos manuais') + ' · ' + summary.count + ' registros' + (summary.excluded ? ' · ' + summary.excluded + ' transferência(s)/desconsiderada(s) fora dos valores' : '')), this.state.query || this.state.bankFilter || this.state.txSource !== 'all' ? h('button', { type: 'button', className: 'mf-small-link', onClick: () => this.setState({ query: '', bankFilter: '', txSource: 'all', txSelected: [] }) }, 'Limpar filtros') : null), h('div', { className: 'panel-toolbar' }, h('div', { className: 'search-box' }, h(Icon, { name: 'search', size: 18 }), h('input', { value: this.state.query, 'aria-label': 'Buscar movimentações', placeholder: 'Buscar por nome, categoria ou conta...', onChange: (e) => this.setState({ query: e.target.value }) })), h('div', { className: 'toolbar-actions' }, !review ? h(StyledSelect, { className: 'form-control bank-filter', value: this.state.txSource, options: [{ value: 'all', label: 'Todas as origens' }, { value: 'bank', label: 'Contas conectadas' }, { value: 'manual', label: 'Adicionadas por você' }], onChange: (v) => this.setState({ txSource: v, txSelected: [] }) }) : null, this.state.bank.data.accounts.length > 1 || this.state.bankFilter ? h(StyledSelect, { className: 'form-control bank-filter', value: this.state.bankFilter,
+        const active = [];
+        const add = (key, label, patch) => active.push({ key, label, clear: () => this.setState({ ...patch, txSelected: [], quickCategory: null }) });
+        if (this.state.query.trim())
+            add('query', 'Busca: ' + this.state.query.trim().slice(0, 32), { query: '' });
+        if (this.state.txSource !== 'all' && !review)
+            add('origin', this.state.txSource === 'bank' ? 'Origem: banco' : 'Origem: manual', { txSource: 'all' });
+        if (this.state.bankFilter) {
+            const account = this.state.bank.data.accounts.find(a => a.id === this.state.bankFilter);
+            add('account', 'Conta: ' + ((account === null || account === void 0 ? void 0 : account.name) || 'Selecionada'), { bankFilter: '' });
+        }
+        if (this.state.txCategoryFilter)
+            add('category', 'Categoria: ' + this.state.txCategoryFilter, { txCategoryFilter: '' });
+        if (this.state.txKindFilter && this.state.txKindFilter !== 'all')
+            add('kind', this.state.txKindFilter === 'income' ? 'Receitas' : 'Despesas', { txKindFilter: 'all' });
+        if (!review && this.state.txReviewFilter && this.state.txReviewFilter !== 'all')
+            add('review', this.state.txReviewFilter === 'pending' ? 'A conferir' : 'Revisadas', { txReviewFilter: 'all' });
+        if (this.state.txSort && this.state.txSort !== 'date_desc')
+            add('sort', this.state.txSort === 'date_asc' ? 'Data mais antiga' :
+                this.state.txSort === 'amount_desc' ? 'Maior valor' : 'Menor valor', { txSort: 'date_desc' });
+        if (!review && this.state.overviewPeriod !== 'month')
+            add('period', 'Período: ' + pDate(span.start) + ' a ' + pDate(span.end), { overviewPeriod: 'month' });
+        return h('div', { className: 'section mf-tx-section u2-transactions' }, !review && ((_a = this.state.bank.data.suspectedDuplicates) === null || _a === void 0 ? void 0 : _a.length) ? h(Card, { className: 'mf-duplicate-banner' }, h('div', {}, h('b', {}, 'Possíveis movimentações repetidas (' + this.state.bank.data.suspectedDuplicates.length + ')'), h('p', {}, 'Encontramos registros semelhantes em conexões diferentes. Confira antes de revisar: os valores não foram removidos ou mesclados.')), this.state.bank.data.suspectedDuplicates.slice(0, 3).map(d => h('div', { className: 'mf-duplicate-row', key: d.pairKey }, h('span', {}, d.date.split('-').reverse().join('/') + ' · ' + d.description + ' · ' + fmt(Math.abs(d.amount))), h('button', { className: 'ghost-button', onClick: () => this.dismissBankDuplicate(d.pairKey) }, 'Ignorar aviso')))) : null, review ? h(Card, { className: 'mf-review-banner' }, h('div', {}, h('span', { className: 'micro-label' }, 'SUA CAIXA DE REVISÃO'), h('h2', {}, count ? count + ' movimentações carregadas para conferir' : partialBank ? 'Nenhuma revisão pendente entre os registros carregados' : 'Tudo organizado! 🎉'), h('p', {}, count ? 'Revisão calculada sobre os registros bancários carregados, independentemente do período.' : 'Outros registros podem existir fora da janela carregada quando o histórico é parcial.')), h('button', { className: 'outlined-action', onClick: () => this.navigate('transactions') }, 'Ver todas as movimentações')) : null, h('div', { className: 'u2-summary-heading' }, h('div', {}, h('h2', {}, 'Seu histórico, com contexto'), h('p', {}, review ? 'Caixa de revisão · registros bancários carregados' : pDate(span.start) + ' a ' + pDate(span.end) + ' · filtros aplicados ao resumo')), hasBank && hasManual ? h('div', { className: 'u2-view-tabs', 'aria-label': 'Origem dos valores do resumo' }, ['bank', 'manual'].map(v => h('button', { type: 'button', 'aria-pressed': source === v, onClick: () => this.setState({ txSummarySource: v }) }, v === 'bank' ? 'Banco' : 'Manual'))) : null), h('div', { className: 'u2-metrics' }, [
+            { label: 'Entradas confirmadas', value: fmt(summary.income), detail: 'Receitas · ' + (source === 'bank' ? (partialBank ? 'banco · linhas carregadas' : 'banco') : 'manual'), kind: 'income' },
+            { label: 'Saídas confirmadas', value: fmt(summary.expense), detail: 'Despesas · ' + (source === 'bank' ? (partialBank ? 'banco · linhas carregadas' : 'banco') : 'manual'), kind: 'expense' },
+            { label: 'Resultado dos registros', value: fmt(summary.net), detail: 'Entradas menos saídas · não é saldo disponível' + (source === 'bank' && partialBank ? ' · histórico parcial' : ''), kind: '', tone: 'net', semantic: summary.net > 0 ? 'is-positive' : summary.net < 0 ? 'is-negative' : 'is-neutral' },
+            { label: source === 'bank' ? 'Pendentes no banco' : 'Registros manuais', value: String(source === 'bank' ? summary.pending : summary.count), detail: source === 'bank' ? summary.review + ' a conferir · revisão independente do pagamento' : 'Valores separados das contas conectadas', kind: '', tone: source === 'bank' ? 'warning' : 'balance' }
+        ].map(x => h('article', { className: 'u2-metric mf-border-reveal mf-tone-' + (x.tone || x.kind || 'neutral') + ' ' + x.kind + (x.semantic ? ' ' + x.semantic : ''), role: 'group', tabIndex: 0, key: x.label }, h('span', {}, x.label), h('strong', {}, x.value), h('small', {}, x.detail)))), partialBank ? h('p', { className: 'u5-history-limited', role: 'status' }, 'Histórico bancário parcial: ' + this.state.bank.data.transactions.length + ' de ' +
+            this.state.bank.data.totalTransactions +
+            ' movimentações carregadas. Os resumos bancários e a revisão nesta tela abrangem somente as linhas carregadas; não representam o histórico completo.') : null, h('div', { className: 'u2-scope' }, h('span', {}, 'Resumo: ' + (source === 'bank' ? 'contas conectadas' : 'lançamentos manuais') +
+            ' · ' + summary.count + ' registros' + (summary.excluded ? ' · ' + summary.excluded + ' transferência(s)/desconsiderada(s) fora dos valores' : '')), active.length ? h('button', { type: 'button', className: 'mf-small-link',
+            onClick: () => this.clearMovementFilters() }, 'Limpar todos os filtros') : null), h('div', { className: 'panel-toolbar u5-filter-toolbar' }, h('div', { className: 'search-box' }, h(Icon, { name: 'search', size: 18 }), h('input', { value: this.state.query, 'aria-label': 'Buscar movimentações',
+            placeholder: 'Buscar descrição, estabelecimento ou categoria',
+            onChange: (e) => this.setState({ query: e.target.value, txSelected: [], quickCategory: null }) })), h('div', { className: 'toolbar-actions' }, !review ? h(StyledSelect, { className: 'form-control bank-filter', value: this.state.txSource,
+            ariaLabel: 'Filtrar origem', options: [{ value: 'all', label: 'Todas as origens' },
+                { value: 'bank', label: 'Contas conectadas' }, { value: 'manual', label: 'Adicionadas por você' }],
+            onChange: (v) => this.setState({ txSource: v, bankFilter: v === 'manual' ? '' : this.state.bankFilter,
+                txSelected: [], quickCategory: null }) }) : null, this.state.bank.data.accounts.length > 1 || this.state.bankFilter ? h(StyledSelect, {
+            className: 'form-control bank-filter', value: this.state.bankFilter, ariaLabel: 'Filtrar conta',
             options: [{ value: '', label: 'Todas as contas' }, ...this.state.bank.data.accounts.map(a => ({ value: a.id, label: a.name }))],
-            onChange: (v) => this.setState({ bankFilter: v, txSelected: [] }) }) : null, !review ? h('button', { className: 'ghost-button', onClick: () => { var _a; return (_a = this.csvInput) === null || _a === void 0 ? void 0 : _a.click(); } }, h(Icon, { name: 'upload', size: 17 }), 'Importar CSV') : null, null)), selected.length ? h(Card, { className: 'mf-bulk-toolbar' }, h('b', {}, selected.length + ' selecionada(s)'), h(StyledSelect, { value: this.state.txBatchCategory, options: cats.map(c => ({ value: c.name, label: c.emoji + ' ' + c.name })), onChange: (value) => this.setState({ txBatchCategory: value }) }), h('button', { className: 'ghost-button', disabled: this.state.detailBusy, onClick: () => this.applyBankBatch({ category: this.state.txBatchCategory }) }, 'Aplicar categoria'), h('button', { className: 'primary-button', disabled: this.state.detailBusy, onClick: () => this.applyBankBatch({ reviewed: true }) }, 'Marcar revisadas'), h('button', { className: 'mf-small-link', onClick: () => this.setState({ txSelected: [] }) }, 'Limpar seleção')) : null, h(Card, { className: 'table-card' }, h('div', { className: 'mf-table-summary' }, h('span', { role: 'status' }, filtered.length + ' resultados' + (filtered.length > 500 ? ' · exibindo os primeiros 500; resumo inclui todos os resultados' : '')), review ? h('span', {}, 'A revisar · todos os períodos') : null, this.state.bank.data.truncated ? h('span', {}, 'Histórico do banco parcial') : null), !review ? h('details', { className: 'mf-table-help' }, h('summary', {}, 'Como editar'), h('p', {}, 'No nome: detalhes. Na categoria: edição. Divisões e vínculos ficam no detalhe.')) : null, h('div', { className: 'table-scroller' }, h('table', {}, h('thead', {}, h('tr', {}, ['', 'Data', 'Movimentação', 'Categoria', 'Origem', 'Situação', 'Valor', 'Ação'].map((n, i) => h('th', { key: i }, n)))), h('tbody', {}, shown.length ? shown.map(t => {
+            onChange: (v) => this.setState({ bankFilter: v, txSource: v ? 'bank' : this.state.txSource,
+                txSelected: [], quickCategory: null })
+        }) : null, h('button', { type: 'button', className: 'ghost-button u5-more-filters',
+            'aria-expanded': !!this.state.txAdvancedOpen, 'aria-controls': 'u5-advanced-filters',
+            onClick: () => this.setState({ txAdvancedOpen: !this.state.txAdvancedOpen }) }, h(Icon, { name: 'filter', size: 16 }), 'Filtros' + (active.length ? ' · ' + active.length : '')), !review ? h('button', { type: 'button', className: 'ghost-button',
+            onClick: () => { var _a; return (_a = this.csvInput) === null || _a === void 0 ? void 0 : _a.click(); } }, h(Icon, { name: 'upload', size: 17 }), 'Importar CSV') : null)), this.state.txAdvancedOpen ? h('div', { id: 'u5-advanced-filters', className: 'u5-advanced-filters',
+            'aria-label': 'Filtros avançados' }, h(StyledSelect, { value: this.state.txCategoryFilter || '', ariaLabel: 'Filtrar categoria',
+            options: [{ value: '', label: 'Todas as categorias' }, ...cats.map(c => ({ value: c.name, label: c.name }))],
+            onChange: (v) => this.setState({ txCategoryFilter: v, txSelected: [], quickCategory: null }) }), h(StyledSelect, { value: this.state.txKindFilter || 'all', ariaLabel: 'Filtrar receitas e despesas',
+            options: [{ value: 'all', label: 'Receitas e despesas' }, { value: 'income', label: 'Somente receitas' },
+                { value: 'expense', label: 'Somente despesas' }],
+            onChange: (v) => this.setState({ txKindFilter: v, txSelected: [], quickCategory: null }) }), !review ? h(StyledSelect, { value: this.state.txReviewFilter || 'all', ariaLabel: 'Filtrar situação de revisão',
+            options: [{ value: 'all', label: 'Qualquer revisão' }, { value: 'pending', label: 'A conferir (banco)' },
+                { value: 'reviewed', label: 'Revisadas (banco)' }],
+            onChange: (v) => this.setState({ txReviewFilter: v, txSelected: [], quickCategory: null }) }) : null, h(StyledSelect, { value: this.state.txSort || 'date_desc', ariaLabel: 'Ordenar movimentações',
+            options: [{ value: 'date_desc', label: 'Data mais recente' },
+                { value: 'date_asc', label: 'Data mais antiga' },
+                { value: 'amount_desc', label: 'Maior valor absoluto' },
+                { value: 'amount_asc', label: 'Menor valor absoluto' }],
+            onChange: (v) => this.setState({ txSort: v, txSelected: [], quickCategory: null }) })) : null, active.length ? h('div', { className: 'u5-filter-chips', role: 'group', 'aria-label': 'Filtros ativos' }, active.map(chip => h('button', { type: 'button', key: chip.key, className: 'u5-filter-chip',
+            'aria-label': 'Remover filtro ' + chip.label, onClick: chip.clear }, chip.label, h(Icon, { name: 'close', size: 13 })))) : null, selected.length ? h(Card, { className: 'mf-bulk-toolbar' }, h('b', {}, selected.length + ' selecionada(s)'), h(StyledSelect, { value: this.state.txBatchCategory, options: cats.map(c => ({ value: c.name, label: c.emoji + ' ' + c.name })), onChange: (value) => this.setState({ txBatchCategory: value }) }), h('button', { className: 'ghost-button', disabled: this.state.detailBusy, onClick: () => this.applyBankBatch({ category: this.state.txBatchCategory }) }, 'Aplicar categoria'), h('button', { className: 'primary-button', disabled: this.state.detailBusy, onClick: () => this.applyBankBatch({ reviewed: true }) }, 'Marcar revisadas'), h('button', { className: 'mf-small-link', onClick: () => this.setState({ txSelected: [] }) }, 'Limpar seleção')) : null, h(Card, { className: 'table-card' }, h('div', { className: 'mf-table-summary' }, h('span', { role: 'status' }, filtered.length + ' resultados nos dados carregados' + (filtered.length > 500 ? ' · exibindo os primeiros 500; resumo inclui as demais linhas filtradas e carregadas' : '')), review ? h('span', {}, 'A revisar · todos os períodos carregados') : null, partialBank ? h('span', {}, 'Histórico bancário parcial') : null), !review ? h('details', { className: 'mf-table-help' }, h('summary', {}, 'Como editar'), h('p', {}, 'No nome: detalhes. Na categoria: edição. Divisões e vínculos ficam no detalhe.')) : null, h('div', { className: 'table-scroller' }, h('table', {}, h('thead', {}, h('tr', {}, ['', 'Data', 'Movimentação', 'Categoria', 'Origem', 'Situação', 'Valor', 'Ação'].map((n, i) => h('th', { key: i }, n)))), h('tbody', {}, shown.length ? shown.map(t => {
             var _a;
             const bank = t.origin === 'bank', v = t.raw, category = cats.find(c => c.name === t.category);
             return h('tr', { key: t.key }, h('td', {}, bank ? h('input', { type: 'checkbox', className: 'mf-check', checked: this.bankTxSelected(v), title: 'Selecionar para ação em lote', onChange: () => this.toggleSelected(v) }) : null), h('td', { className: 'muted' }, t.date.split('-').reverse().join('/')), h('td', {}, h('button', { className: 'mf-row-detail', title: 'Abrir detalhes', onClick: () => bank ? this.openBankDetail(v) : this.openManualDetail(t.raw) }, h('span', { className: 'mf-row-emoji' }, (category === null || category === void 0 ? void 0 : category.emoji) || '✨'), h('span', {}, h('b', {}, t.merchant || t.description), t.merchant && t.merchant !== t.description ? h('small', {}, t.description) : null, bank && v.linkedManualId ? h('small', { className: 'mf-linked' }, '✓ Conferido com lançamento manual') : null))), h('td', {}, h(TransactionCategoryButton, { category: t.category, emoji: category === null || category === void 0 ? void 0 : category.emoji,
                 label: 'Editar categoria de ' + (t.merchant || t.description) + ' · ' + t.date.split('-').reverse().join('/') + ' · ' + t.account + ' · ' + (t.amount >= 0 ? '+' : '−') + fmt(Math.abs(t.amount)),
-                onClick: () => this.openCategoryFromRow(t.origin, t.raw) }), bank && ((_a = v.splits) === null || _a === void 0 ? void 0 : _a.length) ? h('small', { className: 'mf-muted-block' }, 'Dividida em ' + v.splits.length + ' partes') : null), h('td', {}, t.account), h('td', {}, bank ? h('span', { className: 'mf-status-group' }, h('span', { className: 'kind-pill' }, t.status === 'POSTED' ? 'Confirmada' : t.status === 'PENDING' ? 'Pendente no banco' : t.status), h('small', { className: v.reviewed ? 'u2-reviewed' : 'u2-to-review' }, v.reviewed ? '✓ Revisada' : 'A conferir'), effectiveNature(v) === 'transfer' ? h('small', {}, 'Transferência') : effectiveNature(v) === 'ignore' ? h('small', {}, 'Desconsiderada') : null) : h('span', { className: 'kind-pill' }, 'Manual')), h('td', { className: t.amount >= 0 ? 'good-text amount-cell' : 'amount-cell' }, (t.amount >= 0 ? '+' : '−') + fmt(Math.abs(t.amount))), h('td', {}, bank && !v.reviewed ? h('button', { className: 'mf-quick-review', disabled: this.state.detailBusy, onClick: () => this.markBankReviewed(v), title: 'Conferir esta movimentação sem abrir detalhes' }, '✓ Revisar') : null));
+                expanded: !!this.state.quickCategory && this.state.quickCategory.origin === t.origin && this.state.quickCategory.id === t.raw.id && (t.origin === 'manual' || this.state.quickCategory.accountId === t.raw.accountId),
+                disabled: this.state.quickCategoryBusy || this.state.busy,
+                onClick: (e) => this.openCategoryFromRow(t.origin, t.raw, e) }), bank && ((_a = v.splits) === null || _a === void 0 ? void 0 : _a.length) ? h('small', { className: 'mf-muted-block' }, 'Dividida em ' + v.splits.length + ' partes') : null), h('td', {}, t.account), h('td', {}, bank ? h('span', { className: 'mf-status-group' }, h('span', { className: 'kind-pill' }, t.status === 'POSTED' ? 'Confirmada' : t.status === 'PENDING' ? 'Pendente no banco' : t.status), h('small', { className: v.reviewed ? 'u2-reviewed' : 'u2-to-review' }, v.reviewed ? '✓ Revisada' : 'A conferir'), effectiveNature(v) === 'transfer' ? h('small', {}, 'Transferência') : effectiveNature(v) === 'ignore' ? h('small', {}, 'Desconsiderada') : null) : h('span', { className: 'kind-pill' }, 'Manual')), h('td', { className: t.amount >= 0 ? 'good-text amount-cell' : 'amount-cell' }, (t.amount >= 0 ? '+' : '−') + fmt(Math.abs(t.amount))), h('td', {}, bank && !v.reviewed ? h('button', { className: 'mf-quick-review', disabled: this.state.detailBusy || this.reviewSavingKeys.has(v.accountId + '|' + v.id), onClick: () => this.markBankReviewed(v), title: 'Conferir esta movimentação sem abrir detalhes' }, '✓ Revisar') : null));
         }) : h('tr', {}, h('td', { colSpan: 8, className: 'empty-table' }, review ? 'Não há movimentações para revisar.' : 'Não há movimentações neste período.')))))));
     }
     renderCategories() {
@@ -1506,11 +2063,11 @@ class App extends React.Component {
                 onClick: () => this.setState({ categoryEditor: { ...e, emoji } }) }, emoji))), h('button', { className: 'mf-small-link', type: 'button', onClick: () => this.setState({ categoryMoreEmojis: !this.state.categoryMoreEmojis }) }, this.state.categoryMoreEmojis ? 'Mostrar menos emojis' : 'Explorar todos os emojis'), h('div', { className: 'appearance-label' }, h('b', {}, 'Sua paleta de cores'), h('span', {}, 'Cores que combinam com o tema escuro')), h('div', { className: 'color-grid', role: 'group', 'aria-label': 'Escolha uma cor' }, COLOR_OPTIONS.map(color => h('button', { key: color, type: 'button',
                 className: 'color-choice ' + (e.color === color ? 'selected' : ''), style: { background: color }, 'aria-label': 'Cor ' + color, 'aria-pressed': e.color === color,
                 onClick: () => this.setState({ categoryEditor: { ...e, color } }) }, e.color === color ? '✓' : null))), h('label', { className: 'custom-color-label' }, 'Cor personalizada (opcional)', h('input', { key: e.previousName + '-' + e.color, className: 'color-hex-input', defaultValue: e.color,
-                maxLength: 7, spellCheck: false, placeholder: '#884bff', onBlur: (v) => { const color = String(v.target.value).trim(); if (/^#[0-9a-fA-F]{6}$/.test(color))
+                maxLength: 7, spellCheck: false, placeholder: '#3e9a85', onBlur: (v) => { const color = String(v.target.value).trim(); if (/^#[0-9a-fA-F]{6}$/.test(color))
                     this.setState({ categoryEditor: { ...e, color: color.toLowerCase() } });
                 else
                     v.target.value = e.color; }, onKeyDown: (v) => { if (v.key === 'Enter')
-                    v.currentTarget.blur(); } }))), h('div', { className: 'toolbar-actions' }, h('button', { className: 'primary-button', onClick: () => this.saveCategory() }, e.previousName ? 'Salvar alterações' : 'Adicionar categoria'), e.previousName ? h('button', { className: 'ghost-button', onClick: () => this.setState({ categoryEditor: { previousName: '', name: '', color: '#884bff', emoji: '✨', kind: 'expense' } }) }, 'Cancelar edição') : null)), h(Card, { className: 'settings-card' }, h('div', { className: 'card-heading' }, h('div', {}, h('h2', {}, 'Regras automáticas'), h('p', {}, 'Ex.: descrição contém IFOOD → Alimentação. Menor prioridade vence; empate segue a regra mais antiga.'))), h('div', { className: 'rule-list' }, rules.length ? rules.map(rule => h('div', { className: 'rule-list-row', key: rule.id }, h('div', {}, h('strong', {}, rule.pattern), h('small', {}, (rule.matchMode === 'exact' ? 'Texto exato' : rule.matchMode === 'starts' ? 'Começa com' : 'Contém') + ' · ' + (rule.scope === 'both' ? 'Banco e manuais' : rule.scope === 'bank' ? 'Banco' : 'Manuais') + ' · Prioridade ' + rule.priority)), h('span', { className: 'category-tag' }, rule.category), h('button', { className: 'small-link', onClick: () => this.setState({ ruleEditor: { id: rule.id, pattern: rule.pattern, matchMode: rule.matchMode, category: rule.category, scope: rule.scope, priority: String(rule.priority) } }) }, 'Editar'), h('button', { className: 'trash-button', title: 'Excluir regra', onClick: () => this.deleteRule(rule.id) }, h(Icon, { name: 'trash', size: 16 })))) : h('p', { className: 'muted-desc' }, 'Nenhuma regra criada. Cadastre a primeira abaixo.')), h('div', { className: 'rule-suggestions' }, h('small', {}, 'Modelos rápidos:'), [
+                    v.currentTarget.blur(); } }))), h('div', { className: 'toolbar-actions' }, h('button', { className: 'primary-button', onClick: () => this.saveCategory() }, e.previousName ? 'Salvar alterações' : 'Adicionar categoria'), e.previousName ? h('button', { className: 'ghost-button', onClick: () => this.setState({ categoryEditor: { previousName: '', name: '', color: '#3e9a85', emoji: '✨', kind: 'expense' } }) }, 'Cancelar edição') : null)), h(Card, { className: 'settings-card' }, h('div', { className: 'card-heading' }, h('div', {}, h('h2', {}, 'Regras automáticas'), h('p', {}, 'Ex.: descrição contém IFOOD → Alimentação. Menor prioridade vence; empate segue a regra mais antiga.'))), h('div', { className: 'rule-list' }, rules.length ? rules.map(rule => h('div', { className: 'rule-list-row', key: rule.id }, h('div', {}, h('strong', {}, rule.pattern), h('small', {}, (rule.matchMode === 'exact' ? 'Texto exato' : rule.matchMode === 'starts' ? 'Começa com' : 'Contém') + ' · ' + (rule.scope === 'both' ? 'Banco e manuais' : rule.scope === 'bank' ? 'Banco' : 'Manuais') + ' · Prioridade ' + rule.priority)), h('span', { className: 'category-tag' }, rule.category), h('button', { className: 'small-link', onClick: () => this.setState({ ruleEditor: { id: rule.id, pattern: rule.pattern, matchMode: rule.matchMode, category: rule.category, scope: rule.scope, priority: String(rule.priority) } }) }, 'Editar'), h('button', { className: 'trash-button', title: 'Excluir regra', onClick: () => this.deleteRule(rule.id) }, h(Icon, { name: 'trash', size: 16 })))) : h('p', { className: 'muted-desc' }, 'Nenhuma regra criada. Cadastre a primeira abaixo.')), h('div', { className: 'rule-suggestions' }, h('small', {}, 'Modelos rápidos:'), [
                 { pattern: 'IFOOD', category: 'Alimentação' },
                 { pattern: 'UBER', category: 'Transporte' },
                 { pattern: 'NETFLIX', category: 'Assinaturas' },
@@ -1550,7 +2107,7 @@ class App extends React.Component {
             const average = values.reduce((a, b) => a + b, 0) / 3;
             return Math.max(2000, Math.ceil(average * 1.1 / 1000) * 1000);
         };
-        return h('div', { className: 'section mf-budget-section u3-budgets' }, h('div', { className: 'mf-budget-heading' }, h('div', {}, h('p', {}, mode === 'expense' ? 'Acompanhe seus limites por categoria.' : 'Veja a composição das receitas recebidas.')), h('div', { className: 'mf-budget-switch', role: 'group', 'aria-label': 'Visualização financeira' }, h('button', { type: 'button', className: mode === 'expense' ? 'active' : '', 'aria-pressed': mode === 'expense', onClick: () => this.setState({ budgetTab: 'expense', showAllBudgetCategories: false, budgetFocus: 'all', budgetSearch: '' }) }, 'Gastos'), h('button', { type: 'button', className: mode === 'income' ? 'active' : '', 'aria-pressed': mode === 'income', onClick: () => this.setState({ budgetTab: 'income', showAllBudgetCategories: false, budgetFocus: 'all', budgetSearch: '' }) }, 'Receitas'))), this.renderSourcePicker(), h('p', { className: 'mf-budget-context' }, prettyMonth(this.state.month) + ' · ' + (mode === 'expense' ? 'Gastos do mês e limites cadastrados por categoria' : 'Composição das receitas recebidas, sem incluir transferências próprias confirmadas')), mode === 'expense' ? h('div', { className: 'mf-budget-summary mf-budget-summary-four' }, h('div', {}, h('small', {}, 'Gasto nas categorias com limite'), h('strong', {}, fmt(spentLimited))), h('div', {}, h('small', {}, 'Limites cadastrados'), h('strong', {}, limited.length ? fmt(limitTotal) : 'Sem limites')), h('div', {}, h('small', {}, margin < 0 ? 'Excesso nos limites' : 'Margem nos limites'), h('strong', { className: margin < 0 ? 'bad-text' : '' }, limited.length ? fmt(Math.abs(margin)) : 'Sem limites'), h('small', {}, 'Não representa saldo disponível')), h('div', {}, h('small', {}, 'Gasto fora dos limites'), h('strong', {}, fmt(Math.max(0, total - spentLimited))))) :
+        return h('div', { className: 'section mf-budget-section u3-budgets' }, h('div', { className: 'mf-budget-heading' }, h('div', {}, h('p', {}, mode === 'expense' ? 'Acompanhe seus limites por categoria.' : 'Veja a composição das receitas recebidas.')), h('div', { className: 'mf-budget-switch', role: 'group', 'aria-label': 'Visualização financeira' }, h('button', { type: 'button', className: mode === 'expense' ? 'active' : '', 'aria-pressed': mode === 'expense', onClick: () => this.setState({ budgetTab: 'expense', showAllBudgetCategories: false, budgetFocus: 'all', budgetSearch: '' }) }, 'Gastos'), h('button', { type: 'button', className: mode === 'income' ? 'active' : '', 'aria-pressed': mode === 'income', onClick: () => this.setState({ budgetTab: 'income', showAllBudgetCategories: false, budgetFocus: 'all', budgetSearch: '' }) }, 'Receitas'))), this.renderSourcePicker(), h('p', { className: 'mf-budget-context' }, prettyMonth(this.state.month) + ' · ' + (mode === 'expense' ? 'Gastos do mês e limites cadastrados por categoria' : 'Composição das receitas recebidas, sem incluir transferências próprias confirmadas')), mode === 'expense' ? h('div', { className: 'mf-budget-summary mf-budget-summary-four' }, h('div', { className: 'mf-border-reveal mf-tone-expense', role: 'group', tabIndex: 0 }, h('small', {}, 'Gasto nas categorias com limite'), h('strong', {}, fmt(spentLimited))), h('div', { className: 'mf-border-reveal mf-tone-balance', role: 'group', tabIndex: 0 }, h('small', {}, 'Limites cadastrados'), h('strong', {}, limited.length ? fmt(limitTotal) : 'Sem limites')), h('div', { className: 'mf-border-reveal mf-tone-net ' + (limited.length ? (margin < 0 ? 'is-negative' : 'is-positive') : 'is-neutral'), role: 'group', tabIndex: 0 }, h('small', {}, margin < 0 ? 'Excesso nos limites' : 'Margem nos limites'), h('strong', { className: margin < 0 ? 'bad-text' : '' }, limited.length ? fmt(Math.abs(margin)) : 'Sem limites'), h('small', {}, 'Não representa saldo disponível')), h('div', { className: 'mf-border-reveal mf-tone-warning', role: 'group', tabIndex: 0 }, h('small', {}, 'Gasto fora dos limites'), h('strong', {}, fmt(Math.max(0, total - spentLimited))))) :
             h('div', { className: 'mf-budget-summary' }, h('div', {}, h('small', {}, 'Total recebido no período'), h('strong', {}, fmt(total))), h('div', {}, h('small', {}, 'Origens com recebimentos'), h('strong', {}, String(entries.filter(x => x.total > 0).length))), h('div', {}, h('small', {}, 'Maior fonte de receita'), h('strong', {}, entries.length ? entries.slice().sort((a, b) => b.total - a.total)[0].info.name : 'Nenhuma ainda'))), mode === 'expense' ? h('section', { className: 'u3-budget-insight' }, h('div', { className: 'u3-coverage' }, h('div', { className: 'u3-coverage-ring', 'aria-hidden': 'true', style: { background: 'conic-gradient(var(--u3-accent) ' + (signals.covered || 0) + '%, var(--surface3) 0)' } }, h('strong', {}, signals.covered === null ? '—' : signals.covered + '%')), h('div', {}, h('h2', {}, 'Gastos com um limite definido'), h('p', {}, signals.covered === null ? 'Sem gastos nesta fonte e mês.' : signals.covered + '% dos gastos do mês estão em categorias com limite.'), h('small', {}, 'Cobertura do orçamento · não é dinheiro reservado'))), h('div', { className: 'u3-budget-actions' }, [
             { key: 'attention', count: signals.exceeded + signals.near, title: 'Pedem atenção', description: signals.exceeded + ' acima · ' + signals.near + ' perto do limite', icon: 'alert' },
             { key: 'unlimited', count: signals.unlimited, title: 'Sem limite', description: 'Categorias com gastos para organizar', icon: 'layers' }
@@ -1559,8 +2116,11 @@ class App extends React.Component {
             const pct = hasLimit && limit > 0 ? Math.round(spent / limit * 100) : hasLimit ? (spent > 0 ? 100 : 0) : 0;
             const share = total > 0 ? Math.round(spent / total * 100) : 0;
             const status = !hasLimit ? 'unlimited' : spent > limit ? 'exceeded' : limit > 0 && spent / limit >= .9 ? 'near' : 'within';
-            const row = h(Card, { className: 'budget-item mf-budget-card mf-budget-' + status, key: info.name }, h('div', { className: 'budget-item-top' }, h('span', { className: 'cat-symbol', style: { background: info.color + '28', color: info.color } }, info.emoji || '✨'), h('div', {}, h('h3', {}, info.name), h('small', { className: 'u3-budget-state' }, mode === 'income' ? 'Recebimentos do mês' : status === 'exceeded' ? 'Acima do limite' : status === 'near' ? 'Próximo do limite' : status === 'unlimited' ? 'Sem limite' : 'Dentro do limite'))), h('div', { className: 'mf-budget-money' }, h('strong', {}, fmt(spent)), h('span', {}, mode === 'expense' ? 'gasto até agora' : 'recebido no período')), mode === 'income' ? h('div', { className: 'mf-income-share' }, h('div', { className: 'progress-track' }, h('div', { className: 'progress-bar', style: { background: info.color, width: (spent > 0 ? Math.max(2, Math.min(share, 100)) : 0) + '%' } })), h('small', {}, share === 0 && spent > 0 ? 'Menos de 1% das receitas' : share + '% das receitas')) :
-                hasLimit ? h('div', { className: 'mf-budget-limit' }, h('div', { className: 'mf-budget-limit-head' }, h('span', {}, 'Limite ' + fmt(limit)), h('strong', { className: spent > limit ? 'bad-text' : '' }, limit === 0 && spent > 0 ? 'Acima do limite' : pct + '% utilizado')), h('div', { className: 'progress-track' }, h('div', { className: 'progress-bar', style: { width: Math.min(pct, 100) + '%' } })), h('small', {}, spent > limit ? 'Ultrapassou em ' + fmt(spent - limit) : status === 'near' ? 'Próximo do limite · restam ' + fmt(limit - spent) : limit === 0 ? 'Limite zero definido' : 'Restam ' + fmt(limit - spent))) :
+            const gauge = mode === 'expense' && hasLimit && limit > 0 ? budgetB3Visual(spent, limit) : null;
+            const remaining = limit - spent;
+            const row = h(Card, { className: 'budget-item mf-budget-card mf-budget-' + status + (gauge ? ' mf-budget-card-b3' : ''), key: info.name }, h('div', { className: 'budget-item-top' }, h('span', { className: 'cat-symbol', style: { background: info.color + '28', color: info.color } }, info.emoji || '✨'), h('div', {}, h('h3', {}, info.name), h('small', { className: 'u3-budget-state' }, mode === 'income' ? 'Recebimentos do mês' : status === 'exceeded' ? 'Acima do limite' : status === 'near' ? 'Próximo do limite' : status === 'unlimited' ? 'Sem limite' : 'Dentro do limite'))), gauge ? h('div', { className: 'mf-budget-b3', role: 'group', 'aria-label': 'Orçamento de ' + info.name + ': ' + gauge.percent + '% utilizado; gasto ' + fmt(spent) + ' de ' + fmt(limit) + (remaining < 0 ? '; excedido em ' + fmt(-remaining) : '; restante ' + fmt(remaining)) }, h('div', { className: 'mf-budget-b3-dial', style: { '--mf-budget-b3-color': gauge.color } }, h('svg', { className: 'mf-budget-b3-svg', viewBox: '0 0 200 110', 'aria-hidden': true, focusable: 'false' }, h('path', { className: 'mf-budget-b3-track', d: 'M 14 96 A 86 86 0 0 1 186 96', pathLength: 100 }), gauge.fill > 0 ? h('path', { className: 'mf-budget-b3-fill', d: 'M 14 96 A 86 86 0 0 1 186 96', pathLength: 100, strokeDasharray: gauge.fill + ' 100' }) : null), h('strong', { className: 'mf-budget-b3-percent' }, gauge.percent + '%'), h('span', { className: 'mf-budget-b3-caption' }, 'do limite utilizado')), h('div', { className: 'mf-budget-b3-values' }, h('div', {}, h('small', {}, 'Gasto atual'), h('strong', {}, fmt(spent))), h('div', {}, h('small', {}, 'Limite configurado'), h('strong', {}, fmt(limit)))), h('p', { className: 'mf-budget-b3-remaining' + (remaining < 0 ? ' is-exceeded' : '') }, remaining < 0 ? 'Limite ultrapassado · excesso de ' + fmt(-remaining) : 'Restam ' + fmt(remaining))) :
+                h('div', { className: 'mf-budget-money' }, h('strong', {}, fmt(spent)), h('span', {}, mode === 'expense' ? 'gasto até agora' : 'recebido no período')), mode === 'income' ? h('div', { className: 'mf-income-share' }, h('div', { className: 'progress-track' }, h('div', { className: 'progress-bar', style: { background: info.color, width: (spent > 0 ? Math.max(2, Math.min(share, 100)) : 0) + '%' } })), h('small', {}, share === 0 && spent > 0 ? 'Menos de 1% das receitas' : share + '% das receitas')) :
+                gauge ? null : hasLimit ? h('div', { className: 'mf-budget-limit' }, h('div', { className: 'mf-budget-limit-head' }, h('span', {}, 'Limite ' + fmt(limit)), h('strong', { className: spent > limit ? 'bad-text' : '' }, limit === 0 ? (spent > 0 ? 'Acima do limite' : 'Limite zero definido') : pct + '% utilizado')), limit > 0 ? h('div', { className: 'progress-track' }, h('div', { className: 'progress-bar', style: { width: Math.min(pct, 100) + '%' } })) : null, h('small', {}, spent > limit ? 'Ultrapassou em ' + fmt(spent - limit) : status === 'near' ? 'Próximo do limite · restam ' + fmt(limit - spent) : limit === 0 ? 'Limite zero definido' : 'Restam ' + fmt(limit - spent))) :
                     h('div', { className: 'mf-no-budget' }, h('span', {}, 'Sem limite definido'), h('div', { className: 'mf-budget-limit-actions' }, suggestLimit(info.name) ? h('button', { type: 'button', className: 'small-link', title: 'Sugestão: média dos últimos três meses com 10% de margem, arredondada para R$ 10. Você confirma antes de salvar.', onClick: () => this.setState({ editModal: { type: 'budget', key: info.name, title: 'Limite sugerido · ' + info.name, value: moneyString(suggestLimit(info.name)) } }) }, 'Sugerir ' + fmt(suggestLimit(info.name))) : null, h('button', { type: 'button', className: 'small-link', onClick: () => this.setState({ editModal: { type: 'budget', key: info.name, title: 'Definir limite · ' + info.name, value: '' } }) }, 'Definir limite'))), mode === 'expense' && hasLimit ? h('div', { className: 'budget-item-bottom' }, h('button', { className: 'small-link', onClick: () => this.setState({ editModal: { type: 'budget', key: info.name, title: 'Editar limite · ' + info.name, value: moneyString(limit) } }) }, 'Editar limite')) : null);
             const group = mode === 'expense' && (index === 0 || hasLimit !== visible[index - 1].hasLimit);
             return group ? [h('h3', { className: 'mf-budget-group-title', key: 'group-' + info.name }, hasLimit ? 'Categorias com limite' : 'Gastos sem limite'), row] : row;
@@ -1568,33 +2128,42 @@ class App extends React.Component {
             onClick: () => this.setState({ showAllBudgetCategories: !this.state.showAllBudgetCategories }) }, this.state.showAllBudgetCategories ? 'Ocultar outras categorias' : 'Ver outras categorias (' + quiet.length + ')', h(Icon, { name: this.state.showAllBudgetCategories ? 'chevron-up' : 'chevron-down', size: 16 })), this.state.showAllBudgetCategories ? h('div', { className: 'mf-budget-quiet-grid' }, quiet.map(c => h('div', { className: 'mf-budget-quiet-row', key: c.name }, h('span', {}, c.emoji || '✨', '  ', c.name), mode === 'expense' ? h('button', { className: 'small-link', onClick: () => this.setState({ editModal: { type: 'budget', key: c.name, title: 'Definir limite · ' + c.name, value: '' } }) }, 'Definir limite') : h('span', { className: 'muted' }, 'Sem receitas neste mês')))) : null) : null, h('p', { className: 'mf-budget-disclaimer' }, 'Pix para terceiros continuam como entradas ou saídas até que sejam identificados como transferências próprias. Reembolsos sem vínculo são mostrados como entradas, não abatimentos automáticos de gastos.'));
     }
     renderAssistant(includeBanner = true) {
-        const d = this.state.data, out = this.state.outcome, daily = !!desktop && this.state.mode === 'real';
+        const d = this.state.data, out = this.state.outcome, daily = !!desktop && this.state.mode === 'real', stale = this.isSimulationStale();
         const examples = [{ name: 'Notebook', price: '3200', icon: 'wallet' }, { name: 'Celular', price: '2400', icon: 'cart' }, { name: 'Compra pequena', price: '350', icon: 'spark' }];
-        return h('div', { className: 'section assistant-page u3-simulator' }, includeBanner ? h('div', { className: 'intro-banner assistant-banner mf-compact-banner mf-sim-intro u3-sim-heading' }, h('div', {}, h('h2', {}, 'Decida com o cenário completo.'), h('p', {}, 'Compare parcelas, juros e o efeito da compra no seu planejamento.')), h('span', { className: 'u3-source-badge' }, daily ? 'Fluxo de caixa diário' : 'Perfil manual · cenário simplificado')) : null, h('div', { className: 'assistant-grid' }, h(Card, { className: 'sim-form-card' }, h('div', { className: 'card-heading' }, h('div', {}, h('span', { className: 'micro-label' }, 'MONTE SEU CENÁRIO'), h('h2', {}, 'Sua próxima compra'), h('p', {}, 'Simular não cria uma dívida.'))), this.field('Valor do produto (R$)', h('input', { className: 'form-control', type: 'text', inputMode: 'decimal', value: this.state.sim.value, placeholder: 'Ex.: 1.499,90', onChange: (e) => this.setSimulation({ value: e.target.value }) })), h('div', { className: 'two-inputs' }, this.field('Número de parcelas', h(StyledSelect, { className: 'form-control', value: this.state.sim.installments, options: [1, 2, 3, 4, 5, 6, 8, 10, 12, 18, 24, 36].map(n => ({ value: String(n), label: n === 1 ? 'À vista' : n + 'x' })), onChange: (value) => this.setSimulation({ installments: value }) })), this.field('Juros ao mês (%)', h('input', { className: 'form-control', type: 'text', inputMode: 'decimal', value: this.state.sim.interest, onChange: (e) => this.setSimulation({ interest: e.target.value }) }))), daily ? this.field('Primeiro vencimento', h(SingleDatePicker, { value: this.state.sim.firstDueDate || (() => { const today = iso(new Date()), [y, m, d] = today.split('-').map(Number); return Number(this.state.sim.installments) === 1 ? today : iso(new Date(y, m, Math.min(d, new Date(y, m + 1, 0).getDate()))); })(), onChange: (value) => this.setSimulation({ firstDueDate: value }) }), 'A data é usada na projeção diária.') : h('p', { className: 'u3-sim-note' }, 'Este cenário simplificado começa no próximo mês e usa os valores recorrentes do perfil.'), h('div', { className: 'u3-reserve-note' }, h(Icon, { name: 'shield', size: 17 }), h('div', {}, h('small', {}, 'Reserva mínima cadastrada'), h('strong', {}, fmt(d.settings.reserve))), h('button', { type: 'button', className: 'mf-small-link', onClick: () => { this.setState({ settingsSection: 'profile' }); this.navigate('settings'); } }, 'Ajustar')), h('button', { type: 'button', className: 'primary-button full action-large', disabled: this.state.simBusy, onClick: () => this.runSim() }, h(Icon, { name: this.state.simBusy ? 'refresh' : 'spark', size: 18 }), this.state.simBusy ? 'Calculando cenário…' : 'Analisar compra'), h('details', { className: 'mf-sim-premises' }, h('summary', {}, 'O que entra nesta simulação?'), h('p', {}, daily ? 'Saldos de referência e compromissos cadastrados. Receitas incertas ficam fora do cenário.' : 'Renda, despesas fixas, parcelas e reserva informadas no perfil.'), h('p', {}, 'A fonte e os alertas dos dados aparecem no resultado. Nenhum valor é reservado automaticamente.')), h('div', { className: 'sim-example-title' }, 'Experimentar um valor'), h('div', { className: 'quick-examples' }, examples.map(x => h('button', { type: 'button', className: 'quick-choice', onClick: () => this.setSimulation({ value: x.price }), key: x.name }, h(Icon, { name: x.icon, size: 16 }), x.name)))), h('div', { className: 'result-column' }, this.state.simSaved ? this.renderSimulationComparison() : null, out ? this.renderResult(out) : h(Card, { className: 'empty-result' }, h('span', { className: 'empty-result-icon' }, h(Icon, { name: 'chart', size: 34 })), h('h2', {}, this.state.simBusy ? 'Calculando o impacto da compra…' : 'Compare antes de decidir.'), h('p', {}, 'Analise uma opção, guarde como referência e experimente outra quantidade de parcelas ou taxa.'), h('div', { className: 'u3-result-guide' }, h('span', {}, h('b', {}, '01'), 'Veja o custo total'), h('span', {}, h('b', {}, '02'), 'Confira a reserva'), h('span', {}, h('b', {}, '03'), 'Compare duas opções'))), u3SimulationCost(out) ? h('div', { className: 'u3-save-scenario' }, h('button', { type: 'button', className: 'outlined-action', onClick: () => this.saveSimulation() }, h(Icon, { name: 'layers', size: 16 }), this.state.simSaved ? 'Substituir referência A' : 'Guardar como referência A'), h('small', {}, 'Disponível nesta sessão · não cria compromisso')) : null, h('div', { className: 'info-box' }, h(Icon, { name: 'shield', size: 17 }), h('p', {}, 'Análise matemática. Dados incompletos ou antigos podem limitar a projeção; o resultado não garante capacidade de pagamento.')))));
+        return h('div', { className: 'section assistant-page u3-simulator' }, includeBanner ? h('div', { className: 'intro-banner assistant-banner mf-compact-banner mf-sim-intro u3-sim-heading' }, h('div', {}, h('h2', {}, 'Decida com o cenário completo.'), h('p', {}, 'Compare parcelas, juros e o efeito da compra no seu planejamento.')), h('span', { className: 'u3-source-badge' }, daily ? 'Fluxo de caixa diário' : 'Perfil manual · cenário simplificado')) : null, h('div', { className: 'assistant-grid' }, h(Card, { className: 'sim-form-card' }, h('div', { className: 'card-heading' }, h('div', {}, h('span', { className: 'micro-label' }, 'MONTE SEU CENÁRIO'), h('h2', {}, 'Sua próxima compra'), h('p', {}, 'Simular não cria uma dívida.'))), this.field('Valor do produto (R$)', h('input', { className: 'form-control', type: 'text', inputMode: 'decimal', value: this.state.sim.value, placeholder: 'Ex.: 1.499,90', onChange: (e) => this.setSimulation({ value: e.target.value }) })), h('div', { className: 'two-inputs' }, this.field('Número de parcelas', h(StyledSelect, { className: 'form-control', value: this.state.sim.installments, options: [1, 2, 3, 4, 5, 6, 8, 10, 12, 18, 24, 36].map(n => ({ value: String(n), label: n === 1 ? 'À vista' : n + 'x' })), onChange: (value) => this.setSimulation({ installments: value }) })), this.field('Juros ao mês (%)', h('input', { className: 'form-control', type: 'text', inputMode: 'decimal', value: this.state.sim.interest, onChange: (e) => this.setSimulation({ interest: e.target.value }) }))), daily ? this.field('Primeiro vencimento', h(SingleDatePicker, { value: this.state.sim.firstDueDate || (() => { const today = iso(new Date()), [y, m, d] = today.split('-').map(Number); return Number(this.state.sim.installments) === 1 ? today : iso(new Date(y, m, Math.min(d, new Date(y, m + 1, 0).getDate()))); })(), onChange: (value) => this.setSimulation({ firstDueDate: value }) }), 'A data é usada na projeção diária.') : h('p', { className: 'u3-sim-note' }, 'Este cenário simplificado começa no próximo mês e usa os valores recorrentes do perfil.'), h('div', { className: 'u3-reserve-note' }, h(Icon, { name: 'shield', size: 17 }), h('div', {}, h('small', {}, 'Reserva mínima cadastrada'), h('strong', {}, fmt(d.settings.reserve))), h('button', { type: 'button', className: 'mf-small-link', onClick: () => { this.setState({ settingsSection: 'profile' }); this.navigate('settings'); } }, 'Ajustar')), h('button', { type: 'button', className: 'primary-button full action-large', disabled: this.state.simBusy, onClick: () => this.runSim() }, h(Icon, { name: this.state.simBusy ? 'refresh' : 'spark', size: 18 }), this.state.simBusy ? 'Calculando cenário…' : stale ? 'Recalcular cenário' : 'Analisar compra'), h('details', { className: 'mf-sim-premises' }, h('summary', {}, 'O que entra nesta simulação?'), h('p', {}, daily ? 'Saldos de referência e compromissos cadastrados. Receitas incertas ficam fora do cenário.' : 'Renda, despesas fixas, parcelas e reserva informadas no perfil.'), h('p', {}, 'A fonte e os alertas dos dados aparecem no resultado. Nenhum valor é reservado automaticamente.')), h('div', { className: 'sim-example-title' }, 'Experimentar um valor'), h('div', { className: 'quick-examples' }, examples.map(x => h('button', { type: 'button', className: 'quick-choice', onClick: () => this.setSimulation({ value: x.price }), key: x.name }, h(Icon, { name: x.icon, size: 16 }), x.name)))), h('div', { className: 'result-column' }, this.state.simSaved ? this.renderSimulationComparison() : null, this.state.simError ? h('p', { className: 'u5-sim-error', role: 'alert' }, this.state.simError) : null, out ? h('div', { className: stale ? 'u5-sim-stale' : 'u5-sim-current' }, h('p', { className: 'u5-sim-state', role: 'status' }, stale ? 'Resultado anterior — desatualizado. Recalcule para atualizar os valores.' :
+            'Resultado calculado com as premissas atuais.'), this.renderResult(out)) :
+            h(Card, { className: 'empty-result' }, h('span', { className: 'empty-result-icon' }, h(Icon, { name: 'chart', size: 34 })), h('h2', {}, this.state.simBusy ? 'Calculando o impacto da compra…' : 'Compare antes de decidir.'), h('p', {}, 'Analise uma opção, guarde como referência e experimente outra quantidade de parcelas ou taxa.'), h('div', { className: 'u3-result-guide' }, h('span', {}, h('b', {}, '01'), 'Veja o custo total'), h('span', {}, h('b', {}, '02'), 'Confira a reserva'), h('span', {}, h('b', {}, '03'), 'Compare duas opções'))), u3SimulationCost(out) && !stale && !this.state.simBusy && !this.state.simError ?
+            h('div', { className: 'u3-save-scenario' }, h('button', { type: 'button', className: 'outlined-action', onClick: () => this.saveSimulation() }, h(Icon, { name: 'layers', size: 16 }), this.state.simSaved ? 'Substituir referência A' : 'Guardar como referência A'), h('small', {}, 'Disponível nesta sessão · não cria compromisso')) : null, h('div', { className: 'info-box' }, h(Icon, { name: 'shield', size: 17 }), h('p', {}, 'Análise matemática. Dados incompletos ou antigos podem limitar a projeção; o resultado não garante capacidade de pagamento.')))));
     }
     renderSimulationComparison() {
+        var _a;
         const saved = this.state.simSaved;
         if (!saved)
             return null;
-        const a = u3SimulationCost(saved.result), b = u3SimulationCost(this.state.outcome);
+        const a = u3SimulationCost(saved.result), b = this.isSimulationStale() ? null : u3SimulationCost(this.state.outcome);
         if (!a)
             return null;
         const delta = b ? b.total - a.total : null, sameEngine = b && a.daily === b.daily;
         const count = (out) => out.installments || out.count;
-        const rows = [['Valor original', fmt(a.principal), b ? fmt(b.principal) : '—'], ['Parcelas', String(count(saved.result)) + 'x', b ? String(count(this.state.outcome)) + 'x' : '—'], ['Parcela de referência', fmt(a.monthly), b ? fmt(b.monthly) : '—'], ['Taxa ao mês', saved.input.interest + '%', b ? this.state.sim.interest + '%' : '—'], ['Juros totais', fmt(a.interest), b ? fmt(b.interest) : '—'], ['Custo total', fmt(a.total), b ? fmt(b.total) : '—']];
+        const rows = [['Valor original', fmt(a.principal), b ? fmt(b.principal) : '—'], ['Parcelas', String(count(saved.result)) + 'x', b ? String(count(this.state.outcome)) + 'x' : '—'], ['Parcela de referência', fmt(a.monthly), b ? fmt(b.monthly) : '—'], ['Taxa ao mês', saved.input.interest + '%', b ? (((_a = this.state.simCalculatedInput) === null || _a === void 0 ? void 0 : _a.interest) || '') + '%' : '—'], ['Juros totais', fmt(a.interest), b ? fmt(b.interest) : '—'], ['Custo total', fmt(a.total), b ? fmt(b.total) : '—']];
         if (sameEngine && a.daily)
             rows.push(['Menor saldo projetado', a.minimum === null ? '—' : fmt(a.minimum), b.minimum === null ? '—' : fmt(b.minimum)]);
-        return h('section', { className: 'u3-comparison' }, h('div', { className: 'u3-panel-heading' }, h('div', {}, h('h2', {}, 'Duas opções, lado a lado'), h('p', {}, b ? 'Comparação dos resultados calculados' : 'Referência guardada. Altere os dados e analise a opção B.')), h('button', { type: 'button', className: 'mf-small-link', onClick: () => this.setState({ simSaved: undefined }) }, 'Limpar referência')), h('div', { className: 'u3-comparison-scroll' }, h('table', {}, h('caption', { className: 'sr-only' }, 'Comparação entre a referência A e o resultado atual B'), h('thead', {}, h('tr', {}, h('th', { scope: 'col' }, 'Cenário'), h('th', { scope: 'col' }, 'Referência A'), h('th', { scope: 'col' }, 'Atual B'))), h('tbody', {}, rows.map(row => h('tr', { key: row[0] }, h('th', { scope: 'row' }, row[0]), h('td', {}, row[1]), h('td', {}, row[2])))))), h('div', { className: 'u3-comparison-context' }, h('span', {}, 'A: ' + (a.daily ? 'projeção diária · início ' + bankReferenceLabel(saved.result.firstDueDate) : 'perfil manual')), b ? h('span', {}, 'B: ' + (b.daily ? 'projeção diária · início ' + bankReferenceLabel(this.state.outcome.firstDueDate) : 'perfil manual')) : null), delta === null ? null : h('p', { className: 'u3-comparison-delta' }, delta === 0 ? 'Mesmo custo total.' : 'O custo total da opção B é ' + fmt(Math.abs(delta)) + (delta > 0 ? ' maior.' : ' menor.')), b && a.principal !== b.principal ? h('p', { className: 'u3-sim-note' }, 'Os valores originais são diferentes. A diferença no total não representa economia de juros.') : null, b && !sameEngine ? h('p', { className: 'u3-sim-note' }, 'As opções usam motores diferentes. Compare apenas os custos; os saldos não são equivalentes.') : null, h('small', { className: 'u3-sim-note' }, 'Cada projeção usa os dados disponíveis no momento da análise. A parcela pode variar por centavos; confira o cronograma.'));
+        return h('section', { className: 'u3-comparison' }, h('div', { className: 'u3-panel-heading' }, h('div', {}, h('h2', {}, 'Duas opções, lado a lado'), h('p', {}, b ? 'Comparação de dois cálculos atualizados' : this.isSimulationStale() ? 'A referência A permanece salva; recalcule as novas premissas para atualizar B.' : 'Referência guardada. Altere os dados e analise a opção B.')), h('button', { type: 'button', className: 'mf-small-link', onClick: () => this.setState({ simSaved: undefined }) }, 'Limpar referência')), h('div', { className: 'u3-comparison-scroll' }, h('table', {}, h('caption', { className: 'sr-only' }, 'Comparação entre a referência A e o resultado atual B'), h('thead', {}, h('tr', {}, h('th', { scope: 'col' }, 'Cenário'), h('th', { scope: 'col' }, 'Referência A'), h('th', { scope: 'col' }, 'Atual B'))), h('tbody', {}, rows.map(row => h('tr', { key: row[0] }, h('th', { scope: 'row' }, row[0]), h('td', {}, row[1]), h('td', {}, row[2])))))), h('div', { className: 'u3-comparison-context' }, h('span', {}, 'A: ' + (a.daily ? 'projeção diária · início ' + bankReferenceLabel(saved.result.firstDueDate) : 'perfil manual')), b ? h('span', {}, 'B: ' + (b.daily ? 'projeção diária · início ' + bankReferenceLabel(this.state.outcome.firstDueDate) : 'perfil manual')) : null), delta === null ? null : h('p', { className: 'u3-comparison-delta' }, delta === 0 ? 'Mesmo custo total.' : 'O custo total da opção B é ' + fmt(Math.abs(delta)) + (delta > 0 ? ' maior.' : ' menor.')), b && a.principal !== b.principal ? h('p', { className: 'u3-sim-note' }, 'Os valores originais são diferentes. A diferença no total não representa economia de juros.') : null, b && !sameEngine ? h('p', { className: 'u3-sim-note' }, 'As opções usam motores diferentes. Compare apenas os custos; os saldos não são equivalentes.') : null, h('small', { className: 'u3-sim-note' }, 'Cada projeção usa os dados disponíveis no momento da análise. A parcela pode variar por centavos; confira o cronograma.'));
     }
     renderResult(out) {
         var _a;
+        if (!out)
+            return null;
         if (out.error)
             return h(Card, { className: 'result-error' }, h(Icon, { name: 'alert' }), out.error);
         if (out.engine === 'planning') {
             const info = { risk: ['Saldo negativo previsto', 'As parcelas podem levar o saldo abaixo de zero.', 'danger'], caution: ['Sua reserva fica comprometida', 'A projeção cai abaixo da reserva definida.', 'caution'], unknown: ['Dados insuficientes ou antigos', 'Confira suas contas e compromissos antes de decidir.', 'unknown'], estimate: ['Cenário projetado', 'Os compromissos cadastrados cabem na projeção, mas isso não garante a compra.', 'caution'] };
             const [title, subtitle, cls] = info[out.risk] || info.unknown;
             const quality = ((_a = out.reference) === null || _a === void 0 ? void 0 : _a.quality) || 'unknown';
-            return h(Card, { className: 'result-card mf-scenario-result' }, h('div', { className: 'result-badge ' + cls }, h(Icon, { name: 'alert', size: 22 }), h('div', {}, h('h2', {}, title), h('p', {}, subtitle))), h('div', { className: 'result-metrics' }, h('div', {}, h('span', {}, 'Parcela'), h('strong', {}, fmt(out.monthly))), h('div', {}, h('span', {}, 'Total com juros'), h('strong', {}, fmt(out.total))), h('div', {}, h('span', {}, 'Menor saldo sem compra'), h('strong', {}, fmt(out.baselineMinimum))), h('div', {}, h('span', {}, 'Menor saldo com compra'), h('strong', { className: out.minimumAfterPurchase < 0 ? 'bad-text' : '' }, fmt(out.minimumAfterPurchase)))), h('p', { className: 'mf-scenario-alert' }, 'Dia mais apertado: ' + out.worstDay.split('-').reverse().join('/') + ' · Reserva considerada: ' + fmt(out.reserve)), h('div', { className: 'u3-cost-strip' }, h('span', {}, 'Valor original ', h('b', {}, fmt(out.principal))), h('span', {}, 'Juros totais ', h('b', {}, fmt(out.interest))), h('span', {}, 'Total ', h('b', {}, fmt(out.total)))), h(U3ScenarioChart, { rows: out.rows }), h('details', { className: 'u3-monthly-data' }, h('summary', {}, 'Ver valores por mês · ' + out.rows.length + ' meses'), h('div', { className: 'u3-comparison-scroll' }, h('table', {}, h('caption', {}, 'Fechamento mensal estimado · não representa o menor saldo diário'), h('thead', {}, h('tr', {}, h('th', { scope: 'col' }, 'Mês'), h('th', { scope: 'col' }, 'Sem compra'), h('th', { scope: 'col' }, 'Com compra'))), h('tbody', {}, out.rows.map((v) => h('tr', { key: v.month }, h('th', { scope: 'row' }, prettyMonth(v.month)), h('td', {}, fmt(v.withoutPurchase)), h('td', { className: v.withPurchase < 0 ? 'bad-text' : '' }, fmt(v.withPurchase)))))))), h('button', { className: 'primary-button mf-plan-from-sim', disabled: out.installments > 36, onClick: () => this.planSimulatedPurchase() }, 'Planejar esta compra'), out.installments > 36 ? h('p', { className: 'muted-desc' }, 'Para registrar o compromisso, simule até 36 parcelas.') : null, h('p', { className: 'disclaimer' }, quality === 'stale' ? 'A última leitura do banco está antiga. Atualize as contas antes de tomar decisões. ' : quality === 'incomplete' ? 'Há contas sem saldo disponível. A projeção está incompleta. ' : quality === 'unverified' ? 'O saldo recebido pode não refletir as movimentações mais recentes. ' : '', out.warning));
+            return h(Card, { className: 'result-card mf-scenario-result' }, h('div', { className: 'result-badge ' + cls }, h(Icon, { name: 'alert', size: 22 }), h('div', {}, h('h2', {}, title), h('p', {}, subtitle))), h('div', { className: 'result-metrics' }, h('div', {}, h('span', {}, 'Parcela'), h('strong', {}, fmt(out.monthly))), h('div', {}, h('span', {}, 'Total com juros'), h('strong', {}, fmt(out.total))), h('div', {}, h('span', {}, 'Menor saldo sem compra'), h('strong', {}, fmt(out.baselineMinimum))), h('div', {}, h('span', {}, 'Menor saldo com compra'), h('strong', { className: out.minimumAfterPurchase < 0 ? 'bad-text' : '' }, fmt(out.minimumAfterPurchase)))), h('p', { className: 'mf-scenario-alert' }, 'Dia mais apertado: ' + out.worstDay.split('-').reverse().join('/') + ' · Reserva considerada: ' + fmt(out.reserve)), h('div', { className: 'u3-cost-strip' }, h('span', {}, 'Valor original ', h('b', {}, fmt(out.principal))), h('span', {}, 'Juros totais ', h('b', {}, fmt(out.interest))), h('span', {}, 'Total ', h('b', {}, fmt(out.total)))), h(U3ScenarioChart, { rows: out.rows }), h('details', { className: 'u3-monthly-data' }, h('summary', {}, 'Ver valores por mês · ' + out.rows.length + ' meses'), h('div', { className: 'u3-comparison-scroll' }, h('table', {}, h('caption', {}, 'Fechamento mensal estimado · não representa o menor saldo diário'), h('thead', {}, h('tr', {}, h('th', { scope: 'col' }, 'Mês'), h('th', { scope: 'col' }, 'Sem compra'), h('th', { scope: 'col' }, 'Com compra'))), h('tbody', {}, out.rows.map((v) => h('tr', { key: v.month }, h('th', { scope: 'row' }, prettyMonth(v.month)), h('td', {}, fmt(v.withoutPurchase)), h('td', { className: v.withPurchase < 0 ? 'bad-text' : '' }, fmt(v.withPurchase)))))))), h('button', { type: 'button', className: 'primary-button mf-plan-from-sim',
+                disabled: out.installments > 36 || !this.canPlanSimulatedPurchase(out),
+                title: !this.canPlanSimulatedPurchase(out) ? 'Recalcule as premissas antes de planejar esta compra.' : undefined,
+                onClick: () => this.planSimulatedPurchase() }, 'Planejar esta compra'), out.installments > 36 ? h('p', { className: 'muted-desc' }, 'Para registrar o compromisso, simule até 36 parcelas.') : null, h('p', { className: 'disclaimer' }, quality === 'stale' ? 'A última leitura do banco está antiga. Atualize as contas antes de tomar decisões. ' : quality === 'incomplete' ? 'Há contas sem saldo disponível. A projeção está incompleta. ' : quality === 'unverified' ? 'O saldo recebido pode não refletir as movimentações mais recentes. ' : '', out.warning));
         }
         const r = out.risk;
         const info = { safe: ['Cenário favorável, não garantia', 'Seu perfil informado indica margem para acomodar a parcela.', 'safe'], caution: ['Atenção ao orçamento', 'A compra reduz sua margem ou compromete uma parte relevante da renda.', 'caution'], risk: ['Compra arriscada', 'A projeção pode ultrapassar a margem informada ou comprometer sua reserva.', 'danger'], unknown: ['Dados insuficientes', 'Defina renda e despesas fixas em Configurações para avaliar o risco.', 'unknown'] };
@@ -1620,7 +2189,7 @@ class App extends React.Component {
         const b = this.state.bank, c = b.config || EMPTY_BANK.config, accounts = b.data.accounts || [], tx = b.data.transactions || [], f = this.state.bankForm;
         const coverage = bankBalanceCoverage(accounts), now = Date.now(), signals = accounts.map(account => ({ account, ...u3AccountSignals(account, tx, now) })), attention = signals.filter(x => x.attention), shown = this.state.accountFocus === 'attention' ? signals.filter(x => x.attention) : signals;
         const issues = (b.data.items || []).filter(x => !['UPDATED', 'UPDATING'].includes(x.status));
-        return h('div', { className: 'section bank-page u3-accounts' }, h('div', { className: 'u3-section-heading' }, h('div', {}, h('h2', {}, 'Seu dinheiro, conta por conta.'), h('p', {}, 'Saldos recebidos e qualidade da referência em um só lugar.')), h('button', { type: 'button', className: 'primary-button', disabled: !c.configured || this.state.bankBusy, onClick: () => this.syncBank() }, h(Icon, { name: 'refresh', size: 16 }), this.state.bankBusy ? 'Atualizando…' : 'Atualizar contas')), h('div', { className: 'mf-accounts-summary u3-account-summary' }, h(Card, { className: 'mf-account-total' }, h('small', {}, 'Saldo bancário de referência'), h('strong', {}, bankBalanceLabel(coverage)), h('p', {}, 'Não somado aos registros manuais')), h(Card, { className: 'mf-account-count' }, h('small', {}, 'Contas com saldo informado'), h('strong', {}, coverage.knownCount + ' de ' + accounts.length), h('p', {}, coverage.missingCount ? coverage.missingCount + ' saldo(s) indisponível(is)' : 'Zero informado é diferente de saldo ausente')), h(Card, { className: 'u3-account-signal' }, h('small', {}, 'Referência de até 24h'), h('strong', {}, signals.filter(x => x.reference.status === 'recent').length + ' conta(s)'), h('p', {}, 'O horário não garante saldo em tempo real')), h('button', { type: 'button', className: 'u3-account-signal u3-clickable-card', 'aria-pressed': this.state.accountFocus === 'attention', onClick: () => this.setState({ accountFocus: this.state.accountFocus === 'attention' ? 'all' : 'attention' }) }, h('small', {}, 'Conferir referência'), h('strong', {}, attention.length + ' conta(s)'), h('p', {}, 'Saldo ausente, antigo ou sem horário'))), issues.length ? h('div', { className: 'u3-connection-alert', role: 'status' }, h(Icon, { name: 'alert', size: 18 }), h('span', {}, issues.length + ' conexão(ões) precisam de conferência. Os valores abaixo podem estar desatualizados.'), h('button', { type: 'button', className: 'mf-small-link', onClick: () => this.setState({ bankIntegrationsOpen: true }) }, 'Ver conexão')) : null, accounts.length ? h('section', { className: 'mf-accounts-first' }, h('div', { className: 'mf-bank-account-heading' }, h('h2', {}, 'Saldos por conta'), h('small', {}, 'Atualização: ' + (((_a = b.data.last) === null || _a === void 0 ? void 0 : _a.completedAt) ? new Date(b.data.last.completedAt).toLocaleString('pt-BR') : 'não informada'))), h('div', { className: 'u3-account-toolbar' }, h('div', { className: 'u2-view-tabs', 'aria-label': 'Filtro de contas' }, [{ value: 'all', label: 'Todas as contas' }, { value: 'attention', label: 'Conferir referência' }].map(x => h('button', { type: 'button', 'aria-pressed': (this.state.accountFocus || 'all') === x.value, onClick: () => this.setState({ accountFocus: x.value }) }, x.label))), h('span', {}, 'Contadores do histórico carregado · todos os períodos')), shown.length ? h('div', { className: 'bank-account-grid' }, shown.map(({ account: a, reference, pending, review, count }) => h(Card, { className: 'bank-account u3-account-card', key: a.id }, h('div', { className: 'u3-account-card-head' }, h('span', { className: 'bank-account-icon' }, h(Icon, { name: 'bank', size: 20 })), h('div', {}, h('h3', {}, a.name), h('small', {}, u3AccountType(a.subtype))), h('span', { className: 'u3-reference-badge is-' + reference.status }, reference.label)), h('small', { className: 'u3-balance-label' }, 'Saldo informado'), h('strong', {}, Number.isFinite(a.balance) ? fmt(a.balance) : 'Saldo não disponível'), h('span', { className: 'u3-reference-date' }, 'Referência recebida: ' + bankReferenceLabel(a.updatedAt)), h('div', { className: 'u3-account-counts' }, h('div', {}, h('b', {}, count), h('small', {}, 'registros')), h('div', {}, h('b', {}, pending), h('small', {}, 'pendentes no banco')), h('div', {}, h('b', {}, review), h('small', {}, 'a conferir'))), h('button', { type: 'button', className: 'u3-account-open', onClick: () => { this.setState({ bankFilter: a.id, txSource: 'bank', query: '', txSelected: [] }); this.navigate('transactions'); } }, 'Abrir movimentações', h(Icon, { name: 'arrow', size: 15 }))))) : h('p', { className: 'u3-empty' }, 'Nenhuma conta precisa de conferência de referência.')) :
+        return h('div', { className: 'section bank-page u3-accounts' }, h('div', { className: 'u3-section-heading' }, h('div', {}, h('h2', {}, 'Seu dinheiro, conta por conta.'), h('p', {}, 'Saldos recebidos e qualidade da referência em um só lugar.')), h('button', { type: 'button', className: 'primary-button', disabled: !c.configured || this.state.bankBusy, onClick: () => this.syncBank() }, h(Icon, { name: 'refresh', size: 16 }), this.state.bankBusy ? 'Atualizando…' : 'Atualizar contas')), h('div', { className: 'mf-accounts-summary u3-account-summary' }, h(Card, { className: 'mf-account-total mf-border-reveal mf-tone-balance' }, h('small', {}, 'Saldo bancário de referência'), h('strong', {}, bankBalanceLabel(coverage)), h('p', {}, 'Não somado aos registros manuais')), h(Card, { className: 'mf-account-count mf-border-reveal mf-tone-neutral' }, h('small', {}, 'Contas com saldo informado'), h('strong', {}, coverage.knownCount + ' de ' + accounts.length), h('p', {}, coverage.missingCount ? coverage.missingCount + ' saldo(s) indisponível(is)' : 'Zero informado é diferente de saldo ausente')), h(Card, { className: 'u3-account-signal mf-border-reveal mf-tone-income' }, h('small', {}, 'Referência de até 24h'), h('strong', {}, signals.filter(x => x.reference.status === 'recent').length + ' conta(s)'), h('p', {}, 'O horário não garante saldo em tempo real')), h('button', { type: 'button', className: 'u3-account-signal u3-clickable-card mf-border-reveal mf-tone-warning', 'aria-pressed': this.state.accountFocus === 'attention', onClick: () => this.setState({ accountFocus: this.state.accountFocus === 'attention' ? 'all' : 'attention' }) }, h('small', {}, 'Conferir referência'), h('strong', {}, attention.length + ' conta(s)'), h('p', {}, 'Saldo ausente, antigo ou sem horário'))), issues.length ? h('div', { className: 'u3-connection-alert', role: 'status' }, h(Icon, { name: 'alert', size: 18 }), h('span', {}, issues.length + ' conexão(ões) precisam de conferência. Os valores abaixo podem estar desatualizados.'), h('button', { type: 'button', className: 'mf-small-link', onClick: () => this.setState({ bankIntegrationsOpen: true }) }, 'Ver conexão')) : null, accounts.length ? h('section', { className: 'mf-accounts-first' }, h('div', { className: 'mf-bank-account-heading' }, h('h2', {}, 'Saldos por conta'), h('small', {}, 'Atualização: ' + (((_a = b.data.last) === null || _a === void 0 ? void 0 : _a.completedAt) ? new Date(b.data.last.completedAt).toLocaleString('pt-BR') : 'não informada'))), h('div', { className: 'u3-account-toolbar' }, h('div', { className: 'u2-view-tabs', 'aria-label': 'Filtro de contas' }, [{ value: 'all', label: 'Todas as contas' }, { value: 'attention', label: 'Conferir referência' }].map(x => h('button', { type: 'button', 'aria-pressed': (this.state.accountFocus || 'all') === x.value, onClick: () => this.setState({ accountFocus: x.value }) }, x.label))), h('span', {}, 'Contadores do histórico carregado · todos os períodos')), shown.length ? h('div', { className: 'bank-account-grid' }, shown.map(({ account: a, reference, pending, review, count }) => h(Card, { className: 'bank-account u3-account-card', key: a.id }, h('div', { className: 'u3-account-card-head' }, h('span', { className: 'bank-account-icon' }, h(Icon, { name: 'bank', size: 20 })), h('div', {}, h('h3', {}, a.name), h('small', {}, u3AccountType(a.subtype))), h('span', { className: 'u3-reference-badge is-' + reference.status }, reference.label)), h('small', { className: 'u3-balance-label' }, 'Saldo informado'), h('strong', {}, Number.isFinite(a.balance) ? fmt(a.balance) : 'Saldo não disponível'), h('span', { className: 'u3-reference-date' }, 'Referência recebida: ' + bankReferenceLabel(a.updatedAt)), h('div', { className: 'u3-account-counts' }, h('div', {}, h('b', {}, count), h('small', {}, 'registros')), h('div', {}, h('b', {}, pending), h('small', {}, 'pendentes no banco')), h('div', {}, h('b', {}, review), h('small', {}, 'a conferir'))), h('button', { type: 'button', className: 'u3-account-open', onClick: () => { this.setState({ bankFilter: a.id, txSource: 'bank', query: '', txSelected: [] }); this.navigate('transactions'); } }, 'Abrir movimentações', h(Icon, { name: 'arrow', size: 15 }))))) : h('p', { className: 'u3-empty' }, 'Nenhuma conta precisa de conferência de referência.')) :
             h(Card, { className: 'u3-empty-accounts' }, h(Icon, { name: 'bank', size: 28 }), h('h2', {}, c.configured ? 'Sua conexão está configurada' : 'Vamos conectar suas contas?'), h('p', {}, c.configured ? 'Atualize para receber as contas e seus saldos.' : 'Configure sua conexão abaixo. Nenhuma senha bancária é solicitada aqui.')), h('details', { className: 'mf-bank-integrations', open: this.state.bankIntegrationsOpen || !accounts.length, onToggle: (e) => { if (this.state.bankIntegrationsOpen !== e.currentTarget.open)
                 this.setState({ bankIntegrationsOpen: e.currentTarget.open }); } }, h('summary', {}, h(Icon, { name: 'settings', size: 17 }), 'Conexão e sincronização'), h('div', { className: 'bank-grid' }, h(Card, { className: 'settings-card' }, h('div', { className: 'card-heading' }, h('div', {}, h('h2', {}, 'Sua conexão bancária'), h('p', {}, c.configured ? 'Acesso conectado e protegido' : 'Conecte suas contas para acompanhar tudo aqui')), h('span', { className: 'bank-status ' + (c.configured ? 'enabled' : '') }, c.configured ? 'Configurada' : 'Não configurada')), !c.secure ? h('p', { className: 'bank-warning' }, 'Não foi possível proteger sua chave neste computador. Evite configurar a conexão agora.') : null, c.configured ? h('button', { type: 'button', className: 'bank-details-toggle', 'aria-expanded': this.state.bankConfigOpen, onClick: () => this.setState({ bankConfigOpen: !this.state.bankConfigOpen }) }, h(Icon, { name: 'settings', size: 16 }), this.state.bankConfigOpen ? 'Ocultar detalhes da conexão' : 'Alterar dados da conexão') : null, (!c.configured || this.state.bankConfigOpen) ? h('div', { className: 'bank-settings-details' }, this.field('Código da aplicação', h('input', { className: 'form-control', value: f.clientId, placeholder: 'Cole o código de identificação', maxLength: 300, autoComplete: 'off', onChange: (e) => this.setState({ bankForm: { ...f, clientId: e.target.value } }) })), this.field('Chave privada', h('input', { className: 'form-control', type: 'password', value: f.clientSecret, placeholder: c.configured ? 'Já protegido — deixe vazio para manter' : 'Cole sua chave de acesso', maxLength: 1000, autoComplete: 'new-password', onChange: (e) => this.setState({ bankForm: { ...f, clientSecret: e.target.value } }) })), this.field('Código da conexão (separe por vírgula, se houver mais de uma)', h('textarea', { className: 'form-control bank-item-field', value: f.itemIds, rows: 2, placeholder: 'Cole o código da conta autorizada', onChange: (e) => this.setState({ bankForm: { ...f, itemIds: e.target.value } }) }), 'Use os códigos fornecidos ao autorizar a conexão. Nunca informe sua senha bancária.'), h('div', { className: 'bank-actions' }, h('button', { className: 'primary-button', disabled: !c.secure || this.state.bankBusy, onClick: () => this.configureBank() }, h(Icon, { name: 'shield', size: 17 }), 'Salvar conexão'))) : null, h('div', { className: 'bank-actions' }, h('button', { className: 'outlined-action full', disabled: !c.configured || this.state.bankBusy, onClick: () => this.syncBank() }, h(Icon, { name: 'refresh', size: 17 }), this.state.bankBusy ? 'Atualizando…' : 'Atualizar minhas contas')), h('div', { className: 'privacy-small' }, h(Icon, { name: 'shield', size: 17 }), 'Sua chave é protegida neste computador e não faz parte das cópias de segurança.'), c.configured ? h('button', { className: 'bank-forget', onClick: () => this.forgetBank(), disabled: this.state.bankBusy }, 'Desconectar conta deste computador') : null, this.state.bankMessage ? h('p', { className: 'bank-feedback', role: 'status' }, this.state.bankMessage) : null), h(Card, { className: 'settings-card' }, h('h2', {}, 'Resumo da sincronização'), h('div', { className: 'bank-metric-list' }, h('div', {}, h('span', {}, 'Contas bancárias'), h('strong', {}, String(accounts.length))), h('div', {}, h('span', {}, 'Movimentações no histórico local'), h('strong', {}, String((_b = b.data.totalTransactions) !== null && _b !== void 0 ? _b : tx.length))), h('div', {}, h('span', {}, 'Última sincronização'), h('strong', {}, ((_c = b.data.last) === null || _c === void 0 ? void 0 : _c.completedAt) ? new Date(b.data.last.completedAt).toLocaleString('pt-BR') : 'Nunca')), h('div', {}, h('span', {}, 'Novas na última consulta'), h('strong', {}, String((_e = (_d = b.data.last) === null || _d === void 0 ? void 0 : _d.newCount) !== null && _e !== void 0 ? _e : '—')))), h('p', { className: 'muted-desc' }, 'As instituições podem demorar para enviar novas movimentações. Atualizar busca as informações mais recentes disponíveis.'), h('div', { className: 'info-box' }, h(Icon, { name: 'alert', size: 19 }), h('p', {}, 'As movimentações do banco não são misturadas automaticamente aos lançamentos adicionados por você. Isso evita despesas em duplicidade.')), (b.data.items || []).map(x => h('div', { className: 'bank-item-info', key: x.itemId }, h('b', {}, (!x.institution || x.institution === 'Meu Pluggy' ? 'Conta conectada' : x.institution)), h('small', {}, 'Situação: ' + (x.status === 'UPDATED' ? 'Atualizada' : x.status === 'UPDATING' ? 'Atualizando' : x.status === 'LOGIN_ERROR' ? 'Precisa reconectar' : 'Verifique sua conexão')), h('small', {}, 'Consentimento: ' + (x.consentExpiresAt ? new Date(x.consentExpiresAt).toLocaleDateString('pt-BR') : 'conforme seu banco'))))))), h(Card, { className: 'mf-bank-route' }, h('div', {}, h('h2', {}, 'Histórico financeiro em um só lugar'), h('p', { className: 'muted-desc' }, 'Consulte as transações, revise categorias e veja detalhes em Movimentações. Aqui você gerencia apenas suas conexões e saldos.')), h('button', { className: 'primary-button', onClick: () => { this.setState({ bankFilter: '', txSource: 'bank' }); this.navigate('transactions'); } }, 'Ver movimentações', h(Icon, { name: 'arrow', size: 16 }))));
     }
@@ -1695,7 +2264,22 @@ class App extends React.Component {
                 this.flash('Não foi possível remover: ' + String((e === null || e === void 0 ? void 0 : e.message) || e));
             } } }, 'Excluir')))) : null, tx && tx.amount < 0 ? h('div', { className: 'mf-detail-section' }, h('b', {}, 'Dividir compra'), h('p', { className: 'muted-desc' }, 'Distribua o valor entre categorias sem alterar o total da compra original.'), tx.splitOutdated ? h('p', { className: 'mf-inline-warning' }, 'O banco atualizou o valor desta compra. Revise a divisão antes de aplicá-la novamente.') : null, f.splitParts.map((part, i) => h('div', { className: 'mf-split-row', key: i }, h(StyledSelect, { value: part.category, options: cats.map(c => ({ value: c.name, label: c.emoji + ' ' + c.name })), onChange: (category) => this.setState({ detailDraft: { ...f, splitParts: f.splitParts.map((v, j) => i === j ? { ...v, category } : v) } }) }), h('input', { className: 'form-control', value: part.value, inputMode: 'decimal', placeholder: '0,00', onChange: (e) => this.setState({ detailDraft: { ...f, splitParts: f.splitParts.map((v, j) => i === j ? { ...v, value: e.target.value } : v) } }) }), h('button', { className: 'mf-small-link', title: 'Remover parte', disabled: f.splitParts.length <= 2, onClick: () => this.setState({ detailDraft: { ...f, splitParts: f.splitParts.filter((_, j) => j !== i) } }) }, h(Icon, { name: 'close', size: 18 })))), h('div', { className: 'mf-detail-split-footer' }, h('button', { className: 'mf-small-link', disabled: f.splitParts.length >= 20, onClick: () => this.setState({ detailDraft: { ...f, splitParts: [...f.splitParts, { category: category, value: '0,00' }] } }) }, '+ Adicionar parte'), h('strong', { className: splitTotal === Math.abs(tx.amount) ? 'good-text' : 'bad-text' }, fmt(Number.isFinite(splitTotal) ? splitTotal : 0) + ' / ' + fmt(Math.abs(tx.amount)))), h('div', { className: 'mf-action-row' }, h('button', { className: 'primary-button', disabled: this.state.detailBusy || splitTotal !== Math.abs(tx.amount) || f.splitParts.some(p => parseMoney(p.value) <= 0), onClick: () => this.saveSplit() }, 'Salvar divisão'), h('button', { className: 'ghost-button', disabled: this.state.detailBusy || !((_a = tx.splits) === null || _a === void 0 ? void 0 : _a.length), onClick: () => this.runBankOperation('bankSplit', { accountId: tx.accountId, externalId: tx.id, parts: [] }, 'Divisão removida.') }, 'Remover divisão'))) : null, tx ? h('div', { className: 'mf-detail-section' }, h('b', {}, 'Conferir com um lançamento seu'), tx.linkedManualId ? h('div', { className: 'mf-suggestion' }, h('span', {}, '✓ Vinculado a um lançamento que você adicionou'), h('button', { className: 'mf-small-link', disabled: this.state.detailBusy, onClick: () => this.setManualLink(null) }, 'Desvincular')) :
             matchSuggestions.length ? matchSuggestions.map(m => h('div', { className: 'mf-suggestion', key: m.id }, h('div', {}, h('b', {}, m.description), h('small', {}, m.date.split('-').reverse().join('/') + ' · ' + fmt(m.amount))), h('button', { className: 'ghost-button', disabled: this.state.detailBusy, onClick: () => this.setManualLink(m.id) }, 'Vincular'))) : h('p', { className: 'muted-desc' }, 'Nenhum lançamento manual com mesmo valor, tipo e data próxima.')) : null, tx && opposite.length ? h('div', { className: 'mf-detail-section' }, h('b', {}, 'Possível transferência entre suas contas'), h('p', { className: 'muted-desc' }, 'Encontramos um valor oposto em outra conta. Confira antes de classificar.'), opposite.map(other => h('div', { className: 'mf-suggestion', key: other.id }, h('span', {}, other.accountName + ' · ' + fmt(Math.abs(other.amount))), h('button', { className: 'ghost-button', disabled: this.state.detailBusy, onClick: () => { if (confirm('Marcar ambas como transferência própria?'))
-                this.runBankOperation('bankBatch', { items: [{ accountId: tx.accountId, externalId: tx.id }, { accountId: other.accountId, externalId: other.id }], nature: 'transfer', reviewed: true }, 'Movimentações marcadas como transferência interna.'); } }, 'Marcar ambas')))) : null, manual ? h('div', { className: 'mf-detail-section' }, h('b', {}, 'Categoria do lançamento'), h(StyledSelect, { className: 'mf-transaction-category-select', value: manual.category, options: cats.map(c => ({ value: c.name, label: c.emoji + ' ' + c.name })), onChange: (v) => this.changeManualCategory(manual.id, v) }), h('p', { className: 'muted-desc' }, 'Este lançamento é independente dos dados recebidos das instituições conectadas.')) : null, tx ? h('div', { className: 'mf-detail-section mf-raw-details' }, h('b', {}, 'Detalhes originais'), h('p', {}, tx.description), h('small', {}, 'Identificador de referência disponível apenas neste computador.')) : null)));
+                this.runBankOperation('bankBatch', { items: [{ accountId: tx.accountId, externalId: tx.id }, { accountId: other.accountId, externalId: other.id }], nature: 'transfer', reviewed: true }, 'Movimentações marcadas como transferência interna.'); } }, 'Marcar ambas')))) : null, manual && this.state.manualDraft ? h('div', { className: 'mf-detail-section mf-manual-editor' }, h('b', {}, 'Editar lançamento manual'), h('p', { className: 'muted-desc' }, 'Altere os dados deste lançamento sem modificar os extratos das instituições conectadas.'), this.field('Descrição', h('input', { className: 'form-control', maxLength: 150, value: this.state.manualDraft.description,
+            onChange: (e) => this.setState({ manualDraft: { ...this.state.manualDraft, description: e.target.value } }) })), h('div', { className: 'mf-detail-grid' }, this.field('Valor (R$)', h('input', { className: 'form-control', inputMode: 'decimal',
+            value: this.state.manualDraft.value, disabled: this.isManualLinked(manual.id),
+            onChange: (e) => this.setState({ manualDraft: { ...this.state.manualDraft, value: e.target.value } }) })), this.field('Data', h(SingleDatePicker, { value: this.state.manualDraft.date,
+            disabled: this.isManualLinked(manual.id),
+            onChange: (value) => this.setState({ manualDraft: { ...this.state.manualDraft, date: value } }) }))), this.field('Categoria do lançamento', h(StyledSelect, {
+            className: 'mf-transaction-category-select', value: this.state.manualDraft.category,
+            options: cats.filter(c => manual.kind === 'income' ? c.kind !== 'expense' : c.kind !== 'income')
+                .map(c => ({ value: c.name, label: c.emoji + ' ' + c.name })),
+            onChange: (v) => this.setState({ manualDraft: { ...this.state.manualDraft, category: v } })
+        })), this.isManualLinked(manual.id) ? h('p', { className: 'mf-manual-warning' }, 'Lançamento vinculado a uma movimentação bancária: desvincule antes de alterar data, valor ou excluir.') : null, h('div', { className: 'mf-manual-actions' }, h('button', { type: 'button', className: 'primary-button', disabled: this.state.busy,
+            onClick: () => this.saveManualDetail(manual.id) }, h(Icon, { name: 'check', size: 16 }), 'Salvar alterações'), h('button', { type: 'button', className: 'ghost-button', disabled: this.state.busy,
+            onClick: () => this.setState({ manualDraft: { description: manual.description, date: manual.date,
+                    value: moneyString(manual.amount), category: manual.category } }) }, 'Cancelar alterações'), h('button', { type: 'button', className: 'ghost-button mf-danger-action',
+            disabled: this.state.busy || this.isManualLinked(manual.id),
+            onClick: () => this.removeEntry(manual.id) }, 'Excluir lançamento'))) : null, tx ? h('div', { className: 'mf-detail-section mf-raw-details' }, h('b', {}, 'Detalhes originais'), h('p', {}, tx.description), h('small', {}, 'Identificador de referência disponível apenas neste computador.')) : null)));
     }
     renderEditModal() { const item = this.state.editModal; if (!item)
         return null; return h('div', { className: 'modal-backdrop ' + (item.type === 'budget' ? 'mf-budget-edit-backdrop' : ''), onMouseDown: (e) => { if (e.target === e.currentTarget)
@@ -1705,7 +2289,7 @@ class App extends React.Component {
             this.setState({ showEntry: false }); } }, h('div', { className: 'modal', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Registrar movimentação' }, h('div', { className: 'modal-head' }, h('div', {}, h('small', { className: 'micro-label' }, 'NOVO LANÇAMENTO'), h('h2', {}, 'Registrar movimentação')), h('button', { className: 'close-button', type: 'button', 'aria-label': 'Fechar painel', onClick: () => this.setState({ showEntry: false }) }, h(Icon, { name: 'close', size: 18 }))), h('div', { className: 'segmented' }, ['expense', 'income'].map(k => h('button', { key: k, className: f.kind === k ? 'selected' : '', onClick: () => this.setState({ entry: { ...f, kind: k, category: this.state.entryCategoryTouched && this.getCategories().some(c => c.name === f.category && (k === 'income' ? c.kind !== 'expense' : c.kind !== 'income')) ? f.category : k === 'income' ? 'Salário' : 'Outros' } }) }, k === 'expense' ? 'Despesa' : 'Receita'))), this.field('Descrição', h('input', { className: 'form-control', placeholder: 'Ex.: supermercado', value: f.description, maxLength: 150, onChange: (e) => { const description = e.target.value; const category = this.state.entryCategoryTouched ? f.category : (findCategoryRule(description, 'manual', this.state.rules) || 'Outros'); this.setState({ entry: { ...f, description, category } }); } })), h('div', { className: 'two-inputs' }, this.field('Valor (R$)', h('input', { className: 'form-control', placeholder: '0,00', inputMode: 'decimal', value: f.value, onChange: (e) => this.setState({ entry: { ...f, value: e.target.value } }) })), this.field('Data', h(SingleDatePicker, { value: f.date, onChange: (value) => this.setState({ entry: { ...f, date: value } }) }))), this.field('Categoria', h(StyledSelect, { className: 'form-control', value: f.category, options: this.getCategories().filter(c => f.kind === 'income' ? c.kind !== 'expense' : c.kind !== 'income').map(c => ({ value: c.name, label: (c.emoji || '✨') + '  ' + c.name })), onChange: (value) => this.setState({ entry: { ...f, category: value }, entryCategoryTouched: true }) })), h('div', { className: 'modal-actions' }, h('button', { className: 'ghost-button', onClick: () => this.setState({ showEntry: false }) }, 'Cancelar'), h('button', { className: 'primary-button', onClick: () => this.saveEntry() }, h(Icon, { name: 'check', size: 18 }), 'Salvar lançamento')))); }
     render() { if (this.state.fatal)
         return h('main', { className: 'startup-error' }, h('h1', {}, 'Não foi possível abrir seus dados'), h('p', {}, this.state.fatal), h('p', {}, 'Se houver arquivos importantes, não desinstale a versão anterior nem apague a pasta de dados.')); if (this.state.booting && desktop)
-        return h('main', { className: 'startup-error' }, h('h1', {}, 'Meu Financeiro'), h('p', {}, 'Preparando seus dados…')); return h('div', { className: 'shell' }, this.renderSide(), h('main', { className: 'main-area ' + (this.state.page === 'overview' ? 'u1-shell' : ['transactions', 'planning'].includes(this.state.page) ? 'u2-shell' : ['budgets', 'banks', 'assistant'].includes(this.state.page) ? 'u3-shell' : '') }, this.renderWorkspaceBar(), this.renderTop(), this.state.mode === 'demo' ? h('div', { className: 'demo-strip' }, h(Icon, { name: 'spark', size: 17 }), 'Você está explorando dados fictícios. Nada aqui altera suas finanças pessoais.', h('button', { onClick: () => this.toggleMode() }, 'Sair da demonstração')) : null, ({ overview: this.renderOverview, planning: this.renderPlanning, transactions: this.renderMovements, budgets: this.renderBudgets, banks: this.renderBanks, categories: this.renderCategories, assistant: this.renderAssistant, settings: this.renderSettings, intelligence: () => renderIntelligenceView(this) }[this.state.page] || this.renderOverview).call(this), h('footer', { className: 'footer' }, h('span', {}, desktop ? 'Meu Financeiro v0.9.5-beta.8 · Interface U3 · Feito para você' : 'Meu Financeiro v0.9.5-beta.8 · Interface U3 · Feito para você'), h('span', {}, this.state.cloudPersonalTransferred ? 'Personalizações em revisão na nuvem' : 'Fonte local · integração sob autorização'))), this.state.toast ? h('div', { className: 'toast' }, h(Icon, { name: 'check', size: 17 }), this.state.toast) : null, this.state.showEntry ? this.renderEntryModal() : null, this.state.editModal ? this.renderEditModal() : null, this.state.detail ? this.renderDetailDrawer() : null, this.state.planOpen ? this.renderPlanModal() : null, this.state.planSelected ? this.renderPlanDetail() : null, renderIntelligencePanel(this), !this.state.intelligencePanelOpen && !this.state.showEntry && !this.state.editModal && !this.state.detail && !this.state.planOpen && !this.state.planSelected ? h('button', { type: 'button', className: 'mf-ai-fab', 'aria-label': 'Perguntar à IA sobre esta página', title: 'Perguntar à IA sobre esta página', onClick: () => this.openIntelligenceContext() }, h(Icon, { name: 'spark', size: 24 })) : null, h('input', { type: 'file', accept: '.json,application/json', style: { display: 'none' }, ref: (e) => this.fileInput = e, onChange: (e) => { var _a; if ((_a = e.target.files) === null || _a === void 0 ? void 0 : _a[0])
+        return h('main', { className: 'startup-error' }, h('h1', {}, 'Meu Financeiro'), h('p', {}, 'Preparando seus dados…')); return h('div', { className: 'shell' }, this.renderSide(), h('main', { className: 'main-area ' + (this.state.page === 'overview' ? 'u1-shell' : ['transactions', 'planning'].includes(this.state.page) ? 'u2-shell' : ['budgets', 'banks', 'assistant'].includes(this.state.page) ? 'u3-shell' : '') }, this.renderWorkspaceBar(), this.renderTop(), this.state.mode === 'demo' ? h('div', { className: 'demo-strip' }, h(Icon, { name: 'spark', size: 17 }), 'Você está explorando dados fictícios. Nada aqui altera suas finanças pessoais.', h('button', { onClick: () => this.toggleMode() }, 'Sair da demonstração')) : null, ({ overview: this.renderOverview, planning: this.renderPlanning, transactions: this.renderMovements, budgets: this.renderBudgets, banks: this.renderBanks, categories: this.renderCategories, assistant: this.renderAssistant, settings: this.renderSettings, intelligence: () => renderIntelligenceView(this) }[this.state.page] || this.renderOverview).call(this), h('footer', { className: 'footer' }, h('span', {}, desktop ? 'Meu Financeiro v0.9.5-beta.8 · Interface U3 · Feito para você' : 'Meu Financeiro v0.9.5-beta.8 · Interface U3 · Feito para você'), h('span', {}, this.state.cloudPersonalTransferred ? 'Personalizações em revisão na nuvem' : 'Fonte local · integração sob autorização'))), this.state.toast ? h('div', { className: 'toast' }, h(Icon, { name: 'check', size: 17 }), this.state.toast) : null, this.state.showEntry ? this.renderEntryModal() : null, this.state.editModal ? this.renderEditModal() : null, this.state.detail ? this.renderDetailDrawer() : null, this.state.quickCategory ? this.renderQuickCategoryPopover() : null, this.state.planOpen ? this.renderPlanModal() : null, this.state.planSelected ? this.renderPlanDetail() : null, renderIntelligencePanel(this), !this.state.intelligencePanelOpen && !this.state.showEntry && !this.state.editModal && !this.state.detail && !this.state.planOpen && !this.state.planSelected ? h('button', { type: 'button', className: 'mf-ai-fab', 'aria-label': 'Perguntar à IA sobre esta página', title: 'Perguntar à IA sobre esta página', onClick: () => this.openIntelligenceContext() }, h(Icon, { name: 'spark', size: 24 })) : null, h('input', { type: 'file', accept: '.json,application/json', style: { display: 'none' }, ref: (e) => this.fileInput = e, onChange: (e) => { var _a; if ((_a = e.target.files) === null || _a === void 0 ? void 0 : _a[0])
             this.importJSON(e.target.files[0]); e.target.value = ''; } }), h('input', { type: 'file', accept: '.csv,text/csv', style: { display: 'none' }, ref: (e) => this.csvInput = e, onChange: (e) => { var _a; if ((_a = e.target.files) === null || _a === void 0 ? void 0 : _a[0])
             this.importCSV(e.target.files[0]); e.target.value = ''; } })); }
 }
@@ -1741,7 +2325,7 @@ function pFilterTransactions(app) {
             if (l.status === 'POSTED')
                 linked.add(l.accountId + '|' + l.externalId);
     const allBank = s.mode === 'demo' ? [] : s.bank.data.transactions.filter((i) => i.date.slice(0, 7) === month);
-    const bank = allBank.filter((i) => mode === 'bank' || !linked.has(i.accountId + '|' + i.id)).map((i) => ({ key: 'bank:' + i.accountId + '|' + i.id, type: 'bank', kind: i.amount > 0 ? 'income' : 'expense', date: i.date, title: i.customTitle || i.merchant || i.description, original: i.description, category: i.category, amount: Math.abs(i.amount), status: i.status === 'POSTED' ? 'paid' : 'pending', item: i }));
+    const bank = allBank.filter((i) => mode === 'bank' || !linked.has(i.accountId + '|' + i.id)).map((i) => ({ key: 'bank:' + i.accountId + '|' + i.id, type: 'bank', kind: effectiveNature(i), date: i.date, title: i.customTitle || i.merchant || i.description, original: i.description, category: i.category, amount: Math.abs(i.amount), status: i.status === 'POSTED' ? 'paid' : 'pending', item: i }));
     const manualLinked = new Set(allBank.filter((b) => b.status === 'POSTED').map((b) => b.linkedManualId).filter(Boolean));
     const manual = s.data.transactions.filter((i) => i.date.slice(0, 7) === month && !manualLinked.has(i.id)).map((i) => ({ key: 'manual:' + i.id, type: 'manual', kind: i.kind, date: i.date, title: i.description, original: '', category: i.category, amount: i.amount, status: 'paid', item: i }));
     return [...planned, ...bank, ...manual].filter(x => (mode === 'all' || (mode === 'planned' && x.type === 'planned') || (mode === 'bank' && x.type === 'bank') || (mode === 'pending' && x.type === 'planned' && (x.status === 'pending' || x.status === 'overdue')) || (mode === 'paid' && x.status === 'paid')) && (!t || [x.title, x.original, x.category].join(' ').toLowerCase().includes(t))).sort((a, b) => a.date.localeCompare(b.date) || a.key.localeCompare(b.key));
@@ -1773,16 +2357,56 @@ function pSummary(app) {
 }
 function pLedgerRow(app, r) {
     const category = app.getCategories().find((c) => c.name === r.category);
-    return h('button', { type: 'button', className: 'p-ledger-row', key: r.key, onClick: () => r.type === 'planned' ? app.openPlanDetail(r.item.id) : r.type === 'bank' ? app.openPlanBankDetail(r.item) : app.openManualDetail(r.item) }, h('span', { className: 'p-ledger-icon', style: { background: category ? category.color + '25' : undefined } }, (category === null || category === void 0 ? void 0 : category.emoji) || '🧾'), h('span', { className: 'p-ledger-name' }, h('strong', {}, r.title), h('small', {}, r.category + ' · ' + (r.type === 'planned' ? 'Planejado' : r.type === 'bank' ? 'Banco' : 'Manual')), r.original && r.original !== r.title ? h('small', {}, r.original) : null), h('span', { className: 'p-ledger-date' }, pDate(r.date)), pChip(r.status), h('span', { className: 'u2-ledger-amount' }, h('strong', { className: r.kind === 'income' ? 'good-text' : 'bad-text' }, (r.kind === 'income' ? '+' : '−') + fmt(r.amount)), r.type === 'planned' && r.item.remaining > 0 ? h('small', {}, fmt(r.item.remaining) + ' restante') : null), h('span', { className: 'p-row-arrow' }, h(Icon, { name: 'chevron-right', size: 16 })));
+    return h('button', { type: 'button', className: 'p-ledger-row', key: r.key, onClick: () => r.type === 'planned' ? app.openPlanDetail(r.item.id) : r.type === 'bank' ? app.openPlanBankDetail(r.item) : app.openManualDetail(r.item) }, h('span', { className: 'p-ledger-icon', style: { background: category ? category.color + '25' : undefined } }, (category === null || category === void 0 ? void 0 : category.emoji) || '🧾'), h('span', { className: 'p-ledger-name' }, h('strong', {}, r.title), h('small', {}, r.category + ' · ' + (r.type === 'planned' ? (r.item.certainty === 'estimated' ? 'Planejado · estimativa incerta' : 'Planejado · previsão confirmada') : r.type === 'bank' ? (r.kind === 'transfer' ? 'Transferência própria · não contabilizada' : r.kind === 'ignore' ? 'Desconsiderada · não contabilizada' : 'Banco') : 'Manual')), r.original && r.original !== r.title ? h('small', {}, r.original) : null), h('span', { className: 'p-ledger-date' }, pDate(r.date)), pChip(r.status), h('span', { className: 'u2-ledger-amount' }, h('strong', { className: r.kind === 'income' ? 'good-text' : r.kind === 'expense' ? 'bad-text' : 'muted' }, (r.kind === 'income' ? '+' : r.kind === 'expense' ? '−' : '') + fmt(r.amount)), r.type === 'planned' && r.item.remaining > 0 ? h('small', {}, fmt(r.item.remaining) + ' restante') : null), h('span', { className: 'p-row-arrow' }, h(Icon, { name: 'chevron-right', size: 16 })));
 }
 function pAgenda(app, rows) {
     const shown = rows.slice(0, 350), groups = [...new Set(shown.map(r => r.date))];
     return h('div', { className: 'u2-agenda' }, groups.map(date => h('section', { className: 'u2-day-group', key: date }, h('h3', {}, pShort(date) + ' · ' + pDate(date), h('span', {}, rows.filter(r => r.date === date).length + ' registro(s)')), shown.filter(r => r.date === date).map(r => pLedgerRow(app, r)))), rows.length > 350 ? h('p', { className: 'muted-desc' }, 'Exibindo os primeiros 350 de ' + rows.length + ' registros. Refine os filtros para consultar os demais.') : null);
 }
+function pCalendarDayInfo(rows, date) {
+    const matches = rows.filter(r => r.date === date);
+    let recorded = 0, expected = 0, estimated = 0, excluded = 0, incoming = 0, outgoing = 0;
+    for (const r of matches) {
+        if (r.kind === 'transfer' || r.kind === 'ignore') {
+            excluded++;
+            continue;
+        }
+        if (r.type === 'planned' && r.item.certainty === 'estimated' && r.status !== 'paid')
+            estimated++;
+        else if (r.status === 'paid')
+            recorded++;
+        else
+            expected++;
+        if (r.kind === 'income')
+            incoming += r.amount;
+        else if (r.kind === 'expense')
+            outgoing += r.amount;
+    }
+    return { count: matches.length, recorded, expected, estimated, excluded, incoming, outgoing };
+}
 function pCalendar(app, rows) {
     const month = app.state.planMonth, first = new Date(month + '-01T12:00:00').getDay(), days = Number(endOfMonth(month).slice(-2));
     const selected = app.state.planDay, dayRows = rows.filter(r => r.date === selected);
-    return h('div', { className: 'u2-calendar' }, h('p', { className: 'muted-desc' }, 'Selecione um dia para consultar os registros. Os filtros acima também se aplicam ao calendário.'), h('div', { className: 'u2-calendar-week', 'aria-hidden': 'true' }, ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(day => h('span', {}, day))), h('div', { className: 'u2-calendar-grid', 'aria-label': 'Dias de ' + prettyMonth(month) }, Array.from({ length: first }, (_, i) => h('span', { key: 'blank' + i })), Array.from({ length: days }, (_, i) => { const date = month + '-' + String(i + 1).padStart(2, '0'), count = rows.filter(r => r.date === date).length; return h('button', { type: 'button', key: date, 'aria-pressed': selected === date, 'aria-label': pDate(date) + ' · ' + count + ' registro(s)', onClick: () => app.setState({ planDay: date }) }, h('b', {}, i + 1), h('small', {}, count ? count + ' registro(s)' : '—')); })), h('h3', { className: 'u2-calendar-selected' }, pDate(selected) + ' · ' + dayRows.length + ' registro(s)'), dayRows.length ? pAgenda(app, dayRows) : h('p', { className: 'p-empty-list' }, 'Nenhum registro para este dia e estes filtros.'));
+    const keyDay = (e, day) => {
+        const delta = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7 };
+        const destination = e.key in delta ? day + delta[e.key] : e.key === 'Home' ? 1 : e.key === 'End' ? days : null;
+        if (destination === null)
+            return;
+        e.preventDefault();
+        e.stopPropagation();
+        const next = month + '-' + String(Math.max(1, Math.min(days, destination))).padStart(2, '0');
+        const grid = e.currentTarget.parentElement;
+        app.setState({ planDay: next }, () => { var _a, _b, _c; return (_c = (_b = (_a = grid === null || grid === void 0 ? void 0 : grid.querySelector) === null || _a === void 0 ? void 0 : _a.call(grid, '[data-plan-day="' + next + '"]')) === null || _b === void 0 ? void 0 : _b.focus) === null || _c === void 0 ? void 0 : _c.call(_b); });
+    };
+    return h('div', { className: 'u2-calendar u5-plan-calendar' }, h('p', { className: 'muted-desc' }, 'Valores dos registros filtrados, não do saldo projetado. Use as setas para selecionar o dia.'), h('div', { className: 'u2-calendar-week', 'aria-hidden': 'true' }, ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(day => h('span', {}, day))), h('div', { className: 'u2-calendar-grid', 'aria-label': 'Dias de ' + prettyMonth(month) }, Array.from({ length: first }, (_, i) => h('span', { key: 'blank' + i, 'aria-hidden': true })), Array.from({ length: days }, (_, i) => {
+        const date = month + '-' + String(i + 1).padStart(2, '0'), info = pCalendarDayInfo(rows, date);
+        const tooltip = pDate(date) + ' · ' + info.count + ' registros · ' + info.recorded + ' realizados, ' +
+            info.expected + ' previstos, ' + info.estimated + ' incertos, ' + info.excluded + ' não contabilizados · Entradas ' + fmt(info.incoming) + ' / Saídas ' + fmt(info.outgoing);
+        return h('button', { type: 'button', key: date, 'data-plan-day': date,
+            className: 'u5-plan-calendar-day' + (selected === date ? ' is-selected' : ''),
+            'aria-pressed': selected === date, 'aria-label': tooltip, title: tooltip,
+            onClick: () => app.setState({ planDay: date }), onKeyDown: (e) => keyDay(e, i + 1) }, h('b', {}, i + 1), h('small', {}, info.count ? info.count + ' registro(s)' : '—'), info.count ? h('span', { className: 'u5-plan-calendar-status' }, info.recorded ? h('span', { className: 'recorded' }, info.recorded + ' realizado(s)') : null, info.expected ? h('span', { className: 'expected' }, info.expected + ' previsto(s)') : null, info.estimated ? h('span', { className: 'estimated' }, info.estimated + ' incerto(s)') : null, info.excluded ? h('span', { className: 'excluded' }, info.excluded + ' fora do fluxo') : null) : null, info.count ? h('span', { className: 'u5-plan-day-flow' }, info.incoming ? h('span', { className: 'good-text' }, '+' + fmt(info.incoming)) : null, info.outgoing ? h('span', { className: 'bad-text' }, '−' + fmt(info.outgoing)) : null) : null);
+    })), h('h3', { className: 'u2-calendar-selected' }, pDate(selected) + ' · ' + dayRows.length + ' registro(s)'), dayRows.length ? pAgenda(app, dayRows) : h('p', { className: 'p-empty-list' }, 'Nenhum compromisso ou registro nesta data para os filtros aplicados.'));
 }
 function pTimeline(app) {
     const s = app.state, today = iso(new Date()), month = s.planMonth, start = month + '-01', last = endOfMonth(month), max = Number(last.slice(-2));
@@ -1839,7 +2463,7 @@ function pTimeline(app) {
         }
     };
     return h('div', { className: 'p-timeline-panel' }, h('div', { className: 'p-timeline-head' }, h('div', {}, h('span', { className: 'micro-label' }, 'EVOLUÇÃO DO SALDO'), h('h2', {}, 'Seu dinheiro, dia após dia'), h('p', {}, 'Arraste o ponto no gráfico para acompanhar o saldo de cada dia.')), h('span', { className: 'p-chart-month-label' }, prettyMonth(month))), h('div', { className: 'p-chart-metrics' }, h('div', { className: 'p-chart-current' }, h('span', { className: 'micro-label' }, label + ' · ' + pDate(s.planDay)), h('strong', {}, selected ? fmt(selected.closing) : '—'), h('span', { className: 'p-chart-delta ' + (positive ? 'up' : negative ? 'down' : 'neutral') }, deltaLabel, h('small', {}, ' vs. dia anterior'))), h('div', { className: 'p-chart-guide' }, h('span', {}, 'Dia ' + Number(s.planDay.slice(-2)) + ' de ' + max), h('small', {}, (selected === null || selected === void 0 ? void 0 : selected.phase) === 'estimated_history' ? 'Valor histórico estimado, sujeito à disponibilidade dos dados' : 'Valores futuros são estimativas; não representam saldo garantido'))), h('div', { className: 'p-chart-canvas' }, rows.length ? h('svg', { viewBox: '0 0 1010 280', className: 'p-balance-svg p-draggable-chart',
-        role: 'slider', tabindex: 0, 'aria-label': 'Dia selecionado no gráfico de saldo · ' + prettyMonth(month),
+        role: 'slider', tabIndex: 0, 'aria-label': 'Dia selecionado no gráfico de saldo · ' + prettyMonth(month),
         'aria-valuemin': 1, 'aria-valuemax': max, 'aria-valuenow': Number(s.planDay.slice(-2)),
         'aria-valuetext': pDate(s.planDay) + ' · ' + (selected ? fmt(selected.closing) : 'sem valor') + ' · ' + deltaLabel,
         onKeyDown: keyDay,
@@ -1858,7 +2482,7 @@ function pTimeline(app) {
             e.currentTarget.releasePointerCapture(e.pointerId);
         } },
         onPointerCancel: (e) => { if (e.currentTarget.hasPointerCapture(e.pointerId))
-            e.currentTarget.releasePointerCapture(e.pointerId); } }, h('defs', {}, h('linearGradient', { id: 'pBalanceArea', x1: '0', y1: '0', x2: '0', y2: '1' }, h('stop', { offset: '0%', stopColor: '#8f51ff', stopOpacity: '.30' }), h('stop', { offset: '100%', stopColor: '#8f51ff', stopOpacity: '.01' })), h('linearGradient', { id: 'pBalanceStroke', x1: '0', y1: '0', x2: '1', y2: '0' }, h('stop', { offset: '0%', stopColor: '#ad7aff' }), h('stop', { offset: '100%', stopColor: '#7b5dff' }))), ...ticks.map((t, i) => h('g', { key: 'tick-' + i }, h('line', { x1: left, y1: t.y, x2: right, y2: t.y, className: 'p-chart-grid-line' }), h('text', { x: left - 15, y: t.y + 4, className: 'p-chart-axis-label', textAnchor: 'end' }, Math.abs(t.value) >= 100000 ? 'R$ ' + (t.value / 100000).toFixed(1).replace('.', ',') + ' mil' : 'R$ ' + Math.round(t.value / 100)))), ...xLabels.map(d => h('text', { key: 'day-' + d, x: left + (d - 1) * width / Math.max(1, max - 1), y: 264, textAnchor: 'middle', className: 'p-chart-axis-label' }, 'Dia ' + d)), h('path', { d: areaPath, fill: 'url(#pBalanceArea)' }), h('path', { d: pointPath, fill: 'none', stroke: 'url(#pBalanceStroke)', strokeWidth: 3.5, strokeLinecap: 'round', strokeLinejoin: 'round' }), pastRows.length > 1 ? h('path', { d: historicalPath, fill: 'none', stroke: '#d5bcff', strokeWidth: 3.5, strokeDasharray: '7 7', strokeLinecap: 'round' }) : null, selected ? h('g', {}, h('line', { x1: activeX, y1: top, x2: activeX, y2: bottom, className: 'p-chart-active-line' }), h('circle', { cx: activeX, cy: activeY, r: 10, fill: '#9265ff', stroke: '#e6d4ff', strokeWidth: 3, className: 'p-chart-drag-handle' }), h('circle', { cx: activeX, cy: activeY, r: 17, fill: '#9963ff', fillOpacity: .13 })) : null) : h('div', { className: 'p-chart-empty' }, 'Ainda não há dados para mostrar o gráfico.')), h('p', { className: 'p-chart-instruction' }, 'Arraste a bolinha no gráfico ou use as setas do teclado. ' + (pastRows.length ? 'Linha pontilhada: histórico estimado.' : '')), timeline.historicalNotice && month === today.slice(0, 7) ? h('p', { className: 'p-chart-disclaimer' }, timeline.historicalNotice) : null, h('div', { className: 'p-day-details' }, h('div', { className: 'p-day-balance-card' }, h('span', { className: 'micro-label' }, 'DIA ' + pDate(s.planDay)), h('strong', {}, selected ? fmt(selected.closing) : '—'), h('small', {}, (selected === null || selected === void 0 ? void 0 : selected.phase) === 'estimated_history' ? 'Saldo histórico reconstruído' : 'Saldo estimado ao final do dia'), selected ? h('div', { className: 'p-day-totals' }, h('span', {}, 'Início ' + fmt(selected.opening)), h('span', { className: 'good-text' }, '+' + fmt(selected.incoming)), h('span', { className: 'bad-text' }, '−' + fmt(selected.outgoing))) : null), h('div', { className: 'p-day-events' }, h('h3', {}, 'Movimentações de ' + pDate(s.planDay)), items.length || bank.length ? [
+            e.currentTarget.releasePointerCapture(e.pointerId); } }, h('defs', {}, h('linearGradient', { id: 'pBalanceArea', x1: '0', y1: '0', x2: '0', y2: '1' }, h('stop', { offset: '0%', stopColor: 'var(--green)', stopOpacity: '.30' }), h('stop', { offset: '100%', stopColor: 'var(--green)', stopOpacity: '.01' })), h('linearGradient', { id: 'pBalanceStroke', x1: '0', y1: '0', x2: '1', y2: '0' }, h('stop', { offset: '0%', stopColor: 'var(--green)' }), h('stop', { offset: '100%', stopColor: 'var(--green)' }))), ...ticks.map((t, i) => h('g', { key: 'tick-' + i }, h('line', { x1: left, y1: t.y, x2: right, y2: t.y, className: 'p-chart-grid-line' }), h('text', { x: left - 15, y: t.y + 4, className: 'p-chart-axis-label', textAnchor: 'end' }, Math.abs(t.value) >= 100000 ? 'R$ ' + (t.value / 100000).toFixed(1).replace('.', ',') + ' mil' : 'R$ ' + Math.round(t.value / 100)))), ...xLabels.map(d => h('text', { key: 'day-' + d, x: left + (d - 1) * width / Math.max(1, max - 1), y: 264, textAnchor: 'middle', className: 'p-chart-axis-label' }, 'Dia ' + d)), h('path', { d: areaPath, fill: 'url(#pBalanceArea)' }), h('path', { d: pointPath, fill: 'none', stroke: 'url(#pBalanceStroke)', strokeWidth: 3.5, strokeLinecap: 'round', strokeLinejoin: 'round' }), pastRows.length > 1 ? h('path', { d: historicalPath, fill: 'none', stroke: 'var(--muted)', strokeWidth: 3.5, strokeDasharray: '7 7', strokeLinecap: 'round' }) : null, selected ? h('g', {}, h('line', { x1: activeX, y1: top, x2: activeX, y2: bottom, className: 'p-chart-active-line' }), h('circle', { cx: activeX, cy: activeY, r: 10, fill: 'var(--green)', stroke: 'var(--surface)', strokeWidth: 3, className: 'p-chart-drag-handle' }), h('circle', { cx: activeX, cy: activeY, r: 17, fill: 'var(--green)', fillOpacity: .13 })) : null) : h('div', { className: 'p-chart-empty' }, 'Ainda não há dados para mostrar o gráfico.')), h('p', { className: 'p-chart-instruction' }, 'Arraste a bolinha no gráfico ou use as setas do teclado. ' + (pastRows.length ? 'Linha pontilhada: histórico estimado.' : '')), timeline.historicalNotice && month === today.slice(0, 7) ? h('p', { className: 'p-chart-disclaimer' }, timeline.historicalNotice) : null, h('div', { className: 'p-day-details' }, h('div', { className: 'p-day-balance-card' }, h('span', { className: 'micro-label' }, 'DIA ' + pDate(s.planDay)), h('strong', {}, selected ? fmt(selected.closing) : '—'), h('small', {}, (selected === null || selected === void 0 ? void 0 : selected.phase) === 'estimated_history' ? 'Saldo histórico reconstruído' : 'Saldo estimado ao final do dia'), selected ? h('div', { className: 'p-day-totals' }, h('span', {}, 'Início ' + fmt(selected.opening)), h('span', { className: 'good-text' }, '+' + fmt(selected.incoming)), h('span', { className: 'bad-text' }, '−' + fmt(selected.outgoing))) : null), h('div', { className: 'p-day-events' }, h('h3', {}, 'Movimentações de ' + pDate(s.planDay)), items.length || bank.length ? [
         ...items.map((i) => { var _a; return h('button', { className: 'p-event-row', key: i.id, onClick: () => app.openPlanDetail(i.id) }, h('span', { className: 'p-event-icon' }, ((_a = app.getCategories().find((c) => c.name === i.category)) === null || _a === void 0 ? void 0 : _a.emoji) || '🧾'), h('span', { className: 'p-event-name' }, h('b', {}, i.title), h('small', {}, pStatus(i.effectiveStatus) + (i.certainty === 'estimated' ? ' · estimado' : ''))), h('strong', { className: i.kind === 'income' ? 'good-text' : 'bad-text' }, (i.kind === 'income' ? '+' : '−') + fmt(i.remaining || i.amount))); }),
         ...bank.map((b) => h('button', { className: 'p-event-row', key: b.accountId + ':' + b.id, onClick: () => app.openPlanBankDetail(b) }, h('span', { className: 'p-event-icon' }, '🏦'), h('span', { className: 'p-event-name' }, h('b', {}, b.customTitle || b.merchant || b.description), h('small', {}, 'Realizada · ' + b.accountName)), h('strong', { className: b.amount >= 0 ? 'good-text' : 'bad-text' }, (b.amount >= 0 ? '+' : '−') + fmt(Math.abs(b.amount)))))
     ] : h('p', { className: 'muted-desc' }, 'Nenhuma movimentação registrada para esta data.'))));
@@ -1883,7 +2507,9 @@ function renderPlanningView(app) {
         return h('section', { className: 'p-empty' }, h('h2', {}, 'Planejamento para suas finanças reais'), h('p', {}, 'Saia da demonstração para cadastrar e acompanhar seus compromissos.'), h('button', { className: 'primary-button', onClick: () => app.toggleMode() }, 'Ver meus dados'));
     const p = s.planning, today = iso(new Date()), rows = pFilterTransactions(app), presentation = s.planPresentation || 'agenda';
     return h('div', { className: 'p-main u2-planning' }, h('section', { className: 'p-hero' }, h('div', {}, h('span', { className: 'micro-label' }, 'SUA AGENDA FINANCEIRA'), h('h2', {}, 'Organize o próximo passo.'), h('p', {}, 'Vencimentos, pagamentos e previsões no mesmo lugar.')), h('div', { className: 'p-hero-actions' }, h('button', { className: 'primary-button', onClick: () => app.openPlan(undefined, 'expense') }, '＋ Planejar despesa'), h('button', { className: 'ghost-button', onClick: () => app.openPlan(undefined, 'income') }, '＋ Prever receita'), h('button', { className: 'p-sync', disabled: s.bankBusy || s.planBusy, onClick: () => app.syncBank(false) }, h(Icon, { name: 'refresh', size: 15 }), s.bankBusy ? 'Atualizando…' : 'Atualizar'))), pUpcoming(app), pSummary(app), ((_a = p.projection.reference) === null || _a === void 0 ? void 0 : _a.quality) === 'stale' ? h('div', { className: 'p-warning' }, 'O último saldo recebido tem mais de 24 horas. Atualize suas contas antes de usar esta previsão.') : ((_b = p.projection.reference) === null || _b === void 0 ? void 0 : _b.quality) === 'incomplete' ? h('div', { className: 'p-warning' }, 'Algumas contas não informaram saldo. O total projetado pode estar incompleto.') : ((_c = p.projection.reference) === null || _c === void 0 ? void 0 : _c.quality) === 'unverified' ? h('div', { className: 'p-warning' }, 'O banco foi consultado recentemente, mas o saldo pode não incluir operações mais novas. Confira antes de assumir compromissos.') : null, p.projection.negativeDays.length ? h('div', { className: 'p-warning' }, h(Icon, { name: 'alert', size: 16 }), 'Há ' + p.projection.negativeDays.length + ' dia(s) com saldo projetado negativo. Primeiro: ' + pDate(p.projection.negativeDays[0])) : null, h('section', { className: 'p-ledger' }, h('div', { className: 'p-section-heading' }, h('div', {}, h('span', { className: 'micro-label' }, 'AGENDA COMPLETA'), h('h2', {}, 'Compromissos e movimentações'), h('p', {}, 'Priorize os vencimentos e consulte o histórico por período.')), h('div', { className: 'p-ledger-navigation' }, pMonthNavigation(app), h('span', { className: 'p-count' }, rows.length + ' registros filtrados'))), h('div', { className: 'p-ledger-tools' }, h('input', { className: 'form-control', 'aria-label': 'Buscar na agenda', placeholder: 'Buscar nome, descrição ou categoria...', value: s.planTerm, onChange: (e) => app.setState({ planTerm: e.target.value }) }), h(StyledSelect, { value: s.planView, options: [{ value: 'all', label: 'Tudo' }, { value: 'planned', label: 'Planejadas' }, { value: 'pending', label: 'Pendentes e vencidas' }, { value: 'bank', label: 'Movimentações do banco' }, { value: 'paid', label: 'Realizadas' }], onChange: (v) => app.setState({ planView: v }) })), h('div', { className: 'u2-view-tabs', 'aria-label': 'Visualização do planejamento' }, [{ value: 'agenda', label: 'Agenda' }, { value: 'calendar', label: 'Calendário' }, { value: 'projection', label: 'Projeção diária' }].map(v => h('button', { type: 'button', 'aria-pressed': presentation === v.value, onClick: () => app.setState({ planPresentation: v.value }) }, v.label))), presentation === 'projection' ? h('p', { className: 'u2-projection-hint' }, 'A projeção abaixo usa o cenário financeiro completo. A busca e o filtro de registros se aplicam somente à agenda e ao calendário.') :
-        presentation === 'calendar' ? pCalendar(app, rows) : h('div', { className: 'p-ledger-list' }, rows.length ? pAgenda(app, rows) : h('div', { className: 'p-empty-list' }, p.generatedAt ? 'Nenhum registro para estes filtros. Adicione uma previsão ou altere a pesquisa.' : 'Atualize para carregar sua agenda.')), s.bank.data.truncated ? h('p', { className: 'p-warning' }, 'O histórico de transações do banco é parcial nesta visualização. Consulte sua conta para dados mais antigos.') : null), pSuggestions(app), h('details', { className: 'mf-planning-projection', key: presentation, open: presentation === 'projection' }, h('summary', {}, h(Icon, { name: 'chart', size: 17 }), 'Consultar projeção diária'), h('p', { className: 'u2-projection-hint' }, 'Cenário completo do mês. A busca da agenda não altera esta projeção.'), h('div', { className: 'p-scenario-toggle' }, h('span', {}, h('b', {}, 'Projeção conservadora'), h('small', {}, 'Receitas incertas ficam fora do saldo previsto por padrão.')), h('label', {}, h('input', { type: 'checkbox', checked: s.planIncludeEstimated, onChange: (e) => app.setState({ planIncludeEstimated: e.target.checked }, () => app.refreshPlanning()) }), 'Incluir receitas incertas')), pTimeline(app)), h('p', { className: 'p-footnote' }, 'O saldo de referência vem da última informação disponível da instituição. Lançamentos já pagos e refletidos no banco não são descontados novamente. Previsões futuras são estimativas, não garantias.'));
+        presentation === 'calendar' ? pCalendar(app, rows) : presentation === 'projection' ? null : h('div', { className: 'p-ledger-list' }, rows.length ? pAgenda(app, rows) : h('div', { className: 'p-empty-list' }, p.generatedAt ? 'Nenhum registro para estes filtros. Adicione uma previsão ou altere a pesquisa.' : 'Atualize para carregar sua agenda.')), s.bank.data.truncated ? h('p', { className: 'p-warning' }, 'O histórico de transações do banco é parcial nesta visualização. Consulte sua conta para dados mais antigos.') : null), pSuggestions(app), presentation === 'projection' ? h('section', { className: 'mf-planning-projection u5-single-projection',
+        'aria-label': 'Projeção diária do mês' }, h('div', { className: 'u5-projection-heading' }, h('h2', {}, 'Projeção diária · ' + prettyMonth(s.planMonth)), h('p', { className: 'u2-projection-hint' }, 'Cenário completo do mês; independente dos filtros de registros.')), h('div', { className: 'p-scenario-toggle' }, h('span', {}, h('b', {}, 'Projeção conservadora'), h('small', {}, 'Receitas incertas ficam fora do saldo previsto por padrão.')), h('label', {}, h('input', { type: 'checkbox', checked: s.planIncludeEstimated,
+        onChange: (e) => app.setState({ planIncludeEstimated: e.target.checked }, () => app.refreshPlanning()) }), 'Incluir receitas incertas')), pTimeline(app)) : null, h('p', { className: 'p-footnote' }, 'O saldo de referência vem da última informação disponível da instituição. Lançamentos já pagos e refletidos no banco não são descontados novamente. Previsões futuras são estimativas, não garantias.'));
 }
 function renderPlanEditor(app) {
     const s = app.state, f = s.planForm, categories = app.getCategories();
@@ -1913,7 +2539,7 @@ function renderPlanDrawer(app) {
 function hFn(item, index) { return h('div', { key: index, className: 'p-audit-row' }, h('strong', {}, { created: 'Criado', edited: 'Editado', linked: 'Vinculado ao banco', unlinked: 'Vínculo desfeito', cancelled: 'Cancelado', settled_manual: 'Quitado manualmente', planned: 'Reativado', ignored: 'Sugestão ignorada' }[item.action] || item.action), h('small', {}, new Date(item.at).toLocaleString('pt-BR') + (item.details ? ' · ' + item.details : ''))); }
 const INTELLIGENCE_CONTEXTS = {
     overview: { label: 'Visão geral', description: 'Indicadores e evolução do período escolhido.', questions: ['Explique as principais mudanças da minha visão geral.', 'Quais informações faltam para avaliar minha saúde financeira?'] },
-    transactions: { label: 'Movimentações', description: 'Categorias, recorrências e revisão de lançamentos.', questions: ['Analise possíveis padrões nas minhas movimentações.', 'Como revisar despesas incomuns sem alterar o extrato original?'] },
+    transactions: { label: 'Movimentações', description: 'Categorias, recorrências e revisão de lançamentos.', questions: ['Analise possíveis padrões nas minhas movimentações.', 'Categorize minha compra do mercado como Alimentação.'] },
     planning: { label: 'Planejamento', description: 'Contas futuras e projeção diária do fluxo de caixa.', questions: ['Quais compromissos podem comprometer meu saldo futuro?', 'Como planejar uma reserva sem depender de renda incerta?'] },
     budgets: { label: 'Orçamentos', description: 'Limites, histórico de categorias e oportunidades de ajuste.', questions: ['Como definir limites mais inteligentes por categoria?', 'Quais categorias devo analisar antes de reduzir gastos?'] },
     assistant: { label: 'Simular compra', description: 'Impacto de compras e parcelamentos no planejamento.', questions: ['Como avaliar se uma nova compra cabe no meu orçamento?', 'O que devo comparar antes de parcelar uma compra?'] },
@@ -1967,37 +2593,116 @@ function intelligenceNextTab(current, key) {
         return ids[(index + ids.length - 1) % ids.length];
     return null;
 }
+function intelligenceHistoryList(app) {
+    if (typeof intelligenceEnsureHydrated === 'function')
+        intelligenceEnsureHydrated(app);
+    return Array.isArray(app.state.intelligenceMessages) ? app.state.intelligenceMessages : [];
+}
+function intelligenceOpenFullChat(app) {
+    if (typeof intelligenceEnsureHydrated === 'function')
+        intelligenceEnsureHydrated(app);
+    const scope = app.state.intelligencePanelOpen && app.state.intelligenceContextSnapshot ? app.state.intelligenceContextSnapshot : intelligencePageScope(app);
+    app.setState({ page: 'intelligence', intelligenceTab: 'chat', intelligenceDraftScope: scope, intelligencePanelOpen: false, detail: null, planSelected: null });
+}
 function intelligencePrepare(app, question) {
+    if (typeof intelligenceEnsureHydrated === 'function')
+        intelligenceEnsureHydrated(app);
     app.setState({ page: 'intelligence', intelligenceTab: 'chat', intelligenceDraft: question, intelligenceDraftScope: app.state.intelligencePanelOpen && app.state.intelligenceContextSnapshot ? app.state.intelligenceContextSnapshot : intelligencePageScope(app), intelligencePanelOpen: false, detail: null, planSelected: null });
+}
+function renderIntelligenceStructuredCard(card) {
+    return h('div', { className: 'mf-ai-structured-card', role: 'region', 'aria-label': card.title }, h('div', { className: 'mf-ai-structured-head' }, h('strong', {}, card.title), card.subtitle ? h('small', {}, card.subtitle) : null), Array.isArray(card.metrics) && card.metrics.length ? h('div', { className: 'mf-ai-structured-metrics' }, ...card.metrics.map((m, idx) => h('div', { key: idx, className: 'mf-ai-structured-metric is-' + (m.tone || 'neutral') }, h('small', {}, m.label), h('strong', {}, m.value)))) : null, Array.isArray(card.rows) && card.rows.length ? h('div', { className: 'mf-ai-table-wrap' }, h('table', {}, card.headers ? h('thead', {}, h('tr', {}, h('th', {}, card.headers[0]), h('th', {}, card.headers[1]), card.headers[2] ? h('th', {}, card.headers[2]) : null)) : null, h('tbody', {}, ...card.rows.map((r, idx) => h('tr', { key: idx }, h('td', {}, r.col1), h('td', {}, r.col2), r.col3 !== undefined ? h('td', {}, r.col3) : null))))) : null, card.footnote ? h('small', { className: 'mf-ai-structured-foot' }, card.footnote) : null);
+}
+function renderIntelligenceActionProposalCard(app, proposal) {
+    const moneyFmt = (cents) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format((cents || 0) / 100);
+    const isAmbiguous = proposal.status === 'ambiguous';
+    const isPending = proposal.status === 'pending';
+    const allCandidates = Array.isArray(proposal.candidates) ? proposal.candidates : [];
+    const totalCount = proposal.candidatesCount || allCandidates.length;
+    const visibleLimit = typeof proposal.visibleLimit === 'number' && proposal.visibleLimit > 0 ? proposal.visibleLimit : 8;
+    const visibleCandidates = allCandidates.slice(0, visibleLimit);
+    const hiddenCount = Math.max(0, allCandidates.length - visibleCandidates.length);
+    const statusLabel = proposal.status === 'ambiguous' ? 'Seleção explícita necessária (' + totalCount + ' opções)' :
+        proposal.status === 'pending' ? 'Prévia sem gravação · I2-B pendente' :
+            proposal.status === 'preview_confirmed' ? 'Prévia validada · sem gravação (I2-B)' :
+                proposal.status === 'stale' ? 'Estado desatualizado · recusada' : 'Proposta negada';
+    return h('div', { className: 'mf-ai-proposal-card status-' + proposal.status, role: 'region', 'aria-label': 'Prévia de categorização supervisionada' }, h('div', { className: 'mf-ai-proposal-head' }, h('span', { className: 'micro-label' }, isAmbiguous ? 'DESAMBIGUAÇÃO DE LANÇAMENTOS' : proposal.origin === 'bank' ? 'PRÉVIA · MOVIMENTAÇÃO BANCÁRIA' : 'PRÉVIA · LANÇAMENTO MANUAL'), h('span', { className: 'mf-ai-status' }, statusLabel)), isAmbiguous && allCandidates.length ? h('div', { className: 'mf-ai-candidate-list', role: 'group', 'aria-label': 'Escolha o lançamento exato' }, h('p', { className: 'mf-ai-proposal-notice' }, 'Múltiplos lançamentos correspondem ao pedido. Nunca escolhemos um registro arbitrariamente; selecione abaixo qual deseja preparar para “' + proposal.proposedCategory + '”:'), allCandidates.length > 8 ? h('p', { className: 'mf-ai-refine-hint' }, 'Para refinar a busca entre os ' + allCandidates.length + ' lançamentos, informe data (ex.: ontem ou DD/MM/AAAA), valor exato (ex.: R$ 50,00) ou origem (banco / manual).') : null, ...visibleCandidates.map((c) => h('div', { key: c.candidateKey, className: 'mf-ai-candidate-row' }, h('div', { className: 'mf-ai-candidate-copy' }, h('strong', {}, c.description), h('small', {}, (c.origin === 'bank' ? 'Banco (' + c.accountName + ')' : 'Manual') + ' · ' + c.date + ' · ' + moneyFmt(c.amountCents) + ' · Atual: ' + c.currentCategory)), h('button', { type: 'button', className: 'ghost-button', onClick: () => intelligenceSelectActionCandidate(app, proposal.id, c.candidateKey) }, 'Selecionar lançamento'))), hiddenCount > 0 ? h('button', { type: 'button', className: 'ghost-button mf-ai-expand-candidates', onClick: () => intelligenceExpandProposalCandidates(app, proposal.id) }, 'Mostrar mais ' + hiddenCount + ' lançamento(s) (ver todos os ' + allCandidates.length + ')') : null, h('div', { className: 'mf-ai-proposal-actions' }, h('button', { type: 'button', className: 'ghost-button', onClick: () => intelligenceResolveActionProposal(app, proposal.id, 'deny') }, 'Cancelar proposta'))) : null, !isAmbiguous ? h('div', { className: 'mf-ai-proposal-tx' }, h('strong', {}, proposal.description), h('small', {}, (proposal.origin === 'bank' ? 'Banco (' + (proposal.accountName || proposal.accountId || 'Conta') + ')' : 'Manual') + ' · ' + proposal.date + ' · ' + moneyFmt(proposal.amountCents))) : null, !isAmbiguous ? h('div', { className: 'mf-ai-proposal-diff' }, h('div', { className: 'mf-ai-diff-col' }, h('small', {}, 'Categoria atual'), h('b', {}, proposal.currentCategory || 'Sem categoria')), h('span', { className: 'mf-ai-diff-arrow', 'aria-hidden': 'true' }, '→'), h('div', { className: 'mf-ai-diff-col is-proposed' }, h('small', {}, 'Categoria proposta'), h('b', {}, proposal.proposedCategory))) : null, isPending ? h('p', { className: 'mf-ai-proposal-notice' }, 'Prévia sem gravação: confirmar valida identidade, origem, data, valor e categoria, mas não persiste alterações no SQLite até a entrega I2-B.') : null, isPending ? h('div', { className: 'mf-ai-proposal-actions' }, h('button', { type: 'button', className: 'primary-button', onClick: () => intelligenceResolveActionProposal(app, proposal.id, 'approve') }, 'Confirmar prévia (sem gravar)'), h('button', { type: 'button', className: 'ghost-button', onClick: () => intelligenceResolveActionProposal(app, proposal.id, 'deny') }, 'Negar alteração')) : null, proposal.resultMessage ? h('p', { className: 'mf-ai-proposal-result', role: 'status' }, proposal.resultMessage) : null);
+}
+function renderIntelligenceMessageItem(app, msg) {
+    const isUser = msg.role === 'user';
+    const badge = msg.status === 'unavailable' ? h('span', { className: 'mf-ai-msg-badge is-warn' }, 'Conta desconectada') :
+        msg.status === 'unimplemented' ? h('span', { className: 'mf-ai-msg-badge is-info' }, 'Aguarda I2-A') :
+            msg.status === 'error' ? h('span', { className: 'mf-ai-msg-badge is-error' }, 'Serviço indisponível') : null;
+    return h('article', { key: msg.id, className: 'mf-ai-msg ' + (isUser ? 'is-user' : 'is-assistant') + ' is-' + msg.status }, h('header', { className: 'mf-ai-msg-meta' }, h('strong', {}, isUser ? 'Você' : 'Assistente MF'), h('span', {}, msg.scopeLabel + ' · ' + msg.createdAt), badge), h('div', { className: 'mf-ai-msg-body mf-ai-markdown' }, ...aiMarkdownNodes(msg.text)), msg.structuredCard ? renderIntelligenceStructuredCard(msg.structuredCard) : null, msg.proposal ? renderIntelligenceActionProposalCard(app, msg.proposal) : null, msg.details ? h('details', { className: 'mf-ai-msg-details' }, h('summary', {}, 'Ver contexto e diagnóstico'), h('p', {}, msg.details)) : null);
 }
 function intelligenceExampleCard(app, id, title, description, icon, question) {
     return h('div', { className: 'mf-ai-example-card', key: id }, h('span', { className: 'mf-ai-example-icon' }, h(Icon, { name: icon, size: 20 })), h('div', { className: 'mf-ai-example-copy' }, h('strong', {}, title), h('p', {}, description), h('button', { type: 'button', className: 'mf-ai-link', onClick: () => intelligencePrepare(app, question) }, 'Preparar análise', h(Icon, { name: 'arrow', size: 15 }))));
 }
+function renderIntelligenceHistorySidebar(app) {
+    const s = app.state;
+    const query = String(s.intelligenceHistoryQuery || '');
+    const groups = typeof intelligenceGroupThreadsByDate === 'function' ? intelligenceGroupThreadsByDate(app, query) : [];
+    const activeId = s.intelligenceActiveThreadId || null;
+    const totalThreads = Array.isArray(s.intelligenceThreads) ? s.intelligenceThreads.length : 0;
+    return h('aside', { className: 'mf-ai-history-sidebar', 'aria-label': 'Histórico de conversas' }, h('div', { className: 'mf-ai-history-top' }, h('div', { className: 'mf-ai-history-title-row' }, h('strong', {}, 'Conversas'), h('span', { className: 'mf-ai-thread-count' }, String(totalThreads))), h('button', { type: 'button', className: 'primary-button mf-ai-new-thread-btn', onClick: () => intelligenceCreateThread(app) }, h(Icon, { name: 'plus', size: 14 }), 'Nova conversa')), h('div', { className: 'mf-ai-history-search' }, h('input', { type: 'search', value: query, maxLength: 120, placeholder: 'Buscar no histórico…', 'aria-label': 'Buscar conversas no histórico', onChange: (e) => app.setState({ intelligenceHistoryQuery: e.target.value }) })), s.intelligenceStorageError ? h('p', { className: 'mf-ai-error mf-ai-storage-error', role: 'alert' }, s.intelligenceStorageError) : null, groups.length === 0 ? h('div', { className: 'mf-ai-history-empty' }, h('p', {}, query.trim() ? 'Nenhuma conversa encontrada para “' + query.trim() + '”.' : 'Nenhuma conversa salva neste perfil (' + (s.mode === 'demo' ? 'Demonstração' : 'Pessoal') + ').'), h('small', {}, 'O histórico deste perfil é local e não usa o cofre criptografado. Não inclua senhas nem tokens.')) :
+        h('div', { className: 'mf-ai-history-groups', role: 'list' }, ...groups.map((grp) => h('div', { key: grp.label, className: 'mf-ai-history-group' }, h('span', { className: 'mf-ai-history-date-label' }, grp.label), ...grp.items.map((th) => h('div', { key: th.id, role: 'listitem', className: 'mf-ai-thread-item ' + (th.id === activeId ? 'is-active' : '') }, h('button', { type: 'button', className: 'mf-ai-thread-select', 'aria-current': th.id === activeId ? 'true' : 'false', onClick: () => intelligenceSelectThread(app, th.id) }, h('strong', {}, th.title), h('small', {}, th.scopeLabel + ' · ' + th.updatedTime + ' · ' + th.messages.length + ' msg')), h('button', { type: 'button', className: 'mf-ai-thread-delete', 'aria-label': 'Excluir conversa ' + th.title, title: 'Excluir conversa', onClick: () => intelligenceDeleteThread(app, th.id) }, '×')))))), totalThreads > 0 ? h('div', { className: 'mf-ai-history-foot' }, h('button', { type: 'button', className: 'ghost-button full', onClick: () => intelligenceClearHistory(app) }, 'Limpar histórico do perfil')) : null);
+}
 function renderIntelligenceView(app) {
+    var _a;
+    if (((_a = app.state.workIntelligenceDemo) === null || _a === void 0 ? void 0 : _a.enabled) && typeof renderWorkIntelligenceDemo === 'function')
+        return renderWorkIntelligenceDemo(app);
+    if (typeof intelligenceEnsureHydrated === 'function')
+        intelligenceEnsureHydrated(app);
     const s = app.state, tab = s.intelligenceTab || 'today';
     const tabs = [{ id: 'today', label: 'Hoje' }, { id: 'chat', label: 'Conversar' }, { id: 'actions', label: 'Plano de ação' }];
+    const messages = intelligenceHistoryList(app);
+    const allProposals = typeof intelligenceAllProposals === 'function' ? intelligenceAllProposals(app) : messages.map(m => m.proposal).filter(Boolean);
+    const convState = typeof intelligenceConversationState === 'function' ? intelligenceConversationState(app) : { kind: 'oauth_disconnected', pill: 'Conta desconectada · modo local', badge: 'Conta desconectada', css: 'is-offline' };
+    const activeScope = s.intelligenceDraftScope || intelligencePageScope(app, s.intelligenceContext || s.page);
     let section = null;
     if (tab === 'today')
-        section = h('div', { className: 'mf-ai-today' }, h('div', { className: 'mf-ai-welcome' }, h('span', { className: 'micro-label' }, 'PAINEL CONCEITUAL · DADOS FICTÍCIOS'), h('h2', {}, 'Três assuntos para explorar.'), h('p', {}, 'Exemplos fictícios. Eles não representam alertas reais das suas contas.')), h('div', { className: 'mf-ai-card-grid' }, intelligenceExampleCard(app, 'future', 'Compromissos à frente', 'Analise pagamentos futuros antes de separar dinheiro para investir.', 'calendar', 'Avalie meus compromissos futuros antes de eu reservar dinheiro para investimentos.'), intelligenceExampleCard(app, 'budgets', 'Limites mais inteligentes', 'Compare o comportamento das categorias antes de alterar seu orçamento.', 'pie', 'Ajude-me a elaborar limites inteligentes para o próximo mês.'), intelligenceExampleCard(app, 'reserve', 'Reserva e liquidez', 'Entenda a diferença entre saldo disponível e dinheiro realmente livre.', 'shield', 'Como calcular o dinheiro realmente livre para poupar ou investir?')), h('div', { className: 'mf-ai-explainer' }, h(Icon, { name: 'shield', size: 19 }), h('div', {}, h('strong', {}, 'Insights econômicos por padrão'), h('p', {}, 'Na integração definitiva, alertas matemáticos virão do motor financeiro; o GPT-6.1 Sol será acionado apenas quando você solicitar explicação ou análise.'))));
+        section = h('div', { className: 'mf-ai-today' }, h('button', { type: 'button', className: 'ghost-button', onClick: () => workDemoLoad(app) }, 'Explorar nova Inteligência · dados fictícios'), h('div', { className: 'mf-ai-welcome' }, h('span', { className: 'micro-label' }, 'PAINEL CONCEITUAL · DADOS FICTÍCIOS'), h('h2', {}, 'Três assuntos para explorar.'), h('p', {}, 'Exemplos fictícios. Eles não representam alertas reais das suas contas.')), h('div', { className: 'mf-ai-card-grid' }, intelligenceExampleCard(app, 'future', 'Compromissos à frente', 'Analise pagamentos futuros antes de separar dinheiro para investir.', 'calendar', 'Avalie meus compromissos futuros antes de eu reservar dinheiro para investimentos.'), intelligenceExampleCard(app, 'budgets', 'Limites mais inteligentes', 'Compare o comportamento das categorias antes de alterar seu orçamento.', 'pie', 'Ajude-me a elaborar limites inteligentes para o próximo mês.'), intelligenceExampleCard(app, 'reserve', 'Reserva e liquidez', 'Entenda a diferença entre saldo disponível e dinheiro realmente livre.', 'shield', 'Como calcular o dinheiro realmente livre para poupar ou investir?')), h('div', { className: 'mf-ai-explainer' }, h(Icon, { name: 'shield', size: 19 }), h('div', {}, h('strong', {}, 'Insights econômicos por padrão'), h('p', {}, 'Na integração definitiva, alertas matemáticos virão do motor financeiro; o GPT-6.1 Sol será acionado apenas quando você solicitar explicação ou análise.'))));
     else if (tab === 'chat')
-        section = h('div', { className: 'mf-ai-chat-layout' }, h('div', { className: 'mf-ai-chat-main' }, h('div', { className: 'mf-ai-chat-hero' }, h('span', { className: 'mf-ai-orb' }, h(Icon, { name: 'spark', size: 25 })), h('h2', {}, 'Prepare uma pergunta.'), h('p', {}, 'Escreva e revise um rascunho local. Os testes de IA ficam no laboratório, com dados fictícios.')), s.intelligenceDraftScope ? h('div', { className: 'mf-ai-context-meta' }, h('span', {}, 'Rascunho de ' + s.intelligenceDraftScope.label), h('span', {}, s.intelligenceDraftScope.period)) : null, s.intelligencePreparedQuestion ? h('div', { className: 'mf-ai-prepared', role: 'status' }, h('span', { className: 'micro-label' }, 'PERGUNTA PREPARADA · NÃO ENVIADA'), h('p', {}, s.intelligencePreparedQuestion), h('small', {}, 'Este rascunho não é enviado ao Sol. Use os casos fictícios autorizados abaixo; nenhuma chamada ocorreu aqui.')) : null, h('div', { className: 'mf-ai-composer' }, h('label', { className: 'mf-ai-composer-label', htmlFor: 'mf-ai-draft' }, 'Sua pergunta'), h('textarea', { id: 'mf-ai-draft', value: s.intelligenceDraft || '', rows: 3, maxLength: 750, placeholder: 'Ex.: Quanto posso investir sem comprometer meus pagamentos?', onChange: (e) => app.setState({ intelligenceDraft: e.target.value }) }), h('span', { className: 'mf-ai-compose-actions' }, h('small', {}, 'Rascunho local · não enviado'), h('button', { type: 'button', className: 'primary-button', disabled: !(s.intelligenceDraft || '').trim(), onClick: () => app.setState({ intelligencePreparedQuestion: (s.intelligenceDraft || '').trim(), intelligenceDraft: '' }) }, 'Preparar pergunta', h(Icon, { name: 'arrow', size: 16 }))))), h('aside', { className: 'mf-ai-prompts' }, h('strong', {}, 'Para começar'), ['Como construir uma reserva de emergência?', 'Como funcionam limites inteligentes?', 'Quando faz sentido antecipar uma dívida?'].map((q, i) => h('button', { type: 'button', key: i, onClick: () => app.setState({ intelligenceDraft: q }) }, q, h(Icon, { name: 'arrow', size: 14 }))), h('div', { className: 'mf-ai-prompt-foot' }, h('b', {}, 'Modelo em testes'), h('span', {}, 'GPT-6.1 Sol · Low/Medium'), h('small', {}, 'OAuth local no Windows; sem fallback pago e sem acesso bancário pela IA.'))));
+        section = h('div', { className: 'mf-ai-workbench' }, renderIntelligenceHistorySidebar(app), h('div', { className: 'mf-ai-chat-main mf-ai-workbench-main' }, h('div', { className: 'mf-ai-workbench-header' }, h('div', { className: 'mf-ai-chat-hero' }, h('span', { className: 'mf-ai-orb' }, h(Icon, { name: 'spark', size: 25 })), h('h2', {}, 'Central de conversação financeira'), h('p', {}, 'Histórico compartilhado com o chat lateral, salvo localmente quando disponível. Não cole credenciais.')), h('div', { className: 'mf-ai-workbench-badges' }, h('span', { className: 'mf-ai-conn-pill ' + convState.css }, convState.pill), h('span', { className: 'mf-ai-scope-badge' }, 'Contexto: ' + activeScope.label + ' · ' + activeScope.period))), s.intelligenceDraftScope ? h('div', { className: 'mf-ai-context-meta' }, h('span', {}, 'Rascunho de ' + s.intelligenceDraftScope.label), h('span', {}, s.intelligenceDraftScope.period)) : null, s.intelligencePreparedQuestion ? h('div', { className: 'mf-ai-prepared', role: 'status' }, h('span', { className: 'micro-label' }, 'PERGUNTA PREPARADA · NÃO ENVIADA'), h('p', {}, s.intelligencePreparedQuestion), h('small', {}, 'Este rascunho não é enviado ao Sol. Use os casos fictícios autorizados abaixo; nenhuma chamada ocorreu aqui.')) : null, messages.length === 0 ? h('div', { className: 'mf-ai-empty-thread' }, h('h3', {}, 'Comece uma análise ou prepare uma categorização supervisionada'), h('p', {}, 'Suas conversas ficam organizadas por data na coluna à esquerda e continuam disponíveis ao alternar para o chat lateral em qualquer uma das oito áreas.'), h('div', { className: 'mf-ai-starter-grid' }, ['Categorize minha compra do mercado como Alimentação.', 'Mostre um resumo estruturado das minhas movimentações carregadas.', 'Como construir uma reserva de emergência?', 'Quando faz sentido antecipar uma dívida?'].map((q, i) => h('button', { type: 'button', className: 'mf-ai-context-prompt', key: i, onClick: () => intelligenceSubmitQuestion(app, q) }, h('span', {}, q), h(Icon, { name: 'arrow', size: 14 }))))) :
+            h('div', { className: 'mf-ai-thread', role: 'log', 'aria-live': 'polite' }, ...messages.map(m => renderIntelligenceMessageItem(app, m)), s.aiBusy ? h('div', { className: 'mf-ai-msg is-assistant is-streaming', role: 'status' }, h('strong', {}, 'Assistente MF'), h('p', {}, 'Processando solicitação…')) : null), s.aiError ? h('p', { className: 'mf-ai-error', role: 'alert' }, s.aiError) : null, h('div', { className: 'mf-ai-composer' }, h('label', { className: 'mf-ai-composer-label', htmlFor: 'mf-ai-draft' }, 'Sua pergunta ou comando supervisionado'), h('textarea', { id: 'mf-ai-draft', value: s.intelligenceDraft || '', rows: 3, maxLength: 750, placeholder: 'Ex.: Categorize minha compra do mercado de ontem como Alimentação…', onChange: (e) => app.setState({ intelligenceDraft: e.target.value }), onKeyDown: (e) => { if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                if ((s.intelligenceDraft || '').trim())
+                    void intelligenceSubmitQuestion(app, s.intelligenceDraft);
+            } } }), h('span', { className: 'mf-ai-compose-actions' }, h('small', {}, convState.pill + ' · armazenamento local isolado (' + (s.mode === 'demo' ? 'Demonstração' : 'Pessoal') + ')'), h('div', { className: 'mf-ai-compose-btns' }, h('button', { type: 'button', className: 'ghost-button', disabled: !(s.intelligenceDraft || '').trim(), onClick: () => app.setState({ intelligencePreparedQuestion: (s.intelligenceDraft || '').trim(), intelligenceDraft: '' }) }, 'Guardar rascunho'), h('button', { type: 'button', className: 'primary-button', disabled: !(s.intelligenceDraft || '').trim() || Boolean(s.aiBusy), onClick: () => intelligenceSubmitQuestion(app, s.intelligenceDraft) }, 'Enviar no chat', h(Icon, { name: 'arrow', size: 16 })))))));
     else
-        section = h('div', { className: 'mf-ai-actions' }, h('div', { className: 'mf-ai-welcome' }, h('span', { className: 'micro-label' }, 'EXEMPLOS DE DECISÕES · SEM ALTERAÇÕES REAIS'), h('h2', {}, 'Sugestões para revisar, nunca automáticas.'), h('p', {}, 'Os itens ilustrativos abaixo não estão vinculados às suas contas e não alteram registros.')), [{ id: 'limits', title: 'Revisar limites de categorias', description: 'Compare médias, compromissos e uma margem de segurança.', question: 'Prepare uma proposta de limites por categoria para o próximo mês.' },
+        section = h('div', { className: 'mf-ai-actions' }, h('div', { className: 'mf-ai-welcome' }, h('span', { className: 'micro-label' }, 'AÇÕES SUPERVISIONADAS E EXEMPLOS · SEM GRAVAÇÃO AUTOMÁTICA'), h('h2', {}, 'Sugestões e prévias para revisar, nunca automáticas.'), h('p', {}, 'As propostas preparadas nas suas conversas aparecem abaixo mantendo a prévia sem gravação até a entrega I2-B.')), allProposals.length ? h('div', { className: 'mf-ai-proposals-list', 'aria-label': 'Propostas supervisionadas da sessão' }, ...allProposals.map(p => renderIntelligenceActionProposalCard(app, p))) :
+            h('div', { className: 'mf-ai-empty-actions' }, h('p', {}, 'Nenhuma proposta supervisionada pendente nesta conversa. Peça no chat, por exemplo: “Categorize minha compra do mercado como Alimentação”.')), [{ id: 'limits', title: 'Revisar limites de categorias', description: 'Compare médias, compromissos e uma margem de segurança.', question: 'Prepare uma proposta de limites por categoria para o próximo mês.' },
             { id: 'reserve', title: 'Planejar reserva de emergência', description: 'Estime um objetivo compatível com despesas essenciais e liquidez.', question: 'Como construir uma reserva de emergência considerando meus compromissos?' },
             { id: 'review', title: 'Revisar despesas recorrentes', description: 'Identifique cobranças repetidas antes de propor mudanças.', question: 'Como posso avaliar se meus gastos recorrentes precisam de revisão?' }].map((item) => h('div', { className: 'mf-ai-action-card', key: item.id }, h('div', { className: 'mf-ai-action-text' }, h('span', { className: 'mf-ai-status' }, 'Exemplo ilustrativo'), h('h3', {}, item.title), h('p', {}, item.description), s.intelligenceExpandedAction === item.id ? h('div', { className: 'mf-ai-action-detail' }, 'Na versão conectada, esta proposta mostrará dados utilizados, impacto esperado, validade da análise e ações de aceitar, editar ou rejeitar. Nada será aplicado automaticamente.') : null), h('div', { className: 'mf-ai-action-buttons' }, h('button', { type: 'button', className: 'ghost-button', onClick: () => app.setState({ intelligenceExpandedAction: s.intelligenceExpandedAction === item.id ? null : item.id }) }, s.intelligenceExpandedAction === item.id ? 'Recolher' : 'Ver detalhes'), h('button', { type: 'button', className: 'mf-ai-link', onClick: () => intelligencePrepare(app, item.question) }, 'Preparar análise', h(Icon, { name: 'arrow', size: 15 }))))));
-    return h('section', { className: 'section mf-intelligence-page', 'aria-label': 'Inteligência financeira' }, h('div', { className: 'mf-ai-intro' }, h('div', {}, h('span', { className: 'micro-label' }, 'INTELIGÊNCIA FINANCEIRA'), h('h2', {}, 'Seu espaço de análise'), h('p', {}, 'Hoje, conversa e plano de ação — com dados demonstrativos identificados.')), h('span', { className: 'mf-ai-preview-label' }, h(Icon, { name: 'shield', size: 15 }), 'Prévia · dados fictícios')), h('div', { className: 'mf-ai-tabbar', role: 'tablist', 'aria-label': 'Seções da Inteligência' }, tabs.map((item) => h('button', { type: 'button', key: item.id, role: 'tab', 'aria-selected': tab === item.id,
+    return h('section', { className: 'section mf-intelligence-page', 'aria-label': 'Inteligência financeira' }, h('div', { className: 'mf-ai-intro' }, h('div', {}, h('span', { className: 'micro-label' }, 'INTELIGÊNCIA FINANCEIRA'), h('h2', {}, 'Seu espaço de análise e conversação'), h('p', {}, 'Hoje, conversa com histórico persistente e plano de ação supervisionado.')), h('span', { className: 'mf-ai-preview-label' }, h(Icon, { name: 'shield', size: 15 }), s.mode === 'demo' ? 'Prévia · dados fictícios' : 'Prévia · dados locais, sem inferência')), h('div', { className: 'mf-ai-tabbar', role: 'tablist', 'aria-label': 'Seções da Inteligência' }, tabs.map((item) => h('button', { type: 'button', key: item.id, role: 'tab', 'aria-selected': tab === item.id,
         id: 'mf-ai-tab-' + item.id, 'aria-controls': 'mf-ai-section-' + item.id, tabIndex: tab === item.id ? 0 : -1, className: tab === item.id ? 'active' : '', onClick: () => app.setState({ intelligenceTab: item.id }), onKeyDown: (e) => { const next = intelligenceNextTab(item.id, e.key); if (next) {
             e.preventDefault();
             app.setState({ intelligenceTab: next }, () => { var _a; return (_a = document.getElementById('mf-ai-tab-' + next)) === null || _a === void 0 ? void 0 : _a.focus(); });
-        } } }, item.label))), h('div', { id: 'mf-ai-section-' + tab, role: 'tabpanel', 'aria-labelledby': 'mf-ai-tab-' + tab, tabIndex: 0 }, section), tab === 'chat' ? h('details', { className: 'mf-ai-lab-disclosure' }, h('summary', {}, h(Icon, { name: 'settings', size: 17 }), h('span', {}, 'Laboratório de Inteligência'), h('small', {}, 'Conexão, memória, contexto fictício e testes opcionais')), renderIntelligenceConnection(app), renderIntelligencePrivacy(app), renderIntelligenceFinancialContext(app)) : null);
+        } } }, item.label))), h('div', { id: 'mf-ai-section-' + tab, role: 'tabpanel', 'aria-labelledby': 'mf-ai-tab-' + tab, tabIndex: 0 }, section), h('details', { className: 'mf-ai-lab-disclosure' }, h('summary', {}, h(Icon, { name: 'settings', size: 17 }), h('span', {}, 'Laboratório de Inteligência'), h('small', {}, 'Configurações técnicas, conexão OAuth, memória e contexto sintético')), renderIntelligenceConnection(app), renderIntelligencePrivacy(app), renderIntelligenceFinancialContext(app)));
 }
 function renderIntelligencePanel(app) {
+    var _a;
     if (!app.state.intelligencePanelOpen)
         return null;
+    if (((_a = app.state.workIntelligenceDemo) === null || _a === void 0 ? void 0 : _a.enabled) && typeof renderWorkIntelligencePanel === 'function')
+        return renderWorkIntelligencePanel(app);
+    if (typeof intelligenceEnsureHydrated === 'function')
+        intelligenceEnsureHydrated(app);
     const info = intelligenceContextFor(app.state.intelligenceContext);
     const scope = app.state.intelligenceContextSnapshot || intelligencePageScope(app, app.state.intelligenceContext);
+    const messages = intelligenceHistoryList(app);
+    const threads = Array.isArray(app.state.intelligenceThreads) ? app.state.intelligenceThreads : [];
+    const activeThreadId = app.state.intelligenceActiveThreadId || '';
+    const convState = typeof intelligenceConversationState === 'function' ? intelligenceConversationState(app) : { kind: 'oauth_disconnected', pill: 'Conta desconectada · modo local', badge: 'Conta desconectada', css: 'is-offline' };
+    const busy = Boolean(app.state.aiBusy || app.state.intelligenceDrawerBusy);
+    const draft = String(app.state.intelligenceDraft || '');
     return h('div', { className: 'mf-ai-backdrop', role: 'presentation', onMouseDown: (e) => { if (e.target === e.currentTarget)
-            app.setState({ intelligencePanelOpen: false }); } }, h('aside', { className: 'mf-ai-drawer', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Assistente contextual de ' + info.label }, h('div', { className: 'mf-ai-drawer-head' }, h('div', {}, h('span', { className: 'micro-label' }, 'ASSISTENTE CONTEXTUAL'), h('h2', {}, info.label)), h('button', { type: 'button', className: 'close-button', 'aria-label': 'Fechar assistente', onClick: () => app.setState({ intelligencePanelOpen: false }) }, '×')), h('div', { className: 'mf-ai-drawer-body' }, h('div', { className: 'mf-ai-context-meta' }, h('span', {}, scope.label), h('span', {}, scope.period), h('span', {}, scope.mode), ...scope.filters.map((filter) => h('span', { key: filter }, filter))), h('div', { className: 'mf-ai-preview-notice' }, h(Icon, { name: 'shield', size: 20 }), h('div', {}, h('strong', {}, 'Rascunho local'), h('p', {}, 'Este painel não consulta contas nem envia perguntas ao GPT. Os testes autorizados ficam no laboratório.'))), h('p', { className: 'muted-desc' }, info.description), h('h3', {}, 'Sugestões para esta página'), info.questions.map((q, i) => h('button', { type: 'button', className: 'mf-ai-context-prompt', key: i, onClick: () => intelligencePrepare(app, q) }, h('span', {}, q), h(Icon, { name: 'arrow', size: 16 }))), h('label', { className: 'mf-ai-context-composer' }, h('span', {}, 'Rascunho da pergunta'), h('textarea', { value: app.state.intelligenceDraft || '', rows: 3, maxLength: 750, placeholder: 'Escreva o que deseja analisar…', onChange: (e) => app.setState({ intelligenceDraft: e.target.value }) })), h('button', { type: 'button', className: 'primary-button full', disabled: !(app.state.intelligenceDraft || '').trim(), onClick: () => intelligencePrepare(app, app.state.intelligenceDraft.trim()) }, 'Preparar na Inteligência'), h('div', { className: 'mf-ai-drawer-footer' }, h('button', { type: 'button', className: 'primary-button full', onClick: () => app.setState({ page: 'intelligence', intelligenceTab: 'chat', intelligencePanelOpen: false, detail: null, planSelected: null }) }, 'Abrir Inteligência')))));
+            app.setState({ intelligencePanelOpen: false }); } }, h('aside', { className: 'mf-ai-drawer mf-ai-drawer-compact', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Assistente contextual de ' + info.label }, h('div', { className: 'mf-ai-drawer-head' }, h('div', { className: 'mf-ai-drawer-title-wrap' }, h('div', { className: 'mf-ai-drawer-kicker-row' }, h('span', { className: 'micro-label' }, 'COPILOTO CONTEXTUAL'), h('span', { className: 'mf-ai-conn-pill ' + convState.css }, convState.pill)), h('h2', {}, info.label)), h('div', { className: 'mf-ai-drawer-head-actions' }, h('button', { type: 'button', className: 'ghost-button mf-ai-expand-btn', 'aria-label': 'Nova conversa', title: 'Iniciar nova conversa', onClick: () => intelligenceCreateThread(app) }, 'Nova'), h('button', { type: 'button', className: 'ghost-button mf-ai-expand-btn', 'aria-label': 'Expandir na aba Inteligência', title: 'Abrir na aba Inteligência mantendo a conversa ativa', onClick: () => intelligenceOpenFullChat(app) }, 'Expandir'), h('button', { type: 'button', className: 'close-button', 'aria-label': 'Fechar assistente', onClick: () => app.setState({ intelligencePanelOpen: false }) }, '×'))), h('div', { className: 'mf-ai-context-meta mf-ai-drawer-scope' }, h('span', {}, scope.label), h('span', {}, scope.period), h('span', {}, scope.mode), ...scope.filters.map((filter) => h('span', { key: filter }, filter)), threads.length > 1 ? h('select', { className: 'mf-ai-drawer-thread-select', 'aria-label': 'Alternar conversa ativa', value: activeThreadId, onChange: (e) => intelligenceSelectThread(app, e.target.value) }, ...threads.map((t) => h('option', { key: t.id, value: t.id }, t.title + ' (' + t.messages.length + ')'))) : null), h('div', { className: 'mf-ai-drawer-body' }, messages.length === 0 ? h('div', { className: 'mf-ai-drawer-empty' }, h('p', { className: 'muted-desc' }, info.description), h('div', { className: 'mf-ai-drawer-suggestions', 'aria-label': 'Sugestões rápidas para ' + info.label }, ...info.questions.map((q, i) => h('button', { type: 'button', className: 'mf-ai-context-prompt', key: i, onClick: () => intelligenceSubmitQuestion(app, q) }, h('span', {}, q), h(Icon, { name: 'arrow', size: 15 }))))) :
+        h('div', { className: 'mf-ai-drawer-messages', role: 'log', 'aria-live': 'polite' }, ...messages.map(m => renderIntelligenceMessageItem(app, m)), busy ? h('div', { className: 'mf-ai-msg is-assistant is-streaming', role: 'status' }, h('strong', {}, 'Assistente MF'), h('p', {}, 'Processando solicitação no contexto de ' + scope.label + '…')) : null), app.state.intelligenceStorageError ? h('p', { className: 'mf-ai-error', role: 'alert' }, app.state.intelligenceStorageError) : null, app.state.aiError ? h('p', { className: 'mf-ai-error', role: 'alert' }, app.state.aiError) : null), h('form', { className: 'mf-ai-drawer-composer', onSubmit: (e) => { e.preventDefault(); if (draft.trim() && !busy)
+            void intelligenceSubmitQuestion(app, draft); } }, h('label', { className: 'mf-ai-context-composer', htmlFor: 'mf-ai-drawer-input' }, h('span', { className: 'sr-only' }, 'Pergunta para o assistente'), h('textarea', { id: 'mf-ai-drawer-input', value: draft, rows: 2, maxLength: 750, disabled: busy, placeholder: 'Pergunte sobre ' + scope.label.toLowerCase() + ' ou prepare prévia de categoria…', onChange: (e) => app.setState({ intelligenceDraft: e.target.value }), onKeyDown: (e) => { if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            if (draft.trim() && !busy)
+                void intelligenceSubmitQuestion(app, draft);
+        } } })), h('div', { className: 'mf-ai-drawer-footer' }, messages.length > 0 && activeThreadId ? h('button', { type: 'button', className: 'ghost-button', onClick: () => intelligenceDeleteThread(app, activeThreadId) }, 'Excluir conversa') : h('span', { className: 'mf-ai-drawer-hint' }, 'Histórico salvo e sincronizado com a aba Inteligência'), h('button', { type: 'submit', className: 'primary-button', disabled: !draft.trim() || busy }, busy ? 'Enviando…' : 'Enviar', h(Icon, { name: 'arrow', size: 15 }))))));
 }
 function renderIntelligenceSettings(app) {
     return h(Card, { className: 'settings-card mf-ai-settings' }, h('div', { className: 'card-heading' }, h('div', {}, h('h2', {}, 'Inteligência artificial'), h('p', {}, 'Autenticação local e testes fictícios · Entrega 2'))), h('div', { className: 'mf-ai-setting-line' }, h('span', {}, 'Estado'), h('strong', {}, app.state.aiStatus.connected ? 'Conectada' : 'Não conectada')), h('div', { className: 'mf-ai-setting-line' }, h('span', {}, 'Modelo previsto'), h('strong', {}, 'GPT-6.1 Sol')), h('div', { className: 'mf-ai-setting-line' }, h('span', {}, 'Raciocínio'), h('strong', {}, 'Low / Medium automático')), h('div', { className: 'mf-ai-setting-line' }, h('span', {}, 'Economia de tokens'), h('strong', {}, 'Contexto mínimo + aprovação por teste')), h('p', { className: 'muted-desc' }, 'OAuth e memórias aprovadas são protegidos localmente no Windows. Nenhuma memória é enviada sem consentimento por teste. Dados bancários e sincronização de memórias no PWA continuam indisponíveis para a IA.'), h('button', { type: 'button', className: 'outlined-action full', onClick: () => app.navigate('intelligence') }, h(Icon, { name: 'spark', size: 17 }), 'Abrir prévia da Inteligência'));
@@ -2248,4 +2953,1167 @@ function renderIntelligenceConnection(app) {
         onChange: (e) => app.setState({ aiCreditsConfirmed: Boolean(e.target.checked) }) }), h('span', {}, 'Conferi em Configurações → Uso: créditos adicionais desativados e limite semanal do aplicativo abaixo de 100%.')), h('button', { type: 'button', className: 'primary-button', disabled: s.aiBusy || !s.aiCreditsConfirmed,
         onClick: () => intelligenceTest(app) }, s.aiBusy ? 'Executando teste...' : 'Testar GPT-6.1 Sol com dados fictícios'), h('p', { className: 'mf-ai-usage-warning' }, 'As configurações de créditos e o teto semanal são controlados pelo ChatGPT. Limite deste aplicativo abaixo de 100% impede uso de créditos adicionais nessa modalidade. O app não consegue verificar esses ajustes automaticamente. O teste conta com limite preventivo de três solicitações por sessão.')) : null, s.aiBusy ? h('p', { className: 'mf-ai-progress', role: 'status' }, 'Aguardando autenticação ou conclusão do teste...') : null, s.aiStreaming && !s.aiResult ? h('div', { className: 'mf-ai-stream', role: 'status' }, h('strong', {}, 'Resposta em andamento'), h('p', {}, s.aiStreaming.slice(0, 12000))) : null, s.aiResult ? h('div', { className: 'mf-ai-test-result' }, h('span', { className: 'micro-label' }, 'TESTE CONCLUÍDO · APENAS DADOS FICTÍCIOS'), h('div', { className: 'mf-ai-markdown' }, ...aiMarkdownNodes(s.aiResult.text || 'Nenhum texto retornado.')), s.aiResult.usageStored === false ? h('small', {}, 'As métricas desta resposta não puderam ser salvas no histórico local.') : null, h('small', {}, 'Modelo ' + s.aiResult.model + ' · esforço ' + s.aiResult.effort +
         (s.aiResult.usage ? ' · entrada ' + s.aiResult.usage.inputTokens + ' tokens · saída ' + s.aiResult.usage.outputTokens + ' tokens' : ''))) : null, s.aiError ? h('p', { className: 'mf-ai-error', role: 'alert' }, s.aiError) : null);
+}
+function intelligenceNowTime() {
+    const d = new Date();
+    return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+}
+function intelligenceFoldText(value) {
+    return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('pt-BR').replace(/\s+/g, ' ').trim();
+}
+function intelligenceConversationState(app) {
+    var _a, _b, _c, _d, _f, _g, _h, _j, _k, _l;
+    const s = (app === null || app === void 0 ? void 0 : app.state) || {};
+    const activeError = String(s.aiError || ((_a = s.aiStatus) === null || _a === void 0 ? void 0 : _a.error) || '').trim();
+    const explicitUnavailable = Boolean(activeError ||
+        ((_b = s.aiStatus) === null || _b === void 0 ? void 0 : _b.unavailable) === true ||
+        ((_c = s.aiStatus) === null || _c === void 0 ? void 0 : _c.serviceAvailable) === false ||
+        ((_d = s.aiCapabilities) === null || _d === void 0 ? void 0 : _d.serviceAvailable) === false ||
+        (((_f = s.aiStatus) === null || _f === void 0 ? void 0 : _f.connected) === true && ((_g = s.aiStatus) === null || _g === void 0 ? void 0 : _g.secure) === false));
+    if (explicitUnavailable) {
+        return { kind: 'service_unavailable', pill: 'Serviço temporariamente indisponível', badge: 'Indisponível', css: 'is-error' };
+    }
+    if (((_h = s.aiStatus) === null || _h === void 0 ? void 0 : _h.connected) === true) {
+        const chatDeclared = Boolean(((_j = s.aiCapabilities) === null || _j === void 0 ? void 0 : _j.conversationalInferenceEnabled) === true ||
+            ((_k = s.aiCapabilities) === null || _k === void 0 ? void 0 : _k.chatAvailable) === true ||
+            ((_l = s.aiStatus) === null || _l === void 0 ? void 0 : _l.chatAvailable) === true);
+        if (chatDeclared) {
+            return { kind: 'chat_available', pill: 'Serviço de conversação disponível · motor I2-A pendente', badge: 'Chat disponível', css: 'is-ready' };
+        }
+        return { kind: 'oauth_connected_unimplemented', pill: 'Conta autenticada · chat aberto na I2-A', badge: 'Aguarda I2-A', css: 'is-auth-only' };
+    }
+    return { kind: 'oauth_disconnected', pill: 'Conta desconectada · modo local', badge: 'Sem OAuth', css: 'is-offline' };
+}
+function intelligenceReferenceToday(app) {
+    var _a;
+    const custom = (_a = app === null || app === void 0 ? void 0 : app.state) === null || _a === void 0 ? void 0 : _a.today;
+    if (typeof custom === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(custom))
+        return custom;
+    const now = new Date();
+    return [now.getFullYear(), String(now.getMonth() + 1).padStart(2, '0'), String(now.getDate()).padStart(2, '0')].join('-');
+}
+function intelligenceShiftIsoDate(baseIso, deltaDays) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(baseIso))
+        return null;
+    const [y, m, d] = baseIso.split('-').map(Number);
+    const dt = new Date(Date.UTC(y, m - 1, d + deltaDays));
+    if (!Number.isFinite(dt.getTime()))
+        return null;
+    return dt.toISOString().slice(0, 10);
+}
+function intelligenceValidateIsoDate(y, m, d) {
+    if (!Number.isInteger(y) || !Number.isInteger(m) || !Number.isInteger(d) || y < 2000 || y > 2100 || m < 1 || m > 12 || d < 1 || d > 31)
+        return null;
+    const dt = new Date(Date.UTC(y, m - 1, d));
+    if (dt.getUTCFullYear() !== y || dt.getUTCMonth() + 1 !== m || dt.getUTCDate() !== d)
+        return null;
+    return String(y).padStart(4, '0') + '-' + String(m).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+}
+function intelligenceParseCategorizeIntent(question, categories, referenceToday) {
+    const clean = String(question || '').trim();
+    const m = /(?:categoriz(?:e|ar)|classifiqu(?:e|ar)|mud(?:e|ar)\s+a?\s*categoria(?:\s+d[aeo])?)\s+(.+?)\s+(?:como|para)\s+([A-Za-zÀ-ÿ0-9\s_-]+?)[.?!]*$/i.exec(clean);
+    if (!m)
+        return null;
+    let body = m[1].trim();
+    const rawCat = m[2].trim().replace(/^["'“”]|["'“”]$/g, '').trim();
+    if (!body || !rawCat)
+        return null;
+    let originFilter = 'all';
+    if (/\b(?:lan[çc]amento\s+manual|registro\s+manual|manualmente|manual)\b/i.test(body)) {
+        originFilter = 'manual';
+        body = body.replace(/\b(?:no\s+lan[çc]amento\s+manual|lan[çc]amento\s+manual|registro\s+manual|manualmente|manual)\b/gi, ' ');
+    }
+    else if (/\b(?:no\s+banco|do\s+banco|banc[áa]ri[ao]s?)\b/i.test(body)) {
+        originFilter = 'bank';
+        body = body.replace(/\b(?:no\s+banco|do\s+banco|na\s+conta\s+banc[áa]ria|banc[áa]ri[ao]s?)\b/gi, ' ');
+    }
+    let dateFilter = null;
+    let invalidDate = null;
+    const refIso = referenceToday && /^\d{4}-\d{2}-\d{2}$/.test(referenceToday) ? referenceToday : intelligenceReferenceToday(null);
+    const isoMatch = /\b(\d{4})-(\d{2})-(\d{2})\b/.exec(body);
+    const brFullMatch = /\b(\d{1,2})\/(\d{1,2})\/(\d{4})\b/.exec(body);
+    const brShortMatch = !brFullMatch ? /\b(\d{1,2})\/(\d{1,2})\b/.exec(body) : null;
+    if (isoMatch) {
+        const valid = intelligenceValidateIsoDate(Number(isoMatch[1]), Number(isoMatch[2]), Number(isoMatch[3]));
+        if (valid)
+            dateFilter = valid;
+        else
+            invalidDate = isoMatch[0];
+        body = body.replace(isoMatch[0], ' ');
+    }
+    else if (brFullMatch) {
+        const valid = intelligenceValidateIsoDate(Number(brFullMatch[3]), Number(brFullMatch[2]), Number(brFullMatch[1]));
+        if (valid)
+            dateFilter = valid;
+        else
+            invalidDate = brFullMatch[0];
+        body = body.replace(brFullMatch[0], ' ');
+    }
+    else if (brShortMatch && refIso) {
+        const refYear = Number(refIso.slice(0, 4));
+        const valid = intelligenceValidateIsoDate(refYear, Number(brShortMatch[2]), Number(brShortMatch[1]));
+        if (valid)
+            dateFilter = valid;
+        else
+            invalidDate = brShortMatch[0];
+        body = body.replace(brShortMatch[0], ' ');
+    }
+    else if (/\banteontem\b/i.test(body)) {
+        if (refIso)
+            dateFilter = intelligenceShiftIsoDate(refIso, -2);
+        else
+            invalidDate = 'anteontem';
+        body = body.replace(/\b(?:de\s+)?anteontem\b/gi, ' ');
+    }
+    else if (/\bontem\b/i.test(body)) {
+        if (refIso)
+            dateFilter = intelligenceShiftIsoDate(refIso, -1);
+        else
+            invalidDate = 'ontem';
+        body = body.replace(/\b(?:de\s+)?ontem\b/gi, ' ');
+    }
+    else if (/\bhoje\b/i.test(body)) {
+        if (refIso)
+            dateFilter = refIso;
+        else
+            invalidDate = 'hoje';
+        body = body.replace(/\b(?:de\s+)?hoje\b/gi, ' ');
+    }
+    let amountCentsFilter = null;
+    const amtMatch = /(?:no\s+valor\s+de\s+|de\s+|por\s+)?R\$\s*(\d{1,3}(?:\.\d{3})*|\d+)(?:,(\d{1,2}))?\b|(?:no\s+valor\s+de\s+|de\s+)(\d{1,6}),(\d{2})\b/i.exec(body);
+    if (amtMatch) {
+        const wholeRaw = (amtMatch[1] || amtMatch[3] || '').replace(/\./g, '');
+        const decRaw = (amtMatch[2] || amtMatch[4] || '0').padEnd(2, '0');
+        const cents = Number(wholeRaw) * 100 + Number(decRaw);
+        if (Number.isSafeInteger(cents) && cents > 0)
+            amountCentsFilter = cents;
+        body = body.replace(amtMatch[0], ' ');
+    }
+    body = body
+        .replace(/^(?:a\s+|o\s+|minha\s+|meu\s+)?(?:compra|despesa|gasto|lan[çc]amento|pagamento|transa[çc][ãa]o|recebimento|receita)?\s*(?:d[aeo]s?\s+|no\s+|na\s+|em\s+)?/i, '')
+        .replace(/\b(?:feita|feito|realizada|realizado|no\s+dia|em|de|do|da)\s*$/i, '')
+        .replace(/^["'“”]|["'“”]$/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+    const catFold = intelligenceFoldText(rawCat);
+    const catList = Array.isArray(categories) && categories.length ? categories : (typeof DEFAULT_CATEGORY_INFOS !== 'undefined' ? DEFAULT_CATEGORY_INFOS : []);
+    const foundCat = catList.find((c) => intelligenceFoldText(c.name) === catFold) || null;
+    return {
+        term: body,
+        targetCategory: foundCat ? String(foundCat.name) : rawCat,
+        categoryInfo: foundCat ? { name: String(foundCat.name), kind: (foundCat.kind || 'expense') } : null,
+        dateFilter,
+        invalidDate,
+        amountCentsFilter,
+        originFilter
+    };
+}
+function intelligenceMatchesEstablishment(labelFold, termFold) {
+    if (!termFold || !labelFold)
+        return false;
+    if (labelFold.includes(termFold))
+        return true;
+    const tokens = termFold.split(' ').filter(t => t.length >= 3);
+    if (tokens.length > 1 && tokens.every(t => labelFold.includes(t)))
+        return true;
+    return false;
+}
+function intelligenceBuildCategorizeProposal(app, intent) {
+    var _a, _b, _c;
+    const s = app.state || {};
+    if (intent.invalidDate) {
+        return {
+            text: 'Não foi possível determinar a data **' + intent.invalidDate + '** informada no pedido. Informe uma data válida (ex.: `06/11/2026`, `hoje` ou `ontem`) antes de preparar a prévia.',
+            proposal: null,
+            details: 'Validação determinística de data rejeitou o parâmetro de data.'
+        };
+    }
+    const catList = Array.isArray(s.categories) && s.categories.length ? s.categories : (typeof DEFAULT_CATEGORY_INFOS !== 'undefined' ? DEFAULT_CATEGORY_INFOS : []);
+    if (!intent.categoryInfo) {
+        const validNames = catList.map((c) => c.name).slice(0, 14).join(', ');
+        return {
+            text: 'A categoria **' + intent.targetCategory + '** não existe no seu cadastro atual. Escolha uma categoria válida (' + validNames + ') antes de preparar a prévia.',
+            proposal: null,
+            details: 'Categorias inexistentes são bloqueadas antes de construir propostas.'
+        };
+    }
+    if (!intent.term) {
+        return {
+            text: 'Informe o nome do estabelecimento ou descrição do lançamento que deseja classificar como **' + intent.categoryInfo.name + '**.',
+            proposal: null,
+            details: 'Nenhum termo de estabelecimento foi identificado na solicitação.'
+        };
+    }
+    const termFold = intelligenceFoldText(intent.term);
+    const bankTxs = (s.mode === 'demo' || intent.originFilter === 'manual') ? [] : (Array.isArray((_b = (_a = s.bank) === null || _a === void 0 ? void 0 : _a.data) === null || _b === void 0 ? void 0 : _b.transactions) ? s.bank.data.transactions : []);
+    const manualTxs = intent.originFilter === 'bank' ? [] : (Array.isArray((_c = s.data) === null || _c === void 0 ? void 0 : _c.transactions) ? s.data.transactions : []);
+    const rawMatches = [];
+    for (const b of bankTxs) {
+        const displayTitle = String(b.customTitle || b.merchant || b.description || 'Movimentação bancária');
+        const rawDesc = String(b.description || displayTitle);
+        const searchable = intelligenceFoldText(displayTitle + ' ' + rawDesc + ' ' + (b.accountName || ''));
+        if (!intelligenceMatchesEstablishment(searchable, termFold))
+            continue;
+        if (intent.dateFilter && String(b.date) !== intent.dateFilter)
+            continue;
+        const absAmount = Math.abs(Number(b.amount || 0));
+        if (intent.amountCentsFilter !== null && absAmount !== intent.amountCentsFilter)
+            continue;
+        const nature = b.nature && b.nature !== 'auto' ? String(b.nature) : (Number(b.amount) >= 0 ? 'income' : 'expense');
+        const txKind = nature === 'income' ? 'income' : 'expense';
+        const accId = String(b.accountId || '');
+        const accName = String(b.accountName || accId || 'Conta bancária');
+        rawMatches.push({
+            candidateKey: 'bank|' + accId + '|' + String(b.id),
+            origin: 'bank',
+            txId: String(b.id),
+            accountId: accId,
+            accountName: accName,
+            description: displayTitle,
+            rawDescription: rawDesc,
+            date: String(b.date || ''),
+            amountCents: absAmount,
+            txKind,
+            currentCategory: String(b.category || 'Outros'),
+            natureRaw: nature
+        });
+    }
+    for (const m of manualTxs) {
+        const desc = String(m.description || 'Lançamento manual');
+        const searchable = intelligenceFoldText(desc);
+        if (!intelligenceMatchesEstablishment(searchable, termFold))
+            continue;
+        if (intent.dateFilter && String(m.date) !== intent.dateFilter)
+            continue;
+        const absAmount = Math.abs(Number(m.amount || 0));
+        if (intent.amountCentsFilter !== null && absAmount !== intent.amountCentsFilter)
+            continue;
+        const txKind = m.kind === 'income' ? 'income' : 'expense';
+        rawMatches.push({
+            candidateKey: 'manual|manual|' + String(m.id),
+            origin: 'manual',
+            txId: String(m.id),
+            accountId: 'manual',
+            accountName: 'Manual',
+            description: desc,
+            rawDescription: desc,
+            date: String(m.date || ''),
+            amountCents: absAmount,
+            txKind,
+            currentCategory: String(m.category || 'Outros'),
+            natureRaw: txKind
+        });
+    }
+    if (rawMatches.length === 0) {
+        const filterNotes = [
+            intent.dateFilter ? 'data ' + intent.dateFilter : null,
+            intent.amountCentsFilter !== null ? 'valor R$ ' + (intent.amountCentsFilter / 100).toFixed(2).replace('.', ',') : null,
+            intent.originFilter !== 'all' ? 'origem ' + (intent.originFilter === 'bank' ? 'bancária' : 'manual') : null
+        ].filter(Boolean).join(', ');
+        return {
+            text: 'Não encontrei nenhuma movimentação correspondente a **' + intent.term + '**' + (filterNotes ? ' (' + filterNotes + ')' : '') + ' para classificar como **' + intent.categoryInfo.name + '**.',
+            proposal: null,
+            details: 'Busca determinística verificou ' + bankTxs.length + ' registro(s) bancário(s) e ' + manualTxs.length + ' manual(is).'
+        };
+    }
+    const nonTransfer = rawMatches.filter(r => r.natureRaw !== 'transfer' && r.natureRaw !== 'ignore');
+    if (nonTransfer.length === 0) {
+        return {
+            text: 'O lançamento localizado para **' + intent.term + '** está marcado como transferência ou ignorado e não pode receber a categoria **' + intent.categoryInfo.name + '**.',
+            proposal: null,
+            details: 'Transferências próprias e lançamentos ignorados não aceitam reclassificação de receita/despesa.'
+        };
+    }
+    const compatible = nonTransfer.filter(r => intent.categoryInfo.kind === 'both' || intent.categoryInfo.kind === r.txKind);
+    if (compatible.length === 0) {
+        const expectedKind = intent.categoryInfo.kind === 'income' ? 'receita (entrada)' : 'despesa (saída)';
+        return {
+            text: 'A categoria **' + intent.categoryInfo.name + '** é exclusiva para **' + expectedKind + '**, mas o lançamento localizado (**' + nonTransfer[0].description + '**) possui natureza incompatível.',
+            proposal: null,
+            details: 'Incompatibilidade entre a direção do movimento e o tipo da categoria cadastrada.'
+        };
+    }
+    compatible.sort((a, b) => b.date.localeCompare(a.date) ||
+        b.amountCents - a.amountCents ||
+        a.description.localeCompare(b.description, 'pt-BR') ||
+        a.candidateKey.localeCompare(b.candidateKey));
+    const cleanCandidates = compatible.map(({ natureRaw: _n, ...rest }) => rest);
+    if (cleanCandidates.length > 1) {
+        const dates = new Set(cleanCandidates.map(c => c.date));
+        const dateNote = dates.size > 1
+            ? 'Ordenados por data verificada (de ' + cleanCandidates[0].date + ' a ' + cleanCandidates[cleanCandidates.length - 1].date + ').'
+            : 'Todos registrados na mesma data (' + cleanCandidates[0].date + ').';
+        const extraNote = cleanCandidates.length > 8
+            ? ' Exibindo inicialmente 8 de ' + cleanCandidates.length + ' resultados; você pode refinar a busca (por data, valor exato ou origem) ou expandir a lista completa abaixo.'
+            : '';
+        return {
+            text: 'Foram encontrados **' + cleanCandidates.length + ' lançamentos** compatíveis com **' + intent.term + '**. ' + dateNote + extraNote + ' Para evitar seleção arbitrária, escolha explicitamente abaixo qual lançamento deseja preparar na prévia para **' + intent.categoryInfo.name + '**:',
+            proposal: {
+                id: 'prop-' + Date.now(),
+                kind: 'categorize',
+                origin: cleanCandidates[0].origin,
+                txId: '',
+                accountId: '',
+                accountName: '',
+                description: 'Seleção pendente (' + cleanCandidates.length + ' opções)',
+                date: cleanCandidates[0].date,
+                amountCents: 0,
+                txKind: cleanCandidates[0].txKind,
+                currentCategory: '',
+                proposedCategory: intent.categoryInfo.name,
+                status: 'ambiguous',
+                candidates: cleanCandidates,
+                candidatesCount: cleanCandidates.length,
+                visibleLimit: 8
+            },
+            details: 'Ambiguidade detectada entre ' + cleanCandidates.length + ' registros ordenados por data/valor/identidade. Todos os candidatos foram preservados sem truncamento.'
+        };
+    }
+    const chosen = cleanCandidates[0];
+    return {
+        text: 'Localizei exatamente 1 movimentação compatível: **' + chosen.description + '** (' + (chosen.origin === 'bank' ? 'Banco · ' + chosen.accountName : 'Manual') + ' em ' + chosen.date + '). Confira abaixo a prévia sem gravação para **' + intent.categoryInfo.name + '**.',
+        proposal: {
+            id: 'prop-' + Date.now(),
+            kind: 'categorize',
+            origin: chosen.origin,
+            txId: chosen.txId,
+            accountId: chosen.accountId,
+            accountName: chosen.accountName,
+            description: chosen.description,
+            rawDescription: chosen.rawDescription,
+            date: chosen.date,
+            amountCents: chosen.amountCents,
+            txKind: chosen.txKind,
+            currentCategory: chosen.currentCategory,
+            proposedCategory: intent.categoryInfo.name,
+            status: 'pending',
+            candidatesCount: 1,
+            visibleLimit: 1
+        },
+        details: 'Correspondência única verificada por estabelecimento, origem, data, valor e compatibilidade de categoria.'
+    };
+}
+function intelligenceExpandProposalCandidates(app, proposalId, step) {
+    const list = Array.isArray(app.state.intelligenceMessages) ? app.state.intelligenceMessages : [];
+    const updated = list.map((msg) => {
+        if (!msg.proposal || msg.proposal.id !== proposalId || !Array.isArray(msg.proposal.candidates))
+            return msg;
+        const total = msg.proposal.candidates.length;
+        const currentLimit = typeof msg.proposal.visibleLimit === 'number' && msg.proposal.visibleLimit > 0 ? msg.proposal.visibleLimit : 8;
+        const nextLimit = typeof step === 'number' && step > 0 ? Math.min(total, currentLimit + step) : total;
+        return {
+            ...msg,
+            proposal: {
+                ...msg.proposal,
+                visibleLimit: nextLimit
+            }
+        };
+    });
+    intelligenceSyncThreadMessages(app, updated);
+}
+function intelligenceVerifyProposalRecord(app, p) {
+    var _a, _b, _c;
+    const s = (app === null || app === void 0 ? void 0 : app.state) || {};
+    const catList = Array.isArray(s.categories) && s.categories.length ? s.categories : (typeof DEFAULT_CATEGORY_INFOS !== 'undefined' ? DEFAULT_CATEGORY_INFOS : []);
+    const catInfo = catList.find((c) => c.name === p.proposedCategory);
+    if (!catInfo)
+        return { ok: false, reason: 'A categoria proposta “' + p.proposedCategory + '” não existe mais no cadastro.' };
+    if (catInfo.kind !== 'both' && catInfo.kind !== p.txKind)
+        return { ok: false, reason: 'A categoria “' + p.proposedCategory + '” tornou-se incompatível com a natureza do lançamento.' };
+    if (p.origin === 'bank') {
+        if (s.mode === 'demo')
+            return { ok: false, reason: 'O aplicativo entrou em modo demonstração; registros bancários reais não estão ativos.' };
+        const txs = Array.isArray((_b = (_a = s.bank) === null || _a === void 0 ? void 0 : _a.data) === null || _b === void 0 ? void 0 : _b.transactions) ? s.bank.data.transactions : [];
+        const rec = txs.find((t) => String(t.id) === p.txId && String(t.accountId || '') === String(p.accountId || ''));
+        if (!rec)
+            return { ok: false, reason: 'A movimentação bancária (conta ' + (p.accountName || p.accountId) + ') não foi localizada no estado atual.' };
+        const nature = rec.nature && rec.nature !== 'auto' ? String(rec.nature) : (Number(rec.amount) >= 0 ? 'income' : 'expense');
+        if (nature === 'transfer' || nature === 'ignore')
+            return { ok: false, reason: 'A natureza da movimentação mudou para transferência/ignorado.' };
+        const recKind = nature === 'income' ? 'income' : 'expense';
+        if (recKind !== p.txKind)
+            return { ok: false, reason: 'A direção contábil da movimentação foi alterada.' };
+        if (String(rec.date || '') !== p.date)
+            return { ok: false, reason: 'A data da movimentação mudou de ' + p.date + ' para ' + String(rec.date || '') + '.' };
+        if (Math.abs(Number(rec.amount || 0)) !== p.amountCents)
+            return { ok: false, reason: 'O valor da movimentação foi alterado desde a criação da proposta.' };
+        if (String(rec.category || 'Outros') !== p.currentCategory)
+            return { ok: false, reason: 'A categoria atual mudou de “' + p.currentCategory + '” para “' + String(rec.category || 'Outros') + '”.' };
+        return { ok: true };
+    }
+    const manualTxs = Array.isArray((_c = s.data) === null || _c === void 0 ? void 0 : _c.transactions) ? s.data.transactions : [];
+    const rec = manualTxs.find((t) => String(t.id) === p.txId);
+    if (!rec)
+        return { ok: false, reason: 'O lançamento manual não foi localizado no estado atual.' };
+    const recKind = rec.kind === 'income' ? 'income' : 'expense';
+    if (recKind !== p.txKind)
+        return { ok: false, reason: 'O tipo do lançamento manual foi alterado.' };
+    if (String(rec.date || '') !== p.date)
+        return { ok: false, reason: 'A data do lançamento manual mudou de ' + p.date + ' para ' + String(rec.date || '') + '.' };
+    if (Math.abs(Number(rec.amount || 0)) !== p.amountCents)
+        return { ok: false, reason: 'O valor do lançamento manual foi alterado.' };
+    if (String(rec.category || 'Outros') !== p.currentCategory)
+        return { ok: false, reason: 'A categoria atual mudou de “' + p.currentCategory + '” para “' + String(rec.category || 'Outros') + '”.' };
+    return { ok: true };
+}
+function intelligenceSelectActionCandidate(app, proposalId, candidateKey) {
+    const list = Array.isArray(app.state.intelligenceMessages) ? app.state.intelligenceMessages : [];
+    const updated = list.map((msg) => {
+        if (!msg.proposal || msg.proposal.id !== proposalId || msg.proposal.status !== 'ambiguous')
+            return msg;
+        const cand = (msg.proposal.candidates || []).find(c => c.candidateKey === candidateKey);
+        if (!cand)
+            return msg;
+        const nextProposal = {
+            ...msg.proposal,
+            origin: cand.origin,
+            txId: cand.txId,
+            accountId: cand.accountId,
+            accountName: cand.accountName,
+            description: cand.description,
+            rawDescription: cand.rawDescription,
+            date: cand.date,
+            amountCents: cand.amountCents,
+            txKind: cand.txKind,
+            currentCategory: cand.currentCategory,
+            status: 'pending',
+            resultMessage: 'Lançamento selecionado. Confira os dados abaixo para validar a prévia sem gravação.'
+        };
+        const check = intelligenceVerifyProposalRecord(app, nextProposal);
+        if (!check.ok) {
+            return {
+                ...msg,
+                proposal: {
+                    ...nextProposal,
+                    status: 'stale',
+                    resultMessage: 'Estado desatualizado ao selecionar: ' + check.reason
+                }
+            };
+        }
+        return { ...msg, proposal: nextProposal };
+    });
+    intelligenceSyncThreadMessages(app, updated);
+}
+function intelligenceResolveActionProposal(app, proposalId, decision) {
+    const list = Array.isArray(app.state.intelligenceMessages) ? app.state.intelligenceMessages : [];
+    const updated = list.map((msg) => {
+        if (!msg.proposal || msg.proposal.id !== proposalId)
+            return msg;
+        if (decision === 'deny') {
+            return {
+                ...msg,
+                proposal: {
+                    ...msg.proposal,
+                    status: 'denied',
+                    resultMessage: 'Proposta negada pelo usuário. Nenhuma alteração foi realizada.'
+                }
+            };
+        }
+        if (msg.proposal.status === 'ambiguous' || !msg.proposal.txId) {
+            return {
+                ...msg,
+                proposal: {
+                    ...msg.proposal,
+                    resultMessage: 'Selecione explicitamente um dos lançamentos listados antes de confirmar a prévia.'
+                }
+            };
+        }
+        const p = msg.proposal;
+        const check = intelligenceVerifyProposalRecord(app, p);
+        if (!check.ok) {
+            return {
+                ...msg,
+                proposal: {
+                    ...p,
+                    status: 'stale',
+                    resultMessage: 'Estado desatualizado: ' + check.reason + ' Nenhuma alteração foi validada.'
+                }
+            };
+        }
+        return {
+            ...msg,
+            proposal: {
+                ...p,
+                status: 'preview_confirmed',
+                resultMessage: 'Prévia validada sem gravação: identidade (' + (p.origin === 'bank' ? 'Banco · ' + (p.accountName || p.accountId) : 'Manual') + '), data (' + p.date + '), valor e categoria (' + p.currentCategory + ' → ' + p.proposedCategory + ') conferidos. Nenhuma escrita foi executada no banco de dados (persistência real prevista para a I2-B).'
+            }
+        };
+    });
+    intelligenceSyncThreadMessages(app, updated);
+}
+async function intelligenceSubmitQuestion(app, rawQuestion) {
+    var _a, _b, _c;
+    const q = String(rawQuestion || '').trim().slice(0, 750);
+    if (!q || app.state.aiBusy || app.state.intelligenceDrawerBusy)
+        return;
+    const priorError = String(app.state.aiError || ((_a = app.state.aiStatus) === null || _a === void 0 ? void 0 : _a.error) || '').trim();
+    const convState = intelligenceConversationState(app);
+    const scope = app.state.intelligencePanelOpen && app.state.intelligenceContextSnapshot
+        ? app.state.intelligenceContextSnapshot
+        : intelligencePageScope(app, app.state.page);
+    const now = intelligenceNowTime();
+    const userMsg = {
+        id: 'usr-' + Date.now(),
+        role: 'user',
+        text: q,
+        createdAt: now,
+        scopeLabel: scope.label,
+        periodLabel: scope.period,
+        status: 'sent'
+    };
+    intelligenceEnsureHydrated(app);
+    const todayIso = intelligenceReferenceToday(app) || '2026-11-11';
+    userMsg.createdAtIso = todayIso;
+    const currentMessages = Array.isArray(app.state.intelligenceMessages) ? app.state.intelligenceMessages : [];
+    app.setState({
+        intelligenceMessages: [...currentMessages, userMsg],
+        intelligenceDraft: '',
+        intelligencePreparedQuestion: q,
+        intelligenceDraftScope: scope
+    });
+    const catIntent = intelligenceParseCategorizeIntent(q, app.state.categories, todayIso);
+    if (catIntent) {
+        const built = intelligenceBuildCategorizeProposal(app, catIntent);
+        const reply = {
+            id: 'ast-' + (Date.now() + 1),
+            role: 'assistant',
+            text: built.text,
+            createdAt: intelligenceNowTime(),
+            createdAtIso: todayIso,
+            scopeLabel: scope.label,
+            periodLabel: scope.period,
+            status: 'done',
+            details: built.details,
+            proposal: built.proposal
+        };
+        intelligenceSyncThreadMessages(app, [...currentMessages, userMsg, reply], scope);
+        return;
+    }
+    const wantsLocalSummary = /\b(?:resumo\s+estruturado|tabela\s+de\s+categorias|resumo\s+das\s+minhas\s+movimenta[çc][õo]es)\b/i.test(q);
+    const structuredCard = wantsLocalSummary ? intelligenceBuildStructuredSummaryCard(app) : null;
+    let replyText = '';
+    let replyStatus = 'unavailable';
+    if (convState.kind === 'service_unavailable') {
+        replyStatus = 'error';
+        const errReason = priorError || (((_b = app.state.aiStatus) === null || _b === void 0 ? void 0 : _b.connected) && ((_c = app.state.aiStatus) === null || _c === void 0 ? void 0 : _c.secure) === false ? 'cofre de criptografia local indisponível' : 'falha temporária de comunicação com o serviço de IA');
+        replyText = '**Serviço temporariamente indisponível:** Não foi possível acessar o serviço de IA neste momento (' + errReason + '). Nenhuma resposta foi simulada.';
+    }
+    else if (convState.kind === 'chat_available') {
+        replyStatus = 'unimplemented';
+        replyText = '**Conta autenticada e serviço de conversação disponível, mas motor de conversação aberta ainda não implementado (aguarda I2-A):** Sua conexão OAuth com o ChatGPT está ativa e a capacidade de conversação está habilitada, porém o envio de perguntas abertas sobre dados financeiros reais ainda não foi implementado nesta etapa por segurança. Nenhuma resposta de IA foi simulada e nenhum provedor externo foi acionado.';
+    }
+    else if (convState.kind === 'oauth_connected_unimplemented') {
+        replyStatus = 'unimplemented';
+        replyText = '**Funcionalidade ainda não implementada (aguarda I2-A):** Sua conta ChatGPT está autenticada via OAuth, mas o serviço de conversação aberta sobre dados financeiros reais ainda não foi habilitado nesta etapa. Você já pode preparar prévias locais de categorização (ex.: *"Categorize minha compra do mercado de ontem como Alimentação"*) ou executar os casos homologados no Laboratório.';
+    }
+    else {
+        replyStatus = 'unavailable';
+        replyText = '**Conta desconectada (não autenticada) e conversação aberta pendente (I2-A):** O ChatGPT não está conectado neste computador e a conversação financeira livre será entregue na etapa I2-A. Nenhuma resposta de IA foi simulada. Prévias determinísticas de categorização continuam disponíveis localmente.';
+    }
+    const reply = {
+        id: 'ast-' + (Date.now() + 1),
+        role: 'assistant',
+        text: replyText,
+        createdAt: intelligenceNowTime(),
+        createdAtIso: todayIso,
+        scopeLabel: scope.label,
+        periodLabel: scope.period,
+        status: replyStatus,
+        details: 'Estado: ' + convState.pill + ' · Escopo: ' + scope.label + ' (' + scope.period + ') · Conversa salva com segurança no histórico local do perfil.',
+        structuredCard
+    };
+    intelligenceSyncThreadMessages(app, [...currentMessages, userMsg, reply], scope);
+}
+const INTELLIGENCE_STORAGE_PREFIX = 'mf_ai_threads_v1_';
+const INTELLIGENCE_MAX_THREADS = 24;
+const INTELLIGENCE_MAX_MESSAGES_PER_THREAD = 50;
+function intelligenceStorageKey(mode) {
+    return INTELLIGENCE_STORAGE_PREFIX + (mode === 'demo' ? 'demo' : 'real');
+}
+function intelligenceGetStorage(app) {
+    if (app === null || app === void 0 ? void 0 : app.chatStorage)
+        return app.chatStorage;
+    try {
+        if (typeof window !== 'undefined' && window.localStorage)
+            return window.localStorage;
+    }
+    catch (_e) { }
+    return null;
+}
+function intelligenceSanitizeStoredText(input) {
+    let text = String(input || '').slice(0, 4000);
+    text = text.replace(/\bsk-[A-Za-z0-9_-]{12,}\b/g, '[TOKEN_REMOVIDO]');
+    text = text.replace(/\bBearer\s+[A-Za-z0-9._\-]{12,}\b/gi, 'Bearer [TOKEN_REMOVIDO]');
+    text = text.replace(/\b(?:access_token|refresh_token|client_secret|id_token)\s*[:=]\s*[^\s,"']+/gi, '[SEGREDO_REMOVIDO]');
+    return text;
+}
+function intelligenceSanitizeStoredMetadata(input, depth = 0) {
+    if (depth > 6)
+        return null;
+    if (typeof input === 'string')
+        return intelligenceSanitizeStoredText(input);
+    if (typeof input === 'number')
+        return Number.isFinite(input) ? input : null;
+    if (typeof input === 'boolean')
+        return input;
+    if (Array.isArray(input))
+        return input.slice(0, 100).map(value => intelligenceSanitizeStoredMetadata(value, depth + 1));
+    if (input && typeof input === 'object') {
+        const safe = {};
+        for (const [key, value] of Object.entries(input).slice(0, 60)) {
+            if (/^(?:access[_-]?token|refresh[_-]?token|id[_-]?token|client[_-]?secret|api[_-]?key|private[_-]?key|password|authorization|cookie|session[_-]?secret)$/i.test(key))
+                continue;
+            if (!/^[A-Za-z][A-Za-z0-9_-]{0,64}$/.test(key))
+                continue;
+            safe[key] = intelligenceSanitizeStoredMetadata(value, depth + 1);
+        }
+        return safe;
+    }
+    return null;
+}
+function intelligenceSanitizeThreadList(rawList, mode) {
+    if (!Array.isArray(rawList))
+        return [];
+    const out = [];
+    for (const item of rawList.slice(0, INTELLIGENCE_MAX_THREADS)) {
+        if (!item || typeof item !== 'object' || typeof item.id !== 'string')
+            continue;
+        const itemMode = item.mode === 'demo' ? 'demo' : 'real';
+        if (itemMode !== mode)
+            continue;
+        const rawMsgs = Array.isArray(item.messages) ? item.messages.slice(-INTELLIGENCE_MAX_MESSAGES_PER_THREAD) : [];
+        const msgs = rawMsgs.filter((m) => m && typeof m.id === 'string' && typeof m.text === 'string').map((m) => ({
+            id: String(m.id).slice(0, 80),
+            role: (m.role === 'user' || m.role === 'system' ? m.role : 'assistant'),
+            text: intelligenceSanitizeStoredText(m.text),
+            createdAt: String(m.createdAt || '00:00').slice(0, 16),
+            createdAtIso: typeof m.createdAtIso === 'string' ? m.createdAtIso.slice(0, 10) : undefined,
+            scopeLabel: intelligenceSanitizeStoredText(String(m.scopeLabel || 'Geral')).slice(0, 60),
+            periodLabel: intelligenceSanitizeStoredText(String(m.periodLabel || '')).slice(0, 80),
+            status: (['sent', 'streaming', 'done', 'unavailable', 'unimplemented', 'error'].includes(m.status) ? m.status : 'done'),
+            details: m.details ? intelligenceSanitizeStoredText(m.details) : undefined,
+            proposal: m.proposal && typeof m.proposal === 'object' ? intelligenceSanitizeStoredMetadata(m.proposal) : null,
+            structuredCard: m.structuredCard && typeof m.structuredCard === 'object' ? intelligenceSanitizeStoredMetadata(m.structuredCard) : null
+        }));
+        out.push({
+            id: String(item.id).slice(0, 80),
+            title: intelligenceSanitizeStoredText(String(item.title || 'Conversa financeira')).slice(0, 90) || 'Conversa financeira',
+            createdAtIso: typeof item.createdAtIso === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(item.createdAtIso) ? item.createdAtIso : '2026-11-11',
+            updatedAtIso: typeof item.updatedAtIso === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(item.updatedAtIso) ? item.updatedAtIso : '2026-11-11',
+            updatedTime: String(item.updatedTime || '00:00').slice(0, 16),
+            scopeLabel: intelligenceSanitizeStoredText(String(item.scopeLabel || 'Visão geral')).slice(0, 60),
+            periodLabel: intelligenceSanitizeStoredText(String(item.periodLabel || '')).slice(0, 80),
+            mode,
+            messages: msgs
+        });
+    }
+    return out;
+}
+function intelligenceLoadStoredThreads(app, mode) {
+    var _a;
+    if (mode === void 0) { mode = (((_a = app === null || app === void 0 ? void 0 : app.state) === null || _a === void 0 ? void 0 : _a.mode) === 'demo' ? 'demo' : 'real'); }
+    const store = intelligenceGetStorage(app);
+    if (!store)
+        return { threads: [], error: '' };
+    try {
+        const raw = store.getItem(intelligenceStorageKey(mode));
+        if (!raw)
+            return { threads: [], error: '' };
+        const parsed = JSON.parse(raw);
+        const list = intelligenceSanitizeThreadList((parsed === null || parsed === void 0 ? void 0 : parsed.threads) || parsed, mode);
+        return { threads: list, error: '' };
+    }
+    catch (_e) {
+        return { threads: [], error: 'Não foi possível ler o histórico salvo localmente (dados corrompidos ou armazenamento bloqueado).' };
+    }
+}
+function intelligencePersistThreads(app, threads, mode) {
+    var _a;
+    if (mode === void 0) { mode = (((_a = app === null || app === void 0 ? void 0 : app.state) === null || _a === void 0 ? void 0 : _a.mode) === 'demo' ? 'demo' : 'real'); }
+    const store = intelligenceGetStorage(app);
+    if (!store)
+        return 'Armazenamento local indisponível. Esta conversa não foi salva.';
+    try {
+        const sanitized = intelligenceSanitizeThreadList(threads, mode);
+        const payload = JSON.stringify({ version: 1, mode, threads: sanitized });
+        store.setItem(intelligenceStorageKey(mode), payload);
+        return '';
+    }
+    catch (_e) {
+        return 'Não foi possível salvar o histórico de conversas no armazenamento local (limite atingido ou acesso negado).';
+    }
+}
+function intelligenceEnsureHydrated(app) {
+    var _a, _b, _c, _d, _f;
+    if (!app || !app.state)
+        return;
+    const mode = app.state.mode === 'demo' ? 'demo' : 'real';
+    if (app.state.intelligenceHydratedMode === mode && Array.isArray(app.state.intelligenceThreads))
+        return;
+    const loaded = intelligenceLoadStoredThreads(app, mode);
+    const existingMsgs = Array.isArray(app.state.intelligenceMessages) && app.state.intelligenceHydratedMode === undefined ? app.state.intelligenceMessages : [];
+    let threads = loaded.threads;
+    let activeId = ((_a = threads[0]) === null || _a === void 0 ? void 0 : _a.id) || null;
+    let activeMsgs = ((_b = threads[0]) === null || _b === void 0 ? void 0 : _b.messages) || [];
+    if (existingMsgs.length > 0 && threads.length === 0) {
+        const todayIso = intelligenceReferenceToday(app) || '2026-11-11';
+        const firstUser = existingMsgs.find(m => m.role === 'user');
+        const initialThread = {
+            id: 'th-init-' + Date.now(),
+            title: firstUser ? firstUser.text.slice(0, 60) : 'Conversa da sessão',
+            createdAtIso: todayIso,
+            updatedAtIso: todayIso,
+            updatedTime: ((_c = existingMsgs[existingMsgs.length - 1]) === null || _c === void 0 ? void 0 : _c.createdAt) || intelligenceNowTime(),
+            scopeLabel: ((_d = existingMsgs[0]) === null || _d === void 0 ? void 0 : _d.scopeLabel) || 'Visão geral',
+            periodLabel: ((_f = existingMsgs[0]) === null || _f === void 0 ? void 0 : _f.periodLabel) || '',
+            mode,
+            messages: existingMsgs
+        };
+        threads = [initialThread];
+        activeId = initialThread.id;
+        activeMsgs = existingMsgs;
+    }
+    app.state.intelligenceHydratedMode = mode;
+    app.state.intelligenceThreads = threads;
+    app.state.intelligenceActiveThreadId = activeId;
+    app.state.intelligenceMessages = activeMsgs;
+    if (loaded.error)
+        app.state.intelligenceStorageError = loaded.error;
+}
+function intelligenceSyncThreadMessages(app, messages, scopeOverride) {
+    var _a, _b;
+    intelligenceEnsureHydrated(app);
+    const mode = app.state.mode === 'demo' ? 'demo' : 'real';
+    const todayIso = intelligenceReferenceToday(app) || '2026-11-11';
+    const nowTime = intelligenceNowTime();
+    let threads = Array.isArray(app.state.intelligenceThreads) ? [...app.state.intelligenceThreads] : [];
+    let activeId = app.state.intelligenceActiveThreadId || null;
+    const trimmedMsgs = messages.slice(-INTELLIGENCE_MAX_MESSAGES_PER_THREAD);
+    const firstUser = trimmedMsgs.find(m => m.role === 'user');
+    const computedTitle = firstUser ? intelligenceSanitizeStoredText(firstUser.text).slice(0, 58) : 'Nova conversa';
+    const scopeLabel = (scopeOverride === null || scopeOverride === void 0 ? void 0 : scopeOverride.label) || ((_a = trimmedMsgs[trimmedMsgs.length - 1]) === null || _a === void 0 ? void 0 : _a.scopeLabel) || intelligencePageScope(app).label;
+    const periodLabel = (scopeOverride === null || scopeOverride === void 0 ? void 0 : scopeOverride.period) || ((_b = trimmedMsgs[trimmedMsgs.length - 1]) === null || _b === void 0 ? void 0 : _b.periodLabel) || intelligencePageScope(app).period;
+    const idx = threads.findIndex(t => t.id === activeId);
+    if (idx >= 0) {
+        const current = threads[idx];
+        const updatedThread = {
+            ...current,
+            title: current.title === 'Nova conversa' && firstUser ? computedTitle : current.title,
+            updatedAtIso: todayIso,
+            updatedTime: nowTime,
+            scopeLabel,
+            periodLabel,
+            messages: trimmedMsgs
+        };
+        threads.splice(idx, 1);
+        threads = [updatedThread, ...threads];
+    }
+    else if (trimmedMsgs.length > 0) {
+        const newThread = {
+            id: 'th-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
+            title: computedTitle,
+            createdAtIso: todayIso,
+            updatedAtIso: todayIso,
+            updatedTime: nowTime,
+            scopeLabel,
+            periodLabel,
+            mode,
+            messages: trimmedMsgs
+        };
+        activeId = newThread.id;
+        threads = [newThread, ...threads].slice(0, INTELLIGENCE_MAX_THREADS);
+    }
+    const storageErr = intelligencePersistThreads(app, threads, mode);
+    app.setState({
+        intelligenceHydratedMode: mode,
+        intelligenceThreads: threads,
+        intelligenceActiveThreadId: activeId,
+        intelligenceMessages: trimmedMsgs,
+        intelligenceStorageError: storageErr
+    });
+}
+function intelligenceCreateThread(app, initialTitle = 'Nova conversa') {
+    intelligenceEnsureHydrated(app);
+    const mode = app.state.mode === 'demo' ? 'demo' : 'real';
+    const todayIso = intelligenceReferenceToday(app) || '2026-11-11';
+    const scope = app.state.intelligencePanelOpen && app.state.intelligenceContextSnapshot
+        ? app.state.intelligenceContextSnapshot
+        : intelligencePageScope(app, app.state.page);
+    const newThread = {
+        id: 'th-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
+        title: initialTitle.slice(0, 60) || 'Nova conversa',
+        createdAtIso: todayIso,
+        updatedAtIso: todayIso,
+        updatedTime: intelligenceNowTime(),
+        scopeLabel: scope.label,
+        periodLabel: scope.period,
+        mode,
+        messages: []
+    };
+    const currentThreads = Array.isArray(app.state.intelligenceThreads) ? app.state.intelligenceThreads : [];
+    const nextThreads = [newThread, ...currentThreads].slice(0, INTELLIGENCE_MAX_THREADS);
+    const storageErr = intelligencePersistThreads(app, nextThreads, mode);
+    app.setState({
+        intelligenceHydratedMode: mode,
+        intelligenceThreads: nextThreads,
+        intelligenceActiveThreadId: newThread.id,
+        intelligenceMessages: [],
+        intelligenceDraft: '',
+        intelligenceStorageError: storageErr
+    });
+    return newThread.id;
+}
+function intelligenceSelectThread(app, threadId) {
+    intelligenceEnsureHydrated(app);
+    const threads = Array.isArray(app.state.intelligenceThreads) ? app.state.intelligenceThreads : [];
+    const found = threads.find(t => t.id === threadId);
+    if (!found)
+        return;
+    app.setState({
+        intelligenceActiveThreadId: found.id,
+        intelligenceMessages: found.messages,
+        intelligenceDraftScope: { label: found.scopeLabel, period: found.periodLabel, mode: found.mode === 'demo' ? 'Demonstração' : 'Pessoal' }
+    });
+}
+function intelligenceDeleteThread(app, threadId, confirmFn) {
+    intelligenceEnsureHydrated(app);
+    const threads = Array.isArray(app.state.intelligenceThreads) ? app.state.intelligenceThreads : [];
+    const target = threads.find(t => t.id === threadId);
+    if (!target)
+        return false;
+    const ask = confirmFn || (typeof confirm === 'function' ? confirm : () => false);
+    if (!ask('Excluir permanentemente a conversa “' + target.title + '” deste perfil?'))
+        return false;
+    const mode = app.state.mode === 'demo' ? 'demo' : 'real';
+    const remaining = threads.filter(t => t.id !== threadId);
+    const nextActive = app.state.intelligenceActiveThreadId === threadId ? (remaining[0] || null) : (remaining.find(t => t.id === app.state.intelligenceActiveThreadId) || remaining[0] || null);
+    const storageErr = intelligencePersistThreads(app, remaining, mode);
+    if (storageErr) {
+        app.setState({ intelligenceStorageError: storageErr });
+        return false;
+    }
+    app.setState({
+        intelligenceThreads: remaining,
+        intelligenceActiveThreadId: nextActive ? nextActive.id : null,
+        intelligenceMessages: nextActive ? nextActive.messages : [],
+        intelligenceStorageError: storageErr
+    });
+    return true;
+}
+function intelligenceClearHistory(app, confirmFn) {
+    intelligenceEnsureHydrated(app);
+    const threads = Array.isArray(app.state.intelligenceThreads) ? app.state.intelligenceThreads : [];
+    if (!threads.length)
+        return false;
+    const ask = confirmFn || (typeof confirm === 'function' ? confirm : () => false);
+    if (!ask('Excluir todas as ' + threads.length + ' conversa(s) salvas neste perfil?'))
+        return false;
+    const mode = app.state.mode === 'demo' ? 'demo' : 'real';
+    const storageErr = intelligencePersistThreads(app, [], mode);
+    if (storageErr) {
+        app.setState({ intelligenceStorageError: storageErr });
+        return false;
+    }
+    app.setState({
+        intelligenceThreads: [],
+        intelligenceActiveThreadId: null,
+        intelligenceMessages: [],
+        intelligenceStorageError: storageErr
+    });
+    return true;
+}
+function intelligenceSwitchProfileMode(app, newMode) {
+    const loaded = intelligenceLoadStoredThreads(app, newMode);
+    const first = loaded.threads[0] || null;
+    app.setState({
+        mode: newMode,
+        intelligenceHydratedMode: newMode,
+        intelligenceThreads: loaded.threads,
+        intelligenceActiveThreadId: first ? first.id : null,
+        intelligenceMessages: first ? first.messages : [],
+        intelligenceStorageError: loaded.error
+    });
+}
+function intelligenceSearchThreads(app, query = app.state.intelligenceHistoryQuery || '') {
+    intelligenceEnsureHydrated(app);
+    const threads = Array.isArray(app.state.intelligenceThreads) ? app.state.intelligenceThreads : [];
+    const qFold = intelligenceFoldText(query);
+    const sorted = [...threads].sort((a, b) => b.updatedAtIso.localeCompare(a.updatedAtIso) || b.updatedTime.localeCompare(a.updatedTime));
+    if (!qFold)
+        return sorted;
+    return sorted.filter(t => {
+        const hay = intelligenceFoldText([t.title, t.scopeLabel, t.periodLabel, ...t.messages.map(m => m.text)].join(' '));
+        return hay.includes(qFold);
+    });
+}
+function intelligenceGroupThreadsByDate(app, query = app.state.intelligenceHistoryQuery || '') {
+    const filtered = intelligenceSearchThreads(app, query);
+    if (!filtered.length)
+        return [];
+    const todayIso = intelligenceReferenceToday(app) || '2026-11-11';
+    const yesterdayIso = intelligenceShiftIsoDate(todayIso, -1) || '';
+    const groupsMap = { 'Hoje': [], 'Ontem': [], 'Anteriores': [] };
+    for (const th of filtered) {
+        if (th.updatedAtIso === todayIso)
+            groupsMap['Hoje'].push(th);
+        else if (yesterdayIso && th.updatedAtIso === yesterdayIso)
+            groupsMap['Ontem'].push(th);
+        else
+            groupsMap['Anteriores'].push(th);
+    }
+    return ['Hoje', 'Ontem', 'Anteriores'].filter(k => groupsMap[k].length > 0).map(k => ({ label: k, items: groupsMap[k] }));
+}
+function intelligenceAllProposals(app) {
+    intelligenceEnsureHydrated(app);
+    const activeMsgs = Array.isArray(app.state.intelligenceMessages) ? app.state.intelligenceMessages : [];
+    const fromActive = activeMsgs.map(m => m.proposal).filter(Boolean);
+    if (fromActive.length > 0)
+        return fromActive;
+    const threads = Array.isArray(app.state.intelligenceThreads) ? app.state.intelligenceThreads : [];
+    const all = [];
+    for (const t of threads) {
+        for (const m of t.messages) {
+            if (m.proposal)
+                all.push(m.proposal);
+        }
+    }
+    return all;
+}
+function intelligenceBuildStructuredSummaryCard(app) {
+    var _a, _b, _c, _d, _f;
+    const s = (app === null || app === void 0 ? void 0 : app.state) || {};
+    const moneyFmt = (cents) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(cents / 100);
+    const bankTxs = s.mode === 'demo' ? [] : (Array.isArray((_b = (_a = s.bank) === null || _a === void 0 ? void 0 : _a.data) === null || _b === void 0 ? void 0 : _b.transactions) ? s.bank.data.transactions : []);
+    const manualTxs = Array.isArray((_c = s.data) === null || _c === void 0 ? void 0 : _c.transactions) ? s.data.transactions : [];
+    if (!bankTxs.length && !manualTxs.length)
+        return null;
+    const useBank = s.mode !== 'demo' && bankTxs.length > 0 &&
+        (s.dashboardSource !== 'manual' || manualTxs.length === 0);
+    const records = useBank ? bankTxs : manualTxs;
+    const sourceLabel = useBank ? 'contas conectadas' : 'lançamentos manuais';
+    let totalExpense = 0, totalIncome = 0, postedCount = 0, excluded = 0;
+    const byCat = new Map();
+    if (typeof FinancePeriodLedger === 'undefined')
+        return { title: 'Resumo indisponível', footnote: 'Motor financeiro indisponível. Nenhum total foi calculado.' };
+    for (const rec of records) {
+        if (!rec || typeof rec !== 'object') {
+            excluded++;
+            continue;
+        }
+        const row = useBank ? {
+            date: rec.date, status: rec.status, amountCents: rec.amount, nature: rec.nature,
+            category: rec.category || 'Outros',
+            splits: !rec.splitOutdated && Array.isArray(rec.splits) ? rec.splits.map((p) => ({ category: p === null || p === void 0 ? void 0 : p.category, amountCents: p === null || p === void 0 ? void 0 : p.amount })) : undefined
+        } : { date: rec.date, kind: rec.kind, amountCents: rec.amount, category: rec.category || 'Outros' };
+        try {
+            const result = FinancePeriodLedger.aggregateFinancePeriod([row], {
+                start: rec.date, end: rec.date, source: useBank ? 'bank' : 'manual'
+            });
+            excluded += result.excluded;
+            postedCount += result.transactionsIncluded;
+            totalIncome += result.incomeCents;
+            totalExpense += result.expenseCents;
+            for (const part of result.expenses) {
+                const prior = byCat.get(part.name) || { expense: 0, count: 0 };
+                byCat.set(part.name, { expense: prior.expense + part.amountCents, count: prior.count + 1 });
+            }
+        }
+        catch {
+            excluded++;
+        }
+    }
+    const rows = [...byCat.entries()].sort((a, b) => b[1].expense - a[1].expense).slice(0, 5).map(([cat, info]) => ({
+        col1: cat, col2: String(info.count) + ' reg.', col3: moneyFmt(info.expense)
+    }));
+    const partial = useBank && !!((_f = (_d = s.bank) === null || _d === void 0 ? void 0 : _d.data) === null || _f === void 0 ? void 0 : _f.truncated);
+    return {
+        title: 'Resumo determinístico local (sem uso de IA)',
+        subtitle: (s.mode === 'demo' ? 'Perfil Demonstração' : 'Perfil Pessoal') + ' · origem: ' + sourceLabel + ' · ' + records.length + ' linhas carregadas',
+        metrics: [
+            { label: 'Entradas confirmadas carregadas', value: moneyFmt(totalIncome), tone: 'positive' },
+            { label: 'Saídas confirmadas carregadas', value: moneyFmt(totalExpense), tone: 'warning' },
+            { label: 'Registros válidos', value: String(postedCount), tone: 'neutral' }
+        ],
+        headers: ['Categoria', 'Qtd.', 'Despesas carregadas'], rows,
+        footnote: (partial ? 'Histórico bancário parcial: estes valores não representam todos os registros. ' : '') +
+            'Soma de uma única origem (' + sourceLabel + '), nunca banco + manual; ' + excluded +
+            ' registros pendentes/desconsiderados fora dos totais. Valores apenas dos registros carregados, não saldo auditado.'
+    };
+}
+let workDemoSequence = 0;
+function workDemoId() { return 'work-demo-' + (++workDemoSequence); }
+function workDemoInitial() {
+    const id = workDemoId();
+    return { enabled: true, tab: 'today', source: 'bank', status: 'loading', error: '', revision: 0, snapshot: null,
+        draft: '', threads: [{ id, title: 'Nova conversa', messages: [] }], activeId: id, proposal: null, audit: [] };
+}
+function workDemoMoney(n) { return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(n / 100); }
+function workDemoSnapshot(raw, source) {
+    var _a, _b, _c, _d, _e, _f, _g;
+    if (!raw || raw.source !== source || raw.stage !== 'synthetic_financial_context_preview' ||
+        raw.onlyFictitiousFinancialData !== true || raw.realFinancialDataIncluded !== false ||
+        raw.inferenceCalled !== false || raw.changesApplied !== false || raw.cloudCutoverAllowed !== false ||
+        raw.engine !== 'shared/finance-period-ledger.mjs')
+        throw Error('O adaptador não confirmou a origem fictícia.');
+    const money = (v) => { if (!Number.isSafeInteger(v))
+        throw Error('Valor fictício inválido.'); return v; };
+    const text = (v) => { if (typeof v !== 'string' || v.length > 300)
+        throw Error('Texto fictício inválido.'); return v; };
+    if (!Array.isArray(raw.budgets) || !Array.isArray(raw.warnings))
+        throw Error('Contexto fictício incompleto.');
+    return { source, engine: raw.engine, period: { start: text((_a = raw.period) === null || _a === void 0 ? void 0 : _a.start), end: text((_b = raw.period) === null || _b === void 0 ? void 0 : _b.end) },
+        realized: { incomeCents: money((_c = raw.realized) === null || _c === void 0 ? void 0 : _c.incomeCents), expenseCents: money((_d = raw.realized) === null || _d === void 0 ? void 0 : _d.expenseCents), netCents: money((_e = raw.realized) === null || _e === void 0 ? void 0 : _e.netCents) },
+        budgets: raw.budgets.map((b) => ({ category: text(b.category), limitCents: money(b.limitCents), spentCents: money(b.spentCents), pct: b.pct === null ? null : money(b.pct) })),
+        future: { pendingConfirmedExpensesCents: money((_f = raw.future) === null || _f === void 0 ? void 0 : _f.pendingConfirmedExpensesCents), futureUncertainIncomeCents: money((_g = raw.future) === null || _g === void 0 ? void 0 : _g.futureUncertainIncomeCents) },
+        warnings: raw.warnings.map(text) };
+}
+async function workDemoLoad(app, source = 'bank', adapter) {
+    var _a;
+    const previous = app.state.workIntelligenceDemo || workDemoInitial();
+    const revision = previous.revision + 1;
+    app.setState({ workIntelligenceDemo: { ...previous, enabled: true, source, revision, status: 'loading', error: '', snapshot: null,
+            proposal: ((_a = previous.proposal) === null || _a === void 0 ? void 0 : _a.status) === 'pending' ? { ...previous.proposal, status: 'stale' } : previous.proposal } });
+    try {
+        const read = adapter || (typeof desktop !== 'undefined' && (desktop === null || desktop === void 0 ? void 0 : desktop.aiFinancialContextDemo) ?
+            (s) => desktop.aiFinancialContextDemo(s) : null);
+        if (!read)
+            throw Error('O adaptador de demonstração está indisponível neste ambiente.');
+        const snapshot = workDemoSnapshot(await read(source), source);
+        app.setState((state) => {
+            const current = state.workIntelligenceDemo;
+            return (current === null || current === void 0 ? void 0 : current.enabled) && current.revision === revision ? { workIntelligenceDemo: { ...current, snapshot, status: 'ready' } } : {};
+        });
+    }
+    catch (error) {
+        app.setState((state) => {
+            const current = state.workIntelligenceDemo;
+            return (current === null || current === void 0 ? void 0 : current.enabled) && current.revision === revision ? { workIntelligenceDemo: { ...current, status: 'error', snapshot: null, error: String((error === null || error === void 0 ? void 0 : error.message) || 'Falha ao carregar demonstração.').slice(0, 180) } } : {};
+        });
+    }
+}
+function workDemoUpdate(app, patch) {
+    app.setState((state) => ({ workIntelligenceDemo: { ...state.workIntelligenceDemo, ...patch } }));
+}
+function workDemoExit(app) {
+    app.setState((state) => ({ workIntelligenceDemo: { ...state.workIntelligenceDemo, enabled: false, revision: state.workIntelligenceDemo.revision + 1 }, intelligencePanelOpen: false }));
+}
+function workDemoNewThread(app) {
+    const d = app.state.workIntelligenceDemo, id = workDemoId();
+    workDemoUpdate(app, { threads: [{ id, title: 'Nova conversa', messages: [] }, ...d.threads].slice(0, 12), activeId: id, draft: '', tab: 'chat' });
+}
+function workDemoPrepare(app) {
+    const d = app.state.workIntelligenceDemo;
+    if ((d === null || d === void 0 ? void 0 : d.status) !== 'ready' || !d.snapshot)
+        return;
+    const b = d.snapshot.budgets.find(b => b.spentCents > b.limitCents);
+    if (!b)
+        return;
+    workDemoUpdate(app, { tab: 'actions', proposal: { id: workDemoId(), revision: d.revision, source: d.source, category: b.category,
+            beforeCents: b.limitCents, afterCents: b.spentCents, status: 'pending' } });
+}
+function workDemoResolve(app, id, decision) {
+    var _a;
+    const d = app.state.workIntelligenceDemo, p = d === null || d === void 0 ? void 0 : d.proposal;
+    if (!(d === null || d === void 0 ? void 0 : d.enabled) || !p || p.id !== id || p.status !== 'pending')
+        return;
+    const current = (_a = d.snapshot) === null || _a === void 0 ? void 0 : _a.budgets.find(b => b.category === p.category);
+    const valid = d.status === 'ready' && p.revision === d.revision && p.source === d.source &&
+        (current === null || current === void 0 ? void 0 : current.limitCents) === p.beforeCents && (current === null || current === void 0 ? void 0 : current.spentCents) === p.afterCents;
+    const status = decision === 'deny' ? 'denied' : valid ? 'approved' : 'stale';
+    workDemoUpdate(app, { proposal: { ...p, status }, audit: [...d.audit, { id: p.id, decision, result: status }].slice(-30) });
+}
+const WORK_DEMO_QUESTIONS = ['Quanto gastei com alimentação?', 'Quais orçamentos estão em risco?', 'Quanto tenho comprometido?', 'Posso comprar um celular parcelado?'];
+function workDemoAnswer(snapshot, question) {
+    const q = intelligenceFoldText(question);
+    if (q.includes('alimentacao')) {
+        const b = snapshot.budgets.find(b => b.category === 'Alimentação');
+        return b ? 'Alimentação: ' + workDemoMoney(b.spentCents) + '. Valor confirmado no exemplo para ' + snapshot.period.start + ' a ' + snapshot.period.end + '.' : 'Não há dados suficientes de alimentação neste exemplo.';
+    }
+    if (q.includes('orcamento') || q.includes('limite')) {
+        const risk = snapshot.budgets.filter(b => b.spentCents > b.limitCents);
+        return risk.length ? risk.map(b => b.category + ': ' + workDemoMoney(b.spentCents) + ' gastos, limite ' + workDemoMoney(b.limitCents) + '.').join(' ') : 'Nenhum orçamento do exemplo está excedido. Isso não prevê o restante do mês.';
+    }
+    if (q.includes('comprometido') || q.includes('compromisso'))
+        return 'Compromissos futuros confirmados do exemplo: ' + workDemoMoney(snapshot.future.pendingConfirmedExpensesCents) + '. Receitas incertas: ' + workDemoMoney(snapshot.future.futureUncertainIncomeCents) + ', fora do realizado.';
+    if (q.includes('celular') || q.includes('comprar') || q.includes('parcel'))
+        return 'Dados insuficientes: não há saldo bancário verificado nem projeção certificada. Use Simular compra para informar as premissas; este exemplo não conclui se a compra cabe no seu caixa.';
+    if (q.includes('categoria') || q.includes('categorize') || q.includes('planej'))
+        return 'Esta demonstração prepara somente ajustes de limite fictício. Categorização e compromissos supervisionados permanecem como próximas fatias; nenhum registro será alterado.';
+    return 'Receitas do exemplo: ' + workDemoMoney(snapshot.realized.incomeCents) + '; despesas: ' + workDemoMoney(snapshot.realized.expenseCents) + '. Diferença: ' + workDemoMoney(snapshot.realized.netCents) + ', que não representa saldo disponível. Resposta determinística, sem modelo de IA.';
+}
+function workDemoSend(app, question) {
+    const d = app.state.workIntelligenceDemo, q = String(question || '').trim().slice(0, 750);
+    if (!q || (d === null || d === void 0 ? void 0 : d.status) !== 'ready' || !d.snapshot)
+        return;
+    const thread = d.threads.find(t => t.id === d.activeId);
+    if (!thread)
+        return;
+    const messages = [...thread.messages,
+        { id: workDemoId(), role: 'user', text: q, source: d.source },
+        { id: workDemoId(), role: 'assistant', text: workDemoAnswer(d.snapshot, q), question: q, source: d.source }];
+    workDemoUpdate(app, { draft: '', threads: d.threads.map(t => t.id === thread.id ? { ...t, title: t.messages.length ? t.title : q.slice(0, 42), messages: messages.slice(-50) } : t) });
+}
+function renderWorkDemoProposal(app, d) {
+    const p = d.proposal;
+    if (!p)
+        return h('div', { className: 'mf-work-empty' }, h('h3', {}, 'Nenhuma alteração preparada'), h('p', {}, 'Escolha um alerta no radar para preparar uma prévia fictícia.'));
+    const labels = { pending: 'Aguardando sua decisão', approved: 'Simulação concluída · nada gravado', denied: 'Proposta negada · nada gravado', stale: 'Prévia desatualizada · prepare novamente' };
+    return h('section', { className: 'mf-work-proposal', 'aria-label': 'Prévia fictícia de ajuste de limite' }, h('span', { className: 'mf-work-badge' }, 'Recomendação · demonstração'), h('h3', {}, 'Revisar limite de ' + p.category), h('p', {}, 'Exemplo de ajuste ao gasto já lançado. Não é uma recomendação para o seu orçamento pessoal.'), h('div', { className: 'mf-work-diff' }, h('div', {}, h('small', {}, 'Limite atual fictício'), h('strong', {}, workDemoMoney(p.beforeCents))), h('span', { 'aria-hidden': 'true' }, '→'), h('div', {}, h('small', {}, 'Prévia fictícia'), h('strong', {}, workDemoMoney(p.afterCents)))), h('p', {}, 'Validação: fonte, revisão, categoria e valores devem continuar iguais.'), h('p', { role: 'status', 'data-work-proposal-status': p.status }, labels[p.status]), p.status === 'pending' ? h('div', { className: 'mf-work-actions' }, h('button', { type: 'button', className: 'primary-button', onClick: () => workDemoResolve(app, p.id, 'allow') }, 'Permitir simulação'), h('button', { type: 'button', className: 'ghost-button', onClick: () => workDemoResolve(app, p.id, 'deny') }, 'Negar')) : null, h('small', {}, 'Sem escrita no SQLite. Decisão registrada apenas nesta sessão demonstrativa.'));
+}
+function renderWorkDemoChat(app, d, compact = false) {
+    const thread = d.threads.find(t => t.id === d.activeId);
+    return h('div', { className: 'mf-work-conversation' }, h('div', { className: 'mf-work-actions' }, h('button', { type: 'button', className: 'ghost-button', onClick: () => workDemoNewThread(app) }, 'Nova conversa fictícia'), h('select', { 'aria-label': 'Conversas fictícias', value: d.activeId, onChange: (e) => workDemoUpdate(app, { activeId: e.target.value }) }, ...d.threads.map(t => h('option', { key: t.id, value: t.id }, t.title)))), h('div', { className: 'mf-work-messages', role: 'log', 'aria-live': 'polite', 'aria-label': 'Mensagens da demonstração' }, !(thread === null || thread === void 0 ? void 0 : thread.messages.length) ? h('div', { className: 'mf-work-empty' }, h('h3', {}, 'Converse com os números do exemplo'), h('p', {}, 'Respostas locais explicáveis. Sem envio para IA.')) : null, ...((thread === null || thread === void 0 ? void 0 : thread.messages) || []).map(m => h('article', { key: m.id, className: 'mf-work-message is-' + m.role }, h('small', {}, m.role === 'user' ? 'Você · demonstração' : 'Assistente · resposta determinística'), h('p', {}, m.text), m.role === 'assistant' ? h('details', {}, h('summary', {}, 'Dados e cálculo consultados'), h('p', {}, 'Fonte fictícia: ' + m.source + '. Motor: shared/finance-period-ledger.mjs. Novembro/2026. Banco e manual separados; pendências e transferências fora do realizado. Sem saldo verificado.')) : null))), h('div', { className: 'mf-work-prompts' }, ...WORK_DEMO_QUESTIONS.slice(0, compact ? 2 : 4).map(q => h('button', { type: 'button', key: q, className: 'ghost-button', disabled: d.status !== 'ready', onClick: () => workDemoSend(app, q) }, q))), h('form', { className: 'mf-work-composer', onSubmit: (e) => { e.preventDefault(); workDemoSend(app, d.draft); } }, h('label', {}, 'Pergunta sobre os dados fictícios', h('textarea', { rows: 2, maxLength: 750, value: d.draft, disabled: d.status !== 'ready', onChange: (e) => workDemoUpdate(app, { draft: e.target.value }) })), h('button', { className: 'primary-button', type: 'submit', disabled: d.status !== 'ready' || !d.draft.trim() }, 'Enviar demonstração')));
+}
+function renderWorkIntelligenceDemo(app) {
+    const d = app.state.workIntelligenceDemo, r = d.snapshot;
+    return h('section', { className: 'section mf-work-demo', 'aria-label': 'Demonstração da nova Inteligência' }, h('header', { className: 'mf-work-hero' }, h('div', {}, h('span', { className: 'micro-label' }, 'INTELIGÊNCIA · DEMONSTRAÇÃO ISOLADA'), h('h2', {}, 'Suas próximas decisões, com contexto.'), h('p', {}, 'Dados fictícios de novembro de 2026 · sem IA externa · sem gravação financeira.')), h('button', { type: 'button', className: 'ghost-button', onClick: () => workDemoExit(app) }, 'Sair da demonstração')), h('div', { className: 'mf-work-toolbar' }, h('label', {}, 'Fonte do exemplo', h('select', { value: d.source, onChange: (e) => void workDemoLoad(app, e.target.value) }, h('option', { value: 'bank' }, 'Banco fictício'), h('option', { value: 'manual' }, 'Manual fictício'))), h('span', { className: 'mf-work-badge' }, 'Histórico temporário · somente nesta sessão')), h('div', { role: 'tablist', 'aria-label': 'Áreas da demonstração', className: 'mf-ai-tabbar' }, ...['today', 'chat', 'actions'].map((tab, i) => h('button', { key: tab, id: 'mf-work-tab-' + tab, role: 'tab', type: 'button', 'aria-selected': d.tab === tab, 'aria-controls': 'mf-work-panel', tabIndex: d.tab === tab ? 0 : -1, className: d.tab === tab ? 'active' : '', onClick: () => workDemoUpdate(app, { tab }), onKeyDown: (e) => { const next = intelligenceNextTab(tab, e.key); if (next) {
+            e.preventDefault();
+            workDemoUpdate(app, { tab: next });
+            setTimeout(() => { var _a; return (_a = document.getElementById('mf-work-tab-' + next)) === null || _a === void 0 ? void 0 : _a.focus(); }, 0);
+        } } }, ['Hoje', 'Conversar', 'Ações'][i]))), h('div', { id: 'mf-work-panel', role: 'tabpanel', 'aria-labelledby': 'mf-work-tab-' + d.tab }, d.status === 'loading' ? h('p', { role: 'status' }, 'Preparando contexto fictício…') : d.status === 'error' ? h('div', { role: 'alert' }, h('p', {}, d.error), h('button', { type: 'button', className: 'ghost-button', onClick: () => void workDemoLoad(app, d.source) }, 'Tentar novamente')) :
+        d.tab === 'chat' ? renderWorkDemoChat(app, d) : d.tab === 'actions' ? h('div', {}, renderWorkDemoProposal(app, d), h('details', {}, h('summary', {}, 'Decisões desta sessão (' + d.audit.length + ')'), ...d.audit.map((a, i) => h('p', { key: i }, a.id + ' · ' + a.decision + ' · ' + a.result + ' · sem gravação')))) :
+            r ? h('div', { className: 'mf-work-radar' }, h('div', { className: 'mf-work-primary' }, h('span', { className: 'mf-work-badge' }, 'Alerta · confirmado no exemplo'), h('h3', {}, 'Comece pelos limites que já foram ultrapassados'), ...r.budgets.filter(b => b.spentCents > b.limitCents).map(b => h('div', { key: b.category, className: 'mf-work-budget' }, h('strong', {}, b.category), h('span', {}, workDemoMoney(b.spentCents) + ' / ' + workDemoMoney(b.limitCents)), h('small', {}, b.pct === null ? 'Limite zero · percentual indefinido' : b.pct + '% do limite fictício'), h('progress', { max: 100, value: Math.min(b.pct || 0, 100), 'aria-label': 'Uso fictício de ' + b.category }))), h('button', { type: 'button', className: 'primary-button', disabled: !r.budgets.some(b => b.spentCents > b.limitCents), onClick: () => workDemoPrepare(app) }, 'Preparar ajuste fictício')), h('div', { className: 'mf-work-secondary' }, h('span', { className: 'mf-work-badge' }, 'Confirmado no exemplo'), h('h3', {}, 'Compromissos à frente'), h('strong', { className: 'mf-work-number' }, workDemoMoney(r.future.pendingConfirmedExpensesCents)), h('p', {}, 'Pagamentos futuros confirmados do exemplo. Receitas incertas de ' + workDemoMoney(r.future.futureUncertainIncomeCents) + ' ficam fora do realizado.'), h('button', { type: 'button', className: 'ghost-button', onClick: () => { workDemoUpdate(app, { tab: 'chat' }); workDemoSend(app, 'Quanto tenho comprometido?'); } }, 'Entender os compromissos')), h('aside', { className: 'mf-work-quality' }, h('span', { className: 'mf-work-badge' }, 'Dados insuficientes'), h('h3', {}, 'Quanto posso gastar? Ainda não sabemos.'), h('p', {}, 'Saldo e cobertura histórica não foram verificados. A diferença entre receitas e despesas não é dinheiro livre.'), h('details', {}, h('summary', {}, 'Ver origem e limitações'), h('p', {}, r.engine + ' · ' + r.period.start + ' a ' + r.period.end), h('ul', {}, ...r.warnings.map((w, i) => h('li', { key: i }, w)))))) : null));
+}
+function workDemoPanelKey(app, e) {
+    if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        app.setState({ intelligencePanelOpen: false });
+        return;
+    }
+    if (e.key !== 'Tab')
+        return;
+    const controls = Array.from(e.currentTarget.querySelectorAll('button:not([disabled]),textarea:not([disabled]),select:not([disabled]),summary,[tabindex="0"]'));
+    const first = controls[0], last = controls[controls.length - 1];
+    if (!first)
+        return;
+    if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+    }
+    else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+    }
+}
+const workDemoPanelRefs = new WeakMap();
+function workDemoPanelRef(app) {
+    if (!workDemoPanelRefs.has(app)) {
+        let origin = null;
+        workDemoPanelRefs.set(app, (element) => {
+            var _a;
+            if (element) {
+                origin = document.activeElement;
+                (_a = element.querySelector('button')) === null || _a === void 0 ? void 0 : _a.focus();
+            }
+            else if (origin === null || origin === void 0 ? void 0 : origin.isConnected)
+                origin.focus();
+        });
+    }
+    return workDemoPanelRefs.get(app);
+}
+function renderWorkIntelligencePanel(app) {
+    const d = app.state.workIntelligenceDemo, context = intelligenceContextFor(app.state.intelligenceContext).label;
+    return h('div', { className: 'mf-ai-backdrop', onMouseDown: (e) => { if (e.target === e.currentTarget)
+            app.setState({ intelligencePanelOpen: false }); } }, h('aside', { className: 'mf-ai-drawer mf-work-demo mf-work-drawer', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Demonstração contextual de ' + context, ref: workDemoPanelRef(app), onKeyDown: (e) => workDemoPanelKey(app, e) }, h('header', { className: 'mf-work-hero' }, h('div', {}, h('span', { className: 'micro-label' }, 'DEMONSTRAÇÃO · CONTEXTO AUTORIZADO'), h('h2', {}, context), h('p', {}, 'Apenas o nome da seção; os números são fictícios.')), h('div', { className: 'mf-work-actions' }, h('button', { type: 'button', className: 'ghost-button', onClick: () => app.setState({ page: 'intelligence', intelligencePanelOpen: false, workIntelligenceDemo: { ...d, tab: 'chat' } }) }, 'Expandir demonstração'), h('button', { type: 'button', className: 'close-button', 'aria-label': 'Fechar demonstração contextual', onClick: () => app.setState({ intelligencePanelOpen: false }) }, '×'))), renderWorkDemoChat(app, d, true)));
 }

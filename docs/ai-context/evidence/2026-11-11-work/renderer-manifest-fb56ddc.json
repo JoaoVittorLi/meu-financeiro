@@ -1,0 +1,45 @@
+{
+  "schema": "mf-renderer-provenance-v2",
+  "sourceCommit": "fb56ddc217ae9a500f1ac6421cc9bc3ddfcb5c5b",
+  "version": "0.9.5-beta.8",
+  "toolchain": {
+    "node": "v22.23.4",
+    "typescript": "5.8.3",
+    "electron": "45.2.3"
+  },
+  "appEntry": "app/index.html",
+  "bundle": "app/app.js",
+  "sourceProof": {
+    "compilerOutputSHA256": "bf5d5a30e524ca9c26e7096a9366f4ed4f26130db3059b24c13607aff9b488d2",
+    "inputSHA256": {
+      "src/ai-markdown.ts": "d95ba13a9fa57313af703fcc0b80053c6b0b166199e3c65392094a039921028b",
+      "src/app.ts": "6c1b7a0dee66f87e846dfbaf98db7422b7716521edea6b70c518c333d436559d",
+      "src/intelligence-integration.ts": "a5c0fe99fea114edd842952cfa6c727b7f5196d21c0a794da1917d6c51009abc",
+      "src/intelligence-staging.ts": "8188df912160ccd24149541dd66ef3c44bdf558aab6555cff6555c91972a1697",
+      "src/intelligence-view.ts": "e194ee939ac970ac74b3ae1d62a5b698456618dd7c22981fac39e167c49ccad5",
+      "src/plan-view.ts": "b16735a33747f69ee19df0bd877bdf6da44761231c91d291fb849025166a949b",
+      "tsconfig.json": "9d81433a7ef4391b5c3d22a2de493ca1f8bcea574cf6ba6376750ad20e8280f5"
+    }
+  },
+  "assets": {
+    "app/app.js": "bf5d5a30e524ca9c26e7096a9366f4ed4f26130db3059b24c13607aff9b488d2",
+    "app/appearance.js": "dd107b49ab30f4cd98905245ce69c7a77d7927bbc428f16076ac7e794c126542",
+    "app/decisions.css": "7b478262be72f66abd1265cf7563ff985302c68e9faac1bdd9e42fc908312483",
+    "app/design-system.css": "203431494221852feb6090af51514bca96afe9bf046a6153c332eeda62b4069e",
+    "app/icon.png": "636987d8389ba96986c36399b925252757f51f66ea8df9fbbc8f00ebcc7a099e",
+    "app/icon.svg": "698d0be311911de782dffa4bed5d27dbf50b50490cd8c8c0b9a8cd96f3b8194b",
+    "app/index.html": "e1227b905b3df1ecaf0f96f8c6e33246ce2cd17e9273a933ecbb6bc3e983927b",
+    "app/intelligence-staging.css": "c157f321542ed331673227bc509343a732cb744a989441233d0fbb698859ee9e",
+    "app/intelligence.css": "53f298003f84d64cf5d69af44200c2582383788c6e1a790eebc4313f2a03eebc",
+    "app/movements-productivity.css": "ed47c75748aa0b463b5450da2fdacb61f9a6614bba387f3bfe5138788463e688",
+    "app/operations.css": "5f0944b36a54a85427b21f72e4e0a9352a4cddc61a2d64942b88c455f35400b7",
+    "app/overview.css": "18eaefc6b858dfb94de83f8902170d7534d72605d1253bc1261d3bd28e22e8a2",
+    "app/planning-productivity.css": "e050414334f308970536fe80cd023c339d6daa9eab90fe7ce7c6878443ec12c5",
+    "app/premium-interactions.css": "76d7425b2c795f02df5d427e7cfddc9336349f7ad8dde2f3b52e38395959eba8",
+    "app/refinement.css": "6b72a09ac129b6906e11e9225370ad66115aeb5e84dad8fc57c4185bc131e6c8",
+    "app/style.css": "72fc1421565870738be090fd79ad7696dc9305df3b5870e8e6774c631448908d",
+    "app/vendor/LICENSE_REACT.txt": "25be65f73be3ff2acda5f508e4f4cd733f51c5b7f65bc04f51a0c0b0557b8ae9",
+    "app/vendor/react-dom.min.js": "c7a65157caebd9af7e108f1f1eb8b6e2c8fafb141d0f4c2a4d4dfd851c52ec9e",
+    "app/vendor/react.min.js": "de59b0d4504aa0350c13775fec9b78859f3eda83dea21d60dded98bb7866d54a"
+  }
+}

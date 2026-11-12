@@ -1,0 +1,47 @@
+{
+  "schema": "mf-renderer-provenance-v2",
+  "sourceCommit": "2d867adb08048c5fa32eed4fa42a960103b9df86",
+  "version": "0.9.5-beta.8",
+  "toolchain": {
+    "node": "v22.23.4",
+    "typescript": "5.8.3",
+    "electron": "45.2.3"
+  },
+  "appEntry": "app/index.html",
+  "bundle": "app/app.js",
+  "sourceProof": {
+    "compilerOutputSHA256": "43a6e9d4ce76106490e8076581e394ae9d9036cac15bfbdca7815ce0697ade49",
+    "inputSHA256": {
+      "scripts/build-finance-ledger.cjs": "dd572a90e4a29fb629f6fe861b61aecf029d837d40102c95c35105463e63a416",
+      "shared/finance-period-ledger.mjs": "2c83b9843b01fa552936931c6e6d7078c042cf16d22b4662db474ca7251c5bb5",
+      "src/ai-markdown.ts": "9607141bdd7a4741408087feb475620b4b4830669acd960d0ae0275a0f4cac62",
+      "src/app.ts": "380622432087423f44b9151cd127d8442195169451a5ea995e85c03af30eb463",
+      "src/intelligence-integration.ts": "3d90612f4fefdb59f2384bd2dee264b319bf09c907e20af7741d79a498a8f5e9",
+      "src/intelligence-staging.ts": "01707448981449b0da9720aa02efcd599e4a31cb0418ebb01228e38c3973ace6",
+      "src/intelligence-view.ts": "4970527ee6f1e39a03d22be8ee887201b8e357af1ac9d79bd9efd5ac5de2c40b",
+      "src/plan-view.ts": "bdf14de2b6bf86a4547a2230ab361db907be9bed52a830aac98a8ded6a1b570f",
+      "tsconfig.json": "6970d4f207d99c35fdca8a656b5dd808254de35a2dc4567994b27820034ce780"
+    }
+  },
+  "assets": {
+    "app/app.js": "43a6e9d4ce76106490e8076581e394ae9d9036cac15bfbdca7815ce0697ade49",
+    "app/appearance.js": "7c2ea6e627fefe6558c204435bb9fec75b78d46f65feeba6ff9c1dd5bfc6f121",
+    "app/decisions.css": "2b11ebe231db62fdfb4933886f92ffa278c5b8dc8a52dc25522b9294f872287a",
+    "app/design-system.css": "f86e3f2b164025b6f3fd72c5f8b4b5a16e3ecbbec1a9c75404f646b8fc4407d8",
+    "app/icon.png": "636987d8389ba96986c36399b925252757f51f66ea8df9fbbc8f00ebcc7a099e",
+    "app/icon.svg": "fedc8220f96142e520b03d5e5a6af06c282ddb56db95605fb948248eeebc8ad5",
+    "app/index.html": "a501aef02f8f97d6d959159a523748f9640872cec5784da95a76ffd054057fce",
+    "app/intelligence-staging.css": "38f5f3dad104f649351b8b83739183f5802125147fe99426eb1c4f082e32faa7",
+    "app/intelligence.css": "08bbbea09238390d6908e7ddd0121a328e116bbbe245b4bb7c5d5c3d39daf903",
+    "app/movements-productivity.css": "e271cdc6c9a78240018012507a2d672cd8dc5cb1f1c9c757a3be11ad3d4439da",
+    "app/operations.css": "cb8fcf0c3677c2a259dd7ba2151bc5cc52fe9e4e5ef5e7896092ae8864a178ae",
+    "app/overview.css": "22668ee6fc6c3a72c623d29537f4b9a5051c124cac93ed336cfde05263da76eb",
+    "app/planning-productivity.css": "85c61ce5c4e7bc76643953a9c7f79c8e75b3151bdec083be91a730e9b3c8f9cf",
+    "app/premium-interactions.css": "44dff9b824761b377eda2a4c86e583a366abeb24fef30aba3c44bc2efc1a0f08",
+    "app/refinement.css": "6b72a09ac129b6906e11e9225370ad66115aeb5e84dad8fc57c4185bc131e6c8",
+    "app/style.css": "1793478e80a4d3482a78e2f127b5e10e5514fa75a7fe8539295706b108d28287",
+    "app/vendor/LICENSE_REACT.txt": "c7fd0cdda292e9e61249d519c117fe61b0fe57691f4b0915c67aa8285015c220",
+    "app/vendor/react-dom.min.js": "90034f29bd3d750260b48f63d7a4d2155407a3c2b69056501c1c6437859a14b3",
+    "app/vendor/react.min.js": "f12564356e3702a158d760ec22b8ae4f219f36d960a6974b40899f11c2a52dc3"
+  }
+}

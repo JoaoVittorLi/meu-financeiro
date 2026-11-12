@@ -1,0 +1,42 @@
+{
+  "base": "ce8dd04669a474957dc2d6c1107bc91d862031fc",
+  "incorporated": [
+    {
+      "pr": 42,
+      "sha": "d401dd870242397f09d06a0111a1f23bd1b5c830"
+    },
+    {
+      "pr": 41,
+      "sha": "496d8bf344b86e4c5f1d016061145d83b794e45b"
+    }
+  ],
+  "localCodeCommit": "2d867adb08048c5fa32eed4fa42a960103b9df86",
+  "parents": [
+    "d401dd870242397f09d06a0111a1f23bd1b5c830",
+    "496d8bf344b86e4c5f1d016061145d83b794e45b"
+  ],
+  "environment": "Windows local JOÃOVITOR",
+  "node": "22.23.4",
+  "npm": "10.9.9",
+  "fullSuite": {
+    "pass": 448,
+    "fail": 0,
+    "skip": 0
+  },
+  "directed": {
+    "pass": 28,
+    "fail": 0
+  },
+  "types": "PASS",
+  "compile": "PASS",
+  "f08": "PASS",
+  "asar": "1/1 PASS",
+  "provenanceCreate": "PASS",
+  "provenanceVerify": "PASS",
+  "sharedLedger": "ef0901fd6e87c896b3994257a84fa00740552235",
+  "qaElectron": "NÃO EXECUTADO nesta candidata; bloqueio conhecido da sessão",
+  "screenshots": 0,
+  "mainChanged": false,
+  "sourceBranchesChanged": false,
+  "personalDataAccessed": false
+}

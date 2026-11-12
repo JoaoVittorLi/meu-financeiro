@@ -5,7 +5,7 @@
   "description": "Meu Financeiro — transações, conciliação, planejamento e simulação de compra usando fluxo de caixa diário",
   "main": "electron/main.cjs",
   "scripts": {
-    "compile": "tsc --project tsconfig.json",
+    "compile": "tsc --project tsconfig.json && node scripts/build-finance-ledger.cjs",
     "test:db": "npm run compile && node --test tests/*.test.cjs",
     "test:asar": "node --test tests/renderer-asar.integration.cjs",
     "test:electron-smoke": "node scripts/d1-electron-smoke.cjs",

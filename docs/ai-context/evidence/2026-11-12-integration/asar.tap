@@ -1,0 +1,26 @@
+(node:16316) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+> meu-financeiro-desktop@0.9.5-beta.8 test:asar
+> node --test tests/renderer-asar.integration.cjs
+
+(node:26240) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+(Use `node --trace-warnings ...` to show where the warning was created)
+TAP version 13
+# (node:1020) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: B00 real ASAR preserves nested license and rejects missing or changed bytes
+ok 1 - B00 real ASAR preserves nested license and rejects missing or changed bytes
+  ---
+  duration_ms: 184.7365
+  type: 'test'
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 1
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 279.0813

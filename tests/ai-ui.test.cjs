@@ -68,7 +68,7 @@ function compileIntelligenceRuntime(){
     {name:'Salário',kind:'income'}
   ];
   const fn=new Function(
-    'h','Icon','Card','DEFAULT_CATEGORY_INFOS','desktop','spanLabel','dateSpan','prettyMonth','iso','document',
+    'h','Icon','Card','DEFAULT_CATEGORY_INFOS','desktop','spanLabel','dateSpan','prettyMonth','iso','document','FinancePeriodLedger',
     js+';return {renderIntelligencePanel,renderIntelligenceView,renderIntelligenceActionProposalCard,intelligenceOpenFullChat,intelligenceSubmitQuestion,intelligenceParseCategorizeIntent,intelligenceBuildCategorizeProposal,intelligenceExpandProposalCandidates,intelligenceSelectActionCandidate,intelligenceResolveActionProposal,intelligenceConversationState,intelligenceCreateThread,intelligenceSelectThread,intelligenceDeleteThread,intelligenceClearHistory,intelligenceGroupThreadsByDate,intelligenceSearchThreads,intelligenceSwitchProfileMode,intelligenceSanitizeThreadList,intelligenceBuildStructuredSummaryCard};'
   );
   return {
@@ -80,7 +80,7 @@ function compileIntelligenceRuntime(){
       ()=> ({start:'2026-11-01',end:'2026-11-11'}),
       ym=>ym,
       ()=> '2026-11-11',
-      {getElementById:()=>({focus(){}})}
+      {getElementById:()=>({focus(){}})},require('../shared/finance-period-ledger.mjs')
     )
   };
 }
@@ -436,9 +436,9 @@ test('I1-B.1 resumo local evita dupla contagem banco + manual e exclui pendentes
   const {runtime}=compileIntelligenceRuntime();
   const card=runtime.intelligenceBuildStructuredSummaryCard({state:{
     mode:'real',dashboardSource:'bank',bank:{data:{truncated:true,transactions:[
-      {id:'confirmed',accountId:'A',status:'POSTED',amount:-10000,category:'Alimentação'},
-      {id:'pending',accountId:'A',status:'PENDING',amount:-3000,category:'Outros'},
-      {id:'transfer',accountId:'A',status:'POSTED',amount:-5000,nature:'transfer',category:'Transferências'}
+      {id:'confirmed',date:'2026-11-10',accountId:'A',status:'POSTED',amount:-10000,category:'Alimentação'},
+      {id:'pending',date:'2026-11-10',accountId:'A',status:'PENDING',amount:-3000,category:'Outros'},
+      {id:'transfer',date:'2026-11-10',accountId:'A',status:'POSTED',amount:-5000,nature:'transfer',category:'Transferências'}
     ]}},data:{transactions:[{id:'manual-duplicate',kind:'expense',amount:10000,category:'Alimentação'}]}}});
   assert(card);
   const expense=card.metrics.find(x=>x.label==='Saídas confirmadas carregadas');

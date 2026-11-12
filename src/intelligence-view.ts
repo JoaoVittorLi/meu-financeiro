@@ -232,6 +232,7 @@ function renderIntelligenceHistorySidebar(app:any){
       h('button',{type:'button',className:'ghost-button full',onClick:()=>intelligenceClearHistory(app)},'Limpar histórico do perfil')):null);
 }
 function renderIntelligenceView(app:any){
+  if(app.state.workIntelligenceDemo?.enabled&&typeof renderWorkIntelligenceDemo==='function')return renderWorkIntelligenceDemo(app);
   if(typeof intelligenceEnsureHydrated==='function')intelligenceEnsureHydrated(app);
   const s=app.state,tab=s.intelligenceTab||'today';
   const tabs=[{id:'today',label:'Hoje'},{id:'chat',label:'Conversar'},{id:'actions',label:'Plano de ação'}];
@@ -241,6 +242,7 @@ function renderIntelligenceView(app:any){
   const activeScope=s.intelligenceDraftScope||intelligencePageScope(app,s.intelligenceContext||s.page);
   let section:any=null;
   if(tab==='today')section=h('div',{className:'mf-ai-today'},
+    h('button',{type:'button',className:'ghost-button',onClick:()=>workDemoLoad(app)},'Explorar nova Inteligência · dados fictícios'),
     h('div',{className:'mf-ai-welcome'},
       h('span',{className:'micro-label'},'PAINEL CONCEITUAL · DADOS FICTÍCIOS'),
       h('h2',{},'Três assuntos para explorar.'),
@@ -324,6 +326,7 @@ function renderIntelligenceView(app:any){
 }
 function renderIntelligencePanel(app:any){
   if(!app.state.intelligencePanelOpen)return null;
+  if(app.state.workIntelligenceDemo?.enabled&&typeof renderWorkIntelligencePanel==='function')return renderWorkIntelligencePanel(app);
   if(typeof intelligenceEnsureHydrated==='function')intelligenceEnsureHydrated(app);
   const info=intelligenceContextFor(app.state.intelligenceContext);
   const scope=app.state.intelligenceContextSnapshot||intelligencePageScope(app,app.state.intelligenceContext);
