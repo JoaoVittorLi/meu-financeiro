@@ -84,7 +84,7 @@ async function localFinancialSubmit(app:any,question:string){
  const state=operational?.uiState;
  const answerText=operational?.answer||reply?.text||error||'Consulta indisponível.';
  const finalStatus:IntelligenceChatMessage['status']=operational?
-  (state==='ready'||state==='empty'?'done':state==='unsupported'?'unimplemented':state==='denied'||state==='expired'?'unavailable':'error'):
+  (state==='ready'||state==='empty'?'done':state==='unsupported'?'unsupported':state==='denied'||state==='expired'?'unavailable':'error'):
   reply?'done':'error';
  const factsValid=operational&&(state==='ready'||state==='empty');
  const evidence=factsValid?(operational.profile==='synthetic'?'Ambiente sintético':'Fonte '+(operational.source==='bank'?'bancária':'manual'))+
