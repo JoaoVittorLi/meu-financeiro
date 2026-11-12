@@ -4,6 +4,13 @@ const {FinanceDB}=require('../electron/db.cjs');
 const {CategoryReviewService,READ_CONSENT,WRITE_CONSENT,specific}=require('../electron/category-review.cjs');
 const ITEM='11111111-1111-4111-8111-111111111111',ACCOUNT='22222222-2222-4222-8222-222222222222',OTHER='33333333-3333-4333-8333-333333333333';
 const tx=(id,extra={})=>({id,date:'2026-11-10',description:'CAFETERIA FLORESTA',amount:-15,status:'POSTED',category:'Outros',...extra});
+test('rule management preview identifies the old and new category even without affected transactions',()=>{
+ const f=fixture();try{
+  const rule=f.accept();const p=f.prepare('manage-rule',{ruleId:rule.ruleId,change:'edit',category:'Transporte'});
+  assert.equal(p.affected.length,0);assert.equal(p.rule.previousCategory,'Alimentação');assert.equal(p.rule.category,'Transporte');assert.equal(p.rule.nature,'expense');assert.equal(p.rule.accountName,'SYNTHETIC 22');
+  assert.equal(f.db.listCategories().rules[0].category,'Alimentação');
+ }finally{f.close();}
+});
 function fixture(filename=':memory:',options={}){
  const db=new FinanceDB(filename);let now=1;
  const service=new CategoryReviewService(db,{syntheticProfile:true,clock:()=>now});

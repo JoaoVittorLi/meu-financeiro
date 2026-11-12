@@ -1,5 +1,15 @@
 # MEU FINANCEIRO 2.0 — roadmap mestre, backlog e controle de avanço
 
+## Q1 — candidata integrada, execução autorizada em 12/11/2026
+
+Smoke real IPC também verifica recusa de lote quando uma correção manual introduz divergência no padrão, além do caminho de classificação aceito sem divergência.
+
+QA nativo adicional encontrou e corrigiu prévia de edição sem antes/depois quando não havia transações afetadas e expansão do drawer que permanecia na Central. Nova prévia identifica regra/conta/natureza/categoria anterior e nova; expansão abre chat principal preservando contexto e prévia pendente. Ajustes de foco/rolagem da prévia e do histórico. Regressões e reteste do novo código concluídos.
+
+Recuperação: detectado por rastreamento do contrato que a restauração trocava o handle SQLite mas mantinha serviços da Inteligência presos à conexão fechada. Corrigido rebinding e descarte de grants/prévias após restore ou recuperação; restore bloqueado enquanto confirmação/backup supervisionado estiver em andamento. Regressão executa o handler real com diálogo controlado e SQLite sintético para ambos os perfis (sem banco pessoal). UI de backup salva arquivo temporário íntegro; seleção/confirmador de restore exercitados e cancelados. Não declarar restore pessoal homologado.
+
+Branch `qa/mf2-q1-integrated-windows-20261112`, base #47/d52df2a (contém #46). Homologação nativa com Computer Use em perfil/SQLite sintéticos; oito áreas percorridas, lançamento/planejamento/orçamento gravados e preservados após reinício. Corrigidos: seleção de lista antiga após alteração de filtro, marca recortada em 1366, cor de borda incompatível com alerta do simulador. Central recebe navegação por seção, tabela com altura limitada e cabeçalho fixo, seleção de elegíveis e paginação acima da tabela. Gate de backup verificado antes da confirmação **exclusivamente sintético**, com rollback, concorrência e restore testados. Código final9e4b1a8: 506/506 Node/SQLite PASS; TypeScript, compilação, F08, ASAR, proveniência e IPC Electron real PASS. QA nativo/recibos e reinícios concluídos; evidências no Draft #48. Plano Windows e gates pessoais publicados em docs/ai-context/Q1_WINDOWS_CANDIDATE.md e Q1_PERSONAL_WRITE_GATES.md. Escrita pessoal bloqueada; sem build Windows/instalador/merge. Evidências e estado final: [log Q1](ai-context/logs/2026-11-12-Q1-INTEGRATED-QA.md).
+
 **Identificador:** MF2-ROADMAP • **Revisão:** 1.2 — Rodada A documental • **Base verificada:** 09/11/2026  
 **Natureza:** especificação de produto + plano de engenharia + acompanhamento, **não** atestado de funcionalidades entregues.  
 **Contexto multiagente:** [README](ai-context/README.md) · [Estado comprovado](ai-context/CURRENT_STATE.md) · [Guia de análise](ai-context/ANALYSIS_PLAYBOOK.md) · [Catálogo de experiência](ai-context/PRODUCT_BLUEPRINT.md) · [Propostas criativas](ai-context/IDEA_REGISTER.md) · [Protocolo de atualização](ai-context/ROADMAP_UPDATE_RULES.md).

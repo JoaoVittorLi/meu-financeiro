@@ -108,7 +108,7 @@ function intelligenceHistoryList(app:any):IntelligenceChatMessage[]{
 function intelligenceOpenFullChat(app:any){
  if(typeof intelligenceEnsureHydrated==='function')intelligenceEnsureHydrated(app);
  const scope=app.state.intelligencePanelOpen&&app.state.intelligenceContextSnapshot?app.state.intelligenceContextSnapshot:intelligencePageScope(app);
- app.setState({page:'intelligence',intelligenceTab:'chat',intelligenceDraftScope:scope,intelligencePanelOpen:false,detail:null,planSelected:null});
+ app.setState({page:'intelligence',intelligenceTab:'chat',categoryReviewOpen:false,intelligenceDraftScope:scope,intelligencePanelOpen:false,detail:null,planSelected:null},()=>document.scrollingElement?.scrollTo({top:0,behavior:'instant' as ScrollBehavior}));
 }
 function intelligencePrepare(app:any,question:string){
   if(typeof intelligenceEnsureHydrated==='function')intelligenceEnsureHydrated(app);
@@ -322,6 +322,7 @@ function renderIntelligenceView(app:any){
       h('span',{className:'mf-ai-preview-label'},h(Icon,{name:'shield',size:15}),s.mode==='demo'?'Prévia · dados fictícios':'Prévia · dados locais, sem inferência')),
     typeof renderLocalFinancialAccess==='function'?renderLocalFinancialAccess(app):null,
     h('button',{type:'button',className:'outlined-action',onClick:()=>void categoryReviewOpen(app)},'Central de revisão · categorização supervisionada'),
+    s.categoryReviewPreview?h('div',{className:'mf-review-drawer-pending',role:'status'},h('p',{},'Uma prévia de categorização aguarda sua decisão.'),h('button',{type:'button',className:'primary-button',onClick:()=>void categoryReviewOpen(app)},'Revisar prévia na Central')):null,
     h('div',{className:'mf-ai-tabbar',role:'tablist','aria-label':'Seções da Inteligência'},
       tabs.map((item:any)=>h('button',{type:'button',key:item.id,role:'tab','aria-selected':tab===item.id,
         id:'mf-ai-tab-'+item.id,'aria-controls':'mf-ai-section-'+item.id,tabIndex:tab===item.id?0:-1,className:tab===item.id?'active':'',onClick:()=>app.setState({intelligenceTab:item.id,categoryReviewOpen:false}),onKeyDown:(e:any)=>{const next=intelligenceNextTab(item.id,e.key);if(next){e.preventDefault();app.setState({intelligenceTab:next,categoryReviewOpen:false},()=>document.getElementById('mf-ai-tab-'+next)?.focus());}}},item.label))),

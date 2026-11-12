@@ -1,0 +1,45 @@
+{
+  "sourceSHA": "9e4b1a8aa03ade64b9e5259d3834417d69bb0936",
+  "version": "0.9.5-beta.8",
+  "environment": "Windows; Node 22.23.4; npm 10.9.9; Electron 45.2.3; synthetic SQLite only",
+  "nodeSQLite": {
+    "pass": 506,
+    "logSHA256": "5F0CE827D9F4F9765C366D794561A621C66FD16075F3BF017FE7C97EF3633B3F",
+    "command": "npm run test:db",
+    "fail": 0,
+    "tests": 506
+  },
+  "types": "PASS: npm run test:types",
+  "compile": "PASS: npm run compile (also part of test:db)",
+  "F08": "PASS: node scripts/renderer-provenance.cjs check-bundle",
+  "ASAR": "PASS: 1 real ASAR integration test",
+  "provenance": "PASS: create + verify",
+  "realElectronIPC": {
+    "ok": true,
+    "verifiedBackups": 5,
+    "checks": [
+      "real preload/main IPC",
+      "verified backup before confirmation",
+      "future-only history preservation",
+      "account/nature boundaries",
+      "idempotent reimport",
+      "manual correction precedence",
+      "pause/resume",
+      "batch classify/undo",
+      "duplicate confirmation",
+      "stale preview rejection",
+      "grant revoke",
+      "SQLite integrity"
+    ]
+  },
+  "nativeQA": "Computer Use; screenshots and receipts in captures.json; eight areas; real 1366x768 and 1920x1080; light/dark",
+  "notExecuted": [
+    "paid CircleCI",
+    "Windows installer generation",
+    "installation",
+    "personal SQLite access or migration",
+    "production deploy",
+    "merge to main",
+    "complete restore through GUI"
+  ]
+}

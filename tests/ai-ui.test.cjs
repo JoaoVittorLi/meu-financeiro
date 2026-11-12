@@ -271,7 +271,9 @@ test('I1-A.2 continuidade entre drawer e aba principal e distinção dos 4 estad
 
   // Continuidade do histórico entre drawer e aba principal
   const countBefore=app.state.intelligenceMessages.length;
+  app.state.categoryReviewOpen=true;app.state.categoryReviewPreview={id:'pending-q1'};
   runtime.intelligenceOpenFullChat(app);
+  assert.equal(app.state.categoryReviewOpen,false);assert.equal(app.state.categoryReviewPreview.id,'pending-q1');
   assert.equal(app.state.page,'intelligence');
   assert.equal(app.state.intelligenceTab,'chat');
   assert.equal(app.state.intelligencePanelOpen,false);

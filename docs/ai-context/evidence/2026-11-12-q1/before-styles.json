@@ -1,0 +1,51 @@
+{
+  "size": {
+    "innerWidth": 1364,
+    "innerHeight": 735
+  },
+  "brand": [
+    {
+      "class": "brand",
+      "text": "Meu FinanceiroCONTROLE DO SEU DINHEIRO",
+      "clientWidth": 164,
+      "scrollWidth": 164,
+      "style": {
+        "overflow": "visible",
+        "font": "14px / 21px \"Segoe UI Variable\", \"Segoe UI\", Arial, sans-serif",
+        "whiteSpace": "normal"
+      }
+    },
+    {
+      "class": "brand-text",
+      "text": "Meu FinanceiroCONTROLE DO SEU DINHEIRO",
+      "clientWidth": 104,
+      "scrollWidth": 108,
+      "style": {
+        "overflow": "hidden",
+        "font": "14px / 21px \"Segoe UI Variable\", \"Segoe UI\", Arial, sans-serif",
+        "whiteSpace": "normal"
+      }
+    },
+    {
+      "class": "",
+      "text": "Meu Financeiro",
+      "clientWidth": 104,
+      "scrollWidth": 108,
+      "style": {
+        "overflow": "visible",
+        "font": "700 16px / 24px \"Segoe UI Variable\", \"Segoe UI\", system-ui, sans-serif",
+        "whiteSpace": "nowrap"
+      }
+    }
+  ],
+  "expense": [
+    {
+      "hover": true,
+      "tone": "#c92a3c",
+      "border": "rgba(0, 0, 0, 0) rgb(229, 229, 232) rgb(229, 229, 232)",
+      "pseudoBorder": "rgb(201, 42, 60)",
+      "background": "rgb(255, 255, 255)",
+      "transform": "matrix(1.022, 0, 0, 1.022, 0, -2)"
+    }
+  ]
+}

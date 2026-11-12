@@ -1,5 +1,11 @@
 # Registro de frentes ativas e prevenção de conflitos
 
+## Q1 — homologação integrada autorizada em 12/11/2026
+
+**Entrega publicada no Draft #48:** código9e4b1a8,506 testes PASS, QA nativo/evidências e planos concluídos. [Handoff](Q1_WINDOWS_CANDIDATE.md). Sem trabalho concorrente pendente nesta sessão; build e escrita pessoal aguardam decisão específica do proprietário.
+
+Codex: `qa/mf2-q1-integrated-windows-20261112`, base #47 `d52df2adcef6d105dc92480714639dece7448985`, já contém #46. Checkout isolado `mf2-q1-windows-qa`. Ownership exclusivo nesta sessão: Central/estilos próprios, correções localizadas de marca e semântica do simulador, gate sintético de backup, main e ferramentas/testes Q1. Sem subagentes. Instalação U3 e SQLite pessoal preservados. [Log](logs/2026-11-12-Q1-INTEGRATED-QA.md). Não executar CircleCI pago/instalador/merge.
+
 ## Execução autorizada — 12/11/2026: categorização supervisionada
 
 Refinamento separado: `fix/mf2-review-layout-navigation-20261112`, empilhado sobre #46/a7f132a. Ownership local de `src/app.ts` (rolagem de navegação), marcação do formulário em `src/intelligence-local.ts`, abertura da Central em `src/intelligence-review.ts`, `app/intelligence.css`, bundle e regressão. Fluxos/sender/SQLite do PR funcional preservados. [QA real](logs/2026-11-12-VISUAL-REVIEW-POLISH.md).

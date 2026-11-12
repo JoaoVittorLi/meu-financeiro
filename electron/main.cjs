@@ -4,6 +4,7 @@ const path=require('node:path');
 const fs=require('node:fs');
 const {FinanceDB}=require('./db.cjs');
 const {isolateSmokeProfile}=require('./smoke-profile.cjs');
+const {q1NativeWindow}=require('./q1-native-window.cjs');
 const {prepareCloudMigration,migrationLocalStatus}=require('./cloud-onboarding.cjs');
 const {uploadPersonalQuarantine,CONSENT,loadMarker,markerFile}=require('./cloud-personal-uploader.cjs');
 const {syncPersonalSafeFields,summary:cloudSafeSyncSummary}=require('./cloud-personal-safe-sync.cjs');
@@ -14,6 +15,7 @@ const {pairViaSystemBrowser,cancelBrowserPairing}=require('./cloud-system-browse
 const {PlanningStore}=require('./planning.cjs');
 const {LocalFinancialIntelligence}=require('./financial-intelligence.cjs');
 const {CategoryReviewService}=require('./category-review.cjs');
+const {CategoryReviewBackupGate}=require('./category-review-backup.cjs');
 const {automaticBackup,restoreBackup,listAutoBackups,validateBackupFile}=require('./recovery.cjs');
 const {PluggyVault}=require('./pluggy-vault.cjs');
 const {PluggyClient}=require('./pluggy.cjs');
@@ -133,7 +135,7 @@ async function connectPreviewIdentity(){
 
 function createWindow(){
  mainWindow=new BrowserWindow({
-   width:1500,height:940,minWidth:1000,minHeight:680,
+   width:1500,height:940,minWidth:1000,minHeight:680,...q1NativeBounds,
    backgroundColor:'#0b0a11',title:'Meu Financeiro',show:false,
    icon:path.join(__dirname,'../app/icon.png'),
    autoHideMenuBar:true,
@@ -143,7 +145,15 @@ function createWindow(){
      webSecurity:true,devTools:!app.isPackaged
    }
  });
- mainWindow.once('ready-to-show',()=>mainWindow.show());
+ mainWindow.once('ready-to-show',()=>{
+  mainWindow.show();
+  if(q1NativeBounds)console.log('[Q1_WINDOW] '+JSON.stringify({bounds:mainWindow.getBounds(),contentBounds:mainWindow.getContentBounds()}));
+ });
+ if(q1NativeBounds){
+  mainWindow.webContents.on('console-message',details=>{if(['warning','error'].includes(details.level))console.error('[Q1_RENDERER] '+JSON.stringify({level:details.level,message:details.message}));});
+  mainWindow.webContents.on('render-process-gone',(_event,details)=>console.error('[Q1_RENDERER_GONE] '+JSON.stringify(details)));
+  mainWindow.webContents.on('preload-error',(_event,_file,error)=>console.error('[Q1_PRELOAD] '+String(error.message)));
+ }
  mainWindow.webContents.setWindowOpenHandler(()=>({action:'deny'}));
  mainWindow.webContents.on('will-navigate',(event)=>event.preventDefault());
  mainWindow.loadFile(path.resolve(__dirname,'../app/index.html'));
@@ -151,6 +161,7 @@ function createWindow(){
 // The userData path must be isolated BEFORE the single-instance lock and
 // before FinanceDB or vault initialization. Unavailable in packaged builds.
 const smokeProfileActive=isolateSmokeProfile(app);
+const q1NativeBounds=q1NativeWindow(smokeProfileActive);
 // Preview portable and installed version share one local finance database.
 // Prevent concurrent Electron instances from writing to the same SQLite file.
 const isPrimaryInstance=app.requestSingleInstanceLock();
@@ -167,16 +178,23 @@ app.whenReady().then(()=>{
  const filename=path.join(app.getPath('userData'),'meu-financeiro.sqlite');
  db=new FinanceDB(filename);
  planner=new PlanningStore(db);
- const localFinancial=new LocalFinancialIntelligence(db,planner);
- // No new review tables, grants or writes in a personal or packaged profile.
- const categoryReview=smokeProfileActive?new CategoryReviewService(db,{syntheticProfile:true}):null;
+ let localFinancial,categoryReview,reviewBackupGate;
+ function bindLocalFinancialServices(){
+  // A restored/recovered database has a new handle. Never retain grants,
+  // previews or a service pointing at the closed pre-restore connection.
+  localFinancial=new LocalFinancialIntelligence(db,planner);
+  // No new review tables, grants or writes in a personal or packaged profile.
+  categoryReview=smokeProfileActive?new CategoryReviewService(db,{syntheticProfile:true}):null;
+  reviewBackupGate=categoryReview?new CategoryReviewBackupGate(categoryReview,path.join(app.getPath('userData'),'review-backups'),{syntheticProfile:true}):null;
+ }
+ bindLocalFinancialServices();
  ipcMain.handle('finance:review-status',event=>{requireAppSender(event);return {available:!!categoryReview,syntheticOnly:true};});
  for(const [channel,method] of [['authorize','authorize'],['list','list'],['queue','queue'],['prepare','prepare'],['confirm','confirm'],['revoke','revoke']]){
   ipcMain.handle('finance:review-'+channel,(event,input)=>{
    requireAppSender(event);
    if(!categoryReview)throw new Error('Escrita da Inteligência desativada neste perfil. Homologação sintética necessária.');
    if(restoring||syncing||cloudPreparationBusy||autoBackupBusy)throw new Error('Aguarde a operação financeira em andamento.');
-   return categoryReview[method](input,event.sender.id);
+   return method==='confirm'?reviewBackupGate.confirm(input,event.sender.id):categoryReview[method](input,event.sender.id);
   });
  }
  ipcMain.handle('finance:read-authorize',(event,input)=>{requireAppSender(event);return localFinancial.authorize(input,event.sender.id);});
@@ -302,7 +320,7 @@ app.whenReady().then(()=>{
  });
  ipcMain.handle('finance:restore',async(event)=>{
    requireAppSender(event);
-   if(syncing||restoring||autoBackupBusy||cloudPreparationBusy)throw new Error('Conclua a sincronização ou cópia em andamento antes de restaurar.');
+   if(syncing||restoring||autoBackupBusy||cloudPreparationBusy||reviewBackupGate?.pending.size)throw new Error('Conclua a sincronização ou cópia em andamento antes de restaurar.');
    const picked=await dialog.showOpenDialog(mainWindow,{title:'Escolher cópia de segurança do Meu Financeiro',properties:['openFile'],filters:[{name:'Cópia completa',extensions:['sqlite']}]});
    if(picked.canceled||!picked.filePaths?.[0])return {cancelled:true};
    // Confirma formato e integridade antes de mostrar qualquer opção destrutiva.
@@ -311,18 +329,20 @@ app.whenReady().then(()=>{
      title:'Confirmar restauração',message:'Substituir os dados atuais por esta cópia?',
      detail:'Seus dados voltarão ao estado da cópia. Antes da restauração, salvaremos uma cópia dos dados atuais. Sua conexão bancária permanecerá configurada.'});
    if(confirmation.response!==1)return {cancelled:true};
+   if(syncing||restoring||autoBackupBusy||cloudPreparationBusy||reviewBackupGate?.pending.size)throw new Error('Conclua a operação em andamento antes de restaurar.');
    restoring=true;
    try{
      const result=await restoreBackup(db,picked.filePaths[0],filename,backupsDirectory());
      db=result.db;
      planner=new PlanningStore(db);
+     bindLocalFinancialServices();
      // Restoring an older snapshot requires a new cloud comparison/approval.
      fs.rmSync(markerFile(app.getPath('userData')),{force:true});
      const state={ok:true};
      mainWindow.webContents.reload();
      return state;
    }catch(error){
-     if(error.recoveredDb){db=error.recoveredDb;planner=new PlanningStore(db);}
+     if(error.recoveredDb){db=error.recoveredDb;planner=new PlanningStore(db);bindLocalFinancialServices();}
      throw new Error('Não foi possível restaurar seus dados: '+error.message);
    }finally{restoring=false;}
  });
