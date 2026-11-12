@@ -14,6 +14,7 @@ const {PREVIEW_ORIGIN,checkPreviewIdentity,testPreviewQuarantine}=require('./clo
 const {pairViaSystemBrowser,cancelBrowserPairing}=require('./cloud-system-browser.cjs');
 const {PlanningStore}=require('./planning.cjs');
 const {LocalFinancialIntelligence}=require('./financial-intelligence.cjs');
+const {IntelligenceOperational}=require('./intelligence-operational.cjs');
 const {CategoryReviewService}=require('./category-review.cjs');
 const {CategoryReviewBackupGate}=require('./category-review-backup.cjs');
 const {automaticBackup,restoreBackup,listAutoBackups,validateBackupFile}=require('./recovery.cjs');
@@ -200,6 +201,13 @@ app.whenReady().then(()=>{
  ipcMain.handle('finance:read-authorize',(event,input)=>{requireAppSender(event);return localFinancial.authorize(input,event.sender.id);});
  ipcMain.handle('finance:read-query',(event,input)=>{requireAppSender(event);return localFinancial.query(input,event.sender.id);});
  ipcMain.handle('finance:read-revoke',(event,token)=>{requireAppSender(event);return localFinancial.revoke(token,event.sender.id);});
+ const operationalIntelligence=new IntelligenceOperational({localFinancial,categoryReview,db});
+ ipcMain.handle('intelligence:operational-overview',(event,input)=>{
+  requireAppSender(event);return operationalIntelligence.overview(input,event.sender.id);
+ });
+ ipcMain.handle('intelligence:operational-ask',(event,input)=>{
+  requireAppSender(event);return operationalIntelligence.ask(input,event.sender.id);
+ });
  vault=new PluggyVault(app.getPath('userData'),safeStorage);
  const aiVault=new AIAuthVault(app.getPath('userData'),safeStorage);
  const aiAuth=new ChatGPTSignIn({vault:aiVault,openExternal:url=>shell.openExternal(url)});

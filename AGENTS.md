@@ -1,5 +1,8 @@
 # AGENTS.md — Meu Financeiro 2.0
 
+> **ATUALIZAÇÃO VINCULANTE — FAST LANE 12/11/2026:** para as duas frentes **já autorizadas** (Redesign Premium e Inteligência Operacional), execute diretamente a Rodada B após checagem focal da baseline e leitura de [FAST_LANE_20261112](docs/ai-context/FAST_LANE_20261112.md) + [contrato IC v1](docs/ai-context/INTELLIGENCE_UI_CONTRACT_V1.md) + [issue #49](https://github.com/JoaoVittorLi/meu-financeiro/issues/49). A Rodada A geral abaixo é histórica e NÃO deve ser repetida nesta missão. Segurança, isolamento, testes e documentação continuam obrigatórios. Não iniciar outras frentes sem autorização.
+
+
 **Instruções obrigatórias para qualquer agente/IA com acesso ao repositório.**
 
 ## Antes de trabalhar

@@ -1,5 +1,8 @@
 # Meu Financeiro — entrada obrigatória para novas IAs
 
+> **LEITURA PRIORITÁRIA DESDE 12/11/2026:** a missão de execução rápida aprovada supera as instruções históricas de repetir auditoria ampla **somente** nas frentes Redesign Premium e Inteligência. Comece por [FAST_LANE_20261112](FAST_LANE_20261112.md), [Contrato IC v1](INTELLIGENCE_UI_CONTRACT_V1.md), [Backlog enxuto](FAST_LANE_BACKLOG.md), [Design Premium](DESIGN_DIRECTION_PREMIUM.md) e [quadro #49](https://github.com/JoaoVittorLi/meu-financeiro/issues/49). Baseline Q1 PR #48 em Draft; nenhuma feature nova foi homologada por estes documentos. O estado de 09/11 abaixo é histórico.
+
+
 > **LEIA ESTE ARQUIVO PRIMEIRO.** Memória de projeto versionada no GitHub. Base de verificação: 09/11/2026, branch design/despezzas-d1-d4, SHA c535cb01403689480d01560de3daa1cae71780d2. Esta documentação foi preparada em branch separada e não implica que código, banco, EXE ou Production tenham sido alterados.
 
 ## Em cinco minutos
