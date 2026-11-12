@@ -1,5 +1,8 @@
 # Prompts oficiais para múltiplos chats e Work — Meu Financeiro 2.0
 
+> **Missões atualizadas, 12/11/2026:** para os executores de Redesign Premium e Inteligência Operacional, NÃO utilizar os prompts antigos de auditoria como primeira etapa. Ler [Fast Lane](FAST_LANE_20261112.md), [contrato IC v1](INTELLIGENCE_UI_CONTRACT_V1.md), [backlog](FAST_LANE_BACKLOG.md) e acompanhar [issue #49](https://github.com/JoaoVittorLi/meu-financeiro/issues/49). Esta alteração autoriza código em escopos R/I aprovados, não release nem escrita pessoal pela IA.
+
+
 O proprietário utiliza ChatGPT Plus e prefere usar Work com eficiência. **Chat arquiteto** prepara roadmap, pesquisa, especificação e auditoria; **Work** executa inspeção em software, código, testes, alterações e PR. Não gastar sessão Work com discussão que pode ser feita no Chat. Estas recomendações são operacionais: limites e consumo variam; não há economia porcentual garantida.
 
 ## 1. Política de esforço do Work

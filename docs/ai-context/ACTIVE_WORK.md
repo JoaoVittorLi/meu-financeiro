@@ -1,5 +1,11 @@
 # Registro de frentes ativas e prevenção de conflitos
 
+## Fast Lane ativa — reserva de ownership (12/11/2026)
+
+**Coordenação documental aprovada; execução R/I ainda não iniciada nesta atualização.** Quadro [#49](https://github.com/JoaoVittorLi/meu-financeiro/issues/49); branch `coord/mf2-premium-intelligence-20261112`, base PR #48/810a2bc. Branch R `feat/mf2-premium-redesign-20261112` (UI/UX: `src/app.ts`, `src/intelligence-view.ts`, `src/intelligence-review.ts`, `app/*.css`) e branch I `feat/mf2-intelligence-operational-20261112` (serviços/IPC/FinanceDB, módulos novos `src/intelligence-operations*`). **Integrador** resolve o renderer gerado, tipos e documentação global. Leia [FAST_LANE](FAST_LANE_20261112.md), [contrato](INTELLIGENCE_UI_CONTRACT_V1.md) e [backlog](FAST_LANE_BACKLOG.md). Nenhum dos executores altera o contrato compartilhado diretamente. Q1 permanece Draft e isolada; não fazer push cruzado nem rebase automático.
+
+
+
 ## Q1 — homologação integrada autorizada em 12/11/2026
 
 Codex: `qa/mf2-q1-integrated-windows-20261112`, base #47 `d52df2adcef6d105dc92480714639dece7448985`, já contém #46. Checkout isolado `mf2-q1-windows-qa`. Ownership exclusivo nesta sessão: Central/estilos próprios, correções localizadas de marca e semântica do simulador, gate sintético de backup, main e ferramentas/testes Q1. Sem subagentes. Instalação U3 e SQLite pessoal preservados. [Log](logs/2026-11-12-Q1-INTEGRATED-QA.md). Não executar CircleCI pago/instalador/merge.
