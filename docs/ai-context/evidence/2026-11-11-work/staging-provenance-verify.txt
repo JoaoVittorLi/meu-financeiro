@@ -1,0 +1,9 @@
+(node:29) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+> meu-financeiro-desktop@0.9.5-beta.8 provenance:verify
+> node scripts/renderer-provenance.cjs verify
+
+PASS: renderer e checkout correspondem ao manifesto.
+(node:42) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+(Use `node --trace-warnings ...` to show where the warning was created)

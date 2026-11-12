@@ -1,0 +1,8 @@
+(node:31512) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+> meu-financeiro-desktop@0.9.5-beta.8 compile
+> tsc --project tsconfig.json && node scripts/build-finance-ledger.cjs
+
+(node:4492) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+(Use `node --trace-warnings ...` to show where the warning was created)

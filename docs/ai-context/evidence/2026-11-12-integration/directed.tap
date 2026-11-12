@@ -1,0 +1,219 @@
+(node:15580) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+(Use `node --trace-warnings ...` to show where the warning was created)
+TAP version 13
+# (node:14824) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: WORK-AUDIT-01 split 60/40 matches authoritative ledger, total 100 and one record
+ok 1 - WORK-AUDIT-01 split 60/40 matches authoritative ledger, total 100 and one record
+  ---
+  duration_ms: 23.7696
+  type: 'test'
+  ...
+# Subtest: split absent falls back exactly to original category without rounding
+ok 2 - split absent falls back exactly to original category without rounding
+  ---
+  duration_ms: 0.4752
+  type: 'test'
+  ...
+# Subtest: split empty falls back exactly to original category without rounding
+ok 3 - split empty falls back exactly to original category without rounding
+  ---
+  duration_ms: 0.4093
+  type: 'test'
+  ...
+# Subtest: split wrongSum falls back exactly to original category without rounding
+ok 4 - split wrongSum falls back exactly to original category without rounding
+  ---
+  duration_ms: 0.3874
+  type: 'test'
+  ...
+# Subtest: split fractional falls back exactly to original category without rounding
+ok 5 - split fractional falls back exactly to original category without rounding
+  ---
+  duration_ms: 0.5535
+  type: 'test'
+  ...
+# Subtest: split zero falls back exactly to original category without rounding
+ok 6 - split zero falls back exactly to original category without rounding
+  ---
+  duration_ms: 0.5425
+  type: 'test'
+  ...
+# Subtest: split negative falls back exactly to original category without rounding
+ok 7 - split negative falls back exactly to original category without rounding
+  ---
+  duration_ms: 0.4626
+  type: 'test'
+  ...
+# Subtest: split string falls back exactly to original category without rounding
+ok 8 - split string falls back exactly to original category without rounding
+  ---
+  duration_ms: 0.3151
+  type: 'test'
+  ...
+# Subtest: split nullPart falls back exactly to original category without rounding
+ok 9 - split nullPart falls back exactly to original category without rounding
+  ---
+  duration_ms: 0.5069
+  type: 'test'
+  ...
+# Subtest: one-cent remainder is preserved and duplicate split categories count a transaction once
+ok 10 - one-cent remainder is preserved and duplicate split categories count a transaction once
+  ---
+  duration_ms: 1.3039
+  type: 'test'
+  ...
+# Subtest: outdated split and invalid fractional original amount never invent cents
+ok 11 - outdated split and invalid fractional original amount never invent cents
+  ---
+  duration_ms: 1.3049
+  type: 'test'
+  ...
+# Subtest: pending/transfer/ignore excluded and income not split into expenses
+ok 12 - pending/transfer/ignore excluded and income not split into expenses
+  ---
+  duration_ms: 0.692
+  type: 'test'
+  ...
+# Subtest: manual source, demo mode and partial loaded bank cache stay separate
+ok 13 - manual source, demo mode and partial loaded bank cache stay separate
+  ---
+  duration_ms: 1.2117
+  type: 'test'
+  ...
+# Subtest: multi-year loaded records remain included and original arrays are untouched
+ok 14 - multi-year loaded records remain included and original arrays are untouched
+  ---
+  duration_ms: 0.4029
+  type: 'test'
+  ...
+# Subtest: bundled engine output is identical to shared ESM and contains no duplicate maintained rules
+ok 15 - bundled engine output is identical to shared ESM and contains no duplicate maintained rules
+  ---
+  duration_ms: 23.9651
+  type: 'test'
+  ...
+# Subtest: F08 rejects a canonical ledger changed after bundling
+ok 16 - F08 rejects a canonical ledger changed after bundling
+  ---
+  duration_ms: 3609.497
+  type: 'test'
+  ...
+# (node:2108) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# {
+#   "id": "WORK-AUDIT-01",
+#   "classification": "CONFIRMADO EM TESTE LOCAL",
+#   "environment": "win32 v22.23.4; TypeScript real; dados inventados",
+#   "finding": "RESOLVED: resumo respeita divis├úo can├┤nica de despesas",
+#   "result": "PASS",
+#   "resolved": true,
+#   "input": {
+#     "amountCents": -10000,
+#     "category": "Compras",
+#     "splits": [
+#       {
+#         "category": "Alimenta├º├úo",
+#         "amount": 6000
+#       },
+#       {
+#         "category": "Transporte",
+#         "amount": 4000
+#       }
+#     ]
+#   },
+#   "actualCategories": [
+#     "Alimenta├º├úo",
+#     "Transporte"
+#   ],
+#   "expectedCategories": [
+#     "Alimenta├º├úo",
+#     "Transporte"
+#   ],
+#   "totalsMatch": true,
+#   "applicationWindowsTested": false,
+#   "financialDataChanged": false
+# }
+# Subtest: combined \#41/\#42 probe confirms canonical 60/40 distribution, no double counting
+ok 17 - combined \#41/\#42 probe confirms canonical 60/40 distribution, no double counting
+  ---
+  duration_ms: 268.7237
+  type: 'test'
+  ...
+# (node:4968) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: read adapter reuses exact deterministic synthetic context; no personal state read
+ok 18 - read adapter reuses exact deterministic synthetic context; no personal state read
+  ---
+  duration_ms: 35.0288
+  type: 'test'
+  ...
+# Subtest: adapter refuses real/unapproved payload and offers retry state
+ok 19 - adapter refuses real/unapproved payload and offers retry state
+  ---
+  duration_ms: 9.0439
+  type: 'test'
+  ...
+# Subtest: malformed cents are rejected; extra input metadata is not retained
+ok 20 - malformed cents are rejected; extra input metadata is not retained
+  ---
+  duration_ms: 1.3977
+  type: 'test'
+  ...
+# Subtest: out of order source responses cannot replace selected context
+ok 21 - out of order source responses cannot replace selected context
+  ---
+  duration_ms: 1.2753
+  type: 'test'
+  ...
+# Subtest: exit invalidates in-flight adapter response
+ok 22 - exit invalidates in-flight adapter response
+  ---
+  duration_ms: 2.0747
+  type: 'test'
+  ...
+# Subtest: chat answers real deterministic fixture, rejects purchase availability and keeps history
+ok 23 - chat answers real deterministic fixture, rejects purchase availability and keeps history
+  ---
+  duration_ms: 2.3353
+  type: 'test'
+  ...
+# Subtest: allow/deny simulations are idempotent; snapshot and personal ledger never mutate
+ok 24 - allow/deny simulations are idempotent; snapshot and personal ledger never mutate
+  ---
+  duration_ms: 3.5309
+  type: 'test'
+  ...
+# Subtest: stale proposal cannot be approved after source reload or target change
+ok 25 - stale proposal cannot be approved after source reload or target change
+  ---
+  duration_ms: 1.0891
+  type: 'test'
+  ...
+# Subtest: UI buttons invoke proposal, decision and shared full/drawer conversation
+ok 26 - UI buttons invoke proposal, decision and shared full/drawer conversation
+  ---
+  duration_ms: 3.8906
+  type: 'test'
+  ...
+# Subtest: all explicit prototype interactions are local; no financial writes or external APIs
+ok 27 - all explicit prototype interactions are local; no financial writes or external APIs
+  ---
+  duration_ms: 0.9216
+  type: 'test'
+  ...
+# Subtest: preview server exposes synthetic reads and refuses writes, unknown sources and path escapes
+ok 28 - preview server exposes synthetic reads and refuses writes, unknown sources and path escapes
+  ---
+  duration_ms: 227.0025
+  type: 'test'
+  ...
+1..28
+# tests 28
+# suites 0
+# pass 28
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 4232.2997

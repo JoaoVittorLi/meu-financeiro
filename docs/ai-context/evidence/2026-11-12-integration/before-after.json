@@ -1,0 +1,27 @@
+{
+  "case": "WORK-AUDIT-01",
+  "base": "ce8dd04669a474957dc2d6c1107bc91d862031fc",
+  "environment": "Windows local, Node 22.23.4",
+  "before": [
+    {
+      "col1": "Compras",
+      "col2": "1 reg.",
+      "col3": "R$ 100,00"
+    }
+  ],
+  "after": [
+    {
+      "col1": "Alimentação",
+      "col2": "1 reg.",
+      "col3": "R$ 60,00"
+    },
+    {
+      "col1": "Transporte",
+      "col2": "1 reg.",
+      "col3": "R$ 40,00"
+    }
+  ],
+  "total": "R$ 100,00",
+  "result": "PASS",
+  "personalDataAccessed": false
+}

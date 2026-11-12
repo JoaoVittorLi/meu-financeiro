@@ -1,0 +1,3 @@
+PASS F08: app.js recompilado virtualmente bate com fontes (9 entradas).
+(node:29720) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+(Use `node --trace-warnings ...` to show where the warning was created)

@@ -2647,6 +2647,9 @@ function renderIntelligenceHistorySidebar(app) {
         h('div', { className: 'mf-ai-history-groups', role: 'list' }, ...groups.map((grp) => h('div', { key: grp.label, className: 'mf-ai-history-group' }, h('span', { className: 'mf-ai-history-date-label' }, grp.label), ...grp.items.map((th) => h('div', { key: th.id, role: 'listitem', className: 'mf-ai-thread-item ' + (th.id === activeId ? 'is-active' : '') }, h('button', { type: 'button', className: 'mf-ai-thread-select', 'aria-current': th.id === activeId ? 'true' : 'false', onClick: () => intelligenceSelectThread(app, th.id) }, h('strong', {}, th.title), h('small', {}, th.scopeLabel + ' · ' + th.updatedTime + ' · ' + th.messages.length + ' msg')), h('button', { type: 'button', className: 'mf-ai-thread-delete', 'aria-label': 'Excluir conversa ' + th.title, title: 'Excluir conversa', onClick: () => intelligenceDeleteThread(app, th.id) }, '×')))))), totalThreads > 0 ? h('div', { className: 'mf-ai-history-foot' }, h('button', { type: 'button', className: 'ghost-button full', onClick: () => intelligenceClearHistory(app) }, 'Limpar histórico do perfil')) : null);
 }
 function renderIntelligenceView(app) {
+    var _a;
+    if (((_a = app.state.workIntelligenceDemo) === null || _a === void 0 ? void 0 : _a.enabled) && typeof renderWorkIntelligenceDemo === 'function')
+        return renderWorkIntelligenceDemo(app);
     if (typeof intelligenceEnsureHydrated === 'function')
         intelligenceEnsureHydrated(app);
     const s = app.state, tab = s.intelligenceTab || 'today';
@@ -2657,7 +2660,7 @@ function renderIntelligenceView(app) {
     const activeScope = s.intelligenceDraftScope || intelligencePageScope(app, s.intelligenceContext || s.page);
     let section = null;
     if (tab === 'today')
-        section = h('div', { className: 'mf-ai-today' }, h('div', { className: 'mf-ai-welcome' }, h('span', { className: 'micro-label' }, 'PAINEL CONCEITUAL · DADOS FICTÍCIOS'), h('h2', {}, 'Três assuntos para explorar.'), h('p', {}, 'Exemplos fictícios. Eles não representam alertas reais das suas contas.')), h('div', { className: 'mf-ai-card-grid' }, intelligenceExampleCard(app, 'future', 'Compromissos à frente', 'Analise pagamentos futuros antes de separar dinheiro para investir.', 'calendar', 'Avalie meus compromissos futuros antes de eu reservar dinheiro para investimentos.'), intelligenceExampleCard(app, 'budgets', 'Limites mais inteligentes', 'Compare o comportamento das categorias antes de alterar seu orçamento.', 'pie', 'Ajude-me a elaborar limites inteligentes para o próximo mês.'), intelligenceExampleCard(app, 'reserve', 'Reserva e liquidez', 'Entenda a diferença entre saldo disponível e dinheiro realmente livre.', 'shield', 'Como calcular o dinheiro realmente livre para poupar ou investir?')), h('div', { className: 'mf-ai-explainer' }, h(Icon, { name: 'shield', size: 19 }), h('div', {}, h('strong', {}, 'Insights econômicos por padrão'), h('p', {}, 'Na integração definitiva, alertas matemáticos virão do motor financeiro; o GPT-6.1 Sol será acionado apenas quando você solicitar explicação ou análise.'))));
+        section = h('div', { className: 'mf-ai-today' }, h('button', { type: 'button', className: 'ghost-button', onClick: () => workDemoLoad(app) }, 'Explorar nova Inteligência · dados fictícios'), h('div', { className: 'mf-ai-welcome' }, h('span', { className: 'micro-label' }, 'PAINEL CONCEITUAL · DADOS FICTÍCIOS'), h('h2', {}, 'Três assuntos para explorar.'), h('p', {}, 'Exemplos fictícios. Eles não representam alertas reais das suas contas.')), h('div', { className: 'mf-ai-card-grid' }, intelligenceExampleCard(app, 'future', 'Compromissos à frente', 'Analise pagamentos futuros antes de separar dinheiro para investir.', 'calendar', 'Avalie meus compromissos futuros antes de eu reservar dinheiro para investimentos.'), intelligenceExampleCard(app, 'budgets', 'Limites mais inteligentes', 'Compare o comportamento das categorias antes de alterar seu orçamento.', 'pie', 'Ajude-me a elaborar limites inteligentes para o próximo mês.'), intelligenceExampleCard(app, 'reserve', 'Reserva e liquidez', 'Entenda a diferença entre saldo disponível e dinheiro realmente livre.', 'shield', 'Como calcular o dinheiro realmente livre para poupar ou investir?')), h('div', { className: 'mf-ai-explainer' }, h(Icon, { name: 'shield', size: 19 }), h('div', {}, h('strong', {}, 'Insights econômicos por padrão'), h('p', {}, 'Na integração definitiva, alertas matemáticos virão do motor financeiro; o GPT-6.1 Sol será acionado apenas quando você solicitar explicação ou análise.'))));
     else if (tab === 'chat')
         section = h('div', { className: 'mf-ai-workbench' }, renderIntelligenceHistorySidebar(app), h('div', { className: 'mf-ai-chat-main mf-ai-workbench-main' }, h('div', { className: 'mf-ai-workbench-header' }, h('div', { className: 'mf-ai-chat-hero' }, h('span', { className: 'mf-ai-orb' }, h(Icon, { name: 'spark', size: 25 })), h('h2', {}, 'Central de conversação financeira'), h('p', {}, 'Histórico compartilhado com o chat lateral, salvo localmente quando disponível. Não cole credenciais.')), h('div', { className: 'mf-ai-workbench-badges' }, h('span', { className: 'mf-ai-conn-pill ' + convState.css }, convState.pill), h('span', { className: 'mf-ai-scope-badge' }, 'Contexto: ' + activeScope.label + ' · ' + activeScope.period))), s.intelligenceDraftScope ? h('div', { className: 'mf-ai-context-meta' }, h('span', {}, 'Rascunho de ' + s.intelligenceDraftScope.label), h('span', {}, s.intelligenceDraftScope.period)) : null, s.intelligencePreparedQuestion ? h('div', { className: 'mf-ai-prepared', role: 'status' }, h('span', { className: 'micro-label' }, 'PERGUNTA PREPARADA · NÃO ENVIADA'), h('p', {}, s.intelligencePreparedQuestion), h('small', {}, 'Este rascunho não é enviado ao Sol. Use os casos fictícios autorizados abaixo; nenhuma chamada ocorreu aqui.')) : null, messages.length === 0 ? h('div', { className: 'mf-ai-empty-thread' }, h('h3', {}, 'Comece uma análise ou prepare uma categorização supervisionada'), h('p', {}, 'Suas conversas ficam organizadas por data na coluna à esquerda e continuam disponíveis ao alternar para o chat lateral em qualquer uma das oito áreas.'), h('div', { className: 'mf-ai-starter-grid' }, ['Categorize minha compra do mercado como Alimentação.', 'Mostre um resumo estruturado das minhas movimentações carregadas.', 'Como construir uma reserva de emergência?', 'Quando faz sentido antecipar uma dívida?'].map((q, i) => h('button', { type: 'button', className: 'mf-ai-context-prompt', key: i, onClick: () => intelligenceSubmitQuestion(app, q) }, h('span', {}, q), h(Icon, { name: 'arrow', size: 14 }))))) :
             h('div', { className: 'mf-ai-thread', role: 'log', 'aria-live': 'polite' }, ...messages.map(m => renderIntelligenceMessageItem(app, m)), s.aiBusy ? h('div', { className: 'mf-ai-msg is-assistant is-streaming', role: 'status' }, h('strong', {}, 'Assistente MF'), h('p', {}, 'Processando solicitação…')) : null), s.aiError ? h('p', { className: 'mf-ai-error', role: 'alert' }, s.aiError) : null, h('div', { className: 'mf-ai-composer' }, h('label', { className: 'mf-ai-composer-label', htmlFor: 'mf-ai-draft' }, 'Sua pergunta ou comando supervisionado'), h('textarea', { id: 'mf-ai-draft', value: s.intelligenceDraft || '', rows: 3, maxLength: 750, placeholder: 'Ex.: Categorize minha compra do mercado de ontem como Alimentação…', onChange: (e) => app.setState({ intelligenceDraft: e.target.value }), onKeyDown: (e) => { if (e.key === 'Enter' && !e.shiftKey) {
@@ -2677,8 +2680,11 @@ function renderIntelligenceView(app) {
         } } }, item.label))), h('div', { id: 'mf-ai-section-' + tab, role: 'tabpanel', 'aria-labelledby': 'mf-ai-tab-' + tab, tabIndex: 0 }, section), h('details', { className: 'mf-ai-lab-disclosure' }, h('summary', {}, h(Icon, { name: 'settings', size: 17 }), h('span', {}, 'Laboratório de Inteligência'), h('small', {}, 'Configurações técnicas, conexão OAuth, memória e contexto sintético')), renderIntelligenceConnection(app), renderIntelligencePrivacy(app), renderIntelligenceFinancialContext(app)));
 }
 function renderIntelligencePanel(app) {
+    var _a;
     if (!app.state.intelligencePanelOpen)
         return null;
+    if (((_a = app.state.workIntelligenceDemo) === null || _a === void 0 ? void 0 : _a.enabled) && typeof renderWorkIntelligencePanel === 'function')
+        return renderWorkIntelligencePanel(app);
     if (typeof intelligenceEnsureHydrated === 'function')
         intelligenceEnsureHydrated(app);
     const info = intelligenceContextFor(app.state.intelligenceContext);
@@ -3933,4 +3939,181 @@ function intelligenceBuildStructuredSummaryCard(app) {
             'Soma de uma única origem (' + sourceLabel + '), nunca banco + manual; ' + excluded +
             ' registros pendentes/desconsiderados fora dos totais. Valores apenas dos registros carregados, não saldo auditado.'
     };
+}
+let workDemoSequence = 0;
+function workDemoId() { return 'work-demo-' + (++workDemoSequence); }
+function workDemoInitial() {
+    const id = workDemoId();
+    return { enabled: true, tab: 'today', source: 'bank', status: 'loading', error: '', revision: 0, snapshot: null,
+        draft: '', threads: [{ id, title: 'Nova conversa', messages: [] }], activeId: id, proposal: null, audit: [] };
+}
+function workDemoMoney(n) { return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(n / 100); }
+function workDemoSnapshot(raw, source) {
+    var _a, _b, _c, _d, _e, _f, _g;
+    if (!raw || raw.source !== source || raw.stage !== 'synthetic_financial_context_preview' ||
+        raw.onlyFictitiousFinancialData !== true || raw.realFinancialDataIncluded !== false ||
+        raw.inferenceCalled !== false || raw.changesApplied !== false || raw.cloudCutoverAllowed !== false ||
+        raw.engine !== 'shared/finance-period-ledger.mjs')
+        throw Error('O adaptador não confirmou a origem fictícia.');
+    const money = (v) => { if (!Number.isSafeInteger(v))
+        throw Error('Valor fictício inválido.'); return v; };
+    const text = (v) => { if (typeof v !== 'string' || v.length > 300)
+        throw Error('Texto fictício inválido.'); return v; };
+    if (!Array.isArray(raw.budgets) || !Array.isArray(raw.warnings))
+        throw Error('Contexto fictício incompleto.');
+    return { source, engine: raw.engine, period: { start: text((_a = raw.period) === null || _a === void 0 ? void 0 : _a.start), end: text((_b = raw.period) === null || _b === void 0 ? void 0 : _b.end) },
+        realized: { incomeCents: money((_c = raw.realized) === null || _c === void 0 ? void 0 : _c.incomeCents), expenseCents: money((_d = raw.realized) === null || _d === void 0 ? void 0 : _d.expenseCents), netCents: money((_e = raw.realized) === null || _e === void 0 ? void 0 : _e.netCents) },
+        budgets: raw.budgets.map((b) => ({ category: text(b.category), limitCents: money(b.limitCents), spentCents: money(b.spentCents), pct: b.pct === null ? null : money(b.pct) })),
+        future: { pendingConfirmedExpensesCents: money((_f = raw.future) === null || _f === void 0 ? void 0 : _f.pendingConfirmedExpensesCents), futureUncertainIncomeCents: money((_g = raw.future) === null || _g === void 0 ? void 0 : _g.futureUncertainIncomeCents) },
+        warnings: raw.warnings.map(text) };
+}
+async function workDemoLoad(app, source = 'bank', adapter) {
+    var _a;
+    const previous = app.state.workIntelligenceDemo || workDemoInitial();
+    const revision = previous.revision + 1;
+    app.setState({ workIntelligenceDemo: { ...previous, enabled: true, source, revision, status: 'loading', error: '', snapshot: null,
+            proposal: ((_a = previous.proposal) === null || _a === void 0 ? void 0 : _a.status) === 'pending' ? { ...previous.proposal, status: 'stale' } : previous.proposal } });
+    try {
+        const read = adapter || (typeof desktop !== 'undefined' && (desktop === null || desktop === void 0 ? void 0 : desktop.aiFinancialContextDemo) ?
+            (s) => desktop.aiFinancialContextDemo(s) : null);
+        if (!read)
+            throw Error('O adaptador de demonstração está indisponível neste ambiente.');
+        const snapshot = workDemoSnapshot(await read(source), source);
+        app.setState((state) => {
+            const current = state.workIntelligenceDemo;
+            return (current === null || current === void 0 ? void 0 : current.enabled) && current.revision === revision ? { workIntelligenceDemo: { ...current, snapshot, status: 'ready' } } : {};
+        });
+    }
+    catch (error) {
+        app.setState((state) => {
+            const current = state.workIntelligenceDemo;
+            return (current === null || current === void 0 ? void 0 : current.enabled) && current.revision === revision ? { workIntelligenceDemo: { ...current, status: 'error', snapshot: null, error: String((error === null || error === void 0 ? void 0 : error.message) || 'Falha ao carregar demonstração.').slice(0, 180) } } : {};
+        });
+    }
+}
+function workDemoUpdate(app, patch) {
+    app.setState((state) => ({ workIntelligenceDemo: { ...state.workIntelligenceDemo, ...patch } }));
+}
+function workDemoExit(app) {
+    app.setState((state) => ({ workIntelligenceDemo: { ...state.workIntelligenceDemo, enabled: false, revision: state.workIntelligenceDemo.revision + 1 }, intelligencePanelOpen: false }));
+}
+function workDemoNewThread(app) {
+    const d = app.state.workIntelligenceDemo, id = workDemoId();
+    workDemoUpdate(app, { threads: [{ id, title: 'Nova conversa', messages: [] }, ...d.threads].slice(0, 12), activeId: id, draft: '', tab: 'chat' });
+}
+function workDemoPrepare(app) {
+    const d = app.state.workIntelligenceDemo;
+    if ((d === null || d === void 0 ? void 0 : d.status) !== 'ready' || !d.snapshot)
+        return;
+    const b = d.snapshot.budgets.find(b => b.spentCents > b.limitCents);
+    if (!b)
+        return;
+    workDemoUpdate(app, { tab: 'actions', proposal: { id: workDemoId(), revision: d.revision, source: d.source, category: b.category,
+            beforeCents: b.limitCents, afterCents: b.spentCents, status: 'pending' } });
+}
+function workDemoResolve(app, id, decision) {
+    var _a;
+    const d = app.state.workIntelligenceDemo, p = d === null || d === void 0 ? void 0 : d.proposal;
+    if (!(d === null || d === void 0 ? void 0 : d.enabled) || !p || p.id !== id || p.status !== 'pending')
+        return;
+    const current = (_a = d.snapshot) === null || _a === void 0 ? void 0 : _a.budgets.find(b => b.category === p.category);
+    const valid = d.status === 'ready' && p.revision === d.revision && p.source === d.source &&
+        (current === null || current === void 0 ? void 0 : current.limitCents) === p.beforeCents && (current === null || current === void 0 ? void 0 : current.spentCents) === p.afterCents;
+    const status = decision === 'deny' ? 'denied' : valid ? 'approved' : 'stale';
+    workDemoUpdate(app, { proposal: { ...p, status }, audit: [...d.audit, { id: p.id, decision, result: status }].slice(-30) });
+}
+const WORK_DEMO_QUESTIONS = ['Quanto gastei com alimentação?', 'Quais orçamentos estão em risco?', 'Quanto tenho comprometido?', 'Posso comprar um celular parcelado?'];
+function workDemoAnswer(snapshot, question) {
+    const q = intelligenceFoldText(question);
+    if (q.includes('alimentacao')) {
+        const b = snapshot.budgets.find(b => b.category === 'Alimentação');
+        return b ? 'Alimentação: ' + workDemoMoney(b.spentCents) + '. Valor confirmado no exemplo para ' + snapshot.period.start + ' a ' + snapshot.period.end + '.' : 'Não há dados suficientes de alimentação neste exemplo.';
+    }
+    if (q.includes('orcamento') || q.includes('limite')) {
+        const risk = snapshot.budgets.filter(b => b.spentCents > b.limitCents);
+        return risk.length ? risk.map(b => b.category + ': ' + workDemoMoney(b.spentCents) + ' gastos, limite ' + workDemoMoney(b.limitCents) + '.').join(' ') : 'Nenhum orçamento do exemplo está excedido. Isso não prevê o restante do mês.';
+    }
+    if (q.includes('comprometido') || q.includes('compromisso'))
+        return 'Compromissos futuros confirmados do exemplo: ' + workDemoMoney(snapshot.future.pendingConfirmedExpensesCents) + '. Receitas incertas: ' + workDemoMoney(snapshot.future.futureUncertainIncomeCents) + ', fora do realizado.';
+    if (q.includes('celular') || q.includes('comprar') || q.includes('parcel'))
+        return 'Dados insuficientes: não há saldo bancário verificado nem projeção certificada. Use Simular compra para informar as premissas; este exemplo não conclui se a compra cabe no seu caixa.';
+    if (q.includes('categoria') || q.includes('categorize') || q.includes('planej'))
+        return 'Esta demonstração prepara somente ajustes de limite fictício. Categorização e compromissos supervisionados permanecem como próximas fatias; nenhum registro será alterado.';
+    return 'Receitas do exemplo: ' + workDemoMoney(snapshot.realized.incomeCents) + '; despesas: ' + workDemoMoney(snapshot.realized.expenseCents) + '. Diferença: ' + workDemoMoney(snapshot.realized.netCents) + ', que não representa saldo disponível. Resposta determinística, sem modelo de IA.';
+}
+function workDemoSend(app, question) {
+    const d = app.state.workIntelligenceDemo, q = String(question || '').trim().slice(0, 750);
+    if (!q || (d === null || d === void 0 ? void 0 : d.status) !== 'ready' || !d.snapshot)
+        return;
+    const thread = d.threads.find(t => t.id === d.activeId);
+    if (!thread)
+        return;
+    const messages = [...thread.messages,
+        { id: workDemoId(), role: 'user', text: q, source: d.source },
+        { id: workDemoId(), role: 'assistant', text: workDemoAnswer(d.snapshot, q), question: q, source: d.source }];
+    workDemoUpdate(app, { draft: '', threads: d.threads.map(t => t.id === thread.id ? { ...t, title: t.messages.length ? t.title : q.slice(0, 42), messages: messages.slice(-50) } : t) });
+}
+function renderWorkDemoProposal(app, d) {
+    const p = d.proposal;
+    if (!p)
+        return h('div', { className: 'mf-work-empty' }, h('h3', {}, 'Nenhuma alteração preparada'), h('p', {}, 'Escolha um alerta no radar para preparar uma prévia fictícia.'));
+    const labels = { pending: 'Aguardando sua decisão', approved: 'Simulação concluída · nada gravado', denied: 'Proposta negada · nada gravado', stale: 'Prévia desatualizada · prepare novamente' };
+    return h('section', { className: 'mf-work-proposal', 'aria-label': 'Prévia fictícia de ajuste de limite' }, h('span', { className: 'mf-work-badge' }, 'Recomendação · demonstração'), h('h3', {}, 'Revisar limite de ' + p.category), h('p', {}, 'Exemplo de ajuste ao gasto já lançado. Não é uma recomendação para o seu orçamento pessoal.'), h('div', { className: 'mf-work-diff' }, h('div', {}, h('small', {}, 'Limite atual fictício'), h('strong', {}, workDemoMoney(p.beforeCents))), h('span', { 'aria-hidden': 'true' }, '→'), h('div', {}, h('small', {}, 'Prévia fictícia'), h('strong', {}, workDemoMoney(p.afterCents)))), h('p', {}, 'Validação: fonte, revisão, categoria e valores devem continuar iguais.'), h('p', { role: 'status', 'data-work-proposal-status': p.status }, labels[p.status]), p.status === 'pending' ? h('div', { className: 'mf-work-actions' }, h('button', { type: 'button', className: 'primary-button', onClick: () => workDemoResolve(app, p.id, 'allow') }, 'Permitir simulação'), h('button', { type: 'button', className: 'ghost-button', onClick: () => workDemoResolve(app, p.id, 'deny') }, 'Negar')) : null, h('small', {}, 'Sem escrita no SQLite. Decisão registrada apenas nesta sessão demonstrativa.'));
+}
+function renderWorkDemoChat(app, d, compact = false) {
+    const thread = d.threads.find(t => t.id === d.activeId);
+    return h('div', { className: 'mf-work-conversation' }, h('div', { className: 'mf-work-actions' }, h('button', { type: 'button', className: 'ghost-button', onClick: () => workDemoNewThread(app) }, 'Nova conversa fictícia'), h('select', { 'aria-label': 'Conversas fictícias', value: d.activeId, onChange: (e) => workDemoUpdate(app, { activeId: e.target.value }) }, ...d.threads.map(t => h('option', { key: t.id, value: t.id }, t.title)))), h('div', { className: 'mf-work-messages', role: 'log', 'aria-live': 'polite', 'aria-label': 'Mensagens da demonstração' }, !(thread === null || thread === void 0 ? void 0 : thread.messages.length) ? h('div', { className: 'mf-work-empty' }, h('h3', {}, 'Converse com os números do exemplo'), h('p', {}, 'Respostas locais explicáveis. Sem envio para IA.')) : null, ...((thread === null || thread === void 0 ? void 0 : thread.messages) || []).map(m => h('article', { key: m.id, className: 'mf-work-message is-' + m.role }, h('small', {}, m.role === 'user' ? 'Você · demonstração' : 'Assistente · resposta determinística'), h('p', {}, m.text), m.role === 'assistant' ? h('details', {}, h('summary', {}, 'Dados e cálculo consultados'), h('p', {}, 'Fonte fictícia: ' + m.source + '. Motor: shared/finance-period-ledger.mjs. Novembro/2026. Banco e manual separados; pendências e transferências fora do realizado. Sem saldo verificado.')) : null))), h('div', { className: 'mf-work-prompts' }, ...WORK_DEMO_QUESTIONS.slice(0, compact ? 2 : 4).map(q => h('button', { type: 'button', key: q, className: 'ghost-button', disabled: d.status !== 'ready', onClick: () => workDemoSend(app, q) }, q))), h('form', { className: 'mf-work-composer', onSubmit: (e) => { e.preventDefault(); workDemoSend(app, d.draft); } }, h('label', {}, 'Pergunta sobre os dados fictícios', h('textarea', { rows: 2, maxLength: 750, value: d.draft, disabled: d.status !== 'ready', onChange: (e) => workDemoUpdate(app, { draft: e.target.value }) })), h('button', { className: 'primary-button', type: 'submit', disabled: d.status !== 'ready' || !d.draft.trim() }, 'Enviar demonstração')));
+}
+function renderWorkIntelligenceDemo(app) {
+    const d = app.state.workIntelligenceDemo, r = d.snapshot;
+    return h('section', { className: 'section mf-work-demo', 'aria-label': 'Demonstração da nova Inteligência' }, h('header', { className: 'mf-work-hero' }, h('div', {}, h('span', { className: 'micro-label' }, 'INTELIGÊNCIA · DEMONSTRAÇÃO ISOLADA'), h('h2', {}, 'Suas próximas decisões, com contexto.'), h('p', {}, 'Dados fictícios de novembro de 2026 · sem IA externa · sem gravação financeira.')), h('button', { type: 'button', className: 'ghost-button', onClick: () => workDemoExit(app) }, 'Sair da demonstração')), h('div', { className: 'mf-work-toolbar' }, h('label', {}, 'Fonte do exemplo', h('select', { value: d.source, onChange: (e) => void workDemoLoad(app, e.target.value) }, h('option', { value: 'bank' }, 'Banco fictício'), h('option', { value: 'manual' }, 'Manual fictício'))), h('span', { className: 'mf-work-badge' }, 'Histórico temporário · somente nesta sessão')), h('div', { role: 'tablist', 'aria-label': 'Áreas da demonstração', className: 'mf-ai-tabbar' }, ...['today', 'chat', 'actions'].map((tab, i) => h('button', { key: tab, id: 'mf-work-tab-' + tab, role: 'tab', type: 'button', 'aria-selected': d.tab === tab, 'aria-controls': 'mf-work-panel', tabIndex: d.tab === tab ? 0 : -1, className: d.tab === tab ? 'active' : '', onClick: () => workDemoUpdate(app, { tab }), onKeyDown: (e) => { const next = intelligenceNextTab(tab, e.key); if (next) {
+            e.preventDefault();
+            workDemoUpdate(app, { tab: next });
+            setTimeout(() => { var _a; return (_a = document.getElementById('mf-work-tab-' + next)) === null || _a === void 0 ? void 0 : _a.focus(); }, 0);
+        } } }, ['Hoje', 'Conversar', 'Ações'][i]))), h('div', { id: 'mf-work-panel', role: 'tabpanel', 'aria-labelledby': 'mf-work-tab-' + d.tab }, d.status === 'loading' ? h('p', { role: 'status' }, 'Preparando contexto fictício…') : d.status === 'error' ? h('div', { role: 'alert' }, h('p', {}, d.error), h('button', { type: 'button', className: 'ghost-button', onClick: () => void workDemoLoad(app, d.source) }, 'Tentar novamente')) :
+        d.tab === 'chat' ? renderWorkDemoChat(app, d) : d.tab === 'actions' ? h('div', {}, renderWorkDemoProposal(app, d), h('details', {}, h('summary', {}, 'Decisões desta sessão (' + d.audit.length + ')'), ...d.audit.map((a, i) => h('p', { key: i }, a.id + ' · ' + a.decision + ' · ' + a.result + ' · sem gravação')))) :
+            r ? h('div', { className: 'mf-work-radar' }, h('div', { className: 'mf-work-primary' }, h('span', { className: 'mf-work-badge' }, 'Alerta · confirmado no exemplo'), h('h3', {}, 'Comece pelos limites que já foram ultrapassados'), ...r.budgets.filter(b => b.spentCents > b.limitCents).map(b => h('div', { key: b.category, className: 'mf-work-budget' }, h('strong', {}, b.category), h('span', {}, workDemoMoney(b.spentCents) + ' / ' + workDemoMoney(b.limitCents)), h('small', {}, b.pct === null ? 'Limite zero · percentual indefinido' : b.pct + '% do limite fictício'), h('progress', { max: 100, value: Math.min(b.pct || 0, 100), 'aria-label': 'Uso fictício de ' + b.category }))), h('button', { type: 'button', className: 'primary-button', disabled: !r.budgets.some(b => b.spentCents > b.limitCents), onClick: () => workDemoPrepare(app) }, 'Preparar ajuste fictício')), h('div', { className: 'mf-work-secondary' }, h('span', { className: 'mf-work-badge' }, 'Confirmado no exemplo'), h('h3', {}, 'Compromissos à frente'), h('strong', { className: 'mf-work-number' }, workDemoMoney(r.future.pendingConfirmedExpensesCents)), h('p', {}, 'Pagamentos futuros confirmados do exemplo. Receitas incertas de ' + workDemoMoney(r.future.futureUncertainIncomeCents) + ' ficam fora do realizado.'), h('button', { type: 'button', className: 'ghost-button', onClick: () => { workDemoUpdate(app, { tab: 'chat' }); workDemoSend(app, 'Quanto tenho comprometido?'); } }, 'Entender os compromissos')), h('aside', { className: 'mf-work-quality' }, h('span', { className: 'mf-work-badge' }, 'Dados insuficientes'), h('h3', {}, 'Quanto posso gastar? Ainda não sabemos.'), h('p', {}, 'Saldo e cobertura histórica não foram verificados. A diferença entre receitas e despesas não é dinheiro livre.'), h('details', {}, h('summary', {}, 'Ver origem e limitações'), h('p', {}, r.engine + ' · ' + r.period.start + ' a ' + r.period.end), h('ul', {}, ...r.warnings.map((w, i) => h('li', { key: i }, w)))))) : null));
+}
+function workDemoPanelKey(app, e) {
+    if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        app.setState({ intelligencePanelOpen: false });
+        return;
+    }
+    if (e.key !== 'Tab')
+        return;
+    const controls = Array.from(e.currentTarget.querySelectorAll('button:not([disabled]),textarea:not([disabled]),select:not([disabled]),summary,[tabindex="0"]'));
+    const first = controls[0], last = controls[controls.length - 1];
+    if (!first)
+        return;
+    if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+    }
+    else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+    }
+}
+const workDemoPanelRefs = new WeakMap();
+function workDemoPanelRef(app) {
+    if (!workDemoPanelRefs.has(app)) {
+        let origin = null;
+        workDemoPanelRefs.set(app, (element) => {
+            var _a;
+            if (element) {
+                origin = document.activeElement;
+                (_a = element.querySelector('button')) === null || _a === void 0 ? void 0 : _a.focus();
+            }
+            else if (origin === null || origin === void 0 ? void 0 : origin.isConnected)
+                origin.focus();
+        });
+    }
+    return workDemoPanelRefs.get(app);
+}
+function renderWorkIntelligencePanel(app) {
+    const d = app.state.workIntelligenceDemo, context = intelligenceContextFor(app.state.intelligenceContext).label;
+    return h('div', { className: 'mf-ai-backdrop', onMouseDown: (e) => { if (e.target === e.currentTarget)
+            app.setState({ intelligencePanelOpen: false }); } }, h('aside', { className: 'mf-ai-drawer mf-work-demo mf-work-drawer', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Demonstração contextual de ' + context, ref: workDemoPanelRef(app), onKeyDown: (e) => workDemoPanelKey(app, e) }, h('header', { className: 'mf-work-hero' }, h('div', {}, h('span', { className: 'micro-label' }, 'DEMONSTRAÇÃO · CONTEXTO AUTORIZADO'), h('h2', {}, context), h('p', {}, 'Apenas o nome da seção; os números são fictícios.')), h('div', { className: 'mf-work-actions' }, h('button', { type: 'button', className: 'ghost-button', onClick: () => app.setState({ page: 'intelligence', intelligencePanelOpen: false, workIntelligenceDemo: { ...d, tab: 'chat' } }) }, 'Expandir demonstração'), h('button', { type: 'button', className: 'close-button', 'aria-label': 'Fechar demonstração contextual', onClick: () => app.setState({ intelligencePanelOpen: false }) }, '×'))), renderWorkDemoChat(app, d, true)));
 }
