@@ -20,7 +20,7 @@
 
 ## Provas executadas e limitações
 - Confirmados no GitHub: R branch inicialmente idêntica à coord/870b7da8, PR #51 publicado separadamente, Issue #49 e contratos obrigatórios lidos.
-- **Executado em V8 isolado sobre código extraído do arquivo remoto:** 4/4 probes (invalidação de período, centavos formatados, rotas whitelist e botões de ações sintéticas/desconhecidas desativados).
+- **Executado em V8 isolado sobre código extraído do arquivo remoto:** 7/7 probes (invalidação de período, centavos formatados, rotas whitelist, ações sintéticas/desconhecidas bloqueadas, carregamento de payload autorizado, descarte de resposta stale e rejeição de contrato inseguro).
 - **Não executado / não afirmar sucesso:** instalação/checkout Windows, screenshot Electron antes/depois, Computer Use nativo, testes Node, TypeScript `npm run test:types`, `npm test`, F08, ASAR, teste integral de IPC e temas em 1366x768/1920x1080. O teste Node adicionado precisa ser executado pelo integrador ou Work com checkout real.
 - **Limite do PR visual isolado:** os serviços do PR #51 ainda não existem nesta branch; a integração funcional de ponta a ponta e a regeneração canônica de `app/app.js` devem ocorrer **na branch do Integrador**, nunca como substituição do backend.
 - Não foram alterados dados pessoais, segredos, configuração de API paga, main, produção, CircleCI pago nem gerado EXE.
