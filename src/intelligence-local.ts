@@ -55,15 +55,51 @@ async function localFinancialRadar(app:any){
 }
 async function localFinancialSubmit(app:any,question:string){
  if(app.state.localFinancialBusy||!String(question||'').trim())return;
- const access=app.state.localFinancialAccess,q=String(question).trim().slice(0,750),scope=intelligencePageScope(app),messages=[...intelligenceHistoryList(app)];
- const user:IntelligenceChatMessage={id:'local-u-'+Date.now(),role:'user',text:q,status:'sent',createdAt:intelligenceNowTime(),scopeLabel:scope.label,periodLabel:app.state.localFinancialMonth||app.state.month};
+ const access:LocalFinancialAccess=app.state.localFinancialAccess;
+ const q=String(question).trim().slice(0,700),scope=intelligencePageScope(app),messages=[...intelligenceHistoryList(app)];
+ const month=app.state.localFinancialMonth||app.state.month,signature=intelligencePremiumSignature(app);
+ const request=(app.__localChatRequest||0)+1;app.__localChatRequest=request;
+ const user:IntelligenceChatMessage={id:'local-u-'+Date.now(),role:'user',text:q,status:'sent',
+  createdAt:intelligenceNowTime(),scopeLabel:scope.label,periodLabel:month};
  app.setState({localFinancialBusy:true,intelligenceDraft:''});
- const parsed=localFinancialParse(q,app.state.categories);let reply:LocalFinancialReply=null,error='';
- try{if(parsed)reply=await localFinancialQuery(app,parsed);else error='Consulta ainda não reconhecida. Pergunte sobre alimentação, assinaturas, maiores despesas, orçamentos, compromissos, comparação ou revisão. Pedidos de alteração não são executados.';}
- catch(e:any){error=String(e.message||'Consulta local indisponível.').slice(0,220);}
- if(app.state.localFinancialAccess?.token!==access?.token)return;
- const answer:IntelligenceChatMessage={id:'local-a-'+Date.now(),role:'assistant',text:reply?.text||error,status:reply?'done':'error',createdAt:intelligenceNowTime(),scopeLabel:scope.label,periodLabel:user.periodLabel,structuredCard:reply?.card||null,details:reply?JSON.stringify(reply.references):'Sem alteração financeira nem envio externo.'};
- intelligenceSyncThreadMessages(app,[...messages,user,answer],scope);app.setState({localFinancialBusy:false});
+ let reply:LocalFinancialReply=null,operational:any=null,error='';
+ try{
+  const api=localFinancialAPI() as any;
+  if(typeof api?.intelligenceOperationalAsk==='function'){
+   operational=await api.intelligenceOperationalAsk({token:access.token,month,question:q});
+   if(operational?.contract!=='IC-v1/I-P0.2-read-only'||operational.readOnly!==true||
+      operational.changesApplied!==false||operational.modelCalled!==false)throw Error('Resposta operacional não verificada.');
+  }else{
+   // Compatibility during isolated R branch: I-P0.2 becomes active after integration.
+   const parsed=localFinancialParse(q,app.state.categories);
+   if(parsed)reply=await localFinancialQuery(app,parsed);
+   else error='Consulta ainda não reconhecida. O serviço de conversa operacional será disponibilizado na integração do PR #51.';
+  }
+ }catch(e:any){error=String(e?.message||'Consulta local indisponível.').slice(0,220);}
+ if(request!==app.__localChatRequest||app.state.localFinancialAccess?.token!==access?.token||
+    signature!==intelligencePremiumSignature(app)){
+  if(request===app.__localChatRequest)app.setState({localFinancialBusy:false});
+  return;
+ }
+ const state=operational?.uiState;
+ const answerText=operational?.answer||reply?.text||error||'Consulta indisponível.';
+ const finalStatus:IntelligenceChatMessage['status']=operational?
+  (state==='ready'||state==='empty'?'done':state==='unsupported'?'unimplemented':state==='denied'||state==='expired'?'unavailable':'error'):
+  reply?'done':'error';
+ const factsValid=operational&&(state==='ready'||state==='empty');
+ const evidence=factsValid?(operational.profile==='synthetic'?'Ambiente sintético':'Fonte '+(operational.source==='bank'?'bancária':'manual'))+
+  ' · '+intelligencePremiumCoverage(operational.coverage)+' · '+month:'';
+ const answer:IntelligenceChatMessage={
+  id:'local-a-'+Date.now(),role:'assistant',text:answerText,status:finalStatus,
+  createdAt:intelligenceNowTime(),scopeLabel:scope.label,periodLabel:month,
+  structuredCard:factsValid&&operational.card?operational.card:reply?.card||null,
+  operationalActions:factsValid&&Array.isArray(operational.actions)?operational.actions:[],
+  operationalEvidence:evidence,
+  details:factsValid?'Consulta local determinística, sem IA externa. Não foi executada qualquer alteração.':
+    reply?JSON.stringify(reply.references):'Nenhuma alteração financeira nem envio externo.'
+ };
+ intelligenceSyncThreadMessages(app,[...messages,user,answer],scope);
+ app.setState({localFinancialBusy:false});
 }
 function renderLocalFinancialAccess(app:any){
  const s=app.state,access:LocalFinancialAccess=s.localFinancialAccess,active=access?.token&&access.expiresAt>Date.now();
