@@ -160,7 +160,7 @@ test('R2: unsupported operational question never generates an invented financial
  await ctx.localFinancialSubmit(a,'Pergunta não suportada');
  assert.equal(a.state.intelligenceMessages[1].status,'unsupported');
  assert.equal(a.state.intelligenceMessages[1].structuredCard,null);
- assert.deepEqual(a.state.intelligenceMessages[1].operationalActions,[]);
+ assert.equal(a.state.intelligenceMessages[1].operationalActions.length,0);
 });
 test('R2: pending chat responses are discarded when read profile or month changes',async()=>{
  let resolve;
