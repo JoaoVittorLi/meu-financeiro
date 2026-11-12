@@ -161,6 +161,33 @@ class IntelligenceOperational{
   // Never route natural-language commands into finance write endpoints.
   if(/\b(crie|criar|altere|alterar|mude|apague|exclua|salve|registre|aplique|aceite|negue|categorize|reclassifique|transfira|pague)\b/.test(q))
    return {...base,uiState:'unsupported',intent:null,answer:'Posso analisar e explicar. Alterações por IA no perfil pessoal permanecem bloqueadas; use o editor manual ou a revisão sintética supervisionada.',evidence:[]};
+  // Explain real synthetic suggestions/audit through the existing guarded service.
+  // This path is read-only and does not call prepare, confirm or undo.
+  const wantsRules=/(sugest|suger|padroes|padroes).*(regra|categori)|(regra).*(suger|sugest)/.test(q);
+  const wantsHistory=/(historico).*(acao|acoes|revisao|regra)/.test(q);
+  if(wantsRules||wantsHistory){
+   if(!this.review)return {...base,uiState:'unsupported',intent:wantsHistory?'review_history':'suggested_rules',
+    answer:'Este recurso de revisão supervisionada só pode operar em perfil sintético validado.',evidence:[],capability:'synthetic_only'};
+   if(typeof input?.reviewToken!=='string'||!input.reviewToken)return {...base,uiState:'denied',
+    intent:wantsHistory?'review_history':'suggested_rules',answer:'Autorize separadamente a revisão do perfil sintético.',evidence:[],capability:'synthetic_only'};
+   try{
+    const report=this.review.list({token:input.reviewToken},owner);
+    const suggestions=Array.isArray(report.suggestions)?report.suggestions:[];
+    const receipts=Array.isArray(report.audit)?report.audit:[];
+    return {...base,uiState:(wantsHistory?receipts:suggestions).length?'ready':'empty',source:'synthetic',profile:'synthetic',
+     capability:'synthetic_only',coverage:report.completeLocalHistory?'complete_local':'partial_local',
+     intent:wantsHistory?'review_history':'suggested_rules',
+     answer:wantsHistory?receipts.length+' recibo(s) locais disponíveis na auditoria sintética.':
+      (report.suggestionsTotal??suggestions.length)+' sugestão(ões) identificada(s) em classificações manuais do ambiente sintético.',
+     facts:wantsHistory?{receiptCount:receipts.length,receipts:receipts.map(a=>({id:a.id,action:a.action,appliedAt:a.appliedAt,undoState:a.undoState}))}:
+      {suggestionCount:report.suggestionsTotal??suggestions.length,suggestions:suggestions.map(a=>({id:a.id,pattern:a.pattern,category:a.category,
+       confidence:a.confidence,reason:a.reason,evidenceCount:a.evidenceCount,state:a.state,conflicts:a.conflicts}))},
+     actions:wantsRules?suggestions.map(a=>action('review:prepare-rule','Revisar regra proposta',true,{
+      handler:'categoryReviewPrepare',operationId:a.id,previewRequired:true})):[action('review:history','Abrir histórico',true,{target:'intelligence',handler:'navigation:review-history'})],
+     evidence:[{source:'CategoryReviewService.list',scanned:report.scanned,partial:!!report.suggestionsPartial}]};
+   }catch(err){const state=errorState(err);return {...base,uiState:state.uiState,capability:'synthetic_only',
+    intent:wantsHistory?'review_history':'suggested_rules',answer:state.unavailableReason,evidence:[]};}
+  }
   let intent=null,category;
   if(/revis|pendentes? de revis|conferir moviment/.test(q))intent='review';
   else if(/compar|mes anterior|aument|diminu/.test(q))intent='compare';
