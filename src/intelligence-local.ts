@@ -31,12 +31,12 @@ async function localFinancialEnable(app:any){
   const grant=await api.localFinancialAuthorize(scope);
   if(app.__localReadGeneration!==generation||app.state.mode!==s.mode){void api.localFinancialRevoke?.(grant.token);return;}
   const backup=s.localFinancialAccess?.backup||{intelligenceThreads:s.intelligenceThreads,intelligenceMessages:s.intelligenceMessages,intelligenceActiveThreadId:s.intelligenceActiveThreadId,intelligenceHydratedMode:s.intelligenceHydratedMode};
-  app.setState({localFinancialAccess:{...grant,backup},localFinancialBusy:false,localFinancialRadar:null,intelligenceThreads:[],intelligenceMessages:[],intelligenceActiveThreadId:null,intelligenceDraft:'',intelligencePreparedQuestion:'',workIntelligenceDemo:s.workIntelligenceDemo?{...s.workIntelligenceDemo,enabled:false}:undefined},()=>void localFinancialRadar(app));
+  app.setState({localFinancialAccess:{...grant,backup},localFinancialBusy:false,localFinancialRadar:null,intelligenceThreads:[],intelligenceMessages:[],intelligenceActiveThreadId:null,intelligenceDraft:'',intelligencePreparedQuestion:'',workIntelligenceDemo:s.workIntelligenceDemo?{...s.workIntelligenceDemo,enabled:false}:undefined},()=>{void localFinancialRadar(app);if(typeof intelligencePremiumLoad==='function')void intelligencePremiumLoad(app);});
  }catch{app.setState({localFinancialBusy:false,localFinancialError:'Não foi possível autorizar a leitura local. Nenhum dado foi consultado por esta solicitação.'});}
 }
 function localFinancialDisable(app:any){
  const access:LocalFinancialAccess=app.state.localFinancialAccess;app.__localReadGeneration=(app.__localReadGeneration||0)+1;
- app.setState({...access?.backup,localFinancialAccess:null,localFinancialRadar:null,localFinancialBusy:false,localFinancialError:'',intelligenceDraft:''});
+ app.setState({...access?.backup,localFinancialAccess:null,localFinancialRadar:null,localFinancialBusy:false,localFinancialError:'',intelligenceDraft:''},()=>{if(typeof intelligencePremiumLoad==='function')void intelligencePremiumLoad(app);});
  if(access?.token)void localFinancialAPI()?.localFinancialRevoke?.(access.token).catch(()=>app.setState({localFinancialError:'A interface encerrou a leitura. A autorização do processo expira em até 15 minutos.'}));
 }
 async function localFinancialQuery(app:any,intent:{intent:LocalFinancialIntent;category?:string}):Promise<LocalFinancialReply>{
@@ -74,9 +74,9 @@ function renderLocalFinancialAccess(app:any){
   access?h('p',{},'Fonte: '+access.source+' · perfil '+access.profile+' · autorização por até 15 minutos.'):null,
   h('div',{className:'mf-ai-access-fields'},
    !access?h('label',{className:'mf-ai-access-field'},'Fonte',h('select',{value:s.mode==='demo'?'manual':s.localFinancialSource||'bank',disabled:s.mode==='demo',onChange:(e:any)=>app.setState({localFinancialSource:e.target.value})},h('option',{value:'bank'},'Contas conectadas'),h('option',{value:'manual'},'Lançamentos manuais'))):null,
-   h('label',{className:'mf-ai-access-field'},'Mês da consulta',h('input',{type:'month',value:s.localFinancialMonth||s.month,onChange:(e:any)=>app.setState({localFinancialMonth:e.target.value,localFinancialRadar:null})})),
+   h('label',{className:'mf-ai-access-field'},'Mês da consulta',h('input',{type:'month',value:s.localFinancialMonth||s.month,onChange:(e:any)=>app.setState({localFinancialMonth:e.target.value,localFinancialRadar:null},()=>{if(typeof intelligencePremiumLoad==='function')void intelligencePremiumLoad(app);})})),
    !access&&s.mode!=='demo'?h('label',{className:'mf-ai-access-planning'},h('input',{type:'checkbox',checked:s.localFinancialPlanning===true,onChange:(e:any)=>app.setState({localFinancialPlanning:e.target.checked})}),h('span',{},'Permitir também leitura do Planejamento')):null),
-  h('div',{className:'mf-ai-proposal-actions'},h('button',{type:'button',className:'primary-button',disabled:s.localFinancialBusy,onClick:()=>active?void localFinancialRadar(app):void localFinancialEnable(app)},active?'Atualizar radar':'Autorizar leitura local'),access?h('button',{type:'button',className:'ghost-button',onClick:()=>localFinancialDisable(app)},'Encerrar leitura e limpar respostas da sessão'):null),
+  h('div',{className:'mf-ai-proposal-actions'},h('button',{type:'button',className:'primary-button',disabled:s.localFinancialBusy,onClick:()=>active?(void localFinancialRadar(app),void intelligencePremiumLoad(app)):void localFinancialEnable(app)},active?'Atualizar radar':'Autorizar leitura local'),access?h('button',{type:'button',className:'ghost-button',onClick:()=>localFinancialDisable(app)},'Encerrar leitura e limpar respostas da sessão'):null),
   s.localFinancialError?h('p',{role:'alert'},s.localFinancialError):null));
 }
 function renderLocalFinancialRadar(app:any){
