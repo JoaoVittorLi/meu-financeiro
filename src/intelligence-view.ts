@@ -318,6 +318,7 @@ function intelligencePremiumButton(app:any,c:any,a:any){
  const routes=['navigation:transactions-review','navigation:transactions','navigation:budgets','navigation:planning',
   'navigation:category-editor','navigation:intelligence-chat','navigation:review-history','categoryReviewPrepare'];
  const enabled=!!a?.permitted&&routes.includes(a?.handler)&&
+  (a.handler!=='navigation:category-editor'||app.state.mode!=='demo')&&
   (a.handler!=='categoryReviewPrepare'||(a.previewRequired===true&&!!a.operationId&&!!app.state.categoryReviewGrant?.token))&&
   (a.handler!=='navigation:review-history'||!!app.state.categoryReviewGrant?.token);
  return h('button',{type:'button',key:a.actionId,className:'mf-premium-action',
@@ -345,6 +346,8 @@ function intelligencePremiumTile(app:any,c:any,icon:string,variant=''){
   h('p',{className:'mf-premium-tile-explanation'},available?
    (c.uiState==='empty'?intelligencePremiumState(c):c.description||'Informações disponíveis da fonte consultada.'):
    intelligencePremiumState(c)),
+  available&&c.id==='UI-01'&&c.evidence?.[1]?
+   h('p',{className:'mf-premium-review-split'},'Confirmadas: '+c.evidence[1].posted+' · Pendentes no banco: '+c.evidence[1].pendingBank+'. Pendente no banco não implica categoria pendente.'):null,
   available?intelligencePremiumEvidence(c):null,
   h('div',{className:'mf-premium-tile-actions'},...actions.map((a:any)=>intelligencePremiumButton(app,c,a))));
 }
@@ -383,7 +386,9 @@ function renderIntelligencePremiumToday(app:any){
     h('button',{type:'button',className:'mf-premium-refresh',disabled:loading,
      onClick:()=>void intelligencePremiumLoad(app)},h(Icon,{name:'arrow',size:15}),loading?'Consultando…':'Atualizar visão'))),
   !grant?h('div',{className:'mf-premium-consent',role:'status'},h(Icon,{name:'shield',size:20}),
-   h('p',{},'Autorize a leitura local acima para consultar suas movimentações. Categorias e estados de disponibilidade continuam acessíveis sem autorização financeira.')):null,
+   h('p',{},s.mode==='real'&&!s.bank?.config?.configured&&s.localFinancialSource!=='manual'?
+    'Nenhuma conexão bancária configurada. Você pode escolher lançamentos manuais na autorização de leitura local acima.':
+    'Autorize a leitura local acima para consultar suas movimentações. Categorias e estados de disponibilidade continuam acessíveis sem autorização financeira.')):null,
   stale?h('div',{className:'mf-premium-alert',role:'status'},'Fonte, perfil, conta ou período mudou. A consulta anterior foi ocultada. Atualize para ver os novos dados.'):null,
   s.intelligencePremiumError?h('div',{className:'mf-premium-alert',role:'alert'},s.intelligencePremiumError):null,
   loading?h('div',{className:'mf-premium-loading',role:'status','aria-label':'Carregando informações financeiras'},
@@ -451,7 +456,7 @@ function renderIntelligenceView(app:any){
           h('h2',{},'Central de conversação financeira'),
           h('p',{},s.categoryReviewGrant?'Conversa temporária compartilhada com o chat lateral. Prévia e confirmação continuam disponíveis na Central.':'Histórico compartilhado com o chat lateral, salvo localmente quando disponível. Não cole credenciais.')),
         h('div',{className:'mf-ai-workbench-badges'},
-          h('span',{className:'mf-ai-conn-pill '+convState.css},convState.pill),
+          h('span',{className:'mf-ai-conn-pill '+convState.css},s.localFinancialAccess?.token?'Leitura local autorizada':convState.pill),
           h('span',{className:'mf-ai-scope-badge'},'Contexto: '+activeScope.label+' · '+activeScope.period))),
       s.intelligenceDraftScope?h('div',{className:'mf-ai-context-meta'},h('span',{},'Rascunho de '+s.intelligenceDraftScope.label),h('span',{},s.intelligenceDraftScope.period)):null,
       s.intelligencePreparedQuestion?h('div',{className:'mf-ai-prepared',role:'status'},
@@ -462,7 +467,7 @@ function renderIntelligenceView(app:any){
         h('h3',{},'Comece uma análise ou prepare uma categorização supervisionada'),
         h('p',{},'Suas conversas ficam organizadas por data na coluna à esquerda e continuam disponíveis ao alternar para o chat lateral em qualquer uma das oito áreas.'),
         h('div',{className:'mf-ai-starter-grid'},
-          ['Categorize minha compra do mercado como Alimentação.','Mostre um resumo estruturado das minhas movimentações carregadas.','Como construir uma reserva de emergência?','Quando faz sentido antecipar uma dívida?'].map((q:string,i:number)=>
+          ['Quais foram meus maiores gastos deste mês?','Compare minhas despesas com o mês anterior.','Quais orçamentos merecem atenção?','Quais compromissos tenho para o próximo mês?'].map((q:string,i:number)=>
             h('button',{type:'button',className:'mf-ai-context-prompt',key:i,onClick:()=>intelligenceSubmitQuestion(app,q)},
               h('span',{},q),h(Icon,{name:'arrow',size:14}))))):
       h('div',{className:'mf-ai-thread',role:'log','aria-live':'polite'},
@@ -502,9 +507,9 @@ function renderIntelligenceView(app:any){
   return h('section',{className:'section mf-intelligence-page','aria-label':'Inteligência financeira'},
     h('div',{className:'mf-ai-intro'},
       h('div',{},h('span',{className:'micro-label'},'INTELIGÊNCIA FINANCEIRA'),
-        h('h2',{},'Seu espaço de análise e conversação'),
-        h('p',{},s.localFinancialAccess?.token?'Hoje e chat consultam os registros autorizados; respostas somente nesta sessão.':'Hoje, conversa com histórico persistente e plano de ação supervisionado.')),
-      h('span',{className:'mf-ai-preview-label'},h(Icon,{name:'shield',size:15}),s.mode==='demo'?'Prévia · dados fictícios':'Prévia · dados locais, sem inferência')),
+        h('h2',{},'Seu centro de comando financeiro'),
+        h('p',{},s.localFinancialAccess?.token?'Hoje e chat consultam os registros autorizados; respostas somente nesta sessão.':'Leitura sob autorização, explicações verificáveis e decisões supervisionadas.')),
+      h('span',{className:'mf-ai-preview-label'},h(Icon,{name:'shield',size:15}),s.mode==='demo'?'Demonstração isolada':s.localFinancialAccess?.token?'Leitura local autorizada':'Sem consulta externa')),
     typeof renderLocalFinancialAccess==='function'?renderLocalFinancialAccess(app):null,
     h('button',{type:'button',className:'outlined-action',onClick:()=>void categoryReviewOpen(app)},'Central de revisão · categorização supervisionada'),
     s.categoryReviewPreview?h('div',{className:'mf-review-drawer-pending',role:'status'},h('p',{},'Uma prévia de categorização aguarda sua decisão.'),h('button',{type:'button',className:'primary-button',onClick:()=>void categoryReviewOpen(app)},'Revisar prévia na Central')):null,
@@ -533,7 +538,7 @@ function renderIntelligencePanel(app:any){
         h('div',{className:'mf-ai-drawer-title-wrap'},
           h('div',{className:'mf-ai-drawer-kicker-row'},
             h('span',{className:'micro-label'},'COPILOTO CONTEXTUAL'),
-            h('span',{className:'mf-ai-conn-pill '+convState.css},convState.pill)),
+            h('span',{className:'mf-ai-conn-pill '+convState.css},s.localFinancialAccess?.token?'Leitura local autorizada':convState.pill)),
           h('h2',{},info.label)),
         h('div',{className:'mf-ai-drawer-head-actions'},
           h('button',{type:'button',className:'ghost-button mf-ai-expand-btn','aria-label':'Nova conversa',title:'Iniciar nova conversa',onClick:()=>intelligenceCreateThread(app)},'Nova'),
