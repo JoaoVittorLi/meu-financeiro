@@ -163,7 +163,7 @@ class IntelligenceOperational{
    return {...base,uiState:'unsupported',intent:null,answer:'Posso analisar e explicar. Alterações por IA no perfil pessoal permanecem bloqueadas; use o editor manual ou a revisão sintética supervisionada.',evidence:[]};
   // Explain real synthetic suggestions/audit through the existing guarded service.
   // This path is read-only and does not call prepare, confirm or undo.
-  const wantsRules=/(sugest|suger|padroes|padroes).*(regra|categori)|(regra).*(suger|sugest)/.test(q);
+  const wantsRules=/(sugest|suger|sugir|sugira|proponha|padroes).*(regra|categori)|(regra).*(suger|sugest|proponha)/.test(q);
   const wantsHistory=/(historico).*(acao|acoes|revisao|regra)/.test(q);
   if(wantsRules||wantsHistory){
    if(!this.review)return {...base,uiState:'unsupported',intent:wantsHistory?'review_history':'suggested_rules',
