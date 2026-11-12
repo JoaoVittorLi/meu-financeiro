@@ -178,10 +178,16 @@ app.whenReady().then(()=>{
  const filename=path.join(app.getPath('userData'),'meu-financeiro.sqlite');
  db=new FinanceDB(filename);
  planner=new PlanningStore(db);
- const localFinancial=new LocalFinancialIntelligence(db,planner);
- // No new review tables, grants or writes in a personal or packaged profile.
- const categoryReview=smokeProfileActive?new CategoryReviewService(db,{syntheticProfile:true}):null;
- const reviewBackupGate=categoryReview?new CategoryReviewBackupGate(categoryReview,path.join(app.getPath('userData'),'review-backups'),{syntheticProfile:true}):null;
+ let localFinancial,categoryReview,reviewBackupGate;
+ function bindLocalFinancialServices(){
+  // A restored/recovered database has a new handle. Never retain grants,
+  // previews or a service pointing at the closed pre-restore connection.
+  localFinancial=new LocalFinancialIntelligence(db,planner);
+  // No new review tables, grants or writes in a personal or packaged profile.
+  categoryReview=smokeProfileActive?new CategoryReviewService(db,{syntheticProfile:true}):null;
+  reviewBackupGate=categoryReview?new CategoryReviewBackupGate(categoryReview,path.join(app.getPath('userData'),'review-backups'),{syntheticProfile:true}):null;
+ }
+ bindLocalFinancialServices();
  ipcMain.handle('finance:review-status',event=>{requireAppSender(event);return {available:!!categoryReview,syntheticOnly:true};});
  for(const [channel,method] of [['authorize','authorize'],['list','list'],['queue','queue'],['prepare','prepare'],['confirm','confirm'],['revoke','revoke']]){
   ipcMain.handle('finance:review-'+channel,(event,input)=>{
@@ -314,7 +320,7 @@ app.whenReady().then(()=>{
  });
  ipcMain.handle('finance:restore',async(event)=>{
    requireAppSender(event);
-   if(syncing||restoring||autoBackupBusy||cloudPreparationBusy)throw new Error('Conclua a sincronização ou cópia em andamento antes de restaurar.');
+   if(syncing||restoring||autoBackupBusy||cloudPreparationBusy||reviewBackupGate?.pending.size)throw new Error('Conclua a sincronização ou cópia em andamento antes de restaurar.');
    const picked=await dialog.showOpenDialog(mainWindow,{title:'Escolher cópia de segurança do Meu Financeiro',properties:['openFile'],filters:[{name:'Cópia completa',extensions:['sqlite']}]});
    if(picked.canceled||!picked.filePaths?.[0])return {cancelled:true};
    // Confirma formato e integridade antes de mostrar qualquer opção destrutiva.
@@ -323,18 +329,20 @@ app.whenReady().then(()=>{
      title:'Confirmar restauração',message:'Substituir os dados atuais por esta cópia?',
      detail:'Seus dados voltarão ao estado da cópia. Antes da restauração, salvaremos uma cópia dos dados atuais. Sua conexão bancária permanecerá configurada.'});
    if(confirmation.response!==1)return {cancelled:true};
+   if(syncing||restoring||autoBackupBusy||cloudPreparationBusy||reviewBackupGate?.pending.size)throw new Error('Conclua a operação em andamento antes de restaurar.');
    restoring=true;
    try{
      const result=await restoreBackup(db,picked.filePaths[0],filename,backupsDirectory());
      db=result.db;
      planner=new PlanningStore(db);
+     bindLocalFinancialServices();
      // Restoring an older snapshot requires a new cloud comparison/approval.
      fs.rmSync(markerFile(app.getPath('userData')),{force:true});
      const state={ok:true};
      mainWindow.webContents.reload();
      return state;
    }catch(error){
-     if(error.recoveredDb){db=error.recoveredDb;planner=new PlanningStore(db);}
+     if(error.recoveredDb){db=error.recoveredDb;planner=new PlanningStore(db);bindLocalFinancialServices();}
      throw new Error('Não foi possível restaurar seus dados: '+error.message);
    }finally{restoring=false;}
  });
