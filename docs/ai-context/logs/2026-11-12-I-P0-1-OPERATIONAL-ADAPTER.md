@@ -33,10 +33,11 @@ const reply = await desktop.intelligenceOperationalAsk({
 - `uiState:'loading'` é gerenciado pela interface durante o IPC. `denied`, `expired`, `error`, `unsupported`, `empty` e `ready` saem do adapter. Descartar resultados se fonte/token/período/perfil mudarem durante a Promise (generation guard).
 
 ## Evidências e limites
-- `tests/intelligence-operational.test.cjs`: 9 testes cobrindo ausência de grant, cents, cobertura parcial, vazio, grant expirado, isolamento sintético, roteamento conversacional, proibição de escrita e parâmetros inválidos.
-- **Executado:** probe funcional no V8 da camada/adaptador com dublês de serviço: **9/9 PASS**. Não equivale a Node real ou SQLite real.
+- `tests/intelligence-operational.test.cjs`: 11 testes cobrindo ausência de grant, cents, cobertura parcial, vazio, grant expirado, isolamento sintético, roteamento conversacional, proibição de escrita e parâmetros inválidos.
+- `tests/intelligence-operational-facts.test.cjs`: seis regressões Node adicionais que exercitam `LocalFinancialIntelligence` e o ledger canônico: centavos, limites, POSTED/PENDING, compromisso confirmado, categoria/comparação, revogação e escopo de Planejamento.
+- **Executado:** probe funcional no V8 do adapter: **11/11 PASS**; probe no V8 do serviço real + ledger canônico: **5/5 PASS**; os seis testes da nova suíte de facts executados no V8 adaptado: **6/6 PASS**. Ainda não equivale a execução Node/SQLite/Electron nativa.
 - **Ainda não executado neste ambiente:** `npm test` Node/SQLite, Electron/IPC nativo, TypeScript, F08, ASAR e Windows; integrador deve executar antes de classificar como integrado/homologado.
-- P0.2 ainda **parcial**: interpretador determinístico de intenções com respostas reais; não há provedor LLM nem tool calling liberado.
+- P0.2 ainda **parcial**: interpretador determinístico de intenções com respostas financeiras reais e consulta de sugestões/recibos **sintéticos mediante token de revisão**. Respostas incluem rotas explícitas de navegação. Não há provedor LLM nem tool calling liberado.
 - Escrita pessoal de IA permanece bloqueada; nenhum custo de API, deploy, CircleCI ou instalador executado.
 
 **Próximo:** Executor R consome os dois IPCs, valida handlers e estados; Integrador junta UI+serviços, recompila renderer, confirma QA e registra contrato IC v1 aditivo.
