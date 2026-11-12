@@ -20,6 +20,7 @@ function localFinancialParse(question:string,categories:any[]=[]):{intent:LocalF
  return null;
 }
 async function localFinancialEnable(app:any){
+ if(app.state.categoryReviewGrant&&typeof categoryReviewDisable==='function')categoryReviewDisable(app);
  const api=localFinancialAPI(),s=app.state;if(s.localFinancialBusy)return;
  if(!api?.localFinancialAuthorize){app.setState({localFinancialError:'Consulta local requer a versão desktop desta candidata.'});return;}
  const source=s.mode==='demo'?'manual':s.localFinancialSource||'bank',profile=s.mode==='demo'?'demo':'real';
@@ -66,6 +67,7 @@ async function localFinancialSubmit(app:any,question:string){
 }
 function renderLocalFinancialAccess(app:any){
  const s=app.state,access:LocalFinancialAccess=s.localFinancialAccess,active=access?.token&&access.expiresAt>Date.now();
+ if(s.categoryReviewGrant)return h('section',{className:'mf-ai-explainer'},h('div',{},h('strong',{},'Revisão sintética autorizada · conversa temporária'),h('p',{},'Mensagens e prévias ficam apenas nesta sessão. Regras e decisões confirmadas são auditadas no SQLite de teste.'),h('button',{type:'button',className:'ghost-button',onClick:()=>categoryReviewDisable(app)},'Encerrar revisão e limpar respostas da sessão')));
  return h('section',{className:'mf-ai-explainer','aria-label':'Permissão de leitura financeira local'},h('div',{},
   h('strong',{},active?'Leitura local autorizada · sem IA externa':'Consultar seus registros locais'),
   h('p',{},'Ao autorizar, movimentos e limites da fonte escolhida serão lidos neste computador. Respostas ficam apenas na memória desta sessão. Consultas usam o mês e a fonte abaixo, sem herdar filtros da tabela.'),

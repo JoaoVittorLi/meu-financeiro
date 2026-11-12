@@ -47,10 +47,17 @@ function categoryColor(color){
   if(typeof color!=='string'||!/^#[a-fA-F0-9]{6}$/.test(color))throw new Error('Cor da categoria inválida.');
   return color.toLowerCase();
 }
-function matchRule(description,scope,rules){
+function matchRule(description,scope,rules,context={}){
   const hay=normalizeLabel(description);
   for(const rule of rules){
+    if(rule.enabled===0)continue;
     if(rule.scope!=='both'&&rule.scope!==scope)continue;
+    // Supervised rules use this same matcher. Missing context fails closed.
+    if(rule.constraint){
+      const c=rule.constraint;
+      if(scope!=='bank'||context.accountId!==c.accountId||context.nature!==c.nature||
+        !Number.isInteger(context.rowid)||context.rowid<=c.afterRowid||context.status!=='POSTED'||context.hasSplits)continue;
+    }
     const needle=normalizeLabel(rule.pattern);
     if(!needle)continue;
     if((rule.matchMode==='exact'&&hay===needle)||
@@ -353,6 +360,10 @@ class FinanceDB {
  listCategories(){
    const categories=this.db.prepare('SELECT name,color,emoji,kind,built_in AS builtIn FROM categories ORDER BY built_in DESC,name COLLATE NOCASE').all().map(x=>({...x}));
    const rules=this.db.prepare('SELECT id,pattern,match_mode AS matchMode,category,scope,priority,enabled FROM category_rules ORDER BY priority ASC,id ASC').all().map(x=>({...x}));
+   if(this.db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='category_rule_constraints'").get()){
+     const constraints=new Map(this.db.prepare('SELECT rule_id,account_id AS accountId,nature,after_rowid AS afterRowid FROM category_rule_constraints').all().map(x=>[x.rule_id,{accountId:x.accountId,nature:x.nature,afterRowid:x.afterRowid}]));
+     for(const rule of rules)if(constraints.has(rule.id))rule.constraint=constraints.get(rule.id);
+   }
    return {categories,rules};
  }
  upsertCategory({previousName,name,color,emoji,kind}){
@@ -494,7 +505,7 @@ class FinanceDB {
        merchant=excluded.merchant,note=excluded.note,nature=excluded.nature,reviewed_at=excluded.reviewed_at`).run(key.accountId,key.externalId,merchant,note,nature,reviewedAt);
    return this.bankOverview();
  }
- batchBankChanges(input){
+ batchBankChanges(input,{inTransaction=false}={}){
    const items=input?.items;
    if(!Array.isArray(items)||!items.length||items.length>100)throw new Error('Selecione entre 1 e 100 movimentações.');
    const category=input?.category==null?null:categoryName(input.category);
@@ -505,7 +516,8 @@ class FinanceDB {
    if(category!==null&&!this.db.prepare('SELECT 1 FROM categories WHERE name=?').get(category))throw new Error('Categoria inválida.');
    const keys=items.map(bankKey);
    if(new Set(keys.map(x=>x.accountId+'|'+x.externalId)).size!==keys.length)throw new Error('Movimentação duplicada na seleção.');
-   this.db.exec('BEGIN IMMEDIATE');
+   if(inTransaction&&!this.db.isTransaction)throw new Error('Transação externa ausente.');
+   if(!inTransaction)this.db.exec('BEGIN IMMEDIATE');
    try{
      for(const key of keys){
        this.getBankTransaction(key);
@@ -517,8 +529,8 @@ class FinanceDB {
          if(nature!==null)this.db.prepare('UPDATE bank_transaction_notes SET nature=? WHERE account_id=? AND external_id=?').run(nature,key.accountId,key.externalId);
        }
      }
-     this.db.exec('COMMIT');return this.bankOverview();
-   }catch(err){this.db.exec('ROLLBACK');throw err;}
+     if(!inTransaction)this.db.exec('COMMIT');return inTransaction?{changed:keys.length}:this.bankOverview();
+   }catch(err){if(!inTransaction)this.db.exec('ROLLBACK');throw err;}
  }
  setBankSplits(input){
    const key=bankKey(input),tx=this.getBankTransaction(key);
@@ -616,14 +628,14 @@ class FinanceDB {
    const aliases=this.db.prepare('SELECT id,pattern,display_name AS displayName FROM merchant_aliases ORDER BY length(pattern) DESC,id ASC').all();
    const splits=this.db.prepare(`SELECT account_id AS accountId,external_id AS externalId,category,amount_cents AS amount FROM bank_transaction_splits ORDER BY position`).all();
    const splitMap=new Map();for(const x of splits){const key=x.accountId+'|'+x.externalId;if(!splitMap.has(key))splitMap.set(key,[]);splitMap.get(key).push({category:x.category,amount:x.amount});}
-   const transactions=this.db.prepare(`SELECT b.external_id AS id,b.account_id AS accountId,a.name AS accountName,b.date,b.description,b.amount_cents AS amount,b.status,b.category AS bankCategory,
+   const transactions=this.db.prepare(`SELECT b.rowid AS rowid,b.external_id AS id,b.account_id AS accountId,a.name AS accountName,b.date,b.description,b.amount_cents AS amount,b.status,b.category AS bankCategory,
      o.category AS overrideCategory,n.merchant,n.note,n.nature,n.reviewed_at AS reviewedAt,l.manual_id AS linkedManualId
      FROM bank_transactions b JOIN bank_accounts a USING(account_id)
      LEFT JOIN bank_category_overrides o ON o.account_id=b.account_id AND o.external_id=b.external_id
      LEFT JOIN bank_transaction_notes n ON n.account_id=b.account_id AND n.external_id=b.external_id
      LEFT JOIN bank_manual_links l ON l.account_id=b.account_id AND l.external_id=b.external_id
      ORDER BY b.date DESC,b.external_id DESC LIMIT 2500`).all().map(x=>{
-       const fromRule=matchRule(x.description,'bank',rules);
+       const fromRule=matchRule(x.description,'bank',rules,{accountId:x.accountId,rowid:x.rowid,status:x.status,nature:x.nature&&x.nature!=='auto'?x.nature:x.amount<0?'expense':'income',hasSplits:splitMap.has(x.accountId+'|'+x.id)});
        const category=x.overrideCategory||fromRule||providerCategory(x.bankCategory,categories);
        const categorySource=x.overrideCategory?'manual':fromRule?'rule':'bank';
        const {overrideCategory,...safe}=x;
@@ -634,7 +646,7 @@ class FinanceDB {
          splits:splitOutdated?[]:savedSplits,splitOutdated};
    });
    // Dashboard aggregates use the ENTIRE local bank history, never only the 2,500 visible rows.
-   const ledger=this.db.prepare(`SELECT b.account_id AS accountId,b.external_id AS externalId,b.date,b.description,
+   const ledger=this.db.prepare(`SELECT b.rowid AS rowid,b.account_id AS accountId,b.external_id AS externalId,b.date,b.description,b.status,
      b.amount_cents AS amount,b.category AS bankCategory,o.category AS overrideCategory,n.nature
      FROM bank_transactions b
      LEFT JOIN bank_category_overrides o USING(account_id,external_id)
@@ -648,7 +660,7 @@ class FinanceDB {
      const day=dayMap.get(x.date),amount=Math.abs(x.amount);
      if(nature==='income'){
        day.income+=amount;
-       const proposed=x.overrideCategory||matchRule(x.description,'bank',rules)||(normalizeLabel(x.description).includes('PIX DEVOLVIDO')?'Reembolsos':providerCategory(x.bankCategory,categories));
+       const proposed=x.overrideCategory||matchRule(x.description,'bank',rules,{...x,nature,hasSplits:splitMap.has(x.accountId+'|'+x.externalId)})||(normalizeLabel(x.description).includes('PIX DEVOLVIDO')?'Reembolsos':providerCategory(x.bankCategory,categories));
        const category=kindByCategory.get(proposed)==='expense'?'Outros':proposed;
        day.incomeCategories.set(category,(day.incomeCategories.get(category)||0)+amount);
        continue;
@@ -657,7 +669,7 @@ class FinanceDB {
      day.expense+=amount;
      const parts=splitMap.get(x.accountId+'|'+x.externalId)||[];
      const ok=parts.length&&parts.reduce((sum,part)=>sum+part.amount,0)===amount;
-     const category=x.overrideCategory||matchRule(x.description,'bank',rules)||providerCategory(x.bankCategory,categories);
+     const category=x.overrideCategory||matchRule(x.description,'bank',rules,{...x,nature,hasSplits:splitMap.has(x.accountId+'|'+x.externalId)})||providerCategory(x.bankCategory,categories);
      for(const part of ok?parts:[{category,amount}]){
        const bucket=kindByCategory.get(part.category)==='income'?'Outros':part.category;
        day.categories.set(bucket,(day.categories.get(bucket)||0)+part.amount);
@@ -725,4 +737,4 @@ class FinanceDB {
  }
  close(){this.db.close();}
 }
-module.exports={FinanceDB, validate,matchRule,normalizeLabel,categoryEmoji,ALLOWED_EMOJIS};
+module.exports={FinanceDB, validate,matchRule,normalizeLabel,providerCategory,categoryEmoji,ALLOWED_EMOJIS};

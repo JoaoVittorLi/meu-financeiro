@@ -237,6 +237,7 @@ function intelligenceFoldText(value:string):string{
   return String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('pt-BR').replace(/\s+/g,' ').trim();
 }
 function intelligenceConversationState(app:any):{kind:'service_unavailable'|'chat_available'|'oauth_connected_unimplemented'|'oauth_disconnected';pill:string;badge:string;css:string}{
+  if(app.state.categoryReviewGrant)return {kind:'chat_available',pill:app.state.categoryReviewGrant.expiresAt>Date.now()?'Revisão sintética · sem IA externa':'Revisão sintética expirada',badge:'Revisão sintética',css:'is-local'};
   if(app.state.localFinancialAccess?.token)return {kind:'chat_available',pill:app.state.localFinancialAccess.expiresAt>Date.now()?'Leitura local · sem IA externa':'Leitura local expirada',badge:'Leitura local',css:'is-local'};
   const s=app?.state||{};
   const activeError=String(s.aiError||s.aiStatus?.error||'').trim();
@@ -692,6 +693,7 @@ function intelligenceResolveActionProposal(app:any,proposalId:string,decision:'a
   intelligenceSyncThreadMessages(app,updated);
 }
 async function intelligenceSubmitQuestion(app:any,rawQuestion:string){
+  if(typeof categoryReviewHandleQuestion==='function'&&categoryReviewHandleQuestion(app,rawQuestion))return;
   if(app.state.localFinancialAccess?.token&&typeof localFinancialSubmit==='function')return localFinancialSubmit(app,rawQuestion);
   const q=String(rawQuestion||'').trim().slice(0,750);
   if(!q||app.state.aiBusy||app.state.intelligenceDrawerBusy)return;
@@ -868,7 +870,7 @@ function intelligenceLoadStoredThreads(app:any,mode:'real'|'demo'=(app?.state?.m
   }
 }
 function intelligencePersistThreads(app:any,threads:IntelligenceThread[],mode:'real'|'demo'=(app?.state?.mode==='demo'?'demo':'real')):string{
-  if(app.state.localFinancialAccess?.token)return ''; // Financial replies are session-only, never localStorage.
+  if(app.state.localFinancialAccess?.token||app.state.categoryReviewGrant?.token)return ''; // Financial replies and pending actions are session-only.
   const store=intelligenceGetStorage(app);
   if(!store)return 'Armazenamento local indisponível. Esta conversa não foi salva.';
   try{
@@ -881,7 +883,7 @@ function intelligencePersistThreads(app:any,threads:IntelligenceThread[],mode:'r
   }
 }
 function intelligenceEnsureHydrated(app:any){
-  if(app.state.localFinancialAccess?.token)return;
+  if(app.state.localFinancialAccess?.token||app.state.categoryReviewGrant?.token)return;
   if(!app||!app.state)return;
   const mode:'real'|'demo'=app.state.mode==='demo'?'demo':'real';
   if(app.state.intelligenceHydratedMode===mode&&Array.isArray(app.state.intelligenceThreads))return;
@@ -1028,7 +1030,7 @@ function intelligenceDeleteThread(app:any,threadId:string,confirmFn?:(msg:string
   return true;
 }
 function intelligenceClearHistory(app:any,confirmFn?:(msg:string)=>boolean){
-  if(app.state.localFinancialAccess?.token){app.setState({intelligenceThreads:[],intelligenceMessages:[],intelligenceActiveThreadId:null});return;}
+  if(app.state.localFinancialAccess?.token||app.state.categoryReviewGrant?.token){app.setState({intelligenceThreads:[],intelligenceMessages:[],intelligenceActiveThreadId:null});return;}
   intelligenceEnsureHydrated(app);
   const threads:IntelligenceThread[]=Array.isArray(app.state.intelligenceThreads)?app.state.intelligenceThreads:[];
   if(!threads.length)return false;
@@ -1046,6 +1048,7 @@ function intelligenceClearHistory(app:any,confirmFn?:(msg:string)=>boolean){
   return true;
 }
 function intelligenceSwitchProfileMode(app:any,newMode:'real'|'demo'){
+  if(app.state.categoryReviewGrant&&typeof categoryReviewDisable==='function')categoryReviewDisable(app);
   if(app.state.localFinancialAccess?.token&&typeof localFinancialDisable==='function')localFinancialDisable(app);
   const loaded=intelligenceLoadStoredThreads(app,newMode);
   const first=loaded.threads[0]||null;

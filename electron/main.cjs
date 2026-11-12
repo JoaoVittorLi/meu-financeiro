@@ -13,6 +13,7 @@ const {PREVIEW_ORIGIN,checkPreviewIdentity,testPreviewQuarantine}=require('./clo
 const {pairViaSystemBrowser,cancelBrowserPairing}=require('./cloud-system-browser.cjs');
 const {PlanningStore}=require('./planning.cjs');
 const {LocalFinancialIntelligence}=require('./financial-intelligence.cjs');
+const {CategoryReviewService}=require('./category-review.cjs');
 const {automaticBackup,restoreBackup,listAutoBackups,validateBackupFile}=require('./recovery.cjs');
 const {PluggyVault}=require('./pluggy-vault.cjs');
 const {PluggyClient}=require('./pluggy.cjs');
@@ -167,6 +168,17 @@ app.whenReady().then(()=>{
  db=new FinanceDB(filename);
  planner=new PlanningStore(db);
  const localFinancial=new LocalFinancialIntelligence(db,planner);
+ // No new review tables, grants or writes in a personal or packaged profile.
+ const categoryReview=smokeProfileActive?new CategoryReviewService(db,{syntheticProfile:true}):null;
+ ipcMain.handle('finance:review-status',event=>{requireAppSender(event);return {available:!!categoryReview,syntheticOnly:true};});
+ for(const [channel,method] of [['authorize','authorize'],['list','list'],['queue','queue'],['prepare','prepare'],['confirm','confirm'],['revoke','revoke']]){
+  ipcMain.handle('finance:review-'+channel,(event,input)=>{
+   requireAppSender(event);
+   if(!categoryReview)throw new Error('Escrita da Inteligência desativada neste perfil. Homologação sintética necessária.');
+   if(restoring||syncing||cloudPreparationBusy||autoBackupBusy)throw new Error('Aguarde a operação financeira em andamento.');
+   return categoryReview[method](input,event.sender.id);
+  });
+ }
  ipcMain.handle('finance:read-authorize',(event,input)=>{requireAppSender(event);return localFinancial.authorize(input,event.sender.id);});
  ipcMain.handle('finance:read-query',(event,input)=>{requireAppSender(event);return localFinancial.query(input,event.sender.id);});
  ipcMain.handle('finance:read-revoke',(event,token)=>{requireAppSender(event);return localFinancial.revoke(token,event.sender.id);});

@@ -8,5 +8,5 @@
     "removeComments": true,
     "skipLibCheck": true
   },
-  "files": ["src/app.ts", "src/plan-view.ts", "src/intelligence-view.ts", "src/ai-markdown.ts", "src/intelligence-integration.ts", "src/intelligence-staging.ts", "src/intelligence-local.ts"]
+  "files": ["src/app.ts", "src/plan-view.ts", "src/intelligence-view.ts", "src/ai-markdown.ts", "src/intelligence-integration.ts", "src/intelligence-staging.ts", "src/intelligence-local.ts", "src/intelligence-review.ts"]
 }

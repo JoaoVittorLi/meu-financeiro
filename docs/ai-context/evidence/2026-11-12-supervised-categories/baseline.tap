@@ -1,0 +1,2877 @@
+
+> meu-financeiro-desktop@0.9.5-beta.8 test:db
+> npm run compile && node --test tests/*.test.cjs
+
+
+> meu-financeiro-desktop@0.9.5-beta.8 compile
+> tsc --project tsconfig.json && node scripts/build-finance-ledger.cjs
+
+TAP version 13
+# Subtest: memórias devem ser explicitamente aprovadas e limitadas; nunca armazenar segredos
+ok 1 - memórias devem ser explicitamente aprovadas e limitadas; nunca armazenar segredos
+  ---
+  duration_ms: 43.1346
+  type: 'test'
+  ...
+# Subtest: cofre se recusa a funcionar sem criptografia, preservando o arquivo
+ok 2 - cofre se recusa a funcionar sem criptografia, preservando o arquivo
+  ---
+  duration_ms: 30.2545
+  type: 'test'
+  ...
+# Subtest: contexto sem consentimento é idêntico à pergunta fictícia base
+ok 3 - contexto sem consentimento é idêntico à pergunta fictícia base
+  ---
+  duration_ms: 0.6719
+  type: 'test'
+  ...
+# Subtest: contexto explícito contém somente notas aprovadas e cabe no orçamento
+ok 4 - contexto explícito contém somente notas aprovadas e cabe no orçamento
+  ---
+  duration_ms: 0.4824
+  type: 'test'
+  ...
+# Subtest: limite de memórias: 12 locais, no máximo 8 usadas no contexto
+ok 5 - limite de memórias: 12 locais, no máximo 8 usadas no contexto
+  ---
+  duration_ms: 255.5888
+  type: 'test'
+  ...
+# Subtest: resposta de teste tem uso registrado sem guardar conversas
+ok 6 - resposta de teste tem uso registrado sem guardar conversas
+  ---
+  duration_ms: 69.2234
+  type: 'test'
+  ...
+# Subtest: nenhuma nota pessoal é enviada sem opt-in do usuário
+ok 7 - nenhuma nota pessoal é enviada sem opt-in do usuário
+  ---
+  duration_ms: 68.6027
+  type: 'test'
+  ...
+# Subtest: E4 uses one finance engine and keeps bank and manual histories separate
+ok 8 - E4 uses one finance engine and keeps bank and manual histories separate
+  ---
+  duration_ms: 44.305
+  type: 'test'
+  ...
+# Subtest: E4 budgets, confirmed commitments and uncertain future income are distinct
+ok 9 - E4 budgets, confirmed commitments and uncertain future income are distinct
+  ---
+  duration_ms: 1.5901
+  type: 'test'
+  ...
+# Subtest: E4 is deterministic, accepts only fixed source names, exposes no raw IDs
+ok 10 - E4 is deterministic, accepts only fixed source names, exposes no raw IDs
+  ---
+  duration_ms: 4.2049
+  type: 'test'
+  ...
+# Subtest: E4 renderer and Electron use a restricted preview bridge with no inference
+ok 11 - E4 renderer and Electron use a restricted preview bridge with no inference
+  ---
+  duration_ms: 2.0523
+  type: 'test'
+  ...
+# Subtest: mesma política de Sol Low/Medium para todos os clientes, sem fallback
+ok 12 - mesma política de Sol Low/Medium para todos os clientes, sem fallback
+  ---
+  duration_ms: 2.4078
+  type: 'test'
+  ...
+# Subtest: cofre isolado exige proteção de credenciais e não grava tokens em claro
+ok 13 - cofre isolado exige proteção de credenciais e não grava tokens em claro
+  ---
+  duration_ms: 28.5829
+  type: 'test'
+  ...
+# Subtest: OIDC exige assinatura válida, issuer, audience, validade e nonce corretos
+ok 14 - OIDC exige assinatura válida, issuer, audience, validade e nonce corretos
+  ---
+  duration_ms: 64.0616
+  type: 'test'
+  ...
+# Subtest: streaming só aprova resposta.completed e rejeita limite da assinatura
+ok 15 - streaming só aprova resposta.completed e rejeita limite da assinatura
+  ---
+  duration_ms: 7.6714
+  type: 'test'
+  ...
+# Subtest: cliente envia apenas cenário fictício sem consulta obrigatória ao catálogo
+ok 16 - cliente envia apenas cenário fictício sem consulta obrigatória ao catálogo
+  ---
+  duration_ms: 1.7912
+  type: 'test'
+  ...
+# Subtest: verificação opcional do catálogo informa falha de rede sem bloquear a análise direta
+ok 17 - verificação opcional do catálogo informa falha de rede sem bloquear a análise direta
+  ---
+  duration_ms: 0.643
+  type: 'test'
+  ...
+# Subtest: falha de rede durante envio ao modelo não repete POST e registra uma tentativa
+ok 18 - falha de rede durante envio ao modelo não repete POST e registra uma tentativa
+  ---
+  duration_ms: 0.7055
+  type: 'test'
+  ...
+# Subtest: falha de rede ao acessar sessão não consulta APIs nem consome tentativa
+ok 19 - falha de rede ao acessar sessão não consulta APIs nem consome tentativa
+  ---
+  duration_ms: 0.5025
+  type: 'test'
+  ...
+# Subtest: todos os três casos fictícios usam somente um POST ao modelo fixo
+ok 20 - todos os três casos fictícios usam somente um POST ao modelo fixo
+  ---
+  duration_ms: 2.6969
+  type: 'test'
+  ...
+# Subtest: modelo indisponível no POST não provoca fallback nem repetição
+ok 21 - modelo indisponível no POST não provoca fallback nem repetição
+  ---
+  duration_ms: 0.8146
+  type: 'test'
+  ...
+# Subtest: WORK-AUDIT-01 split 60/40 matches authoritative ledger, total 100 and one record
+ok 22 - WORK-AUDIT-01 split 60/40 matches authoritative ledger, total 100 and one record
+  ---
+  duration_ms: 33.6645
+  type: 'test'
+  ...
+# Subtest: split absent falls back exactly to original category without rounding
+ok 23 - split absent falls back exactly to original category without rounding
+  ---
+  duration_ms: 1.4147
+  type: 'test'
+  ...
+# Subtest: split empty falls back exactly to original category without rounding
+ok 24 - split empty falls back exactly to original category without rounding
+  ---
+  duration_ms: 1.6658
+  type: 'test'
+  ...
+# Subtest: split wrongSum falls back exactly to original category without rounding
+ok 25 - split wrongSum falls back exactly to original category without rounding
+  ---
+  duration_ms: 0.8097
+  type: 'test'
+  ...
+# Subtest: split fractional falls back exactly to original category without rounding
+ok 26 - split fractional falls back exactly to original category without rounding
+  ---
+  duration_ms: 2.3582
+  type: 'test'
+  ...
+# Subtest: split zero falls back exactly to original category without rounding
+ok 27 - split zero falls back exactly to original category without rounding
+  ---
+  duration_ms: 5.9343
+  type: 'test'
+  ...
+# Subtest: split negative falls back exactly to original category without rounding
+ok 28 - split negative falls back exactly to original category without rounding
+  ---
+  duration_ms: 10.0199
+  type: 'test'
+  ...
+# Subtest: split string falls back exactly to original category without rounding
+ok 29 - split string falls back exactly to original category without rounding
+  ---
+  duration_ms: 25.5368
+  type: 'test'
+  ...
+# Subtest: split nullPart falls back exactly to original category without rounding
+ok 30 - split nullPart falls back exactly to original category without rounding
+  ---
+  duration_ms: 1.0187
+  type: 'test'
+  ...
+# Subtest: one-cent remainder is preserved and duplicate split categories count a transaction once
+ok 31 - one-cent remainder is preserved and duplicate split categories count a transaction once
+  ---
+  duration_ms: 3.1126
+  type: 'test'
+  ...
+# Subtest: outdated split and invalid fractional original amount never invent cents
+ok 32 - outdated split and invalid fractional original amount never invent cents
+  ---
+  duration_ms: 1.3775
+  type: 'test'
+  ...
+# Subtest: pending/transfer/ignore excluded and income not split into expenses
+ok 33 - pending/transfer/ignore excluded and income not split into expenses
+  ---
+  duration_ms: 1.9086
+  type: 'test'
+  ...
+# Subtest: manual source, demo mode and partial loaded bank cache stay separate
+ok 34 - manual source, demo mode and partial loaded bank cache stay separate
+  ---
+  duration_ms: 1.313
+  type: 'test'
+  ...
+# Subtest: multi-year loaded records remain included and original arrays are untouched
+ok 35 - multi-year loaded records remain included and original arrays are untouched
+  ---
+  duration_ms: 0.7592
+  type: 'test'
+  ...
+# Subtest: bundled engine output is identical to shared ESM and contains no duplicate maintained rules
+ok 36 - bundled engine output is identical to shared ESM and contains no duplicate maintained rules
+  ---
+  duration_ms: 86.8979
+  type: 'test'
+  ...
+# Subtest: F08 rejects a canonical ledger changed after bundling
+ok 37 - F08 rejects a canonical ledger changed after bundling
+  ---
+  duration_ms: 2888.2814
+  type: 'test'
+  ...
+# Subtest: Inteligência tem rota própria sem substituir Simular compra
+ok 38 - Inteligência tem rota própria sem substituir Simular compra
+  ---
+  duration_ms: 3.618
+  type: 'test'
+  ...
+# Subtest: Interface nova mantém Hoje, Conversar e Plano de ação como prévia
+ok 39 - Interface nova mantém Hoje, Conversar e Plano de ação como prévia
+  ---
+  duration_ms: 0.6311
+  type: 'test'
+  ...
+# Subtest: Prévia não consulta o banco nem chama provedores de IA
+ok 40 - Prévia não consulta o banco nem chama provedores de IA
+  ---
+  duration_ms: 34.0986
+  type: 'test'
+  ...
+# Subtest: Painel contextual oferece perguntas para todas as seis áreas
+ok 41 - Painel contextual oferece perguntas para todas as seis áreas
+  ---
+  duration_ms: 3.5232
+  type: 'test'
+  ...
+# Subtest: Configurações não coletam segredos no renderer
+ok 42 - Configurações não coletam segredos no renderer
+  ---
+  duration_ms: 0.9879
+  type: 'test'
+  ...
+# Subtest: I1-A.1 múltiplos lançamentos: nunca seleciona iFood para mercado e exige seleção explícita ordenada na ambiguidade
+ok 43 - I1-A.1 múltiplos lançamentos: nunca seleciona iFood para mercado e exige seleção explícita ordenada na ambiguidade
+  ---
+  duration_ms: 612.0408
+  type: 'test'
+  ...
+# Subtest: I1-A.1 identificadores iguais em contas diferentes e datas relativas (ontem / hoje)
+ok 44 - I1-A.1 identificadores iguais em contas diferentes e datas relativas (ontem / hoje)
+  ---
+  duration_ms: 246.2089
+  type: 'test'
+  ...
+# Subtest: I1-A.1 rejeita categoria inexistente ou incompatível com a natureza do lançamento
+ok 45 - I1-A.1 rejeita categoria inexistente ou incompatível com a natureza do lançamento
+  ---
+  duration_ms: 119.2089
+  type: 'test'
+  ...
+# Subtest: I1-A.1 confirmação de prévia e negação não realizam escrita financeira e detectam estado desatualizado
+ok 46 - I1-A.1 confirmação de prévia e negação não realizam escrita financeira e detectam estado desatualizado
+  ---
+  duration_ms: 96.4812
+  type: 'test'
+  ...
+# Subtest: I1-A.2 continuidade entre drawer e aba principal e distinção dos 4 estados de conversação (Problemas A, B e C)
+ok 47 - I1-A.2 continuidade entre drawer e aba principal e distinção dos 4 estados de conversação (Problemas A, B e C)
+  ---
+  duration_ms: 89.673
+  type: 'test'
+  ...
+# Subtest: I1-A.2 desambiguação extensa (> 8 candidatos): preserva todos os candidatos, orienta refinamento e permite expandir/selecionar o 10º item
+ok 48 - I1-A.2 desambiguação extensa (> 8 candidatos): preserva todos os candidatos, orienta refinamento e permite expandir/selecionar o 10º item
+  ---
+  duration_ms: 88.4862
+  type: 'test'
+  ...
+# Subtest: I1-B histórico compartilhado: persistência segura após reinicialização, agrupamento por data, busca, seleção e exclusão confirmada
+ok 49 - I1-B histórico compartilhado: persistência segura após reinicialização, agrupamento por data, busca, seleção e exclusão confirmada
+  ---
+  duration_ms: 128.6817
+  type: 'test'
+  ...
+# Subtest: I1-B isolamento de perfis (Pessoal vs Demonstração) e tratamento de erro de armazenamento
+ok 50 - I1-B isolamento de perfis (Pessoal vs Demonstração) e tratamento de erro de armazenamento
+  ---
+  duration_ms: 83.3816
+  type: 'test'
+  ...
+# Subtest: I1-B.1 recusa exclusão quando storage falha: não confirma falso sucesso
+ok 51 - I1-B.1 recusa exclusão quando storage falha: não confirma falso sucesso
+  ---
+  duration_ms: 177.5054
+  type: 'test'
+  ...
+# Subtest: I1-B.1 sanitização alcança metadados aninhados de proposta e tabela
+ok 52 - I1-B.1 sanitização alcança metadados aninhados de proposta e tabela
+  ---
+  duration_ms: 52.8945
+  type: 'test'
+  ...
+# Subtest: I1-B.1 resumo local evita dupla contagem banco + manual e exclui pendentes
+ok 53 - I1-B.1 resumo local evita dupla contagem banco + manual e exclui pendentes
+  ---
+  duration_ms: 50.552
+  type: 'test'
+  ...
+# Subtest: appearance follows the system until the user chooses an explicit theme, then persists it
+ok 54 - appearance follows the system until the user chooses an explicit theme, then persists it
+  ---
+  duration_ms: 6.0095
+  type: 'test'
+  ...
+# Subtest: invalid stored preference and unavailable storage preserve a usable theme
+ok 55 - invalid stored preference and unavailable storage preserve a usable theme
+  ---
+  duration_ms: 4.2957
+  type: 'test'
+  ...
+# Subtest: B3 — each target percentage yields exactly one uniform RGB color
+ok 56 - B3 — each target percentage yields exactly one uniform RGB color
+  ---
+  duration_ms: 4.1992
+  type: 'test'
+  ...
+# Subtest: B3 — continuous interpolation without attention-threshold color jumps
+ok 57 - B3 — continuous interpolation without attention-threshold color jumps
+  ---
+  duration_ms: 2.6265
+  type: 'test'
+  ...
+# Subtest: B3 — raw percentage grows past 100 while only rendered arc is clamped
+ok 58 - B3 — raw percentage grows past 100 while only rendered arc is clamped
+  ---
+  duration_ms: 0.3993
+  type: 'test'
+  ...
+# Subtest: B3 — limit zero, missing, infinite or negative produce no invented gauge
+ok 59 - B3 — limit zero, missing, infinite or negative produce no invented gauge
+  ---
+  duration_ms: 0.1526
+  type: 'test'
+  ...
+# Subtest: B3 — accepts integer cents and does not round cents before progress
+ok 60 - B3 — accepts integer cents and does not round cents before progress
+  ---
+  duration_ms: 0.1607
+  type: 'test'
+  ...
+# Subtest: B3 — real renderBudgets at 0% has one arc and true label
+ok 61 - B3 — real renderBudgets at 0% has one arc and true label
+  ---
+  duration_ms: 2.7803
+  type: 'test'
+  ...
+# Subtest: B3 — real renderBudgets at 10% has one arc and true label
+ok 62 - B3 — real renderBudgets at 10% has one arc and true label
+  ---
+  duration_ms: 0.7114
+  type: 'test'
+  ...
+# Subtest: B3 — real renderBudgets at 25% has one arc and true label
+ok 63 - B3 — real renderBudgets at 25% has one arc and true label
+  ---
+  duration_ms: 0.4626
+  type: 'test'
+  ...
+# Subtest: B3 — real renderBudgets at 50% has one arc and true label
+ok 64 - B3 — real renderBudgets at 50% has one arc and true label
+  ---
+  duration_ms: 0.6601
+  type: 'test'
+  ...
+# Subtest: B3 — real renderBudgets at 70% has one arc and true label
+ok 65 - B3 — real renderBudgets at 70% has one arc and true label
+  ---
+  duration_ms: 0.8433
+  type: 'test'
+  ...
+# Subtest: B3 — real renderBudgets at 90% has one arc and true label
+ok 66 - B3 — real renderBudgets at 90% has one arc and true label
+  ---
+  duration_ms: 0.4796
+  type: 'test'
+  ...
+# Subtest: B3 — real renderBudgets at 99% has one arc and true label
+ok 67 - B3 — real renderBudgets at 99% has one arc and true label
+  ---
+  duration_ms: 0.2785
+  type: 'test'
+  ...
+# Subtest: B3 — real renderBudgets at 100% has one arc and true label
+ok 68 - B3 — real renderBudgets at 100% has one arc and true label
+  ---
+  duration_ms: 0.2672
+  type: 'test'
+  ...
+# Subtest: B3 — real renderBudgets at 106% has one arc and true label
+ok 69 - B3 — real renderBudgets at 106% has one arc and true label
+  ---
+  duration_ms: 0.8682
+  type: 'test'
+  ...
+# Subtest: B3 — real renderBudgets at 150% has one arc and true label
+ok 70 - B3 — real renderBudgets at 150% has one arc and true label
+  ---
+  duration_ms: 0.3507
+  type: 'test'
+  ...
+# Subtest: B3 — exact cents remain accessible and real over-limit amount is shown
+ok 71 - B3 — exact cents remain accessible and real over-limit amount is shown
+  ---
+  duration_ms: 0.256
+  type: 'test'
+  ...
+# Subtest: B3 — explicit zero limit has neither invented percent nor progress arc
+ok 72 - B3 — explicit zero limit has neither invented percent nor progress arc
+  ---
+  duration_ms: 0.4201
+  type: 'test'
+  ...
+# Subtest: B3 — expenses without a registered limit keep the original define-limit action
+ok 73 - B3 — expenses without a registered limit keep the original define-limit action
+  ---
+  duration_ms: 0.3763
+  type: 'test'
+  ...
+# Subtest: B3 — income categories continue using their original horizontal share bar
+ok 74 - B3 — income categories continue using their original horizontal share bar
+  ---
+  duration_ms: 0.2436
+  type: 'test'
+  ...
+# Subtest: B3 — the selected bank snapshot renders exactly like a manual snapshot
+ok 75 - B3 — the selected bank snapshot renders exactly like a manual snapshot
+  ---
+  duration_ms: 0.3675
+  type: 'test'
+  ...
+# Subtest: B3 — edit limit button still opens existing editor without writing budget data
+ok 76 - B3 — edit limit button still opens existing editor without writing budget data
+  ---
+  duration_ms: 0.3841
+  type: 'test'
+  ...
+# Subtest: B3 — stylesheet keeps one semicircle fill and reduced motion support
+ok 77 - B3 — stylesheet keeps one semicircle fill and reduced motion support
+  ---
+  duration_ms: 8.1902
+  type: 'test'
+  ...
+# (node:15864) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: categorias padrão distinguem receitas, gastos e entradas/saídas sem mudar natureza de Pix
+ok 78 - categorias padrão distinguem receitas, gastos e entradas/saídas sem mudar natureza de Pix
+  ---
+  duration_ms: 12.7729
+  type: 'test'
+  ...
+# Subtest: tipo personalizado persiste e tipo padrão é imutável sem perder registros
+ok 79 - tipo personalizado persiste e tipo padrão é imutável sem perder registros
+  ---
+  duration_ms: 5.5484
+  type: 'test'
+  ...
+# Subtest: limite zero explícito e sem limite são diferentes após salvar e reabrir
+ok 80 - limite zero explícito e sem limite são diferentes após salvar e reabrir
+  ---
+  duration_ms: 1184.1919
+  type: 'test'
+  ...
+# Subtest: migração interpreta zeros legados como não cadastrados e preserva limites existentes
+ok 81 - migração interpreta zeros legados como não cadastrados e preserva limites existentes
+  ---
+  duration_ms: 9501.753
+  type: 'test'
+  ...
+# (node:30772) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: categorias personalizadas persistem e orçamentos dinâmicos sobrevivem reinicialização
+ok 82 - categorias personalizadas persistem e orçamentos dinâmicos sobrevivem reinicialização
+  ---
+  duration_ms: 1396.4091
+  type: 'test'
+  ...
+# Subtest: regras aplicam em banco já sincronizado e são insensíveis a acentos e maiúsculas
+ok 83 - regras aplicam em banco já sincronizado e são insensíveis a acentos e maiúsculas
+  ---
+  duration_ms: 7.5136
+  type: 'test'
+  ...
+# Subtest: menor prioridade vence e regra mais antiga desempata
+ok 84 - menor prioridade vence e regra mais antiga desempata
+  ---
+  duration_ms: 4.1581
+  type: 'test'
+  ...
+# Subtest: correção individual prevalece sobre regra e sincronização repetida
+ok 85 - correção individual prevalece sobre regra e sincronização repetida
+  ---
+  duration_ms: 5.4429
+  type: 'test'
+  ...
+# Subtest: renomear categoria customizada preserva manual, orçamento, regras e overrides
+ok 86 - renomear categoria customizada preserva manual, orçamento, regras e overrides
+  ---
+  duration_ms: 4.4693
+  type: 'test'
+  ...
+# Subtest: categorias em uso não são excluídas; categorias padrão são protegidas
+ok 87 - categorias em uso não são excluídas; categorias padrão são protegidas
+  ---
+  duration_ms: 4.749
+  type: 'test'
+  ...
+# Subtest: corrupção de regra/categoria é recusada sem afetar dados
+ok 88 - corrupção de regra/categoria é recusada sem afetar dados
+  ---
+  duration_ms: 2.5401
+  type: 'test'
+  ...
+# Subtest: escopos separados para banco e lançamentos manuais
+ok 89 - escopos separados para banco e lançamentos manuais
+  ---
+  duration_ms: 2.4546
+  type: 'test'
+  ...
+# Subtest: restauração JSON legada com categoria não cadastrada recria categoria sem perder dados
+ok 90 - restauração JSON legada com categoria não cadastrada recria categoria sem perder dados
+  ---
+  duration_ms: 2.501
+  type: 'test'
+  ...
+# Subtest: migração aditiva a partir de banco anterior preserva dados, Pluggy e saldo
+ok 91 - migração aditiva a partir de banco anterior preserva dados, Pluggy e saldo
+  ---
+  duration_ms: 12478.6171
+  type: 'test'
+  ...
+# Subtest: B01 portal selector stays above detail drawer and AI overlay
+ok 92 - B01 portal selector stays above detail drawer and AI overlay
+  ---
+  duration_ms: 1.3286
+  type: 'test'
+  ...
+# Subtest: B01 one Escape closes only selector and preserves second Escape for dialog
+ok 93 - B01 one Escape closes only selector and preserves second Escape for dialog
+  ---
+  duration_ms: 201.9309
+  type: 'test'
+  ...
+# Subtest: B01 keyboard ArrowDown and Enter select category exactly once
+ok 94 - B01 keyboard ArrowDown and Enter select category exactly once
+  ---
+  duration_ms: 61.3954
+  type: 'test'
+  ...
+# Subtest: B01 menu handles keydown from options in the React portal
+ok 95 - B01 menu handles keydown from options in the React portal
+  ---
+  duration_ms: 54.2012
+  type: 'test'
+  ...
+# Subtest: B01 scroll in owner drawer repositions instead of losing the menu
+ok 96 - B01 scroll in owner drawer repositions instead of losing the menu
+  ---
+  duration_ms: 22.6929
+  type: 'test'
+  ...
+# Subtest: Windows comparison does not transmit local rows and uses exact Preview endpoint
+ok 97 - Windows comparison does not transmit local rows and uses exact Preview endpoint
+  ---
+  duration_ms: 38.2799
+  type: 'test'
+  ...
+# Subtest: Windows rejects missing or mismatched server fingerprints
+ok 98 - Windows rejects missing or mismatched server fingerprints
+  ---
+  duration_ms: 1.3632
+  type: 'test'
+  ...
+# Subtest: all 22 SQLite tables have a unique migration responsibility
+ok 99 - all 22 SQLite tables have a unique migration responsibility
+  ---
+  duration_ms: 2.3949
+  type: 'test'
+  ...
+# Subtest: transfer routing preserves historical gaps, user overrides, and blocks premature cutover
+ok 100 - transfer routing preserves historical gaps, user overrides, and blocks premature cutover
+  ---
+  duration_ms: 0.5684
+  type: 'test'
+  ...
+# (node:21380) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: E1 audits only read access and returns status codes without raw account data
+ok 101 - E1 audits only read access and returns status codes without raw account data
+  ---
+  duration_ms: 43.2186
+  type: 'test'
+  ...
+# Subtest: bank references need a verified personal snapshot and zero missing IDs
+ok 102 - bank references need a verified personal snapshot and zero missing IDs
+  ---
+  duration_ms: 4.0973
+  type: 'test'
+  ...
+# Subtest: E1 catches category changes and undated amount mismatches without clearing local history
+ok 103 - E1 catches category changes and undated amount mismatches without clearing local history
+  ---
+  duration_ms: 5.1456
+  type: 'test'
+  ...
+# Subtest: E1 will not treat HTML login redirects or invalid audit contracts as success
+ok 104 - E1 will not treat HTML login redirects or invalid audit contracts as success
+  ---
+  duration_ms: 3.2915
+  type: 'test'
+  ...
+# Subtest: E1 rejects a truly incomplete local planning schema before contacting Cloudflare
+ok 105 - E1 rejects a truly incomplete local planning schema before contacting Cloudflare
+  ---
+  duration_ms: 1.9969
+  type: 'test'
+  ...
+# Subtest: different account pair order yields identical cryptographic identity digest
+ok 106 - different account pair order yields identical cryptographic identity digest
+  ---
+  duration_ms: 0.2275
+  type: 'test'
+  ...
+# (node:18576) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: desktop schema audit recognizes complete v0.9.4 SQLite structure
+ok 107 - desktop schema audit recognizes complete v0.9.4 SQLite structure
+  ---
+  duration_ms: 8.0105
+  type: 'test'
+  ...
+# Subtest: preflight refuses a partially initialized desktop schema
+ok 108 - preflight refuses a partially initialized desktop schema
+  ---
+  duration_ms: 2.7564
+  type: 'test'
+  ...
+# Subtest: preflight never accepts an object without a SQLite query interface
+ok 109 - preflight never accepts an object without a SQLite query interface
+  ---
+  duration_ms: 2.4139
+  type: 'test'
+  ...
+# (node:27904) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: migration manifest fully maps every persisted v0.9.4 table to primary keys
+ok 110 - migration manifest fully maps every persisted v0.9.4 table to primary keys
+  ---
+  duration_ms: 1.9245
+  type: 'test'
+  ...
+# Subtest: contract matches real SQLite schema without exporting any information
+ok 111 - contract matches real SQLite schema without exporting any information
+  ---
+  duration_ms: 5.5497
+  type: 'test'
+  ...
+# Subtest: contract fails closed with missing planning tables
+ok 112 - contract fails closed with missing planning tables
+  ---
+  duration_ms: 3.1221
+  type: 'test'
+  ...
+# Subtest: contract reports unexpected primary-key shape without reading records
+ok 113 - contract reports unexpected primary-key shape without reading records
+  ---
+  duration_ms: 5.3158
+  type: 'test'
+  ...
+# (node:21416) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: desktop backup manifest is offline, deterministic, read-only and detects record changes
+ok 114 - desktop backup manifest is offline, deterministic, read-only and detects record changes
+  ---
+  duration_ms: 5364.3452
+  type: 'test'
+  ...
+# Subtest: manifest rejects a missing file and a malformed SQLite backup
+ok 115 - manifest rejects a missing file and a malformed SQLite backup
+  ---
+  duration_ms: 1.9908
+  type: 'test'
+  ...
+# (node:30028) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: single-click cloud preparation performs native SQLite backup and 22-table audit without network
+ok 116 - single-click cloud preparation performs native SQLite backup and 22-table audit without network
+  ---
+  duration_ms: 6001.7972
+  type: 'test'
+  ...
+# Subtest: single-click cloud preparation refuses incompatible or missing planning schema and never enables cloud
+ok 117 - single-click cloud preparation refuses incompatible or missing planning schema and never enables cloud
+  ---
+  duration_ms: 441.2719
+  type: 'test'
+  ...
+# Subtest: status ignores unrelated backups and never falsely claims cloud activation
+ok 118 - status ignores unrelated backups and never falsely claims cloud activation
+  ---
+  duration_ms: 23.5003
+  type: 'test'
+  ...
+# (node:3804) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: Windows bankOverview daily totals equal the shared PWA source-separated ledger
+ok 119 - Windows bankOverview daily totals equal the shared PWA source-separated ledger
+  ---
+  duration_ms: 27.9649
+  type: 'test'
+  ...
+# (node:19960) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: primeiro espelhamento não publica diferenças locais anteriores nem repete envio no retry
+ok 120 - primeiro espelhamento não publica diferenças locais anteriores nem repete envio no retry
+  ---
+  duration_ms: 7601.1904
+  type: 'test'
+  ...
+# Subtest: cloud edits flow to Windows; local safe edits sync back without changing money or settlement
+ok 121 - cloud edits flow to Windows; local safe edits sync back without changing money or settlement
+  ---
+  duration_ms: 6779.6057
+  type: 'test'
+  ...
+# Subtest: concurrent local and mobile edits are preserved with conflict, not silently overwritten
+ok 122 - concurrent local and mobile edits are preserved with conflict, not silently overwritten
+  ---
+  duration_ms: 3215.7621
+  type: 'test'
+  ...
+# Subtest: initial baseline prevents preexisting local edits from being overwritten by the server
+ok 123 - initial baseline prevents preexisting local edits from being overwritten by the server
+  ---
+  duration_ms: 2457.7868
+  type: 'test'
+  ...
+# Subtest: authentication failures never erase or overwrite local SQLite finance
+ok 124 - authentication failures never erase or overwrite local SQLite finance
+  ---
+  duration_ms: 2574.9581
+  type: 'test'
+  ...
+# (node:21884) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: creates full 17-table personal snapshot from immutable backup with exact values and no bank rows
+ok 125 - creates full 17-table personal snapshot from immutable backup with exact values and no bank rows
+  ---
+  duration_ms: 8576.3484
+  type: 'test'
+  ...
+# Subtest: refuses snapshot if backup misses planning tables or has invalid sqlite bytes
+ok 126 - refuses snapshot if backup misses planning tables or has invalid sqlite bytes
+  ---
+  duration_ms: 5406.2729
+  type: 'test'
+  ...
+# Subtest: snapshot summary rejects malicious objects or wrong version
+ok 127 - snapshot summary rejects malicious objects or wrong version
+  ---
+  duration_ms: 0.2008
+  type: 'test'
+  ...
+# (node:17692) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: owner-approved desktop uploads 207 real-shaped fictional records with session cookies, replays safely, and resumes after app restart
+ok 128 - owner-approved desktop uploads 207 real-shaped fictional records with session cookies, replays safely, and resumes after app restart
+  ---
+  duration_ms: 262.7076
+  type: 'test'
+  ...
+# Subtest: without explicit owner consent the sender refuses any request, even when identity exists
+ok 129 - without explicit owner consent the sender refuses any request, even when identity exists
+  ---
+  duration_ms: 10.8481
+  type: 'test'
+  ...
+# Subtest: preview returns Access denial, never sends personal rows to another origin
+ok 130 - preview returns Access denial, never sends personal rows to another origin
+  ---
+  duration_ms: 56.5084
+  type: 'test'
+  ...
+# Subtest: desktop preview identity probe sends only cookie-backed GET to pinned preview
+ok 131 - desktop preview identity probe sends only cookie-backed GET to pinned preview
+  ---
+  duration_ms: 51.4665
+  type: 'test'
+  ...
+# Subtest: login navigation limits trusted Access origins and denies browser escape
+ok 132 - login navigation limits trusted Access origins and denies browser escape
+  ---
+  duration_ms: 3.6734
+  type: 'test'
+  ...
+# Subtest: Cloudflare account sign-in popups work only for pinned HTTPS IdP domains
+ok 133 - Cloudflare account sign-in popups work only for pinned HTTPS IdP domains
+  ---
+  duration_ms: 0.5629
+  type: 'test'
+  ...
+# Subtest: Electron no longer runs Google OAuth in an embedded BrowserWindow
+ok 134 - Electron no longer runs Google OAuth in an embedded BrowserWindow
+  ---
+  duration_ms: 0.7441
+  type: 'test'
+  ...
+# Subtest: identity probe rejects Access redirect, invalid password, html login page or financial mode
+ok 135 - identity probe rejects Access redirect, invalid password, html login page or financial mode
+  ---
+  duration_ms: 11.2974
+  type: 'test'
+  ...
+# Subtest: desktop quarantined fake import uses POST with fixed no-finance body, cookies confined to Electron
+ok 136 - desktop quarantined fake import uses POST with fixed no-finance body, cookies confined to Electron
+  ---
+  duration_ms: 0.9991
+  type: 'test'
+  ...
+# Subtest: desktop quarantine probe refuses responses claiming real import or financial activation
+ok 137 - desktop quarantine probe refuses responses claiming real import or financial activation
+  ---
+  duration_ms: 13.9925
+  type: 'test'
+  ...
+# Subtest: system-browser flow opens exact preview URL and securely returns assertions via loopback POST
+ok 138 - system-browser flow opens exact preview URL and securely returns assertions via loopback POST
+  ---
+  duration_ms: 129.3025
+  type: 'test'
+  ...
+# Subtest: invalid nonce and wrong Origin cannot pair until the valid caller confirms
+ok 139 - invalid nonce and wrong Origin cannot pair until the valid caller confirms
+  ---
+  duration_ms: 22.8437
+  type: 'test'
+  ...
+# Subtest: browser form fallback works without CORS and contains no assertions in URL
+ok 140 - browser form fallback works without CORS and contains no assertions in URL
+  ---
+  duration_ms: 10.4706
+  type: 'test'
+  ...
+# Subtest: main process can cancel pairing without producing or persisting any credential
+ok 141 - main process can cancel pairing without producing or persisting any credential
+  ---
+  duration_ms: 66.7465
+  type: 'test'
+  ...
+# Subtest: system-browser callback rejects forged credentials before accepting any session
+ok 142 - system-browser callback rejects forged credentials before accepting any session
+  ---
+  duration_ms: 9.2444
+  type: 'test'
+  ...
+# (node:26860) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: desktop creates 207-row migration plan and sends to fake Cloudflare batch adapter with 80-row retry
+ok 143 - desktop creates 207-row migration plan and sends to fake Cloudflare batch adapter with 80-row retry
+  ---
+  duration_ms: 60.4417
+  type: 'test'
+  ...
+# Subtest: the Windows real-data sender is blocked unconditionally, regardless of any environment variable
+ok 144 - the Windows real-data sender is blocked unconditionally, regardless of any environment variable
+  ---
+  duration_ms: 0.5379
+  type: 'test'
+  ...
+# Subtest: transport refuses extra large records and will not leak rows through summaries
+ok 145 - transport refuses extra large records and will not leak rows through summaries
+  ---
+  duration_ms: 4.1697
+  type: 'test'
+  ...
+# Subtest: fake adapter rejects server claiming cloud activation or returning an unverified receipt
+ok 146 - fake adapter rejects server claiming cloud activation or returning an unverified receipt
+  ---
+  duration_ms: 6.3369
+  type: 'test'
+  ...
+# (node:6224) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: D1.2 — duplicate bank transaction IDs in one batch are rejected atomically
+ok 147 - D1.2 — duplicate bank transaction IDs in one batch are rejected atomically
+  ---
+  duration_ms: 6123.5068
+  type: 'test'
+  ...
+# Subtest: D1.2 — duplicate accounts in one import never silently overwrite balance
+ok 148 - D1.2 — duplicate accounts in one import never silently overwrite balance
+  ---
+  duration_ms: 6225.3492
+  type: 'test'
+  ...
+# Subtest: D1.2 — same account ID from another Pluggy item cannot hijack prior owner
+ok 149 - D1.2 — same account ID from another Pluggy item cannot hijack prior owner
+  ---
+  duration_ms: 2940.4355
+  type: 'test'
+  ...
+# Subtest: D1.2 — same external transaction ID in distinct accounts remains valid
+ok 150 - D1.2 — same external transaction ID in distinct accounts remains valid
+  ---
+  duration_ms: 2138.3579
+  type: 'test'
+  ...
+# (node:4332) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: D1.2 categoria renomeada conserva regras, decisões bancárias e split, orçamento e planejamento
+ok 151 - D1.2 categoria renomeada conserva regras, decisões bancárias e split, orçamento e planejamento
+  ---
+  duration_ms: 8109.2011
+  type: 'test'
+  ...
+# (node:14344) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: D1.2 — limite explícito R$0 impede exclusão de categoria e persiste após reiniciar
+ok 152 - D1.2 — limite explícito R$0 impede exclusão de categoria e persiste após reiniciar
+  ---
+  duration_ms: 7483.2161
+  type: 'test'
+  ...
+# Subtest: D1.2 — edição manual, vínculo, saldo desconhecido e sync idempotente sobrevivem a reinício
+ok 153 - D1.2 — edição manual, vínculo, saldo desconhecido e sync idempotente sobrevivem a reinício
+  ---
+  duration_ms: 5820.5359
+  type: 'test'
+  ...
+# Subtest: D1.2 — parcelas editadas, backup/restore e rejeição de backup inválido preservam histórico
+ok 154 - D1.2 — parcelas editadas, backup/restore e rejeição de backup inválido preservam histórico
+  ---
+  duration_ms: 3464.3084
+  type: 'test'
+  ...
+# Subtest: D1.2 — one Electron instance lock after isolated profile and no profile override in packaged builds
+ok 155 - D1.2 — one Electron instance lock after isolated profile and no profile override in packaged builds
+  ---
+  duration_ms: 1.8939
+  type: 'test'
+  ...
+# Subtest: D1.2 — Windows pipeline executes the real Electron smoke without bypassing existing gates
+ok 156 - D1.2 — Windows pipeline executes the real Electron smoke without bypassing existing gates
+  ---
+  duration_ms: 146.9613
+  type: 'test'
+  ...
+# Subtest: D1.2 — smoke tests DOM navigation and persist/restart through preload IPC, not no-op success
+ok 157 - D1.2 — smoke tests DOM navigation and persist/restart through preload IPC, not no-op success
+  ---
+  duration_ms: 0.4673
+  type: 'test'
+  ...
+# Subtest: D1.2 — o CI conserva screenshots sintéticos e instaladores em artefatos diferentes
+ok 158 - D1.2 — o CI conserva screenshots sintéticos e instaladores em artefatos diferentes
+  ---
+  duration_ms: 8.3985
+  type: 'test'
+  ...
+# Subtest: D1.2 Premium — A-D1 e A-D2/A-D3 preservam Visão Geral, Movimentações e Planejamento
+ok 159 - D1.2 Premium — A-D1 e A-D2/A-D3 preservam Visão Geral, Movimentações e Planejamento
+  ---
+  duration_ms: 0.9191
+  type: 'test'
+  ...
+# Subtest: D1.2 Premium — A-D4 preserva Orçamentos, Contas e Simulador para A-D5
+ok 160 - D1.2 Premium — A-D4 preserva Orçamentos, Contas e Simulador para A-D5
+  ---
+  duration_ms: 0.25
+  type: 'test'
+  ...
+# Subtest: D1.2 Premium — CSS premium é carregado, reduz animações e não aponta para rede
+ok 161 - D1.2 Premium — CSS premium é carregado, reduz animações e não aponta para rede
+  ---
+  duration_ms: 0.6432
+  type: 'test'
+  ...
+# Subtest: D1.2 — sem sinalizador não altera perfil real
+ok 162 - D1.2 — sem sinalizador não altera perfil real
+  ---
+  duration_ms: 0.647
+  type: 'test'
+  ...
+# Subtest: D1.2 — perfil temporário em Electron de desenvolvimento é isolado
+ok 163 - D1.2 — perfil temporário em Electron de desenvolvimento é isolado
+  ---
+  duration_ms: 1.849
+  type: 'test'
+  ...
+# Subtest: D1.2 — nega binário empacotado, caminho genérico, relativo e produção
+ok 164 - D1.2 — nega binário empacotado, caminho genérico, relativo e produção
+  ---
+  duration_ms: 1.2441
+  type: 'test'
+  ...
+# Subtest: D1.2 — o Electron só solicita single-instance lock uma vez
+ok 165 - D1.2 — o Electron só solicita single-instance lock uma vez
+  ---
+  duration_ms: 0.4276
+  type: 'test'
+  ...
+# (node:21652) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: D1.3 — 32 capturas válidas cobrem duas resoluções, temas, movimento e 8 áreas
+ok 166 - D1.3 — 32 capturas válidas cobrem duas resoluções, temas, movimento e 8 áreas
+  ---
+  duration_ms: 338.2399
+  type: 'test'
+  ...
+# Subtest: D1.4 — scrollbar clássica de 17px não reduz artificialmente o viewport emulado
+ok 167 - D1.4 — scrollbar clássica de 17px não reduz artificialmente o viewport emulado
+  ---
+  duration_ms: 350.9513
+  type: 'test'
+  ...
+# Subtest: D1.4 — aguarda a aplicação assíncrona das métricas CDP antes de capturar
+ok 168 - D1.4 — aguarda a aplicação assíncrona das métricas CDP antes de capturar
+  ---
+  duration_ms: 802.5087
+  type: 'test'
+  ...
+# Subtest: D1.4 — viewport genuinamente incorreto reprova com diagnóstico e sem manifesto
+ok 169 - D1.4 — viewport genuinamente incorreto reprova com diagnóstico e sem manifesto
+  ---
+  duration_ms: 2066.069
+  type: 'test'
+  ...
+# Subtest: D1.2 — overflow horizontal reprova matriz, não publica resultado de sucesso
+ok 170 - D1.2 — overflow horizontal reprova matriz, não publica resultado de sucesso
+  ---
+  duration_ms: 1.3392
+  type: 'test'
+  ...
+# Subtest: D1.2 — captura corrompida reprova matriz e não gera manifesto
+ok 171 - D1.2 — captura corrompida reprova matriz e não gera manifesto
+  ---
+  duration_ms: 0.8217
+  type: 'test'
+  ...
+# (node:21196) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: D1.3 — smoke cobre todas as oito áreas Windows sem duplicação
+ok 172 - D1.3 — smoke cobre todas as oito áreas Windows sem duplicação
+  ---
+  duration_ms: 0.8666
+  type: 'test'
+  ...
+# Subtest: D1.3 — matriz visual cobre dois tamanhos, temas claro/escuro e movimento reduzido
+ok 173 - D1.3 — matriz visual cobre dois tamanhos, temas claro/escuro e movimento reduzido
+  ---
+  duration_ms: 0.1267
+  type: 'test'
+  ...
+# Subtest: D1.4 — smoke completo exige todas as 32 imagens após os testes IPC
+ok 174 - D1.4 — smoke completo exige todas as 32 imagens após os testes IPC
+  ---
+  duration_ms: 0.4079
+  type: 'test'
+  ...
+# Subtest: D1.3 — Windows valida presença das 32 capturas e seu manifesto
+ok 175 - D1.3 — Windows valida presença das 32 capturas e seu manifesto
+  ---
+  duration_ms: 1.036
+  type: 'test'
+  ...
+# (node:7532) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: D1.4.3 — 32 PNGs e 32 registros JSON passam com barra de rolagem clássica
+ok 176 - D1.4.3 — 32 PNGs e 32 registros JSON passam com barra de rolagem clássica
+  ---
+  duration_ms: 260.1315
+  type: 'test'
+  ...
+# Subtest: D1.4.3 — array JSON aninhado (32 imagens, 1 registro) é rejeitado
+ok 177 - D1.4.3 — array JSON aninhado (32 imagens, 1 registro) é rejeitado
+  ---
+  duration_ms: 283.1311
+  type: 'test'
+  ...
+# Subtest: D1.4.3 — objeto JSON em vez de array é rejeitado
+ok 178 - D1.4.3 — objeto JSON em vez de array é rejeitado
+  ---
+  duration_ms: 416.9611
+  type: 'test'
+  ...
+# Subtest: D1.4.3 — entrada duplicada reprova sem reduzir a contagem
+ok 179 - D1.4.3 — entrada duplicada reprova sem reduzir a contagem
+  ---
+  duration_ms: 765.7281
+  type: 'test'
+  ...
+# Subtest: D1.4.3 — uma linha ausente reprova mesmo com 32 PNGs
+ok 180 - D1.4.3 — uma linha ausente reprova mesmo com 32 PNGs
+  ---
+  duration_ms: 245.5427
+  type: 'test'
+  ...
+# Subtest: D1.4.3 — PNG físico ausente reprova
+ok 181 - D1.4.3 — PNG físico ausente reprova
+  ---
+  duration_ms: 862.6687
+  type: 'test'
+  ...
+# Subtest: D1.4.3 — PNG adicional inesperado reprova
+ok 182 - D1.4.3 — PNG adicional inesperado reprova
+  ---
+  duration_ms: 401.4823
+  type: 'test'
+  ...
+# Subtest: D1.4.3 — assinatura PNG inválida reprova
+ok 183 - D1.4.3 — assinatura PNG inválida reprova
+  ---
+  duration_ms: 206.4743
+  type: 'test'
+  ...
+# Subtest: D1.4.3 — PNG com dimensões erradas reprova
+ok 184 - D1.4.3 — PNG com dimensões erradas reprova
+  ---
+  duration_ms: 715.9469
+  type: 'test'
+  ...
+# Subtest: D1.4.3 — metadado da página incorreto reprova
+ok 185 - D1.4.3 — metadado da página incorreto reprova
+  ---
+  duration_ms: 546.35
+  type: 'test'
+  ...
+# Subtest: D1.4.3 — viewport reportado errado reprova
+ok 186 - D1.4.3 — viewport reportado errado reprova
+  ---
+  duration_ms: 602.739
+  type: 'test'
+  ...
+# Subtest: D1.4.3 — overflow horizontal continua bloqueando o release
+ok 187 - D1.4.3 — overflow horizontal continua bloqueando o release
+  ---
+  duration_ms: 359.7286
+  type: 'test'
+  ...
+# Subtest: D1.4.3 — manifesto malformado reprova
+ok 188 - D1.4.3 — manifesto malformado reprova
+  ---
+  duration_ms: 258.5662
+  type: 'test'
+  ...
+# Subtest: D1.4.3 — CLI Node retorna sucesso para manifesto completo
+ok 189 - D1.4.3 — CLI Node retorna sucesso para manifesto completo
+  ---
+  duration_ms: 557.1375
+  type: 'test'
+  ...
+# Subtest: D1.4.3 — CLI Node retorna falha e impede build com JSON incorreto
+ok 190 - D1.4.3 — CLI Node retorna falha e impede build com JSON incorreto
+  ---
+  duration_ms: 338.7308
+  type: 'test'
+  ...
+# Subtest: D1.5.1 — real brasileiro com centavos e agrupamento válido
+ok 191 - D1.5.1 — real brasileiro com centavos e agrupamento válido
+  ---
+  duration_ms: 0.7493
+  type: 'test'
+  ...
+# Subtest: D1.5.1 — três casas, expoente, sinal, notação internacional e separadores ambíguos são inválidos
+ok 192 - D1.5.1 — três casas, expoente, sinal, notação internacional e separadores ambíguos são inválidos
+  ---
+  duration_ms: 0.1173
+  type: 'test'
+  ...
+# Subtest: D1.5.1 — zero, negativos e limites de segurança são rejeitados
+ok 193 - D1.5.1 — zero, negativos e limites de segurança são rejeitados
+  ---
+  duration_ms: 0.1469
+  type: 'test'
+  ...
+# Subtest: D1.5.1 — ambos os caminhos humanos usam o parser estrito
+ok 194 - D1.5.1 — ambos os caminhos humanos usam o parser estrito
+  ---
+  duration_ms: 0.2379
+  type: 'test'
+  ...
+# Subtest: D1.5.1 — parser legado de CSV, orçamentos e backups não foi substituído
+ok 195 - D1.5.1 — parser legado de CSV, orçamentos e backups não foi substituído
+  ---
+  duration_ms: 0.1871
+  type: 'test'
+  ...
+# (node:15168) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: D1.5.1 / SQLite — vínculo que existe só no banco impede exclusão e rollback é total
+ok 196 - D1.5.1 / SQLite — vínculo que existe só no banco impede exclusão e rollback é total
+  ---
+  duration_ms: 6538.2546
+  type: 'test'
+  ...
+# Subtest: D1.5.1 / SQLite — vínculo real impede alterar valor mesmo com renderer desatualizado
+ok 197 - D1.5.1 / SQLite — vínculo real impede alterar valor mesmo com renderer desatualizado
+  ---
+  duration_ms: 3522.6153
+  type: 'test'
+  ...
+# Subtest: D1.5.1 / SQLite — alteração de data dentro e fora da tolerância também exige desvincular
+ok 198 - D1.5.1 / SQLite — alteração de data dentro e fora da tolerância também exige desvincular
+  ---
+  duration_ms: 2471.8789
+  type: 'test'
+  ...
+# Subtest: D1.5.1 / SQLite — tipo não pode ser modificado por persistência genérica
+ok 199 - D1.5.1 / SQLite — tipo não pode ser modificado por persistência genérica
+  ---
+  duration_ms: 2052.9678
+  type: 'test'
+  ...
+# Subtest: D1.5.1 / SQLite — descrição/categoria são editáveis sem alterar identidade bancária
+ok 200 - D1.5.1 / SQLite — descrição/categoria são editáveis sem alterar identidade bancária
+  ---
+  duration_ms: 2195.3996
+  type: 'test'
+  ...
+# Subtest: D1.5.1 / SQLite — uma nova instância lê o vínculo persistido e o bloqueio continua
+ok 201 - D1.5.1 / SQLite — uma nova instância lê o vínculo persistido e o bloqueio continua
+  ---
+  duration_ms: 1277.2168
+  type: 'test'
+  ...
+# Subtest: D1.5.1 / SQLite — perfil demo isolado não é bloqueado por vínculos reais
+ok 202 - D1.5.1 / SQLite — perfil demo isolado não é bloqueado por vínculos reais
+  ---
+  duration_ms: 698.0372
+  type: 'test'
+  ...
+# Subtest: D1.5.1 / SQLite — desvinculação explícita libera a exclusão sem apagar o extrato
+ok 203 - D1.5.1 / SQLite — desvinculação explícita libera a exclusão sem apagar o extrato
+  ---
+  duration_ms: 756.7707
+  type: 'test'
+  ...
+# Subtest: D1.5.1 / SQLite — backup SQLite preserva vínculos; abrir cópia permite restauração autorizada
+ok 204 - D1.5.1 / SQLite — backup SQLite preserva vínculos; abrir cópia permite restauração autorizada
+  ---
+  duration_ms: 899.3789
+  type: 'test'
+  ...
+# Subtest: D1.5.1 / SQLite — importação JSON destrutiva via save exige desvinculação, sem limpeza silenciosa
+ok 205 - D1.5.1 / SQLite — importação JSON destrutiva via save exige desvinculação, sem limpeza silenciosa
+  ---
+  duration_ms: 809.4545
+  type: 'test'
+  ...
+# (node:29200) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: D1.5 — novas categorias padrão usam paleta não roxa sem mudar significado financeiro
+ok 206 - D1.5 — novas categorias padrão usam paleta não roxa sem mudar significado financeiro
+  ---
+  duration_ms: 2.0577
+  type: 'test'
+  ...
+# Subtest: D1.5 — alterações de cores já gravadas permanecem após reabrir banco
+ok 207 - D1.5 — alterações de cores já gravadas permanecem após reabrir banco
+  ---
+  duration_ms: 6310.5921
+  type: 'test'
+  ...
+# Subtest: D1.5 — o catálogo de categorias não migra dados, altera apenas INSERT OR IGNORE inicial
+ok 208 - D1.5 — o catálogo de categorias não migra dados, altera apenas INSERT OR IGNORE inicial
+  ---
+  duration_ms: 0.4991
+  type: 'test'
+  ...
+# Subtest: D1.5 — novos swatches omitiram roxos, mas o editor continua aceitando HEX personalizado
+ok 209 - D1.5 — novos swatches omitiram roxos, mas o editor continua aceitando HEX personalizado
+  ---
+  duration_ms: 1.2725
+  type: 'test'
+  ...
+# Subtest: D1.5 — premium interactions CSS is loaded after every existing page stylesheet
+ok 210 - D1.5 — premium interactions CSS is loaded after every existing page stylesheet
+  ---
+  duration_ms: 0.9942
+  type: 'test'
+  ...
+# Subtest: D1.5 — generic hover remains on non-semantic surfaces; KPI cards use semantic shared frame
+ok 211 - D1.5 — generic hover remains on non-semantic surfaces; KPI cards use semantic shared frame
+  ---
+  duration_ms: 0.1541
+  type: 'test'
+  ...
+# Subtest: D1.5 — interactions cover all eight areas without blanket .card:hover
+ok 212 - D1.5 — interactions cover all eight areas without blanket .card:hover
+  ---
+  duration_ms: 0.1604
+  type: 'test'
+  ...
+# Subtest: D1.5 — preserves budget warning strokes and informational card pointer semantics
+ok 213 - D1.5 — preserves budget warning strokes and informational card pointer semantics
+  ---
+  duration_ms: 0.1193
+  type: 'test'
+  ...
+# Subtest: D1.5 — reduced motion stops transforms and transitions while focus remains visible
+ok 214 - D1.5 — reduced motion stops transforms and transitions while focus remains visible
+  ---
+  duration_ms: 0.14
+  type: 'test'
+  ...
+# Subtest: D1.5 — hover effects use pointer precision and do not affect touch scrolling
+ok 215 - D1.5 — hover effects use pointer precision and do not affect touch scrolling
+  ---
+  duration_ms: 0.0727
+  type: 'test'
+  ...
+# Subtest: D1.5 — light and dark detail sections use current theme tokens, not legacy violet RGB
+ok 216 - D1.5 — light and dark detail sections use current theme tokens, not legacy violet RGB
+  ---
+  duration_ms: 0.1822
+  type: 'test'
+  ...
+# Subtest: D1.5 — expense and income use semantic color tokens, no legacy purple literals in planning SVG
+ok 217 - D1.5 — expense and income use semantic color tokens, no legacy purple literals in planning SVG
+  ---
+  duration_ms: 0.1146
+  type: 'test'
+  ...
+# Subtest: D1.5 — manual editor has theme-aware danger and linked warnings
+ok 218 - D1.5 — manual editor has theme-aware danger and linked warnings
+  ---
+  duration_ms: 0.2682
+  type: 'test'
+  ...
+# Subtest: D1.5 — linked manual calendar cannot be opened, date validation rejects rollover
+ok 219 - D1.5 — linked manual calendar cannot be opened, date validation rejects rollover
+  ---
+  duration_ms: 0.3125
+  type: 'test'
+  ...
+# Subtest: D1.5 — CSS selectors retain balanced rule delimiters and no external resources
+ok 220 - D1.5 — CSS selectors retain balanced rule delimiters and no external resources
+  ---
+  duration_ms: 0.1546
+  type: 'test'
+  ...
+# Subtest: D1.5 — editar descrição, data, valor em centavos e categoria preserva ID e outros registros
+ok 221 - D1.5 — editar descrição, data, valor em centavos e categoria preserva ID e outros registros
+  ---
+  duration_ms: 1.9238
+  type: 'test'
+  ...
+# Subtest: D1.5 — rejeita data impossível com calendário real e não grava
+ok 222 - D1.5 — rejeita data impossível com calendário real e não grava
+  ---
+  duration_ms: 0.2525
+  type: 'test'
+  ...
+# Subtest: D1.5 — rejeita valor zero, negativo e não numérico sem persistir
+ok 223 - D1.5 — rejeita valor zero, negativo e não numérico sem persistir
+  ---
+  duration_ms: 0.6864
+  type: 'test'
+  ...
+# Subtest: D1.5 — rejeita descrição vazia e categoria incompatível
+ok 224 - D1.5 — rejeita descrição vazia e categoria incompatível
+  ---
+  duration_ms: 0.1533
+  type: 'test'
+  ...
+# Subtest: D1.5 — lançamento vinculado não pode alterar valor ou data
+ok 225 - D1.5 — lançamento vinculado não pode alterar valor ou data
+  ---
+  duration_ms: 0.2779
+  type: 'test'
+  ...
+# Subtest: D1.5 — vinculado permite mudar descrição/categoria sem tocar extrato
+ok 226 - D1.5 — vinculado permite mudar descrição/categoria sem tocar extrato
+  ---
+  duration_ms: 0.1478
+  type: 'test'
+  ...
+# Subtest: D1.5 — não grava com seletor de banco, ID trocado ou estado ocupado
+ok 227 - D1.5 — não grava com seletor de banco, ID trocado ou estado ocupado
+  ---
+  duration_ms: 0.1607
+  type: 'test'
+  ...
+# Subtest: D1.5 — falha de persistência não fecha drawer nem altera dados
+ok 228 - D1.5 — falha de persistência não fecha drawer nem altera dados
+  ---
+  duration_ms: 0.1803
+  type: 'test'
+  ...
+# Subtest: D1.5 — excluir lançamento manual exige confirmação e preserva outras linhas
+ok 229 - D1.5 — excluir lançamento manual exige confirmação e preserva outras linhas
+  ---
+  duration_ms: 0.3067
+  type: 'test'
+  ...
+# Subtest: D1.5 — exclusão vinculada bloqueada antes de qualquer confirmação
+ok 230 - D1.5 — exclusão vinculada bloqueada antes de qualquer confirmação
+  ---
+  duration_ms: 0.2816
+  type: 'test'
+  ...
+# Subtest: D1.5 — cancelar exclusão não modifica banco e não fecha drawer
+ok 231 - D1.5 — cancelar exclusão não modifica banco e não fecha drawer
+  ---
+  duration_ms: 0.1421
+  type: 'test'
+  ...
+# Subtest: D1.5 — erros de persistência não fingem exclusão concluída
+ok 232 - D1.5 — erros de persistência não fingem exclusão concluída
+  ---
+  duration_ms: 0.0944
+  type: 'test'
+  ...
+# Subtest: D1.5 — drawer visível oferece edição completa, cancelamento e exclusão, sem alterar banco
+ok 233 - D1.5 — drawer visível oferece edição completa, cancelamento e exclusão, sem alterar banco
+  ---
+  duration_ms: 0.6667
+  type: 'test'
+  ...
+# Subtest: períodos rápidos sempre incluem a data de hoje e usam calendário local
+ok 234 - períodos rápidos sempre incluem a data de hoje e usam calendário local
+  ---
+  duration_ms: 1.1275
+  type: 'test'
+  ...
+# Subtest: intervalos personalizados inclusivos e inválidos retornam fallback seguro
+ok 235 - intervalos personalizados inclusivos e inválidos retornam fallback seguro
+  ---
+  duration_ms: 0.3029
+  type: 'test'
+  ...
+# Subtest: totais por intervalo não misturam origens e excluem pendências bancárias
+ok 236 - totais por intervalo não misturam origens e excluem pendências bancárias
+  ---
+  duration_ms: 0.6878
+  type: 'test'
+  ...
+# Subtest: UI não usa seletores ou calendário nativos Windows
+ok 237 - UI não usa seletores ou calendário nativos Windows
+  ---
+  duration_ms: 0.3694
+  type: 'test'
+  ...
+# Subtest: transferências e valores desconsiderados não entram nas receitas ou despesas; divisão preserva totais
+ok 238 - transferências e valores desconsiderados não entram nas receitas ou despesas; divisão preserva totais
+  ---
+  duration_ms: 0.1621
+  type: 'test'
+  ...
+# Subtest: U3 budget signals distinguish zero limits, no limits and no spending without inflating coverage
+ok 239 - U3 budget signals distinguish zero limits, no limits and no spending without inflating coverage
+  ---
+  duration_ms: 8.5155
+  type: 'test'
+  ...
+# Subtest: U3 budget attention filters and limit actions only change presentation until saving
+ok 240 - U3 budget attention filters and limit actions only change presentation until saving
+  ---
+  duration_ms: 20.4748
+  type: 'test'
+  ...
+# Subtest: U3 account freshness uses the received timestamp, handles unknown/zero balances and scopes counters by account
+ok 241 - U3 account freshness uses the received timestamp, handles unknown/zero balances and scopes counters by account
+  ---
+  duration_ms: 2.7054
+  type: 'test'
+  ...
+# Subtest: U3 account actions filter by exact account identity and never expose connection secrets in cards
+ok 242 - U3 account actions filter by exact account identity and never expose connection secrets in cards
+  ---
+  duration_ms: 3.4575
+  type: 'test'
+  ...
+# Subtest: U3 comparison freezes A, preserves a visibly stale B on input edits and keeps finance data
+ok 243 - U3 comparison freezes A, preserves a visibly stale B on input edits and keeps finance data
+  ---
+  duration_ms: 3.7183
+  type: 'test'
+  ...
+# Subtest: U3 ignores late simulation responses after edits, navigation or a newer request
+ok 244 - U3 ignores late simulation responses after edits, navigation or a newer request
+  ---
+  duration_ms: 2.7773
+  type: 'test'
+  ...
+# Subtest: U3 chart shows canonical month-end values, handles negative balances and exposes every month in data table
+ok 245 - U3 chart shows canonical month-end values, handles negative balances and exposes every month in data table
+  ---
+  duration_ms: 6.4307
+  type: 'test'
+  ...
+# Subtest: U3 first-due-date is offered only for daily simulations and profile mode remains explicitly simplified
+ok 246 - U3 first-due-date is offered only for daily simulations and profile mode remains explicitly simplified
+  ---
+  duration_ms: 4.8819
+  type: 'test'
+  ...
+# Subtest: U5.2.1 — renderer mantém Planejar esta compra desabilitado enquanto stale, erro ou cálculo pendente
+ok 247 - U5.2.1 — renderer mantém Planejar esta compra desabilitado enquanto stale, erro ou cálculo pendente
+  ---
+  duration_ms: 6.3891
+  type: 'test'
+  ...
+# Subtest: date-only bank references retain the calendar day and invalid dates remain unavailable
+ok 248 - date-only bank references retain the calendar day and invalid dates remain unavailable
+  ---
+  duration_ms: 12.8138
+  type: 'test'
+  ...
+# Subtest: dashboard agenda shows pending expenses in due order without mutating the ledger
+ok 249 - dashboard agenda shows pending expenses in due order without mutating the ledger
+  ---
+  duration_ms: 1.5531
+  type: 'test'
+  ...
+# Subtest: budget priority puts excess and near limits before remaining limited and unlimited categories
+ok 250 - budget priority puts excess and near limits before remaining limited and unlimited categories
+  ---
+  duration_ms: 0.1951
+  type: 'test'
+  ...
+# Subtest: budget ties remain deterministic and do not treat explicit zero as missing
+ok 251 - budget ties remain deterministic and do not treat explicit zero as missing
+  ---
+  duration_ms: 0.1994
+  type: 'test'
+  ...
+# Subtest: settings regrouping preserves the original panels and their action handlers
+ok 252 - settings regrouping preserves the original panels and their action handlers
+  ---
+  duration_ms: 0.6369
+  type: 'test'
+  ...
+# Subtest: settings tolerate unavailable desktop sections without exposing unrelated children as panels
+ok 253 - settings tolerate unavailable desktop sections without exposing unrelated children as panels
+  ---
+  duration_ms: 0.468
+  type: 'test'
+  ...
+# Subtest: context uses the current planning/budget month instead of the unrelated bank period
+ok 254 - context uses the current planning/budget month instead of the unrelated bank period
+  ---
+  duration_ms: 0.6054
+  type: 'test'
+  ...
+# Subtest: context captures filter descriptions by value and excludes unrelated financial data and secrets
+ok 255 - context captures filter descriptions by value and excludes unrelated financial data and secrets
+  ---
+  duration_ms: 0.5124
+  type: 'test'
+  ...
+# Subtest: intelligence keyboard tabs wrap and support Home/End without intercepting unrelated keys
+ok 256 - intelligence keyboard tabs wrap and support Home/End without intercepting unrelated keys
+  ---
+  duration_ms: 0.1065
+  type: 'test'
+  ...
+# (node:17340) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: D1.1 — SQLite isolado preserva perfis, orçamento zero, banco, categorias e planejamento após backup/restore
+ok 257 - D1.1 — SQLite isolado preserva perfis, orçamento zero, banco, categorias e planejamento após backup/restore
+  ---
+  duration_ms: 7246.3057
+  type: 'test'
+  ...
+# Subtest: E1 Windows IPC contract is declared and wired in all three desktop layers
+ok 258 - E1 Windows IPC contract is declared and wired in all three desktop layers
+  ---
+  duration_ms: 2.5181
+  type: 'test'
+  ...
+# Subtest: Windows and PWA beta versions are intentionally identical
+ok 259 - Windows and PWA beta versions are intentionally identical
+  ---
+  duration_ms: 0.4279
+  type: 'test'
+  ...
+# Subtest: Actions only run on opt-in marker while quota is limited
+ok 260 - Actions only run on opt-in marker while quota is limited
+  ---
+  duration_ms: 42.1302
+  type: 'test'
+  ...
+# (node:12224) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: actual cloud and Windows account/category hashes match, including absent provider category default
+ok 261 - actual cloud and Windows account/category hashes match, including absent provider category default
+  ---
+  duration_ms: 106.3192
+  type: 'test'
+  ...
+# Subtest: E1 shows where two cloud-only transactions appeared, without leaking the records
+ok 262 - E1 shows where two cloud-only transactions appeared, without leaking the records
+  ---
+  duration_ms: 7.5735
+  type: 'test'
+  ...
+# Subtest: E1 separates amount, identity and description disagreements with unchanged counts
+ok 263 - E1 separates amount, identity and description disagreements with unchanged counts
+  ---
+  duration_ms: 0.767
+  type: 'test'
+  ...
+# Subtest: E1 rejects malformed months and limits disclosure when historic window is long
+ok 264 - E1 rejects malformed months and limits disclosure when historic window is long
+  ---
+  duration_ms: 2.7312
+  type: 'test'
+  ...
+# (node:6340) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: new cross-platform purchase-quote formula equals desktop planning simulator
+ok 265 - new cross-platform purchase-quote formula equals desktop planning simulator
+  ---
+  duration_ms: 10.359
+  type: 'test'
+  ...
+# (node:22112) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: live UI uses SQLite response, main/drawer share thread, history stays out of localStorage
+ok 266 - live UI uses SQLite response, main/drawer share thread, history stays out of localStorage
+  ---
+  duration_ms: 187.9494
+  type: 'test'
+  ...
+# Subtest: mutation wording is not interpreted as financial write and unsupported questions are explicit
+ok 267 - mutation wording is not interpreted as financial write and unsupported questions are explicit
+  ---
+  duration_ms: 94.793
+  type: 'test'
+  ...
+# Subtest: all eight starter questions select the intended financial query
+ok 268 - all eight starter questions select the intended financial query
+  ---
+  duration_ms: 66.5941
+  type: 'test'
+  ...
+# Subtest: a reply for an obsolete month is rejected
+ok 269 - a reply for an obsolete month is rejected
+  ---
+  duration_ms: 54.1805
+  type: 'test'
+  ...
+# (node:29884) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: no authorization, foreign owner, expiry and revoke block reads before accessing DB
+ok 270 - no authorization, foreign owner, expiry and revoke block reads before accessing DB
+  ---
+  duration_ms: 1.3788
+  type: 'test'
+  ...
+# Subtest: SQLite-backed food query uses actual 60/40 split and excludes pending/transfer/ignore
+ok 271 - SQLite-backed food query uses actual 60/40 split and excludes pending/transfer/ignore
+  ---
+  duration_ms: 20.0052
+  type: 'test'
+  ...
+# Subtest: single source, demo isolation and changed database produce new computed answers
+ok 272 - single source, demo isolation and changed database produce new computed answers
+  ---
+  duration_ms: 5.271
+  type: 'test'
+  ...
+# Subtest: radar, category increases, largest expenses and review have explainable references
+ok 273 - radar, category increases, largest expenses and review have explainable references
+  ---
+  duration_ms: 7.2837
+  type: 'test'
+  ...
+# Subtest: planning permission is separate and amounts reuse remaining balance from PlanningStore
+ok 274 - planning permission is separate and amounts reuse remaining balance from PlanningStore
+  ---
+  duration_ms: 5.8166
+  type: 'test'
+  ...
+# Subtest: all query intents are read only and reject mutation intent and malformed month
+ok 275 - all query intents are read only and reject mutation intent and malformed month
+  ---
+  duration_ms: 9.5557
+  type: 'test'
+  ...
+# Subtest: actual truncated SQLite cache is explicitly labelled and never presented as full history
+ok 276 - actual truncated SQLite cache is explicitly labelled and never presented as full history
+  ---
+  duration_ms: 465.1296
+  type: 'test'
+  ...
+# (node:26352) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: caixa de revisão guarda notas e natureza, sem alterar importação nem perder em sync
+ok 277 - caixa de revisão guarda notas e natureza, sem alterar importação nem perder em sync
+  ---
+  duration_ms: 8.9761
+  type: 'test'
+  ...
+# Subtest: divisão exige igualdade exata e preserva valor original
+ok 278 - divisão exige igualdade exata e preserva valor original
+  ---
+  duration_ms: 7.3336
+  type: 'test'
+  ...
+# Subtest: vínculo manual é explícito, exclusivo, preservado e só removido após desvinculação
+ok 279 - vínculo manual é explícito, exclusivo, preservado e só removido após desvinculação
+  ---
+  duration_ms: 5.2751
+  type: 'test'
+  ...
+# Subtest: estabelecimentos padronizados e revisão em lote não modificam o extrato bruto
+ok 280 - estabelecimentos padronizados e revisão em lote não modificam o extrato bruto
+  ---
+  duration_ms: 3.8182
+  type: 'test'
+  ...
+# Subtest: migração aditiva mantém categorias e lançamentos existentes
+ok 281 - migração aditiva mantém categorias e lançamentos existentes
+  ---
+  duration_ms: 3.3642
+  type: 'test'
+  ...
+# Subtest: mudanças no banco reabrem a revisão e evitam conciliação desatualizada
+ok 282 - mudanças no banco reabrem a revisão e evitam conciliação desatualizada
+  ---
+  duration_ms: 3.9306
+  type: 'test'
+  ...
+# Subtest: editar a data de um lançamento vinculado exige desvinculação explícita
+ok 283 - editar a data de um lançamento vinculado exige desvinculação explícita
+  ---
+  duration_ms: 3.4796
+  type: 'test'
+  ...
+# Subtest: U2 filtered summaries separate origins, settlement, review, nature and linked manual records
+ok 284 - U2 filtered summaries separate origins, settlement, review, nature and linked manual records
+  ---
+  duration_ms: 15.1929
+  type: 'test'
+  ...
+# Subtest: U2 totals include every filtered record beyond the table limit and show payment/review independently
+ok 285 - U2 totals include every filtered record beyond the table limit and show payment/review independently
+  ---
+  duration_ms: 42.9768
+  type: 'test'
+  ...
+# Subtest: U2 monthly commitments use remaining amounts, exclude paid/cancelled/uncertain income and cross-month dates
+ok 286 - U2 monthly commitments use remaining amounts, exclude paid/cancelled/uncertain income and cross-month dates
+  ---
+  duration_ms: 2.5744
+  type: 'test'
+  ...
+# Subtest: U2 unified agenda deduplicates settled bank links by account and retains manual until settlement
+ok 287 - U2 unified agenda deduplicates settled bank links by account and retains manual until settlement
+  ---
+  duration_ms: 3.2231
+  type: 'test'
+  ...
+# Subtest: U2 calendar and view controls preserve identities and do not mutate financial data
+ok 288 - U2 calendar and view controls preserve identities and do not mutate financial data
+  ---
+  duration_ms: 9.8581
+  type: 'test'
+  ...
+# Subtest: U2 unloaded planning is distinct from a loaded empty agenda
+ok 289 - U2 unloaded planning is distinct from a loaded empty agenda
+  ---
+  duration_ms: 3.6997
+  type: 'test'
+  ...
+# Subtest: U1 month-to-date compares matching calendar days, including shorter and leap months
+ok 290 - U1 month-to-date compares matching calendar days, including shorter and leap months
+  ---
+  duration_ms: 1.0759
+  type: 'test'
+  ...
+# Subtest: U1 completed months and custom windows name their actual previous interval
+ok 291 - U1 completed months and custom windows name their actual previous interval
+  ---
+  duration_ms: 0.1914
+  type: 'test'
+  ...
+# Subtest: U1 coverage distinguishes no spending from uncovered spending, and clamps presentation
+ok 292 - U1 coverage distinguishes no spending from uncovered spending, and clamps presentation
+  ---
+  duration_ms: 0.875
+  type: 'test'
+  ...
+# Subtest: U1 comparisons never manufacture percentages without a usable nonzero baseline
+ok 293 - U1 comparisons never manufacture percentages without a usable nonzero baseline
+  ---
+  duration_ms: 0.2258
+  type: 'test'
+  ...
+# Subtest: U1 accumulated points are bounded and end at the exact selected interval
+ok 294 - U1 accumulated points are bounded and end at the exact selected interval
+  ---
+  duration_ms: 0.3431
+  type: 'test'
+  ...
+# Subtest: U1 shorter previous months are clamped, never reading past their explicit end
+ok 295 - U1 shorter previous months are clamped, never reading past their explicit end
+  ---
+  duration_ms: 0.2622
+  type: 'test'
+  ...
+# (node:31092) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: recorrência preserva dia de origem e edição pontual não modifica demais parcelas
+ok 296 - recorrência preserva dia de origem e edição pontual não modifica demais parcelas
+  ---
+  duration_ms: 6.3545
+  type: 'test'
+  ...
+# Subtest: parcelamento distribui centavos sem erros e não cria 0 reais
+ok 297 - parcelamento distribui centavos sem erros e não cria 0 reais
+  ---
+  duration_ms: 2.3598
+  type: 'test'
+  ...
+# Subtest: projeção diária conta previsto uma vez e não desconta pagamento já refletido no saldo
+ok 298 - projeção diária conta previsto uma vez e não desconta pagamento já refletido no saldo
+  ---
+  duration_ms: 3.0499
+  type: 'test'
+  ...
+# Subtest: pagamento parcial e total são únicos; editar, desfazer e proibir uso em duas contas
+ok 299 - pagamento parcial e total são únicos; editar, desfazer e proibir uso em duas contas
+  ---
+  duration_ms: 4.4374
+  type: 'test'
+  ...
+# Subtest: valor diferente exige edição explícita sem alterar o original, vínculo incorreto pode ser desfeito
+ok 300 - valor diferente exige edição explícita sem alterar o original, vínculo incorreto pode ser desfeito
+  ---
+  duration_ms: 3.6023
+  type: 'test'
+  ...
+# Subtest: receita incerta excluída por padrão e alternativa pode ser exibida
+ok 301 - receita incerta excluída por padrão e alternativa pode ser exibida
+  ---
+  duration_ms: 2.8746
+  type: 'test'
+  ...
+# Subtest: pagamento manual só depois da data, reversível, não duplica em projeções
+ok 302 - pagamento manual só depois da data, reversível, não duplica em projeções
+  ---
+  duration_ms: 2.9358
+  type: 'test'
+  ...
+# Subtest: sugestões usam semelhança, rejeição e exclusividade; não vinculam automaticamente
+ok 303 - sugestões usam semelhança, rejeição e exclusividade; não vinculam automaticamente
+  ---
+  duration_ms: 2.474
+  type: 'test'
+  ...
+# Subtest: nome personalizado nunca modifica descrição importada
+ok 304 - nome personalizado nunca modifica descrição importada
+  ---
+  duration_ms: 4.7171
+  type: 'test'
+  ...
+# Subtest: cancelamento remove previsão sem apagar histórico, dados persistem no mesmo SQLite
+ok 305 - cancelamento remove previsão sem apagar histórico, dados persistem no mesmo SQLite
+  ---
+  duration_ms: 2.7487
+  type: 'test'
+  ...
+# Subtest: backup e reabertura preservam planejamento, nomes personalizados e extrato original
+ok 306 - backup e reabertura preservam planejamento, nomes personalizados e extrato original
+  ---
+  duration_ms: 4770.5921
+  type: 'test'
+  ...
+# Subtest: sincronização que altera pagamento conciliado reabre pendência sem duplicação
+ok 307 - sincronização que altera pagamento conciliado reabre pendência sem duplicação
+  ---
+  duration_ms: 3.2709
+  type: 'test'
+  ...
+# Subtest: categoria personalizada renomeada preserva classificação do compromisso
+ok 308 - categoria personalizada renomeada preserva classificação do compromisso
+  ---
+  duration_ms: 2.9262
+  type: 'test'
+  ...
+# Subtest: um pagamento não pode vincular compromisso e registro manual ao mesmo tempo
+ok 309 - um pagamento não pode vincular compromisso e registro manual ao mesmo tempo
+  ---
+  duration_ms: 3.3555
+  type: 'test'
+  ...
+# Subtest: projeção de mês futuro transporta despesas anteriores e vencidas
+ok 310 - projeção de mês futuro transporta despesas anteriores e vencidas
+  ---
+  duration_ms: 2.984
+  type: 'test'
+  ...
+# (node:10428) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: importação bancária deduplica; não altera lançamentos manuais nem perfil demo
+ok 311 - importação bancária deduplica; não altera lançamentos manuais nem perfil demo
+  ---
+  duration_ms: 6.5575
+  type: 'test'
+  ...
+# Subtest: transação bancária atualizada conserva id e muda status/valor
+ok 312 - transação bancária atualizada conserva id e muda status/valor
+  ---
+  duration_ms: 3.0476
+  type: 'test'
+  ...
+# Subtest: lote inválido não altera SQLite bancário nem o manual
+ok 313 - lote inválido não altera SQLite bancário nem o manual
+  ---
+  duration_ms: 3.9197
+  type: 'test'
+  ...
+# Subtest: cliente Pluggy usa auth, accounts e cursor e nunca redireciona para URLs externas
+ok 314 - cliente Pluggy usa auth, accounts e cursor e nunca redireciona para URLs externas
+  ---
+  duration_ms: 1.3519
+  type: 'test'
+  ...
+# Subtest: API não prossegue com consentimento expirado e preserva banco
+ok 315 - API não prossegue com consentimento expirado e preserva banco
+  ---
+  duration_ms: 2.2113
+  type: 'test'
+  ...
+# Subtest: cofre guarda somente criptografia simulada e não expõe segredo no status
+ok 316 - cofre guarda somente criptografia simulada e não expõe segredo no status
+  ---
+  duration_ms: 11.435
+  type: 'test'
+  ...
+# (node:27036) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: cópia íntegra permite restauração do histórico, categorias e regras
+ok 317 - cópia íntegra permite restauração do histórico, categorias e regras
+  ---
+  duration_ms: 4987.0561
+  type: 'test'
+  ...
+# Subtest: arquivo inválido ou sem tabelas não substitui o banco existente
+ok 318 - arquivo inválido ou sem tabelas não substitui o banco existente
+  ---
+  duration_ms: 2605.0482
+  type: 'test'
+  ...
+# Subtest: cópias automáticas diárias não duplicam e mantêm 7 datas
+ok 319 - cópias automáticas diárias não duplicam e mantêm 7 datas
+  ---
+  duration_ms: 3658.9879
+  type: 'test'
+  ...
+# Subtest: emojis em categorias preservados após atualização e nova abertura
+ok 320 - emojis em categorias preservados após atualização e nova abertura
+  ---
+  duration_ms: 1406.7094
+  type: 'test'
+  ...
+# Subtest: D1.1 — cópia diária preexistente corrompida não é considerada válida nem sobrescrita
+ok 321 - D1.1 — cópia diária preexistente corrompida não é considerada válida nem sobrescrita
+  ---
+  duration_ms: 682.9434
+  type: 'test'
+  ...
+# Subtest: D1.1 — backup parcial inválido não é publicado nem elimina a cópia anterior íntegra
+ok 322 - D1.1 — backup parcial inválido não é publicado nem elimina a cópia anterior íntegra
+  ---
+  duration_ms: 677.979
+  type: 'test'
+  ...
+# Subtest: D1.1 — cópia diária alterada depois da validação é rejeitada na próxima verificação
+ok 323 - D1.1 — cópia diária alterada depois da validação é rejeitada na próxima verificação
+  ---
+  duration_ms: 934.5497
+  type: 'test'
+  ...
+# Subtest: D1.1 — validação do backup WAL não deixa auxiliares .partial após sucesso
+ok 324 - D1.1 — validação do backup WAL não deixa auxiliares .partial após sucesso
+  ---
+  duration_ms: 896.0926
+  type: 'test'
+  ...
+# (node:25484) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: categorias padrão possuem emojis e personalizadas persistem em reinicialização
+ok 325 - categorias padrão possuem emojis e personalizadas persistem em reinicialização
+  ---
+  duration_ms: 4122.8882
+  type: 'test'
+  ...
+# Subtest: migração de banco anterior adiciona emoji sem perder as regras ou as transações
+ok 326 - migração de banco anterior adiciona emoji sem perder as regras ou as transações
+  ---
+  duration_ms: 4049.7987
+  type: 'test'
+  ...
+# Subtest: B00 records version, commit, toolchain and exact renderer asset hashes
+ok 327 - B00 records version, commit, toolchain and exact renderer asset hashes
+  ---
+  duration_ms: 118.1509
+  type: 'test'
+  ...
+# Subtest: B00 normalizes nested archive paths for Windows and POSIX readers
+ok 328 - B00 normalizes nested archive paths for Windows and POSIX readers
+  ---
+  duration_ms: 0.4904
+  type: 'test'
+  ...
+# Subtest: B00 rejects old bundles, tampered CSS and a different commit
+ok 329 - B00 rejects old bundles, tampered CSS and a different commit
+  ---
+  duration_ms: 76.31
+  type: 'test'
+  ...
+# Subtest: B00 refuses package versions and missing frontend assets not matching manifest
+ok 330 - B00 refuses package versions and missing frontend assets not matching manifest
+  ---
+  duration_ms: 252.7943
+  type: 'test'
+  ...
+# Subtest: B00 compares every ASAR renderer byte, including package version
+ok 331 - B00 compares every ASAR renderer byte, including package version
+  ---
+  duration_ms: 152.7375
+  type: 'test'
+  ...
+# Subtest: F08 rejects stale but marker-complete renderer and changed TS source
+ok 332 - F08 rejects stale but marker-complete renderer and changed TS source
+  ---
+  duration_ms: 6098.2265
+  type: 'test'
+  ...
+# (node:23152) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: inicializa banco SQLite real e salva centavos corretamente
+ok 333 - inicializa banco SQLite real e salva centavos corretamente
+  ---
+  duration_ms: 2438.9102
+  type: 'test'
+  ...
+# Subtest: demonstração jamais altera dados pessoais
+ok 334 - demonstração jamais altera dados pessoais
+  ---
+  duration_ms: 3.4475
+  type: 'test'
+  ...
+# Subtest: operação inválida não apaga dados: transação atômica e validação
+ok 335 - operação inválida não apaga dados: transação atômica e validação
+  ---
+  duration_ms: 2.3183
+  type: 'test'
+  ...
+# Subtest: salva descrições com aspas e comandos SQL como texto simples
+ok 336 - salva descrições com aspas e comandos SQL como texto simples
+  ---
+  duration_ms: 3.4688
+  type: 'test'
+  ...
+# Subtest: cópia SQLite é íntegra e reabre após backup online
+ok 337 - cópia SQLite é íntegra e reabre após backup online
+  ---
+  duration_ms: 2435.5558
+  type: 'test'
+  ...
+# Subtest: backup JSON da v0.3 pode ser importado com version 3
+ok 338 - backup JSON da v0.3 pode ser importado com version 3
+  ---
+  duration_ms: 2.9214
+  type: 'test'
+  ...
+# (node:6940) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: linha do tempo inclui todos os dias e estima histórico com diferença diária
+ok 339 - linha do tempo inclui todos os dias e estima histórico com diferença diária
+  ---
+  duration_ms: 4.7665
+  type: 'test'
+  ...
+# Subtest: linha do tempo futura possui 31 dias com saldo após vencimentos
+ok 340 - linha do tempo futura possui 31 dias com saldo após vencimentos
+  ---
+  duration_ms: 2.8945
+  type: 'test'
+  ...
+# Subtest: um dia sem lançamento tem variação zero; parcelas e estimativas preservam cenário
+ok 341 - um dia sem lançamento tem variação zero; parcelas e estimativas preservam cenário
+  ---
+  duration_ms: 3.116
+  type: 'test'
+  ...
+# Subtest: não altera o planejamento, rejeita meses anteriores e datas inválidas
+ok 342 - não altera o planejamento, rejeita meses anteriores e datas inválidas
+  ---
+  duration_ms: 2.6913
+  type: 'test'
+  ...
+# Subtest: B02 category is a native accessible button with explicit category and handler
+ok 343 - B02 category is a native accessible button with explicit category and handler
+  ---
+  duration_ms: 33.71
+  type: 'test'
+  ...
+# Subtest: U5.1 bank and manual category buttons open their identity-aware popover without changing balances
+ok 344 - U5.1 bank and manual category buttons open their identity-aware popover without changing balances
+  ---
+  duration_ms: 13.2169
+  type: 'test'
+  ...
+# Subtest: B02 advanced drawer retains focus restoration for keyboard navigation
+ok 345 - B02 advanced drawer retains focus restoration for keyboard navigation
+  ---
+  duration_ms: 6.1597
+  type: 'test'
+  ...
+# Subtest: B02 category editor is marked for both origins and remains separate from split editing
+ok 346 - B02 category editor is marked for both origins and remains separate from split editing
+  ---
+  duration_ms: 0.4167
+  type: 'test'
+  ...
+# Subtest: B02 renderer labels match the current candidate version and exclude prior releases
+ok 347 - B02 renderer labels match the current candidate version and exclude prior releases
+  ---
+  duration_ms: 0.2513
+  type: 'test'
+  ...
+# (node:18380) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: U5.1 — override pessoal distingue contas diferentes com mesmo externalId, extrato original intacto
+ok 348 - U5.1 — override pessoal distingue contas diferentes com mesmo externalId, extrato original intacto
+  ---
+  duration_ms: 2662.3619
+  type: 'test'
+  ...
+# Subtest: U5.1 — classificação inválida não persiste nem altera overrides existentes
+ok 349 - U5.1 — classificação inválida não persiste nem altera overrides existentes
+  ---
+  duration_ms: 2111.2414
+  type: 'test'
+  ...
+# Subtest: U5.1 — categorias pessoais são persistidas depois de reabrir banco sintético
+ok 350 - U5.1 — categorias pessoais são persistidas depois de reabrir banco sintético
+  ---
+  duration_ms: 2085.0267
+  type: 'test'
+  ...
+# Subtest: U5.1 — alterar categoria manual por save não modifica id, centavos, data ou extrato Pluggy
+ok 351 - U5.1 — alterar categoria manual por save não modifica id, centavos, data ou extrato Pluggy
+  ---
+  duration_ms: 1641.7278
+  type: 'test'
+  ...
+# Subtest: U5.1 — fontes manual/bancárias e mesmo externalId em duas contas não colidem
+ok 352 - U5.1 — fontes manual/bancárias e mesmo externalId em duas contas não colidem
+  ---
+  duration_ms: 8.4992
+  type: 'test'
+  ...
+# Subtest: U5.1 — pesquisa abrange estabelecimento e mantém acentos equivalentes
+ok 353 - U5.1 — pesquisa abrange estabelecimento e mantém acentos equivalentes
+  ---
+  duration_ms: 0.819
+  type: 'test'
+  ...
+# Subtest: U5.1 — filtros combinados categoria, banco, receita/despesa, revisão são interseção
+ok 354 - U5.1 — filtros combinados categoria, banco, receita/despesa, revisão são interseção
+  ---
+  duration_ms: 0.167
+  type: 'test'
+  ...
+# Subtest: U5.1 — revisão filtra apenas banco não revisado em qualquer período
+ok 355 - U5.1 — revisão filtra apenas banco não revisado em qualquer período
+  ---
+  duration_ms: 0.12
+  type: 'test'
+  ...
+# Subtest: U5.1 — ordenação por valor absoluto e data preserva estabilidade de identidade
+ok 356 - U5.1 — ordenação por valor absoluto e data preserva estabilidade de identidade
+  ---
+  duration_ms: 0.292
+  type: 'test'
+  ...
+# Subtest: U5.1 — nenhuma origem altera a semântica receita/despesa por natureza bancária
+ok 357 - U5.1 — nenhuma origem altera a semântica receita/despesa por natureza bancária
+  ---
+  duration_ms: 0.253
+  type: 'test'
+  ...
+# (node:24388) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: U5.1.1 — SQLite real informa histórico parcial com 2.501 transações sintéticas
+ok 358 - U5.1.1 — SQLite real informa histórico parcial com 2.501 transações sintéticas
+  ---
+  duration_ms: 3071.5489
+  type: 'test'
+  ...
+# Subtest: U5.1.1 — aviso é junto dos cartões e números indicam subconjunto carregado
+ok 359 - U5.1.1 — aviso é junto dos cartões e números indicam subconjunto carregado
+  ---
+  duration_ms: 0.3077
+  type: 'test'
+  ...
+# Subtest: U5.1 — categoria abre popover para banco A/B com externalId idêntico e para manual
+ok 360 - U5.1 — categoria abre popover para banco A/B com externalId idêntico e para manual
+  ---
+  duration_ms: 53.2634
+  type: 'test'
+  ...
+# Subtest: U5.1 — manual salva categoria via updateData mantendo id, data, centavos e outros dados
+ok 361 - U5.1 — manual salva categoria via updateData mantendo id, data, centavos e outros dados
+  ---
+  duration_ms: 31.1783
+  type: 'test'
+  ...
+# Subtest: U5.1 — banco grava override pessoal com accountId+externalId, não por ID isolado
+ok 362 - U5.1 — banco grava override pessoal com accountId+externalId, não por ID isolado
+  ---
+  duration_ms: 21.1267
+  type: 'test'
+  ...
+# Subtest: U5.1 — falha bancária mantém categoria anterior, popover e erro visível
+ok 363 - U5.1 — falha bancária mantém categoria anterior, popover e erro visível
+  ---
+  duration_ms: 18.0659
+  type: 'test'
+  ...
+# Subtest: U5.1 — falha de gravação manual preserva seleção e informa erro
+ok 364 - U5.1 — falha de gravação manual preserva seleção e informa erro
+  ---
+  duration_ms: 14.1576
+  type: 'test'
+  ...
+# Subtest: U5.1 — cliques repetidos não disparam duas gravações bancárias
+ok 365 - U5.1 — cliques repetidos não disparam duas gravações bancárias
+  ---
+  duration_ms: 15.0034
+  type: 'test'
+  ...
+# Subtest: U5.1 — Enter confirma seleção ativa, setas navegam, Escape restaura foco
+ok 366 - U5.1 — Enter confirma seleção ativa, setas navegam, Escape restaura foco
+  ---
+  duration_ms: 16.192
+  type: 'test'
+  ...
+# Subtest: U5.1 — busca sem acento, categorias compatíveis e opção atual
+ok 367 - U5.1 — busca sem acento, categorias compatíveis e opção atual
+  ---
+  duration_ms: 19.9102
+  type: 'test'
+  ...
+# Subtest: U5.1 — limpar filtros restaura padrão sem mexer em lançamentos nem regras financeiras
+ok 368 - U5.1 — limpar filtros restaura padrão sem mexer em lançamentos nem regras financeiras
+  ---
+  duration_ms: 12.7773
+  type: 'test'
+  ...
+# Subtest: U5.1.1 — categoria bancária segue effectiveNature mesmo com sinal oposto
+ok 369 - U5.1.1 — categoria bancária segue effectiveNature mesmo com sinal oposto
+  ---
+  duration_ms: 13.5587
+  type: 'test'
+  ...
+# Subtest: U5.1.1 — transfer e ignore exigem revisão explícita sem modificar natureza ou extrato
+ok 370 - U5.1.1 — transfer e ignore exigem revisão explícita sem modificar natureza ou extrato
+  ---
+  duration_ms: 26.1885
+  type: 'test'
+  ...
+# Subtest: U5.2 — calendário diferencia realizado, previsto e incerto sem recontar valores
+ok 371 - U5.2 — calendário diferencia realizado, previsto e incerto sem recontar valores
+  ---
+  duration_ms: 1.4972
+  type: 'test'
+  ...
+# Subtest: U5.2 — dezembro/janeiro, limites do mês e seleção por teclado
+ok 372 - U5.2 — dezembro/janeiro, limites do mês e seleção por teclado
+  ---
+  duration_ms: 1.4839
+  type: 'test'
+  ...
+# Subtest: U5.2 — categoria do dia e tooltip mostram valores exatos dos registros filtrados
+ok 373 - U5.2 — categoria do dia e tooltip mostram valores exatos dos registros filtrados
+  ---
+  duration_ms: 0.374
+  type: 'test'
+  ...
+# Subtest: U5.2 — a projeção diária é uma única aba, não um details duplicado
+ok 374 - U5.2 — a projeção diária é uma única aba, não um details duplicado
+  ---
+  duration_ms: 13.5865
+  type: 'test'
+  ...
+# Subtest: U5.2 — contrato sem saldo: projeção sem linha usa travessão, nunca zero inventado
+ok 375 - U5.2 — contrato sem saldo: projeção sem linha usa travessão, nunca zero inventado
+  ---
+  duration_ms: 0.1946
+  type: 'test'
+  ...
+# Subtest: U5.2 — compromissos do mês/ano distinguem receitas confirmadas, incertas e canceladas
+ok 376 - U5.2 — compromissos do mês/ano distinguem receitas confirmadas, incertas e canceladas
+  ---
+  duration_ms: 3.9374
+  type: 'test'
+  ...
+# Subtest: U5.2 — calendário/agenda usam IDs compostos e não duplicam pagamentos vinculados
+ok 377 - U5.2 — calendário/agenda usam IDs compostos e não duplicam pagamentos vinculados
+  ---
+  duration_ms: 7.0771
+  type: 'test'
+  ...
+# Subtest: U5.2.1 — override de natureza bancária prevalece sobre sinal; auto respeita sinal
+ok 378 - U5.2.1 — override de natureza bancária prevalece sobre sinal; auto respeita sinal
+  ---
+  duration_ms: 0.2624
+  type: 'test'
+  ...
+# Subtest: U5.2.1 — transferências entre contas e lançamentos ignorados visíveis, sem afetar totais diários
+ok 379 - U5.2.1 — transferências entre contas e lançamentos ignorados visíveis, sem afetar totais diários
+  ---
+  duration_ms: 6.2114
+  type: 'test'
+  ...
+# Subtest: U5.2 — resultado permanece visível e marcado como desatualizado após editar valor
+ok 380 - U5.2 — resultado permanece visível e marcado como desatualizado após editar valor
+  ---
+  duration_ms: 29.963
+  type: 'test'
+  ...
+# Subtest: U5.2 — recalcular atualiza B, mantém referência A e preserva entradas em centavos
+ok 381 - U5.2 — recalcular atualiza B, mantém referência A e preserva entradas em centavos
+  ---
+  duration_ms: 19.12
+  type: 'test'
+  ...
+# Subtest: U5.2 — comparação mostra B somente quando cenário calculado está atual
+ok 382 - U5.2 — comparação mostra B somente quando cenário calculado está atual
+  ---
+  duration_ms: 17.044
+  type: 'test'
+  ...
+# Subtest: U5.2 — erro de validação não descarta última simulação confirmada
+ok 383 - U5.2 — erro de validação não descarta última simulação confirmada
+  ---
+  duration_ms: 10.8393
+  type: 'test'
+  ...
+# Subtest: U5.2 — falha de backend conserva resultado anterior e impede sucesso falso
+ok 384 - U5.2 — falha de backend conserva resultado anterior e impede sucesso falso
+  ---
+  duration_ms: 11.724
+  type: 'test'
+  ...
+# Subtest: U5.2 — resposta da requisição antiga não substitui resultado novo
+ok 385 - U5.2 — resposta da requisição antiga não substitui resultado novo
+  ---
+  duration_ms: 10.4402
+  type: 'test'
+  ...
+# Subtest: U5.2 — editar durante requisição cancela aplicação da resposta pendente
+ok 386 - U5.2 — editar durante requisição cancela aplicação da resposta pendente
+  ---
+  duration_ms: 10.8048
+  type: 'test'
+  ...
+# Subtest: U5.2 — vencimento inicial e taxa seguem parâmetros originais sem mutar motor
+ok 387 - U5.2 — vencimento inicial e taxa seguem parâmetros originais sem mutar motor
+  ---
+  duration_ms: 12.5532
+  type: 'test'
+  ...
+# Subtest: U5.2 — modo local mantém o mesmo contrato de preservação
+ok 388 - U5.2 — modo local mantém o mesmo contrato de preservação
+  ---
+  duration_ms: 7.8661
+  type: 'test'
+  ...
+# Subtest: U5.2 — interface distingue resultado antigo, erro, ação Recalcular e cenário salvo
+ok 389 - U5.2 — interface distingue resultado antigo, erro, ação Recalcular e cenário salvo
+  ---
+  duration_ms: 0.4791
+  type: 'test'
+  ...
+# Subtest: U5.2.1 — tentativa direta com resultado stale não prepara compromisso nem mostra confirmação
+ok 390 - U5.2.1 — tentativa direta com resultado stale não prepara compromisso nem mostra confirmação
+  ---
+  duration_ms: 12.9503
+  type: 'test'
+  ...
+# Subtest: U5.2.1 — erro de cálculo bloqueia conversão mesmo com resultado antigo preservado
+ok 391 - U5.2.1 — erro de cálculo bloqueia conversão mesmo com resultado antigo preservado
+  ---
+  duration_ms: 6.816
+  type: 'test'
+  ...
+# Subtest: U5.2.1 — enquanto nova requisição está pendente, não permite converter resultado antigo
+ok 392 - U5.2.1 — enquanto nova requisição está pendente, não permite converter resultado antigo
+  ---
+  duration_ms: 6.3227
+  type: 'test'
+  ...
+# Subtest: U5.2.1 — premissas alteradas exigem recálculo antes da conversão válida
+ok 393 - U5.2.1 — premissas alteradas exigem recálculo antes da conversão válida
+  ---
+  duration_ms: 9.0817
+  type: 'test'
+  ...
+# Subtest: U5.2.1 — confirmação recusada mantém resultado e não abre planejamento
+ok 394 - U5.2.1 — confirmação recusada mantém resultado e não abre planejamento
+  ---
+  duration_ms: 5.2429
+  type: 'test'
+  ...
+# Subtest: U5.2.1 — sem snapshot calculado correspondente não existe conversão possível
+ok 395 - U5.2.1 — sem snapshot calculado correspondente não existe conversão possível
+  ---
+  duration_ms: 6.7866
+  type: 'test'
+  ...
+# Subtest: U5.2.1 — botão de planejamento compartilha guarda com método
+ok 396 - U5.2.1 — botão de planejamento compartilha guarda com método
+  ---
+  duration_ms: 1.0685
+  type: 'test'
+  ...
+# Subtest: UI03 design tokens pass core WCAG 2.2 AA text/background ratios
+ok 397 - UI03 design tokens pass core WCAG 2.2 AA text/background ratios
+  ---
+  duration_ms: 1.2787
+  type: 'test'
+  ...
+# Subtest: UI03 chart renders distinct local-currency ticks and accessible table
+ok 398 - UI03 chart renders distinct local-currency ticks and accessible table
+  ---
+  duration_ms: 77.2968
+  type: 'test'
+  ...
+# Subtest: UI03 donut groups after five categories but exposes all exact amounts
+ok 399 - UI03 donut groups after five categories but exposes all exact amounts
+  ---
+  duration_ms: 9.1387
+  type: 'test'
+  ...
+# Subtest: UI03 seven-day agenda is computed only from planned unpaid expenses
+ok 400 - UI03 seven-day agenda is computed only from planned unpaid expenses
+  ---
+  duration_ms: 11.6317
+  type: 'test'
+  ...
+# Subtest: UI03 planning prioritizes upcoming commitments and agenda before graph
+ok 401 - UI03 planning prioritizes upcoming commitments and agenda before graph
+  ---
+  duration_ms: 0.1515
+  type: 'test'
+  ...
+# Subtest: UI03 daily information hierarchy covers all eight sections
+ok 402 - UI03 daily information hierarchy covers all eight sections
+  ---
+  duration_ms: 1.0388
+  type: 'test'
+  ...
+# Subtest: UI03 retains B02 category button after donut and chart redesign
+ok 403 - UI03 retains B02 category button after donut and chart redesign
+  ---
+  duration_ms: 2.3733
+  type: 'test'
+  ...
+# Subtest: UI03 does not introduce new financial engines or changes to data identity
+ok 404 - UI03 does not introduce new financial engines or changes to data identity
+  ---
+  duration_ms: 0.3037
+  type: 'test'
+  ...
+# Subtest: F05 browser regression: viewport scroll repositions SingleDatePicker without dismissing it
+ok 405 - F05 browser regression: viewport scroll repositions SingleDatePicker without dismissing it
+  ---
+  duration_ms: 0.7316
+  type: 'test'
+  ...
+# Subtest: F05 browser regression: viewport scroll repositions PeriodPicker without dismissing it
+ok 406 - F05 browser regression: viewport scroll repositions PeriodPicker without dismissing it
+  ---
+  duration_ms: 0.2407
+  type: 'test'
+  ...
+# Subtest: F03/F06 visual styles retain category labels, small-width demo notice and all Intelligence tabs
+ok 407 - F03/F06 visual styles retain category labels, small-width demo notice and all Intelligence tabs
+  ---
+  duration_ms: 0.3018
+  type: 'test'
+  ...
+# Subtest: F01 saldo desconhecido, parcial, zero real e total conhecido
+ok 408 - F01 saldo desconhecido, parcial, zero real e total conhecido
+  ---
+  duration_ms: 45.1514
+  type: 'test'
+  ...
+# Subtest: F03 donut preserva somas e legenda legível
+ok 409 - F03 donut preserva somas e legenda legível
+  ---
+  duration_ms: 12.7893
+  type: 'test'
+  ...
+# Subtest: F04 botões laterais mantêm nomes acessíveis e localização ativa
+ok 410 - F04 botões laterais mantêm nomes acessíveis e localização ativa
+  ---
+  duration_ms: 4.3393
+  type: 'test'
+  ...
+# Subtest: F05/F06 calendários fecham por Escape, devolvem foco e cabem em 320px
+ok 411 - F05/F06 calendários fecham por Escape, devolvem foco e cabem em 320px
+  ---
+  duration_ms: 54.9243
+  type: 'test'
+  ...
+# Subtest: F07 impede duplo clique e serializa respostas de IPC entre contas
+ok 412 - F07 impede duplo clique e serializa respostas de IPC entre contas
+  ---
+  duration_ms: 10.32
+  type: 'test'
+  ...
+# Subtest: F02 versões do Windows, PWA e renderer coincidem dinamicamente
+ok 413 - F02 versões do Windows, PWA e renderer coincidem dinamicamente
+  ---
+  duration_ms: 0.7965
+  type: 'test'
+  ...
+# (node:26124) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: simulação utiliza o mesmo fluxo diário e não altera compromissos ou extrato
+ok 414 - simulação utiliza o mesmo fluxo diário e não altera compromissos ou extrato
+  ---
+  duration_ms: 12.6218
+  type: 'test'
+  ...
+# Subtest: compra à vista e juros mensais possuem custos e vencimentos coerentes
+ok 415 - compra à vista e juros mensais possuem custos e vencimentos coerentes
+  ---
+  duration_ms: 4.8241
+  type: 'test'
+  ...
+# Subtest: compromissos previstos e reserva alteram alerta, sem classificação de compra como garantida
+ok 416 - compromissos previstos e reserva alteram alerta, sem classificação de compra como garantida
+  ---
+  duration_ms: 3.7165
+  type: 'test'
+  ...
+# Subtest: receitas incertas não financiam compras no cenário conservador
+ok 417 - receitas incertas não financiam compras no cenário conservador
+  ---
+  duration_ms: 3.576
+  type: 'test'
+  ...
+# Subtest: dados de banco antigos ou incompletos sinalizam risco sem declarar compra segura
+ok 418 - dados de banco antigos ou incompletos sinalizam risco sem declarar compra segura
+  ---
+  duration_ms: 3.0111
+  type: 'test'
+  ...
+# Subtest: validação bloqueia simulações absurdas e períodos inválidos
+ok 419 - validação bloqueia simulações absurdas e períodos inválidos
+  ---
+  duration_ms: 10.0309
+  type: 'test'
+  ...
+# Subtest: agregação diária usa histórico acima de 2500 transações e respeita naturezas e divisão
+ok 420 - agregação diária usa histórico acima de 2500 transações e respeita naturezas e divisão
+  ---
+  duration_ms: 126.2619
+  type: 'test'
+  ...
+# Subtest: reconexão bancária produz aviso não destrutivo de possível duplicidade e permite ignorar
+ok 421 - reconexão bancária produz aviso não destrutivo de possível duplicidade e permite ignorar
+  ---
+  duration_ms: 7.1511
+  type: 'test'
+  ...
+# (node:24112) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: transferências são categorias sem alterar natureza financeira de Pix a terceiros
+ok 422 - transferências são categorias sem alterar natureza financeira de Pix a terceiros
+  ---
+  duration_ms: 6.8898
+  type: 'test'
+  ...
+# Subtest: rendimento é traduzido e outras correções manuais têm precedência
+ok 423 - rendimento é traduzido e outras correções manuais têm precedência
+  ---
+  duration_ms: 4.8498
+  type: 'test'
+  ...
+# Subtest: pacote AI: valida fingerprint, aplica sem tocar extrato e não reaplica duplicado
+ok 424 - pacote AI: valida fingerprint, aplica sem tocar extrato e não reaplica duplicado
+  ---
+  duration_ms: 5.7055
+  type: 'test'
+  ...
+# Subtest: pacote adulterado é rejeitado antes de alterar dados
+ok 425 - pacote adulterado é rejeitado antes de alterar dados
+  ---
+  duration_ms: 2.1132
+  type: 'test'
+  ...
+# Subtest: V1.1 regressão — superfície e topo não mudam de altura com V1.3
+ok 426 - V1.1 regressão — superfície e topo não mudam de altura com V1.3
+  ---
+  duration_ms: 0.8911
+  type: 'test'
+  ...
+# Subtest: V1.1 regressão — uma única borda no mesmo perímetro, sem anel interno
+ok 427 - V1.1 regressão — uma única borda no mesmo perímetro, sem anel interno
+  ---
+  duration_ms: 0.1816
+  type: 'test'
+  ...
+# Subtest: V1.1 regressão — variáveis semânticas e resultado dependente do sinal
+ok 428 - V1.1 regressão — variáveis semânticas e resultado dependente do sinal
+  ---
+  duration_ms: 0.9531
+  type: 'test'
+  ...
+# Subtest: V1.1 regressão — hover Premium mantido sem reflow
+ok 429 - V1.1 regressão — hover Premium mantido sem reflow
+  ---
+  duration_ms: 0.248
+  type: 'test'
+  ...
+# Subtest: V1.1 regressão — foco integrado e reduced-motion
+ok 430 - V1.1 regressão — foco integrado e reduced-motion
+  ---
+  duration_ms: 0.2473
+  type: 'test'
+  ...
+# Subtest: V1.1 regressão — stylesheet final e classe limitada a resumos financeiros
+ok 431 - V1.1 regressão — stylesheet final e classe limitada a resumos financeiros
+  ---
+  duration_ms: 0.2804
+  type: 'test'
+  ...
+# Subtest: V1.2 — categorias não avançam além do painel e acomodam valores longos
+ok 432 - V1.2 — categorias não avançam além do painel e acomodam valores longos
+  ---
+  duration_ms: 1.3561
+  type: 'test'
+  ...
+# Subtest: V1.2 — últimas movimentações preservam textos e valores sem truncamento
+ok 433 - V1.2 — últimas movimentações preservam textos e valores sem truncamento
+  ---
+  duration_ms: 0.4153
+  type: 'test'
+  ...
+# Subtest: V1.2 — 125% pode redistribuir grids sem zoom artificial ou remover painéis
+ok 434 - V1.2 — 125% pode redistribuir grids sem zoom artificial ou remover painéis
+  ---
+  duration_ms: 0.3553
+  type: 'test'
+  ...
+# Subtest: V1.2 — fonte, cobertura e orçamento mantêm cabeçalhos/valores legíveis
+ok 435 - V1.2 — fonte, cobertura e orçamento mantêm cabeçalhos/valores legíveis
+  ---
+  duration_ms: 0.3939
+  type: 'test'
+  ...
+# Subtest: V1.2 — Hoje separa cards, banner e laboratório mantendo preparar análise
+ok 436 - V1.2 — Hoje separa cards, banner e laboratório mantendo preparar análise
+  ---
+  duration_ms: 0.3951
+  type: 'test'
+  ...
+# Subtest: V1.2 — chat lateral encolhe corretamente; modal mantém scroll interno e botões
+ok 437 - V1.2 — chat lateral encolhe corretamente; modal mantém scroll interno e botões
+  ---
+  duration_ms: 0.2947
+  type: 'test'
+  ...
+# Subtest: V1.2 — BUG-02 respeita superfície e contraste do tema claro sem afetar a V1.1
+ok 438 - V1.2 — BUG-02 respeita superfície e contraste do tema claro sem afetar a V1.1
+  ---
+  duration_ms: 0.3693
+  type: 'test'
+  ...
+# Subtest: V1.2 — patches são CSS puro, delimitadores balanceados e sem mudanças em dados
+ok 439 - V1.2 — patches são CSS puro, delimitadores balanceados e sem mudanças em dados
+  ---
+  duration_ms: 0.3911
+  type: 'test'
+  ...
+# Subtest: V1.3 — a mesma borda renderiza topo e laterais; remove anel anterior
+ok 440 - V1.3 — a mesma borda renderiza topo e laterais; remove anel anterior
+  ---
+  duration_ms: 1.0568
+  type: 'test'
+  ...
+# Subtest: V1.3 — fallback semântico não supera classes com especificidade mais baixa
+ok 441 - V1.3 — fallback semântico não supera classes com especificidade mais baixa
+  ---
+  duration_ms: 0.3141
+  type: 'test'
+  ...
+# Subtest: V1.3 — Movimentações: Saídas confirmadas preserva a mesma cor de despesa
+ok 442 - V1.3 — Movimentações: Saídas confirmadas preserva a mesma cor de despesa
+  ---
+  duration_ms: 0.2986
+  type: 'test'
+  ...
+# Subtest: V1.3 — Visão Geral: saldo, receitas, despesas e resultado por sinal
+ok 443 - V1.3 — Visão Geral: saldo, receitas, despesas e resultado por sinal
+  ---
+  duration_ms: 0.2058
+  type: 'test'
+  ...
+# Subtest: V1.3 — Orçamentos: gasto vermelho, limites teal, margem dinâmica, alerta warning
+ok 444 - V1.3 — Orçamentos: gasto vermelho, limites teal, margem dinâmica, alerta warning
+  ---
+  duration_ms: 0.4151
+  type: 'test'
+  ...
+# Subtest: V1.3 — Contas: saldo teal, contador neutro, referência recente verde, conferência warning
+ok 445 - V1.3 — Contas: saldo teal, contador neutro, referência recente verde, conferência warning
+  ---
+  duration_ms: 0.2882
+  type: 'test'
+  ...
+# Subtest: V1.3 — foco, hover restrito ao mouse e movimento reduzido preservados
+ok 446 - V1.3 — foco, hover restrito ao mouse e movimento reduzido preservados
+  ---
+  duration_ms: 0.136
+  type: 'test'
+  ...
+# Subtest: V1.3 — não amplia o efeito indiscriminadamente a formulários e IA
+ok 447 - V1.3 — não amplia o efeito indiscriminadamente a formulários e IA
+  ---
+  duration_ms: 0.1779
+  type: 'test'
+  ...
+# {
+#   "id": "WORK-AUDIT-01",
+#   "classification": "CONFIRMADO EM TESTE LOCAL",
+#   "environment": "win32 v22.23.4; TypeScript real; dados inventados",
+#   "finding": "RESOLVED: resumo respeita divisão canônica de despesas",
+#   "result": "PASS",
+#   "resolved": true,
+#   "input": {
+#     "amountCents": -10000,
+#     "category": "Compras",
+#     "splits": [
+#       {
+#         "category": "Alimentação",
+#         "amount": 6000
+#       },
+#       {
+#         "category": "Transporte",
+#         "amount": 4000
+#       }
+#     ]
+#   },
+#   "actualCategories": [
+#     "Alimentação",
+#     "Transporte"
+#   ],
+#   "expectedCategories": [
+#     "Alimentação",
+#     "Transporte"
+#   ],
+#   "totalsMatch": true,
+#   "applicationWindowsTested": false,
+#   "financialDataChanged": false
+# }
+# Subtest: combined \#41/\#42 probe confirms canonical 60/40 distribution, no double counting
+ok 448 - combined \#41/\#42 probe confirms canonical 60/40 distribution, no double counting
+  ---
+  duration_ms: 174.9029
+  type: 'test'
+  ...
+# Subtest: read adapter reuses exact deterministic synthetic context; no personal state read
+ok 449 - read adapter reuses exact deterministic synthetic context; no personal state read
+  ---
+  duration_ms: 19.3884
+  type: 'test'
+  ...
+# Subtest: adapter refuses real/unapproved payload and offers retry state
+ok 450 - adapter refuses real/unapproved payload and offers retry state
+  ---
+  duration_ms: 4.8247
+  type: 'test'
+  ...
+# Subtest: malformed cents are rejected; extra input metadata is not retained
+ok 451 - malformed cents are rejected; extra input metadata is not retained
+  ---
+  duration_ms: 0.7955
+  type: 'test'
+  ...
+# Subtest: out of order source responses cannot replace selected context
+ok 452 - out of order source responses cannot replace selected context
+  ---
+  duration_ms: 0.7618
+  type: 'test'
+  ...
+# Subtest: exit invalidates in-flight adapter response
+ok 453 - exit invalidates in-flight adapter response
+  ---
+  duration_ms: 0.7151
+  type: 'test'
+  ...
+# Subtest: chat answers real deterministic fixture, rejects purchase availability and keeps history
+ok 454 - chat answers real deterministic fixture, rejects purchase availability and keeps history
+  ---
+  duration_ms: 1.3635
+  type: 'test'
+  ...
+# Subtest: allow/deny simulations are idempotent; snapshot and personal ledger never mutate
+ok 455 - allow/deny simulations are idempotent; snapshot and personal ledger never mutate
+  ---
+  duration_ms: 1.3483
+  type: 'test'
+  ...
+# Subtest: stale proposal cannot be approved after source reload or target change
+ok 456 - stale proposal cannot be approved after source reload or target change
+  ---
+  duration_ms: 0.6798
+  type: 'test'
+  ...
+# Subtest: UI buttons invoke proposal, decision and shared full/drawer conversation
+ok 457 - UI buttons invoke proposal, decision and shared full/drawer conversation
+  ---
+  duration_ms: 2.1746
+  type: 'test'
+  ...
+# Subtest: all explicit prototype interactions are local; no financial writes or external APIs
+ok 458 - all explicit prototype interactions are local; no financial writes or external APIs
+  ---
+  duration_ms: 6.1703
+  type: 'test'
+  ...
+# Subtest: preview server exposes synthetic reads and refuses writes, unknown sources and path escapes
+ok 459 - preview server exposes synthetic reads and refuses writes, unknown sources and path escapes
+  ---
+  duration_ms: 199.2443
+  type: 'test'
+  ...
+1..459
+# tests 459
+# suites 0
+# pass 459
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 27121.5291
