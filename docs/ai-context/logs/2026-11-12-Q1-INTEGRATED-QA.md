@@ -30,4 +30,6 @@ Arquivos reais em [pasta Q1](../evidence/2026-11-12-q1/). `captures.json` regist
 
 ## Pendências desta etapa
 
+Primeiro smoke IPC recusou corretamente o lote após introduzirmos evidência manual divergente (Alimentação/Transporte). Teste reorganizado: lote antes da divergência; depois exige recusa explícita por baixa confiança. Não relaxado o guard do produto.
+
 QA funcional da Central final, capturas claro/escuro, gates completos no commit, Draft PR e plano Windows. Nenhum CircleCI/EXE/instalador/deploy/merge executado.

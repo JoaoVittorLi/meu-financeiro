@@ -24,13 +24,15 @@ async function run(){
   ingest([tx('q1-future'),tx('q1-income',10)]);ingest([tx('q1-future')]);ingest([tx('q1-other')],OTHER);
   assert.equal(row('q1-future').category,'Alimentação');assert.equal(row('q1-income').category,'Outros');assert.equal(row('q1-other').category,'Outros');
   assert.equal(db.db.prepare("SELECT COUNT(*) n FROM bank_transactions WHERE external_id='q1-future'").get().n,1);
-  db.overrideBankCategory({accountId:ACCOUNT,externalId:'q1-future',category:'Transporte'});ingest([tx('q1-future')]);assert.equal(row('q1-future').category,'Transporte');
   await confirm(await prepare('manage-rule',{ruleId:approved.ruleId,change:'pause'}));ingest([tx('q1-paused')]);assert.equal(row('q1-paused').category,'Outros');
   await confirm(await prepare('manage-rule',{ruleId:approved.ruleId,change:'resume'}));assert.equal(row('q1-paused').category,'Alimentação');
   const queue=await call('categoryReviewQueue',{token,limit:50}),items=queue.rows.filter(r=>['cafe-4','cafe-5'].includes(r.externalId));assert.equal(items.length,2);
   const p=await prepare('classify',{items,category:'Alimentação'}),receipts=await Promise.all([confirm(p),confirm(p)]);assert.equal(receipts[0].id,receipts[1].id);assert.equal((await confirm(p)).replayed,true);
   assert.equal(row('cafe-4').category,'Alimentação');
   await confirm(await prepare('undo',{commandId:p.id}));assert.equal(row('cafe-4').category,'Outros');
+  db.overrideBankCategory({accountId:ACCOUNT,externalId:'q1-future',category:'Transporte'});ingest([tx('q1-future')]);assert.equal(row('q1-future').category,'Transporte');
+  const ambiguous=(await call('categoryReviewQueue',{token})).rows.filter(r=>['cafe-4','cafe-5'].includes(r.externalId));
+  await assert.rejects(prepare('classify',{items:ambiguous,category:'Alimentação'}),/Baixa confiança/);
   const fresh=(await call('categoryReviewQueue',{token})).rows.find(r=>r.externalId==='cafe-4');
   const stale=await prepare('classify',{items:[fresh],category:'Alimentação'});db.overrideBankCategory({accountId:ACCOUNT,externalId:'cafe-4',category:'Transporte'});
   await assert.rejects(confirm(stale),/desatualizada/);assert.equal(row('cafe-4').category,'Transporte');
