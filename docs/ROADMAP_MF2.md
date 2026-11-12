@@ -505,3 +505,7 @@ O esforço sugerido ao Work é **Alto na primeira análise arquitetural ampla, M
 - [MARKET_FEATURES_DEEP_DIVE](ai-context/MARKET_FEATURES_DEEP_DIVE.md): especificação de dez experiências com referência de mercado, fluxo do usuário, MVP, contratos, dependências e testes. São **recomendações para a Rodada A**, não novas entregas aprovadas.
 - Primeiro gate técnico continua **MF2-00**: recuperar checkpoint do Work, validar equivalência de branches divergentes, executar CI Windows e smoke no SHA final, confirmar documentação e rollback.
 - Decisões de UX/pesquisa não podem acionar automaticamente a Rodada B. Integrador atualiza CURRENT_STATE após verificação; branch candidata não altera `main`.
+
+
+## 12/11/2026 — QA Windows sem instalador (Draft)
+Runner manual desligado por padrão, captura real e inspeção calculada de hover/foco. Nenhum CI executado; autorização Windows específica pendente. Sem correção CSS especulativa ou homologação fictícia. Ver docs/ai-context/logs/2026-11-12-PRODUCT-QA-WINDOWS.md.
