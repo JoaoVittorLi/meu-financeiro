@@ -557,3 +557,5 @@ Sprint Premium R2: composer compartilhado principal/lateral, perguntas de contin
 Sprint Premium R4: espaço de trabalho de Movimentações, visões rápidas, agrupamento por data, seleção do banco visível, Central acessível e categoria contextual com editor/categorySave existentes. Três regressões SQLite dirigidas aprovadas; QA nativo em andamento.
 
 Sprint Premium R5 iniciado: briefing de prioridades reais no dashboard, consulta contextual e drilldown por natureza/fonte nos indicadores. Ledger/gráficos/agenda/orçamento existentes preservados; saldo desconhecido continua indisponível/parcial. Fatia inicial R5, sem novo serviço I.
+
+Checkpoint integrado #54: R3/R2/R4 funcionais; primeira fatia R5 em e897140. 542/542 Node/SQLite, TypeScript, compile, F08/proveniência, ASAR real e IPC PASS. Evidências nativas e limites em evidence/2026-11-12-premium-sprint. Não equivale a instalador homologado ou escrita pessoal liberada.
