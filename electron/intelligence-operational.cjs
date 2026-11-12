@@ -204,9 +204,21 @@ class IntelligenceOperational{
   if(typeof input?.token!=='string'||!input.token)return {...base,uiState:'denied',intent,answer:'Autorize a leitura local da fonte e do perfil antes de consultar suas finanças.',evidence:[]};
   try{
    const reply=checkedReply(this.local.query({token:input.token,month:p.month,intent,...(category?{category}:{})},owner));
+   const navigation={
+    review:['navigate:transactions-review','Abrir revisão','transactions','navigation:transactions-review'],
+    budgets:['navigate:budgets','Abrir Orçamentos','budgets','navigation:budgets'],
+    radar:['navigate:budgets','Ver Radar e Orçamentos','budgets','navigation:budgets'],
+    commitments:['navigate:planning','Abrir Planejamento','planning','navigation:planning'],
+    largest:['navigate:transactions','Ver Movimentações','transactions','navigation:transactions'],
+    compare:['navigate:transactions','Ver Movimentações','transactions','navigation:transactions'],
+    category:['navigate:transactions','Ver categoria','transactions','navigation:transactions']
+   };
+   const nav=navigation[intent];
    return {...base,uiState:'ready',intent,category:category||null,answer:reply.text,source:reply.references.source,
     profile:reply.references.profile,coverage:reply.references.partial?'partial_local':'unknown',
-    facts:reply.facts,card:reply.card,evidence:[reply.references,...(reply.card?.footnote?[{warning:reply.card.footnote}]:[])]};
+    facts:reply.facts,card:reply.card,
+    actions:nav?[action(nav[0],nav[1],true,{target:nav[2],handler:nav[3]})]:[],
+    evidence:[reply.references,...(reply.card?.footnote?[{warning:reply.card.footnote}]:[])]};
   }catch(err){const status=errorState(err);return {...base,uiState:status.uiState,intent,answer:'Não consegui consultar os dados autorizados. '+status.unavailableReason,evidence:[]};}
  }
 }
