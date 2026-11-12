@@ -7,7 +7,7 @@
 
 ### Checkpoint da frente I — I-P0.1 (implementação isolada, não homologada)
 
-**Status proposto: EM_TESTE / PR Draft em preparação.** O Executor I publicou camada IC v1 de cards Hoje (UI-01…UI-08), IPC de leitura protegida, fatos em centavos inteiros e roteador conversacional determinístico de consultas autorizadas. UI-02 e UI-08 somente em perfil sintético; UI-06 permanece editor manual; nenhuma escrita pessoal por IA. Ver [log técnico I-P0.1](ai-context/logs/2026-11-12-I-P0-1-OPERATIONAL-ADAPTER.md) e [Issue #49](https://github.com/JoaoVittorLi/meu-financeiro/issues/49). Probe V8: 9/9; Node/SQLite/TypeScript/IPC Electron, integração ao Redesign e gates de release **pendentes**, sem promoção de CURRENT_STATE.
+**Status proposto: EM_TESTE / PR Draft em preparação.** O Executor I publicou camada IC v1 de cards Hoje (UI-01…UI-08), IPC de leitura protegida, fatos em centavos inteiros e roteador conversacional determinístico de consultas autorizadas. UI-02 e UI-08 somente em perfil sintético; UI-06 permanece editor manual; nenhuma escrita pessoal por IA. Ver [log técnico I-P0.1](ai-context/logs/2026-11-12-I-P0-1-OPERATIONAL-ADAPTER.md) e [Issue #49](https://github.com/JoaoVittorLi/meu-financeiro/issues/49). Probes V8: adaptador 11/11, facts 6/6; Node/SQLite/TypeScript/IPC Electron, integração ao Redesign e gates de release **pendentes**, sem promoção de CURRENT_STATE.
 
 
 ## Q1 — candidata integrada, execução autorizada em 12/11/2026
