@@ -1649,3 +1649,15 @@
     grid-template-columns: 7px minmax(0, 1fr) minmax(0, auto) 30px;
   }
 }
+/* R5 — actionable financial brief over the shared ledger dashboard */
+.mf-overview-brief{padding:22px;border:1px solid var(--border);border-radius:22px;background:linear-gradient(120deg,color-mix(in srgb,var(--accent) 9%,var(--surface)),var(--surface));display:grid;grid-template-columns:minmax(200px,.85fr) 2fr;gap:24px;align-items:center}
+.mf-overview-brief-title h2{font-size:22px;letter-spacing:-.65px;line-height:1.2;margin:7px 0}.mf-overview-brief-title p{font-size:11px;color:var(--muted);margin:0}
+.mf-overview-priorities{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.mf-overview-priorities button{min-width:0;display:flex;align-items:center;gap:10px;padding:16px 12px;text-align:left;border:1px solid var(--border);border-radius:14px;color:var(--text);background:var(--surface);transition:background .15s,border-color .15s}
+.mf-overview-priorities button:hover{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--surface))}.mf-overview-priorities button>svg:first-child{color:var(--accent);flex-shrink:0}.mf-overview-priorities button>svg:last-child{margin-left:auto;flex-shrink:0}
+.mf-overview-priorities span{display:flex;flex-direction:column;gap:5px;min-width:0}.mf-overview-priorities strong{font-size:12px;line-height:1.4}.mf-overview-priorities small{font-size:10px;line-height:1.5;color:var(--muted)}
+.mf-overview-metric{text-align:left;font-family:inherit;cursor:pointer}.mf-overview-metric .u1-metric-label>svg:last-child{margin-left:auto;opacity:.6}.mf-overview-metric:hover .u1-metric-label>svg:last-child{opacity:1}
+.mf-premium-overview .u1-main-grid{gap:20px}.mf-premium-overview .u1-panel{border-radius:20px}.mf-premium-overview .u1-rhythm{background:linear-gradient(165deg,color-mix(in srgb,var(--accent) 4%,var(--surface)),var(--surface))}
+@media(max-width:1450px){.mf-overview-brief{grid-template-columns:1fr;padding:16px;gap:14px}.mf-overview-brief-title{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}.mf-overview-brief-title h2{font-size:19px;margin:0}.mf-overview-priorities button{padding:12px}.mf-overview-priorities{gap:8px}}
+@media(max-width:700px){.mf-overview-priorities{grid-template-columns:1fr}.mf-overview-priorities button{min-height:60px}}
+@media(prefers-reduced-motion:reduce){.mf-overview-priorities button{transition:none}}

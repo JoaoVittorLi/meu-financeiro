@@ -1,3 +1,11 @@
+## Sprint Premium #54 — 12/11/2026 (novo checkpoint)
+
+Base #53/779cd31 preservada. Branch `feat/mf2-premium-productivity-sprint-20261112`, Draft [#54](https://github.com/JoaoVittorLi/meu-financeiro/pull/54) contra `integration/mf2-q1-operational-premium-20261112`. Código validado `e897140f3b93a9705bfdb7f44bb95112fff7a156`; commits seguintes contêm somente evidências/handoff. R3 Central, R2 Chat e R4 Movimentações têm jornadas funcionais verificadas; R5 começou com briefing e drilldowns, não foi declarado redesign completo.
+
+542/542 Node/SQLite; TypeScript, compilação canônica, F08, proveniência, teste ASAR e ASAR real da candidata em TEMP, IPC Electron PASS. Electron sintético real com Computer Use, claro/escuro e 1366×768/1920×1080. [Evidências e limitações](evidence/2026-11-12-premium-sprint/README.md), [log](logs/2026-11-12-PREMIUM-PRODUCTIVITY-SPRINT.md).
+
+Continuar pela branch do sprint, sem reaplicar #48/#51/#52/#53. Serviços I intactos. Revisar o diff e dependências futuras de Inteligência pelo #49 antes de integrar qualquer novo serviço. Próxima fatia visual pode expandir R5, preservando ledger e sem inventar saldos, inferência ou escrita pessoal. Não iniciar outro módulo completo por inferência. Nenhum merge main, build Windows pago, EXE, instalação ou dado pessoal alterado. Rollback de código: usar a base #53; confirmações sintéticas têm recibo/undo no perfil temporário. Para qualquer build futuro, renovar gates/proveniência no SHA aprovado; autorização do proprietário continua necessária.
+
 # Handoff operacional — IA que vai assumir o Work "Meu Financeiro - Definitivo"
 
 ## Entrega Q1 — 12/11/2026 (prevalece sobre o histórico abaixo)

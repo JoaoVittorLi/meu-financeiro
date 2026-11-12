@@ -1,0 +1,22 @@
+{
+  "ok": true,
+  "requestedCapture": "1366x768",
+  "version": "0.9.5-beta.8",
+  "sqliteIsolated": true,
+  "sha": "e897140f3b93a9705bfdb7f44bb95112fff7a156",
+  "checks": [
+    "real preload/main IPC",
+    "verified backup before confirmation",
+    "future-only history preservation",
+    "account/nature boundaries",
+    "idempotent reimport",
+    "manual correction precedence",
+    "pause/resume",
+    "batch classify/undo",
+    "duplicate confirmation",
+    "stale preview rejection",
+    "grant revoke",
+    "SQLite integrity"
+  ],
+  "backups": 5
+}

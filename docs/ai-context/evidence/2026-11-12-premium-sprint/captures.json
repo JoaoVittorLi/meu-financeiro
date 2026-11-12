@@ -1,0 +1,292 @@
+[
+  {
+    "file": "r2-1366-dark-drawer-final.jpg",
+    "sourceCommit": "2fed5e7e9dc21e5f2d7f19ce2d627412311ef118",
+    "component": "r2",
+    "theme": "dark",
+    "width": 1366,
+    "height": 768,
+    "sha256": "f1389bfa306980ce2ba2731b5ff8ca3031d296853e3f6a5c4b75381810256984",
+    "capture": "Windows Computer Use; native Electron; synthetic SQLite"
+  },
+  {
+    "file": "r2-1366-dark-final.jpg",
+    "sourceCommit": "2fed5e7e9dc21e5f2d7f19ce2d627412311ef118",
+    "component": "r2",
+    "theme": "dark",
+    "width": 1366,
+    "height": 768,
+    "sha256": "ecddac9388f300adeee03ef3a31026d1ec7aaf4193524e48264d7ef900fb05a3",
+    "capture": "Windows Computer Use; native Electron; synthetic SQLite"
+  },
+  {
+    "file": "r2-1366-light-final.jpg",
+    "sourceCommit": "2fed5e7e9dc21e5f2d7f19ce2d627412311ef118",
+    "component": "r2",
+    "theme": "light",
+    "width": 1366,
+    "height": 768,
+    "sha256": "31db5bcb6faed50393fee94f97f6fb0d5a566ba3b2acd4c998cadcbf4d5a39ec",
+    "capture": "Windows Computer Use; native Electron; synthetic SQLite"
+  },
+  {
+    "file": "r2-1920-dark-answer.jpg",
+    "sourceCommit": "0a4164602ea0a596cccfc47d92136569446834f5",
+    "component": "r2",
+    "theme": "dark",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "8908272f27ffc3fdb268ef9bee9f8c31d49192a2752fbf19125b534b6e7c5fc4",
+    "capture": "Windows Computer Use; native Electron; synthetic SQLite"
+  },
+  {
+    "file": "r2-1920-dark-destination.jpg",
+    "sourceCommit": "0a4164602ea0a596cccfc47d92136569446834f5",
+    "component": "r2",
+    "theme": "dark",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "50f8026c99306207eb630c4bf4ed60ba199cfdbb12b9683b9ac6247525f63ad9",
+    "capture": "Windows Computer Use; native Electron; synthetic SQLite"
+  },
+  {
+    "file": "r2-1920-dark-drawer-final.jpg",
+    "sourceCommit": "2fed5e7e9dc21e5f2d7f19ce2d627412311ef118",
+    "component": "r2",
+    "theme": "dark",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "c40dc7aa35979a6d5977db0c9fd4d99b6ff1a40bad67e55f1c69f4c98133db10",
+    "capture": "Windows Computer Use; native Electron; synthetic SQLite"
+  },
+  {
+    "file": "r2-1920-dark-drawer.jpg",
+    "sourceCommit": "0a4164602ea0a596cccfc47d92136569446834f5",
+    "component": "r2",
+    "theme": "dark",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "db31270a5ffae3beaf732113f42e12fa4435180d97d044d7b6e48561545ae402",
+    "capture": "Windows Computer Use; native Electron; synthetic SQLite"
+  },
+  {
+    "file": "r2-1920-dark-navigation.jpg",
+    "sourceCommit": "0a4164602ea0a596cccfc47d92136569446834f5",
+    "component": "r2",
+    "theme": "dark",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "f8d8b867e1b1862f3120294b4caba3d9390e191ca52932ebc81d222faf6f0be4",
+    "capture": "Windows Computer Use; native Electron; synthetic SQLite"
+  },
+  {
+    "file": "r3-1366-dark-history.jpg",
+    "sourceCommit": "aaa09e869eb324a3b7ea2cadf04861a4246bdffe",
+    "component": "r3",
+    "theme": "dark",
+    "width": 1366,
+    "height": 768,
+    "sha256": "63a27df4404f12d7acf738723aefdd3e86b69b43a265cc567ea10e3efbf0d69e",
+    "capture": "Windows Computer Use; native Electron; synthetic SQLite"
+  },
+  {
+    "file": "r3-1366-light-preview.jpg",
+    "sourceCommit": "aaa09e869eb324a3b7ea2cadf04861a4246bdffe",
+    "component": "r3",
+    "theme": "light",
+    "width": 1366,
+    "height": 768,
+    "sha256": "73708416a6ed26f09955ad9b4c06a114c0ff6bb4ad3c0c2f9860963fb4c1d0e6",
+    "capture": "Windows Computer Use; native Electron; synthetic SQLite"
+  },
+  {
+    "file": "r3-1366-light-queue.jpg",
+    "sourceCommit": "aaa09e869eb324a3b7ea2cadf04861a4246bdffe",
+    "component": "r3",
+    "theme": "light",
+    "width": 1366,
+    "height": 768,
+    "sha256": "412c47f0cd31c6ed9fb0f20fa01c3db59ec9d2efa42b6b1d7a1957ecd64c8770",
+    "capture": "Windows Computer Use; native Electron; synthetic SQLite"
+  },
+  {
+    "file": "r3-1366-light-receipt.jpg",
+    "sourceCommit": "aaa09e869eb324a3b7ea2cadf04861a4246bdffe",
+    "component": "r3",
+    "theme": "light",
+    "width": 1366,
+    "height": 768,
+    "sha256": "b26ff5d39cdec5a55ef726db50b6c380f9f0b3e170cdec13ec3cde285beef525",
+    "capture": "Windows Computer Use; native Electron; synthetic SQLite"
+  },
+  {
+    "file": "r3-1366-light-undo.jpg",
+    "sourceCommit": "aaa09e869eb324a3b7ea2cadf04861a4246bdffe",
+    "component": "r3",
+    "theme": "light",
+    "width": 1366,
+    "height": 768,
+    "sha256": "6fa3129a2ec4bf4fe09a96e5a01b591d37192d5f4526945070aafca66d8c1636",
+    "capture": "Windows Computer Use; native Electron; synthetic SQLite"
+  },
+  {
+    "file": "r3-1366-light-workbench.jpg",
+    "sourceCommit": "aaa09e869eb324a3b7ea2cadf04861a4246bdffe",
+    "component": "r3",
+    "theme": "light",
+    "width": 1366,
+    "height": 768,
+    "sha256": "30da835214ab8bff30c8cb5c34228f7fbf7cb2f639267007125e101df6ed11f2",
+    "capture": "Windows Computer Use; native Electron; synthetic SQLite"
+  },
+  {
+    "file": "r3-1920-dark-deferred.jpg",
+    "sourceCommit": "aaa09e869eb324a3b7ea2cadf04861a4246bdffe",
+    "component": "r3",
+    "theme": "dark",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "a884f1ea06c78e2bc011295af295a6efc50ba0c2e72a5e59d6aeb30c35aac5d7",
+    "capture": "Windows Computer Use; native Electron; synthetic SQLite"
+  },
+  {
+    "file": "r3-1920-dark-denied.jpg",
+    "sourceCommit": "aaa09e869eb324a3b7ea2cadf04861a4246bdffe",
+    "component": "r3",
+    "theme": "dark",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "c8f95311d76f45761b433a1ed40345647bae90c67974c0c6b8fe513c8f3b4860",
+    "capture": "Windows Computer Use; native Electron; synthetic SQLite"
+  },
+  {
+    "file": "r3-1920-dark-history.jpg",
+    "sourceCommit": "aaa09e869eb324a3b7ea2cadf04861a4246bdffe",
+    "component": "r3",
+    "theme": "dark",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "05c88fccee624725a27fb0569aac9cfb9c7952199cd4b0c5f4b7e760033ada1c",
+    "capture": "Windows Computer Use; native Electron; synthetic SQLite"
+  },
+  {
+    "file": "r3-1920-dark-suggestions.jpg",
+    "sourceCommit": "aaa09e869eb324a3b7ea2cadf04861a4246bdffe",
+    "component": "r3",
+    "theme": "dark",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "ff025394a8285a9f0694963ec3e75b181f0a61175cc211e8b3e8c37b606e1a21",
+    "capture": "Windows Computer Use; native Electron; synthetic SQLite"
+  },
+  {
+    "file": "r3-1920-light-final.jpg",
+    "sourceCommit": "e897140f3b93a9705bfdb7f44bb95112fff7a156",
+    "component": "r3",
+    "theme": "light",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "956dff03236c67b4b4f9752507353f446fca43eb8966bcfb0033ad918d2b7da8",
+    "capture": "Windows Computer Use; native Electron; synthetic SQLite"
+  },
+  {
+    "file": "r3-1920-light-persisted-decisions.jpg",
+    "sourceCommit": "e897140f3b93a9705bfdb7f44bb95112fff7a156",
+    "component": "r3",
+    "theme": "light",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "68a9ada170f9ccc3e6a317097f411432c5a2dad8f602c8e3b418ebc23d72a574",
+    "capture": "Windows Computer Use; native Electron; synthetic SQLite"
+  },
+  {
+    "file": "r4-1366-dark-grouped.jpg",
+    "sourceCommit": "39f7ae6af913066faef77d94e7edef47af6d8036",
+    "component": "r4",
+    "theme": "dark",
+    "width": 1366,
+    "height": 768,
+    "sha256": "c0c28ac0e0af76daa1873f6ccd93da1262483226b2aeb217005d674288d688f6",
+    "capture": "Windows Computer Use; native Electron; synthetic SQLite"
+  },
+  {
+    "file": "r4-1366-light-grouped.jpg",
+    "sourceCommit": "39f7ae6af913066faef77d94e7edef47af6d8036",
+    "component": "r4",
+    "theme": "light",
+    "width": 1366,
+    "height": 768,
+    "sha256": "30fa85a54f06ba521d857337db889392eb400f0e66ac0391f879e0aa5618d343",
+    "capture": "Windows Computer Use; native Electron; synthetic SQLite"
+  },
+  {
+    "file": "r4-1920-dark-category-editor.jpg",
+    "sourceCommit": "203d5a14a225d6c8ef43af9055a16ce7d95e676b",
+    "component": "r4",
+    "theme": "dark",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "ee4a66d5f02238e5418fc63ecd8dd482946cc35fbf3081f8c1e7b4b2b4afa0e1",
+    "capture": "Windows Computer Use; native Electron; synthetic SQLite"
+  },
+  {
+    "file": "r4-1920-dark-preserved-draft.jpg",
+    "sourceCommit": "203d5a14a225d6c8ef43af9055a16ce7d95e676b",
+    "component": "r4",
+    "theme": "dark",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "fb83914a96653b84378471be92e3afda0304e71c47041cb7e9531413a66fd89b",
+    "capture": "Windows Computer Use; native Electron; synthetic SQLite"
+  },
+  {
+    "file": "r4-1920-dark-workspace.jpg",
+    "sourceCommit": "203d5a14a225d6c8ef43af9055a16ce7d95e676b",
+    "component": "r4",
+    "theme": "dark",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "b24f5fba521afb2979d151034ae448c6457e35e8ee26c54817fbb247e42b698a",
+    "capture": "Windows Computer Use; native Electron; synthetic SQLite"
+  },
+  {
+    "file": "r5-1366-light-dashboard.jpg",
+    "sourceCommit": "39d4f5b976a0c258b8e7a604ba3a6c285e15ae76",
+    "component": "r5",
+    "theme": "light",
+    "width": 1366,
+    "height": 768,
+    "sha256": "7a6d95a88704762e62f245bf62549d21dcdf26de8638ecc2e1ee5754467bcdb2",
+    "capture": "Windows Computer Use; native Electron; synthetic SQLite"
+  },
+  {
+    "file": "r5-1366-light-drilldown.jpg",
+    "sourceCommit": "39d4f5b976a0c258b8e7a604ba3a6c285e15ae76",
+    "component": "r5",
+    "theme": "light",
+    "width": 1366,
+    "height": 768,
+    "sha256": "48b1c3f19aac0a59f627f6661bf3ebfa012af29e9819255dafcbc8a0e39cb90d",
+    "capture": "Windows Computer Use; native Electron; synthetic SQLite"
+  },
+  {
+    "file": "r5-1920-dark-final.jpg",
+    "sourceCommit": "e897140f3b93a9705bfdb7f44bb95112fff7a156",
+    "component": "r5",
+    "theme": "dark",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "46f7e0a3a355fd5f76b5878236b624a403670532be9d7492326759e51d2b01cd",
+    "capture": "Windows Computer Use; native Electron; synthetic SQLite"
+  },
+  {
+    "file": "r5-1920-light-final.jpg",
+    "sourceCommit": "e897140f3b93a9705bfdb7f44bb95112fff7a156",
+    "component": "r5",
+    "theme": "light",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "943904e44d4be2b9c97798d7367b0a4df864862714fb9738d193007b8a4ef9e0",
+    "capture": "Windows Computer Use; native Electron; synthetic SQLite"
+  }
+]

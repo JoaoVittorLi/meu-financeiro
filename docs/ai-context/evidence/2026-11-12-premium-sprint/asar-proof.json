@@ -1,0 +1,6 @@
+{
+  "sourceCommit": "e897140f3b93a9705bfdb7f44bb95112fff7a156",
+  "bytes": 1425198,
+  "sha256": "8989bb287acd1bed761fecd47911e0cbeb27aa963bcd5e7fe3acc79e9ec39993",
+  "verified": "scripts/renderer-provenance.cjs verifyArchive; renderer asset bytes match candidate; temporary archive only, no installer"
+}

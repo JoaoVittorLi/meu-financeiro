@@ -547,3 +547,15 @@ Branch integration/mf2-q1-operational-premium-20261112: incorpora #48/31c7386, #
 
 Checkpoint da união:533/533 PASS, TypeScript/F08/ASAR/proveniência e IPC Electron real PASS. Computer Use Premium light/dark1366×768 e1920×1080, navegação do card e chat real84,04 verificados. Evidências novas em ai-context/evidence/2026-11-12-integration. R3 permanece fora do escopo.
 
+
+## Sprint Premium — R3 em execução
+Base #53/779cd31. Branch feat/mf2-premium-productivity-sprint-20261112. R3 implementa Central por abas, fila pesquisável na página, inspeção rápida, categoria/sugestão/confiança/evidência por registro, impacto explícito e recibos com hierarquia visual. Guards financeiros intactos; prévia de contexto antigo descartada. 10/10 testes dirigidos e compilação PASS; QA Electron seguinte. R2/R4 autorizados na sequência; R5 condicionado aos gates.
+
+
+Sprint Premium R2: composer compartilhado principal/lateral, perguntas de continuidade, período nas mensagens, autorização expirada com rascunho preservado e layout de conversa renovado. Serviços operacionais existentes; QA integrado em andamento.
+
+Sprint Premium R4: espaço de trabalho de Movimentações, visões rápidas, agrupamento por data, seleção do banco visível, Central acessível e categoria contextual com editor/categorySave existentes. Três regressões SQLite dirigidas aprovadas; QA nativo em andamento.
+
+Sprint Premium R5 iniciado: briefing de prioridades reais no dashboard, consulta contextual e drilldown por natureza/fonte nos indicadores. Ledger/gráficos/agenda/orçamento existentes preservados; saldo desconhecido continua indisponível/parcial. Fatia inicial R5, sem novo serviço I.
+
+Checkpoint integrado #54: R3/R2/R4 funcionais; primeira fatia R5 em e897140. 542/542 Node/SQLite, TypeScript, compile, F08/proveniência, ASAR real e IPC PASS. Evidências nativas e limites em evidence/2026-11-12-premium-sprint. Não equivale a instalador homologado ou escrita pessoal liberada.
