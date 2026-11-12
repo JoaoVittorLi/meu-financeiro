@@ -4,6 +4,8 @@
 
 Smoke real IPC também verifica recusa de lote quando uma correção manual introduz divergência no padrão, além do caminho de classificação aceito sem divergência.
 
+QA nativo adicional encontrou e corrigiu prévia de edição sem antes/depois quando não havia transações afetadas e expansão do drawer que permanecia na Central. Nova prévia identifica regra/conta/natureza/categoria anterior e nova; expansão abre chat principal preservando contexto e prévia pendente. Ajustes de foco/rolagem da prévia e do histórico. Regressões e reteste do novo HEAD exigidos.
+
 Branch `qa/mf2-q1-integrated-windows-20261112`, base #47/d52df2a (contém #46). Homologação nativa com Computer Use em perfil/SQLite sintéticos; oito áreas percorridas, lançamento/planejamento/orçamento gravados e preservados após reinício. Corrigidos: seleção de lista antiga após alteração de filtro, marca recortada em 1366, cor de borda incompatível com alerta do simulador. Central recebe navegação por seção, tabela com altura limitada e cabeçalho fixo, seleção de elegíveis e paginação acima da tabela. Gate de backup verificado antes da confirmação **exclusivamente sintético**, com rollback, concorrência e restore testados. Primeira rodada Node/SQLite: 499 PASS; gate adicional de janela e gates finais/QA do código final pendentes nesta etapa. Escrita pessoal bloqueada; sem build Windows/instalador/merge. Evidências e estado final: [log Q1](ai-context/logs/2026-11-12-Q1-INTEGRATED-QA.md).
 
 **Identificador:** MF2-ROADMAP • **Revisão:** 1.2 — Rodada A documental • **Base verificada:** 09/11/2026  

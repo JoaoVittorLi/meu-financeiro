@@ -24,6 +24,10 @@ function categoryReviewSetFilter(app:any,name:string,value:string){
 function categoryReviewJump(id:string){
  const section=document.getElementById(id);if(section?.tagName==='DETAILS')(section as HTMLDetailsElement).open=true;section?.scrollIntoView({block:'start'});section?.focus({preventScroll:true});
 }
+async function categoryReviewHistory(app:any,rule:any){
+ app.setState({categoryReviewFilters:{accountId:rule.accountId,pattern:rule.pattern},categoryReviewFilterRevision:(app.state.categoryReviewFilterRevision||0)+1,categoryReviewQueue:null,categoryReviewSelected:[],categoryReviewPreview:null});
+ await categoryReviewRun(app,async()=>{await categoryReviewRefresh(app);categoryReviewJump('mf-review-section-1');});
+}
 async function categoryReviewOpen(app:any){
  app.setState({page:'intelligence',intelligencePanelOpen:false,intelligenceTab:'actions',categoryReviewOpen:true},()=>document.scrollingElement?.scrollTo({top:0,behavior:'instant' as ScrollBehavior}));
  await categoryReviewRun(app,async()=>{
@@ -82,7 +86,7 @@ function renderCategoryReviewPreview(app:any){
  const p=app.state.categoryReviewPreview;if(!p)return null;
  return h('section',{className:'mf-review-preview','aria-label':'Prévia da ação supervisionada'},
   h('span',{className:'micro-label'},'PRÉVIA · NENHUMA ALTERAÇÃO EXECUTADA'),h('h3',{},p.title),h('p',{},p.summary),
-  p.rule?h('dl',{className:'mf-review-rule-details'},...Object.entries({Padrão:p.rule.pattern,Correspondência:'Descrição exata',Categoria:p.rule.category,Conta:p.rule.accountName,Natureza:p.rule.nature==='expense'?'Saída':'Entrada',Prioridade:p.rule.priority}).map(([k,v])=>h('div',{key:k},h('dt',{},k),h('dd',{},String(v))))):null,
+  p.rule?h('dl',{className:'mf-review-rule-details'},...Object.entries({Padrão:p.rule.pattern,Correspondência:'Descrição exata',...(p.rule.previousCategory?{'Categoria anterior':p.rule.previousCategory}:{}),Categoria:p.rule.category,Conta:p.rule.accountName,Natureza:p.rule.nature==='expense'?'Saída':'Entrada',Prioridade:p.rule.priority}).map(([k,v])=>h('div',{key:k},h('dt',{},k),h('dd',{},String(v))))):null,
   p.historicalEligible!=null?h('p',{},p.historicalEligible+(p.historicalPartial?'+':'')+' registro(s) anteriores elegíveis. Aplicar ao histórico exige outra seleção e outra confirmação.'):null,
   p.affected?.length?h('div',{className:'mf-review-table-wrap'},h('table',{},h('thead',{},h('tr',{},...['Movimentação','Valor','Antes','Depois'].map(t=>h('th',{key:t},t)))),h('tbody',{},...p.affected.map((r:any)=>h('tr',{key:categoryReviewKey(r)},h('td',{},r.description||r.externalId,h('small',{},r.accountName||r.accountId)),h('td',{},r.amount!=null?fmt(Math.abs(r.amount)):'—'),h('td',{},r.category||'—'),h('td',{},r.newCategory||'—')))))):null,
   p.totalCents!=null?h('p',{},'Total absoluto da seleção: '+fmt(p.totalCents)):null,
@@ -120,7 +124,7 @@ function renderCategoryReview(app:any){
    h('nav',{className:'mf-review-sections','aria-label':'Seções da revisão'},...['Sugestões','Movimentações','Regras','Decisões'].map((label,i)=>button(label,()=>categoryReviewJump('mf-review-section-'+i)))),
    report.suggestionsPartial?h('p',{},'Exibindo 100 de '+report.suggestionsTotal+' sugestões.'):null,
    renderCategoryReviewPreview(app),
-   s.categoryReviewReceipt?h('div',{className:'mf-review-receipt',role:'status'},h('strong',{},'Ação persistida e auditada.'),h('p',{},'Comprovante: '+s.categoryReviewReceipt.id),s.categoryReviewReceipt.backup?.verified?h('small',{},'Cópia de segurança verificada antes desta ação.'):null,s.categoryReviewReceipt.action==='rule'?h('div',{},h('p',{},'Regra criada para as próximas importações. Deseja aplicar também aos lançamentos anteriores compatíveis?'),button('Revisar histórico compatível',()=>app.setState({categoryReviewFilters:{accountId:s.categoryReviewReceipt.rule.accountId,pattern:s.categoryReviewReceipt.rule.pattern},categoryReviewSelected:[]},()=>void categoryReviewRun(app,()=>categoryReviewRefresh(app)))),button('Agora não',()=>app.setState({categoryReviewReceipt:null}))):null):null,
+   s.categoryReviewReceipt?h('div',{className:'mf-review-receipt',role:'status'},h('strong',{},'Ação persistida e auditada.'),h('p',{},'Comprovante: '+s.categoryReviewReceipt.id),s.categoryReviewReceipt.backup?.verified?h('small',{},'Cópia de segurança verificada antes desta ação.'):null,s.categoryReviewReceipt.action==='rule'?h('div',{},h('p',{},'Regra criada para as próximas importações. Deseja aplicar também aos lançamentos anteriores compatíveis?'),button('Revisar histórico compatível',()=>void categoryReviewHistory(app,s.categoryReviewReceipt.rule)),button('Agora não',()=>app.setState({categoryReviewReceipt:null}))):null):null,
    h('section',{id:'mf-review-section-0',tabIndex:-1,'aria-label':'Sugestões de regras'},h('h3',{},'Padrões que podem reduzir seu trabalho'),
     !report.suggestions.length?h('p',{className:'mf-review-empty'},'Nenhum padrão novo com evidência manual nesta análise.'):null,
     ...report.suggestions.map((r:any)=>h('article',{key:r.id,className:'mf-review-suggestion'},h('div',{className:'mf-review-suggestion-head'},h('h4',{},r.name),h('span',{className:'mf-review-confidence is-'+r.confidence},'Confiança '+categoryReviewConfidence(r.confidence)+(r.state==='deferred'?' · adiada':''))),h('p',{},r.reason),h('p',{},r.accountName+' · '+(r.nature==='expense'?'Saídas':'Entradas')+' · descrição exata · '+r.compatible+' compatíveis'),r.conflicts.length?h('p',{className:'mf-ai-error'},'Divergências: '+r.conflicts.join(' · ')):null,

@@ -54,6 +54,7 @@
 .mf-review-table-wrap th {position:sticky;top:0;z-index:1}
 .mf-review tbody tr:has(input:checked) {background:var(--positive-bg)}
 .mf-review-pagination {margin-bottom:12px}
+.mf-review-preview {scroll-margin-top:160px}
 @media(max-width:1180px){.mf-review-summary {grid-template-columns:repeat(3,minmax(0,1fr))}.mf-review-summary>button {grid-column:1/-1}.mf-review {padding:18px}.mf-review-rule-details {grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:650px){.mf-review-summary {grid-template-columns:1fr}.mf-review-rule-details {grid-template-columns:1fr}.mf-review-actions>button {flex:1 1 180px}.mf-review {padding:14px}}
 @media(prefers-reduced-motion:no-preference){.mf-review-preview {animation:mf-review-appear 160ms ease-out}@keyframes mf-review-appear {from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}}

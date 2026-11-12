@@ -15,6 +15,13 @@ function fixture(){
 function nodes(tree,match,out=[]){if(tree&&typeof tree==='object'){if(match(tree))out.push(tree);for(const c of tree.children||[])nodes(c,match,out);}return out;}
 const text=n=>typeof n==='string'?n:(n?.children||[]).map(text).join('');
 const settle=()=>new Promise(resolve=>setImmediate(resolve));
+test('history handoff applies the approved account and exact pattern then focuses the review queue',async()=>{
+ const f=fixture();try{
+  await authorize(f);const calls=[];f.context.document.getElementById=id=>({scrollIntoView:()=>calls.push(id),focus:()=>calls.push('focus')});
+  await click(f,'Aceitar / simular regra');await confirm(f);await click(f,'Revisar histórico compatível');
+  assert.equal(f.app.state.categoryReviewFilters.pattern,'CAFETERIA FLORESTA');assert(f.app.state.categoryReviewQueue.rows.every(r=>r.description==='CAFETERIA FLORESTA'));assert(calls.includes('mf-review-section-1'));assert(calls.includes('focus'));
+ }finally{f.close();}
+});
 async function click(f,label,index=0){const tree=f.context.renderCategoryReview(f.app),button=nodes(tree,n=>n.tag==='button'&&text(n)===label)[index];assert(button,'Botão ausente: '+label);assert(!button.props.disabled,'Botão desativado: '+label);button.props.onClick();await settle();await settle();}
 async function authorize(f){await f.context.categoryReviewOpen(f.app);await click(f,'Autorizar revisão dos dados sintéticos');}
 async function confirm(f){const checkbox=nodes(f.context.renderCategoryReview(f.app),n=>n.tag==='input'&&n.props.type==='checkbox'&&String(n.props.onChange).includes('categoryReviewConfirmed'))[0];assert(checkbox);checkbox.props.onChange({target:{checked:true}});await click(f,'Confirmar esta ação');}

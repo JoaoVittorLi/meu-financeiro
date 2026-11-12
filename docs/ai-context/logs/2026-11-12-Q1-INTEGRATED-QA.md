@@ -30,6 +30,8 @@ Arquivos reais em [pasta Q1](../evidence/2026-11-12-q1/). `captures.json` regist
 
 ## Pendências desta etapa
 
+QA em f2d7381: classificação individual, regra futura, lote de2 (37,80), undo, adiar e negar executados pela UI. SQLite antes/depois do undo exportado; somente os dois overrides do lote removidos, classificação individual da outra conta preservada. Chat principal recebeu a frase literal solicitada e abriu Central. Drawer mostrou a mesma conversa e criou prévia de desfazer sem executar. Encontrados dois defeitos adicionais e corrigidos: edição de regra com0 afetados não identificava antes/depois; Expandir fechava drawer mas mantinha Central aberta em vez de exibir chat. Cancelamento feito sem confirmar essa prévia. Acrescentados detalhes da regra, aviso de prévia pendente no chat principal e regressões. Rolagem da prévia agora evita sobreposição do menu. Handoff de histórico aplica filtro e foca a fila diretamente.
+
 Primeiro smoke IPC recusou corretamente o lote após introduzirmos evidência manual divergente (Alimentação/Transporte). Teste reorganizado: lote antes da divergência; depois exige recusa explícita por baixa confiança. Não relaxado o guard do produto.
 
 QA funcional da Central final, capturas claro/escuro, gates completos no commit, Draft PR e plano Windows. Nenhum CircleCI/EXE/instalador/deploy/merge executado.

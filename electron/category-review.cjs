@@ -226,7 +226,7 @@ class CategoryReviewService{
     }
    });
    return {action,rule,config,change:payload.change,category,count,affected,impactHash:impact.digest('hex'),
-    preview:{title:{pause:'Pausar regra',resume:'Reativar regra',delete:'Excluir regra',edit:'Editar categoria da regra'}[payload.change],summary:count+' registro(s) automáticos compatíveis; overrides e extratos brutos preservados.',affected,affectedTotal:count,partial:count>affected.length}};
+    preview:{title:{pause:'Pausar regra',resume:'Reativar regra',delete:'Excluir regra',edit:'Editar categoria da regra'}[payload.change],summary:count+' registro(s) automáticos compatíveis; overrides e extratos brutos preservados.',rule:{...rule,category,previousCategory:rule.category,accountName:this.sql.prepare('SELECT name FROM bank_accounts WHERE account_id=?').get(rule.constraint.accountId)?.name||rule.constraint.accountId,nature:rule.constraint.nature},affected,affectedTotal:count,partial:count>affected.length}};
   }
   if(action==='undo'){
    const command=this.sql.prepare('SELECT receipt,undo_state AS undoState FROM category_review_commands WHERE id=?').get(payload.commandId);
