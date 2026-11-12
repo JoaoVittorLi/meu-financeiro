@@ -15,7 +15,7 @@ test('Inteligência tem rota própria sem substituir Simular compra',()=>{
 
 test('Interface nova mantém Hoje, Conversar e Plano de ação como prévia',()=>{
  const view=source('src/intelligence-view.ts');
- for(const label of ["label:'Hoje'","label:'Conversar'","label:'Plano de ação'","Prévia · dados fictícios","NÃO ENVIADA"])
+ for(const label of ["label:'Hoje'","label:'Conversar'","label:'Plano de ação'","Demonstração isolada","NÃO ENVIADA"])
   assert.ok(view.includes(label),'Esperado na interface: '+label);
  assert.match(view,/renderIntelligencePanel\(app:any\)/);
  assert.match(view,/renderIntelligenceSettings\(app:any\)/);

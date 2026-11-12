@@ -540,3 +540,7 @@ O esforço sugerido ao Work é **Alto na primeira análise arquitetural ampla, M
 
 ## 12/11/2026 — leitura financeira determinística (Draft)
 Base #43 preservada. Serviço local/IPC e chat principal/lateral consultam SQLite autorizado sem escrita nem inferência. Oito consultas e radar; respostas só na memória. Código e regressões em revisão; homologação Electron pendente. Ver docs/ai-context/logs/2026-11-12-LOCAL-FINANCIAL-INTELLIGENCE.md.
+
+## Integração Q1 + I + R — 12/11/2026
+Branch integration/mf2-q1-operational-premium-20261112: incorpora #48/31c7386, #51/c45a01c e #52/2c3884c, preservando ancestralidade e roadmap de ambas as frentes. Rebinding operacional após restore/recovery, tokens anteriores invalidados. Renderer canônico recompilado; 533 testes passaram após conciliar snapshots antigos do layout e preservar a recusa de escrita na consulta local. Gates finais e QA nativo em andamento. Sem R3, escrita pessoal, main ou build pago.
+

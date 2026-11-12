@@ -73,7 +73,7 @@ async function localFinancialSubmit(app:any,question:string){
    // Compatibility during isolated R branch: I-P0.2 becomes active after integration.
    const parsed=localFinancialParse(q,app.state.categories);
    if(parsed)reply=await localFinancialQuery(app,parsed);
-   else error='Consulta ainda não reconhecida. O serviço de conversa operacional será disponibilizado na integração do PR #51.';
+   else error='Consulta ainda não reconhecida. Comandos de escrita não são executados por esta consulta local.';
   }
  }catch(e:any){error=String(e?.message||'Consulta local indisponível.').slice(0,220);}
  if(request!==app.__localChatRequest||app.state.localFinancialAccess?.token!==access?.token||

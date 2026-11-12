@@ -3,7 +3,7 @@ const {test}=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path');
 const root=path.join(__dirname,'..'),read=p=>fs.readFileSync(path.join(root,p),'utf8');
 const overview=read('app/overview.css');
-const intelligence=read('app/intelligence.css');
+const intelligence=read('app/intelligence.css').split('/* R0/R1')[0];
 const premium=read('app/premium-interactions.css');
 const app=read('src/app.ts');
 const ai=read('src/intelligence-view.ts');
@@ -62,7 +62,7 @@ test('V1.2 — Hoje separa cards, banner e laboratório mantendo preparar análi
  assert.match(scoped,/\.mf-intelligence-page \.mf-ai-link\s*\{[\s\S]*?flex-wrap:\s*wrap/);
  assert.match(scoped,/\.mf-intelligence-page \.mf-ai-explainer > div\s*\{[\s\S]*?overflow-wrap:\s*anywhere/);
  assert.match(scoped,/\.mf-intelligence-page \.mf-ai-lab-disclosure > summary small\s*\{[\s\S]*?flex:\s*1 1 180px/);
- for(const phrase of ['Preparar análise','Insights econômicos por padrão','Laboratório de Inteligência'])
+ for(const phrase of ['Preparar análise','renderIntelligencePremiumToday','Laboratório de Inteligência'])
   assert(ai.includes(phrase));
 });
 test('V1.2 — chat lateral encolhe corretamente; modal mantém scroll interno e botões',()=>{

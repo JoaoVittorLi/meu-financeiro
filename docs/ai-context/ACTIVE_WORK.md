@@ -110,3 +110,6 @@ Branch `feat/mf2-work-intelligence-staging-20261112`, base PR #39 `ce8dd04`. Own
 ## Candidata #42 + #41 — 12/11/2026
 
 Branch integration/mf2-ai-summary-staging-20261112. Ownership limitado à candidata: resolução dos três conflitos, probe compatível, regressão e documentação/evidências. #39/#41/#42 preservados. Produto novo não desenvolvido. CURRENT_STATE e gates globais não promovidos; integração definitiva depende de revisão e QA gráfico autorizado.
+
+Integrador temporário: integration/mf2-q1-operational-premium-20261112; ownership main/recovery test, junção renderer, docs e evidências. R3 permanece com Redesign.
+

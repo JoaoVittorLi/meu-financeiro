@@ -180,6 +180,7 @@ app.whenReady().then(()=>{
  db=new FinanceDB(filename);
  planner=new PlanningStore(db);
  let localFinancial,categoryReview,reviewBackupGate;
+ let operationalIntelligence;
  function bindLocalFinancialServices(){
   // A restored/recovered database has a new handle. Never retain grants,
   // previews or a service pointing at the closed pre-restore connection.
@@ -187,6 +188,7 @@ app.whenReady().then(()=>{
   // No new review tables, grants or writes in a personal or packaged profile.
   categoryReview=smokeProfileActive?new CategoryReviewService(db,{syntheticProfile:true}):null;
   reviewBackupGate=categoryReview?new CategoryReviewBackupGate(categoryReview,path.join(app.getPath('userData'),'review-backups'),{syntheticProfile:true}):null;
+  operationalIntelligence=new IntelligenceOperational({localFinancial,categoryReview,db});
  }
  bindLocalFinancialServices();
  ipcMain.handle('finance:review-status',event=>{requireAppSender(event);return {available:!!categoryReview,syntheticOnly:true};});
@@ -201,7 +203,6 @@ app.whenReady().then(()=>{
  ipcMain.handle('finance:read-authorize',(event,input)=>{requireAppSender(event);return localFinancial.authorize(input,event.sender.id);});
  ipcMain.handle('finance:read-query',(event,input)=>{requireAppSender(event);return localFinancial.query(input,event.sender.id);});
  ipcMain.handle('finance:read-revoke',(event,token)=>{requireAppSender(event);return localFinancial.revoke(token,event.sender.id);});
- const operationalIntelligence=new IntelligenceOperational({localFinancial,categoryReview,db});
  ipcMain.handle('intelligence:operational-overview',(event,input)=>{
   requireAppSender(event);return operationalIntelligence.overview(input,event.sender.id);
  });
