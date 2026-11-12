@@ -80,3 +80,7 @@ Perguntar sem alterar nada: tarefa atual; branch e SHA; alterações locais não
 - **Ownership desta frente:** documentação de plano de branches e pesquisa de mercado; não modificar código do Work em andamento.
 - **Estado de análise:** consultar BRANCH_CONSOLIDATION_PLAN.md e MARKET_FEATURES_DEEP_DIVE.md nesta branch.
 - **Próximo integrador:** verificar alterações locais do Work e PR17 mais novo; se moverem, comparar/reconciliar antes de usar a branch candidata para execução. Só marcar G0 após testes/homologação.
+
+## Work staging autorizado — 11/11/2026
+
+Branch `feat/mf2-work-intelligence-staging-20261112`, base PR #39 `ce8dd04`. Ownership desta proposta: novos `src/intelligence-staging.ts`, `app/intelligence-staging.css`, scripts/testes Work; hooks mínimos em `src/intelligence-view.ts`, `app/index.html`, `tsconfig.json` e bundle gerado. Reconciliar alterações de outros executores nesses quatro arquivos antes de integrar. Nenhuma edição da branch #39, CURRENT_STATE, motores, Electron main/preload ou PWA. Checkpoint e evidências no [handoff Work](reviews/2026-11-11-WORK-CHECKPOINT.md).

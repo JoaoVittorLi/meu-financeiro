@@ -1,0 +1,15 @@
+(node:5) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+> meu-financeiro-desktop@0.9.5-beta.8 test:electron-smoke
+> node scripts/d1-electron-smoke.cjs
+
+(node:18) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:18) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+FAIL REAL ELECTRON D1.2: Error: Timeout ao abrir app/index.html no Electron (40 s); Electron output: [26:1111/231848.083639:ERROR:dbus/bus.cc:406] Failed to connect to the bus: Failed to open socket: Operation not permitted
+[26:1111/231848.083721:ERROR:dbus/bus.cc:406] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
+[26:1111/231849.128866:FATAL:chrome/browser/process_singleton_posix.cc:319] Check failed: . socket() failed: Operation not permitted (1)
+
+    at start (/workspace/scratch/5bfcfcfb454b/mf2-work-staging/scripts/d1-electron-smoke.cjs:143:9)
+    at async smoke (/workspace/scratch/5bfcfcfb454b/mf2-work-staging/scripts/d1-electron-smoke.cjs:245:11)
