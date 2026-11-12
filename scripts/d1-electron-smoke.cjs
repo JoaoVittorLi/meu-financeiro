@@ -290,4 +290,4 @@ async function smoke(){
  }
 }
 if(require.main===module)smoke().catch(e=>{console.error('FAIL REAL ELECTRON D1.2:',e);process.exitCode=1});
-module.exports={availablePort,createSyntheticProfile,awaitTarget,checkNavigation,visualMatrix,waitForEmulatedViewport,SMOKE_VIEWS,SMOKE_PRESETS};
+module.exports={start,evaluate,closeCleanly,availablePort,createSyntheticProfile,awaitTarget,checkNavigation,visualMatrix,waitForEmulatedViewport,SMOKE_VIEWS,SMOKE_PRESETS};
