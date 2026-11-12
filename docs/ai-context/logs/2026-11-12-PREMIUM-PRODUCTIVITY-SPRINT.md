@@ -14,3 +14,5 @@ R4 checkpoint: jornada essencial nativa e SQLite PASS, agrupamento e pesquisa in
 R5 primeira fatia: prioridades de revisão (histórico carregado), agenda e explicação local; indicadores Receita/Despesa/Resultado abrem filtros reais e limpam seleção/conta/categoria antigas. Layout do briefing responsivo, dashboard e cálculos existentes preservados. Dois testes dirigidos de navegação/fonte adicionados.
 
 R5 nativo em 39d4f5b: briefing e saldo parcial visíveis em 1366 claro; indicador de despesas abre destino filtrado. Normalizados tokens de superfície nos novos componentes para o design-system existente.
+
+Gate completo detectou duas asserções de integração visual sobre a classe dos indicadores R5. Restaurada a ordem contratual das classes sem relaxar os testes; ações e semântica preservadas. Reexecutando regressão no SHA corrigido.
