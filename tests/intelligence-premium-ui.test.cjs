@@ -117,3 +117,61 @@ test('R1: source, profile, token and review grant are isolated session signature
   Object.assign(a.state,{mode:'real',localFinancialMonth:'2026-11',localFinancialAccess:null,categoryReviewGrant:null});
  }
 });
+
+
+function chatContext(api,options={}){
+ const sandbox=context(api);
+ const localSource=fs.readFileSync(path.join(__dirname,'../src/intelligence-local.ts'),'utf8');
+ const localOutput=ts.transpileModule(localSource,{
+  compilerOptions:{target:ts.ScriptTarget.ES2019,module:ts.ModuleKind.None}
+ }).outputText;
+ sandbox.intelligenceNowTime=()=>'19:00';
+ sandbox.intelligenceSyncThreadMessages=(app,messages)=>{app.setState({intelligenceMessages:messages});};
+ vm.runInContext(localOutput,sandbox,{filename:'intelligence-local.compiled.js',timeout:1500});
+ return sandbox;
+}
+test('R2: authorized chat uses operational endpoint and shows source, period and actions',async()=>{
+ let request=null;
+ const api={intelligenceOperationalAsk:async input=>{
+  request=input;
+  return {contract:'IC-v1/I-P0.2-read-only',readOnly:true,changesApplied:false,modelCalled:false,
+   uiState:'ready',answer:'Comparação local calculada.',source:'bank',profile:'real',coverage:'partial_local',
+   card:{title:'Comparação',rows:[],headers:['Fonte','Valor']},
+   actions:[{actionId:'navigate:transactions',label:'Ver Movimentações',permitted:true,handler:'navigation:transactions'}]};
+ }};
+ const ctx=chatContext(api);
+ const a=app({page:'intelligence',localFinancialAccess:{token:'private-session-token',source:'bank',profile:'real'},
+  intelligenceMessages:[],categories:[]});
+ await ctx.localFinancialSubmit(a,'Compare minhas despesas com o mês anterior');
+ assert.equal(request.token,'private-session-token');
+ assert.equal(request.month,'2026-11');
+ assert.equal(request.question,'Compare minhas despesas com o mês anterior');
+ assert.equal(a.state.intelligenceMessages.length,2);
+ assert.equal(a.state.intelligenceMessages[1].operationalActions[0].handler,'navigation:transactions');
+ assert.equal(a.state.intelligenceMessages[1].status,'done');
+ assert.equal(JSON.stringify(a.state.intelligenceMessages).includes('private-session-token'),false);
+});
+test('R2: unsupported operational question never generates an invented financial card',async()=>{
+ const ctx=chatContext({intelligenceOperationalAsk:async()=>({
+  contract:'IC-v1/I-P0.2-read-only',readOnly:true,changesApplied:false,modelCalled:false,
+  uiState:'unsupported',answer:'Não reconheço a solicitação.',actions:[]})});
+ const a=app({page:'intelligence',localFinancialAccess:{token:'t',source:'bank',profile:'real'},
+  intelligenceMessages:[],categories:[]});
+ await ctx.localFinancialSubmit(a,'Pergunta não suportada');
+ assert.equal(a.state.intelligenceMessages[1].status,'unsupported');
+ assert.equal(a.state.intelligenceMessages[1].structuredCard,null);
+ assert.deepEqual(a.state.intelligenceMessages[1].operationalActions,[]);
+});
+test('R2: pending chat responses are discarded when read profile or month changes',async()=>{
+ let resolve;
+ const ctx=chatContext({intelligenceOperationalAsk:()=>new Promise(r=>resolve=r)});
+ const a=app({page:'intelligence',localFinancialAccess:{token:'private',source:'bank',profile:'real'},
+  intelligenceMessages:[],categories:[]});
+ const pending=ctx.localFinancialSubmit(a,'Quais os meus gastos?');
+ a.state.localFinancialMonth='2026-12';
+ resolve({contract:'IC-v1/I-P0.2-read-only',readOnly:true,changesApplied:false,modelCalled:false,
+  uiState:'ready',answer:'Dados do mês anterior',source:'bank'});
+ await pending;
+ assert.equal(a.state.intelligenceMessages.length,0);
+ assert.equal(a.state.localFinancialBusy,false);
+});
