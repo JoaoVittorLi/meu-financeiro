@@ -12,3 +12,5 @@ R4 nativo 203d5a1: criado Pets Sprint pelo botão contextual no lançamento; des
 R4 checkpoint: jornada essencial nativa e SQLite PASS, agrupamento e pesquisa interativos verificados. Eliminado cabeçalho redundante após inspeção 1366 para priorizar a tabela. R5 autorizado começa após este checkpoint; gates finais serão reexecutados no novo SHA.
 
 R5 primeira fatia: prioridades de revisão (histórico carregado), agenda e explicação local; indicadores Receita/Despesa/Resultado abrem filtros reais e limpam seleção/conta/categoria antigas. Layout do briefing responsivo, dashboard e cálculos existentes preservados. Dois testes dirigidos de navegação/fonte adicionados.
+
+R5 nativo em 39d4f5b: briefing e saldo parcial visíveis em 1366 claro; indicador de despesas abre destino filtrado. Normalizados tokens de superfície nos novos componentes para o design-system existente.

@@ -2818,7 +2818,7 @@
 .mf-ai-msg .mf-premium-evidence {padding-top:9px;line-height:1.6}
 /* R2 — shared conversational workspace */
 .mf-ai-workbench{grid-template-columns:220px minmax(0,1fr);gap:18px;align-items:start}
-.mf-ai-workbench-main{padding:24px;border-radius:22px;background:linear-gradient(145deg,color-mix(in srgb,var(--card) 96%,var(--accent)),var(--card));min-height:560px}
+.mf-ai-workbench-main{padding:24px;border-radius:22px;background:linear-gradient(145deg,color-mix(in srgb,var(--surface) 96%,var(--accent)),var(--surface));min-height:560px}
 .mf-ai-workbench-header{padding-bottom:18px;border-bottom:1px solid var(--border);flex-wrap:wrap}
 .mf-ai-workbench-header .mf-ai-chat-hero{text-align:left;align-items:flex-start}
 .mf-ai-workbench-header h2{font-size:24px;letter-spacing:-.7px}
@@ -2829,14 +2829,14 @@
 .mf-ai-msg-meta{flex-wrap:wrap;gap:7px}
 .mf-ai-msg-meta span{font-size:10px;overflow-wrap:anywhere}
 .mf-chat-followups{display:flex;gap:7px;flex-wrap:wrap;padding:4px 0}
-.mf-chat-followups button{display:flex;align-items:center;gap:8px;border:1px solid var(--border);background:var(--card);color:var(--text);border-radius:30px;padding:8px 12px;font-size:11px;text-align:left;transition:border-color .15s,background .15s}
-.mf-chat-followups button:hover{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 9%,var(--card))}
-.mf-chat-composer{border:1px solid var(--border);border-radius:18px;padding:14px;background:var(--card);margin-top:auto}
+.mf-chat-followups button{display:flex;align-items:center;gap:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:30px;padding:8px 12px;font-size:11px;text-align:left;transition:border-color .15s,background .15s}
+.mf-chat-followups button:hover{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 9%,var(--surface))}
+.mf-chat-composer{border:1px solid var(--border);border-radius:18px;padding:14px;background:var(--surface);margin-top:auto}
 .mf-chat-composer:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 12%,transparent)}
 .mf-chat-composer textarea{width:100%;resize:vertical;min-height:68px;max-height:180px;border:0!important;background:transparent;color:var(--text);padding:10px 0;box-shadow:none!important;outline:0}
 .mf-chat-compose-footer{display:flex;gap:10px;align-items:center;flex-wrap:wrap;border-top:1px solid var(--border);padding-top:10px}
 .mf-chat-compose-footer small{color:var(--muted);font-size:10px;flex:1 1 140px}
-.mf-chat-expired{padding:10px;border-radius:10px;background:color-mix(in srgb,#c88a32 13%,var(--card));margin-bottom:12px;font-size:12px}
+.mf-chat-expired{padding:10px;border-radius:10px;background:color-mix(in srgb,#c88a32 13%,var(--surface));margin-bottom:12px;font-size:12px}
 .mf-ai-drawer-compact{width:min(520px,100vw);border-radius:22px 0 0 22px}
 .mf-ai-drawer-compact>.mf-chat-followups{padding:8px 18px}
 .mf-ai-drawer-compact>.mf-chat-composer{margin:0 12px 12px}
@@ -2844,4 +2844,4 @@
 @keyframes mf-chat-arrive{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}
 @media(max-width:1100px){.mf-ai-workbench{grid-template-columns:1fr}.mf-ai-history-sidebar{max-height:220px;overflow:auto}.mf-ai-workbench-main{padding:18px}.mf-ai-workbench-main .mf-ai-thread{max-height:54vh}}
 @media(prefers-reduced-motion:reduce){.mf-ai-msg{animation:none}.mf-chat-followups button{transition:none}}
-.mf-chat-access{border:1px solid var(--border);border-radius:12px;background:var(--card);overflow:hidden}.mf-chat-access>summary{display:flex;align-items:center;gap:10px;padding:13px 16px;cursor:pointer;font-size:12px;font-weight:600}.mf-chat-access>summary small{margin-left:auto;color:var(--muted);font-weight:400}.mf-chat-access .mf-ai-local-access{margin:0;border:0}.mf-ai-drawer>.mf-chat-access{margin:0 12px 8px;flex:0 0 auto}.mf-ai-drawer>.mf-chat-access[open]{max-height:42vh;overflow:auto}
+.mf-chat-access{border:1px solid var(--border);border-radius:12px;background:var(--surface);overflow:hidden}.mf-chat-access>summary{display:flex;align-items:center;gap:10px;padding:13px 16px;cursor:pointer;font-size:12px;font-weight:600}.mf-chat-access>summary small{margin-left:auto;color:var(--muted);font-weight:400}.mf-chat-access .mf-ai-local-access{margin:0;border:0}.mf-ai-drawer>.mf-chat-access{margin:0 12px 8px;flex:0 0 auto}.mf-ai-drawer>.mf-chat-access[open]{max-height:42vh;overflow:auto}
