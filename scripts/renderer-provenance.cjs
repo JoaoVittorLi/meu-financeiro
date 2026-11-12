@@ -59,6 +59,8 @@ function checkFreshBundle(root){
  const failures=[...diagnostics,...result.diagnostics].filter(d=>d.category===ts.DiagnosticCategory.Error);
  if(failures.length)throw new Error('F08: compilação inválida: '+ts.flattenDiagnosticMessageText(failures[0].messageText,' '));
  if(!generated)throw new Error('F08: compilação não emitiu app/app.js.');
+ const hasLedger=fs.existsSync(path.join(root,'scripts/build-finance-ledger.cjs'));
+ if(hasLedger)generated=require('./build-finance-ledger.cjs').bundleLedger(root,generated);
  const bundleFile=fs.readFileSync(outputPath);
  if(hash(generated)!==hash(bundleFile))
   throw new Error('F08: Bundle desatualizado frente às fontes TypeScript. Execute npm run compile.');
@@ -67,6 +69,7 @@ function checkFreshBundle(root){
   if(relative.startsWith('../')||path.isAbsolute(relative))throw new Error('F08: arquivo de fonte fora do projeto: '+relative);
   return relative;
  })];
+ if(hasLedger)inputPaths.push('scripts/build-finance-ledger.cjs','shared/finance-period-ledger.mjs');
  return {compilerOutputSHA256:hash(generated),inputSHA256:Object.fromEntries(inputPaths.sort().map(rel=>[rel,hash(fs.readFileSync(path.join(root,rel)))]))};
 }
 function checkCheckout(root){

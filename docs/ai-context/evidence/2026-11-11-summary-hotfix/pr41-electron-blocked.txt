@@ -1,0 +1,7 @@
+(node:30364) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:30364) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+FAIL REAL ELECTRON D1.2: Error: Electron saiu antes do CDP: 2147483651; Electron output: 
+
+    at start (C:\Users\joaov\OneDrive\Documentos\ChatGPT\Meu Fin\mf2-pr41-windows-qa\scripts\d1-electron-smoke.cjs:143:9)
+    at async smoke (C:\Users\joaov\OneDrive\Documentos\ChatGPT\Meu Fin\mf2-pr41-windows-qa\scripts\d1-electron-smoke.cjs:245:11)

@@ -80,3 +80,7 @@ Perguntar sem alterar nada: tarefa atual; branch e SHA; alterações locais não
 - **Ownership desta frente:** documentação de plano de branches e pesquisa de mercado; não modificar código do Work em andamento.
 - **Estado de análise:** consultar BRANCH_CONSOLIDATION_PLAN.md e MARKET_FEATURES_DEEP_DIVE.md nesta branch.
 - **Próximo integrador:** verificar alterações locais do Work e PR17 mais novo; se moverem, comparar/reconciliar antes de usar a branch candidata para execução. Só marcar G0 após testes/homologação.
+
+## WORK-AUDIT-01 — hotfix dirigido, 11/11/2026
+
+Branch fix/mf2-ai-summary-splits-20261112 sobre ce8dd04. Ownership: intelligence-integration.ts, gerador de bundle compartilhado, proveniência, testes e log/roadmap. PR #41 e componentes staging intocados. Integrador deve reconciliar bundle/documentação e atualizar o probe do #41 após integrar. Sem alterações em CURRENT_STATE ou gates globais.

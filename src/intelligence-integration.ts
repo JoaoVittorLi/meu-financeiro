@@ -1090,6 +1090,7 @@ function intelligenceAllProposals(app:any):IntelligenceActionProposal[]{
   }
   return all;
 }
+declare const FinancePeriodLedger:{aggregateFinancePeriod:(rows:any[],options:any)=>any};
 function intelligenceBuildStructuredSummaryCard(app:any):IntelligenceStructuredCard|null{
   const s=app?.state||{};
   const moneyFmt=(cents:number)=>new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(cents/100);
@@ -1104,20 +1105,29 @@ function intelligenceBuildStructuredSummaryCard(app:any):IntelligenceStructuredC
   const sourceLabel=useBank?'contas conectadas':'lançamentos manuais';
   let totalExpense=0,totalIncome=0,postedCount=0,excluded=0;
   const byCat=new Map<string,{expense:number;count:number}>();
+  if(typeof FinancePeriodLedger==='undefined')return {title:'Resumo indisponível',footnote:'Motor financeiro indisponível. Nenhum total foi calculado.'};
   for(const rec of records){
-    if(useBank&&rec.status!=='POSTED'){excluded++;continue;}
-    const nature=useBank?(rec.nature&&rec.nature!=='auto'?rec.nature:(rec.amount>=0?'income':'expense')):rec.kind;
-    if(nature==='transfer'||nature==='ignore'||(nature!=='expense'&&nature!=='income')){excluded++;continue;}
-    const abs=Math.abs(Number(rec.amount));
-    if(!Number.isSafeInteger(abs)){excluded++;continue;}
-    postedCount++;
-    if(nature==='income')totalIncome+=abs;
-    else{
-      totalExpense+=abs;
-      const cat=String(rec.category||'Outros');
-      const prior=byCat.get(cat)||{expense:0,count:0};
-      byCat.set(cat,{expense:prior.expense+abs,count:prior.count+1});
-    }
+    if(!rec||typeof rec!=='object'){excluded++;continue;}
+    // Adapt fields only: shared ledger validates cents, nature and split sums.
+    const row=useBank?{
+      date:rec.date,status:rec.status,amountCents:rec.amount,nature:rec.nature,
+      category:rec.category||'Outros',
+      splits:!rec.splitOutdated&&Array.isArray(rec.splits)?rec.splits.map((p:any)=>({category:p?.category,amountCents:p?.amount})):undefined
+    }:{date:rec.date,kind:rec.kind,amountCents:rec.amount,category:rec.category||'Outros'};
+    try{
+      // Per-record periods preserve the loaded multi-year cache scope without
+      // imposing the engine's 730-day limit or using full-history aggregates.
+      const result=FinancePeriodLedger.aggregateFinancePeriod([row],{
+        start:rec.date,end:rec.date,source:useBank?'bank':'manual'
+      });
+      excluded+=result.excluded;postedCount+=result.transactionsIncluded;
+      totalIncome+=result.incomeCents;totalExpense+=result.expenseCents;
+      for(const part of result.expenses){
+        const prior=byCat.get(part.name)||{expense:0,count:0};
+        byCat.set(part.name,{expense:prior.expense+part.amountCents,count:prior.count+1});
+      }
+    }catch{excluded++;} // Malformed data is excluded, never rounded or rewritten.
+
   }
   const rows=[...byCat.entries()].sort((a,b)=>b[1].expense-a[1].expense).slice(0,5).map(([cat,info])=>({
     col1:cat,col2:String(info.count)+' reg.',col3:moneyFmt(info.expense)
