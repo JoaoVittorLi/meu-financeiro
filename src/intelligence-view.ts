@@ -232,6 +232,200 @@ function renderIntelligenceHistorySidebar(app:any){
     totalThreads>0?h('div',{className:'mf-ai-history-foot'},
       h('button',{type:'button',className:'ghost-button full',onClick:()=>intelligenceClearHistory(app)},s.categoryReviewGrant?'Limpar conversa temporária':'Limpar histórico do perfil')):null);
 }
+
+/* R1 — Premium operational surface. PR #51 owns all financial facts and permission
+   checks. This renderer owns only presentation, routing and stale-response guards. */
+const MF_PREMIUM_IDS=['UI-01','UI-02','UI-03','UI-04','UI-05','UI-06','UI-07','UI-08'];
+function intelligencePremiumAPI():any{return desktop as any;}
+function intelligencePremiumSignature(app:any):string{
+ const s=app.state,a=s.localFinancialAccess,g=s.categoryReviewGrant;
+ return JSON.stringify([s.mode,s.localFinancialMonth||s.month,a?.token||'',a?.source||'',a?.profile||'',
+  a?.planning===true,g?.token||'',s.bankFilter||'']);
+}
+function intelligencePremiumInvalidate(app:any){
+ app.__premiumRequest=(app.__premiumRequest||0)+1;
+ app.setState({intelligencePremiumReport:null,intelligencePremiumSignature:null,intelligencePremiumLoading:false,intelligencePremiumError:''});
+}
+async function intelligencePremiumLoad(app:any){
+ const api=intelligencePremiumAPI(),signature=intelligencePremiumSignature(app),s=app.state;
+ const sequence=(app.__premiumRequest||0)+1;app.__premiumRequest=sequence;
+ app.setState({intelligencePremiumLoading:true,intelligencePremiumSignature:signature,intelligencePremiumReport:null,intelligencePremiumError:''});
+ if(typeof api?.intelligenceOperationalOverview!=='function'){
+  if(sequence===app.__premiumRequest)app.setState({intelligencePremiumLoading:false,
+    intelligencePremiumError:'A integração com os serviços do PR #51 ainda não está disponível nesta versão do aplicativo.'});
+  return;
+ }
+ const a=s.localFinancialAccess,g=s.categoryReviewGrant,month=s.localFinancialMonth||s.month;
+ try{
+  const result=await api.intelligenceOperationalOverview({
+   month,source:a?.source||(s.mode==='demo'?'manual':s.localFinancialSource||'bank'),
+   profile:a?.profile||(s.mode==='demo'?'demo':'real'),token:a?.token||null,reviewToken:g?.token||null
+  });
+  if(sequence!==app.__premiumRequest||signature!==intelligencePremiumSignature(app))return;
+  if(result?.contract!=='IC-v1/I-P0.1'||result?.privacy?.changesApplied!==false||
+     result?.privacy?.personalAIWritingEnabled!==false||
+     !Array.isArray(result.cards)||result.cards.length!==8||
+     MF_PREMIUM_IDS.some((id,i)=>result.cards[i]?.id!==id))throw Error('Contrato financeiro inválido.');
+  app.setState({intelligencePremiumReport:result,intelligencePremiumLoading:false,intelligencePremiumError:''});
+ }catch(error:any){
+  if(sequence!==app.__premiumRequest||signature!==intelligencePremiumSignature(app))return;
+  app.setState({intelligencePremiumLoading:false,intelligencePremiumReport:null,
+   intelligencePremiumError:String(error?.message||'Não foi possível carregar esta análise.').slice(0,220)});
+ }
+}
+function intelligencePremiumMoney(value:any):string{
+ return Number.isSafeInteger(value)?new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(value/100):'—';
+}
+function intelligencePremiumCoverage(value:string):string{
+ return value==='complete_local'?'Histórico local analisado':value==='partial_local'?'Cobertura parcial da fonte local':'Cobertura não certificada';
+}
+function intelligencePremiumState(c:any):string{
+ if(!c)return 'Aguardando consulta.';
+ if(c.uiState==='ready')return '';
+ const labels:any={loading:'Consultando dados…',empty:'Sem registros aplicáveis neste período.',
+  denied:'Autorização necessária para consultar.',expired:'A autorização expirou. Autorize novamente.',
+  stale:'Consulta desatualizada. Atualize o período.',error:'Não foi possível consultar esta fonte.',
+  unsupported:'Não disponível para esta fonte ou perfil.'};
+ return c.unavailableReason||labels[c.uiState]||'Não disponível no momento.';
+}
+function intelligencePremiumAction(app:any,c:any,a:any):void{
+ if(!a?.permitted||!a.handler)return;
+ switch(a.handler){
+  case 'navigation:transactions-review': app.navigate('review');return;
+  case 'navigation:transactions': app.navigate('transactions');return;
+  case 'navigation:budgets': app.navigate('budgets');return;
+  case 'navigation:planning': app.navigate('planning');return;
+  case 'navigation:category-editor':
+   app.navigate('categories');
+   setTimeout(()=>{const node=document.getElementById('mf-category-editor-heading');node?.scrollIntoView({block:'center'});node?.focus();},0);
+   return;
+  case 'navigation:intelligence-chat':
+   app.setState({page:'intelligence',intelligenceTab:'chat',categoryReviewOpen:false});return;
+  case 'navigation:review-history':
+   if(app.state.categoryReviewGrant?.token)void categoryReviewOpen(app);return;
+  case 'categoryReviewPrepare':
+   if(!app.state.categoryReviewGrant?.token||!a.previewRequired||!a.operationId)return;
+   void (async()=>{await categoryReviewOpen(app);if(app.state.categoryReviewGrant?.token)
+     await categoryReviewPrepare(app,'rule',{suggestionId:a.operationId});})();
+   return;
+ }
+}
+function intelligencePremiumButton(app:any,c:any,a:any){
+ const routes=['navigation:transactions-review','navigation:transactions','navigation:budgets','navigation:planning',
+  'navigation:category-editor','navigation:intelligence-chat','navigation:review-history','categoryReviewPrepare'];
+ const enabled=!!a?.permitted&&routes.includes(a?.handler)&&
+  (a.handler!=='categoryReviewPrepare'||(a.previewRequired===true&&!!a.operationId&&!!app.state.categoryReviewGrant?.token))&&
+  (a.handler!=='navigation:review-history'||!!app.state.categoryReviewGrant?.token);
+ return h('button',{type:'button',key:a.actionId,className:'mf-premium-action',
+  disabled:!enabled,title:!enabled?(a.disabledReason||'Ação indisponível neste perfil.'):a.label,
+  onClick:()=>intelligencePremiumAction(app,c,a)},a.label,h(Icon,{name:'arrow',size:14}));
+}
+function intelligencePremiumEvidence(c:any){
+ if(!c)return null;
+ return h('small',{className:'mf-premium-evidence'},
+  (c.profile==='synthetic'?'Ambiente sintético':c.source==='planning'?'Planejamento':c.source==='bank'?'Banco':c.source==='manual'?'Manual':'Fonte local')+
+  ' · '+intelligencePremiumCoverage(c.coverage)+
+  (c.period?.start?' · '+c.period.start.slice(0,7):''));
+}
+function intelligencePremiumTile(app:any,c:any,icon:string,variant=''){
+ if(!c)return null;
+ const available=c.uiState==='ready'||c.uiState==='empty';
+ const actions=Array.isArray(c.actions)?c.actions:[];
+ return h('article',{key:c.id,className:'mf-premium-tile '+variant+' is-'+c.uiState,'aria-labelledby':'mf-premium-'+c.id},
+  h('header',{className:'mf-premium-tile-head'},
+   h('span',{className:'mf-premium-tile-icon'},h(Icon,{name:icon,size:19})),
+   h('span',{className:'mf-premium-contract'},c.id)),
+  h('h3',{id:'mf-premium-'+c.id},c.title),
+  available&&Number.isSafeInteger(c.valueCents)?h('strong',{className:'mf-premium-value'},intelligencePremiumMoney(c.valueCents)):
+   available&&Number.isSafeInteger(c.count)?h('strong',{className:'mf-premium-value'},String(c.count)):null,
+  h('p',{className:'mf-premium-tile-explanation'},available?
+   (c.uiState==='empty'?intelligencePremiumState(c):c.description||'Informações disponíveis da fonte consultada.'):
+   intelligencePremiumState(c)),
+  available?intelligencePremiumEvidence(c):null,
+  h('div',{className:'mf-premium-tile-actions'},...actions.map((a:any)=>intelligencePremiumButton(app,c,a))));
+}
+function intelligencePremiumBudgetChart(c:any){
+ const budgets=(Array.isArray(c?.budgets)?c.budgets:[]).slice(0,4);
+ return h('div',{className:'mf-premium-budget-list'},
+  ...budgets.map((b:any)=>h('div',{key:b.category,className:'mf-premium-budget-item'},
+   h('div',{className:'mf-premium-budget-label'},
+    h('strong',{},b.category),
+    h('span',{},intelligencePremiumMoney(b.spentCents)+' / '+intelligencePremiumMoney(b.limitCents))),
+   Number.isFinite(b.percentage)&&Number.isSafeInteger(b.limitCents)&&b.limitCents>0?
+    h('div',{className:'mf-premium-budget-track',role:'progressbar','aria-label':'Consumo do orçamento '+b.category,
+     'aria-valuemin':0,'aria-valuemax':100,'aria-valuenow':Math.min(100,Math.max(0,b.percentage))},
+     h('span',{className:b.percentage>=100?'is-over':'',style:{width:Math.min(100,Math.max(0,b.percentage))+'%'}})):null)));
+}
+function renderIntelligencePremiumToday(app:any){
+ const s=app.state,signature=intelligencePremiumSignature(app);
+ const stale=!!s.intelligencePremiumReport&&s.intelligencePremiumSignature!==signature;
+ const report=!stale?s.intelligencePremiumReport:null;
+ const loading=!!s.intelligencePremiumLoading&&!stale;
+ const cards:Array<any>=Array.isArray(report?.cards)?report.cards:[];
+ const get=(id:string)=>cards.find(c=>c.id===id)||null;
+ const radar=get('UI-03'),review=get('UI-01'),budgets=get('UI-04'),commit=get('UI-05'),
+  rules=get('UI-02'),categories=get('UI-06'),conversation=get('UI-07'),history=get('UI-08');
+ const meaningful=radar?.uiState==='ready'&&radar.count>0;
+ const sourceLabel=s.categoryReviewGrant?.token?'Revisão sintética':s.localFinancialAccess?.source==='bank'?'Fonte bancária':
+   s.localFinancialAccess?.source==='manual'?'Lançamentos manuais':'Sem leitura autorizada';
+ const grant=s.localFinancialAccess?.token||s.categoryReviewGrant?.token;
+ return h('div',{className:'mf-ai-premium-today',role:'region','aria-label':'Inteligência Hoje'},
+  h('div',{className:'mf-premium-head'},
+   h('div',{},h('span',{className:'mf-premium-eyebrow'},h(Icon,{name:'spark',size:15}),'VISÃO OPERACIONAL · '+sourceLabel),
+    h('h2',{},'O que merece sua atenção?'),
+    h('p',{},'Sinais verificáveis para transformar informação em decisão. Nenhuma mudança é aplicada sem sua confirmação.')),
+   h('div',{className:'mf-premium-head-controls'},
+    h('span',{className:'mf-premium-period'},s.localFinancialMonth||s.month),
+    h('button',{type:'button',className:'mf-premium-refresh',disabled:loading,
+     onClick:()=>void intelligencePremiumLoad(app)},h(Icon,{name:'arrow',size:15}),loading?'Consultando…':'Atualizar visão'))),
+  !grant?h('div',{className:'mf-premium-consent',role:'status'},h(Icon,{name:'shield',size:20}),
+   h('p',{},'Autorize a leitura local acima para consultar suas movimentações. Categorias e estados de disponibilidade continuam acessíveis sem autorização financeira.')):null,
+  stale?h('div',{className:'mf-premium-alert',role:'status'},'Fonte, perfil, conta ou período mudou. A consulta anterior foi ocultada. Atualize para ver os novos dados.'):null,
+  s.intelligencePremiumError?h('div',{className:'mf-premium-alert',role:'alert'},s.intelligencePremiumError):null,
+  loading?h('div',{className:'mf-premium-loading',role:'status','aria-label':'Carregando informações financeiras'},
+   h('div',{className:'mf-premium-skeleton'}),h('div',{className:'mf-premium-skeleton'}),h('div',{className:'mf-premium-skeleton'})):null,
+  report?h('div',{className:'mf-premium-dashboard'},
+   h('div',{className:'mf-premium-lead'},
+    h('section',{className:'mf-premium-radar '+(meaningful?'has-attention':''),'aria-labelledby':'mf-premium-radar-title'},
+     h('span',{className:'mf-premium-kicker'},'UI-03 · RADAR FINANCEIRO'),
+     h('h3',{id:'mf-premium-radar-title'},meaningful?'Pontos de atenção encontrados.':'Visão do período'),
+     radar?.uiState==='ready'||radar?.uiState==='empty'?
+      h('div',{},radar.count!==null&&Number.isSafeInteger(radar.count)?
+       h('div',{className:'mf-premium-radar-count'},h('strong',{},String(radar.count)),h('span',{},radar.count===1?'ponto de atenção':'pontos de atenção')):null,
+       Array.isArray(radar.observations)&&radar.observations.length?
+       h('ul',{className:'mf-premium-observations'},...radar.observations.slice(0,3).map((o:any)=>h('li',{key:o.category},
+        h('strong',{},o.category),h('span',{},intelligencePremiumMoney(o.spentCents)+' / '+intelligencePremiumMoney(o.limitCents))))):
+       h('p',{},intelligencePremiumState({...radar,uiState:'empty'})),
+       intelligencePremiumEvidence(radar),
+       h('div',{className:'mf-premium-tile-actions'},...(radar.actions||[]).map((a:any)=>intelligencePremiumButton(app,radar,a)))) :
+      h('p',{className:'mf-premium-state'},intelligencePremiumState(radar))),
+    intelligencePremiumTile(app,review,'filter','mf-premium-review')),
+   h('div',{className:'mf-premium-major-grid'},
+    h('section',{className:'mf-premium-budget-card','aria-labelledby':'mf-premium-budget-title'},
+     h('div',{className:'mf-premium-tile-head'},h('span',{className:'mf-premium-tile-icon'},h(Icon,{name:'pie',size:19})),h('span',{className:'mf-premium-contract'},'UI-04')),
+     h('h3',{id:'mf-premium-budget-title'},'Orçamentos em perspectiva'),
+     budgets?.uiState==='ready'||budgets?.uiState==='empty'?
+      h('div',{},intelligencePremiumBudgetChart(budgets),
+       !budgets?.budgets?.length?h('p',{},'Nenhum limite cadastrado com dados aplicáveis.'):null,
+       intelligencePremiumEvidence(budgets),
+       h('div',{className:'mf-premium-tile-actions'},...(budgets.actions||[]).map((a:any)=>intelligencePremiumButton(app,budgets,a)))) :
+      h('p',{},intelligencePremiumState(budgets))),
+    intelligencePremiumTile(app,commit,'calendar','mf-premium-commitment')),
+   h('div',{className:'mf-premium-lower-grid'},
+    intelligencePremiumTile(app,rules,'spark'),
+    intelligencePremiumTile(app,categories,'filter'),
+    intelligencePremiumTile(app,conversation,'spark'),
+    intelligencePremiumTile(app,history,'calendar')),
+   h('div',{className:'mf-premium-bottom-note'},
+    h(Icon,{name:'shield',size:16}),
+    h('span',{},'Valores em centavos da fonte autorizada. '+
+      intelligencePremiumCoverage(radar?.coverage||'unknown')+
+      '. Revisões e recibos sintéticos nunca representam alterações pessoais.'))):
+   !loading&&!s.intelligencePremiumError&&!stale?
+    h('div',{className:'mf-premium-empty',role:'status'},h('strong',{},'Sua central está pronta para consultar.'),
+     h('p',{},'Use “Atualizar visão” para carregar os contratos reais disponíveis nesta instalação.')):null);
+}
+
 function renderIntelligenceView(app:any){
   if(app.state.workIntelligenceDemo?.enabled&&typeof renderWorkIntelligenceDemo==='function')return renderWorkIntelligenceDemo(app);
   if(typeof intelligenceEnsureHydrated==='function')intelligenceEnsureHydrated(app);
@@ -243,20 +437,7 @@ function renderIntelligenceView(app:any){
   const convState=typeof intelligenceConversationState==='function'?intelligenceConversationState(app):{kind:'oauth_disconnected',pill:'Conta desconectada · modo local',badge:'Conta desconectada',css:'is-offline'};
   const activeScope=s.intelligenceDraftScope||intelligencePageScope(app,s.intelligenceContext||s.page);
   let section:any=null;
-  if(tab==='today')section=h('div',{className:'mf-ai-today'},
-    h('button',{type:'button',className:'ghost-button',onClick:()=>workDemoLoad(app)},'Explorar nova Inteligência · dados fictícios'),
-    h('div',{className:'mf-ai-welcome'},
-      h('span',{className:'micro-label'},'PAINEL CONCEITUAL · DADOS FICTÍCIOS'),
-      h('h2',{},'Três assuntos para explorar.'),
-      h('p',{},'Exemplos fictícios. Eles não representam alertas reais das suas contas.')),
-    h('div',{className:'mf-ai-card-grid'},
-      intelligenceExampleCard(app,'future','Compromissos à frente','Analise pagamentos futuros antes de separar dinheiro para investir.','calendar','Avalie meus compromissos futuros antes de eu reservar dinheiro para investimentos.'),
-      intelligenceExampleCard(app,'budgets','Limites mais inteligentes','Compare o comportamento das categorias antes de alterar seu orçamento.','pie','Ajude-me a elaborar limites inteligentes para o próximo mês.'),
-      intelligenceExampleCard(app,'reserve','Reserva e liquidez','Entenda a diferença entre saldo disponível e dinheiro realmente livre.','shield','Como calcular o dinheiro realmente livre para poupar ou investir?')),
-    h('div',{className:'mf-ai-explainer'},h(Icon,{name:'shield',size:19}),
-      h('div',{},h('strong',{},'Insights econômicos por padrão'),
-        h('p',{},'Na integração definitiva, alertas matemáticos virão do motor financeiro; o GPT-6.1 Sol será acionado apenas quando você solicitar explicação ou análise.'))));
-  if(tab==='today'&&s.localFinancialAccess?.token&&typeof renderLocalFinancialRadar==='function')section=renderLocalFinancialRadar(app);
+  if(tab==='today')section=renderIntelligencePremiumToday(app);
   if(tab==='chat')section=h('div',{className:'mf-ai-workbench'},
     renderIntelligenceHistorySidebar(app),
     h('div',{className:'mf-ai-chat-main mf-ai-workbench-main'},
