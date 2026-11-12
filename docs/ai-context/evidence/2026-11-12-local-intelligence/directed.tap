@@ -1,0 +1,182 @@
+(node:22616) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+(Use `node --trace-warnings ...` to show where the warning was created)
+TAP version 13
+# (node:23584) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: WORK-AUDIT-01 split 60/40 matches authoritative ledger, total 100 and one record
+ok 1 - WORK-AUDIT-01 split 60/40 matches authoritative ledger, total 100 and one record
+  ---
+  duration_ms: 20.8896
+  type: 'test'
+  ...
+# Subtest: split absent falls back exactly to original category without rounding
+ok 2 - split absent falls back exactly to original category without rounding
+  ---
+  duration_ms: 0.6941
+  type: 'test'
+  ...
+# Subtest: split empty falls back exactly to original category without rounding
+ok 3 - split empty falls back exactly to original category without rounding
+  ---
+  duration_ms: 0.4451
+  type: 'test'
+  ...
+# Subtest: split wrongSum falls back exactly to original category without rounding
+ok 4 - split wrongSum falls back exactly to original category without rounding
+  ---
+  duration_ms: 0.5129
+  type: 'test'
+  ...
+# Subtest: split fractional falls back exactly to original category without rounding
+ok 5 - split fractional falls back exactly to original category without rounding
+  ---
+  duration_ms: 0.8503
+  type: 'test'
+  ...
+# Subtest: split zero falls back exactly to original category without rounding
+ok 6 - split zero falls back exactly to original category without rounding
+  ---
+  duration_ms: 0.6319
+  type: 'test'
+  ...
+# Subtest: split negative falls back exactly to original category without rounding
+ok 7 - split negative falls back exactly to original category without rounding
+  ---
+  duration_ms: 0.5363
+  type: 'test'
+  ...
+# Subtest: split string falls back exactly to original category without rounding
+ok 8 - split string falls back exactly to original category without rounding
+  ---
+  duration_ms: 0.7355
+  type: 'test'
+  ...
+# Subtest: split nullPart falls back exactly to original category without rounding
+ok 9 - split nullPart falls back exactly to original category without rounding
+  ---
+  duration_ms: 0.8209
+  type: 'test'
+  ...
+# Subtest: one-cent remainder is preserved and duplicate split categories count a transaction once
+ok 10 - one-cent remainder is preserved and duplicate split categories count a transaction once
+  ---
+  duration_ms: 1.1069
+  type: 'test'
+  ...
+# Subtest: outdated split and invalid fractional original amount never invent cents
+ok 11 - outdated split and invalid fractional original amount never invent cents
+  ---
+  duration_ms: 0.9183
+  type: 'test'
+  ...
+# Subtest: pending/transfer/ignore excluded and income not split into expenses
+ok 12 - pending/transfer/ignore excluded and income not split into expenses
+  ---
+  duration_ms: 0.6296
+  type: 'test'
+  ...
+# Subtest: manual source, demo mode and partial loaded bank cache stay separate
+ok 13 - manual source, demo mode and partial loaded bank cache stay separate
+  ---
+  duration_ms: 1.0085
+  type: 'test'
+  ...
+# Subtest: multi-year loaded records remain included and original arrays are untouched
+ok 14 - multi-year loaded records remain included and original arrays are untouched
+  ---
+  duration_ms: 0.6113
+  type: 'test'
+  ...
+# Subtest: bundled engine output is identical to shared ESM and contains no duplicate maintained rules
+ok 15 - bundled engine output is identical to shared ESM and contains no duplicate maintained rules
+  ---
+  duration_ms: 25.5675
+  type: 'test'
+  ...
+# Subtest: F08 rejects a canonical ledger changed after bundling
+ok 16 - F08 rejects a canonical ledger changed after bundling
+  ---
+  duration_ms: 2220.192
+  type: 'test'
+  ...
+# (node:9052) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:9052) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# Subtest: live UI uses SQLite response, main/drawer share thread, history stays out of localStorage
+ok 17 - live UI uses SQLite response, main/drawer share thread, history stays out of localStorage
+  ---
+  duration_ms: 338.3496
+  type: 'test'
+  ...
+# Subtest: mutation wording is not interpreted as financial write and unsupported questions are explicit
+ok 18 - mutation wording is not interpreted as financial write and unsupported questions are explicit
+  ---
+  duration_ms: 163.6515
+  type: 'test'
+  ...
+# Subtest: all eight starter questions select the intended financial query
+ok 19 - all eight starter questions select the intended financial query
+  ---
+  duration_ms: 135.911
+  type: 'test'
+  ...
+# Subtest: a reply for an obsolete month is rejected
+ok 20 - a reply for an obsolete month is rejected
+  ---
+  duration_ms: 111.9588
+  type: 'test'
+  ...
+# (node:19908) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:19908) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# Subtest: no authorization, foreign owner, expiry and revoke block reads before accessing DB
+ok 21 - no authorization, foreign owner, expiry and revoke block reads before accessing DB
+  ---
+  duration_ms: 2.0293
+  type: 'test'
+  ...
+# Subtest: SQLite-backed food query uses actual 60/40 split and excludes pending/transfer/ignore
+ok 22 - SQLite-backed food query uses actual 60/40 split and excludes pending/transfer/ignore
+  ---
+  duration_ms: 28.8579
+  type: 'test'
+  ...
+# Subtest: single source, demo isolation and changed database produce new computed answers
+ok 23 - single source, demo isolation and changed database produce new computed answers
+  ---
+  duration_ms: 8.2619
+  type: 'test'
+  ...
+# Subtest: radar, category increases, largest expenses and review have explainable references
+ok 24 - radar, category increases, largest expenses and review have explainable references
+  ---
+  duration_ms: 10.6309
+  type: 'test'
+  ...
+# Subtest: planning permission is separate and amounts reuse remaining balance from PlanningStore
+ok 25 - planning permission is separate and amounts reuse remaining balance from PlanningStore
+  ---
+  duration_ms: 8.8011
+  type: 'test'
+  ...
+# Subtest: all query intents are read only and reject mutation intent and malformed month
+ok 26 - all query intents are read only and reject mutation intent and malformed month
+  ---
+  duration_ms: 12.6237
+  type: 'test'
+  ...
+# Subtest: actual truncated SQLite cache is explicitly labelled and never presented as full history
+ok 27 - actual truncated SQLite cache is explicitly labelled and never presented as full history
+  ---
+  duration_ms: 823.0496
+  type: 'test'
+  ...
+1..27
+# tests 27
+# suites 0
+# pass 27
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2907.0136

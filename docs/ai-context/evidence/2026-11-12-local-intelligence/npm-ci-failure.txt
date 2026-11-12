@@ -1,0 +1,49 @@
+(node:9352) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+(Use `node --trace-warnings ...` to show where the warning was created)
+npm warn cleanup Failed to remove some directories [
+npm warn cleanup   [
+npm warn cleanup     '\\\\?\\C:\\Users\\joaov\\OneDrive\\Documentos\\ChatGPT\\Meu Fin\\mf2-live-intelligence\\node_modules',
+npm warn cleanup     [Error: EPERM: operation not permitted, rmdir 'C:\Users\joaov\OneDrive\Documentos\ChatGPT\Meu Fin\mf2-live-intelligence\node_modules\@electron\universal\node_modules'] {
+npm warn cleanup       errno: -4048,
+npm warn cleanup       code: 'EPERM',
+npm warn cleanup       syscall: 'rmdir',
+npm warn cleanup       path: 'C:\\Users\\joaov\\OneDrive\\Documentos\\ChatGPT\\Meu Fin\\mf2-live-intelligence\\node_modules\\@electron\\universal\\node_modules'
+npm warn cleanup     }
+npm warn cleanup   ],
+npm warn cleanup   [
+npm warn cleanup     '\\\\?\\C:\\Users\\joaov\\OneDrive\\Documentos\\ChatGPT\\Meu Fin\\mf2-live-intelligence\\node_modules\\@electron\\universal',
+npm warn cleanup     [Error: EPERM: operation not permitted, rmdir 'C:\Users\joaov\OneDrive\Documentos\ChatGPT\Meu Fin\mf2-live-intelligence\node_modules\@electron\universal'] {
+npm warn cleanup       errno: -4048,
+npm warn cleanup       code: 'EPERM',
+npm warn cleanup       syscall: 'rmdir',
+npm warn cleanup       path: 'C:\\Users\\joaov\\OneDrive\\Documentos\\ChatGPT\\Meu Fin\\mf2-live-intelligence\\node_modules\\@electron\\universal'
+npm warn cleanup     }
+npm warn cleanup   ]
+npm warn cleanup ]
+npm error code EPERM
+npm error syscall mkdir
+npm error path C:\Users\joaov\OneDrive\Documentos\ChatGPT\Meu Fin\mf2-live-intelligence\node_modules\@isaacs\cliui
+npm error errno -4048
+npm error Error: EPERM: operation not permitted, mkdir 'C:\Users\joaov\OneDrive\Documentos\ChatGPT\Meu Fin\mf2-live-intelligence\node_modules\@isaacs\cliui'
+npm error     at async mkdir (node:internal/fs/promises:858:10)
+npm error     at async C:\Users\joaov\OneDrive\Documentos\ChatGPT\Meu Fin\mf2-toolchain-win\node-v22.23.4-win-x64\node_modules\npm\node_modules\@npmcli\arborist\lib\arborist\reify.js:638:20
+npm error     at async Promise.allSettled (index 25)
+npm error     at async [reifyPackages] (C:\Users\joaov\OneDrive\Documentos\ChatGPT\Meu Fin\mf2-toolchain-win\node-v22.23.4-win-x64\node_modules\npm\node_modules\@npmcli\arborist\lib\arborist\reify.js:334:11)
+npm error     at async Arborist.reify (C:\Users\joaov\OneDrive\Documentos\ChatGPT\Meu Fin\mf2-toolchain-win\node-v22.23.4-win-x64\node_modules\npm\node_modules\@npmcli\arborist\lib\arborist\reify.js:149:5)
+npm error     at async CI.exec (C:\Users\joaov\OneDrive\Documentos\ChatGPT\Meu Fin\mf2-toolchain-win\node-v22.23.4-win-x64\node_modules\npm\lib\commands\ci.js:100:5)
+npm error     at async Npm.exec (C:\Users\joaov\OneDrive\Documentos\ChatGPT\Meu Fin\mf2-toolchain-win\node-v22.23.4-win-x64\node_modules\npm\lib\npm.js:207:9)
+npm error     at async module.exports (C:\Users\joaov\OneDrive\Documentos\ChatGPT\Meu Fin\mf2-toolchain-win\node-v22.23.4-win-x64\node_modules\npm\lib\cli\entry.js:74:5) {
+npm error   errno: -4048,
+npm error   code: 'EPERM',
+npm error   syscall: 'mkdir',
+npm error   path: 'C:\\Users\\joaov\\OneDrive\\Documentos\\ChatGPT\\Meu Fin\\mf2-live-intelligence\\node_modules\\@isaacs\\cliui'
+npm error }
+npm error
+npm error The operation was rejected by your operating system.
+npm error It's possible that the file was already in use (by a text editor or antivirus),
+npm error or that you lack permissions to access it.
+npm error
+npm error If you believe this might be a permissions issue, please double-check the
+npm error permissions of the file and its containing directories, or try running
+npm error the command again as root/Administrator.
+npm error A complete log of this run can be found in: C:\Users\joaov\AppData\Local\Packages\openai.codex_2p2nqsd0c76g0\AC\#!sandbox.{be42371c-3dec-4a3f-92e4-f349f19cd7f5}\npm-cache\_logs\2026-11-12T03_28_10_957Z-debug-0.log

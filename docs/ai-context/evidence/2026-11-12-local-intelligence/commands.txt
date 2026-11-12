@@ -1,0 +1,8 @@
+Windows local; Node22.23.4/npm10.9.9; base43 bc5ccb4f28c2e224614100dff41e03d0c1034fca
+npm run test:db (includes compile)
+npm run test:types
+node scripts/renderer-provenance.cjs check-bundle
+npm run test:asar
+node scripts/work-audit-probes.cjs
+node --test tests/financial-intelligence.test.cjs tests/financial-intelligence-ui.test.cjs tests/ai-summary-splits.test.cjs
+Runtime/env and dependency reuse caveat: see matching handoff.
