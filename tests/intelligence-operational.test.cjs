@@ -127,3 +127,21 @@ test('rejects malformed months and sender IDs',()=>{
  assert.throws(()=>engine.overview({month:MONTH},NaN));
  assert.throws(()=>engine.ask({month:MONTH,question:'\x00'},OWNER));
 });
+
+test('I-P0.2: chat suggests existing synthetic rules with evidence and preview-required actions',()=>{
+ const {engine,calls}=services({synthetic:true});
+ const r=engine.ask({month:MONTH,reviewToken:'synthetic-allowed',question:'Sugira regras de categorização'},OWNER);
+ assert.equal(r.intent,'suggested_rules');assert.equal(r.uiState,'ready');
+ assert.equal(r.profile,'synthetic');assert.equal(r.facts.suggestions[0].id,'rule-1');
+ assert.equal(r.actions[0].operationId,'rule-1');assert.equal(r.actions[0].previewRequired,true);
+ assert.equal(calls.length,0);
+ const history=engine.ask({month:MONTH,reviewToken:'synthetic-allowed',question:'Histórico de ações da revisão'},OWNER);
+ assert.equal(history.intent,'review_history');assert.equal(history.facts.receipts[0].id,'receipt-1');
+});
+test('I-P0.2: personal profile never receives synthetic suggestions without independent grant',()=>{
+ const {engine,calls}=services({synthetic:true});
+ const r=engine.ask({month:MONTH,token:'allowed',question:'Sugira regras'},OWNER);
+ assert.equal(r.uiState,'denied');
+ assert.equal(r.facts,undefined);
+ assert.equal(calls.length,0);
+});
