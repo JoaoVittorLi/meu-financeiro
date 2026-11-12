@@ -1,5 +1,9 @@
 # Registro de frentes ativas e prevenção de conflitos
 
+## Execução autorizada — 12/11/2026: categorização supervisionada
+
+Codex nesta missão: branch `feat/mf2-supervised-categorization-20261112`, base candidata `34750c9`. Ownership: `electron/category-review.cjs`, extensões localizadas de `db.cjs`/main/preload, `src/intelligence-review.ts`, hooks da Inteligência, CSS próprio, fixture e testes. Sem edição concorrente por subagentes. Não atualizar CURRENT_STATE nem promover candidata/main. Próxima frente em branch separada: formulário de leitura e rolagem de navegação, defeitos observados por Computer Use. [Log](logs/2026-11-12-SUPERVISED-CATEGORIES.md).
+
 Última leitura via GitHub: 09/11/2026. **Work em execução não é inspecionável aqui**; itens marcados como "desconhecido" devem ser reconciliados com a sessão antes de qualquer escrita.
 
 **Atualização técnica — 10/11/2026:** Executor PR #28 agora possui quatro regressões reais adicionais de identidade bancária (lotes com duplicados, contas duplicadas, vínculo indevido entre conexões e ID compartilhado entre contas distintas). **7/7 PASS** com Node 22.16.0 e SQLite real extraído do ASAR beta.7 + código D1.2 exato, sem CI/GUI novo. Staging `feat/mf2-beta8-premium-staging-20261110` SHA `HEAD da branch (consultar GitHub; staging ainda não homologado)`: **somente os dois CSS do Argon** somados à D1.2 de código, sem versão/beta.8, CI ou merge. PR #27 CSS-only continua fonte; PR #26 segue sob ownership do Arquiteto; A-D3 não publicada nesta verificação. Priorizar testes de regressão e smoke real antes de qualquer promoção.
