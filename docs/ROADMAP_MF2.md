@@ -555,3 +555,5 @@ Base #53/779cd31. Branch feat/mf2-premium-productivity-sprint-20261112. R3 imple
 Sprint Premium R2: composer compartilhado principal/lateral, perguntas de continuidade, período nas mensagens, autorização expirada com rascunho preservado e layout de conversa renovado. Serviços operacionais existentes; QA integrado em andamento.
 
 Sprint Premium R4: espaço de trabalho de Movimentações, visões rápidas, agrupamento por data, seleção do banco visível, Central acessível e categoria contextual com editor/categorySave existentes. Três regressões SQLite dirigidas aprovadas; QA nativo em andamento.
+
+Sprint Premium R5 iniciado: briefing de prioridades reais no dashboard, consulta contextual e drilldown por natureza/fonte nos indicadores. Ledger/gráficos/agenda/orçamento existentes preservados; saldo desconhecido continua indisponível/parcial. Fatia inicial R5, sem novo serviço I.

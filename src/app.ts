@@ -1361,6 +1361,11 @@ class App extends React.Component<any,State>{
        selected==='bank'&&stale?h('small',{className:'bad-text'},'Atenção: dados bancários antigos ou ainda não sincronizados.'):null):null);
  }
 
+ openOverviewTransactions(kind:'all'|'income'|'expense'='all',pending=false){
+  const useBank=this.state.mode==='real'&&this.state.dashboardSource==='bank'&&this.state.bank.data.accounts.length>0;
+  this.setState({query:'',bankFilter:'',txSource:useBank?'bank':'manual',txCategoryFilter:'',txKindFilter:kind,txReviewFilter:pending?'pending':'all',txSelected:[],quickCategory:null});
+  this.navigate('transactions');
+ }
  renderOverview(){
  const state=this.state,d=state.data,bank=state.bank,period=dateSpan(state.overviewPeriod,state.customStart,state.customEnd),{start,end}=period;
  const useBank=state.mode==='real'&&state.dashboardSource==='bank'&&bank.data.accounts.length>0;
@@ -1378,9 +1383,16 @@ class App extends React.Component<any,State>{
  const openBudget=()=>{this.setState({month});this.navigate('budgets');};
  const palette=['#8066d5','#329b89','#d29844','#5a8fc9','#c7759c'];
  const categoryColor=(name:string,index:number)=>{const info=this.getCategories().find(c=>c.name===name);return info&&(!info.builtIn||info.color.toLowerCase()!=='#3e9a85')?info.color:palette[index];};
- const metric=(label:string,value:number,icon:string,hint:string,tone:string)=>h('section',{className:'u1-metric mf-border-reveal mf-tone-'+(tone==='net'?'net':tone)+' '+tone+(tone==='net'?(value>0?' is-positive':value<0?' is-negative':' is-neutral'):''),role:'group',tabIndex:0,'aria-label':label+' · '+money(value)},h('div',{className:'u1-metric-label'},h(Icon,{name:icon,size:16}),label),h('strong',{},money(value)),h('small',{},hint));
- return h('div',{className:'overview-content u1-overview '+(hidden?'u1-values-hidden':'')},
+ const metric=(label:string,value:number,icon:string,hint:string,tone:string)=>h('button',{type:'button',className:'u1-metric mf-overview-metric mf-border-reveal mf-tone-'+(tone==='net'?'net':tone)+' '+tone+(tone==='net'?(value>0?' is-positive':value<0?' is-negative':' is-neutral'):''),'aria-label':label+' · '+money(value)+' · ver movimentações',onClick:()=>this.openOverviewTransactions(tone==='income'?'income':tone==='expense'?'expense':'all')},h('div',{className:'u1-metric-label'},h(Icon,{name:icon,size:16}),label,h(Icon,{name:'arrow',size:13})),h('strong',{},money(value)),h('small',{},hint));
+ const reviewCount=useBank?bank.data.transactions.filter(t=>!t.reviewed).length:null;
+ return h('div',{className:'overview-content u1-overview mf-premium-overview '+(hidden?'u1-values-hidden':'')},
   h('div',{className:'u1-context'},this.renderSourcePicker(),h('span',{},date(start)+' — '+date(end)+' · '+(useBank?'Movimentos confirmados'+(bank.data.truncated?' · histórico parcial':''):'Registros manuais'))),
+  h('section',{className:'mf-overview-brief','aria-label':'Prioridades financeiras'},
+   h('div',{className:'mf-overview-brief-title'},h('span',{className:'micro-label'},'SEU DIA FINANCEIRO'),h('h2',{},'Clareza para a próxima decisão'),h('p',{},'Fonte '+(useBank?'bancária':'manual')+' · '+date(start)+' a '+date(end))),
+   h('div',{className:'mf-overview-priorities'},
+    h('button',{type:'button',onClick:()=>useBank?this.openOverviewTransactions('all',true):this.openOverviewTransactions()},h(Icon,{name:'check',size:18}),h('span',{},h('strong',{},reviewCount===null?'Conferir registros manuais':reviewCount+' a conferir'),h('small',{},useBank?'Somente histórico bancário carregado':'Abra os lançamentos desta fonte')),h(Icon,{name:'arrow',size:14})),
+    h('button',{type:'button',onClick:()=>this.navigate('planning')},h(Icon,{name:'calendar',size:18}),h('span',{},h('strong',{},generated?upcoming.length+' compromissos':'Conferir agenda'),h('small',{},generated?'Próximos 7 dias · inclui vencidos':'Abra para carregar seus compromissos')),h(Icon,{name:'arrow',size:14})),
+    h('button',{type:'button',onClick:()=>this.openIntelligenceContext('overview')},h(Icon,{name:'spark',size:18}),h('span',{},h('strong',{},'Entender meus números'),h('small',{},'Consulta local sob autorização')),h(Icon,{name:'arrow',size:14})))),
   state.bankMessage&&bank.config.configured?h('div',{className:'sync-feedback',role:'status'},state.bankMessage):null,
   h('div',{className:'stats-grid'},
    h('section',{className:'u1-balance mf-border-reveal mf-tone-balance',role:'group',tabIndex:0,'aria-label':useBank?'Saldo nas contas':'Saldo manual'},h('div',{className:'u1-balance-label'},h('span',{},useBank?'Saldo nas contas':'Saldo manual'),h('button',{type:'button',className:'u1-icon-button','aria-label':hidden?'Mostrar valores':'Ocultar valores','aria-pressed':hidden,onClick:()=>this.setState({overviewHideValues:!hidden})},h(Icon,{name:hidden?'eye-off':'eye',size:18}))),
