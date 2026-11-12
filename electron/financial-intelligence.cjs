@@ -38,19 +38,21 @@ class LocalFinancialIntelligence{
  const warnings=['Uma única origem; valores apenas dos registros locais carregados.','Receitas menos despesas não representam saldo disponível.'];
  if(bank?.truncated)warnings.push('Histórico bancário parcial: a lista local tem limite de 2.500 registros; não representa todo o extrato.');
  const references={engine:'shared/finance-period-ledger.mjs',source:g.source,profile:g.profile,period:p,loaded:records.length,partial:!!bank?.truncated,readAt:new Date(this.clock()).toISOString(),planningRead:false};
+ let facts={kind:input.intent,transactionsIncluded:current.transactionsIncluded,excluded:current.excluded,incomeCents:current.incomeCents,expenseCents:current.expenseCents,netCents:current.netCents};
  let title='Resumo financeiro local',text='Valores calculados dos registros autorizados.',table=[],headers=['Informação','Valor'],metrics=[];
  const counts=(value,label)=>({label,value:String(value),tone:'neutral'});
  if(input.intent==='category'){
  const name=String(input.category||'').trim();if(!name||name.length>50)throw Error('Informe uma categoria válida.');
  const amount=current.expenses.filter(c=>fold(c.name)===fold(name)).reduce((s,c)=>s+c.amountCents,0);
- title='Gastos em '+name;text=money(amount)+' em '+name+' no período selecionado.';table=[{col1:name,col2:money(amount)}];
+ facts={...facts,category:name,amountCents:amount};title='Gastos em '+name;text=money(amount)+' em '+name+' no período selecionado.';table=[{col1:name,col2:money(amount)}];
  }else if(input.intent==='budgets'||input.intent==='radar'){
+ facts={...facts,budgets:budgets.map(b=>({category:b.category,spentCents:b.spentCents,limitCents:b.limitCents,pct:b.pct})),alertCount:budgets.filter(b=>b.spentCents>b.limitCents||(b.limitCents>0&&b.pct>=80)).length};
  title=input.intent==='radar'?'O que merece atenção neste mês':'Orçamentos excedidos';
  table=budgets.filter(b=>input.intent==='budgets'?b.spentCents>b.limitCents:b.spentCents>b.limitCents||(b.limitCents>0&&b.pct>=80)).sort((a,b)=>b.spentCents-b.limitCents-(a.spentCents-a.limitCents)).map(b=>({col1:b.category,col2:money(b.spentCents)+' / '+money(b.limitCents),col3:b.limitCents===0?'Limite zero':b.spentCents>b.limitCents?'Excedido':b.pct+'% · atenção'}));headers=['Categoria','Gasto / limite','Situação'];
  text=table.length?'Consumo confirmado; atenção a partir de 80% do limite.':'Nenhum limite excedido ou próximo do limite nos registros consultados. Isso não prevê despesas futuras.';
  metrics=[counts(current.transactionsIncluded,'Movimentos considerados'),counts(current.excluded,'Pendentes/desconsiderados')];
  }else if(input.intent==='compare'){
- const old=aggregateFinancePeriod(rows,{...previous,source:g.source});
+ const old=aggregateFinancePeriod(rows,{...previous,source:g.source});facts={...facts,previousPeriod:previous,previousExpenseCents:old.expenseCents,deltaExpenseCents:current.expenseCents-old.expenseCents};
  title='Despesas: mês atual × anterior';headers=['Categoria','Atual / anterior','Variação'];
  const names=new Set([...current.expenses,...old.expenses].map(c=>c.name));
  table=[...names].map(name=>{const now=current.expenses.find(c=>c.name===name)?.amountCents||0,before=old.expenses.find(c=>c.name===name)?.amountCents||0;return {name,now,before,delta:now-before};}).sort((a,b)=>b.delta-a.delta).slice(0,12).map(c=>({col1:c.name,col2:money(c.now)+' / '+money(c.before),col3:money(c.delta)}));
@@ -61,12 +63,13 @@ class LocalFinancialIntelligence{
  text='Valores totais das movimentações; divisões não multiplicam lançamentos.';
  }else if(input.intent==='review'){
  title='Movimentações a revisar';headers=['Descrição','Data','Estado'];
- if(!bank){text='Revisão bancária não se aplica à fonte manual.';}else{const review=records.filter(r=>r.date>=p.start&&r.date<=p.end&&!r.reviewed);table=review.slice(0,20).map(r=>({col1:String(r.merchant||r.description).slice(0,120),col2:r.date,col3:r.status==='POSTED'?'Confirmada · a revisar':'Pendente · a revisar'}));text=review.length+' movimentação(ões) carregada(s) ainda não revisada(s).';}
+ if(!bank){text='Revisão bancária não se aplica à fonte manual.';}else{const review=records.filter(r=>r.date>=p.start&&r.date<=p.end&&!r.reviewed);facts={...facts,review:{count:review.length,postedCount:review.filter(r=>r.status==='POSTED').length,pendingBankCount:review.filter(r=>r.status!=='POSTED').length}};table=review.slice(0,20).map(r=>({col1:String(r.merchant||r.description).slice(0,120),col2:r.date,col3:r.status==='POSTED'?'Confirmada · a revisar':'Pendente · a revisar'}));text=review.length+' movimentação(ões) carregada(s) ainda não revisada(s).';}
  }else if(input.intent==='commitments'){
  references.planningRead=true;references.planningPeriod=next;title='Compromissos do próximo mês';headers=['Compromisso','Vencimento','Restante'];
  const today=isoToday(),items=this.planner.list({today,start:next.start,end:next.end});
  const confirmed=items.filter(p=>p.kind==='expense'&&p.status==='planned'&&p.certainty==='confirmed'&&p.remaining>0);
  const total=confirmed.reduce((s,p)=>s+p.remaining,0);table=confirmed.slice(0,20).map(p=>({col1:p.title,col2:p.dueDate,col3:money(p.remaining)}));
+ facts={...facts,commitments:{count:confirmed.length,totalCents:total,period:next,partial:items.length===5000}};
  text='Total confirmado a pagar: '+money(total)+'. Valores restantes calculados pelo Planejamento; pagos/cancelados e estimativas fora desse total.';
  if(items.length===5000)warnings.push('Planejamento pode estar parcial: limite de registros atingido.');
  }else{
@@ -74,7 +77,7 @@ class LocalFinancialIntelligence{
  table=[{col1:'Conferir no Simulador',col2:'Saldo inicial e data, reserva, compromissos, preço, juros e parcelas'},{col1:'Cobertura dos dados',col2:bank?.truncated?'Extrato local parcial':'Histórico completo não certificado'},{col1:'Receitas futuras',col2:'Não tratar estimativas como dinheiro recebido'}];
  }
  if(!table.length)table=[{col1:'Sem registros aplicáveis',col2:'Nenhum resultado para este filtro.'}];
- return {version:1,readOnly:true,inferenceCalled:false,changesApplied:false,text,references,card:{title,subtitle:input.month+' · '+(g.source==='bank'?'Banco':'Manual')+' · '+(g.profile==='demo'?'Perfil demonstração':'Perfil pessoal'),metrics,headers,rows:table,footnote:warnings.join(' ')}};
+ return {version:1,readOnly:true,inferenceCalled:false,changesApplied:false,text,references,facts,card:{title,subtitle:input.month+' · '+(g.source==='bank'?'Banco':'Manual')+' · '+(g.profile==='demo'?'Perfil demonstração':'Perfil pessoal'),metrics,headers,rows:table,footnote:warnings.join(' ')}};
  }
 }
 module.exports={LocalFinancialIntelligence,CONSENT,INTENTS,period};

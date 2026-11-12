@@ -5,6 +5,10 @@
 **DECISÃO DO PROPRIETÁRIO / APROVADO_PARA_EXECUCAO, NÃO HOMOLOGADO.** Duas frentes sincronizadas: **R — Redesign Premium**, **I — Inteligência Operacional**. Base de código inicial PR #48 / `810a2bcb7706584474dbd2900cec536ff53edda5`, ainda Draft. Contratos e ownership no [protocolo Fast Lane](ai-context/FAST_LANE_20261112.md), [IC v1](ai-context/INTELLIGENCE_UI_CONTRACT_V1.md), [backlog de fatias verticais](ai-context/FAST_LANE_BACKLOG.md), [brief de design](ai-context/DESIGN_DIRECTION_PREMIUM.md) e [issue #49](https://github.com/JoaoVittorLi/meu-financeiro/issues/49). P0: Inteligência Hoje/Conversar conectados e revisão/categorização utilizável em sintético; depois Movimentações e Visão Geral Premium. Priorizar código útil sobre reauditoria geral. **Status das novas frentes: NÃO_INICIADO nesta publicação documental**. Nenhum merge, Windows CI, produção, gasto API ou escrita IA pessoal autorizados.
 
 
+### Checkpoint da frente I — I-P0.1 (implementação isolada, não homologada)
+
+**Status proposto: EM_TESTE / PR Draft em preparação.** O Executor I publicou camada IC v1 de cards Hoje (UI-01…UI-08), IPC de leitura protegida, fatos em centavos inteiros e roteador conversacional determinístico de consultas autorizadas. UI-02 e UI-08 somente em perfil sintético; UI-06 permanece editor manual; nenhuma escrita pessoal por IA. Ver [log técnico I-P0.1](ai-context/logs/2026-11-12-I-P0-1-OPERATIONAL-ADAPTER.md) e [Issue #49](https://github.com/JoaoVittorLi/meu-financeiro/issues/49). Probes V8: adaptador 11/11, facts 6/6; Node/SQLite/TypeScript/IPC Electron, integração ao Redesign e gates de release **pendentes**, sem promoção de CURRENT_STATE.
+
 
 ## Q1 — candidata integrada, execução autorizada em 12/11/2026
 
