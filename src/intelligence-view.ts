@@ -49,7 +49,7 @@ type IntelligenceChatMessage = {
   createdAtIso?:string;
   scopeLabel:string;
   periodLabel:string;
-  status:'sent'|'streaming'|'done'|'unavailable'|'unimplemented'|'error';
+  status:'sent'|'streaming'|'done'|'unavailable'|'unsupported'|'unimplemented'|'error';
   details?:string;
   operationalActions?:any[];
   operationalEvidence?:string;
@@ -183,6 +183,7 @@ function renderIntelligenceActionProposalCard(app:any,proposal:IntelligenceActio
 function renderIntelligenceMessageItem(app:any,msg:IntelligenceChatMessage){
   const isUser=msg.role==='user';
   const badge=msg.status==='unavailable'?h('span',{className:'mf-ai-msg-badge is-warn'},'Conta desconectada'):
+    msg.status==='unsupported'?h('span',{className:'mf-ai-msg-badge is-info'},'Consulta não reconhecida'):
     msg.status==='unimplemented'?h('span',{className:'mf-ai-msg-badge is-info'},'Aguarda I2-A'):
     msg.status==='error'?h('span',{className:'mf-ai-msg-badge is-error'},'Serviço indisponível'):null;
   return h('article',{key:msg.id,className:'mf-ai-msg '+(isUser?'is-user':'is-assistant')+' is-'+msg.status},
@@ -538,7 +539,7 @@ function renderIntelligencePanel(app:any){
         h('div',{className:'mf-ai-drawer-title-wrap'},
           h('div',{className:'mf-ai-drawer-kicker-row'},
             h('span',{className:'micro-label'},'COPILOTO CONTEXTUAL'),
-            h('span',{className:'mf-ai-conn-pill '+convState.css},s.localFinancialAccess?.token?'Leitura local autorizada':convState.pill)),
+            h('span',{className:'mf-ai-conn-pill '+convState.css},app.state.localFinancialAccess?.token?'Leitura local autorizada':convState.pill)),
           h('h2',{},info.label)),
         h('div',{className:'mf-ai-drawer-head-actions'},
           h('button',{type:'button',className:'ghost-button mf-ai-expand-btn','aria-label':'Nova conversa',title:'Iniciar nova conversa',onClick:()=>intelligenceCreateThread(app)},'Nova'),
