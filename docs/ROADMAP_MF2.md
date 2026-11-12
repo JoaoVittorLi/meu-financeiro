@@ -1,5 +1,18 @@
 # MEU FINANCEIRO 2.0 — roadmap mestre, backlog e controle de avanço
 
+## Diretriz mais recente — Fast Lane Redesign + Inteligência (12/11/2026)
+
+**DECISÃO DO PROPRIETÁRIO / APROVADO_PARA_EXECUCAO, NÃO HOMOLOGADO.** Duas frentes sincronizadas: **R — Redesign Premium**, **I — Inteligência Operacional**. Base de código inicial PR #48 / `810a2bcb7706584474dbd2900cec536ff53edda5`, ainda Draft. Contratos e ownership no [protocolo Fast Lane](ai-context/FAST_LANE_20261112.md), [IC v1](ai-context/INTELLIGENCE_UI_CONTRACT_V1.md), [backlog de fatias verticais](ai-context/FAST_LANE_BACKLOG.md), [brief de design](ai-context/DESIGN_DIRECTION_PREMIUM.md) e [issue #49](https://github.com/JoaoVittorLi/meu-financeiro/issues/49). P0: Inteligência Hoje/Conversar conectados e revisão/categorização utilizável em sintético; depois Movimentações e Visão Geral Premium. Priorizar código útil sobre reauditoria geral. **Status das novas frentes: NÃO_INICIADO nesta publicação documental**. Nenhum merge, Windows CI, produção, gasto API ou escrita IA pessoal autorizados.
+
+
+### Checkpoint da frente I — I-P0.1 (implementação isolada, não homologada)
+
+**Status proposto: EM_TESTE / PR Draft em preparação.** O Executor I publicou camada IC v1 de cards Hoje (UI-01…UI-08), IPC de leitura protegida, fatos em centavos inteiros e roteador conversacional determinístico de consultas autorizadas. UI-02 e UI-08 somente em perfil sintético; UI-06 permanece editor manual; nenhuma escrita pessoal por IA. Ver [log técnico I-P0.1](ai-context/logs/2026-11-12-I-P0-1-OPERATIONAL-ADAPTER.md) e [Issue #49](https://github.com/JoaoVittorLi/meu-financeiro/issues/49). Probes V8: adaptador 11/11, facts 6/6; Node/SQLite/TypeScript/IPC Electron, integração ao Redesign e gates de release **pendentes**, sem promoção de CURRENT_STATE.
+### Checkpoint de implementação isolada R — R0/R1 + R2 inicial (12/11/2026)
+
+**Status proposto: EM_TESTE / NÃO HOMOLOGADO.** O Executor R implementou a aba **Inteligência Hoje Premium**, consumidora dos oito contratos IC-v1 do PR #51, com estados/ações/cobertura e visual responsive claro/escuro. Chat principal e lateral recebem o roteador `intelligenceOperationalAsk` no fluxo de leitura local autorizada, com ações de navegação e resposta protegida contra alteração de sessão. UI-02 e UI-08 permanecem sintéticos; nenhum botão de escrita pessoal por IA foi habilitado. O código visual está isolado na branch R, **ainda sem backend da branch I**. Ver [log R](ai-context/logs/2026-11-12-R-PREMIUM-INTELLIGENCE.md) e [Issue #49](https://github.com/JoaoVittorLi/meu-financeiro/issues/49). Sete probes V8 focais passaram; testes completos Node/TypeScript/IPC/Electron/ASAR/F08, screenshot nativa e integração R+I seguem **pendentes**. Nenhum gate global foi promovido.
+
+
 ## Q1 — candidata integrada, execução autorizada em 12/11/2026
 
 Smoke real IPC também verifica recusa de lote quando uma correção manual introduz divergência no padrão, além do caminho de classificação aceito sem divergência.
@@ -527,3 +540,10 @@ O esforço sugerido ao Work é **Alto na primeira análise arquitetural ampla, M
 
 ## 12/11/2026 — leitura financeira determinística (Draft)
 Base #43 preservada. Serviço local/IPC e chat principal/lateral consultam SQLite autorizado sem escrita nem inferência. Oito consultas e radar; respostas só na memória. Código e regressões em revisão; homologação Electron pendente. Ver docs/ai-context/logs/2026-11-12-LOCAL-FINANCIAL-INTELLIGENCE.md.
+
+## Integração Q1 + I + R — 12/11/2026
+Branch integration/mf2-q1-operational-premium-20261112: incorpora #48/31c7386, #51/c45a01c e #52/2c3884c, preservando ancestralidade e roadmap de ambas as frentes. Rebinding operacional após restore/recovery, tokens anteriores invalidados. Renderer canônico recompilado; 533 testes passaram após conciliar snapshots antigos do layout e preservar a recusa de escrita na consulta local. Gates finais e QA nativo em andamento. Sem R3, escrita pessoal, main ou build pago.
+
+
+Checkpoint da união:533/533 PASS, TypeScript/F08/ASAR/proveniência e IPC Electron real PASS. Computer Use Premium light/dark1366×768 e1920×1080, navegação do card e chat real84,04 verificados. Evidências novas em ai-context/evidence/2026-11-12-integration. R3 permanece fora do escopo.
+

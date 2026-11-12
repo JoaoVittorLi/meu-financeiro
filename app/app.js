@@ -1728,6 +1728,8 @@ class App extends React.Component {
                 (_a = document.scrollingElement) === null || _a === void 0 ? void 0 : _a.scrollTo({ top: 0, left: 0, behavior: 'instant' });
             if (enteringPlan)
                 void this.refreshPlanning();
+            if (target === 'intelligence' && typeof intelligencePremiumLoad === 'function')
+                void intelligencePremiumLoad(this);
         });
         if (target === 'intelligence' || target === 'settings')
             void intelligenceRefresh(this);
@@ -2064,7 +2066,7 @@ class App extends React.Component {
         const categories = this.getCategories(), rules = this.state.rules, e = this.state.categoryEditor, r = this.state.ruleEditor;
         const preview = findCategoryRule(this.state.ruleTest, 'bank', rules);
         return h('div', { className: 'section categories-page' }, h('div', { className: 'intro-banner' }, h('div', {}, h('span', { className: 'micro-label' }, 'ORGANIZAÇÃO AUTOMÁTICA'), h('h2', {}, 'Seu dinheiro, suas categorias.'), h('p', {}, 'Personalize os nomes e cores, crie regras por descrição e ajuste lançamentos individualmente. Tudo funciona localmente, sem IA paga.')), h('div', { className: 'banner-orb' }, h(Icon, { name: 'filter', size: 46 }))), desktop && this.state.mode === 'real' ? h(Card, { className: 'mf-category-import' }, h('div', {}, h('b', {}, 'Classificação inteligente preparada para você'), h('p', {}, 'Aplique um arquivo de sugestões revisadas. O aplicativo preserva suas correções, cria uma cópia de segurança e mantém movimentações duvidosas para você analisar.')), h('button', { className: 'primary-button', onClick: () => this.importCategoryPack() }, h(Icon, { name: 'upload', size: 17 }), 'Importar sugestões')) : null, this.state.mode === 'demo' ? h(Card, { className: 'settings-card' }, h('h2', {}, 'Modo demonstração'), h('p', {}, 'A edição de regras e categorias está disponível somente nos seus dados pessoais.'), h('button', { className: 'primary-button', onClick: () => this.toggleMode() }, 'Voltar aos meus dados')) :
-            h('div', { className: 'categories-layout' }, h(Card, { className: 'settings-card' }, h('div', { className: 'card-heading' }, h('div', {}, h('h2', {}, 'Categorias personalizadas'), h('p', {}, 'As categorias padrão podem mudar de cor. Categorias criadas por você podem ser renomeadas.'))), h('div', { className: 'category-list' }, categories.map(cat => h('div', { className: 'category-list-row', key: cat.name }, h('span', { className: 'category-emoji-icon', style: { background: cat.color + '20', borderColor: cat.color + '70' } }, cat.emoji || '✨'), h('b', {}, cat.name), h('small', { className: 'mf-category-kind-tag' }, cat.kind === 'income' ? 'Receita' : cat.kind === 'expense' ? 'Gasto' : 'Entrada ou saída'), cat.builtIn ? h('small', { className: 'muted' }, 'Padrão') : null, h('button', { className: 'small-link', onClick: () => this.setState({ categoryEditor: { previousName: cat.name, name: cat.name, color: cat.color, emoji: cat.emoji || '✨', kind: cat.kind } }) }, 'Editar'), !cat.builtIn ? h('button', { className: 'trash-button', title: 'Excluir categoria sem uso', onClick: () => this.deleteCategory(cat.name) }, h(Icon, { name: 'trash', size: 16 })) : null))), h('h3', {}, e.previousName ? 'Editar categoria' : 'Criar categoria'), this.field('Nome', h('input', { className: 'form-control', value: e.name, maxLength: 50, placeholder: 'Ex.: Pets, Delivery, Estudos', disabled: !!(e.previousName && ((_a = categories.find(c => c.name === e.previousName)) === null || _a === void 0 ? void 0 : _a.builtIn)), onChange: (v) => this.setState({ categoryEditor: { ...e, name: v.target.value } }) })), this.field('Tipo de categoria', h(StyledSelect, { value: e.kind, disabled: !!(e.previousName && ((_b = categories.find(c => c.name === e.previousName)) === null || _b === void 0 ? void 0 : _b.builtIn)), options: [{ value: 'expense', label: 'Gasto' }, { value: 'income', label: 'Receita' }, { value: 'both', label: 'Entrada ou saída' }], onChange: (kind) => this.setState({ categoryEditor: { ...e, kind } }) })), h('div', { className: 'category-appearance' }, h('div', { className: 'category-preview', style: { borderColor: e.color + '75' } }, h('span', { className: 'category-preview-icon', style: { background: e.color + '26', boxShadow: '0 0 24px ' + e.color + '25' } }, e.emoji || '✨'), h('div', {}, h('small', {}, 'PRÉVIA DA CATEGORIA'), h('strong', {}, e.name.trim() || 'Minha categoria'), h('span', {}, 'Você escolhe como organizar cada movimentação.'))), h('div', { className: 'appearance-label' }, h('b', {}, 'Escolha um emoji'), h('span', {}, 'Um símbolo para reconhecer rapidamente seus gastos')), h('div', { className: 'emoji-grid', role: 'group', 'aria-label': 'Escolha um emoji' }, (this.state.categoryMoreEmojis ? EMOJI_OPTIONS : Array.from(new Set([...EMOJI_OPTIONS.slice(0, 18), e.emoji]))).map(emoji => h('button', { type: 'button', key: emoji,
+            h('div', { className: 'categories-layout' }, h(Card, { className: 'settings-card' }, h('div', { className: 'card-heading' }, h('div', {}, h('h2', {}, 'Categorias personalizadas'), h('p', {}, 'As categorias padrão podem mudar de cor. Categorias criadas por você podem ser renomeadas.'))), h('div', { className: 'category-list' }, categories.map(cat => h('div', { className: 'category-list-row', key: cat.name }, h('span', { className: 'category-emoji-icon', style: { background: cat.color + '20', borderColor: cat.color + '70' } }, cat.emoji || '✨'), h('b', {}, cat.name), h('small', { className: 'mf-category-kind-tag' }, cat.kind === 'income' ? 'Receita' : cat.kind === 'expense' ? 'Gasto' : 'Entrada ou saída'), cat.builtIn ? h('small', { className: 'muted' }, 'Padrão') : null, h('button', { className: 'small-link', onClick: () => this.setState({ categoryEditor: { previousName: cat.name, name: cat.name, color: cat.color, emoji: cat.emoji || '✨', kind: cat.kind } }) }, 'Editar'), !cat.builtIn ? h('button', { className: 'trash-button', title: 'Excluir categoria sem uso', onClick: () => this.deleteCategory(cat.name) }, h(Icon, { name: 'trash', size: 16 })) : null))), h('h3', { id: 'mf-category-editor-heading', tabIndex: -1 }, e.previousName ? 'Editar categoria' : 'Criar categoria'), this.field('Nome', h('input', { className: 'form-control', value: e.name, maxLength: 50, placeholder: 'Ex.: Pets, Delivery, Estudos', disabled: !!(e.previousName && ((_a = categories.find(c => c.name === e.previousName)) === null || _a === void 0 ? void 0 : _a.builtIn)), onChange: (v) => this.setState({ categoryEditor: { ...e, name: v.target.value } }) })), this.field('Tipo de categoria', h(StyledSelect, { value: e.kind, disabled: !!(e.previousName && ((_b = categories.find(c => c.name === e.previousName)) === null || _b === void 0 ? void 0 : _b.builtIn)), options: [{ value: 'expense', label: 'Gasto' }, { value: 'income', label: 'Receita' }, { value: 'both', label: 'Entrada ou saída' }], onChange: (kind) => this.setState({ categoryEditor: { ...e, kind } }) })), h('div', { className: 'category-appearance' }, h('div', { className: 'category-preview', style: { borderColor: e.color + '75' } }, h('span', { className: 'category-preview-icon', style: { background: e.color + '26', boxShadow: '0 0 24px ' + e.color + '25' } }, e.emoji || '✨'), h('div', {}, h('small', {}, 'PRÉVIA DA CATEGORIA'), h('strong', {}, e.name.trim() || 'Minha categoria'), h('span', {}, 'Você escolhe como organizar cada movimentação.'))), h('div', { className: 'appearance-label' }, h('b', {}, 'Escolha um emoji'), h('span', {}, 'Um símbolo para reconhecer rapidamente seus gastos')), h('div', { className: 'emoji-grid', role: 'group', 'aria-label': 'Escolha um emoji' }, (this.state.categoryMoreEmojis ? EMOJI_OPTIONS : Array.from(new Set([...EMOJI_OPTIONS.slice(0, 18), e.emoji]))).map(emoji => h('button', { type: 'button', key: emoji,
                 className: 'emoji-choice ' + (e.emoji === emoji ? 'selected' : ''), 'aria-label': 'Usar emoji ' + emoji, 'aria-pressed': e.emoji === emoji,
                 onClick: () => this.setState({ categoryEditor: { ...e, emoji } }) }, emoji))), h('button', { className: 'mf-small-link', type: 'button', onClick: () => this.setState({ categoryMoreEmojis: !this.state.categoryMoreEmojis }) }, this.state.categoryMoreEmojis ? 'Mostrar menos emojis' : 'Explorar todos os emojis'), h('div', { className: 'appearance-label' }, h('b', {}, 'Sua paleta de cores'), h('span', {}, 'Cores que combinam com o tema escuro')), h('div', { className: 'color-grid', role: 'group', 'aria-label': 'Escolha uma cor' }, COLOR_OPTIONS.map(color => h('button', { key: color, type: 'button',
                 className: 'color-choice ' + (e.color === color ? 'selected' : ''), style: { background: color }, 'aria-label': 'Cor ' + color, 'aria-pressed': e.color === color,
@@ -2636,9 +2638,10 @@ function renderIntelligenceActionProposalCard(app, proposal) {
 function renderIntelligenceMessageItem(app, msg) {
     const isUser = msg.role === 'user';
     const badge = msg.status === 'unavailable' ? h('span', { className: 'mf-ai-msg-badge is-warn' }, 'Conta desconectada') :
-        msg.status === 'unimplemented' ? h('span', { className: 'mf-ai-msg-badge is-info' }, 'Aguarda I2-A') :
-            msg.status === 'error' ? h('span', { className: 'mf-ai-msg-badge is-error' }, 'Serviço indisponível') : null;
-    return h('article', { key: msg.id, className: 'mf-ai-msg ' + (isUser ? 'is-user' : 'is-assistant') + ' is-' + msg.status }, h('header', { className: 'mf-ai-msg-meta' }, h('strong', {}, isUser ? 'Você' : 'Assistente MF'), h('span', {}, msg.scopeLabel + ' · ' + msg.createdAt), badge), h('div', { className: 'mf-ai-msg-body mf-ai-markdown' }, ...aiMarkdownNodes(msg.text)), msg.structuredCard ? renderIntelligenceStructuredCard(msg.structuredCard) : null, msg.proposal ? renderIntelligenceActionProposalCard(app, msg.proposal) : null, msg.id.startsWith('review-answer-') ? h('button', { type: 'button', className: 'primary-button', onClick: () => void categoryReviewOpen(app) }, 'Abrir Central de Revisão') : null, msg.details ? h('details', { className: 'mf-ai-msg-details' }, h('summary', {}, 'Ver contexto e diagnóstico'), h('p', {}, msg.details)) : null);
+        msg.status === 'unsupported' ? h('span', { className: 'mf-ai-msg-badge is-info' }, 'Consulta não reconhecida') :
+            msg.status === 'unimplemented' ? h('span', { className: 'mf-ai-msg-badge is-info' }, 'Aguarda I2-A') :
+                msg.status === 'error' ? h('span', { className: 'mf-ai-msg-badge is-error' }, 'Serviço indisponível') : null;
+    return h('article', { key: msg.id, className: 'mf-ai-msg ' + (isUser ? 'is-user' : 'is-assistant') + ' is-' + msg.status }, h('header', { className: 'mf-ai-msg-meta' }, h('strong', {}, isUser ? 'Você' : 'Assistente MF'), h('span', {}, msg.scopeLabel + ' · ' + msg.createdAt), badge), h('div', { className: 'mf-ai-msg-body mf-ai-markdown' }, ...aiMarkdownNodes(msg.text)), msg.structuredCard ? renderIntelligenceStructuredCard(msg.structuredCard) : null, msg.operationalEvidence ? h('small', { className: 'mf-premium-evidence' }, msg.operationalEvidence) : null, Array.isArray(msg.operationalActions) && msg.operationalActions.length ? h('div', { className: 'mf-premium-tile-actions' }, ...msg.operationalActions.map((action) => intelligencePremiumButton(app, null, action))) : null, msg.proposal ? renderIntelligenceActionProposalCard(app, msg.proposal) : null, msg.id.startsWith('review-answer-') ? h('button', { type: 'button', className: 'primary-button', onClick: () => void categoryReviewOpen(app) }, 'Abrir Central de Revisão') : null, msg.details ? h('details', { className: 'mf-ai-msg-details' }, h('summary', {}, 'Ver contexto e diagnóstico'), h('p', {}, msg.details)) : null);
 }
 function intelligenceExampleCard(app, id, title, description, icon, question) {
     return h('div', { className: 'mf-ai-example-card', key: id }, h('span', { className: 'mf-ai-example-icon' }, h(Icon, { name: icon, size: 20 })), h('div', { className: 'mf-ai-example-copy' }, h('strong', {}, title), h('p', {}, description), h('button', { type: 'button', className: 'mf-ai-link', onClick: () => intelligencePrepare(app, question) }, 'Preparar análise', h(Icon, { name: 'arrow', size: 15 }))));
@@ -2652,8 +2655,177 @@ function renderIntelligenceHistorySidebar(app) {
     return h('aside', { className: 'mf-ai-history-sidebar', 'aria-label': 'Histórico de conversas' }, h('div', { className: 'mf-ai-history-top' }, h('div', { className: 'mf-ai-history-title-row' }, h('strong', {}, 'Conversas'), h('span', { className: 'mf-ai-thread-count' }, String(totalThreads))), h('button', { type: 'button', className: 'primary-button mf-ai-new-thread-btn', onClick: () => intelligenceCreateThread(app) }, h(Icon, { name: 'plus', size: 14 }), 'Nova conversa')), h('div', { className: 'mf-ai-history-search' }, h('input', { type: 'search', value: query, maxLength: 120, placeholder: 'Buscar no histórico…', 'aria-label': 'Buscar conversas no histórico', onChange: (e) => app.setState({ intelligenceHistoryQuery: e.target.value }) })), s.intelligenceStorageError ? h('p', { className: 'mf-ai-error mf-ai-storage-error', role: 'alert' }, s.intelligenceStorageError) : null, groups.length === 0 ? h('div', { className: 'mf-ai-history-empty' }, h('p', {}, query.trim() ? 'Nenhuma conversa encontrada para “' + query.trim() + '”.' : 'Nenhuma conversa salva neste perfil (' + (s.mode === 'demo' ? 'Demonstração' : 'Pessoal') + ').'), h('small', {}, s.categoryReviewGrant ? 'Conversa temporária. Mensagens e autorizações não são gravadas no histórico do perfil.' : 'O histórico deste perfil é local e não usa o cofre criptografado. Não inclua senhas nem tokens.')) :
         h('div', { className: 'mf-ai-history-groups', role: 'list' }, ...groups.map((grp) => h('div', { key: grp.label, className: 'mf-ai-history-group' }, h('span', { className: 'mf-ai-history-date-label' }, grp.label), ...grp.items.map((th) => h('div', { key: th.id, role: 'listitem', className: 'mf-ai-thread-item ' + (th.id === activeId ? 'is-active' : '') }, h('button', { type: 'button', className: 'mf-ai-thread-select', 'aria-current': th.id === activeId ? 'true' : 'false', onClick: () => intelligenceSelectThread(app, th.id) }, h('strong', {}, th.title), h('small', {}, th.scopeLabel + ' · ' + th.updatedTime + ' · ' + th.messages.length + ' msg')), h('button', { type: 'button', className: 'mf-ai-thread-delete', 'aria-label': 'Excluir conversa ' + th.title, title: 'Excluir conversa', onClick: () => intelligenceDeleteThread(app, th.id) }, '×')))))), totalThreads > 0 ? h('div', { className: 'mf-ai-history-foot' }, h('button', { type: 'button', className: 'ghost-button full', onClick: () => intelligenceClearHistory(app) }, s.categoryReviewGrant ? 'Limpar conversa temporária' : 'Limpar histórico do perfil')) : null);
 }
+const MF_PREMIUM_IDS = ['UI-01', 'UI-02', 'UI-03', 'UI-04', 'UI-05', 'UI-06', 'UI-07', 'UI-08'];
+function intelligencePremiumAPI() { return desktop; }
+function intelligencePremiumSignature(app) {
+    const s = app.state, a = s.localFinancialAccess, g = s.categoryReviewGrant;
+    return JSON.stringify([s.mode, s.localFinancialMonth || s.month, (a === null || a === void 0 ? void 0 : a.token) || '', (a === null || a === void 0 ? void 0 : a.source) || '', (a === null || a === void 0 ? void 0 : a.profile) || '',
+        (a === null || a === void 0 ? void 0 : a.planning) === true, (g === null || g === void 0 ? void 0 : g.token) || '', s.bankFilter || '']);
+}
+function intelligencePremiumInvalidate(app) {
+    app.__premiumRequest = (app.__premiumRequest || 0) + 1;
+    app.setState({ intelligencePremiumReport: null, intelligencePremiumSignature: null, intelligencePremiumLoading: false, intelligencePremiumError: '' });
+}
+async function intelligencePremiumLoad(app) {
+    var _a, _b;
+    const api = intelligencePremiumAPI(), signature = intelligencePremiumSignature(app), s = app.state;
+    const sequence = (app.__premiumRequest || 0) + 1;
+    app.__premiumRequest = sequence;
+    app.setState({ intelligencePremiumLoading: true, intelligencePremiumSignature: signature, intelligencePremiumReport: null, intelligencePremiumError: '' });
+    if (typeof (api === null || api === void 0 ? void 0 : api.intelligenceOperationalOverview) !== 'function') {
+        if (sequence === app.__premiumRequest)
+            app.setState({ intelligencePremiumLoading: false,
+                intelligencePremiumError: 'A integração com os serviços do PR #51 ainda não está disponível nesta versão do aplicativo.' });
+        return;
+    }
+    const a = s.localFinancialAccess, g = s.categoryReviewGrant, month = s.localFinancialMonth || s.month;
+    try {
+        const result = await api.intelligenceOperationalOverview({
+            month, source: (a === null || a === void 0 ? void 0 : a.source) || (s.mode === 'demo' ? 'manual' : s.localFinancialSource || 'bank'),
+            profile: (a === null || a === void 0 ? void 0 : a.profile) || (s.mode === 'demo' ? 'demo' : 'real'), token: (a === null || a === void 0 ? void 0 : a.token) || null, reviewToken: (g === null || g === void 0 ? void 0 : g.token) || null
+        });
+        if (sequence !== app.__premiumRequest || signature !== intelligencePremiumSignature(app))
+            return;
+        if ((result === null || result === void 0 ? void 0 : result.contract) !== 'IC-v1/I-P0.1' || ((_a = result === null || result === void 0 ? void 0 : result.privacy) === null || _a === void 0 ? void 0 : _a.changesApplied) !== false ||
+            ((_b = result === null || result === void 0 ? void 0 : result.privacy) === null || _b === void 0 ? void 0 : _b.personalAIWritingEnabled) !== false ||
+            !Array.isArray(result.cards) || result.cards.length !== 8 ||
+            MF_PREMIUM_IDS.some((id, i) => { var _a; return ((_a = result.cards[i]) === null || _a === void 0 ? void 0 : _a.id) !== id; }))
+            throw Error('Contrato financeiro inválido.');
+        app.setState({ intelligencePremiumReport: result, intelligencePremiumLoading: false, intelligencePremiumError: '' });
+    }
+    catch (error) {
+        if (sequence !== app.__premiumRequest || signature !== intelligencePremiumSignature(app))
+            return;
+        app.setState({ intelligencePremiumLoading: false, intelligencePremiumReport: null,
+            intelligencePremiumError: String((error === null || error === void 0 ? void 0 : error.message) || 'Não foi possível carregar esta análise.').slice(0, 220) });
+    }
+}
+function intelligencePremiumMoney(value) {
+    return Number.isSafeInteger(value) ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value / 100) : '—';
+}
+function intelligencePremiumCoverage(value) {
+    return value === 'complete_local' ? 'Histórico local analisado' : value === 'partial_local' ? 'Cobertura parcial da fonte local' : 'Cobertura não certificada';
+}
+function intelligencePremiumState(c) {
+    if (!c)
+        return 'Aguardando consulta.';
+    if (c.uiState === 'ready')
+        return '';
+    const labels = { loading: 'Consultando dados…', empty: 'Sem registros aplicáveis neste período.',
+        denied: 'Autorização necessária para consultar.', expired: 'A autorização expirou. Autorize novamente.',
+        stale: 'Consulta desatualizada. Atualize o período.', error: 'Não foi possível consultar esta fonte.',
+        unsupported: 'Não disponível para esta fonte ou perfil.' };
+    return c.unavailableReason || labels[c.uiState] || 'Não disponível no momento.';
+}
+function intelligencePremiumAction(app, c, a) {
+    var _a, _b;
+    if (!(a === null || a === void 0 ? void 0 : a.permitted) || !a.handler)
+        return;
+    switch (a.handler) {
+        case 'navigation:transactions-review':
+            app.navigate('review');
+            return;
+        case 'navigation:transactions':
+            app.navigate('transactions');
+            return;
+        case 'navigation:budgets':
+            app.navigate('budgets');
+            return;
+        case 'navigation:planning':
+            app.navigate('planning');
+            return;
+        case 'navigation:category-editor':
+            app.navigate('categories');
+            setTimeout(() => { const node = document.getElementById('mf-category-editor-heading'); node === null || node === void 0 ? void 0 : node.scrollIntoView({ block: 'center' }); node === null || node === void 0 ? void 0 : node.focus(); }, 0);
+            return;
+        case 'navigation:intelligence-chat':
+            app.setState({ page: 'intelligence', intelligenceTab: 'chat', categoryReviewOpen: false });
+            return;
+        case 'navigation:review-history':
+            if ((_a = app.state.categoryReviewGrant) === null || _a === void 0 ? void 0 : _a.token)
+                void categoryReviewOpen(app);
+            return;
+        case 'categoryReviewPrepare':
+            if (!((_b = app.state.categoryReviewGrant) === null || _b === void 0 ? void 0 : _b.token) || !a.previewRequired || !a.operationId)
+                return;
+            void (async () => {
+                var _a;
+                await categoryReviewOpen(app);
+                if ((_a = app.state.categoryReviewGrant) === null || _a === void 0 ? void 0 : _a.token)
+                    await categoryReviewPrepare(app, 'rule', { suggestionId: a.operationId });
+            })();
+            return;
+    }
+}
+function intelligencePremiumButton(app, c, a) {
+    var _a, _b;
+    const routes = ['navigation:transactions-review', 'navigation:transactions', 'navigation:budgets', 'navigation:planning',
+        'navigation:category-editor', 'navigation:intelligence-chat', 'navigation:review-history', 'categoryReviewPrepare'];
+    const enabled = !!(a === null || a === void 0 ? void 0 : a.permitted) && routes.includes(a === null || a === void 0 ? void 0 : a.handler) &&
+        (a.handler !== 'navigation:category-editor' || app.state.mode !== 'demo') &&
+        (a.handler !== 'categoryReviewPrepare' || (a.previewRequired === true && !!a.operationId && !!((_a = app.state.categoryReviewGrant) === null || _a === void 0 ? void 0 : _a.token))) &&
+        (a.handler !== 'navigation:review-history' || !!((_b = app.state.categoryReviewGrant) === null || _b === void 0 ? void 0 : _b.token));
+    return h('button', { type: 'button', key: a.actionId, className: 'mf-premium-action',
+        disabled: !enabled, title: !enabled ? (a.disabledReason || 'Ação indisponível neste perfil.') : a.label,
+        onClick: () => intelligencePremiumAction(app, c, a) }, a.label, h(Icon, { name: 'arrow', size: 14 }));
+}
+function intelligencePremiumEvidence(c) {
+    var _a;
+    if (!c)
+        return null;
+    return h('small', { className: 'mf-premium-evidence' }, (c.profile === 'synthetic' ? 'Ambiente sintético' : c.source === 'planning' ? 'Planejamento' : c.source === 'bank' ? 'Banco' : c.source === 'manual' ? 'Manual' : 'Fonte local') +
+        ' · ' + intelligencePremiumCoverage(c.coverage) +
+        (((_a = c.period) === null || _a === void 0 ? void 0 : _a.start) ? ' · ' + c.period.start.slice(0, 7) : ''));
+}
+function intelligencePremiumTile(app, c, icon, variant = '') {
+    var _a;
+    if (!c)
+        return null;
+    const available = c.uiState === 'ready' || c.uiState === 'empty';
+    const actions = Array.isArray(c.actions) ? c.actions : [];
+    return h('article', { key: c.id, className: 'mf-premium-tile ' + variant + ' is-' + c.uiState, 'aria-labelledby': 'mf-premium-' + c.id }, h('header', { className: 'mf-premium-tile-head' }, h('span', { className: 'mf-premium-tile-icon' }, h(Icon, { name: icon, size: 19 })), h('span', { className: 'mf-premium-contract' }, c.id)), h('h3', { id: 'mf-premium-' + c.id }, c.title), available && Number.isSafeInteger(c.valueCents) ? h('strong', { className: 'mf-premium-value' }, intelligencePremiumMoney(c.valueCents)) :
+        available && Number.isSafeInteger(c.count) ? h('strong', { className: 'mf-premium-value' }, String(c.count)) : null, h('p', { className: 'mf-premium-tile-explanation' }, available ?
+        (c.uiState === 'empty' ? intelligencePremiumState(c) : c.description || 'Informações disponíveis da fonte consultada.') :
+        intelligencePremiumState(c)), available && c.id === 'UI-01' && ((_a = c.evidence) === null || _a === void 0 ? void 0 : _a[1]) ?
+        h('p', { className: 'mf-premium-review-split' }, 'Confirmadas: ' + c.evidence[1].posted + ' · Pendentes no banco: ' + c.evidence[1].pendingBank + '. Pendente no banco não implica categoria pendente.') : null, available ? intelligencePremiumEvidence(c) : null, h('div', { className: 'mf-premium-tile-actions' }, ...actions.map((a) => intelligencePremiumButton(app, c, a))));
+}
+function intelligencePremiumBudgetChart(c) {
+    const budgets = (Array.isArray(c === null || c === void 0 ? void 0 : c.budgets) ? c.budgets : []).slice(0, 4);
+    return h('div', { className: 'mf-premium-budget-list' }, ...budgets.map((b) => h('div', { key: b.category, className: 'mf-premium-budget-item' }, h('div', { className: 'mf-premium-budget-label' }, h('strong', {}, b.category), h('span', {}, intelligencePremiumMoney(b.spentCents) + ' / ' + intelligencePremiumMoney(b.limitCents))), Number.isFinite(b.percentage) && Number.isSafeInteger(b.limitCents) && b.limitCents > 0 ?
+        h('div', { className: 'mf-premium-budget-track', role: 'progressbar', 'aria-label': 'Consumo do orçamento ' + b.category,
+            'aria-valuemin': 0, 'aria-valuemax': 100, 'aria-valuenow': Math.min(100, Math.max(0, b.percentage)) }, h('span', { className: b.percentage >= 100 ? 'is-over' : '', style: { width: Math.min(100, Math.max(0, b.percentage)) + '%' } })) : null)));
+}
+function renderIntelligencePremiumToday(app) {
+    var _a, _b, _c, _d, _e, _f, _g, _h;
+    const s = app.state, signature = intelligencePremiumSignature(app);
+    const stale = !!s.intelligencePremiumReport && s.intelligencePremiumSignature !== signature;
+    const report = !stale ? s.intelligencePremiumReport : null;
+    const loading = !!s.intelligencePremiumLoading && !stale;
+    const cards = Array.isArray(report === null || report === void 0 ? void 0 : report.cards) ? report.cards : [];
+    const get = (id) => cards.find(c => c.id === id) || null;
+    const radar = get('UI-03'), review = get('UI-01'), budgets = get('UI-04'), commit = get('UI-05'), rules = get('UI-02'), categories = get('UI-06'), conversation = get('UI-07'), history = get('UI-08');
+    const meaningful = (radar === null || radar === void 0 ? void 0 : radar.uiState) === 'ready' && radar.count > 0;
+    const sourceLabel = ((_a = s.categoryReviewGrant) === null || _a === void 0 ? void 0 : _a.token) ? 'Revisão sintética' : ((_b = s.localFinancialAccess) === null || _b === void 0 ? void 0 : _b.source) === 'bank' ? 'Fonte bancária' :
+        ((_c = s.localFinancialAccess) === null || _c === void 0 ? void 0 : _c.source) === 'manual' ? 'Lançamentos manuais' : 'Sem leitura autorizada';
+    const grant = ((_d = s.localFinancialAccess) === null || _d === void 0 ? void 0 : _d.token) || ((_e = s.categoryReviewGrant) === null || _e === void 0 ? void 0 : _e.token);
+    return h('div', { className: 'mf-ai-premium-today', role: 'region', 'aria-label': 'Inteligência Hoje' }, h('div', { className: 'mf-premium-head' }, h('div', {}, h('span', { className: 'mf-premium-eyebrow' }, h(Icon, { name: 'spark', size: 15 }), 'VISÃO OPERACIONAL · ' + sourceLabel), h('h2', {}, 'O que merece sua atenção?'), h('p', {}, 'Sinais verificáveis para transformar informação em decisão. Nenhuma mudança é aplicada sem sua confirmação.')), h('div', { className: 'mf-premium-head-controls' }, h('span', { className: 'mf-premium-period' }, s.localFinancialMonth || s.month), h('button', { type: 'button', className: 'mf-premium-refresh', disabled: loading,
+        onClick: () => void intelligencePremiumLoad(app) }, h(Icon, { name: 'arrow', size: 15 }), loading ? 'Consultando…' : 'Atualizar visão'))), !grant ? h('div', { className: 'mf-premium-consent', role: 'status' }, h(Icon, { name: 'shield', size: 20 }), h('p', {}, s.mode === 'real' && !((_g = (_f = s.bank) === null || _f === void 0 ? void 0 : _f.config) === null || _g === void 0 ? void 0 : _g.configured) && s.localFinancialSource !== 'manual' ?
+        'Nenhuma conexão bancária configurada. Você pode escolher lançamentos manuais na autorização de leitura local acima.' :
+        'Autorize a leitura local acima para consultar suas movimentações. Categorias e estados de disponibilidade continuam acessíveis sem autorização financeira.')) : null, stale ? h('div', { className: 'mf-premium-alert', role: 'status' }, 'Fonte, perfil, conta ou período mudou. A consulta anterior foi ocultada. Atualize para ver os novos dados.') : null, s.intelligencePremiumError ? h('div', { className: 'mf-premium-alert', role: 'alert' }, s.intelligencePremiumError) : null, loading ? h('div', { className: 'mf-premium-loading', role: 'status', 'aria-label': 'Carregando informações financeiras' }, h('div', { className: 'mf-premium-skeleton' }), h('div', { className: 'mf-premium-skeleton' }), h('div', { className: 'mf-premium-skeleton' })) : null, report ? h('div', { className: 'mf-premium-dashboard' }, h('div', { className: 'mf-premium-lead' }, h('section', { className: 'mf-premium-radar ' + (meaningful ? 'has-attention' : ''), 'aria-labelledby': 'mf-premium-radar-title' }, h('span', { className: 'mf-premium-kicker' }, 'UI-03 · RADAR FINANCEIRO'), h('h3', { id: 'mf-premium-radar-title' }, meaningful ? 'Pontos de atenção encontrados.' : 'Visão do período'), (radar === null || radar === void 0 ? void 0 : radar.uiState) === 'ready' || (radar === null || radar === void 0 ? void 0 : radar.uiState) === 'empty' ?
+        h('div', {}, radar.count !== null && Number.isSafeInteger(radar.count) ?
+            h('div', { className: 'mf-premium-radar-count' }, h('strong', {}, String(radar.count)), h('span', {}, radar.count === 1 ? 'ponto de atenção' : 'pontos de atenção')) : null, Array.isArray(radar.observations) && radar.observations.length ?
+            h('ul', { className: 'mf-premium-observations' }, ...radar.observations.slice(0, 3).map((o) => h('li', { key: o.category }, h('strong', {}, o.category), h('span', {}, intelligencePremiumMoney(o.spentCents) + ' / ' + intelligencePremiumMoney(o.limitCents))))) :
+            h('p', {}, intelligencePremiumState({ ...radar, uiState: 'empty' })), intelligencePremiumEvidence(radar), h('div', { className: 'mf-premium-tile-actions' }, ...(radar.actions || []).map((a) => intelligencePremiumButton(app, radar, a)))) :
+        h('p', { className: 'mf-premium-state' }, intelligencePremiumState(radar))), intelligencePremiumTile(app, review, 'filter', 'mf-premium-review')), h('div', { className: 'mf-premium-major-grid' }, h('section', { className: 'mf-premium-budget-card', 'aria-labelledby': 'mf-premium-budget-title' }, h('div', { className: 'mf-premium-tile-head' }, h('span', { className: 'mf-premium-tile-icon' }, h(Icon, { name: 'pie', size: 19 })), h('span', { className: 'mf-premium-contract' }, 'UI-04')), h('h3', { id: 'mf-premium-budget-title' }, 'Orçamentos em perspectiva'), (budgets === null || budgets === void 0 ? void 0 : budgets.uiState) === 'ready' || (budgets === null || budgets === void 0 ? void 0 : budgets.uiState) === 'empty' ?
+        h('div', {}, intelligencePremiumBudgetChart(budgets), !((_h = budgets === null || budgets === void 0 ? void 0 : budgets.budgets) === null || _h === void 0 ? void 0 : _h.length) ? h('p', {}, 'Nenhum limite cadastrado com dados aplicáveis.') : null, intelligencePremiumEvidence(budgets), h('div', { className: 'mf-premium-tile-actions' }, ...(budgets.actions || []).map((a) => intelligencePremiumButton(app, budgets, a)))) :
+        h('p', {}, intelligencePremiumState(budgets))), intelligencePremiumTile(app, commit, 'calendar', 'mf-premium-commitment')), h('div', { className: 'mf-premium-lower-grid' }, intelligencePremiumTile(app, rules, 'spark'), intelligencePremiumTile(app, categories, 'filter'), intelligencePremiumTile(app, conversation, 'spark'), intelligencePremiumTile(app, history, 'calendar')), h('div', { className: 'mf-premium-bottom-note' }, h(Icon, { name: 'shield', size: 16 }), h('span', {}, 'Valores em centavos da fonte autorizada. ' +
+        intelligencePremiumCoverage((radar === null || radar === void 0 ? void 0 : radar.coverage) || 'unknown') +
+        '. Revisões e recibos sintéticos nunca representam alterações pessoais.'))) :
+        !loading && !s.intelligencePremiumError && !stale ?
+            h('div', { className: 'mf-premium-empty', role: 'status' }, h('strong', {}, 'Sua central está pronta para consultar.'), h('p', {}, 'Use “Atualizar visão” para carregar os contratos reais disponíveis nesta instalação.')) : null);
+}
 function renderIntelligenceView(app) {
-    var _a, _b, _c, _d;
+    var _a, _b, _c, _d, _e;
     if (((_a = app.state.workIntelligenceDemo) === null || _a === void 0 ? void 0 : _a.enabled) && typeof renderWorkIntelligenceDemo === 'function')
         return renderWorkIntelligenceDemo(app);
     if (typeof intelligenceEnsureHydrated === 'function')
@@ -2668,11 +2840,9 @@ function renderIntelligenceView(app) {
     const activeScope = s.intelligenceDraftScope || intelligencePageScope(app, s.intelligenceContext || s.page);
     let section = null;
     if (tab === 'today')
-        section = h('div', { className: 'mf-ai-today' }, h('button', { type: 'button', className: 'ghost-button', onClick: () => workDemoLoad(app) }, 'Explorar nova Inteligência · dados fictícios'), h('div', { className: 'mf-ai-welcome' }, h('span', { className: 'micro-label' }, 'PAINEL CONCEITUAL · DADOS FICTÍCIOS'), h('h2', {}, 'Três assuntos para explorar.'), h('p', {}, 'Exemplos fictícios. Eles não representam alertas reais das suas contas.')), h('div', { className: 'mf-ai-card-grid' }, intelligenceExampleCard(app, 'future', 'Compromissos à frente', 'Analise pagamentos futuros antes de separar dinheiro para investir.', 'calendar', 'Avalie meus compromissos futuros antes de eu reservar dinheiro para investimentos.'), intelligenceExampleCard(app, 'budgets', 'Limites mais inteligentes', 'Compare o comportamento das categorias antes de alterar seu orçamento.', 'pie', 'Ajude-me a elaborar limites inteligentes para o próximo mês.'), intelligenceExampleCard(app, 'reserve', 'Reserva e liquidez', 'Entenda a diferença entre saldo disponível e dinheiro realmente livre.', 'shield', 'Como calcular o dinheiro realmente livre para poupar ou investir?')), h('div', { className: 'mf-ai-explainer' }, h(Icon, { name: 'shield', size: 19 }), h('div', {}, h('strong', {}, 'Insights econômicos por padrão'), h('p', {}, 'Na integração definitiva, alertas matemáticos virão do motor financeiro; o GPT-6.1 Sol será acionado apenas quando você solicitar explicação ou análise.'))));
-    if (tab === 'today' && ((_b = s.localFinancialAccess) === null || _b === void 0 ? void 0 : _b.token) && typeof renderLocalFinancialRadar === 'function')
-        section = renderLocalFinancialRadar(app);
+        section = renderIntelligencePremiumToday(app);
     if (tab === 'chat')
-        section = h('div', { className: 'mf-ai-workbench' }, renderIntelligenceHistorySidebar(app), h('div', { className: 'mf-ai-chat-main mf-ai-workbench-main' }, h('div', { className: 'mf-ai-workbench-header' }, h('div', { className: 'mf-ai-chat-hero' }, h('span', { className: 'mf-ai-orb' }, h(Icon, { name: 'spark', size: 25 })), h('h2', {}, 'Central de conversação financeira'), h('p', {}, s.categoryReviewGrant ? 'Conversa temporária compartilhada com o chat lateral. Prévia e confirmação continuam disponíveis na Central.' : 'Histórico compartilhado com o chat lateral, salvo localmente quando disponível. Não cole credenciais.')), h('div', { className: 'mf-ai-workbench-badges' }, h('span', { className: 'mf-ai-conn-pill ' + convState.css }, convState.pill), h('span', { className: 'mf-ai-scope-badge' }, 'Contexto: ' + activeScope.label + ' · ' + activeScope.period))), s.intelligenceDraftScope ? h('div', { className: 'mf-ai-context-meta' }, h('span', {}, 'Rascunho de ' + s.intelligenceDraftScope.label), h('span', {}, s.intelligenceDraftScope.period)) : null, s.intelligencePreparedQuestion ? h('div', { className: 'mf-ai-prepared', role: 'status' }, h('span', { className: 'micro-label' }, 'PERGUNTA PREPARADA · NÃO ENVIADA'), h('p', {}, s.intelligencePreparedQuestion), h('small', {}, 'Este rascunho não é enviado ao Sol. Use os casos fictícios autorizados abaixo; nenhuma chamada ocorreu aqui.')) : null, messages.length === 0 ? h('div', { className: 'mf-ai-empty-thread' }, h('h3', {}, 'Comece uma análise ou prepare uma categorização supervisionada'), h('p', {}, 'Suas conversas ficam organizadas por data na coluna à esquerda e continuam disponíveis ao alternar para o chat lateral em qualquer uma das oito áreas.'), h('div', { className: 'mf-ai-starter-grid' }, ['Categorize minha compra do mercado como Alimentação.', 'Mostre um resumo estruturado das minhas movimentações carregadas.', 'Como construir uma reserva de emergência?', 'Quando faz sentido antecipar uma dívida?'].map((q, i) => h('button', { type: 'button', className: 'mf-ai-context-prompt', key: i, onClick: () => intelligenceSubmitQuestion(app, q) }, h('span', {}, q), h(Icon, { name: 'arrow', size: 14 }))))) :
+        section = h('div', { className: 'mf-ai-workbench' }, renderIntelligenceHistorySidebar(app), h('div', { className: 'mf-ai-chat-main mf-ai-workbench-main' }, h('div', { className: 'mf-ai-workbench-header' }, h('div', { className: 'mf-ai-chat-hero' }, h('span', { className: 'mf-ai-orb' }, h(Icon, { name: 'spark', size: 25 })), h('h2', {}, 'Central de conversação financeira'), h('p', {}, s.categoryReviewGrant ? 'Conversa temporária compartilhada com o chat lateral. Prévia e confirmação continuam disponíveis na Central.' : 'Histórico compartilhado com o chat lateral, salvo localmente quando disponível. Não cole credenciais.')), h('div', { className: 'mf-ai-workbench-badges' }, h('span', { className: 'mf-ai-conn-pill ' + convState.css }, ((_b = s.localFinancialAccess) === null || _b === void 0 ? void 0 : _b.token) ? 'Leitura local autorizada' : convState.pill), h('span', { className: 'mf-ai-scope-badge' }, 'Contexto: ' + activeScope.label + ' · ' + activeScope.period))), s.intelligenceDraftScope ? h('div', { className: 'mf-ai-context-meta' }, h('span', {}, 'Rascunho de ' + s.intelligenceDraftScope.label), h('span', {}, s.intelligenceDraftScope.period)) : null, s.intelligencePreparedQuestion ? h('div', { className: 'mf-ai-prepared', role: 'status' }, h('span', { className: 'micro-label' }, 'PERGUNTA PREPARADA · NÃO ENVIADA'), h('p', {}, s.intelligencePreparedQuestion), h('small', {}, 'Este rascunho não é enviado ao Sol. Use os casos fictícios autorizados abaixo; nenhuma chamada ocorreu aqui.')) : null, messages.length === 0 ? h('div', { className: 'mf-ai-empty-thread' }, h('h3', {}, 'Comece uma análise ou prepare uma categorização supervisionada'), h('p', {}, 'Suas conversas ficam organizadas por data na coluna à esquerda e continuam disponíveis ao alternar para o chat lateral em qualquer uma das oito áreas.'), h('div', { className: 'mf-ai-starter-grid' }, ['Quais foram meus maiores gastos deste mês?', 'Compare minhas despesas com o mês anterior.', 'Quais orçamentos merecem atenção?', 'Quais compromissos tenho para o próximo mês?'].map((q, i) => h('button', { type: 'button', className: 'mf-ai-context-prompt', key: i, onClick: () => intelligenceSubmitQuestion(app, q) }, h('span', {}, q), h(Icon, { name: 'arrow', size: 14 }))))) :
             h('div', { className: 'mf-ai-thread', role: 'log', 'aria-live': 'polite' }, ...messages.map(m => renderIntelligenceMessageItem(app, m)), (s.aiBusy || s.localFinancialBusy) ? h('div', { className: 'mf-ai-msg is-assistant is-streaming', role: 'status' }, h('strong', {}, 'Assistente MF'), h('p', {}, 'Processando solicitação…')) : null), s.aiError ? h('p', { className: 'mf-ai-error', role: 'alert' }, s.aiError) : null, h('div', { className: 'mf-ai-composer' }, h('label', { className: 'mf-ai-composer-label', htmlFor: 'mf-ai-draft' }, 'Sua pergunta ou comando supervisionado'), h('textarea', { id: 'mf-ai-draft', value: s.intelligenceDraft || '', rows: 3, maxLength: 750, placeholder: 'Ex.: Categorize minha compra do mercado de ontem como Alimentação…', onChange: (e) => app.setState({ intelligenceDraft: e.target.value }), onKeyDown: (e) => { if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
                 if ((s.intelligenceDraft || '').trim())
@@ -2683,14 +2853,16 @@ function renderIntelligenceView(app) {
             h('div', { className: 'mf-ai-empty-actions' }, h('p', {}, 'Nenhuma proposta supervisionada pendente nesta conversa. Peça no chat, por exemplo: “Categorize minha compra do mercado como Alimentação”.')), [{ id: 'limits', title: 'Revisar limites de categorias', description: 'Compare médias, compromissos e uma margem de segurança.', question: 'Prepare uma proposta de limites por categoria para o próximo mês.' },
             { id: 'reserve', title: 'Planejar reserva de emergência', description: 'Estime um objetivo compatível com despesas essenciais e liquidez.', question: 'Como construir uma reserva de emergência considerando meus compromissos?' },
             { id: 'review', title: 'Revisar despesas recorrentes', description: 'Identifique cobranças repetidas antes de propor mudanças.', question: 'Como posso avaliar se meus gastos recorrentes precisam de revisão?' }].map((item) => h('div', { className: 'mf-ai-action-card', key: item.id }, h('div', { className: 'mf-ai-action-text' }, h('span', { className: 'mf-ai-status' }, 'Exemplo ilustrativo'), h('h3', {}, item.title), h('p', {}, item.description), s.intelligenceExpandedAction === item.id ? h('div', { className: 'mf-ai-action-detail' }, 'Na versão conectada, esta proposta mostrará dados utilizados, impacto esperado, validade da análise e ações de aceitar, editar ou rejeitar. Nada será aplicado automaticamente.') : null), h('div', { className: 'mf-ai-action-buttons' }, h('button', { type: 'button', className: 'ghost-button', onClick: () => app.setState({ intelligenceExpandedAction: s.intelligenceExpandedAction === item.id ? null : item.id }) }, s.intelligenceExpandedAction === item.id ? 'Recolher' : 'Ver detalhes'), h('button', { type: 'button', className: 'mf-ai-link', onClick: () => intelligencePrepare(app, item.question) }, 'Preparar análise', h(Icon, { name: 'arrow', size: 15 }))))));
-    return h('section', { className: 'section mf-intelligence-page', 'aria-label': 'Inteligência financeira' }, h('div', { className: 'mf-ai-intro' }, h('div', {}, h('span', { className: 'micro-label' }, 'INTELIGÊNCIA FINANCEIRA'), h('h2', {}, 'Seu espaço de análise e conversação'), h('p', {}, ((_d = s.localFinancialAccess) === null || _d === void 0 ? void 0 : _d.token) ? 'Hoje e chat consultam os registros autorizados; respostas somente nesta sessão.' : 'Hoje, conversa com histórico persistente e plano de ação supervisionado.')), h('span', { className: 'mf-ai-preview-label' }, h(Icon, { name: 'shield', size: 15 }), s.mode === 'demo' ? 'Prévia · dados fictícios' : 'Prévia · dados locais, sem inferência')), typeof renderLocalFinancialAccess === 'function' ? renderLocalFinancialAccess(app) : null, h('button', { type: 'button', className: 'outlined-action', onClick: () => void categoryReviewOpen(app) }, 'Central de revisão · categorização supervisionada'), s.categoryReviewPreview ? h('div', { className: 'mf-review-drawer-pending', role: 'status' }, h('p', {}, 'Uma prévia de categorização aguarda sua decisão.'), h('button', { type: 'button', className: 'primary-button', onClick: () => void categoryReviewOpen(app) }, 'Revisar prévia na Central')) : null, h('div', { className: 'mf-ai-tabbar', role: 'tablist', 'aria-label': 'Seções da Inteligência' }, tabs.map((item) => h('button', { type: 'button', key: item.id, role: 'tab', 'aria-selected': tab === item.id,
-        id: 'mf-ai-tab-' + item.id, 'aria-controls': 'mf-ai-section-' + item.id, tabIndex: tab === item.id ? 0 : -1, className: tab === item.id ? 'active' : '', onClick: () => app.setState({ intelligenceTab: item.id, categoryReviewOpen: false }), onKeyDown: (e) => { const next = intelligenceNextTab(item.id, e.key); if (next) {
+    return h('section', { className: 'section mf-intelligence-page', 'aria-label': 'Inteligência financeira' }, h('div', { className: 'mf-ai-intro' }, h('div', {}, h('span', { className: 'micro-label' }, 'INTELIGÊNCIA FINANCEIRA'), h('h2', {}, 'Seu centro de comando financeiro'), h('p', {}, ((_d = s.localFinancialAccess) === null || _d === void 0 ? void 0 : _d.token) ? 'Hoje e chat consultam os registros autorizados; respostas somente nesta sessão.' : 'Leitura sob autorização, explicações verificáveis e decisões supervisionadas.')), h('span', { className: 'mf-ai-preview-label' }, h(Icon, { name: 'shield', size: 15 }), s.mode === 'demo' ? 'Demonstração isolada' : ((_e = s.localFinancialAccess) === null || _e === void 0 ? void 0 : _e.token) ? 'Leitura local autorizada' : 'Sem consulta externa')), typeof renderLocalFinancialAccess === 'function' ? renderLocalFinancialAccess(app) : null, h('button', { type: 'button', className: 'outlined-action', onClick: () => void categoryReviewOpen(app) }, 'Central de revisão · categorização supervisionada'), s.categoryReviewPreview ? h('div', { className: 'mf-review-drawer-pending', role: 'status' }, h('p', {}, 'Uma prévia de categorização aguarda sua decisão.'), h('button', { type: 'button', className: 'primary-button', onClick: () => void categoryReviewOpen(app) }, 'Revisar prévia na Central')) : null, h('div', { className: 'mf-ai-tabbar', role: 'tablist', 'aria-label': 'Seções da Inteligência' }, tabs.map((item) => h('button', { type: 'button', key: item.id, role: 'tab', 'aria-selected': tab === item.id,
+        id: 'mf-ai-tab-' + item.id, 'aria-controls': 'mf-ai-section-' + item.id, tabIndex: tab === item.id ? 0 : -1, className: tab === item.id ? 'active' : '', onClick: () => app.setState({ intelligenceTab: item.id, categoryReviewOpen: false }, () => { if (item.id === 'today')
+            void intelligencePremiumLoad(app); }), onKeyDown: (e) => { const next = intelligenceNextTab(item.id, e.key); if (next) {
             e.preventDefault();
-            app.setState({ intelligenceTab: next, categoryReviewOpen: false }, () => { var _a; return (_a = document.getElementById('mf-ai-tab-' + next)) === null || _a === void 0 ? void 0 : _a.focus(); });
+            app.setState({ intelligenceTab: next, categoryReviewOpen: false }, () => { var _a; (_a = document.getElementById('mf-ai-tab-' + next)) === null || _a === void 0 ? void 0 : _a.focus(); if (next === 'today')
+                void intelligencePremiumLoad(app); });
         } } }, item.label))), h('div', { id: 'mf-ai-section-' + tab, role: 'tabpanel', 'aria-labelledby': 'mf-ai-tab-' + tab, tabIndex: 0 }, section), h('details', { className: 'mf-ai-lab-disclosure' }, h('summary', {}, h(Icon, { name: 'settings', size: 17 }), h('span', {}, 'Laboratório de Inteligência'), h('small', {}, 'Configurações técnicas, conexão OAuth, memória e contexto sintético')), renderIntelligenceConnection(app), renderIntelligencePrivacy(app), renderIntelligenceFinancialContext(app)));
 }
 function renderIntelligencePanel(app) {
-    var _a;
+    var _a, _b;
     if (!app.state.intelligencePanelOpen)
         return null;
     if (((_a = app.state.workIntelligenceDemo) === null || _a === void 0 ? void 0 : _a.enabled) && typeof renderWorkIntelligencePanel === 'function')
@@ -2706,7 +2878,7 @@ function renderIntelligencePanel(app) {
     const busy = Boolean(app.state.aiBusy || app.state.localFinancialBusy || app.state.intelligenceDrawerBusy);
     const draft = String(app.state.intelligenceDraft || '');
     return h('div', { className: 'mf-ai-backdrop', role: 'presentation', onMouseDown: (e) => { if (e.target === e.currentTarget)
-            app.setState({ intelligencePanelOpen: false }); } }, h('aside', { className: 'mf-ai-drawer mf-ai-drawer-compact', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Assistente contextual de ' + info.label }, h('div', { className: 'mf-ai-drawer-head' }, h('div', { className: 'mf-ai-drawer-title-wrap' }, h('div', { className: 'mf-ai-drawer-kicker-row' }, h('span', { className: 'micro-label' }, 'COPILOTO CONTEXTUAL'), h('span', { className: 'mf-ai-conn-pill ' + convState.css }, convState.pill)), h('h2', {}, info.label)), h('div', { className: 'mf-ai-drawer-head-actions' }, h('button', { type: 'button', className: 'ghost-button mf-ai-expand-btn', 'aria-label': 'Nova conversa', title: 'Iniciar nova conversa', onClick: () => intelligenceCreateThread(app) }, 'Nova'), h('button', { type: 'button', className: 'ghost-button mf-ai-expand-btn', 'aria-label': 'Expandir na aba Inteligência', title: 'Abrir na aba Inteligência mantendo a conversa ativa', onClick: () => intelligenceOpenFullChat(app) }, 'Expandir'), h('button', { type: 'button', className: 'close-button', 'aria-label': 'Fechar assistente', onClick: () => app.setState({ intelligencePanelOpen: false }) }, '×'))), h('div', { className: 'mf-ai-context-meta mf-ai-drawer-scope' }, h('span', {}, scope.label), h('span', {}, scope.period), h('span', {}, scope.mode), ...scope.filters.map((filter) => h('span', { key: filter }, filter)), threads.length > 1 ? h('select', { className: 'mf-ai-drawer-thread-select', 'aria-label': 'Alternar conversa ativa', value: activeThreadId, onChange: (e) => intelligenceSelectThread(app, e.target.value) }, ...threads.map((t) => h('option', { key: t.id, value: t.id }, t.title + ' (' + t.messages.length + ')'))) : null), typeof renderLocalFinancialAccess === 'function' ? renderLocalFinancialAccess(app) : null, app.state.categoryReviewPreview ? h('div', { className: 'mf-review-drawer-pending' }, h('p', {}, 'Uma prévia de categorização aguarda sua decisão.'), h('button', { type: 'button', className: 'primary-button', onClick: () => void categoryReviewOpen(app) }, 'Revisar prévia na Central')) : null, h('div', { className: 'mf-ai-drawer-body' }, messages.length === 0 ? h('div', { className: 'mf-ai-drawer-empty' }, h('p', { className: 'muted-desc' }, info.description), h('div', { className: 'mf-ai-drawer-suggestions', 'aria-label': 'Sugestões rápidas para ' + info.label }, ...info.questions.map((q, i) => h('button', { type: 'button', className: 'mf-ai-context-prompt', key: i, onClick: () => intelligenceSubmitQuestion(app, q) }, h('span', {}, q), h(Icon, { name: 'arrow', size: 15 }))))) :
+            app.setState({ intelligencePanelOpen: false }); } }, h('aside', { className: 'mf-ai-drawer mf-ai-drawer-compact', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Assistente contextual de ' + info.label }, h('div', { className: 'mf-ai-drawer-head' }, h('div', { className: 'mf-ai-drawer-title-wrap' }, h('div', { className: 'mf-ai-drawer-kicker-row' }, h('span', { className: 'micro-label' }, 'COPILOTO CONTEXTUAL'), h('span', { className: 'mf-ai-conn-pill ' + convState.css }, ((_b = app.state.localFinancialAccess) === null || _b === void 0 ? void 0 : _b.token) ? 'Leitura local autorizada' : convState.pill)), h('h2', {}, info.label)), h('div', { className: 'mf-ai-drawer-head-actions' }, h('button', { type: 'button', className: 'ghost-button mf-ai-expand-btn', 'aria-label': 'Nova conversa', title: 'Iniciar nova conversa', onClick: () => intelligenceCreateThread(app) }, 'Nova'), h('button', { type: 'button', className: 'ghost-button mf-ai-expand-btn', 'aria-label': 'Expandir na aba Inteligência', title: 'Abrir na aba Inteligência mantendo a conversa ativa', onClick: () => intelligenceOpenFullChat(app) }, 'Expandir'), h('button', { type: 'button', className: 'close-button', 'aria-label': 'Fechar assistente', onClick: () => app.setState({ intelligencePanelOpen: false }) }, '×'))), h('div', { className: 'mf-ai-context-meta mf-ai-drawer-scope' }, h('span', {}, scope.label), h('span', {}, scope.period), h('span', {}, scope.mode), ...scope.filters.map((filter) => h('span', { key: filter }, filter)), threads.length > 1 ? h('select', { className: 'mf-ai-drawer-thread-select', 'aria-label': 'Alternar conversa ativa', value: activeThreadId, onChange: (e) => intelligenceSelectThread(app, e.target.value) }, ...threads.map((t) => h('option', { key: t.id, value: t.id }, t.title + ' (' + t.messages.length + ')'))) : null), typeof renderLocalFinancialAccess === 'function' ? renderLocalFinancialAccess(app) : null, app.state.categoryReviewPreview ? h('div', { className: 'mf-review-drawer-pending' }, h('p', {}, 'Uma prévia de categorização aguarda sua decisão.'), h('button', { type: 'button', className: 'primary-button', onClick: () => void categoryReviewOpen(app) }, 'Revisar prévia na Central')) : null, h('div', { className: 'mf-ai-drawer-body' }, messages.length === 0 ? h('div', { className: 'mf-ai-drawer-empty' }, h('p', { className: 'muted-desc' }, info.description), h('div', { className: 'mf-ai-drawer-suggestions', 'aria-label': 'Sugestões rápidas para ' + info.label }, ...info.questions.map((q, i) => h('button', { type: 'button', className: 'mf-ai-context-prompt', key: i, onClick: () => intelligenceSubmitQuestion(app, q) }, h('span', {}, q), h(Icon, { name: 'arrow', size: 15 }))))) :
         h('div', { className: 'mf-ai-drawer-messages', role: 'log', 'aria-live': 'polite' }, ...messages.map(m => renderIntelligenceMessageItem(app, m)), busy ? h('div', { className: 'mf-ai-msg is-assistant is-streaming', role: 'status' }, h('strong', {}, 'Assistente MF'), h('p', {}, 'Processando solicitação no contexto de ' + scope.label + '…')) : null), app.state.intelligenceStorageError ? h('p', { className: 'mf-ai-error', role: 'alert' }, app.state.intelligenceStorageError) : null, app.state.aiError ? h('p', { className: 'mf-ai-error', role: 'alert' }, app.state.aiError) : null), h('form', { className: 'mf-ai-drawer-composer', onSubmit: (e) => { e.preventDefault(); if (draft.trim() && !busy)
             void intelligenceSubmitQuestion(app, draft); } }, h('label', { className: 'mf-ai-context-composer', htmlFor: 'mf-ai-drawer-input' }, h('span', { className: 'sr-only' }, 'Pergunta para o assistente'), h('textarea', { id: 'mf-ai-drawer-input', value: draft, rows: 2, maxLength: 750, disabled: busy, placeholder: 'Pergunte sobre ' + scope.label.toLowerCase() + ' ou prepare prévia de categoria…', onChange: (e) => app.setState({ intelligenceDraft: e.target.value }), onKeyDown: (e) => { if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
@@ -4198,7 +4370,8 @@ async function localFinancialEnable(app) {
             return;
         }
         const backup = ((_b = s.localFinancialAccess) === null || _b === void 0 ? void 0 : _b.backup) || { intelligenceThreads: s.intelligenceThreads, intelligenceMessages: s.intelligenceMessages, intelligenceActiveThreadId: s.intelligenceActiveThreadId, intelligenceHydratedMode: s.intelligenceHydratedMode };
-        app.setState({ localFinancialAccess: { ...grant, backup }, localFinancialBusy: false, localFinancialRadar: null, intelligenceThreads: [], intelligenceMessages: [], intelligenceActiveThreadId: null, intelligenceDraft: '', intelligencePreparedQuestion: '', workIntelligenceDemo: s.workIntelligenceDemo ? { ...s.workIntelligenceDemo, enabled: false } : undefined }, () => void localFinancialRadar(app));
+        app.setState({ localFinancialAccess: { ...grant, backup }, localFinancialBusy: false, localFinancialRadar: null, intelligenceThreads: [], intelligenceMessages: [], intelligenceActiveThreadId: null, intelligenceDraft: '', intelligencePreparedQuestion: '', workIntelligenceDemo: s.workIntelligenceDemo ? { ...s.workIntelligenceDemo, enabled: false } : undefined }, () => { void localFinancialRadar(app); if (typeof intelligencePremiumLoad === 'function')
+            void intelligencePremiumLoad(app); });
     }
     catch {
         app.setState({ localFinancialBusy: false, localFinancialError: 'Não foi possível autorizar a leitura local. Nenhum dado foi consultado por esta solicitação.' });
@@ -4208,7 +4381,8 @@ function localFinancialDisable(app) {
     var _a, _b;
     const access = app.state.localFinancialAccess;
     app.__localReadGeneration = (app.__localReadGeneration || 0) + 1;
-    app.setState({ ...access === null || access === void 0 ? void 0 : access.backup, localFinancialAccess: null, localFinancialRadar: null, localFinancialBusy: false, localFinancialError: '', intelligenceDraft: '' });
+    app.setState({ ...access === null || access === void 0 ? void 0 : access.backup, localFinancialAccess: null, localFinancialRadar: null, localFinancialBusy: false, localFinancialError: '', intelligenceDraft: '' }, () => { if (typeof intelligencePremiumLoad === 'function')
+        void intelligencePremiumLoad(app); });
     if (access === null || access === void 0 ? void 0 : access.token)
         void ((_b = (_a = localFinancialAPI()) === null || _a === void 0 ? void 0 : _a.localFinancialRevoke) === null || _b === void 0 ? void 0 : _b.call(_a, access.token).catch(() => app.setState({ localFinancialError: 'A interface encerrou a leitura. A autorização do processo expira em até 15 minutos.' })));
 }
@@ -4240,23 +4414,57 @@ async function localFinancialSubmit(app, question) {
     var _a;
     if (app.state.localFinancialBusy || !String(question || '').trim())
         return;
-    const access = app.state.localFinancialAccess, q = String(question).trim().slice(0, 750), scope = intelligencePageScope(app), messages = [...intelligenceHistoryList(app)];
-    const user = { id: 'local-u-' + Date.now(), role: 'user', text: q, status: 'sent', createdAt: intelligenceNowTime(), scopeLabel: scope.label, periodLabel: app.state.localFinancialMonth || app.state.month };
+    const access = app.state.localFinancialAccess;
+    const q = String(question).trim().slice(0, 700), scope = intelligencePageScope(app), messages = [...intelligenceHistoryList(app)];
+    const month = app.state.localFinancialMonth || app.state.month, signature = intelligencePremiumSignature(app);
+    const request = (app.__localChatRequest || 0) + 1;
+    app.__localChatRequest = request;
+    const user = { id: 'local-u-' + Date.now(), role: 'user', text: q, status: 'sent',
+        createdAt: intelligenceNowTime(), scopeLabel: scope.label, periodLabel: month };
     app.setState({ localFinancialBusy: true, intelligenceDraft: '' });
-    const parsed = localFinancialParse(q, app.state.categories);
-    let reply = null, error = '';
+    let reply = null, operational = null, error = '';
     try {
-        if (parsed)
-            reply = await localFinancialQuery(app, parsed);
-        else
-            error = 'Consulta ainda não reconhecida. Pergunte sobre alimentação, assinaturas, maiores despesas, orçamentos, compromissos, comparação ou revisão. Pedidos de alteração não são executados.';
+        const api = localFinancialAPI();
+        if (typeof (api === null || api === void 0 ? void 0 : api.intelligenceOperationalAsk) === 'function') {
+            operational = await api.intelligenceOperationalAsk({ token: access.token, month, question: q });
+            if ((operational === null || operational === void 0 ? void 0 : operational.contract) !== 'IC-v1/I-P0.2-read-only' || operational.readOnly !== true ||
+                operational.changesApplied !== false || operational.modelCalled !== false)
+                throw Error('Resposta operacional não verificada.');
+        }
+        else {
+            const parsed = localFinancialParse(q, app.state.categories);
+            if (parsed)
+                reply = await localFinancialQuery(app, parsed);
+            else
+                error = 'Consulta ainda não reconhecida. Comandos de escrita não são executados por esta consulta local.';
+        }
     }
     catch (e) {
-        error = String(e.message || 'Consulta local indisponível.').slice(0, 220);
+        error = String((e === null || e === void 0 ? void 0 : e.message) || 'Consulta local indisponível.').slice(0, 220);
     }
-    if (((_a = app.state.localFinancialAccess) === null || _a === void 0 ? void 0 : _a.token) !== (access === null || access === void 0 ? void 0 : access.token))
+    if (request !== app.__localChatRequest || ((_a = app.state.localFinancialAccess) === null || _a === void 0 ? void 0 : _a.token) !== (access === null || access === void 0 ? void 0 : access.token) ||
+        signature !== intelligencePremiumSignature(app)) {
+        if (request === app.__localChatRequest)
+            app.setState({ localFinancialBusy: false });
         return;
-    const answer = { id: 'local-a-' + Date.now(), role: 'assistant', text: (reply === null || reply === void 0 ? void 0 : reply.text) || error, status: reply ? 'done' : 'error', createdAt: intelligenceNowTime(), scopeLabel: scope.label, periodLabel: user.periodLabel, structuredCard: (reply === null || reply === void 0 ? void 0 : reply.card) || null, details: reply ? JSON.stringify(reply.references) : 'Sem alteração financeira nem envio externo.' };
+    }
+    const state = operational === null || operational === void 0 ? void 0 : operational.uiState;
+    const answerText = (operational === null || operational === void 0 ? void 0 : operational.answer) || (reply === null || reply === void 0 ? void 0 : reply.text) || error || 'Consulta indisponível.';
+    const finalStatus = operational ?
+        (state === 'ready' || state === 'empty' ? 'done' : state === 'unsupported' ? 'unsupported' : state === 'denied' || state === 'expired' ? 'unavailable' : 'error') :
+        reply ? 'done' : 'error';
+    const factsValid = operational && (state === 'ready' || state === 'empty');
+    const evidence = factsValid ? (operational.profile === 'synthetic' ? 'Ambiente sintético' : 'Fonte ' + (operational.source === 'bank' ? 'bancária' : 'manual')) +
+        ' · ' + intelligencePremiumCoverage(operational.coverage) + ' · ' + month : '';
+    const answer = {
+        id: 'local-a-' + Date.now(), role: 'assistant', text: answerText, status: finalStatus,
+        createdAt: intelligenceNowTime(), scopeLabel: scope.label, periodLabel: month,
+        structuredCard: factsValid && operational.card ? operational.card : (reply === null || reply === void 0 ? void 0 : reply.card) || null,
+        operationalActions: factsValid && Array.isArray(operational.actions) ? operational.actions : [],
+        operationalEvidence: evidence,
+        details: factsValid ? 'Consulta local determinística, sem IA externa. Não foi executada qualquer alteração.' :
+            reply ? JSON.stringify(reply.references) : 'Nenhuma alteração financeira nem envio externo.'
+    };
     intelligenceSyncThreadMessages(app, [...messages, user, answer], scope);
     app.setState({ localFinancialBusy: false });
 }
@@ -4264,7 +4472,8 @@ function renderLocalFinancialAccess(app) {
     const s = app.state, access = s.localFinancialAccess, active = (access === null || access === void 0 ? void 0 : access.token) && access.expiresAt > Date.now();
     if (s.categoryReviewGrant)
         return h('section', { className: 'mf-ai-explainer' }, h('div', {}, h('strong', {}, 'Revisão sintética autorizada · conversa temporária'), h('p', {}, 'Mensagens e prévias ficam apenas nesta sessão. Regras e decisões confirmadas são auditadas no SQLite de teste.'), h('button', { type: 'button', className: 'ghost-button', onClick: () => categoryReviewDisable(app) }, 'Encerrar revisão e limpar respostas da sessão')));
-    return h('section', { className: 'mf-ai-explainer mf-ai-local-access', 'aria-label': 'Permissão de leitura financeira local' }, h('div', {}, h('strong', {}, active ? 'Leitura local autorizada · sem IA externa' : 'Consultar seus registros locais'), h('p', {}, 'Ao autorizar, movimentos e limites da fonte escolhida serão lidos neste computador. Respostas ficam apenas na memória desta sessão. Consultas usam o mês e a fonte abaixo, sem herdar filtros da tabela.'), access ? h('p', {}, 'Fonte: ' + access.source + ' · perfil ' + access.profile + ' · autorização por até 15 minutos.') : null, h('div', { className: 'mf-ai-access-fields' }, !access ? h('label', { className: 'mf-ai-access-field' }, 'Fonte', h('select', { value: s.mode === 'demo' ? 'manual' : s.localFinancialSource || 'bank', disabled: s.mode === 'demo', onChange: (e) => app.setState({ localFinancialSource: e.target.value }) }, h('option', { value: 'bank' }, 'Contas conectadas'), h('option', { value: 'manual' }, 'Lançamentos manuais'))) : null, h('label', { className: 'mf-ai-access-field' }, 'Mês da consulta', h('input', { type: 'month', value: s.localFinancialMonth || s.month, onChange: (e) => app.setState({ localFinancialMonth: e.target.value, localFinancialRadar: null }) })), !access && s.mode !== 'demo' ? h('label', { className: 'mf-ai-access-planning' }, h('input', { type: 'checkbox', checked: s.localFinancialPlanning === true, onChange: (e) => app.setState({ localFinancialPlanning: e.target.checked }) }), h('span', {}, 'Permitir também leitura do Planejamento')) : null), h('div', { className: 'mf-ai-proposal-actions' }, h('button', { type: 'button', className: 'primary-button', disabled: s.localFinancialBusy, onClick: () => active ? void localFinancialRadar(app) : void localFinancialEnable(app) }, active ? 'Atualizar radar' : 'Autorizar leitura local'), access ? h('button', { type: 'button', className: 'ghost-button', onClick: () => localFinancialDisable(app) }, 'Encerrar leitura e limpar respostas da sessão') : null), s.localFinancialError ? h('p', { role: 'alert' }, s.localFinancialError) : null));
+    return h('section', { className: 'mf-ai-explainer mf-ai-local-access', 'aria-label': 'Permissão de leitura financeira local' }, h('div', {}, h('strong', {}, active ? 'Leitura local autorizada · sem IA externa' : 'Consultar seus registros locais'), h('p', {}, 'Ao autorizar, movimentos e limites da fonte escolhida serão lidos neste computador. Respostas ficam apenas na memória desta sessão. Consultas usam o mês e a fonte abaixo, sem herdar filtros da tabela.'), access ? h('p', {}, 'Fonte: ' + access.source + ' · perfil ' + access.profile + ' · autorização por até 15 minutos.') : null, h('div', { className: 'mf-ai-access-fields' }, !access ? h('label', { className: 'mf-ai-access-field' }, 'Fonte', h('select', { value: s.mode === 'demo' ? 'manual' : s.localFinancialSource || 'bank', disabled: s.mode === 'demo', onChange: (e) => app.setState({ localFinancialSource: e.target.value }) }, h('option', { value: 'bank' }, 'Contas conectadas'), h('option', { value: 'manual' }, 'Lançamentos manuais'))) : null, h('label', { className: 'mf-ai-access-field' }, 'Mês da consulta', h('input', { type: 'month', value: s.localFinancialMonth || s.month, onChange: (e) => app.setState({ localFinancialMonth: e.target.value, localFinancialRadar: null }, () => { if (typeof intelligencePremiumLoad === 'function')
+            void intelligencePremiumLoad(app); }) })), !access && s.mode !== 'demo' ? h('label', { className: 'mf-ai-access-planning' }, h('input', { type: 'checkbox', checked: s.localFinancialPlanning === true, onChange: (e) => app.setState({ localFinancialPlanning: e.target.checked }) }), h('span', {}, 'Permitir também leitura do Planejamento')) : null), h('div', { className: 'mf-ai-proposal-actions' }, h('button', { type: 'button', className: 'primary-button', disabled: s.localFinancialBusy, onClick: () => active ? (void localFinancialRadar(app), void intelligencePremiumLoad(app)) : void localFinancialEnable(app) }, active ? 'Atualizar radar' : 'Autorizar leitura local'), access ? h('button', { type: 'button', className: 'ghost-button', onClick: () => localFinancialDisable(app) }, 'Encerrar leitura e limpar respostas da sessão') : null), s.localFinancialError ? h('p', { role: 'alert' }, s.localFinancialError) : null));
 }
 function renderLocalFinancialRadar(app) {
     const report = app.state.localFinancialRadar;

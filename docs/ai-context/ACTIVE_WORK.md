@@ -1,5 +1,11 @@
 # Registro de frentes ativas e prevenção de conflitos
 
+## Fast Lane ativa — reserva de ownership (12/11/2026)
+
+**Coordenação documental aprovada; execução R/I ainda não iniciada nesta atualização.** Quadro [#49](https://github.com/JoaoVittorLi/meu-financeiro/issues/49); branch `coord/mf2-premium-intelligence-20261112`, base PR #48/810a2bc. Branch R `feat/mf2-premium-redesign-20261112` (UI/UX: `src/app.ts`, `src/intelligence-view.ts`, `src/intelligence-review.ts`, `app/*.css`) e branch I `feat/mf2-intelligence-operational-20261112` (serviços/IPC/FinanceDB, módulos novos `src/intelligence-operations*`). **Integrador** resolve o renderer gerado, tipos e documentação global. Leia [FAST_LANE](FAST_LANE_20261112.md), [contrato](INTELLIGENCE_UI_CONTRACT_V1.md) e [backlog](FAST_LANE_BACKLOG.md). Nenhum dos executores altera o contrato compartilhado diretamente. Q1 permanece Draft e isolada; não fazer push cruzado nem rebase automático.
+
+
+
 ## Q1 — homologação integrada autorizada em 12/11/2026
 
 **Entrega publicada no Draft #48:** código9e4b1a8,506 testes PASS, QA nativo/evidências e planos concluídos. [Handoff](Q1_WINDOWS_CANDIDATE.md). Sem trabalho concorrente pendente nesta sessão; build e escrita pessoal aguardam decisão específica do proprietário.
@@ -104,3 +110,6 @@ Branch `feat/mf2-work-intelligence-staging-20261112`, base PR #39 `ce8dd04`. Own
 ## Candidata #42 + #41 — 12/11/2026
 
 Branch integration/mf2-ai-summary-staging-20261112. Ownership limitado à candidata: resolução dos três conflitos, probe compatível, regressão e documentação/evidências. #39/#41/#42 preservados. Produto novo não desenvolvido. CURRENT_STATE e gates globais não promovidos; integração definitiva depende de revisão e QA gráfico autorizado.
+
+Integrador temporário: integration/mf2-q1-operational-premium-20261112; ownership main/recovery test, junção renderer, docs e evidências. R3 permanece com Redesign.
+

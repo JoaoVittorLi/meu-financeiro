@@ -1160,6 +1160,7 @@ class App extends React.Component<any,State>{
       showEntry:false,outcome:null,simBusy:false},()=>{
        if(pageChanged)document.scrollingElement?.scrollTo({top:0,left:0,behavior:'instant' as ScrollBehavior});
        if(enteringPlan)void this.refreshPlanning();
+       if(target==='intelligence'&&typeof intelligencePremiumLoad==='function')void intelligencePremiumLoad(this);
       });
    if(target==='intelligence'||target==='settings')void intelligenceRefresh(this);
    if(page==='settings'&&desktop?.backupStatus)void desktop.backupStatus().then(backupInfo=>this.setState({backupInfo})).catch(()=>{});
@@ -1547,7 +1548,7 @@ class App extends React.Component<any,State>{
            h('span',{className:'category-emoji-icon',style:{background:cat.color+'20',borderColor:cat.color+'70'}},cat.emoji||'✨'),h('b',{},cat.name),h('small',{className:'mf-category-kind-tag'},cat.kind==='income'?'Receita':cat.kind==='expense'?'Gasto':'Entrada ou saída'),cat.builtIn?h('small',{className:'muted'},'Padrão'):null,
            h('button',{className:'small-link',onClick:()=>this.setState({categoryEditor:{previousName:cat.name,name:cat.name,color:cat.color,emoji:cat.emoji||'✨',kind:cat.kind}})},'Editar'),
            !cat.builtIn?h('button',{className:'trash-button',title:'Excluir categoria sem uso',onClick:()=>this.deleteCategory(cat.name)},h(Icon,{name:'trash',size:16})):null))),
-         h('h3',{},e.previousName?'Editar categoria':'Criar categoria'),
+         h('h3',{id:'mf-category-editor-heading',tabIndex:-1},e.previousName?'Editar categoria':'Criar categoria'),
          this.field('Nome',h('input',{className:'form-control',value:e.name,maxLength:50,placeholder:'Ex.: Pets, Delivery, Estudos',disabled:!!(e.previousName&&categories.find(c=>c.name===e.previousName)?.builtIn),onChange:(v:any)=>this.setState({categoryEditor:{...e,name:v.target.value}})})),
          this.field('Tipo de categoria',h(StyledSelect,{value:e.kind,disabled:!!(e.previousName&&categories.find(c=>c.name===e.previousName)?.builtIn),options:[{value:'expense',label:'Gasto'},{value:'income',label:'Receita'},{value:'both',label:'Entrada ou saída'}],onChange:(kind:CategoryInfo['kind'])=>this.setState({categoryEditor:{...e,kind}})})),
          h('div',{className:'category-appearance'},

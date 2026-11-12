@@ -14,6 +14,7 @@ const {PREVIEW_ORIGIN,checkPreviewIdentity,testPreviewQuarantine}=require('./clo
 const {pairViaSystemBrowser,cancelBrowserPairing}=require('./cloud-system-browser.cjs');
 const {PlanningStore}=require('./planning.cjs');
 const {LocalFinancialIntelligence}=require('./financial-intelligence.cjs');
+const {IntelligenceOperational}=require('./intelligence-operational.cjs');
 const {CategoryReviewService}=require('./category-review.cjs');
 const {CategoryReviewBackupGate}=require('./category-review-backup.cjs');
 const {automaticBackup,restoreBackup,listAutoBackups,validateBackupFile}=require('./recovery.cjs');
@@ -179,6 +180,7 @@ app.whenReady().then(()=>{
  db=new FinanceDB(filename);
  planner=new PlanningStore(db);
  let localFinancial,categoryReview,reviewBackupGate;
+ let operationalIntelligence;
  function bindLocalFinancialServices(){
   // A restored/recovered database has a new handle. Never retain grants,
   // previews or a service pointing at the closed pre-restore connection.
@@ -186,6 +188,7 @@ app.whenReady().then(()=>{
   // No new review tables, grants or writes in a personal or packaged profile.
   categoryReview=smokeProfileActive?new CategoryReviewService(db,{syntheticProfile:true}):null;
   reviewBackupGate=categoryReview?new CategoryReviewBackupGate(categoryReview,path.join(app.getPath('userData'),'review-backups'),{syntheticProfile:true}):null;
+  operationalIntelligence=new IntelligenceOperational({localFinancial,categoryReview,db});
  }
  bindLocalFinancialServices();
  ipcMain.handle('finance:review-status',event=>{requireAppSender(event);return {available:!!categoryReview,syntheticOnly:true};});
@@ -200,6 +203,12 @@ app.whenReady().then(()=>{
  ipcMain.handle('finance:read-authorize',(event,input)=>{requireAppSender(event);return localFinancial.authorize(input,event.sender.id);});
  ipcMain.handle('finance:read-query',(event,input)=>{requireAppSender(event);return localFinancial.query(input,event.sender.id);});
  ipcMain.handle('finance:read-revoke',(event,token)=>{requireAppSender(event);return localFinancial.revoke(token,event.sender.id);});
+ ipcMain.handle('intelligence:operational-overview',(event,input)=>{
+  requireAppSender(event);return operationalIntelligence.overview(input,event.sender.id);
+ });
+ ipcMain.handle('intelligence:operational-ask',(event,input)=>{
+  requireAppSender(event);return operationalIntelligence.ask(input,event.sender.id);
+ });
  vault=new PluggyVault(app.getPath('userData'),safeStorage);
  const aiVault=new AIAuthVault(app.getPath('userData'),safeStorage);
  const aiAuth=new ChatGPTSignIn({vault:aiVault,openExternal:url=>shell.openExternal(url)});

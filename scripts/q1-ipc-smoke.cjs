@@ -9,7 +9,9 @@ async function run(){
  try{
   db=new FinanceDB(path.join(r.metadata.profile,'meu-financeiro.sqlite'));
   const call=(method,input)=>evaluate(r.cdp,'return await window.financeDesktop['+JSON.stringify(method)+']('+JSON.stringify(input)+')');
-  assert.equal((await call('categoryReviewStatus')).available,true);
+  assert.equal((await call('categoryReviewStatus')).available,true);  const access=await call('localFinancialAuthorize',{consent:'LOCAL_FINANCIAL_READ_V1',source:'bank',profile:'real',planning:true});
+  assert.equal((await call('intelligenceOperationalOverview',{token:access.token,month:'2026-11'})).cards.length,8);
+  assert.equal((await call('intelligenceOperationalAsk',{token:access.token,month:'2026-11',question:'Quanto gastei?'})).changesApplied,false);
   const g=await call('categoryReviewAuthorize',{consent:'SYNTHETIC_CATEGORY_REVIEW_V1'}),token=g.token;
   const prepare=(action,payload)=>call('categoryReviewPrepare',{token,action,payload});
   const confirm=p=>call('categoryReviewConfirm',{token,id:p.id,digest:p.digest,consent:'CONFIRM_CATEGORY_PREVIEW_V1'});
