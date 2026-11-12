@@ -1,0 +1,39 @@
+{
+  "theme": "dark",
+  "viewport": {
+    "width": 1920,
+    "height": 1080
+  },
+  "overflow": false,
+  "styles": [
+    {
+      "selector": ".u3-simulator .result-badge.unknown",
+      "borderLeftColor": "rgb(245, 188, 99)",
+      "warning": "#f5bc63",
+      "clientWidth": 891,
+      "scrollWidth": 891,
+      "position": "static",
+      "maxHeight": "none",
+      "animationDuration": "0.22s"
+    },
+    {
+      "selector": ".brand-text strong",
+      "borderLeftColor": "rgb(250, 250, 250)",
+      "warning": "#f5bc63",
+      "clientWidth": 108,
+      "scrollWidth": 108,
+      "position": "static",
+      "maxHeight": "none",
+      "animationDuration": "0s"
+    },
+    {
+      "selector": ".mf-review-sections",
+      "absent": true
+    },
+    {
+      "selector": ".mf-review-table-wrap",
+      "absent": true
+    }
+  ],
+  "sourceSHA": "810a2bcb7706584474dbd2900cec536ff53edda5"
+}

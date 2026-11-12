@@ -1,0 +1,132 @@
+{
+  "stage": "before-undo",
+  "integrity": [
+    {
+      "integrity_check": "ok"
+    }
+  ],
+  "labels": [
+    {
+      "external_id": "cafe-4",
+      "category": "Alimentação"
+    },
+    {
+      "external_id": "cafe-5",
+      "category": "Alimentação"
+    },
+    {
+      "external_id": "other-cafe",
+      "category": "Alimentação"
+    }
+  ],
+  "commands": [
+    {
+      "action": "classify",
+      "undo_state": "available",
+      "receipt": {
+        "id": "5aca7560-4317-412d-8a22-5441a379b41c",
+        "action": "classify",
+        "confirmedBy": "renderer:1",
+        "changesApplied": true,
+        "syntheticOnly": true,
+        "category": "Alimentação",
+        "changes": [
+          {
+            "key": {
+              "accountId": "33333333-3333-4333-8333-333333333333",
+              "externalId": "other-cafe"
+            },
+            "description": "CAFETERIA FLORESTA",
+            "date": "2026-11-10",
+            "amount": -2500,
+            "accountName": "Segunda conta · dados fictícios",
+            "beforeCategory": null,
+            "previousEffective": "Outros",
+            "beforeNotes": null,
+            "beforeLabel": null,
+            "afterFingerprint": "b482548ee0a5e5126ac95bfaf506dbab82f92912906afbe7c52d63b5458d3d6e"
+          }
+        ],
+        "digest": "03a0048a909e979700df427cf8692c4c52acb94a5230429001f6882ea81f64a1",
+        "backup": {
+          "id": "27180a3e-e60d-4f00-a85b-dda8f32e12b0",
+          "sha256": "1f1d5c254eb253103cbdc3348353698a90f9b56a5662894d8e85cc1c1b662476",
+          "bytes": 249856,
+          "verified": true
+        }
+      }
+    },
+    {
+      "action": "rule",
+      "undo_state": "available",
+      "receipt": {
+        "id": "85122957-1698-41d9-be85-63dc45f07c40",
+        "action": "rule",
+        "confirmedBy": "renderer:1",
+        "changesApplied": true,
+        "syntheticOnly": true,
+        "ruleId": 1,
+        "afterFingerprint": "94acc8147164bf73f0a14533047318bf71e3329c92c68ca6706535c416e10557",
+        "historicalChanges": 0,
+        "digest": "bfb96dd5c10bcdb92de49187317ce82fa1d03ad0cd465e820f8d0ae256f408c8",
+        "backup": {
+          "id": "b59913ad-7a0e-4e2f-963f-6a9dea832d24",
+          "sha256": "f3389871e6bbf40685c576c1b42bcaaecad6572d0d0da7ebda956719a7ac1bb2",
+          "bytes": 249856,
+          "verified": true
+        }
+      }
+    },
+    {
+      "action": "classify",
+      "undo_state": "available",
+      "receipt": {
+        "id": "130594db-c723-4e43-ae44-3dd7d284b382",
+        "action": "classify",
+        "confirmedBy": "renderer:1",
+        "changesApplied": true,
+        "syntheticOnly": true,
+        "category": "Alimentação",
+        "changes": [
+          {
+            "key": {
+              "accountId": "22222222-2222-4222-8222-222222222222",
+              "externalId": "cafe-4"
+            },
+            "description": "CAFETERIA FLORESTA",
+            "date": "2026-11-10",
+            "amount": -1890,
+            "accountName": "Conta de teste · dados fictícios",
+            "beforeCategory": null,
+            "previousEffective": "Outros",
+            "beforeNotes": null,
+            "beforeLabel": null,
+            "afterFingerprint": "cdc1e3a35fa1e3fac1ccc067a79ad05591be9342e65085c54b9732830f68dcb6"
+          },
+          {
+            "key": {
+              "accountId": "22222222-2222-4222-8222-222222222222",
+              "externalId": "cafe-5"
+            },
+            "description": "CAFETERIA FLORESTA",
+            "date": "2026-11-10",
+            "amount": -1890,
+            "accountName": "Conta de teste · dados fictícios",
+            "beforeCategory": null,
+            "previousEffective": "Outros",
+            "beforeNotes": null,
+            "beforeLabel": null,
+            "afterFingerprint": "6f11f0c7a327b35558060dfa07e25b65ff171a28e4e6e983724e67e9572491d4"
+          }
+        ],
+        "digest": "9116ccb065d46ea97ad44db4c5cea0d82ab332998f21ebd7b52bbfb4d8b2f311",
+        "backup": {
+          "id": "792398ab-c5fd-405a-91e9-c2d414c496fb",
+          "sha256": "8cc1bf5c19300af428711956b2e63cb6462105692e9dc2c0c833bf072e7cf5dc",
+          "bytes": 249856,
+          "verified": true
+        }
+      }
+    }
+  ]
+}

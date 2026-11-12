@@ -1,5 +1,15 @@
 # Handoff operacional — IA que vai assumir o Work "Meu Financeiro - Definitivo"
 
+## Entrega Q1 — 12/11/2026 (prevalece sobre o histórico abaixo)
+
+PR Draft [#48](https://github.com/JoaoVittorLi/meu-financeiro/pull/48), branch `qa/mf2-q1-integrated-windows-20261112`, base #47/d52df2a, já contém #46. Último código `9e4b1a8aa03ade64b9e5259d3834417d69bb0936`; HEAD posterior inclui documentação/evidências. Conferir SHA remoto antes de retomar. Checkout isolado `mf2-q1-windows-qa`; sem agentes concorrentes ou merge. U3 e banco pessoal preservados.
+
+506/506 Node/SQLite PASS; TypeScript, compilação, F08, ASAR, proveniência e IPC Electron real PASS. QA nativo com Computer Use: oito áreas, claro/escuro,1366×768 e1920×1080, operações/recibos/SQLite e reinícios. Corrigidos filtro stale, alcance da edição de regras, expansão do chat, recorte da marca, semântica do simulador e serviços presos ao SQLite fechado após restore. Backups antes das confirmações somente sintéticos. Limites: restore completo por contrato automatizado, diálogo GUI cancelado; Pluggy real, perfil pessoal e pacote instalado não homologados nesta missão.
+
+[Candidata e parâmetros CircleCI](Q1_WINDOWS_CANDIDATE.md) · [gates de escrita pessoal](Q1_PERSONAL_WRITE_GATES.md) · [evidências e antes/depois](evidence/2026-11-12-q1/README.md) · [log](logs/2026-11-12-Q1-INTEGRATED-QA.md).
+
+Próxima ação depende da decisão do proprietário: revisar #48 e autorizar um build Windows na branch indicada. Não acionar job pago, gerar/instalar EXE, migrar banco pessoal, liberar escrita pessoal, fazer merge ou deploy por inferência desta entrega. O override de perfil sintético não funciona em binário empacotado; primeiro smoke instalado exige VM/conta Windows separada.
+
 ## Situação
 
 Uma sessão Work anterior desenvolve o Meu Financeiro, mas sua área de trabalho e alterações ainda não publicadas **não foram inspecionadas diretamente por este Chat**. O GitHub é a única base verificada. Esta documentação é preparada especificamente para **outra IA assumir sem duplicar ou apagar o trabalho anterior**.

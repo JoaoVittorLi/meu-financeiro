@@ -1,0 +1,302 @@
+{
+  "stage": "final",
+  "integrity": [
+    {
+      "integrity_check": "ok"
+    }
+  ],
+  "labels": [
+    {
+      "external_id": "other-cafe",
+      "category": "Alimentação"
+    }
+  ],
+  "commands": [
+    {
+      "action": "classify",
+      "undo_state": "available",
+      "receipt": {
+        "id": "5aca7560-4317-412d-8a22-5441a379b41c",
+        "action": "classify",
+        "confirmedBy": "renderer:1",
+        "changesApplied": true,
+        "syntheticOnly": true,
+        "category": "Alimentação",
+        "changes": [
+          {
+            "key": {
+              "accountId": "33333333-3333-4333-8333-333333333333",
+              "externalId": "other-cafe"
+            },
+            "description": "CAFETERIA FLORESTA",
+            "date": "2026-11-10",
+            "amount": -2500,
+            "accountName": "Segunda conta · dados fictícios",
+            "beforeCategory": null,
+            "previousEffective": "Outros",
+            "beforeNotes": null,
+            "beforeLabel": null,
+            "afterFingerprint": "b482548ee0a5e5126ac95bfaf506dbab82f92912906afbe7c52d63b5458d3d6e"
+          }
+        ],
+        "digest": "03a0048a909e979700df427cf8692c4c52acb94a5230429001f6882ea81f64a1",
+        "backup": {
+          "id": "27180a3e-e60d-4f00-a85b-dda8f32e12b0",
+          "sha256": "1f1d5c254eb253103cbdc3348353698a90f9b56a5662894d8e85cc1c1b662476",
+          "bytes": 249856,
+          "verified": true
+        }
+      }
+    },
+    {
+      "action": "rule",
+      "undo_state": "available",
+      "receipt": {
+        "id": "85122957-1698-41d9-be85-63dc45f07c40",
+        "action": "rule",
+        "confirmedBy": "renderer:1",
+        "changesApplied": true,
+        "syntheticOnly": true,
+        "ruleId": 1,
+        "afterFingerprint": "94acc8147164bf73f0a14533047318bf71e3329c92c68ca6706535c416e10557",
+        "historicalChanges": 0,
+        "digest": "bfb96dd5c10bcdb92de49187317ce82fa1d03ad0cd465e820f8d0ae256f408c8",
+        "backup": {
+          "id": "b59913ad-7a0e-4e2f-963f-6a9dea832d24",
+          "sha256": "f3389871e6bbf40685c576c1b42bcaaecad6572d0d0da7ebda956719a7ac1bb2",
+          "bytes": 249856,
+          "verified": true
+        }
+      }
+    },
+    {
+      "action": "classify",
+      "undo_state": "undone",
+      "receipt": {
+        "id": "130594db-c723-4e43-ae44-3dd7d284b382",
+        "action": "classify",
+        "confirmedBy": "renderer:1",
+        "changesApplied": true,
+        "syntheticOnly": true,
+        "category": "Alimentação",
+        "changes": [
+          {
+            "key": {
+              "accountId": "22222222-2222-4222-8222-222222222222",
+              "externalId": "cafe-4"
+            },
+            "description": "CAFETERIA FLORESTA",
+            "date": "2026-11-10",
+            "amount": -1890,
+            "accountName": "Conta de teste · dados fictícios",
+            "beforeCategory": null,
+            "previousEffective": "Outros",
+            "beforeNotes": null,
+            "beforeLabel": null,
+            "afterFingerprint": "cdc1e3a35fa1e3fac1ccc067a79ad05591be9342e65085c54b9732830f68dcb6"
+          },
+          {
+            "key": {
+              "accountId": "22222222-2222-4222-8222-222222222222",
+              "externalId": "cafe-5"
+            },
+            "description": "CAFETERIA FLORESTA",
+            "date": "2026-11-10",
+            "amount": -1890,
+            "accountName": "Conta de teste · dados fictícios",
+            "beforeCategory": null,
+            "previousEffective": "Outros",
+            "beforeNotes": null,
+            "beforeLabel": null,
+            "afterFingerprint": "6f11f0c7a327b35558060dfa07e25b65ff171a28e4e6e983724e67e9572491d4"
+          }
+        ],
+        "digest": "9116ccb065d46ea97ad44db4c5cea0d82ab332998f21ebd7b52bbfb4d8b2f311",
+        "backup": {
+          "id": "792398ab-c5fd-405a-91e9-c2d414c496fb",
+          "sha256": "8cc1bf5c19300af428711956b2e63cb6462105692e9dc2c0c833bf072e7cf5dc",
+          "bytes": 249856,
+          "verified": true
+        }
+      }
+    },
+    {
+      "action": "undo",
+      "undo_state": "not_applicable",
+      "receipt": {
+        "id": "7b2a177e-31f9-4eaa-a39b-22b39d6aaac0",
+        "action": "undo",
+        "confirmedBy": "renderer:1",
+        "changesApplied": true,
+        "syntheticOnly": true,
+        "undone": "130594db-c723-4e43-ae44-3dd7d284b382",
+        "digest": "560e89ca5652103ffd2329d6d00aed96075e9d6a65b6a7688301a6d64ffff9f5",
+        "backup": {
+          "id": "126f3eff-9e76-454f-8d5f-377f6da75a4e",
+          "sha256": "4de5c240e0f4b3a24c17fa6fa8efd8f497c4e2335f632039b292c85158d04d88",
+          "bytes": 249856,
+          "verified": true
+        }
+      }
+    },
+    {
+      "action": "decision",
+      "undo_state": "not_applicable",
+      "receipt": {
+        "id": "e524466d-4ad3-40f3-8238-965cac0c6e3f",
+        "action": "decision",
+        "confirmedBy": "renderer:1",
+        "changesApplied": true,
+        "syntheticOnly": true,
+        "state": "deferred",
+        "financialChanges": 0,
+        "digest": "e74ad05d3ec04c0f0f29b8d79b45961c5e5fd3008783307c375e4b560b073759",
+        "backup": {
+          "id": "62852006-8717-4797-9ed6-4ea547802a00",
+          "sha256": "63ea9e09138e5a93fdd69c82936b64757f6058e4de8b779d74adc6d5b5d1d1be",
+          "bytes": 249856,
+          "verified": true
+        }
+      }
+    },
+    {
+      "action": "decision",
+      "undo_state": "not_applicable",
+      "receipt": {
+        "id": "b305acc2-d578-48c3-a0f1-c929a2d2d32a",
+        "action": "decision",
+        "confirmedBy": "renderer:1",
+        "changesApplied": true,
+        "syntheticOnly": true,
+        "state": "denied",
+        "financialChanges": 0,
+        "digest": "26f78c2f47f5c1f57f798472d32e09b7d8d4b02a47be383151f527f6fee2233a",
+        "backup": {
+          "id": "3f3a890f-d045-43e8-a009-3f350ecc39ca",
+          "sha256": "d25ac353d59560ecfc4f7472eec3e3cca1227cab8af036bac34982b6ce861cff",
+          "bytes": 249856,
+          "verified": true
+        }
+      }
+    },
+    {
+      "action": "manage-rule",
+      "undo_state": "not_applicable",
+      "receipt": {
+        "id": "a7e0682e-5327-4f23-9305-00c6d8ec5bfc",
+        "action": "manage-rule",
+        "confirmedBy": "renderer:1",
+        "changesApplied": true,
+        "syntheticOnly": true,
+        "ruleId": 1,
+        "change": "edit",
+        "affected": 0,
+        "digest": "5fd07bb9deb8660e8161f71d91365f797f144e41fa12ba883ecc589e72c59148",
+        "backup": {
+          "id": "ff433549-d653-4907-8865-888cbb03490f",
+          "sha256": "7f4fb1decc05fdb90cb996eaf10424f8deb73ed167bf5fac955b0708d27cf754",
+          "bytes": 258048,
+          "verified": true
+        }
+      }
+    },
+    {
+      "action": "manage-rule",
+      "undo_state": "not_applicable",
+      "receipt": {
+        "id": "7577502f-0ada-49ca-9a44-e8f247f42847",
+        "action": "manage-rule",
+        "confirmedBy": "renderer:1",
+        "changesApplied": true,
+        "syntheticOnly": true,
+        "ruleId": 1,
+        "change": "pause",
+        "affected": 0,
+        "digest": "26ff2a8eb192c3cc22a37915f1bff3abd6d7478a6af78fa9ef46570b84b4fee2",
+        "backup": {
+          "id": "e856e054-d9cc-4583-81b2-7a90c301f1f2",
+          "sha256": "0ab583de7a9c970013daa429c9300c0fdb2c2fef33c7a475034f443fb243e776",
+          "bytes": 258048,
+          "verified": true
+        }
+      }
+    },
+    {
+      "action": "manage-rule",
+      "undo_state": "not_applicable",
+      "receipt": {
+        "id": "47eaa964-64fb-4aae-a0e8-212907dc43c9",
+        "action": "manage-rule",
+        "confirmedBy": "renderer:1",
+        "changesApplied": true,
+        "syntheticOnly": true,
+        "ruleId": 1,
+        "change": "resume",
+        "affected": 0,
+        "digest": "3cab3963dad0f54002273e70cf5c8ae7a91b852ad62dc5c84fe63cce3ce052dc",
+        "backup": {
+          "id": "06694a1d-3799-4088-9ae7-13bebf3660b9",
+          "sha256": "1fe58a2851ba3ce82446c098b256dce0999eccd6d414961aed48e1ef16eadf65",
+          "bytes": 258048,
+          "verified": true
+        }
+      }
+    },
+    {
+      "action": "reviewed",
+      "undo_state": "available",
+      "receipt": {
+        "id": "c19bba4d-63c3-4876-ba97-37cf11bf78f2",
+        "action": "reviewed",
+        "confirmedBy": "renderer:1",
+        "changesApplied": true,
+        "syntheticOnly": true,
+        "category": null,
+        "changes": [
+          {
+            "key": {
+              "accountId": "22222222-2222-4222-8222-222222222222",
+              "externalId": "synthetic-bank"
+            },
+            "description": "SYNTHETIC BANK",
+            "date": "2026-11-10",
+            "amount": -1234,
+            "accountName": "Conta de teste · dados fictícios",
+            "beforeCategory": null,
+            "previousEffective": "Alimentação",
+            "beforeNotes": null,
+            "beforeLabel": null,
+            "afterFingerprint": "cddfa1c3b3034d79b119abfb16043a972adc2ef6199d62f7a4c4b71993ee3daf"
+          }
+        ],
+        "digest": "85a4e98f8929f3c09bdf345951bbf2efab91e46318cf80e580e47251b498a624",
+        "backup": {
+          "id": "6f9575cf-3b92-4a61-88f6-a8cf09a0e44f",
+          "sha256": "f4f21122d4f935101a801687b4f7e8e1e5ceaddcba809cb120a1c0245733e695",
+          "bytes": 258048,
+          "verified": true
+        }
+      }
+    },
+    {
+      "action": "decision",
+      "undo_state": "not_applicable",
+      "receipt": {
+        "id": "ebcbc7d4-e346-4cdd-a728-95372efdd01d",
+        "action": "decision",
+        "confirmedBy": "renderer:1",
+        "changesApplied": true,
+        "syntheticOnly": true,
+        "state": "deferred",
+        "financialChanges": 0,
+        "digest": "a0ee33c98496e8448ffa5f71c6eac2e439f141cef7691a314e1d6ccd6250e5bc",
+        "backup": {
+          "id": "318809d6-8e30-4c7f-9a19-f1516810c0b5",
+          "sha256": "dea9a47a233630d98eb0f71224df332951f20f926c584ad7fa1b91372edfa485",
+          "bytes": 258048,
+          "verified": true
+        }
+      }
+    }
+  ]
+}

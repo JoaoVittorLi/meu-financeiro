@@ -28,7 +28,7 @@ Primeira rodada após código: 499/499 Node/SQLite PASS, incluindo6 regressões 
 
 Arquivos reais em [pasta Q1](../evidence/2026-11-12-q1/). `captures.json` registra dimensões efetivas, tema e estágio; primeiras capturas pedidas1366×768 tinham767px e janela maximizada1920×1032: os metadados preservam o tamanho real. Não representam capturas1080. Imagens são JPEG nativos preservados, sem composição. Estágio inicial não representa SHA final; comparações finais serão identificadas explicitamente.
 
-## Pendências desta etapa
+## Rodadas de reteste
 
 Reteste810a2bc: edição mostra antes/depois, grava Transporte, pausa e reativa; revisão individual somente de estado confirmada. Expandir do drawer abre de fato o chat principal preservando frase, resposta e contexto. Temas claro/escuro em1366×768 e1920×1080 reais (F11 nativo para1080), oito áreas escuras verificadas. Normal→hover→retorno da despesa escura conserva vermelho. CSS computado do alerta unknown: borda rgb(245,188,99), igual warning; marca clientWidth=scrollWidth108. Sem overflow horizontal nessa viewport.
 
@@ -38,4 +38,10 @@ QA em f2d7381: classificação individual, regra futura, lote de2 (37,80), undo,
 
 Primeiro smoke IPC recusou corretamente o lote após introduzirmos evidência manual divergente (Alimentação/Transporte). Teste reorganizado: lote antes da divergência; depois exige recusa explícita por baixa confiança. Não relaxado o guard do produto.
 
-QA funcional da Central final, capturas claro/escuro, gates completos no commit, Draft PR e plano Windows. Nenhum CircleCI/EXE/instalador/deploy/merge executado.
+## Estado final — entrega Q1
+
+PR Draft [#48](https://github.com/JoaoVittorLi/meu-financeiro/pull/48). Código final `9e4b1a8aa03ade64b9e5259d3834417d69bb0936`: **506/506 Node/SQLite PASS**, TypeScript, compilação, F08, ASAR real, proveniência create/verify e IPC Electron real PASS. Último smoke nativo desse SHA reabriu o mesmo perfil, conferiu os dados e o tema persistido, alternou para claro e confirmou novo adiamento com recibo/backup verificado `ebcbc7d4-e346-4cdd-a728-95372efdd01d`. SQLite final tem somente o override individual autorizado de `other-cafe`; os dois overrides do lote continuam removidos após undo. Nenhum erro de renderer/preload registrado na última inicialização nativa. Aviso de assinatura antiga de console existiu na instrumentação inicial e foi corrigido antes dos retestes.
+
+Capturas preservadas e indexadas com tamanho real/tema/estágio/SHA. [Índice](../evidence/2026-11-12-q1/README.md) e [validação](../evidence/2026-11-12-q1/validation.json). Código do renderer/estilos do reteste810a2bc é idêntico ao9e4b1a8; este último acrescenta rebinding de recuperação e seus4 testes. Confirmação duplicada/stale/rollback e reimportações testadas via IPC/SQLite; não alegar cliques GUI que não foram feitos. Movimento reduzido preservado: animação da prévia continua restrita a `prefers-reduced-motion:no-preference`; navegação e foco por seção sem animação forçada. Teclado exercitado em seleção de categoria, tema e diálogos.
+
+[Plano Windows](../Q1_WINDOWS_CANDIDATE.md), [liberação pessoal gradual e gates](../Q1_PERSONAL_WRITE_GATES.md) e handoff atualizados. CURRENT_STATE global preservado para o integrador. Sem CircleCI pago, novo EXE/instalador, instalação, merge, deploy, migração ou escrita pessoal. Não houve teste Pluggy conectado nem acesso ao SQLite pessoal. Candidata pronta para revisão e decisão de build isolado; não equivale a release instalada homologada.

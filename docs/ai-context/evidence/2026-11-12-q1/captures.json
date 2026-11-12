@@ -1,0 +1,675 @@
+[
+  {
+    "file": "1366-light-overview-before.jpg",
+    "width": 1366,
+    "height": 767,
+    "theme": "light",
+    "baseSHA": "d52df2adcef6d105dc92480714639dece7448985",
+    "stage": "Q1 initial native instrumentation",
+    "window": "Meu Financeiro | Seu dinheiro, mais inteligente"
+  },
+  {
+    "file": "1366-light-expense-normal-before.jpg",
+    "height": 767,
+    "width": 1366,
+    "theme": "light",
+    "baseSHA": "d52df2adcef6d105dc92480714639dece7448985",
+    "stage": "Q1 initial native instrumentation",
+    "window": "Meu Financeiro | Seu dinheiro, mais inteligente"
+  },
+  {
+    "file": "1366-light-expense-hover-before.jpg",
+    "height": 767,
+    "width": 1366,
+    "theme": "light",
+    "baseSHA": "d52df2adcef6d105dc92480714639dece7448985",
+    "stage": "Q1 initial native instrumentation",
+    "window": "Meu Financeiro | Seu dinheiro, mais inteligente"
+  },
+  {
+    "file": "1366-light-expense-return-before.jpg",
+    "height": 767,
+    "width": 1366,
+    "theme": "light",
+    "baseSHA": "d52df2adcef6d105dc92480714639dece7448985",
+    "stage": "Q1 initial native instrumentation",
+    "window": "Meu Financeiro | Seu dinheiro, mais inteligente"
+  },
+  {
+    "file": "1366-light-values-hidden.jpg",
+    "height": 767,
+    "width": 1366,
+    "theme": "light",
+    "baseSHA": "d52df2adcef6d105dc92480714639dece7448985",
+    "stage": "Q1 initial native instrumentation",
+    "window": "Meu Financeiro | Seu dinheiro, mais inteligente"
+  },
+  {
+    "file": "1366-light-movements.jpg",
+    "height": 767,
+    "width": 1366,
+    "theme": "light",
+    "baseSHA": "d52df2adcef6d105dc92480714639dece7448985",
+    "stage": "Q1 initial native instrumentation",
+    "window": "Meu Financeiro | Seu dinheiro, mais inteligente"
+  },
+  {
+    "file": "1366-light-movements-empty.jpg",
+    "height": 767,
+    "width": 1366,
+    "theme": "light",
+    "baseSHA": "d52df2adcef6d105dc92480714639dece7448985",
+    "stage": "Q1 initial native instrumentation",
+    "window": "Meu Financeiro | Seu dinheiro, mais inteligente"
+  },
+  {
+    "file": "1366-light-movement-filters.jpg",
+    "height": 767,
+    "width": 1366,
+    "theme": "light",
+    "baseSHA": "d52df2adcef6d105dc92480714639dece7448985",
+    "stage": "Q1 initial native instrumentation",
+    "window": "Meu Financeiro | Seu dinheiro, mais inteligente"
+  },
+  {
+    "file": "1366-light-new-entry-modal.jpg",
+    "height": 767,
+    "width": 1366,
+    "theme": "light",
+    "baseSHA": "d52df2adcef6d105dc92480714639dece7448985",
+    "stage": "Q1 initial native instrumentation",
+    "window": "Meu Financeiro | Seu dinheiro, mais inteligente"
+  },
+  {
+    "file": "1366-light-entry-saved.jpg",
+    "height": 767,
+    "width": 1366,
+    "theme": "light",
+    "baseSHA": "d52df2adcef6d105dc92480714639dece7448985",
+    "stage": "Q1 initial native instrumentation",
+    "window": "Meu Financeiro | Seu dinheiro, mais inteligente"
+  },
+  {
+    "file": "1366-light-planning.jpg",
+    "height": 767,
+    "width": 1366,
+    "theme": "light",
+    "baseSHA": "d52df2adcef6d105dc92480714639dece7448985",
+    "stage": "Q1 initial native instrumentation",
+    "window": "Meu Financeiro | Seu dinheiro, mais inteligente"
+  },
+  {
+    "file": "1366-light-planning-editor.jpg",
+    "height": 767,
+    "width": 1366,
+    "theme": "light",
+    "baseSHA": "d52df2adcef6d105dc92480714639dece7448985",
+    "stage": "Q1 initial native instrumentation",
+    "window": "Meu Financeiro | Seu dinheiro, mais inteligente"
+  },
+  {
+    "file": "1366-light-planning-calendar.jpg",
+    "height": 767,
+    "width": 1366,
+    "theme": "light",
+    "baseSHA": "d52df2adcef6d105dc92480714639dece7448985",
+    "stage": "Q1 initial native instrumentation",
+    "window": "Meu Financeiro | Seu dinheiro, mais inteligente"
+  },
+  {
+    "file": "1920-native-light-planning-projection.jpg",
+    "height": 1032,
+    "width": 1920,
+    "theme": "light",
+    "baseSHA": "d52df2adcef6d105dc92480714639dece7448985",
+    "stage": "Q1 initial native instrumentation",
+    "window": "Meu Financeiro | Seu dinheiro, mais inteligente"
+  },
+  {
+    "file": "1920-native-light-budgets.jpg",
+    "height": 1032,
+    "width": 1920,
+    "theme": "light",
+    "baseSHA": "d52df2adcef6d105dc92480714639dece7448985",
+    "stage": "Q1 initial native instrumentation",
+    "window": "Meu Financeiro | Seu dinheiro, mais inteligente"
+  },
+  {
+    "file": "1920-native-light-b3.jpg",
+    "height": 1032,
+    "width": 1920,
+    "theme": "light",
+    "baseSHA": "d52df2adcef6d105dc92480714639dece7448985",
+    "stage": "Q1 initial native instrumentation",
+    "window": "Meu Financeiro | Seu dinheiro, mais inteligente"
+  },
+  {
+    "file": "1920-native-light-b3-exceeded.jpg",
+    "height": 1032,
+    "width": 1920,
+    "theme": "light",
+    "baseSHA": "d52df2adcef6d105dc92480714639dece7448985",
+    "stage": "Q1 initial native instrumentation",
+    "window": "Meu Financeiro | Seu dinheiro, mais inteligente"
+  },
+  {
+    "file": "1920-native-light-simulator.jpg",
+    "height": 1032,
+    "width": 1920,
+    "theme": "light",
+    "baseSHA": "d52df2adcef6d105dc92480714639dece7448985",
+    "stage": "Q1 initial native instrumentation",
+    "window": "Meu Financeiro | Seu dinheiro, mais inteligente"
+  },
+  {
+    "file": "1920-native-light-simulator-result.jpg",
+    "height": 1032,
+    "width": 1920,
+    "theme": "light",
+    "baseSHA": "d52df2adcef6d105dc92480714639dece7448985",
+    "stage": "Q1 initial native instrumentation",
+    "window": "Meu Financeiro | Seu dinheiro, mais inteligente"
+  },
+  {
+    "file": "1920-native-light-accounts.jpg",
+    "height": 1032,
+    "width": 1920,
+    "theme": "light",
+    "baseSHA": "d52df2adcef6d105dc92480714639dece7448985",
+    "stage": "Q1 initial native instrumentation",
+    "window": "Meu Financeiro | Seu dinheiro, mais inteligente"
+  },
+  {
+    "file": "1920-native-light-settings.jpg",
+    "height": 1032,
+    "width": 1920,
+    "theme": "light",
+    "baseSHA": "d52df2adcef6d105dc92480714639dece7448985",
+    "stage": "Q1 initial native instrumentation",
+    "window": "Meu Financeiro | Seu dinheiro, mais inteligente"
+  },
+  {
+    "file": "1920-native-light-recovery-settings.jpg",
+    "height": 1032,
+    "width": 1920,
+    "theme": "light",
+    "baseSHA": "d52df2adcef6d105dc92480714639dece7448985",
+    "stage": "Q1 initial native instrumentation",
+    "window": "Meu Financeiro | Seu dinheiro, mais inteligente"
+  },
+  {
+    "file": "1920-native-light-intelligence.jpg",
+    "height": 1032,
+    "width": 1920,
+    "theme": "light",
+    "baseSHA": "d52df2adcef6d105dc92480714639dece7448985",
+    "stage": "Q1 initial native instrumentation",
+    "window": "Meu Financeiro | Seu dinheiro, mais inteligente"
+  },
+  {
+    "file": "1920-native-light-review-before.jpg",
+    "height": 1032,
+    "width": 1920,
+    "theme": "light",
+    "baseSHA": "d52df2adcef6d105dc92480714639dece7448985",
+    "stage": "Q1 initial native instrumentation",
+    "window": "Meu Financeiro | Seu dinheiro, mais inteligente"
+  },
+  {
+    "file": "1920-native-light-review-queue-before.jpg",
+    "height": 1032,
+    "width": 1920,
+    "theme": "light",
+    "baseSHA": "d52df2adcef6d105dc92480714639dece7448985",
+    "stage": "Q1 initial native instrumentation",
+    "window": "Meu Financeiro | Seu dinheiro, mais inteligente"
+  },
+  {
+    "file": "1920-native-light-filter-stale-before.jpg",
+    "height": 1032,
+    "width": 1920,
+    "theme": "light",
+    "baseSHA": "d52df2adcef6d105dc92480714639dece7448985",
+    "stage": "Q1 initial native instrumentation",
+    "window": "Meu Financeiro | Seu dinheiro, mais inteligente"
+  },
+  {
+    "file": "1366-light-brand-after.jpg",
+    "height": 768,
+    "width": 1366,
+    "theme": "light",
+    "baseSHA": "d52df2adcef6d105dc92480714639dece7448985",
+    "stage": "Q1 initial native instrumentation",
+    "window": "Meu Financeiro | Seu dinheiro, mais inteligente"
+  },
+  {
+    "file": "1366-light-overview-final.jpg",
+    "height": 768,
+    "width": 1366,
+    "theme": "light",
+    "baseSHA": "d52df2adcef6d105dc92480714639dece7448985",
+    "stage": "Q1 committed code, native Computer Use",
+    "window": "Meu Financeiro | Seu dinheiro, mais inteligente",
+    "sourceSHA": "f2d7381b5ba268c46ed8774e5ed298e151e55767"
+  },
+  {
+    "file": "1366-light-review-final.jpg",
+    "height": 768,
+    "width": 1366,
+    "theme": "light",
+    "baseSHA": "d52df2adcef6d105dc92480714639dece7448985",
+    "stage": "Q1 committed code, native Computer Use",
+    "window": "Meu Financeiro | Seu dinheiro, mais inteligente",
+    "sourceSHA": "f2d7381b5ba268c46ed8774e5ed298e151e55767"
+  },
+  {
+    "file": "1366-light-filter-invalidated-after.jpg",
+    "height": 768,
+    "width": 1366,
+    "theme": "light",
+    "baseSHA": "d52df2adcef6d105dc92480714639dece7448985",
+    "stage": "Q1 committed code, native Computer Use",
+    "window": "Meu Financeiro | Seu dinheiro, mais inteligente",
+    "sourceSHA": "f2d7381b5ba268c46ed8774e5ed298e151e55767"
+  },
+  {
+    "file": "1366-light-account-filter-applied.jpg",
+    "height": 768,
+    "width": 1366,
+    "theme": "light",
+    "baseSHA": "d52df2adcef6d105dc92480714639dece7448985",
+    "stage": "Q1 committed code, native Computer Use",
+    "window": "Meu Financeiro | Seu dinheiro, mais inteligente",
+    "sourceSHA": "f2d7381b5ba268c46ed8774e5ed298e151e55767"
+  },
+  {
+    "file": "1366-light-individual-receipt.jpg",
+    "height": 768,
+    "width": 1366,
+    "theme": "light",
+    "baseSHA": "d52df2adcef6d105dc92480714639dece7448985",
+    "stage": "Q1 committed code, native Computer Use",
+    "window": "Meu Financeiro | Seu dinheiro, mais inteligente",
+    "sourceSHA": "f2d7381b5ba268c46ed8774e5ed298e151e55767"
+  },
+  {
+    "file": "1366-light-future-rule-preview.jpg",
+    "height": 768,
+    "width": 1366,
+    "theme": "light",
+    "baseSHA": "d52df2adcef6d105dc92480714639dece7448985",
+    "stage": "Q1 committed code, native Computer Use",
+    "window": "Meu Financeiro | Seu dinheiro, mais inteligente",
+    "sourceSHA": "f2d7381b5ba268c46ed8774e5ed298e151e55767"
+  },
+  {
+    "file": "1366-light-rule-receipt.jpg",
+    "height": 768,
+    "width": 1366,
+    "theme": "light",
+    "baseSHA": "d52df2adcef6d105dc92480714639dece7448985",
+    "stage": "Q1 committed code, native Computer Use",
+    "window": "Meu Financeiro | Seu dinheiro, mais inteligente",
+    "sourceSHA": "f2d7381b5ba268c46ed8774e5ed298e151e55767"
+  },
+  {
+    "file": "1366-light-batch-preview.jpg",
+    "height": 768,
+    "width": 1366,
+    "theme": "light",
+    "baseSHA": "d52df2adcef6d105dc92480714639dece7448985",
+    "stage": "Q1 committed code, native Computer Use",
+    "window": "Meu Financeiro | Seu dinheiro, mais inteligente",
+    "sourceSHA": "f2d7381b5ba268c46ed8774e5ed298e151e55767"
+  },
+  {
+    "file": "1920-light-review-final.jpg",
+    "height": 1080,
+    "width": 1920,
+    "theme": "light",
+    "baseSHA": "d52df2adcef6d105dc92480714639dece7448985",
+    "stage": "Q1 committed code, native Computer Use",
+    "window": "Meu Financeiro | Seu dinheiro, mais inteligente",
+    "sourceSHA": "f2d7381b5ba268c46ed8774e5ed298e151e55767"
+  },
+  {
+    "file": "1920-light-rule-edit-missing-details-before.jpg",
+    "height": 1080,
+    "width": 1920,
+    "theme": "light",
+    "baseSHA": "d52df2adcef6d105dc92480714639dece7448985",
+    "stage": "Q1 committed code, native Computer Use",
+    "window": "Meu Financeiro | Seu dinheiro, mais inteligente",
+    "sourceSHA": "f2d7381b5ba268c46ed8774e5ed298e151e55767"
+  },
+  {
+    "file": "1920-light-chat-review-request.jpg",
+    "height": 1080,
+    "width": 1920,
+    "theme": "light",
+    "baseSHA": "d52df2adcef6d105dc92480714639dece7448985",
+    "stage": "Q1 committed code, native Computer Use",
+    "window": "Meu Financeiro | Seu dinheiro, mais inteligente",
+    "sourceSHA": "f2d7381b5ba268c46ed8774e5ed298e151e55767"
+  },
+  {
+    "file": "1920-light-drawer-context.jpg",
+    "height": 1080,
+    "width": 1920,
+    "theme": "light",
+    "baseSHA": "d52df2adcef6d105dc92480714639dece7448985",
+    "stage": "Q1 committed code, native Computer Use",
+    "window": "Meu Financeiro | Seu dinheiro, mais inteligente",
+    "sourceSHA": "f2d7381b5ba268c46ed8774e5ed298e151e55767"
+  },
+  {
+    "file": "1920-light-chat-expanded-continuity.jpg",
+    "height": 1080,
+    "width": 1920,
+    "theme": "light",
+    "baseSHA": "d52df2adcef6d105dc92480714639dece7448985",
+    "stage": "Q1 committed code, native Computer Use",
+    "window": "Meu Financeiro | Seu dinheiro, mais inteligente",
+    "sourceSHA": "f2d7381b5ba268c46ed8774e5ed298e151e55767"
+  },
+  {
+    "file": "1366-light-review-restart-persistence.jpg",
+    "height": 768,
+    "width": 1366,
+    "theme": "light",
+    "baseSHA": "d52df2adcef6d105dc92480714639dece7448985",
+    "stage": "Q1 final code, native Computer Use",
+    "window": "Meu Financeiro | Seu dinheiro, mais inteligente",
+    "sourceSHA": "810a2bcb7706584474dbd2900cec536ff53edda5"
+  },
+  {
+    "file": "1366-light-rule-edit-details-after.jpg",
+    "height": 768,
+    "width": 1366,
+    "theme": "light",
+    "baseSHA": "d52df2adcef6d105dc92480714639dece7448985",
+    "stage": "Q1 final code, native Computer Use",
+    "window": "Meu Financeiro | Seu dinheiro, mais inteligente",
+    "sourceSHA": "810a2bcb7706584474dbd2900cec536ff53edda5"
+  },
+  {
+    "file": "1366-light-rule-paused.jpg",
+    "height": 768,
+    "width": 1366,
+    "theme": "light",
+    "baseSHA": "d52df2adcef6d105dc92480714639dece7448985",
+    "stage": "Q1 final code, native Computer Use",
+    "window": "Meu Financeiro | Seu dinheiro, mais inteligente",
+    "sourceSHA": "810a2bcb7706584474dbd2900cec536ff53edda5"
+  },
+  {
+    "file": "1366-light-chat-expansion-fixed.jpg",
+    "height": 768,
+    "width": 1366,
+    "theme": "light",
+    "baseSHA": "d52df2adcef6d105dc92480714639dece7448985",
+    "stage": "Q1 final code, native Computer Use",
+    "window": "Meu Financeiro | Seu dinheiro, mais inteligente",
+    "sourceSHA": "810a2bcb7706584474dbd2900cec536ff53edda5"
+  },
+  {
+    "file": "1366-light-chat-continuity-fixed.jpg",
+    "height": 768,
+    "width": 1366,
+    "theme": "light",
+    "baseSHA": "d52df2adcef6d105dc92480714639dece7448985",
+    "stage": "Q1 final code, native Computer Use",
+    "window": "Meu Financeiro | Seu dinheiro, mais inteligente",
+    "sourceSHA": "810a2bcb7706584474dbd2900cec536ff53edda5"
+  },
+  {
+    "file": "1366-dark-chat-final.jpg",
+    "height": 768,
+    "width": 1366,
+    "theme": "dark",
+    "baseSHA": "d52df2adcef6d105dc92480714639dece7448985",
+    "stage": "Q1 final code, native Computer Use",
+    "window": "Meu Financeiro | Seu dinheiro, mais inteligente",
+    "sourceSHA": "810a2bcb7706584474dbd2900cec536ff53edda5"
+  },
+  {
+    "file": "1366-dark-review-final.jpg",
+    "height": 768,
+    "width": 1366,
+    "theme": "dark",
+    "baseSHA": "d52df2adcef6d105dc92480714639dece7448985",
+    "stage": "Q1 final code, native Computer Use",
+    "window": "Meu Financeiro | Seu dinheiro, mais inteligente",
+    "sourceSHA": "810a2bcb7706584474dbd2900cec536ff53edda5"
+  },
+  {
+    "file": "1366-dark-review-queue-final.jpg",
+    "height": 768,
+    "width": 1366,
+    "theme": "dark",
+    "baseSHA": "d52df2adcef6d105dc92480714639dece7448985",
+    "stage": "Q1 final code, native Computer Use",
+    "window": "Meu Financeiro | Seu dinheiro, mais inteligente",
+    "sourceSHA": "810a2bcb7706584474dbd2900cec536ff53edda5"
+  },
+  {
+    "file": "1366-dark-review-second-page.jpg",
+    "height": 768,
+    "width": 1366,
+    "theme": "dark",
+    "baseSHA": "d52df2adcef6d105dc92480714639dece7448985",
+    "stage": "Q1 final code, native Computer Use",
+    "window": "Meu Financeiro | Seu dinheiro, mais inteligente",
+    "sourceSHA": "810a2bcb7706584474dbd2900cec536ff53edda5"
+  },
+  {
+    "file": "1920-dark-review-queue-final.jpg",
+    "height": 1080,
+    "width": 1920,
+    "theme": "dark",
+    "baseSHA": "d52df2adcef6d105dc92480714639dece7448985",
+    "stage": "Q1 final code, native Computer Use",
+    "window": "Meu Financeiro | Seu dinheiro, mais inteligente",
+    "sourceSHA": "810a2bcb7706584474dbd2900cec536ff53edda5"
+  },
+  {
+    "file": "1920-dark-overview-final.jpg",
+    "height": 1080,
+    "width": 1920,
+    "theme": "dark",
+    "baseSHA": "d52df2adcef6d105dc92480714639dece7448985",
+    "stage": "Q1 final code, native Computer Use",
+    "window": "Meu Financeiro | Seu dinheiro, mais inteligente",
+    "sourceSHA": "810a2bcb7706584474dbd2900cec536ff53edda5"
+  },
+  {
+    "file": "1920-dark-expense-normal.jpg",
+    "height": 1080,
+    "width": 1920,
+    "theme": "dark",
+    "baseSHA": "d52df2adcef6d105dc92480714639dece7448985",
+    "stage": "Q1 final code, native Computer Use",
+    "window": "Meu Financeiro | Seu dinheiro, mais inteligente",
+    "sourceSHA": "810a2bcb7706584474dbd2900cec536ff53edda5"
+  },
+  {
+    "file": "1920-dark-expense-hover.jpg",
+    "height": 1080,
+    "width": 1920,
+    "theme": "dark",
+    "baseSHA": "d52df2adcef6d105dc92480714639dece7448985",
+    "stage": "Q1 final code, native Computer Use",
+    "window": "Meu Financeiro | Seu dinheiro, mais inteligente",
+    "sourceSHA": "810a2bcb7706584474dbd2900cec536ff53edda5"
+  },
+  {
+    "file": "1920-dark-expense-return.jpg",
+    "height": 1080,
+    "width": 1920,
+    "theme": "dark",
+    "baseSHA": "d52df2adcef6d105dc92480714639dece7448985",
+    "stage": "Q1 final code, native Computer Use",
+    "window": "Meu Financeiro | Seu dinheiro, mais inteligente",
+    "sourceSHA": "810a2bcb7706584474dbd2900cec536ff53edda5"
+  },
+  {
+    "file": "1920-dark-movements-final.jpg",
+    "height": 1080,
+    "width": 1920,
+    "theme": "dark",
+    "baseSHA": "d52df2adcef6d105dc92480714639dece7448985",
+    "stage": "Q1 final code, native Computer Use",
+    "window": "Meu Financeiro | Seu dinheiro, mais inteligente",
+    "sourceSHA": "810a2bcb7706584474dbd2900cec536ff53edda5"
+  },
+  {
+    "file": "1920-dark-planning-final.jpg",
+    "height": 1080,
+    "width": 1920,
+    "theme": "dark",
+    "baseSHA": "d52df2adcef6d105dc92480714639dece7448985",
+    "stage": "Q1 final code, native Computer Use",
+    "window": "Meu Financeiro | Seu dinheiro, mais inteligente",
+    "sourceSHA": "810a2bcb7706584474dbd2900cec536ff53edda5"
+  },
+  {
+    "file": "1920-dark-planning-drawer.jpg",
+    "height": 1080,
+    "width": 1920,
+    "theme": "dark",
+    "baseSHA": "d52df2adcef6d105dc92480714639dece7448985",
+    "stage": "Q1 final code, native Computer Use",
+    "window": "Meu Financeiro | Seu dinheiro, mais inteligente",
+    "sourceSHA": "810a2bcb7706584474dbd2900cec536ff53edda5"
+  },
+  {
+    "file": "1920-dark-budgets-final.jpg",
+    "height": 1080,
+    "width": 1920,
+    "theme": "dark",
+    "baseSHA": "d52df2adcef6d105dc92480714639dece7448985",
+    "stage": "Q1 final code, native Computer Use",
+    "window": "Meu Financeiro | Seu dinheiro, mais inteligente",
+    "sourceSHA": "810a2bcb7706584474dbd2900cec536ff53edda5"
+  },
+  {
+    "file": "1920-dark-b3-exceeded-final.jpg",
+    "height": 1080,
+    "width": 1920,
+    "theme": "dark",
+    "baseSHA": "d52df2adcef6d105dc92480714639dece7448985",
+    "stage": "Q1 final code, native Computer Use",
+    "window": "Meu Financeiro | Seu dinheiro, mais inteligente",
+    "sourceSHA": "810a2bcb7706584474dbd2900cec536ff53edda5"
+  },
+  {
+    "file": "1920-dark-simulator-warning-after.jpg",
+    "height": 1080,
+    "width": 1920,
+    "theme": "dark",
+    "baseSHA": "d52df2adcef6d105dc92480714639dece7448985",
+    "stage": "Q1 final code, native Computer Use",
+    "window": "Meu Financeiro | Seu dinheiro, mais inteligente",
+    "sourceSHA": "810a2bcb7706584474dbd2900cec536ff53edda5"
+  },
+  {
+    "file": "1920-dark-accounts-final.jpg",
+    "height": 1080,
+    "width": 1920,
+    "theme": "dark",
+    "baseSHA": "d52df2adcef6d105dc92480714639dece7448985",
+    "stage": "Q1 final code, native Computer Use",
+    "window": "Meu Financeiro | Seu dinheiro, mais inteligente",
+    "sourceSHA": "810a2bcb7706584474dbd2900cec536ff53edda5"
+  },
+  {
+    "file": "1920-dark-account-to-movements.jpg",
+    "height": 1080,
+    "width": 1920,
+    "theme": "dark",
+    "baseSHA": "d52df2adcef6d105dc92480714639dece7448985",
+    "stage": "Q1 final code, native Computer Use",
+    "window": "Meu Financeiro | Seu dinheiro, mais inteligente",
+    "sourceSHA": "810a2bcb7706584474dbd2900cec536ff53edda5"
+  },
+  {
+    "file": "1920-dark-settings-final.jpg",
+    "height": 1080,
+    "width": 1920,
+    "theme": "dark",
+    "baseSHA": "d52df2adcef6d105dc92480714639dece7448985",
+    "stage": "Q1 final code, native Computer Use",
+    "window": "Meu Financeiro | Seu dinheiro, mais inteligente",
+    "sourceSHA": "810a2bcb7706584474dbd2900cec536ff53edda5"
+  },
+  {
+    "file": "1920-dark-recovery-settings.jpg",
+    "height": 1080,
+    "width": 1920,
+    "theme": "dark",
+    "baseSHA": "d52df2adcef6d105dc92480714639dece7448985",
+    "stage": "Q1 final code, native Computer Use",
+    "window": "Meu Financeiro | Seu dinheiro, mais inteligente",
+    "sourceSHA": "810a2bcb7706584474dbd2900cec536ff53edda5"
+  },
+  {
+    "file": "1920-dark-ui-backup-saved.jpg",
+    "height": 1080,
+    "width": 1920,
+    "theme": "dark",
+    "baseSHA": "d52df2adcef6d105dc92480714639dece7448985",
+    "stage": "Q1 final code, native Computer Use",
+    "window": "Meu Financeiro | Seu dinheiro, mais inteligente",
+    "sourceSHA": "810a2bcb7706584474dbd2900cec536ff53edda5"
+  },
+  {
+    "file": "1366-dark-final-sha-smoke.jpg",
+    "height": 768,
+    "width": 1366,
+    "theme": "dark",
+    "baseSHA": "d52df2adcef6d105dc92480714639dece7448985",
+    "stage": "Q1 final application code, native Computer Use",
+    "window": "Meu Financeiro | Seu dinheiro, mais inteligente",
+    "sourceSHA": "9e4b1a8aa03ade64b9e5259d3834417d69bb0936"
+  },
+  {
+    "file": "1920-dark-final-sha-smoke.jpg",
+    "height": 1080,
+    "width": 1920,
+    "theme": "dark",
+    "baseSHA": "d52df2adcef6d105dc92480714639dece7448985",
+    "stage": "Q1 final application code, native Computer Use",
+    "window": "Meu Financeiro | Seu dinheiro, mais inteligente",
+    "sourceSHA": "9e4b1a8aa03ade64b9e5259d3834417d69bb0936"
+  },
+  {
+    "file": "1920-light-final-sha-smoke.jpg",
+    "height": 1080,
+    "width": 1920,
+    "theme": "light",
+    "baseSHA": "d52df2adcef6d105dc92480714639dece7448985",
+    "stage": "Q1 final application code, native Computer Use",
+    "window": "Meu Financeiro | Seu dinheiro, mais inteligente",
+    "sourceSHA": "9e4b1a8aa03ade64b9e5259d3834417d69bb0936"
+  },
+  {
+    "file": "1920-light-central-final-sha.jpg",
+    "height": 1080,
+    "width": 1920,
+    "theme": "light",
+    "baseSHA": "d52df2adcef6d105dc92480714639dece7448985",
+    "stage": "Q1 final application code, native Computer Use",
+    "window": "Meu Financeiro | Seu dinheiro, mais inteligente",
+    "sourceSHA": "9e4b1a8aa03ade64b9e5259d3834417d69bb0936"
+  },
+  {
+    "file": "1920-light-final-sha-confirmation.jpg",
+    "height": 1080,
+    "width": 1920,
+    "theme": "light",
+    "baseSHA": "d52df2adcef6d105dc92480714639dece7448985",
+    "stage": "Q1 final application code, native Computer Use",
+    "window": "Meu Financeiro | Seu dinheiro, mais inteligente",
+    "sourceSHA": "9e4b1a8aa03ade64b9e5259d3834417d69bb0936"
+  }
+]
