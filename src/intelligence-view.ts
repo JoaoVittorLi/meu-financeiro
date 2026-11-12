@@ -235,7 +235,7 @@ function renderIntelligenceHistorySidebar(app:any){
             h('small',{},th.scopeLabel+' · '+th.updatedTime+' · '+th.messages.length+' msg')),
           h('button',{type:'button',className:'mf-ai-thread-delete','aria-label':'Excluir conversa '+th.title,title:'Excluir conversa',onClick:()=>intelligenceDeleteThread(app,th.id)},'×')))))),
     totalThreads>0?h('div',{className:'mf-ai-history-foot'},
-      h('button',{type:'button',className:'ghost-button full',onClick:()=>intelligenceClearHistory(app)},s.categoryReviewGrant?'Limpar conversa temporária':'Limpar histórico do perfil')):null);
+      h('button',{type:'button',className:'ghost-button full',onClick:()=>intelligenceClearHistory(app)},(s.categoryReviewGrant||s.localFinancialAccess?.token)?'Limpar conversa temporária':'Limpar histórico do perfil')):null);
 }
 
 /* R1 — Premium operational surface. PR #51 owns all financial facts and permission
@@ -436,6 +436,13 @@ function renderIntelligencePremiumToday(app:any){
      h('p',{},'Use “Atualizar visão” para carregar os contratos reais disponíveis nesta instalação.')):null);
 }
 
+function renderIntelligenceAccess(app:any){
+ if(typeof renderLocalFinancialAccess!=='function')return null;
+ const s=app.state,g=s.localFinancialAccess||s.categoryReviewGrant;
+ if(!g)return renderLocalFinancialAccess(app);
+ const expired=g.expiresAt<=Date.now();
+ return h('details',{className:'mf-chat-access',open:expired},h('summary',{},h(Icon,{name:'shield',size:15}),expired?'Permissão expirada · renovar':s.categoryReviewGrant?'Revisão sintética · gerenciar permissão':'Leitura local autorizada · fonte e período',h('small',{},s.localFinancialMonth||s.month)),renderLocalFinancialAccess(app));
+}
 function intelligenceChatSession(app:any){
  const s=app.state,g=s.localFinancialAccess||s.categoryReviewGrant;
  return {temporary:!!g,expired:!!g&&g.expiresAt<=Date.now(),busy:!!(s.aiBusy||s.localFinancialBusy||s.intelligenceDrawerBusy)};
@@ -522,7 +529,7 @@ function renderIntelligenceView(app:any){
         h('h2',{},'Seu centro de comando financeiro'),
         h('p',{},s.localFinancialAccess?.token?'Hoje e chat consultam os registros autorizados; respostas somente nesta sessão.':'Leitura sob autorização, explicações verificáveis e decisões supervisionadas.')),
       h('span',{className:'mf-ai-preview-label'},h(Icon,{name:'shield',size:15}),s.mode==='demo'?'Demonstração isolada':s.localFinancialAccess?.token?'Leitura local autorizada':'Sem consulta externa')),
-    typeof renderLocalFinancialAccess==='function'?renderLocalFinancialAccess(app):null,
+    renderIntelligenceAccess(app),
     h('button',{type:'button',className:'outlined-action',onClick:()=>void categoryReviewOpen(app)},'Central de revisão · categorização supervisionada'),
     s.categoryReviewPreview?h('div',{className:'mf-review-drawer-pending',role:'status'},h('p',{},'Uma prévia de categorização aguarda sua decisão.'),h('button',{type:'button',className:'primary-button',onClick:()=>void categoryReviewOpen(app)},'Revisar prévia na Central')):null,
     h('div',{className:'mf-ai-tabbar',role:'tablist','aria-label':'Seções da Inteligência'},
@@ -563,7 +570,7 @@ function renderIntelligencePanel(app:any){
         ...scope.filters.map((filter:string)=>h('span',{key:filter},filter)),
         threads.length>1?h('select',{className:'mf-ai-drawer-thread-select','aria-label':'Alternar conversa ativa',value:activeThreadId,onChange:(e:any)=>intelligenceSelectThread(app,e.target.value)},
           ...threads.map((t:IntelligenceThread)=>h('option',{key:t.id,value:t.id},t.title+' ('+t.messages.length+')'))):null),
-      typeof renderLocalFinancialAccess==='function'?renderLocalFinancialAccess(app):null,
+      renderIntelligenceAccess(app),
       app.state.categoryReviewPreview?h('div',{className:'mf-review-drawer-pending'},h('p',{},'Uma prévia de categorização aguarda sua decisão.'),h('button',{type:'button',className:'primary-button',onClick:()=>void categoryReviewOpen(app)},'Revisar prévia na Central')):null,
       h('div',{className:'mf-ai-drawer-body'},
         messages.length===0?h('div',{className:'mf-ai-drawer-empty'},

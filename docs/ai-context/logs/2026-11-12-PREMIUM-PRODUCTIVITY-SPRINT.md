@@ -4,3 +4,5 @@ Base #53/779cd31 conferida; I/c45a01c sem atualização nova. R3 reorganiza Cent
 R3 nativo concluído em aaa09e8: seleção, lote, prévia, confirmação, recibo e desfazer; negar e adiar com recibos. Evidências reais 1366 claro/escuro e 1920 escuro na pasta premium-sprint. Matriz complementar no checkpoint integrado. Próxima etapa R2.
 
 R2 implementado: composer único, fonte/privacidade de sessão corrigida, período por mensagem, follow-ups, layout responsivo de chat e proteção contra envio com grant expirado/IME/ocupado. Nenhum backend recriado.
+
+R4 código: editor de categorias extraído e compartilhado, modal contextual preserva lançamento/rascunho/filtros/seleção, sem aplicar overrides automaticamente. Troca de conta durante save não preenche classificação de outro contexto. Três novos testes com FinanceDB PASS; 16 testes existentes de classificação PASS. R2 refinado após Electron: permissão ativa recolhível para liberar espaço no drawer.
