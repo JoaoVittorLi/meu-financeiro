@@ -26,14 +26,14 @@ Windows local, Node **22.23.4**, npm **10.9.9**, lockfile via `npm ci --no-audit
 | Gate | Resultado |
 | --- | --- |
 | Baseline `npm run test:db` em 34750c9 | 459/459 PASS |
-| `npm run test:db` após implementação | 486/486 PASS, 0 skip |
+| `npm run test:db` após implementação | 489/489 PASS, 0 skip |
 | `npm run test:types` | PASS |
 | `npm run compile` | PASS, incluindo gerador canônico |
 | `node scripts/renderer-provenance.cjs check-bundle` | F08 PASS, 11 entradas |
 | `npm run test:asar` | 1/1 PASS |
-| Proveniência create/verify | Executar e associar ao commit limpo antes da publicação |
+| Proveniência create/verify | PASS no checkpoint 912a597; repetir no HEAD final limpo |
 
-27 testes novos: 23 de serviço/SQLite + 4 de callbacks/persistência de UI. Incluem futuro versus passado, reimportação, ambiguidades e confiança, decisões, regras pausadas/conflitos, splits/PENDING/transfer, manual, stale/duplicação, falha parcial e de auditoria, reversão, limite após o centésimo registro, 2.515 registros paginados, reopen e backup/restauração SQLite. Testes de componentes chamam o serviço de produção com SQLite; não são apresentados como Electron E2E.
+30 testes novos: 26 de serviço/SQLite + 4 de callbacks/persistência de UI. Incluem futuro versus passado, reimportação, ambiguidades e confiança, decisões, regras pausadas/conflitos, splits/PENDING/transfer, manual, stale/duplicação, falha parcial e de auditoria, reversão, limite após o centésimo registro, 2.515 registros paginados, reopen e backup/restauração SQLite. Testes de componentes chamam o serviço de produção com SQLite; não são apresentados como Electron E2E.
 
 ## Computer Use real — cobertura observada
 
@@ -48,6 +48,10 @@ Primeira tentativa de início com `windowsHide:true` não expôs janela. Diagnó
 Defeitos de UX observados e reservados para PR visual separado: mês/checkbox de leitura com alturas/alinhamento inconsistentes; ao navegar de Orçamentos rolado para Simular Compra, o título de destino ficou acima da área visível. Tema escuro e rodada visual final do refinamento serão registrados no PR visual.
 
 ## Limites e próximos gates
+
+### Reforço após o primeiro checkpoint #46
+
+O checkpoint inicial `912a597` tinha 486 testes. Revisão adicional identificou a necessidade de invalidar também **classificações históricas já executadas** quando a instituição altera descrição/valor/data/status/natureza. Proveniência agora vincula o override supervisionado ao conteúdo aprovado: `bankOverview` e agregados ignoram uma classificação desatualizada, a fila explica o motivo e permite nova decisão individual. Uma correção humana explícita remove essa proveniência, mesmo escolhendo a mesma categoria, e é preservada em importações e protegida contra desfazer posterior. Notas/estado de revisão não ressuscitam uma regra negada sem mudança de evidência relevante. Três regressões adicionais; **489/489 PASS** no estado final. O commit subsequente atualiza código, roadmap e o TAP desta entrega.
 
 Implementação conservadora não faz associação aproximada de comerciantes nem inferência generativa. A edição de sugestões mantém padrão exato/conta/natureza; categoria é editável, prioridade validada no contrato. Não entrega agentes de orçamento/planejamento/metas/assinaturas, detecção nova de duplicatas ou migração do histórico legado para cofre. Esses itens seguem posteriores à categorização e à homologação.
 

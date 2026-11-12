@@ -2,7 +2,7 @@
 // Application service over FinanceDB. Instantiated only for a validated disposable
 // Electron profile. No network, model, arbitrary SQL, or renderer-supplied paths.
 const {createHash,randomUUID}=require('node:crypto');
-const {normalizeLabel,matchRule,providerCategory}=require('./db.cjs');
+const {normalizeLabel,matchRule,providerCategory,categoryDecisionFingerprint,effectiveBankOverride}=require('./db.cjs');
 const READ_CONSENT='SYNTHETIC_CATEGORY_REVIEW_V1';
 const WRITE_CONSENT='CONFIRM_CATEGORY_PREVIEW_V1';
 const hash=value=>createHash('sha256').update(JSON.stringify(value)).digest('hex');
@@ -32,10 +32,11 @@ class CategoryReviewService{
     id TEXT PRIMARY KEY,owner INTEGER NOT NULL,action TEXT NOT NULL,
     applied_at TEXT NOT NULL,receipt TEXT NOT NULL,undo_state TEXT NOT NULL DEFAULT 'available');
    CREATE TABLE IF NOT EXISTS category_review_applied_labels (
-    account_id TEXT NOT NULL,external_id TEXT NOT NULL,fingerprint TEXT NOT NULL,
+    account_id TEXT NOT NULL,external_id TEXT NOT NULL,fingerprint TEXT NOT NULL,category TEXT,
     PRIMARY KEY(account_id,external_id),
     FOREIGN KEY(account_id,external_id) REFERENCES bank_transactions(account_id,external_id) ON DELETE CASCADE);
   `);
+  if(!this.sql.prepare('PRAGMA table_info(category_review_applied_labels)').all().some(c=>c.name==='category'))this.sql.exec('ALTER TABLE category_review_applied_labels ADD COLUMN category TEXT');
  }
  authorize(input,owner){
   if(input?.consent!==READ_CONSENT||!Number.isInteger(owner))throw Error('Confirme a leitura do perfil sintético.');
@@ -67,11 +68,12 @@ class CategoryReviewService{
    a.name AS accountName,a.item_id AS itemId,b.date,b.description,b.amount_cents AS amount,b.status,b.category AS bankCategory,
    o.category AS overrideCategory,n.nature AS savedNature,n.reviewed_at AS reviewedAt,n.account_id AS noteAccountId,n.note,n.merchant,
    EXISTS(SELECT 1 FROM bank_transaction_splits s WHERE s.account_id=b.account_id AND s.external_id=b.external_id) AS hasSplits,
-   l.manual_id AS linkedManualId
+   l.manual_id AS linkedManualId,d.fingerprint AS decisionFingerprint,d.category AS decisionCategory
    FROM bank_transactions b JOIN bank_accounts a USING(account_id)
    LEFT JOIN bank_category_overrides o USING(account_id,external_id)
    LEFT JOIN bank_transaction_notes n USING(account_id,external_id)
    LEFT JOIN bank_manual_links l USING(account_id,external_id)
+   LEFT JOIN category_review_applied_labels d USING(account_id,external_id)
    WHERE b.rowid>? AND (?='' OR b.account_id=?) AND (?='' OR b.date>=?) AND (?='' OR b.date<=?)
    ORDER BY b.rowid LIMIT ?`).all(after,accountId,accountId,start,start,end,end,limit).map(r=>({...r,
     nature:r.savedNature&&r.savedNature!=='auto'?r.savedNature:r.amount<0?'expense':'income'}));
@@ -84,10 +86,13 @@ class CategoryReviewService{
  }
  eligible(row){return row.status==='POSTED'&&['income','expense'].includes(row.nature)&&row.amount!==0&&!row.hasSplits&&!row.linkedManualId;}
  category(row,config=this.config()){
-  return row.overrideCategory||matchRule(row.description,'bank',config.rules,row)||providerCategory(row.bankCategory,new Set(config.categories.map(c=>c.name)));
+  const label=this.sql.prepare('SELECT fingerprint,category FROM category_review_applied_labels WHERE account_id=? AND external_id=?').get(row.accountId,row.externalId);
+  return effectiveBankOverride(row,label)||matchRule(row.description,'bank',config.rules,row)||providerCategory(row.bankCategory,new Set(config.categories.map(c=>c.name)));
  }
  publicRow(row,config=this.config()){
-  return {accountId:row.accountId,externalId:row.externalId,accountName:row.accountName,date:row.date,description:row.description,amount:row.amount,status:row.status,nature:row.nature,category:this.category(row,config),manual:!!row.overrideCategory,hasSplits:!!row.hasSplits,fingerprint:hash(row)};
+  const label=this.sql.prepare('SELECT fingerprint,category FROM category_review_applied_labels WHERE account_id=? AND external_id=?').get(row.accountId,row.externalId);
+  const supervisedOutdated=!!row.overrideCategory&&!effectiveBankOverride(row,label);
+  return {accountId:row.accountId,externalId:row.externalId,accountName:row.accountName,date:row.date,description:row.description,amount:row.amount,status:row.status,nature:row.nature,category:this.category(row,config),manual:!!row.overrideCategory&&!supervisedOutdated,supervisedOutdated,hasSplits:!!row.hasSplits,fingerprint:hash(row)};
  }
  suggestions(includeDecided=false){
   const config=this.config(),groups=new Map();
@@ -98,10 +103,10 @@ class CategoryReviewService{
    const g=groups.get(id);g.total++;
    // Learn exclusively from explicit human classifications, never own output.
    const ownLabel=this.sql.prepare('SELECT fingerprint FROM category_review_applied_labels WHERE account_id=? AND external_id=?').get(row.accountId,row.externalId);
-   if(row.overrideCategory&&normalizeLabel(row.overrideCategory)!=='OUTROS'&&ownLabel?.fingerprint!==hash(row)){
+   if(row.overrideCategory&&normalizeLabel(row.overrideCategory)!=='OUTROS'&&!ownLabel){
     g.votes.set(row.overrideCategory,(g.votes.get(row.overrideCategory)||0)+1);
     if(g.examples.length<3)g.examples.push(this.publicRow(row,config));
-    g.evidence.push([row.rowid,hash(row)]);
+    g.evidence.push([row.rowid,categoryDecisionFingerprint(row)]);
    }
   });
   const suggestions=[];
@@ -148,6 +153,7 @@ class CategoryReviewService{
      if(!row.reviewedAt)reasons.push('not_reviewed');
      if(same?.conflicts.length)reasons.push('inconsistent_pattern');
      if(row.hasSplits)reasons.push('split_individual_review');
+     if(this.publicRow(row,config).supervisedOutdated)reasons.push('outdated_classification');
     }
     // PENDING alone is never a categorization issue; never approve it in a batch.
     const confidence=same?.confidence||'none';
@@ -197,7 +203,8 @@ class CategoryReviewService{
    const rows=payload.items.map(k=>{const r=this.row(k);if(k.fingerprint!==hash(r))throw Error('Movimentação desatualizada. Atualize a revisão.');return r;});
    const suggested=this.suggestions(true).suggestions;
    for(const r of rows){
-    if(action==='classify'&&(!this.eligible(r)||r.overrideCategory))throw Error('Preserve classificação manual, splits, vínculos, PENDING e transfer/ignore. Revise individualmente em Movimentações.');
+    const staleOverride=this.publicRow(r,config).supervisedOutdated;
+    if(action==='classify'&&(!this.eligible(r)||(r.overrideCategory&&(!staleOverride||rows.length>1))))throw Error('Preserve classificação manual, splits, vínculos, PENDING e transfer/ignore. Revise individualmente em Movimentações.');
     if(action==='classify')this.validateCategory(payload.category,r.nature);
     const s=suggested.find(s=>s.accountId===r.accountId&&s.nature===r.nature&&s.pattern===normalizeLabel(r.description));
     if(rows.length>1&&s?.confidence==='low')throw Error('Baixa confiança exige revisão individual.');
@@ -268,9 +275,9 @@ class CategoryReviewService{
   }
   if(op.action==='decision'){this.decide(op.suggestion,op.state);return {...receipt,state:op.state,financialChanges:0};}
   if(op.action==='classify'||op.action==='reviewed'){
-   const changes=op.rows.map(r=>({key:{accountId:r.accountId,externalId:r.externalId},description:r.description,date:r.date,amount:r.amount,accountName:r.accountName,beforeCategory:r.overrideCategory,previousEffective:this.category(r,op.config),beforeNotes:r.noteAccountId?{nature:r.savedNature,reviewedAt:r.reviewedAt,note:r.note,merchant:r.merchant}:null,beforeLabel:this.sql.prepare('SELECT fingerprint FROM category_review_applied_labels WHERE account_id=? AND external_id=?').get(r.accountId,r.externalId)?.fingerprint||null}));
+   const changes=op.rows.map(r=>({key:{accountId:r.accountId,externalId:r.externalId},description:r.description,date:r.date,amount:r.amount,accountName:r.accountName,beforeCategory:r.overrideCategory,previousEffective:this.category(r,op.config),beforeNotes:r.noteAccountId?{nature:r.savedNature,reviewedAt:r.reviewedAt,note:r.note,merchant:r.merchant}:null,beforeLabel:this.sql.prepare('SELECT fingerprint,category FROM category_review_applied_labels WHERE account_id=? AND external_id=?').get(r.accountId,r.externalId)||null}));
    this.finance.batchBankChanges({items:changes.map(c=>c.key),...(op.action==='classify'?{category:op.category}:{}),reviewed:true},{inTransaction:true});
-   for(const c of changes){c.afterFingerprint=hash(this.row(c.key));if(op.action==='classify'||c.beforeLabel)this.sql.prepare('INSERT INTO category_review_applied_labels(account_id,external_id,fingerprint) VALUES(?,?,?) ON CONFLICT(account_id,external_id) DO UPDATE SET fingerprint=excluded.fingerprint').run(c.key.accountId,c.key.externalId,c.afterFingerprint);}
+   for(const c of changes){const current=this.row(c.key);if(op.action==='classify')this.sql.prepare('INSERT INTO category_review_applied_labels(account_id,external_id,fingerprint,category) VALUES(?,?,?,?) ON CONFLICT(account_id,external_id) DO UPDATE SET fingerprint=excluded.fingerprint,category=excluded.category').run(c.key.accountId,c.key.externalId,categoryDecisionFingerprint(current),op.category);c.afterFingerprint=hash(this.row(c.key));}
    return {...receipt,category:op.category,changes};
   }
   if(op.action==='manage-rule'){
@@ -286,7 +293,7 @@ class CategoryReviewService{
     else this.sql.prepare('DELETE FROM bank_category_overrides WHERE account_id=? AND external_id=?').run(c.key.accountId,c.key.externalId);
     if(c.beforeNotes)this.sql.prepare('UPDATE bank_transaction_notes SET nature=?,reviewed_at=?,note=?,merchant=? WHERE account_id=? AND external_id=?').run(c.beforeNotes.nature,c.beforeNotes.reviewedAt,c.beforeNotes.note,c.beforeNotes.merchant,c.key.accountId,c.key.externalId);
     else this.sql.prepare('DELETE FROM bank_transaction_notes WHERE account_id=? AND external_id=?').run(c.key.accountId,c.key.externalId);
-    if(c.beforeLabel)this.sql.prepare('INSERT INTO category_review_applied_labels(account_id,external_id,fingerprint) VALUES(?,?,?) ON CONFLICT(account_id,external_id) DO UPDATE SET fingerprint=excluded.fingerprint').run(c.key.accountId,c.key.externalId,c.beforeLabel);
+    if(c.beforeLabel)this.sql.prepare('INSERT INTO category_review_applied_labels(account_id,external_id,fingerprint,category) VALUES(?,?,?,?) ON CONFLICT(account_id,external_id) DO UPDATE SET fingerprint=excluded.fingerprint,category=excluded.category').run(c.key.accountId,c.key.externalId,c.beforeLabel.fingerprint,c.beforeLabel.category);
     else this.sql.prepare('DELETE FROM category_review_applied_labels WHERE account_id=? AND external_id=?').run(c.key.accountId,c.key.externalId);
    }
    this.sql.prepare("UPDATE category_review_commands SET undo_state='undone' WHERE id=?").run(op.commandId);

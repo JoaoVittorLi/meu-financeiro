@@ -83,7 +83,7 @@ function renderCategoryReviewPreview(app:any){
   h('div',{className:'mf-review-actions'},h('button',{type:'button',className:'primary-button',disabled:!app.state.categoryReviewConfirmed||app.state.categoryReviewBusy||p.expiresAt<=Date.now(),onClick:()=>void categoryReviewConfirm(app)},'Confirmar esta ação'),h('button',{type:'button',className:'ghost-button',disabled:app.state.categoryReviewBusy,onClick:()=>app.setState({categoryReviewPreview:null,categoryReviewConfirmed:false})},'Cancelar sem aplicar')));
 }
 function renderCategoryReviewRow(app:any,r:any,selected:any[],button:any){
- const reasons={generic_category:'Categoria genérica',not_reviewed:'Ainda não revisada',inconsistent_pattern:'Classificações divergentes',split_individual_review:'Possui divisão'};
+ const reasons={generic_category:'Categoria genérica',not_reviewed:'Ainda não revisada',inconsistent_pattern:'Classificações divergentes',split_individual_review:'Possui divisão',outdated_classification:'Classificação desatualizada após importação'};
  return h('tr',{key:categoryReviewKey(r)},
   h('td',{},h('input',{type:'checkbox','aria-label':'Selecionar '+r.description+' '+r.externalId,
    disabled:app.state.categoryReviewBusy||!r.batchEligible,checked:selected.some(x=>categoryReviewKey(x)===categoryReviewKey(r)),

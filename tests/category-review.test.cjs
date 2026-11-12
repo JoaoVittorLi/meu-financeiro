@@ -168,6 +168,28 @@ withFixture('invalid calendar dates, expired/revoked grants and tampered receipt
  assert.throws(()=>f.confirm({...p,digest:'0'.repeat(64)}),/inválida/);
  f.service.revoke({token:f.grant.token},1);assert.throws(()=>f.confirm(p),/Autorização/);
 });
+withFixture('reimport invalidates supervised historical labels but preserves a later explicit human override',f=>{
+ f.confirm(f.classify(['old']));assert.equal(f.db.bankOverview().transactions.find(t=>t.id==='old').category,'Alimentação');
+ f.ingest([tx('old',{description:'ESTABELECIMENTO DIFERENTE',amount:-99})]);
+ let row=f.db.bankOverview().transactions.find(t=>t.id==='old');assert.equal(row.category,'Outros');assert.equal(row.supervisedOutdated,true);
+ assert(f.service.queue({token:f.grant.token},1).rows.find(t=>t.externalId==='old').reasons.includes('outdated_classification'));
+ assert.equal(f.db.bankOverview().dailyTotals[0].categories.find(c=>c.name==='Alimentação').total,4500);
+ const resolved=f.confirm(f.classify(['old'],'Transporte'));assert.equal(f.db.bankOverview().transactions.find(t=>t.id==='old').category,'Transporte');
+ f.confirm(f.prepare('undo',{commandId:resolved.id}));assert.equal(f.db.bankOverview().transactions.find(t=>t.id==='old').category,'Outros');
+ f.db.overrideBankCategory({accountId:ACCOUNT,externalId:'old',category:'Alimentação'});
+ f.ingest([tx('old',{description:'OUTRA DESCRICAO',amount:-100})]);row=f.db.bankOverview().transactions.find(t=>t.id==='old');assert.equal(row.category,'Alimentação');assert.equal(row.supervisedOutdated,false);
+});
+withFixture('marking reviewed or editing a note does not resurrect a rejected pattern',f=>{
+ const s=f.list().suggestions[0];f.confirm(f.prepare('decision',{suggestionId:s.id,state:'denied'}));
+ f.confirm(f.prepare('reviewed',{items:[f.service.publicRow(f.service.row({accountId:ACCOUNT,externalId:'a'}))]}));
+ f.db.editBankTransaction({accountId:ACCOUNT,externalId:'b',nature:'auto',merchant:'Nome pessoal de teste',note:'Anotação nova',reviewed:true});
+ assert.equal(f.list().suggestions.length,0);
+});
+withFixture('a human reaffirmation of the same category protects it from supervised undo',f=>{
+ const receipt=f.confirm(f.classify(['old']));
+ f.db.overrideBankCategory({accountId:ACCOUNT,externalId:'old',category:'Alimentação'});
+ assert.throws(()=>f.prepare('undo',{commandId:receipt.id}),/Conflito/);
+});
 test('additive schema, reopen, real SQLite backup and restored rule behavior',async()=>{
  const directory=fs.mkdtempSync(path.join(os.tmpdir(),'mf-review-persistence-')),filename=path.join(directory,'source.sqlite'),backup=path.join(directory,'backup.sqlite');
  let f=fixture(filename);try{

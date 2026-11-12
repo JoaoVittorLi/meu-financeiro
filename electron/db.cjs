@@ -34,6 +34,13 @@ function categoryEmoji(emoji,existing='✨') {
 function normalizeLabel(value){
   return String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleUpperCase('pt-BR').replace(/\s+/g,' ').trim();
 }
+function categoryDecisionFingerprint(row){
+ const nature=row.nature&&row.nature!=='auto'?row.nature:row.amount<0?'expense':'income';
+ return require('node:crypto').createHash('sha256').update(JSON.stringify([row.accountId,row.externalId||row.id,row.date,row.description,row.amount,row.status,nature,row.overrideCategory])).digest('hex');
+}
+function effectiveBankOverride(row,label){
+ return label&&(!label.category||label.category===row.overrideCategory)&&label.fingerprint!==categoryDecisionFingerprint(row)?null:row.overrideCategory;
+}
 function categoryName(name){
   const value=String(name||'').trim();
   if(!value||value.length>50||/[\x00-\x1f<>]/.test(value))throw new Error('Informe uma categoria de até 50 caracteres.');
@@ -442,6 +449,9 @@ class FinanceDB {
      if(!this.db.prepare('SELECT 1 FROM categories WHERE name=?').get(name))throw new Error('Categoria inexistente.');
      this.db.prepare('INSERT INTO bank_category_overrides(account_id,external_id,category) VALUES(?,?,?) ON CONFLICT(account_id,external_id) DO UPDATE SET category=excluded.category').run(accountId,externalId,name);
    }
+   // An explicit human correction supersedes supervised provenance, including
+   // when the user deliberately chooses the same category again.
+   if(this.db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='category_review_applied_labels'").get())this.db.prepare('DELETE FROM category_review_applied_labels WHERE account_id=? AND external_id=?').run(accountId,externalId);
    return this.bankOverview();
  }
  // Importação de sugestões de categorias: validação estrita, idempotência e operação atômica.
@@ -523,6 +533,7 @@ class FinanceDB {
        this.getBankTransaction(key);
        if(category!==null)this.db.prepare(`INSERT INTO bank_category_overrides(account_id,external_id,category) VALUES(?,?,?)
          ON CONFLICT(account_id,external_id) DO UPDATE SET category=excluded.category`).run(key.accountId,key.externalId,category);
+       if(category!==null&&this.db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='category_review_applied_labels'").get())this.db.prepare('DELETE FROM category_review_applied_labels WHERE account_id=? AND external_id=?').run(key.accountId,key.externalId);
        if(typeof reviewed==='boolean'||nature!==null){
          this.db.prepare(`INSERT OR IGNORE INTO bank_transaction_notes(account_id,external_id) VALUES (?,?)`).run(key.accountId,key.externalId);
          if(typeof reviewed==='boolean')this.db.prepare('UPDATE bank_transaction_notes SET reviewed_at=? WHERE account_id=? AND external_id=?').run(reviewed?new Date().toISOString():null,key.accountId,key.externalId);
@@ -620,6 +631,7 @@ class FinanceDB {
   return this.bankOverview();
  }
  bankOverview(){
+   const reviewLabels=this.db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='category_review_applied_labels'").get()?new Map(this.db.prepare('SELECT * FROM category_review_applied_labels').all().map(r=>[JSON.stringify([r.account_id,r.external_id]),r])):new Map();
    const accounts=this.db.prepare(`SELECT account_id AS id,item_id AS itemId,name,subtype,currency,balance_cents AS balance,updated_at AS updatedAt FROM bank_accounts ORDER BY name`).all().map(x=>({...x}));
    const rules=this.listCategories().rules.filter(x=>x.enabled);
    const categoryInfo=this.listCategories().categories;
@@ -635,6 +647,8 @@ class FinanceDB {
      LEFT JOIN bank_transaction_notes n ON n.account_id=b.account_id AND n.external_id=b.external_id
      LEFT JOIN bank_manual_links l ON l.account_id=b.account_id AND l.external_id=b.external_id
      ORDER BY b.date DESC,b.external_id DESC LIMIT 2500`).all().map(x=>{
+       const originalOverride=x.overrideCategory;
+       x.overrideCategory=effectiveBankOverride(x,reviewLabels.get(JSON.stringify([x.accountId,x.id])));
        const fromRule=matchRule(x.description,'bank',rules,{accountId:x.accountId,rowid:x.rowid,status:x.status,nature:x.nature&&x.nature!=='auto'?x.nature:x.amount<0?'expense':'income',hasSplits:splitMap.has(x.accountId+'|'+x.id)});
        const category=x.overrideCategory||fromRule||providerCategory(x.bankCategory,categories);
        const categorySource=x.overrideCategory?'manual':fromRule?'rule':'bank';
@@ -642,7 +656,7 @@ class FinanceDB {
        const merchant=x.merchant||aliases.find(a=>normalizeLabel(x.description).includes(normalizeLabel(a.pattern)))?.displayName||'';
        const savedSplits=splitMap.get(x.accountId+'|'+x.id)||[];
        const splitOutdated=savedSplits.length>0&&savedSplits.reduce((sum,part)=>sum+part.amount,0)!==Math.abs(x.amount);
-       return {...safe,category,categorySource,merchant,note:x.note||'',nature:x.nature||'auto',reviewed:!!x.reviewedAt,
+       return {...safe,category,categorySource,supervisedOutdated:!!originalOverride&&!x.overrideCategory,merchant,note:x.note||'',nature:x.nature||'auto',reviewed:!!x.reviewedAt,
          splits:splitOutdated?[]:savedSplits,splitOutdated};
    });
    // Dashboard aggregates use the ENTIRE local bank history, never only the 2,500 visible rows.
@@ -654,6 +668,7 @@ class FinanceDB {
      WHERE b.status='POSTED' ORDER BY b.date`).all();
    const dayMap=new Map();
    for(const x of ledger){
+     x.overrideCategory=effectiveBankOverride(x,reviewLabels.get(JSON.stringify([x.accountId,x.externalId])));
      const nature=x.nature&&x.nature!=='auto'?x.nature:(x.amount>=0?'income':'expense');
      if(nature==='transfer'||nature==='ignore')continue;
      if(!dayMap.has(x.date))dayMap.set(x.date,{date:x.date,income:0,expense:0,categories:new Map(),incomeCategories:new Map()});
@@ -737,4 +752,4 @@ class FinanceDB {
  }
  close(){this.db.close();}
 }
-module.exports={FinanceDB, validate,matchRule,normalizeLabel,providerCategory,categoryEmoji,ALLOWED_EMOJIS};
+module.exports={FinanceDB, validate,matchRule,normalizeLabel,providerCategory,categoryDecisionFingerprint,effectiveBankOverride,categoryEmoji,ALLOWED_EMOJIS};
