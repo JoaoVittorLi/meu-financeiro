@@ -1716,13 +1716,19 @@ class App extends React.Component {
     navigate(page) {
         this.simRequest++;
         const target = page === 'review' || page === 'categories' ? 'transactions' : page === 'simulator' ? 'assistant' : page;
+        const pageChanged = target !== this.state.page;
         const span = dateSpan(this.state.overviewPeriod, this.state.customStart, this.state.customEnd);
         const newMonth = span.end.slice(0, 7), useMonth = newMonth >= nowYM && newMonth <= shiftMonth(nowYM, 12);
         const enteringPlan = target === 'planning' && this.state.page !== 'planning' && useMonth;
         this.setState({ page: target, txReviewOnly: page === 'review', txOrganize: page === 'categories', quickAddOpen: false, quickCategory: null,
             month: newMonth, ...(enteringPlan ? { planMonth: newMonth, planDay: newMonth === nowYM ? iso(new Date()) : newMonth + '-01' } : {}),
-            showEntry: false, outcome: null, simBusy: false }, () => { if (enteringPlan)
-            void this.refreshPlanning(); });
+            showEntry: false, outcome: null, simBusy: false }, () => {
+            var _a;
+            if (pageChanged)
+                (_a = document.scrollingElement) === null || _a === void 0 ? void 0 : _a.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+            if (enteringPlan)
+                void this.refreshPlanning();
+        });
         if (target === 'intelligence' || target === 'settings')
             void intelligenceRefresh(this);
         if (page === 'settings' && (desktop === null || desktop === void 0 ? void 0 : desktop.backupStatus))
@@ -4258,7 +4264,7 @@ function renderLocalFinancialAccess(app) {
     const s = app.state, access = s.localFinancialAccess, active = (access === null || access === void 0 ? void 0 : access.token) && access.expiresAt > Date.now();
     if (s.categoryReviewGrant)
         return h('section', { className: 'mf-ai-explainer' }, h('div', {}, h('strong', {}, 'Revisão sintética autorizada · conversa temporária'), h('p', {}, 'Mensagens e prévias ficam apenas nesta sessão. Regras e decisões confirmadas são auditadas no SQLite de teste.'), h('button', { type: 'button', className: 'ghost-button', onClick: () => categoryReviewDisable(app) }, 'Encerrar revisão e limpar respostas da sessão')));
-    return h('section', { className: 'mf-ai-explainer', 'aria-label': 'Permissão de leitura financeira local' }, h('div', {}, h('strong', {}, active ? 'Leitura local autorizada · sem IA externa' : 'Consultar seus registros locais'), h('p', {}, 'Ao autorizar, movimentos e limites da fonte escolhida serão lidos neste computador. Respostas ficam apenas na memória desta sessão. Consultas usam o mês e a fonte abaixo, sem herdar filtros da tabela.'), !access ? h('div', { className: 'mf-ai-finance-controls' }, h('label', {}, 'Fonte', h('select', { value: s.mode === 'demo' ? 'manual' : s.localFinancialSource || 'bank', disabled: s.mode === 'demo', onChange: (e) => app.setState({ localFinancialSource: e.target.value }) }, h('option', { value: 'bank' }, 'Contas conectadas'), h('option', { value: 'manual' }, 'Lançamentos manuais'))), s.mode !== 'demo' ? h('label', {}, h('input', { type: 'checkbox', checked: s.localFinancialPlanning === true, onChange: (e) => app.setState({ localFinancialPlanning: e.target.checked }) }), 'Permitir também leitura do Planejamento') : null) : h('p', {}, 'Fonte: ' + access.source + ' · perfil ' + access.profile + ' · autorização por até 15 minutos.'), h('label', {}, 'Mês da consulta', h('input', { type: 'month', value: s.localFinancialMonth || s.month, onChange: (e) => app.setState({ localFinancialMonth: e.target.value, localFinancialRadar: null }) })), h('div', { className: 'mf-ai-proposal-actions' }, h('button', { type: 'button', className: 'primary-button', disabled: s.localFinancialBusy, onClick: () => active ? void localFinancialRadar(app) : void localFinancialEnable(app) }, active ? 'Atualizar radar' : 'Autorizar leitura local'), access ? h('button', { type: 'button', className: 'ghost-button', onClick: () => localFinancialDisable(app) }, 'Encerrar leitura e limpar respostas da sessão') : null), s.localFinancialError ? h('p', { role: 'alert' }, s.localFinancialError) : null));
+    return h('section', { className: 'mf-ai-explainer mf-ai-local-access', 'aria-label': 'Permissão de leitura financeira local' }, h('div', {}, h('strong', {}, active ? 'Leitura local autorizada · sem IA externa' : 'Consultar seus registros locais'), h('p', {}, 'Ao autorizar, movimentos e limites da fonte escolhida serão lidos neste computador. Respostas ficam apenas na memória desta sessão. Consultas usam o mês e a fonte abaixo, sem herdar filtros da tabela.'), access ? h('p', {}, 'Fonte: ' + access.source + ' · perfil ' + access.profile + ' · autorização por até 15 minutos.') : null, h('div', { className: 'mf-ai-access-fields' }, !access ? h('label', { className: 'mf-ai-access-field' }, 'Fonte', h('select', { value: s.mode === 'demo' ? 'manual' : s.localFinancialSource || 'bank', disabled: s.mode === 'demo', onChange: (e) => app.setState({ localFinancialSource: e.target.value }) }, h('option', { value: 'bank' }, 'Contas conectadas'), h('option', { value: 'manual' }, 'Lançamentos manuais'))) : null, h('label', { className: 'mf-ai-access-field' }, 'Mês da consulta', h('input', { type: 'month', value: s.localFinancialMonth || s.month, onChange: (e) => app.setState({ localFinancialMonth: e.target.value, localFinancialRadar: null }) })), !access && s.mode !== 'demo' ? h('label', { className: 'mf-ai-access-planning' }, h('input', { type: 'checkbox', checked: s.localFinancialPlanning === true, onChange: (e) => app.setState({ localFinancialPlanning: e.target.checked }) }), h('span', {}, 'Permitir também leitura do Planejamento')) : null), h('div', { className: 'mf-ai-proposal-actions' }, h('button', { type: 'button', className: 'primary-button', disabled: s.localFinancialBusy, onClick: () => active ? void localFinancialRadar(app) : void localFinancialEnable(app) }, active ? 'Atualizar radar' : 'Autorizar leitura local'), access ? h('button', { type: 'button', className: 'ghost-button', onClick: () => localFinancialDisable(app) }, 'Encerrar leitura e limpar respostas da sessão') : null), s.localFinancialError ? h('p', { role: 'alert' }, s.localFinancialError) : null));
 }
 function renderLocalFinancialRadar(app) {
     const report = app.state.localFinancialRadar;
@@ -4293,7 +4299,7 @@ async function categoryReviewRefresh(app, after = 0) {
     app.setState({ categoryReviewReport: report, categoryReviewQueue: queue, categoryReviewCursor: after });
 }
 async function categoryReviewOpen(app) {
-    app.setState({ page: 'intelligence', intelligencePanelOpen: false, intelligenceTab: 'actions', categoryReviewOpen: true }, () => { var _a; return (_a = document.querySelector('.main-area')) === null || _a === void 0 ? void 0 : _a.scrollTo({ top: 0, behavior: 'instant' }); });
+    app.setState({ page: 'intelligence', intelligencePanelOpen: false, intelligenceTab: 'actions', categoryReviewOpen: true }, () => { var _a; return (_a = document.scrollingElement) === null || _a === void 0 ? void 0 : _a.scrollTo({ top: 0, behavior: 'instant' }); });
     await categoryReviewRun(app, async () => {
         var _a, _b;
         const status = await ((_b = (_a = categoryReviewAPI()) === null || _a === void 0 ? void 0 : _a.categoryReviewStatus) === null || _b === void 0 ? void 0 : _b.call(_a));

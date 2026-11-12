@@ -1327,6 +1327,29 @@
   gap: 12px;
 }
 
+/* Real Electron QA: align source/month and keep consent beside its checkbox.
+   Scoped to local access; other laboratory controls keep their own layout. */
+.mf-ai-local-access>div {width:100%;min-width:0}
+.mf-ai-local-access .mf-ai-access-fields {
+  display:grid;grid-template-columns:minmax(180px,240px) minmax(170px,220px) minmax(180px,1fr);
+  align-items:end;gap:16px;margin:16px 0;
+}
+.mf-ai-local-access .mf-ai-access-field {display:grid;gap:7px;min-width:0;font-size:12px;font-weight:550}
+.mf-ai-local-access .mf-ai-access-field :is(select,input) {
+  box-sizing:border-box;width:100%;min-width:0;min-height:42px;padding:9px 12px;
+  background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:9px;font:inherit;
+  color-scheme:light;
+}
+[data-theme="dark"] .mf-ai-local-access .mf-ai-access-field :is(select,input) {color-scheme:dark}
+.mf-ai-local-access .mf-ai-access-planning {display:flex;flex-direction:row;align-items:center;gap:10px;min-height:42px;line-height:1.5;font-size:12px;font-weight:450}
+.mf-ai-local-access .mf-ai-access-planning input {margin:0;width:17px;height:17px;flex:0 0 17px;accent-color:var(--green)}
+.mf-ai-local-access :is(input,select,button):focus-visible {outline:2px solid var(--focus);outline-offset:3px}
+.mf-ai-local-access .mf-ai-proposal-actions {gap:10px;flex-wrap:wrap}
+.mf-ai-local-access .mf-ai-proposal-actions button {min-height:42px}
+.mf-ai-drawer .mf-ai-local-access .mf-ai-access-fields {grid-template-columns:minmax(0,1fr);gap:12px}
+@media(max-width:1100px){.mf-ai-local-access .mf-ai-access-fields {grid-template-columns:repeat(2,minmax(0,1fr))}.mf-ai-local-access .mf-ai-access-planning {grid-column:1/-1}}
+@media(max-width:650px){.mf-ai-local-access .mf-ai-access-fields {grid-template-columns:minmax(0,1fr)}.mf-ai-local-access .mf-ai-proposal-actions>button {width:100%}}
+
 .mf-ai-finance-controls label {
   display: flex;
   flex-direction: column;

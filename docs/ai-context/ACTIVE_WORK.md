@@ -2,6 +2,8 @@
 
 ## Execução autorizada — 12/11/2026: categorização supervisionada
 
+Refinamento separado: `fix/mf2-review-layout-navigation-20261112`, empilhado sobre #46/a7f132a. Ownership local de `src/app.ts` (rolagem de navegação), marcação do formulário em `src/intelligence-local.ts`, abertura da Central em `src/intelligence-review.ts`, `app/intelligence.css`, bundle e regressão. Fluxos/sender/SQLite do PR funcional preservados. [QA real](logs/2026-11-12-VISUAL-REVIEW-POLISH.md).
+
 Codex nesta missão: branch `feat/mf2-supervised-categorization-20261112`, base candidata `34750c9`. Ownership: `electron/category-review.cjs`, extensões localizadas de `db.cjs`/main/preload, `src/intelligence-review.ts`, hooks da Inteligência, CSS próprio, fixture e testes. Sem edição concorrente por subagentes. Não atualizar CURRENT_STATE nem promover candidata/main. Próxima frente em branch separada: formulário de leitura e rolagem de navegação, defeitos observados por Computer Use. [Log](logs/2026-11-12-SUPERVISED-CATEGORIES.md).
 
 Última leitura via GitHub: 09/11/2026. **Work em execução não é inspecionável aqui**; itens marcados como "desconhecido" devem ser reconciliados com a sessão antes de qualquer escrita.
