@@ -182,14 +182,14 @@ function renderIntelligenceActionProposalCard(app:any,proposal:IntelligenceActio
 }
 function renderIntelligenceMessageItem(app:any,msg:IntelligenceChatMessage){
   const isUser=msg.role==='user';
-  const badge=msg.status==='unavailable'?h('span',{className:'mf-ai-msg-badge is-warn'},'Conta desconectada'):
+  const badge=msg.status==='unavailable'?h('span',{className:'mf-ai-msg-badge is-warn'},'Consulta não autorizada'):
     msg.status==='unsupported'?h('span',{className:'mf-ai-msg-badge is-info'},'Consulta não reconhecida'):
     msg.status==='unimplemented'?h('span',{className:'mf-ai-msg-badge is-info'},'Aguarda I2-A'):
     msg.status==='error'?h('span',{className:'mf-ai-msg-badge is-error'},'Serviço indisponível'):null;
   return h('article',{key:msg.id,className:'mf-ai-msg '+(isUser?'is-user':'is-assistant')+' is-'+msg.status},
     h('header',{className:'mf-ai-msg-meta'},
       h('strong',{},isUser?'Você':'Assistente MF'),
-      h('span',{},msg.scopeLabel+' · '+msg.createdAt),
+      h('span',{},msg.scopeLabel+' · '+msg.periodLabel+' · '+msg.createdAt),
       badge),
     h('div',{className:'mf-ai-msg-body mf-ai-markdown'},...aiMarkdownNodes(msg.text)),
     msg.structuredCard?renderIntelligenceStructuredCard(msg.structuredCard):null,
@@ -225,7 +225,7 @@ function renderIntelligenceHistorySidebar(app:any){
     s.intelligenceStorageError?h('p',{className:'mf-ai-error mf-ai-storage-error',role:'alert'},s.intelligenceStorageError):null,
     groups.length===0?h('div',{className:'mf-ai-history-empty'},
       h('p',{},query.trim()?'Nenhuma conversa encontrada para “'+query.trim()+'”.':'Nenhuma conversa salva neste perfil ('+(s.mode==='demo'?'Demonstração':'Pessoal')+').'),
-      h('small',{},s.categoryReviewGrant?'Conversa temporária. Mensagens e autorizações não são gravadas no histórico do perfil.':'O histórico deste perfil é local e não usa o cofre criptografado. Não inclua senhas nem tokens.')):
+      h('small',{},(s.categoryReviewGrant||s.localFinancialAccess?.token)?'Conversa temporária. Mensagens e autorizações não são gravadas no histórico do perfil.':'O histórico deste perfil é local e não usa o cofre criptografado. Não inclua senhas nem tokens.')):
     h('div',{className:'mf-ai-history-groups',role:'list'},
       ...groups.map((grp:any)=>h('div',{key:grp.label,className:'mf-ai-history-group'},
         h('span',{className:'mf-ai-history-date-label'},grp.label),
@@ -436,6 +436,24 @@ function renderIntelligencePremiumToday(app:any){
      h('p',{},'Use “Atualizar visão” para carregar os contratos reais disponíveis nesta instalação.')):null);
 }
 
+function intelligenceChatSession(app:any){
+ const s=app.state,g=s.localFinancialAccess||s.categoryReviewGrant;
+ return {temporary:!!g,expired:!!g&&g.expiresAt<=Date.now(),busy:!!(s.aiBusy||s.localFinancialBusy||s.intelligenceDrawerBusy)};
+}
+function renderIntelligenceComposer(app:any,drawer=false){
+ const s=app.state,session=intelligenceChatSession(app),draft=String(s.intelligenceDraft||''),id=drawer?'mf-ai-drawer-input':'mf-ai-draft';
+ const submit=()=>{if(draft.trim()&&!session.busy&&!session.expired)void intelligenceSubmitQuestion(app,draft);};
+ return h('form',{className:'mf-chat-composer '+(drawer?'mf-ai-drawer-composer':'mf-ai-composer'),onSubmit:(e:any)=>{e.preventDefault();submit();}},
+  session.expired?h('div',{className:'mf-chat-expired',role:'alert'},h('strong',{},'Autorização expirada'),h('p',{},'Renove a permissão acima para consultar novamente. Seu rascunho foi preservado.')):null,
+  h('label',{className:'mf-ai-composer-label',htmlFor:id},'Converse sobre seus registros'),
+  h('textarea',{id,value:draft,rows:2,maxLength:750,disabled:session.busy,placeholder:'Pergunte sobre despesas, categorias ou compromissos…',onChange:(e:any)=>app.setState({intelligenceDraft:e.target.value}),onKeyDown:(e:any)=>{if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();submit();}}}),
+  h('div',{className:'mf-chat-compose-footer'},h('small',{},session.temporary?'Somente nesta sessão · sem IA externa':'Histórico local · não inclua credenciais'),h('small',{},draft.length+'/750 · Shift + Enter para nova linha'),
+   h('button',{type:'submit',className:'primary-button',disabled:!draft.trim()||session.busy||session.expired},session.busy?'Consultando…':'Enviar',h(Icon,{name:'arrow',size:16}))));
+}
+function renderIntelligenceFollowups(app:any){
+ const questions=app.state.categoryReviewGrant?['Revise todas as minhas movimentações pendentes.','Quais regras são recomendadas?']:['Quais foram minhas maiores despesas?','Quais despesas aumentaram?','Que movimentações preciso revisar?'];
+ return h('div',{className:'mf-chat-followups','aria-label':'Continuar a análise'},...questions.map(q=>h('button',{type:'button',key:q,disabled:intelligenceChatSession(app).busy||intelligenceChatSession(app).expired,onClick:()=>intelligenceSubmitQuestion(app,q)},q,h(Icon,{name:'arrow',size:13}))));
+}
 function renderIntelligenceView(app:any){
   if(app.state.workIntelligenceDemo?.enabled&&typeof renderWorkIntelligenceDemo==='function')return renderWorkIntelligenceDemo(app);
   if(typeof intelligenceEnsureHydrated==='function')intelligenceEnsureHydrated(app);
@@ -454,8 +472,8 @@ function renderIntelligenceView(app:any){
       h('div',{className:'mf-ai-workbench-header'},
         h('div',{className:'mf-ai-chat-hero'},
           h('span',{className:'mf-ai-orb'},h(Icon,{name:'spark',size:25})),
-          h('h2',{},'Central de conversação financeira'),
-          h('p',{},s.categoryReviewGrant?'Conversa temporária compartilhada com o chat lateral. Prévia e confirmação continuam disponíveis na Central.':'Histórico compartilhado com o chat lateral, salvo localmente quando disponível. Não cole credenciais.')),
+          h('h2',{},'Uma conversa, mais clareza.'),
+          h('p',{},(s.categoryReviewGrant||s.localFinancialAccess?.token)?'Conversa temporária compartilhada com o chat lateral. Prévia e confirmação continuam disponíveis na Central.':'Histórico compartilhado com o chat lateral, salvo localmente quando disponível. Não cole credenciais.')),
         h('div',{className:'mf-ai-workbench-badges'},
           h('span',{className:'mf-ai-conn-pill '+convState.css},s.localFinancialAccess?.token?'Leitura local autorizada':convState.pill),
           h('span',{className:'mf-ai-scope-badge'},'Contexto: '+activeScope.label+' · '+activeScope.period))),
@@ -466,7 +484,7 @@ function renderIntelligenceView(app:any){
         h('small',{},'Este rascunho não é enviado ao Sol. Use os casos fictícios autorizados abaixo; nenhuma chamada ocorreu aqui.')):null,
       messages.length===0?h('div',{className:'mf-ai-empty-thread'},
         h('h3',{},'Comece uma análise ou prepare uma categorização supervisionada'),
-        h('p',{},'Suas conversas ficam organizadas por data na coluna à esquerda e continuam disponíveis ao alternar para o chat lateral em qualquer uma das oito áreas.'),
+        h('p',{},'Escolha um ponto de partida. A mesma conversa acompanha você no chat lateral; consultas financeiras autorizadas ficam apenas nesta sessão.'),
         h('div',{className:'mf-ai-starter-grid'},
           ['Quais foram meus maiores gastos deste mês?','Compare minhas despesas com o mês anterior.','Quais orçamentos merecem atenção?','Quais compromissos tenho para o próximo mês?'].map((q:string,i:number)=>
             h('button',{type:'button',className:'mf-ai-context-prompt',key:i,onClick:()=>intelligenceSubmitQuestion(app,q)},
@@ -477,15 +495,8 @@ function renderIntelligenceView(app:any){
           h('strong',{},'Assistente MF'),
           h('p',{},'Processando solicitação…')):null),
       s.aiError?h('p',{className:'mf-ai-error',role:'alert'},s.aiError):null,
-      h('div',{className:'mf-ai-composer'},
-        h('label',{className:'mf-ai-composer-label',htmlFor:'mf-ai-draft'},'Sua pergunta ou comando supervisionado'),
-        h('textarea',{id:'mf-ai-draft',value:s.intelligenceDraft||'',rows:3,maxLength:750,placeholder:'Ex.: Categorize minha compra do mercado de ontem como Alimentação…',onChange:(e:any)=>app.setState({intelligenceDraft:e.target.value}),onKeyDown:(e:any)=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();if((s.intelligenceDraft||'').trim())void intelligenceSubmitQuestion(app,s.intelligenceDraft);}}}),
-        h('span',{className:'mf-ai-compose-actions'},
-          h('small',{},convState.pill+((s.localFinancialAccess?.token||s.categoryReviewGrant)?' · respostas na memória da sessão':' · armazenamento local isolado ('+(s.mode==='demo'?'Demonstração':'Pessoal')+')')),
-          h('div',{className:'mf-ai-compose-btns'},
-            h('button',{type:'button',className:'ghost-button',disabled:!(s.intelligenceDraft||'').trim(),onClick:()=>app.setState({intelligencePreparedQuestion:(s.intelligenceDraft||'').trim(),intelligenceDraft:''})},'Guardar rascunho'),
-            h('button',{type:'button',className:'primary-button',disabled:!(s.intelligenceDraft||'').trim()||Boolean(s.aiBusy||s.localFinancialBusy),onClick:()=>intelligenceSubmitQuestion(app,s.intelligenceDraft)},
-              'Enviar no chat',h(Icon,{name:'arrow',size:16})))))));
+      renderIntelligenceFollowups(app),
+      renderIntelligenceComposer(app)));
   else if(tab==='actions')section=h('div',{className:'mf-ai-actions'},
     h('div',{className:'mf-ai-welcome'},
       h('span',{className:'micro-label'},'AÇÕES SUPERVISIONADAS E EXEMPLOS · SEM GRAVAÇÃO AUTOMÁTICA'),
@@ -567,14 +578,9 @@ function renderIntelligencePanel(app:any){
             h('p',{},'Processando solicitação no contexto de '+scope.label+'…')):null),
         app.state.intelligenceStorageError?h('p',{className:'mf-ai-error',role:'alert'},app.state.intelligenceStorageError):null,
         app.state.aiError?h('p',{className:'mf-ai-error',role:'alert'},app.state.aiError):null),
-      h('form',{className:'mf-ai-drawer-composer',onSubmit:(e:any)=>{e.preventDefault();if(draft.trim()&&!busy)void intelligenceSubmitQuestion(app,draft);}},
-        h('label',{className:'mf-ai-context-composer',htmlFor:'mf-ai-drawer-input'},
-          h('span',{className:'sr-only'},'Pergunta para o assistente'),
-          h('textarea',{id:'mf-ai-drawer-input',value:draft,rows:2,maxLength:750,disabled:busy,placeholder:'Pergunte sobre '+scope.label.toLowerCase()+' ou prepare prévia de categoria…',onChange:(e:any)=>app.setState({intelligenceDraft:e.target.value}),onKeyDown:(e:any)=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();if(draft.trim()&&!busy)void intelligenceSubmitQuestion(app,draft);}}})),
-        h('div',{className:'mf-ai-drawer-footer'},
-          messages.length>0&&activeThreadId?h('button',{type:'button',className:'ghost-button',onClick:()=>intelligenceDeleteThread(app,activeThreadId)},'Excluir conversa'):h('span',{className:'mf-ai-drawer-hint'},app.state.categoryReviewGrant?'Conversa temporária compartilhada com a aba Inteligência':'Histórico salvo e sincronizado com a aba Inteligência'),
-          h('button',{type:'submit',className:'primary-button',disabled:!draft.trim()||busy},busy?'Enviando…':'Enviar',h(Icon,{name:'arrow',size:15}))))));
+      renderIntelligenceFollowups(app),renderIntelligenceComposer(app,true)));
 }
+
 function renderIntelligenceSettings(app:any){
   return h(Card,{className:'settings-card mf-ai-settings'},
     h('div',{className:'card-heading'},h('div',{},h('h2',{},'Inteligência artificial'),h('p',{},'Autenticação local e testes fictícios · Entrega 2'))),

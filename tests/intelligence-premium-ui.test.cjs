@@ -175,3 +175,21 @@ test('R2: pending chat responses are discarded when read profile or month change
  assert.equal(a.state.intelligenceMessages.length,0);
  assert.equal(a.state.localFinancialBusy,false);
 });
+
+test('R2 shared composer preserves an expired draft and prevents submission in main and drawer',()=>{
+ const ctx=context(),a=app({intelligenceDraft:'Quais despesas aumentaram?',localFinancialAccess:{token:'expired',expiresAt:1}});let sent=0;ctx.intelligenceSubmitQuestion=()=>sent++;
+ for(const drawer of [false,true]){
+  const nodes=flatten(ctx.renderIntelligenceComposer(a,drawer));
+  assert(nodes.some(n=>n.props.role==='alert'));assert.equal(nodes.find(n=>n.tag==='textarea').props.value,a.state.intelligenceDraft);
+  assert.equal(nodes.find(n=>n.props.type==='submit').props.disabled,true);
+  nodes.find(n=>n.tag==='form').props.onSubmit({preventDefault(){}});
+ }
+ assert.equal(sent,0);assert.equal(a.state.intelligenceDraft,'Quais despesas aumentaram?');
+});
+test('R2 composer respects busy, Shift+Enter and IME, and uses the same submit action',()=>{
+ const ctx=context(),a=app({intelligenceDraft:'Maiores despesas',localFinancialAccess:{token:'grant',expiresAt:Date.now()+60000}});let sent=0;ctx.intelligenceSubmitQuestion=()=>sent++;
+ let field=flatten(ctx.renderIntelligenceComposer(a)).find(n=>n.tag==='textarea');
+ for(const patch of [{shiftKey:true},{isComposing:true}])field.props.onKeyDown({key:'Enter',preventDefault(){},...patch});
+ assert.equal(sent,0);field.props.onKeyDown({key:'Enter',preventDefault(){}});assert.equal(sent,1);
+ a.state.localFinancialBusy=true;field=flatten(ctx.renderIntelligenceComposer(a,true)).find(n=>n.tag==='textarea');assert.equal(field.props.disabled,true);field.props.onKeyDown({key:'Enter',preventDefault(){}});assert.equal(sent,1);
+});

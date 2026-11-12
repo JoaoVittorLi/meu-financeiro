@@ -551,3 +551,5 @@ Checkpoint da união:533/533 PASS, TypeScript/F08/ASAR/proveniência e IPC Elect
 ## Sprint Premium — R3 em execução
 Base #53/779cd31. Branch feat/mf2-premium-productivity-sprint-20261112. R3 implementa Central por abas, fila pesquisável na página, inspeção rápida, categoria/sugestão/confiança/evidência por registro, impacto explícito e recibos com hierarquia visual. Guards financeiros intactos; prévia de contexto antigo descartada. 10/10 testes dirigidos e compilação PASS; QA Electron seguinte. R2/R4 autorizados na sequência; R5 condicionado aos gates.
 
+
+Sprint Premium R2: composer compartilhado principal/lateral, perguntas de continuidade, período nas mensagens, autorização expirada com rascunho preservado e layout de conversa renovado. Serviços operacionais existentes; QA integrado em andamento.
