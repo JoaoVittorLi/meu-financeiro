@@ -51,6 +51,8 @@ type IntelligenceChatMessage = {
   periodLabel:string;
   status:'sent'|'streaming'|'done'|'unavailable'|'unimplemented'|'error';
   details?:string;
+  operationalActions?:any[];
+  operationalEvidence?:string;
   proposal?:IntelligenceActionProposal|null;
   structuredCard?:IntelligenceStructuredCard|null;
 };
@@ -190,6 +192,8 @@ function renderIntelligenceMessageItem(app:any,msg:IntelligenceChatMessage){
       badge),
     h('div',{className:'mf-ai-msg-body mf-ai-markdown'},...aiMarkdownNodes(msg.text)),
     msg.structuredCard?renderIntelligenceStructuredCard(msg.structuredCard):null,
+    msg.operationalEvidence?h('small',{className:'mf-premium-evidence'},msg.operationalEvidence):null,
+    Array.isArray(msg.operationalActions)&&msg.operationalActions.length?h('div',{className:'mf-premium-tile-actions'},...msg.operationalActions.map((action:any)=>intelligencePremiumButton(app,null,action))):null,
     msg.proposal?renderIntelligenceActionProposalCard(app,msg.proposal):null,
     msg.id.startsWith('review-answer-')?h('button',{type:'button',className:'primary-button',onClick:()=>void categoryReviewOpen(app)},'Abrir Central de Revisão'):null,
     msg.details?h('details',{className:'mf-ai-msg-details'},
@@ -506,7 +510,7 @@ function renderIntelligenceView(app:any){
     s.categoryReviewPreview?h('div',{className:'mf-review-drawer-pending',role:'status'},h('p',{},'Uma prévia de categorização aguarda sua decisão.'),h('button',{type:'button',className:'primary-button',onClick:()=>void categoryReviewOpen(app)},'Revisar prévia na Central')):null,
     h('div',{className:'mf-ai-tabbar',role:'tablist','aria-label':'Seções da Inteligência'},
       tabs.map((item:any)=>h('button',{type:'button',key:item.id,role:'tab','aria-selected':tab===item.id,
-        id:'mf-ai-tab-'+item.id,'aria-controls':'mf-ai-section-'+item.id,tabIndex:tab===item.id?0:-1,className:tab===item.id?'active':'',onClick:()=>app.setState({intelligenceTab:item.id,categoryReviewOpen:false}),onKeyDown:(e:any)=>{const next=intelligenceNextTab(item.id,e.key);if(next){e.preventDefault();app.setState({intelligenceTab:next,categoryReviewOpen:false},()=>document.getElementById('mf-ai-tab-'+next)?.focus());}}},item.label))),
+        id:'mf-ai-tab-'+item.id,'aria-controls':'mf-ai-section-'+item.id,tabIndex:tab===item.id?0:-1,className:tab===item.id?'active':'',onClick:()=>app.setState({intelligenceTab:item.id,categoryReviewOpen:false},()=>{if(item.id==='today')void intelligencePremiumLoad(app);}),onKeyDown:(e:any)=>{const next=intelligenceNextTab(item.id,e.key);if(next){e.preventDefault();app.setState({intelligenceTab:next,categoryReviewOpen:false},()=>{document.getElementById('mf-ai-tab-'+next)?.focus();if(next==='today')void intelligencePremiumLoad(app);});}}},item.label))),
     h('div',{id:'mf-ai-section-'+tab,role:'tabpanel','aria-labelledby':'mf-ai-tab-'+tab,tabIndex:0},section),
     h('details',{className:'mf-ai-lab-disclosure'},h('summary',{},h(Icon,{name:'settings',size:17}),h('span',{},'Laboratório de Inteligência'),h('small',{},'Configurações técnicas, conexão OAuth, memória e contexto sintético')),
        renderIntelligenceConnection(app),renderIntelligencePrivacy(app),renderIntelligenceFinancialContext(app)));
