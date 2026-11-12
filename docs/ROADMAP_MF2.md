@@ -544,3 +544,6 @@ Base #43 preservada. Serviço local/IPC e chat principal/lateral consultam SQLit
 ## Integração Q1 + I + R — 12/11/2026
 Branch integration/mf2-q1-operational-premium-20261112: incorpora #48/31c7386, #51/c45a01c e #52/2c3884c, preservando ancestralidade e roadmap de ambas as frentes. Rebinding operacional após restore/recovery, tokens anteriores invalidados. Renderer canônico recompilado; 533 testes passaram após conciliar snapshots antigos do layout e preservar a recusa de escrita na consulta local. Gates finais e QA nativo em andamento. Sem R3, escrita pessoal, main ou build pago.
 
+
+Checkpoint da união:533/533 PASS, TypeScript/F08/ASAR/proveniência e IPC Electron real PASS. Computer Use Premium light/dark1366×768 e1920×1080, navegação do card e chat real84,04 verificados. Evidências novas em ai-context/evidence/2026-11-12-integration. R3 permanece fora do escopo.
+

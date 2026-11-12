@@ -1,0 +1,7 @@
+# União Q1 + Inteligência Operacional + Premium
+
+Código testado:6979ba2f5b663cc22b34eb6d3789b38eac23e762; merges preservam #48/31c7386, #51/c45a01c, #52/2c3884c e coord/#50. Imagens novas preservadas do Computer Use Windows, JPEG sem edição/emulação, exclusivamente perfil SQLite temporário fictício. Os nomes1366 correspondem a1366×768;1920 a1920×1080 em F11 nativo. Theme light/dark no nome. Não representam dados pessoais, apesar da nomenclatura de perfil real usada pelo app de teste.
+
+[1366 claro: cards](1366-light-premium-cards.jpg) · [1366 escuro: cards](1366-dark-premium-cards.jpg) · [1920 claro](1920-light-premium-cards.jpg) · [1920 escuro](1920-dark-premium-cards.jpg) · [Sem autorização](1366-light-premium-denied.jpg) · [Card abre Orçamentos](1366-light-card-opens-budgets.jpg) · [Chat operacional retorna84,04](1366-dark-operational-chat.jpg).
+
+533/533 testes Node/SQLite PASS ([saída final](tests-final.tap)), TypeScript, compilação, F08/proveniência, ASAR e IPC Electron real PASS. UI-01…08 fornecidos pelo backend e consumidos pelo Premium, com capability/fonte/período/coverage. Regressões de mudança de contexto e contrato inseguro preservadas. Restore/recoveredDb exercitados com handler de produção e SQLite real; não foi restore completo por Computer Use. QA visual focado na junção, sem repetir auditoria Q1 ou iniciar R3. Não constitui homologação de instalador ou escrita pessoal.
