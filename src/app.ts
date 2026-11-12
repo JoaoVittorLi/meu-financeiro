@@ -1151,12 +1151,16 @@ class App extends React.Component<any,State>{
  navigate(page:string){
    this.simRequest++;
    const target=page==='review'||page==='categories'?'transactions':page==='simulator'?'assistant':page;
+   const pageChanged=target!==this.state.page;
    const span=dateSpan(this.state.overviewPeriod,this.state.customStart,this.state.customEnd);
    const newMonth=span.end.slice(0,7),useMonth=newMonth>=nowYM&&newMonth<=shiftMonth(nowYM,12);
    const enteringPlan=target==='planning'&&this.state.page!=='planning'&&useMonth;
    this.setState({page:target,txReviewOnly:page==='review',txOrganize:page==='categories',quickAddOpen:false,quickCategory:null,
       month:newMonth, ...(enteringPlan?{planMonth:newMonth,planDay:newMonth===nowYM?iso(new Date()):newMonth+'-01'}:{}),
-      showEntry:false,outcome:null,simBusy:false},()=>{if(enteringPlan)void this.refreshPlanning();});
+      showEntry:false,outcome:null,simBusy:false},()=>{
+       if(pageChanged)document.scrollingElement?.scrollTo({top:0,left:0,behavior:'instant' as ScrollBehavior});
+       if(enteringPlan)void this.refreshPlanning();
+      });
    if(target==='intelligence'||target==='settings')void intelligenceRefresh(this);
    if(page==='settings'&&desktop?.backupStatus)void desktop.backupStatus().then(backupInfo=>this.setState({backupInfo})).catch(()=>{});
  }

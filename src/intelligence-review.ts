@@ -17,7 +17,7 @@ async function categoryReviewRefresh(app:any,after=0){
  app.setState({categoryReviewReport:report,categoryReviewQueue:queue,categoryReviewCursor:after});
 }
 async function categoryReviewOpen(app:any){
- app.setState({page:'intelligence',intelligencePanelOpen:false,intelligenceTab:'actions',categoryReviewOpen:true},()=>document.querySelector('.main-area')?.scrollTo({top:0,behavior:'instant' as ScrollBehavior}));
+ app.setState({page:'intelligence',intelligencePanelOpen:false,intelligenceTab:'actions',categoryReviewOpen:true},()=>document.scrollingElement?.scrollTo({top:0,behavior:'instant' as ScrollBehavior}));
  await categoryReviewRun(app,async()=>{
   const status=await categoryReviewAPI()?.categoryReviewStatus?.();
   app.setState({categoryReviewAvailable:status?.available===true});

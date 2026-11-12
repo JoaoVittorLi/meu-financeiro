@@ -68,13 +68,14 @@ async function localFinancialSubmit(app:any,question:string){
 function renderLocalFinancialAccess(app:any){
  const s=app.state,access:LocalFinancialAccess=s.localFinancialAccess,active=access?.token&&access.expiresAt>Date.now();
  if(s.categoryReviewGrant)return h('section',{className:'mf-ai-explainer'},h('div',{},h('strong',{},'Revisão sintética autorizada · conversa temporária'),h('p',{},'Mensagens e prévias ficam apenas nesta sessão. Regras e decisões confirmadas são auditadas no SQLite de teste.'),h('button',{type:'button',className:'ghost-button',onClick:()=>categoryReviewDisable(app)},'Encerrar revisão e limpar respostas da sessão')));
- return h('section',{className:'mf-ai-explainer','aria-label':'Permissão de leitura financeira local'},h('div',{},
+ return h('section',{className:'mf-ai-explainer mf-ai-local-access','aria-label':'Permissão de leitura financeira local'},h('div',{},
   h('strong',{},active?'Leitura local autorizada · sem IA externa':'Consultar seus registros locais'),
   h('p',{},'Ao autorizar, movimentos e limites da fonte escolhida serão lidos neste computador. Respostas ficam apenas na memória desta sessão. Consultas usam o mês e a fonte abaixo, sem herdar filtros da tabela.'),
-  !access?h('div',{className:'mf-ai-finance-controls'},
-   h('label',{},'Fonte',h('select',{value:s.mode==='demo'?'manual':s.localFinancialSource||'bank',disabled:s.mode==='demo',onChange:(e:any)=>app.setState({localFinancialSource:e.target.value})},h('option',{value:'bank'},'Contas conectadas'),h('option',{value:'manual'},'Lançamentos manuais'))),
-   s.mode!=='demo'?h('label',{},h('input',{type:'checkbox',checked:s.localFinancialPlanning===true,onChange:(e:any)=>app.setState({localFinancialPlanning:e.target.checked})}),'Permitir também leitura do Planejamento'):null):h('p',{},'Fonte: '+access.source+' · perfil '+access.profile+' · autorização por até 15 minutos.'),
-  h('label',{},'Mês da consulta',h('input',{type:'month',value:s.localFinancialMonth||s.month,onChange:(e:any)=>app.setState({localFinancialMonth:e.target.value,localFinancialRadar:null})})),
+  access?h('p',{},'Fonte: '+access.source+' · perfil '+access.profile+' · autorização por até 15 minutos.'):null,
+  h('div',{className:'mf-ai-access-fields'},
+   !access?h('label',{className:'mf-ai-access-field'},'Fonte',h('select',{value:s.mode==='demo'?'manual':s.localFinancialSource||'bank',disabled:s.mode==='demo',onChange:(e:any)=>app.setState({localFinancialSource:e.target.value})},h('option',{value:'bank'},'Contas conectadas'),h('option',{value:'manual'},'Lançamentos manuais'))):null,
+   h('label',{className:'mf-ai-access-field'},'Mês da consulta',h('input',{type:'month',value:s.localFinancialMonth||s.month,onChange:(e:any)=>app.setState({localFinancialMonth:e.target.value,localFinancialRadar:null})})),
+   !access&&s.mode!=='demo'?h('label',{className:'mf-ai-access-planning'},h('input',{type:'checkbox',checked:s.localFinancialPlanning===true,onChange:(e:any)=>app.setState({localFinancialPlanning:e.target.checked})}),h('span',{},'Permitir também leitura do Planejamento')):null),
   h('div',{className:'mf-ai-proposal-actions'},h('button',{type:'button',className:'primary-button',disabled:s.localFinancialBusy,onClick:()=>active?void localFinancialRadar(app):void localFinancialEnable(app)},active?'Atualizar radar':'Autorizar leitura local'),access?h('button',{type:'button',className:'ghost-button',onClick:()=>localFinancialDisable(app)},'Encerrar leitura e limpar respostas da sessão'):null),
   s.localFinancialError?h('p',{role:'alert'},s.localFinancialError):null));
 }
