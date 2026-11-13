@@ -2940,3 +2940,48 @@
 @media(prefers-reduced-motion:reduce){
  .mf-d01 *, .mf-d01-modal *{animation:none!important;transition:none!important;scroll-behavior:auto!important}
 }
+
+
+/* INT-DESIGN-01 C2 — responsive chart surfaces, no mock totals or gradients. */
+.mf-vr-card{display:grid;gap:12px;padding:16px;margin:10px 0;border:1px solid var(--border);border-radius:18px;background:var(--surface);color:var(--text);min-width:0}
+.mf-vr-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:9px}
+.mf-vr-head h3{font-size:16px;margin:4px 0 0}
+.mf-vr-head small,.mf-vr-cover{font-size:11px;color:var(--muted);margin:0;line-height:1.5}
+.mf-vr-head>strong{font-size:19px;letter-spacing:-.4px;font-variant-numeric:tabular-nums}
+.mf-vr-totals{display:flex;flex-wrap:wrap;gap:8px 14px;color:var(--text);font-size:11px;font-variant-numeric:tabular-nums}
+.mf-vr-treemap{height:240px;width:100%;position:relative;border-radius:13px;overflow:clip;background:var(--surface2);border:1px solid var(--border)}
+.mf-vr-tile{position:absolute;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:5px;min-width:0;padding:7px;
+ border:2px solid var(--surface);border-radius:6px;background:color-mix(in srgb,var(--mf-vr-color) 46%,var(--surface2));
+ color:var(--text);cursor:pointer;overflow:hidden;transition:filter .17s,border-color .17s,opacity .17s}
+.mf-vr-tile>span,.mf-vr-tile strong{font-size:11px;line-height:1.25;overflow-wrap:anywhere;text-align:left}
+.mf-vr-tile strong{font-size:12px;font-variant-numeric:tabular-nums}
+.mf-vr-tile:hover,.mf-vr-tile.is-selected{border-color:var(--text);filter:saturate(1.18)}
+.mf-vr-flow-wrap{max-width:100%;overflow-x:auto;padding:6px;border:1px solid var(--border);border-radius:12px;background:var(--surface2)}
+.mf-vr-flow{display:block;width:100%;height:auto;min-width:360px;min-height:100px;max-height:320px;overflow:visible}
+.mf-vr-flow text{font-size:14px;font-weight:600}
+.mf-vr-flow g[role="button"]{cursor:pointer;outline:none}
+.mf-vr-flow-ribbon{transition:opacity .16s,filter .16s}
+.mf-vr-flow-ribbon.is-selected,.mf-vr-flow g[role="button"]:focus-visible .mf-vr-flow-ribbon{filter:drop-shadow(0 0 3px var(--text));opacity:1}
+.mf-vr-legend{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.mf-vr-legend-item{display:flex;align-items:center;gap:7px;min-width:0;background:var(--surface2);color:var(--text);border:1px solid var(--border);padding:8px;border-radius:9px;text-align:left;cursor:pointer}
+.mf-vr-legend-item.is-selected{border-color:var(--text)}
+.mf-vr-dot{width:9px;height:9px;border-radius:3px;flex:0 0 auto}
+.mf-vr-legend-title{min-width:0;flex:1;overflow-wrap:anywhere;font-size:11px}
+.mf-vr-legend-item strong{font-size:10px;font-variant-numeric:tabular-nums;text-align:right;overflow-wrap:anywhere}
+.mf-vr-inspector{padding:12px;border:1px solid var(--border);border-radius:12px;background:var(--surface2);display:grid;gap:8px}
+.mf-vr-inspector>p{color:var(--muted);font-size:11px;line-height:1.5;margin:0;overflow-wrap:anywhere}
+.mf-vr-inspector>details>summary{cursor:pointer;font-size:11px}
+.mf-vr-inspector ul{font-size:11px;max-height:150px;overflow-y:auto}
+.mf-vr-actions{display:flex;flex-wrap:wrap;gap:8px}
+.mf-vr-actions button{border:1px solid var(--border);border-radius:8px;padding:8px;background:var(--surface);color:var(--text);font-size:11px;cursor:pointer}
+.mf-vr-actions button:disabled{cursor:not-allowed;opacity:.55}
+.mf-vr-table>summary{cursor:pointer;font-size:11px;color:var(--muted)}
+.mf-vr-table table{border-collapse:collapse;width:100%;font-size:11px}
+.mf-vr-table td,.mf-vr-table th{padding:8px 5px;text-align:left;border-bottom:1px solid var(--border);overflow-wrap:anywhere}
+.mf-vr-table td:nth-child(n+2){font-variant-numeric:tabular-nums}
+.mf-vr-card :is(button,summary,[role="button"]):focus-visible{outline:2px solid var(--focus,var(--text));outline-offset:3px}
+.mf-vr-card.is-compact .mf-vr-treemap{height:150px}
+.mf-vr-card.is-compact .mf-vr-legend{grid-template-columns:1fr}
+.mf-vr-card.is-compact .mf-vr-head>strong{font-size:16px}
+@media(max-width:650px){.mf-vr-legend{grid-template-columns:1fr}.mf-vr-card{padding:12px}.mf-vr-treemap{height:190px}}
+@media(prefers-reduced-motion:reduce){.mf-vr-card *{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
