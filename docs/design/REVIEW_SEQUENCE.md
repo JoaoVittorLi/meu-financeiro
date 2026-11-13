@@ -5,7 +5,7 @@ Data: 2026-11-13 · Índice: #55 · Coordenação: #49 · Baseline PR #54 / 55de
 |---|---|---|---|---|
 | D01 | Chat Lateral | **IMPLEMENTATION_READY** (DESIGN_APPROVED) | #56 | **V4.5 FINAL** · protótipo/specs/handoff congelados |
 | D02 | Chat Principal / Expandido | **DESIGN HANDOFF V3 CONSOLIDADO** (implementação pendente) | #58 | Biblioteca de 26 famílias especificada por herança; 3 aprovadas individualmente, VR-10 V2 referência; sem mais microscreens |
-| D03 | Inteligência Hoje | **NEXT / READY_FOR_DESIGN_REVIEW** | #61 | Próxima tela principal; não reintroduzir abas pesadas no chat |
+| D03 | Inteligência Hoje | **PROTOTYPING / WAITING_FEEDBACK** | #61 | V1 tela completa — prioridades, agenda, economia e investigação sob demanda; não aprovado |
 | D04 | Central de Revisão | NOT_STARTED | — | — |
 | D05 | Movimentações | NOT_STARTED | — | — |
 | D06 | Visão Geral | NOT_STARTED | — | — |
@@ -40,3 +40,9 @@ Critérios para DESIGN_APPROVED: aprovação explícita do proprietário sobre v
 - **Entrega principal:** [D02 V3 — índice único](screens/d02-chat-principal/D02_V3_DELIVERY_INDEX.md), [galeria interativa V3](screens/d02-chat-principal/VISUAL_GALLERY_V3_CONSOLIDATED.html), [sistema visual](screens/d02-chat-principal/VISUAL_LIBRARY_CONSOLIDATED_V3.md), [tokens](screens/d02-chat-principal/VISUAL_LIBRARY_TOKENS_V3.json), [CSS referência](screens/d02-chat-principal/VISUAL_LIBRARY_PREMIUM_V3.css), [handoff](screens/d02-chat-principal/VISUAL_LIBRARY_HANDOFF_V3.md), [aceite/QA](screens/d02-chat-principal/VISUAL_LIBRARY_ACCEPTANCE_V3.md).
 - **Progresso confirmado:** conteúdo da galeria V3 e JS sintaticamente validados, documentação versionada. **Não verificado:** screenshots Chromium dessa V3, testes de clique, QA Electron, integração e escrita financeira real.
 - **Próximo item do roteiro:** [D03 — Inteligência Hoje, issue #61](https://github.com/JoaoVittorLi/meu-financeiro/issues/61). Rever D03 como **uma tela inteira**, sem ciclos de microcomponentes já padronizados; respeitar design principal leve, histórico recolhido e painel opcional.
+
+### D03 — V1 Inteligência Hoje, em revisão
+
+- O estado atual de `src/intelligence-view.ts` contém oito cards operacionais com metadados UI-01–08. A V1 mantém a lógica como referência, mas redesenha a superfície inteira sem abas permanentes.
+- [D03 V1 Design Spec](screens/d03-inteligencia-hoje/D03_V1_DESIGN_SPEC.md) · [Fixtures sintéticas](screens/d03-inteligencia-hoje/D03_V1_FIXTURES.json) · [Issue #61](https://github.com/JoaoVittorLi/meu-financeiro/issues/61).
+- Ainda não há aprovação nem implementação/QA Electron. Após feedback, congelar HTML canônico e specs.
