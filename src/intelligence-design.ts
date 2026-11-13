@@ -36,13 +36,18 @@ function mfD01EditChange(app:any,patch:Partial<MfD01Edit>):void{
 function mfD01EditDiscard(app:any):void{
  app.setState({mfD01Edit:null,mfD01Review:null});
 }
+function mfD01Original(p:IntelligenceActionProposal,edit:MfD01Edit):boolean{
+ const original=mfD01Default(p);
+ return edit.name===original.name&&edit.criterion===original.criterion&&
+  edit.history===original.history&&edit.future===false&&edit.selected===original.selected;
+}
 function mfD01EditSave(app:any,p:IntelligenceActionProposal):void{
  const edit: MfD01Edit=app.state.mfD01Edit;
  if(!edit||edit.proposalId!==p.id)return;
  if(!String(edit.name||'').trim())return;
  const next={...edit,name:edit.name.trim(),criterion:edit.criterion.trim()};
  app.setState({mfD01Committed:{...(app.state.mfD01Committed||{}),[p.id]:next},
-  mfD01Edit:null,mfD01Review:null});
+  mfD01Edit:null,mfD01Review:null,mfD01LocalVerified:null});
 }
 function mfD01EnterReview(app:any,p:IntelligenceActionProposal):void{
  const edit=mfD01Current(app,p);
@@ -79,6 +84,8 @@ function renderMfD01Proposal(app:any,p:IntelligenceActionProposal):any{
  const signed=p.txKind==='expense'?'-'+money:money;
  const current=p.currentCategory||'Não categorizada';
  const revision=mfD01Revision(p,edit);
+ const priorVerified=app.state.mfD01LocalVerified?.proposalId===p.id&&app.state.mfD01LocalVerified?.revision===revision;
+ const unchanged=mfD01Original(p,edit);
  const activeEdit: MfD01Edit=app.state.mfD01Edit?.proposalId===p.id?app.state.mfD01Edit:null;
  return h('section',{className:'mf-d01-proposal status-'+p.status,role:'region','aria-label':'Proposta de categoria supervisionada'},
   h('div',{className:'mf-d01-proposal-lead'},
@@ -136,10 +143,11 @@ function renderMfD01Proposal(app:any,p:IntelligenceActionProposal):any{
     h('button',{type:'button',className:'ghost-button',onClick:()=>app.setState({mfD01Review:null})},'Voltar'),
     h('button',{type:'button',className:'primary-button',disabled:!fresh||!review.consent||!edit.history||!edit.selected||!p.txId,
      onClick:()=>{if(!mfD01VerifyReview(app,p)||!app.state.mfD01Review?.consent)return;
-      intelligenceResolveActionProposal(app,p.id,'approve');app.setState({mfD01Review:null});}},'Validar prévia sem gravar'))):
+      if(mfD01Original(p,edit))intelligenceResolveActionProposal(app,p.id,'approve');
+      app.setState({mfD01Review:null,mfD01LocalVerified:{proposalId:p.id,revision}});}},'Validar prévia sem gravar'))):
     null,
-  p.resultMessage?h('p',{className:'mf-d01-result',role:'status'},p.resultMessage):null,
-  p.status==='preview_confirmed'?h('p',{className:'mf-d01-readonly',role:'status'},
+  unchanged&&p.resultMessage?h('p',{className:'mf-d01-result',role:'status'},p.resultMessage):null,
+  (priorVerified||(unchanged&&p.status==='preview_confirmed'))?h('p',{className:'mf-d01-readonly',role:'status'},
    'Prévia conferida. Não foi aplicada nenhuma alteração. A aplicação por IA no perfil pessoal permanece indisponível.'):null,
   h('div',{className:'mf-d01-manual'},
    h('p',{},'Para criar uma categoria agora, use o editor manual. Isso é separado desta proposta.'),
