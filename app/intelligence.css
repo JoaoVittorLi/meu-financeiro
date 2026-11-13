@@ -3132,3 +3132,37 @@
  .mf-v3-card *, .mf-v3-card *::before,.mf-v3-card *::after{
   animation:none!important;transition:none!important;scroll-behavior:auto!important;transform:none!important}
 }
+
+
+/* D02 V3 principal: conversation first, history hidden by default. */
+.mf-intelligence-page .mf-ai-workbench.is-history-closed{
+ display:grid!important;
+ grid-template-columns:minmax(0,1fr)!important;
+ gap:0;
+}
+.mf-intelligence-page .mf-ai-workbench.is-history-closed .mf-ai-workbench-main{
+ min-width:0;max-width:100%;
+}
+.mf-intelligence-page .mf-ai-v3-history-toggle{align-self:flex-start;flex:0 0 auto}
+.mf-intelligence-page .mf-ai-v3-tools{width:100%;margin:8px 0 12px;
+ border:1px solid var(--border);border-radius:12px;background:var(--surface2);
+ color:var(--text);font-size:11px}
+.mf-intelligence-page .mf-ai-v3-tools>summary{cursor:pointer;padding:11px 14px;
+ font-size:11px;font-weight:650;color:var(--muted)}
+.mf-intelligence-page .mf-ai-v3-tool-list{display:flex;flex-wrap:wrap;gap:9px;
+ padding:0 14px 12px;min-width:0}
+.mf-intelligence-page .mf-ai-v3-tool-list button{min-height:35px}
+.mf-intelligence-page .mf-ai-v3-access{width:100%;min-width:0;margin:0 0 12px;
+ border:1px solid var(--border);border-radius:12px;color:var(--text);
+ background:var(--surface)}
+.mf-intelligence-page .mf-ai-v3-access>summary{cursor:pointer;padding:9px 14px;
+ color:var(--muted);font-size:11px}
+.mf-intelligence-page .mf-ai-v3-access>section{margin:0 12px 12px}
+.mf-intelligence-page .mf-ai-v3-content{min-width:0}
+.mf-intelligence-page .mf-ai-v3-content :is(button,input,summary):focus-visible{
+ outline:2px solid var(--focus,var(--green));outline-offset:3px
+}
+@media(max-width:700px){
+ .mf-intelligence-page .mf-ai-workbench{grid-template-columns:minmax(0,1fr)!important}
+ .mf-intelligence-page .mf-ai-workbench-header{flex-wrap:wrap}
+}
