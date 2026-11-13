@@ -2985,3 +2985,48 @@
 .mf-vr-card.is-compact .mf-vr-head>strong{font-size:16px}
 @media(max-width:650px){.mf-vr-legend{grid-template-columns:1fr}.mf-vr-card{padding:12px}.mf-vr-treemap{height:190px}}
 @media(prefers-reduced-motion:reduce){.mf-vr-card *{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
+
+
+/* INT-DESIGN-01 polish: context-only access and selected period result. */
+.mf-d01-access {
+  flex:0 0 auto;
+  min-width:0;
+  border-bottom:1px solid var(--border);
+}
+.mf-d01-access > summary {
+  display:flex;
+  align-items:center;
+  padding:9px 18px;
+  font-size:11px;
+  color:var(--muted);
+  cursor:pointer;
+}
+.mf-d01-access > .mf-chat-access {
+  margin:0 12px 9px;
+}
+.mf-d01-access > .mf-ai-explainer {
+  margin:0 12px 9px;
+  max-height:35vh;
+  overflow-y:auto;
+}
+.mf-vr-result-action {
+  border:1px solid var(--border);
+  border-radius:9px;
+  padding:5px 9px;
+  color:var(--text);
+  background:var(--surface2);
+  font-size:11px;
+  cursor:pointer;
+}
+.mf-vr-result-action[aria-pressed="true"] {
+  border-color:var(--green);
+}
+.mf-vr-result-note {
+  margin:0;
+  padding:9px 11px;
+  border:1px solid color-mix(in srgb,var(--green) 35%,var(--border));
+  border-radius:9px;
+  color:var(--text);
+  font-size:11px;
+  line-height:1.55;
+}
