@@ -204,3 +204,39 @@ test('D02 — responsive four densities, visible focus, no-motion declarations',
  assert.match(css,/@media\(prefers-reduced-motion:reduce\)/);
  assert.match(css,/:focus-visible/);
 });
+
+
+test('D02 — inventory preserves 3 individual approvals, VR10 baseline and inherited design',()=>{
+ const list=api.mfV3Registry();
+ assert.equal(list.filter(x=>x.designStatus==='DESIGN_APPROVED').length,3);
+ assert.equal(list.filter(x=>x.designStatus==='BASELINE_ACCEPTED_FOR_BATCH').length,1);
+ assert.equal(list.filter(x=>x.designStatus==='DESIGN_SPECIFIED_BY_INHERITANCE').length,22);
+ assert.equal(list.find(x=>x.id==='VR-23').capability,'AWAITING_BACKEND_OR_OPERATION');
+});
+test('D02 — ranking controls really change sort state and selected category reveals real values',()=>{
+ const a=app(),m={id:'ranking-controls',visualV3:api.mfV3FromOperational(reply,'rank',previous)};
+ let nodes=flatten(api.mfV3Render(a,m));
+ let relative=nodes.find(x=>x.type==='button'&&txt(x)==='Crescimento %');
+ assert(relative);relative.props.onClick();
+ assert.equal(a.state.mfV3Sort.mode,'relative');
+ nodes=flatten(api.mfV3Render(a,m));
+ const row=nodes.find(x=>x.type==='button'&&txt(x).startsWith('Alimentação')&&x.props.className==='mf-v3-bar');
+ assert(row);row.props.onClick();
+ const after=api.mfV3Render(a,m);
+ assert.match(txt(after),/Antes R\$ 480,00|Antes R\$\s*480,00/);
+ assert.match(txt(after),/28[0,.]+/);
+});
+test('D02 — neutral/no-increase filter does not misuse expense-increase heat colors',()=>{
+ const a=app(),m={id:'neutral',visualV3:api.mfV3FromOperational(reply,'rank',previous)};
+ const more=flatten(api.mfV3Render(a,m)).find(x=>x.type==='button'&&txt(x)==='Mostrar sem aumento');
+ assert(more);more.props.onClick();
+ const nodes=flatten(api.mfV3Render(a,m));
+ assert(nodes.some(x=>x.type==='button'&&txt(x).includes('Moradia')));
+ assert.equal(a.state.mfV3ShowNeutral,'neutral');
+});
+test('D02 — searchable table sort is an actual click handler',()=>{
+ const a=app(),m={id:'sort',visualV3:api.mfV3FromOperational(reply,'table',null)};
+ const btn=flatten(api.mfV3Render(a,m)).find(x=>x.type==='button'&&txt(x)==='Maior gasto');
+ assert(btn);btn.props.onClick();
+ assert.equal(a.state.mfV3TableOrder.order,'amount');
+});
