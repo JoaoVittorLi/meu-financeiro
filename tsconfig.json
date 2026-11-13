@@ -16,6 +16,7 @@
     "src/plan-view.ts",
     "src/intelligence-view.ts",
     "src/intelligence-design.ts",
+    "src/intelligence-visuals.ts",
     "src/ai-markdown.ts",
     "src/intelligence-integration.ts",
     "src/intelligence-staging.ts",
