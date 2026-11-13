@@ -91,7 +91,7 @@ class IntelligenceOrchestrator{
   const replyBase={version:2,contract:'I2-A/D02-V3',readOnly:true,changesApplied:false,
    modelCalled:false,conversationId:opened.id,contextReset:opened.wasReset,
    period:scope.month,source:scope.source,profile:scope.profile,
-   density:DENSITIES.includes(input.density)?input.density:'standard'};
+   density:DENSITIES.includes(input.density)?input.density:'standard',actions:[]};
   const result=(status,answer,extra={})=>({...replyBase,status,answer,
    facts:[],blocks:[],followUps:[],alerts:[],...extra});
   if(/\b(crie|criar|apague|delete|transfira|pague|altere|reclassifique|registre|salve|aceite)\b/i.test(fold(question)))
@@ -100,7 +100,7 @@ class IntelligenceOrchestrator{
   const categories=typeof db?.listCategories==='function'?
    (db.listCategories()?.categories||[]).map(c=>c.name).filter(n=>typeof n==='string'):[];
   let decided=localPlan(question,ctx,categories),plannerWarning=null;
-  if(this.planner&&typeof this.planner.propose==='function'){
+  if(scope.profile==='demo'&&scope.source==='manual'&&this.planner&&typeof this.planner.propose==='function'){
    try{
     const proposed=await this.planner.propose({question,scope,context:ctx});
     if(proposed)decided={plan:validatePlan(proposed),exclusions:ctx.exclusions||[]};
