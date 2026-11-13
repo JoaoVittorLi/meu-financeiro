@@ -5,7 +5,7 @@ Data: 2026-11-13 · Índice: #55 · Coordenação: #49 · Baseline PR #54 / 55de
 |---|---|---|---|---|
 | D01 | Chat Lateral | **IMPLEMENTATION_READY** (DESIGN_APPROVED) | #56 | **V4.5 FINAL** · protótipo/specs/handoff congelados |
 | D02 | Chat Principal / Expandido | **DESIGN HANDOFF V3 CONSOLIDADO** (implementação pendente) | #58 | Biblioteca de 26 famílias especificada por herança; 3 aprovadas individualmente, VR-10 V2 referência; sem mais microscreens |
-| D03 | Inteligência Hoje | **PROTOTYPING / WAITING_FEEDBACK** | #61 | V1 tela completa — prioridades, agenda, economia e investigação sob demanda; não aprovado |
+| D03 | Inteligência Hoje | **IMPLEMENTATION_READY** (DESIGN_APPROVED) | #61 | **V2 FINAL** · cartões premium uniformes + prioridades dinâmicas · HTML/spec/QA/handoff publicados; Electron pendente |
 | D04 | Central de Revisão | NOT_STARTED | — | — |
 | D05 | Movimentações | NOT_STARTED | — | — |
 | D06 | Visão Geral | NOT_STARTED | — | — |
@@ -41,8 +41,20 @@ Critérios para DESIGN_APPROVED: aprovação explícita do proprietário sobre v
 - **Progresso confirmado:** conteúdo da galeria V3 e JS sintaticamente validados, documentação versionada. **Não verificado:** screenshots Chromium dessa V3, testes de clique, QA Electron, integração e escrita financeira real.
 - **Próximo item do roteiro:** [D03 — Inteligência Hoje, issue #61](https://github.com/JoaoVittorLi/meu-financeiro/issues/61). Rever D03 como **uma tela inteira**, sem ciclos de microcomponentes já padronizados; respeitar design principal leve, histórico recolhido e painel opcional.
 
-### D03 — V1 Inteligência Hoje, em revisão
+### D03 — V1 Inteligência Hoje (histórico; superada pela V2)
 
 - O estado atual de `src/intelligence-view.ts` contém oito cards operacionais com metadados UI-01–08. A V1 mantém a lógica como referência, mas redesenha a superfície inteira sem abas permanentes.
 - [D03 V1 Design Spec](screens/d03-inteligencia-hoje/D03_V1_DESIGN_SPEC.md) · [Fixtures sintéticas](screens/d03-inteligencia-hoje/D03_V1_FIXTURES.json) · [Issue #61](https://github.com/JoaoVittorLi/meu-financeiro/issues/61).
-- Ainda não há aprovação nem implementação/QA Electron. Após feedback, congelar HTML canônico e specs.
+- V1 não foi aprovada e foi substituída pela V2. O Electron ainda não foi implementado neste pacote.
+
+### D03 — V2 FINAL APROVADA · 13/11/2026
+
+**Aprovação explícita do proprietário** sobre a tela inteira D03 V2, identidade esmeralda compartilhada pelos cards e motor contextual de prioridades. Polimento final concluído e artefatos publicados em branch de Design:
+
+- [Protótipo HTML reproduzível](screens/d03-inteligencia-hoje/prototype.html) · [Design Spec final](screens/d03-inteligencia-hoje/DESIGN_SPEC_APPROVED.md) · [Regras dinâmicas](screens/d03-inteligencia-hoje/BEHAVIOR_SPEC.md) · [Fixtures sintéticas](screens/d03-inteligencia-hoje/D03_V2_APPROVED_FIXTURES.json).
+- [Aceite e resultados de smoke](screens/d03-inteligencia-hoje/ACCEPTANCE.md) · [Handoff Executor C1/C2](screens/d03-inteligencia-hoje/HANDOFF.md) · [Changelog](screens/d03-inteligencia-hoje/CHANGELOG.md).
+- **Verificação executada:** sintaxe JavaScript e cenários de folga/aperto/insuficiência/margem curta, saldo indisponível, histórico revogado, limite zero e coverage parcial; sem smoke de navegador/Electron.
+- **Polimento:** ajustar ordem da margem curta acima dos alertas secundários; não alterar cores de cartões por severidade, só valores/ícones semânticos.
+- **Status:** `DESIGN_APPROVED / IMPLEMENTATION_READY`, produto `NOT_IMPLEMENTED`. Não merge/main/EXE/escrita financeira pessoal por esta aprovação.
+
+**Próxima tela principal de Design:** D04 — Central de Revisão. O Executor pode implementar D03 em branch separada conforme contratos e QA; não bloquear o design D04 por build.
