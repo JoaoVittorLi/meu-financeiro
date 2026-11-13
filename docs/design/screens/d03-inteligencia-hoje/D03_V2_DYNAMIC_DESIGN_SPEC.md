@@ -1,6 +1,6 @@
 # D03 — Inteligência Hoje · V2 dinâmica (em revisão)
 
-**Estado:** `PROTOTYPING / WAITING_FEEDBACK` — 13/11/2026. V1 direção de layout preservada, V2 ainda **não homologada**. Não mexer em código Electron nesta entrega. O protótipo interativo V2 é apresentado diretamente na conversa para revisão da tela inteira.
+**Histórico:** esta é a especificação V2 original, antes da aprovação. A D03 V2 foi **DESIGN_APPROVED** em 13/11/2026; consulte a [especificação final](DESIGN_SPEC_APPROVED.md), o [protótipo reproduzível](prototype.html), o [handoff](HANDOFF.md) e o [aceite](ACCEPTANCE.md). O Electron ainda não foi implementado/homologado nesta entrega.
 
 ## Feedback do proprietário e resposta
 
