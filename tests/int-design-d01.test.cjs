@@ -81,3 +81,15 @@ test('D01 manual category editor has real navigation and is disabled in demo',()
  a.state.mode='demo';b=flatten(f.renderMfD01Proposal(a,p)).find(n=>n.type==='button'&&copy(n)==='Abrir editor manual');
  assert(b.props.disabled);
 });
+
+
+test('D01 future-only or denied proposals never certify a financial preview',()=>{
+ const a=app(),p=proposal();
+ a.state.mfD01Committed[p.id]={...f.mfD01Default(p),history:false,future:true};
+ f.mfD01EnterReview(a,p);
+ assert.equal(a.state.mfD01Review.freshness,false);
+ assert.equal(f.mfD01VerifyReview(a,p),false);
+ a.state.mfD01Committed[p.id]={...f.mfD01Default(p),history:true,future:false};
+ f.mfD01EnterReview(a,p);
+ assert.equal(f.mfD01VerifyReview(a,{...p,status:'denied'}),false);
+});
