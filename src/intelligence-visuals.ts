@@ -185,7 +185,7 @@ function renderMfVisual(app:any,msg:IntelligenceChatMessage):any{
     nHeight>0?h('rect',{x:710,y:25+eHeight,width:24,height:nHeight,fill:'#53d896'}):null,
     h('text',{x:20,y:15,fill:'currentColor'},'Receitas'),
     h('text',{x:320,y:15,fill:'currentColor'},'Despesas'),
-    h('text',{x:710,y:15,fill:'currentColor'},'Categorias / resultado'))));
+    h('text',{x:710,y:15,fill:'currentColor'},'Categorias / resultado')));
  }
  return h('section',{className:'mf-vr-card mf-vr-'+data.kind+(compact?' is-compact':''),role:'region',
   'aria-label':data.kind==='treemap'?'Distribuição dos gastos por categoria':'Fluxo de dinheiro reconciliado'},
