@@ -3030,3 +3030,10 @@
   font-size:11px;
   line-height:1.55;
 }
+
+/* INT-DESIGN-01 VR07 — category drilldown remains inside chat. */
+.mf-vr-details{display:grid;gap:8px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--text)}
+.mf-vr-details>strong{font-size:12px}
+.mf-vr-details ul{max-height:180px;overflow:auto;padding-left:18px;margin:0;font-size:11px;line-height:1.65}
+.mf-vr-details p{font-size:11px;color:var(--muted);margin:0}
+.mf-vr-details button{justify-self:start;border:1px solid var(--border);padding:8px 11px;border-radius:8px;background:var(--surface2);color:var(--text);cursor:pointer}
