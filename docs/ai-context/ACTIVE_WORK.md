@@ -118,3 +118,8 @@ Sprint Premium R3→R2→R4: feat/mf2-premium-productivity-sprint-20261112, base
 
 
 Sprint Premium checkpoint #54: R3/R2/R4 entregues, R5 primeira fatia; código e897140/542 testes. Evidências/handoff na própria branch, serviços I preservados. Conferir HEAD remoto antes de retomar.
+
+
+## INT-DESIGN-01 — ownership de integração (13/11/2026)
+
+**PR Draft #60 / issue #59.** Branch exclusiva `feat/mf2-int-design-01-d01-vr07-vr08-20261113`, baseada no PR #54 `55de81c03c3171edd0b325eb66d63630018c23c4`, usando exclusivamente D01 V4.5 + VR-07/08 de #57; **sem merge do PR documental #57**. Esta frente possui `src/intelligence-design.ts`, `src/intelligence-visuals.ts`, estilos/inteligência compartilhados em branch isolada, testes e documento técnico. O Integrador mantém ownership de `app/app.js` compilado, contratos comuns e promoção dos gates. Extensão read-only de `electron/financial-intelligence.cjs` (sem novo IPC) foi comunicada em #49 para revisão antes da integração definitiva. D02 completo, VR-09, escrita IA pessoal, release e EXE fora do escopo.
