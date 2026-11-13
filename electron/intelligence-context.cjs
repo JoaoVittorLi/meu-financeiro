@@ -5,6 +5,8 @@ const VALID_MONTH=/^20\d\d-(0[1-9]|1[0-2])$/;
 function scopeOf(input,owner){
  if(!Number.isInteger(owner)||owner<0)throw Error('Identidade de leitura inválida.');
  if(!VALID_MONTH.test(input?.month||''))throw Error('Mês inválido.');
+ if(input?.accountId!==undefined&&input.accountId!==null)
+  throw Error('Filtro por conta individual ainda não autorizado pelo IC-READ.');
  if(typeof input?.token!=='string'||!input.token)throw Error('Autorização de leitura necessária.');
  if(!['bank','manual'].includes(input.source)||!['real','demo'].includes(input.profile))
   throw Error('Fonte ou perfil inválido.');
