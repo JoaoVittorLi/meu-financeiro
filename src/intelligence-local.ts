@@ -89,13 +89,17 @@ async function localFinancialSubmit(app:any,question:string){
  const factsValid=operational&&(state==='ready'||state==='empty');
  const evidence=factsValid?(operational.profile==='synthetic'?'Ambiente sintético':'Fonte '+(operational.source==='bank'?'bancária':'manual'))+
   ' · '+intelligencePremiumCoverage(operational.coverage)+' · '+month:'';
+ const visualKind=factsValid?mfVisualRequested(q):null;
+ const visual=visualKind?mfVisualFromOperational(operational,visualKind):null;
  const answer:IntelligenceChatMessage={
   id:'local-a-'+Date.now(),role:'assistant',text:answerText,status:finalStatus,
   createdAt:intelligenceNowTime(),scopeLabel:scope.label,periodLabel:month,
   structuredCard:factsValid&&operational.card?operational.card:reply?.card||null,
+  visual,
   operationalActions:factsValid&&Array.isArray(operational.actions)?operational.actions:[],
   operationalEvidence:evidence,
-  details:factsValid?'Consulta local determinística, sem IA externa. Não foi executada qualquer alteração.':
+  details:visualKind&&!visual?'Não há evidências suficientes para desenhar o gráfico com totais reconciliados. Confira fonte e cobertura.':
+    factsValid?'Consulta local determinística, sem IA externa. Não foi executada qualquer alteração.':
     reply?JSON.stringify(reply.references):'Nenhuma alteração financeira nem envio externo.'
  };
  intelligenceSyncThreadMessages(app,[...messages,user,answer],scope);
