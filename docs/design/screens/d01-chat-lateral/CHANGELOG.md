@@ -4,3 +4,5 @@
 - **Coordenação**: #56 (tela), #55 (índice), #49 (engenharia/IA). Baseline: PR #54, SHA 55de81c03c3171edd0b325eb66d63630018c23c4.
 - **13/11/2026 — V4 REJEITADA pelo proprietário**: perguntas repetitivas e artificiais, visual sem fidelidade ao app atual nem à V3. Não utilizar a V4 em handoff. Decisão em #56.
 - **13/11/2026 — V4.1 (nova candidata em prototipação)**: revisão apoiada em `app/design-system.css`, `app/style.css`, `app/intelligence.css`, `src/app.ts` e `src/intelligence-view.ts` do PR #54. Perguntas derivadas de registros/período/filtros e estados, sem histórico suficiente não inventar. Aguardando feedback e validação visual do proprietário; não aprovada.
+- **13/11/2026 — V4.2 (parcialmente elogiada, não aprovada):** cabeçalho técnico removido; perguntas conversacionais progressivas e contextuais. Ainda requer melhorias no card de revisão.
+- **13/11/2026 — V4.3 (proposta em revisão):** card premium de revisão com hierarquia de ação, visual leve, comparação atual→sugerida, explicação recolhível, edição, prévia, recibo, próxima revisão e desfazer. Dados exclusivamente sintéticos. Referência de feedback: issue #56. Não aprovado.
