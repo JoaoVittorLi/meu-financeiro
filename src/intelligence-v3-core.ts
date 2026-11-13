@@ -30,7 +30,17 @@ const MF_V3_KINDS=[
  ['VR-25','quality','Qualidade dos dados'],['VR-26','state','Estados especiais']
 ];
 const MF_V3_HEAT=['#ff516a','#ff7470','#fa935d','#f4b350','#f4d363'];
-function mfV3Registry(){return MF_V3_KINDS.map(x=>({id:x[0],kind:x[1],title:x[2]}));}
+function mfV3Registry(){
+ const approved=new Set(['treemap','sankey','rank']);
+ const connected=new Set(['summary','kpi','compare','trend','bar','donut','treemap','sankey',
+  'rank','drilldown','table','budget','cashflow','insight','report','quality','state']);
+ return MF_V3_KINDS.map(x=>({id:x[0],kind:x[1],title:x[2],
+  designStatus:approved.has(x[1])?'DESIGN_APPROVED':
+   x[1]==='drilldown'?'BASELINE_ACCEPTED_FOR_BATCH':'DESIGN_SPECIFIED_BY_INHERITANCE',
+  capability:connected.has(x[1])?'LOCAL_FACTS_ADAPTER':
+   x[1]==='proposal'?'D01_SUPERVISED_PREVIEW':'AWAITING_BACKEND_OR_OPERATION',
+  implementation:'RENDERER_IMPLEMENTED_NOT_HOMOLOGATED'}));
+}
 function mfV3Allowed(kind){return MF_V3_KINDS.some(x=>x[1]===kind);}
 function mfV3Title(kind){const hit=MF_V3_KINDS.find(x=>x[1]===kind);return hit?hit[2]:'Resposta financeira';}
 function mfV3Money(n){return Number.isSafeInteger(n)?new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(n/100):'—';}
