@@ -1,21 +1,33 @@
-# MF2 — Design System Premium (estágio de prototipação)
+# MF2 — Sistema visual aprovado e políticas
 
-Fonte canônica de decisões de direção: `docs/ai-context/DESIGN_DIRECTION_PREMIUM.md` na baseline do PR #54.
+Direção geral do produto: [DESIGN_DIRECTION_PREMIUM.md](../ai-context/DESIGN_DIRECTION_PREMIUM.md) na baseline PR #54. D01 aprovado: [TOKENS.json](./screens/d01-chat-lateral/TOKENS.json) e [DESIGN_SPEC.md](./screens/d01-chat-lateral/DESIGN_SPEC.md).
 
-## Tokens propostos para D01 V4 (sujeitos a feedback)
-- Canvas dark: `#0d1211`; superfície: `#151c1a`; painel: `#19221f`; borda: `#2a3531`.
-- Canvas light: `#f5f7f5`; superfície: `#ffffff`; painel: `#ffffff`; borda: `#e0e7e2`.
-- Positivo/acento dark: `#66d4b6`; positivo light: `#1f7a63`. Desfavorável: `#f37e82` em dark/`#b93f48` em light.
-- Atenção: `#eab968`; neutro: text secondary/cinza. Evitar verde para aumento de despesas.
-- Raio do drawer: `22px`; cards internos: `14px`; botões: `10px`.
-- Transições: `140ms` micro, `240ms` painel, easing `cubic-bezier(.22,1,.36,1)`; respeitar `prefers-reduced-motion`.
-- Drawer de referência: `min(440px, 100%)`; tela expandida com continuidade de sessão.
-- Tipografia base: system-ui/sans-serif, números tabulares, legibilidade em 1366×768 e 1920×1080.
+## Base visual canônica
 
-## Regras semânticas
-- Receita aumenta → favorável; despesas aumentam → desfavorável, quando comparação válida.
-- Despesas diminuem → favorável, quando comparação válida.
-- Falta de base/fonte/tempo → neutro; nunca inventar percentuais no perfil pessoal.
-- Protótipos podem usar valores sintéticos, desde que sinalizados.
-- Ações financeiras reais requerem serviço autorizado, prévia, confirmação, recibo e auditoria; perfil pessoal não habilita por conta da interface.
-- Componentes devem contemplar loading, vazio, erro, contexto expirado e disponibilidade.
+| Token | Dark | Light |
+|---|---|---|
+| Canvas | `#141414` | `#f4f4f6` |
+| Superfície | `#1a1a1a` | `#ffffff` |
+| Superfície elevada | `#202328` | `#f4f4f5` |
+| Borda | `#303034` | `#e5e5e8` |
+| Texto | `#fafafa` | `#171717` |
+| Secundário | `#b1b1ba` | `#64646e` |
+| Positivo / CTA | `#53d896` | `#087e49` |
+| Negativo / despesa | `#ff7a88` | `#c92a3c` |
+| Atenção | `#f5bc63` | `#975b00` |
+
+Fonte: `Segoe UI Variable` com fallback `Segoe UI, system-ui`. Raio do drawer 22 px, card 18 px, modal 20 px, botões 10 px. Motion rápido (140–250 ms) e `prefers-reduced-motion`.
+
+## Consistência de experiência
+
+- Nunca criar faixa de metadados de desenvolvimento no topo do chat. Contexto discreto abaixo do título, detalhes de fonte/período sob demanda.
+- Usuário fala com um assistente, não com o backend. O campo de mensagem fica fixo, e a confirmação financeira aparece apenas em operação concreta.
+- Perguntas de acompanhamento mudam conforme fatos e histórico da conversa: explicação → economia possível → plano → projeção. Não são lista estática nem repetitiva.
+- Cores semânticas: aumento de despesas é desfavorável, redução favorável; quando não há base de comparação suficiente, neutro.
+- Valores são formatados com `pt-BR`; separar despesa, resultado e saldo bancário.
+- Ações condicionais exigem estado (disponível, sem permissão, loading, erro, stale e conflito); nenhum botão operacional fictício no perfil pessoal.
+- Modais de edição e reconfirmação têm propósitos diferentes. Salvar rascunho não é autorizar gravação.
+- Prévia antes de regra categórica abrange histórico, futuras transações, exclusões, duplicidades, precedência e ambiguidades.
+- Aprovado D01 V4.5 **não substitui** desenho das D02–D12. Cada tela deve passar por avaliação própria.
+
+A existência do protótipo não ativa escrita por IA no perfil real. Serviços e transações seguem sob controle do Integrador.
