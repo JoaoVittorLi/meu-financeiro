@@ -65,6 +65,8 @@ test('I2-A/drilldown: ID is real and monetary split is not duplicated',()=>{
   const scope=scopeOf(f.input,71);
   const merchants=f.tools.execute('merchants',{category:'Alimentação'},scope);
   assert.equal(merchants.facts.totalCents,6000);
+  assert.equal(merchants.facts.deltaCents,6000);
+  assert.equal(merchants.facts.merchants[0].deltaCents,6000);
   assert.equal(merchants.facts.merchants[0].ids[0],ACCOUNT+':split');
   const rows=f.tools.execute('transactions',{ids:[ACCOUNT+':split']},scope);
   assert.equal(rows.facts.items[0].amountCents,6000);
@@ -142,5 +144,6 @@ test('I2-A/context expiry: state is ephemeral, never exports grant in visual fac
   assert(!r.blocks.some(b=>b.kind==='sankey'));
   const store=new ConversationContextStore({clock:()=>NOW,ttlMs:1});
   assert.equal(store.open(f.input,71).wasReset,false);
+  assert.throws(()=>scopeOf({...f.input,accountId:'some-bank'},71),/conta individual/);
  }finally{f.db.close();}
 });
