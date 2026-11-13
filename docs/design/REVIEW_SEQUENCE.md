@@ -4,7 +4,7 @@ Data: 2026-11-13 · Índice: #55 · Coordenação: #49 · Baseline PR #54 / 55de
 | Ordem | Tela | Estado | Issue | Versão |
 |---|---|---|---|---|
 | D01 | Chat Lateral | **IMPLEMENTATION_READY** (DESIGN_APPROVED) | #56 | **V4.5 FINAL** · protótipo/specs/handoff congelados |
-| D02 | Chat Principal / Expandido | **PROTOTYPING** | #58 | V1 em revisão · ainda não aprovado |
+| D02 | Chat Principal / Expandido | **PROTOTYPING** | #58 | V4 workspace + Etapa 2 biblioteca visual especificada; aguardando feedback |
 | D03 | Inteligência Hoje | NOT_STARTED | — | — |
 | D04 | Central de Revisão | NOT_STARTED | — | — |
 | D05 | Movimentações | NOT_STARTED | — | — |
@@ -23,3 +23,11 @@ Fluxo de estados: NOT_STARTED → CURRENT_UI_REVIEWED → PROTOTYPING → WAITIN
 **D01 — aprovação do proprietário:** 13/11/2026, protótipo V4.4 com ajustes finais autorizados e consolidados na V4.5. A entrega oficial está no [pacote D01](screens/d01-chat-lateral/) do PR Draft #57. O código Electron não foi alterado; integração, UI real e escrita supervisionada permanecem pendentes.
 
 Critérios para DESIGN_APPROVED: aprovação explícita do proprietário sobre versão exata. Critérios IMPLEMENTATION_READY: prototype.html reproduzível, specs, tokens, fixtures, acceptance, changelog e handoff publicados. O código de produção é responsabilidade do executor em branch separada. Nenhum build pago ou merge em main autorizado.
+
+
+### D02 — Etapa 2 — Biblioteca Visual (13/11/2026)
+
+- **Estado:** `DESIGN_SPECIFIED / WAITING_FEEDBACK`, NÃO `DESIGN_APPROVED` e não implementado.
+- **Escopo:** 26 famílias de respostas tipadas; `compact` lateral D01, `standard` principal D02, `analysis` workspace, `mobile` PWA; dark/light e 10 estados demonstráveis.
+- **Fontes:** [Galeria HTML](screens/d02-chat-principal/VISUAL_GALLERY_STAGE2.html), [Design System](screens/d02-chat-principal/VISUAL_DESIGN_SYSTEM_STAGE2.md), [QA/estados](screens/d02-chat-principal/VISUAL_STATES_QA_STAGE2.md), [Evidências](screens/d02-chat-principal/VISUAL_STAGE2_ACCEPTANCE.md).
+- **Gates seguintes:** aprovação visual do proprietário, contratos autorizados, implementação separada e QA Electron real. D01 V4.5 permanece intacta.
