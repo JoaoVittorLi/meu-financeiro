@@ -66,7 +66,7 @@ class FinancialReadTools{
    loaded:ref.loaded,engine:ref.engine,excludedCategories:p.excludedCategories};
   const wrap=(status,kind,payload={},warning=null)=>({
    tool:name,status,kind,reference:base,factRef:factId(scope,name,
-    JSON.stringify({category:p.category,excluded:p.excludedCategories,ids:p.ids,percent:p.percent})),
+    JSON.stringify({category:p.category,excluded:p.excludedCategories,ids:p.ids,percent:p.percent,asOf:ref.readAt})),
    facts:payload,warning,readOnly:true});
   if(name==='budgets'){
    const budgets=guard.facts?.budgets;
