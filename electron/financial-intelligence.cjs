@@ -46,6 +46,11 @@ class LocalFinancialIntelligence{
  let visualIdentityVerified=true;
  if(input.intent==='radar'){
   for(let i=0;i<rows.length;i++){
+   const item=aggregateFinancePeriod([rows[i]],{...p,source:g.source});
+   // Only records contributing an actual expense to this authorized month
+   // can invalidate visual provenance. Unrelated months, PENDING, transfers,
+   // ignores and income rows do not belong to this diagram.
+   if(!item.expenses.length)continue;
    const rec=records[i];
    const rawId=rec?.id??rec?.externalId;
    const account=g.source==='bank'?String(rec?.accountId||''):'';
@@ -54,8 +59,6 @@ class LocalFinancialIntelligence{
    const key=g.source+':'+account+':'+identity;
    if(!stable||visualSeenIds.has(key))visualIdentityVerified=false;
    else visualSeenIds.add(key);
-   const item=aggregateFinancePeriod([rows[i]],{...p,source:g.source});
-   if(!item.expenses.length)continue;
    for(const cat of item.expenses){
     let value=categoryDetails.get(cat.name);
     if(!value){value={count:0,items:[]};categoryDetails.set(cat.name,value);}
