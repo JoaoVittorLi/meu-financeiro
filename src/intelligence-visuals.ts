@@ -137,6 +137,7 @@ function renderMfVisual(app:any,msg:IntelligenceChatMessage):any{
  const selected=mfVisualSelected(app,msg.id,data),active=data.categories.find(c=>c.name===selected);
  const total=data.expenseCents;
  const resultSelected=selected==='__result__';
+ const detailOpen=app.state.mfVisualDetailsOpen?.messageId===msg.id&&app.state.mfVisualDetailsOpen?.name===selected;
  const compact=app.state.intelligencePanelOpen===true;
  const compare=app.state.mfVisualCompare?.messageId===msg.id&&app.state.mfVisualCompare?.name===selected?app.state.mfVisualCompare:null;
  const tone=(index:number)=>MF_VISUAL_COLORS[index%MF_VISUAL_COLORS.length];
@@ -205,11 +206,15 @@ function renderMfVisual(app:any,msg:IntelligenceChatMessage):any{
   active?h('div',{className:'mf-vr-inspector'},
    h('strong',{},active.name),
    h('p',{},mfVisualMoney(active.amountCents)+' · '+((active.amountCents/data.expenseCents)*100).toFixed(1)+'% das despesas · '+active.movementCount+' movimentação(ões) considerada(s)'),
-   h('details',{},h('summary',{},'Ver registros da categoria'+(active.detailsPartial?' · amostra parcial':'')),
-    h('ul',{},...active.movements.map(m=>h('li',{key:m.id+'-'+m.date},m.date+' · '+m.description+' · '+mfVisualMoney(m.amountCents))),
-    active.detailsPartial?h('li',{},'Exibindo '+active.movements.length+' de '+active.movementCount+' registros; consulte Movimentações para o restante.'):null)),
+   detailOpen?h('div',{className:'mf-vr-details',role:'region','aria-label':'Movimentações de '+active.name},
+     h('strong',{},'Movimentações de '+active.name),
+     h('ul',{},...active.movements.map(m=>h('li',{key:m.id+'-'+m.date},m.date+' · '+m.description+' · '+mfVisualMoney(m.amountCents))),
+     active.detailsPartial?h('p',{role:'status'},'Amostra parcial: '+active.movements.length+' de '+active.movementCount+' registros.'):null,
+     active.detailsPartial?h('button',{type:'button',onClick:()=>mfVisualOpenTransactions(app,active.name,data.period,data.source)},'Abrir histórico completo'):null):null,
    h('div',{className:'mf-vr-actions'},
-    h('button',{type:'button',onClick:()=>mfVisualOpenTransactions(app,active.name,data.period,data.source)},'Ver movimentações'),
+    h('button',{type:'button','aria-expanded':!!detailOpen,
+      onClick:()=>app.setState({mfVisualDetailsOpen:detailOpen?null:{messageId:msg.id,name:active.name}})},
+      detailOpen?'Ocultar movimentações':'Ver movimentações'),
     h('button',{type:'button',disabled:!app.state.localFinancialAccess?.token,
       onClick:()=>void mfVisualComparePrevious(app,msg.id,data,active.name)},'Comparar mês anterior')),
    compare?h('p',{role:'status'},compare.status==='ready'?
