@@ -42,9 +42,18 @@ class LocalFinancialIntelligence{
  // the selected authorized source and month. No SQL writes or new IPC.
  // Per-row deterministic ledger prevents PENDING, transfer, ignore, invalid
  // split, and duplicate amounts from leaking into category drilldowns.
- const categoryDetails=new Map();
+ const categoryDetails=new Map(),visualSeenIds=new Set();
+ let visualIdentityVerified=true;
  if(input.intent==='radar'){
   for(let i=0;i<rows.length;i++){
+   const rec=records[i];
+   const rawId=rec?.id??rec?.externalId;
+   const account=g.source==='bank'?String(rec?.accountId||''):'';
+   const identity=String(rawId??'').trim();
+   const stable=identity&&identity.length<=150&&(g.source==='manual'||!!account);
+   const key=g.source+':'+account+':'+identity;
+   if(!stable||visualSeenIds.has(key))visualIdentityVerified=false;
+   else visualSeenIds.add(key);
    const item=aggregateFinancePeriod([rows[i]],{...p,source:g.source});
    if(!item.expenses.length)continue;
    const rec=records[i];
@@ -68,7 +77,8 @@ class LocalFinancialIntelligence{
      return {name:x.name,amountCents:x.amountCents,movementCount:detail.count,
        movements:detail.items,detailsPartial:detail.items.length<detail.count};
    }),
-   visualSource:'finance-period-ledger-v1'
+   visualSource:visualIdentityVerified?'finance-period-ledger-v1':null,
+   visualLimitation:visualIdentityVerified?null:'Identificadores ausentes ou duplicados; visualização bloqueada até conciliação.'
  };
  let title='Resumo financeiro local',text='Valores calculados dos registros autorizados.',table=[],headers=['Informação','Valor'],metrics=[];
  const counts=(value,label)=>({label,value:String(value),tone:'neutral'});
