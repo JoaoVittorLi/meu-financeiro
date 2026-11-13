@@ -85,7 +85,8 @@ function mfVisualRects(cats:MfVisualCategory[],x=0,y=0,w=100,h=100):MfVisualRect
 }
 function mfVisualSelected(app:any,messageId:string,data:MfVisualSnapshot):string{
  const active=app.state.mfVisualSelection;
- return active?.messageId===messageId&&data.categories.some(c=>c.name===active.name)?active.name:(data.categories[0]?.name||'');
+ return active?.messageId===messageId&&(data.categories.some(c=>c.name===active.name)||
+  (data.kind==='sankey'&&data.netCents>0&&active.name==='__result__'))?active.name:(data.categories[0]?.name||'');
 }
 function mfVisualChoose(app:any,messageId:string,name:string):void{
  app.setState({mfVisualSelection:{messageId,name}});
@@ -135,6 +136,7 @@ function renderMfVisual(app:any,msg:IntelligenceChatMessage):any{
  if(!data)return null;
  const selected=mfVisualSelected(app,msg.id,data),active=data.categories.find(c=>c.name===selected);
  const total=data.expenseCents;
+ const resultSelected=selected==='__result__';
  const compact=app.state.intelligencePanelOpen===true;
  const compare=app.state.mfVisualCompare?.messageId===msg.id&&app.state.mfVisualCompare?.name===selected?app.state.mfVisualCompare:null;
  const tone=(index:number)=>MF_VISUAL_COLORS[index%MF_VISUAL_COLORS.length];
@@ -168,7 +170,9 @@ function renderMfVisual(app:any,msg:IntelligenceChatMessage):any{
    h('svg',{className:'mf-vr-flow',viewBox:'0 0 900 258',role:'img','aria-label':'Receitas distribuídas em despesas por categoria e resultado do período'},
     h('rect',{x:20,y:25,width:26,height:hTotal,rx:6,fill:'#6b8fa9'}),
     h('path',{d:mfVisualRibbon(46,320,25,25,eHeight),fill:'#d98b7e',opacity:.55}),
-    nHeight>0?h('path',{d:mfVisualRibbon(46,710,25+eHeight,25+eHeight,nHeight),fill:'#53d896',opacity:.67}):null,
+    nHeight>0?h('g',{role:'button',tabIndex:0,'aria-label':'Resultado do período '+mfVisualMoney(data.netCents),
+      onClick:()=>open('__result__'),onKeyDown:(e:any)=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();open('__result__');}}},
+      h('path',{d:mfVisualRibbon(46,710,25+eHeight,25+eHeight,nHeight),fill:'#53d896',opacity:resultSelected?1:.67})):null,
     h('rect',{x:320,y:25,width:24,height:eHeight,rx:5,fill:'#d98b7e'}),
     ...data.categories.map((c,i)=>{
      const height=c.amountCents*scale,top=current;current+=height;
@@ -192,7 +196,8 @@ function renderMfVisual(app:any,msg:IntelligenceChatMessage):any{
   data.kind==='sankey'?h('div',{className:'mf-vr-totals'},
    h('span',{},'Receitas '+mfVisualMoney(data.incomeCents)),
    h('span',{},'Despesas '+mfVisualMoney(data.expenseCents)),
-   h('span',{},'Resultado do período '+mfVisualMoney(data.netCents))):null,
+   h('button',{type:'button',className:'mf-vr-result-action',disabled:data.netCents<=0,
+     'aria-pressed':resultSelected,onClick:()=>open('__result__')},'Resultado do período '+mfVisualMoney(data.netCents))):null,
   h('p',{className:'mf-vr-cover',role:data.state==='partial'?'alert':'note'},data.reason),
   data.state==='empty'?h('p',{className:'mf-vr-empty'},'Não existem despesas reconciliadas para esse período.'):null,
   graphic,
@@ -211,6 +216,8 @@ function renderMfVisual(app:any,msg:IntelligenceChatMessage):any{
     'Anterior '+mfVisualMoney(compare.before)+' · atual '+mfVisualMoney(compare.now)+' · diferença '+mfVisualMoney(compare.now-compare.before):
      compare.status==='loading'?'Consultando mês anterior…':
       'Não há uma comparação completa e autorizada disponível.'):null):null,
+  resultSelected?h('p',{className:'mf-vr-result-note',role:'status'},
+   'Resultado do período: '+mfVisualMoney(data.netCents)+'. Isso representa receitas menos despesas efetivas do período; não é o saldo disponível da conta.'):null,
   h('details',{className:'mf-vr-table'},h('summary',{},'Tabela acessível · '+data.categories.length+' categorias'),
    h('table',{},h('thead',{},h('tr',{},h('th',{},'Categoria'),h('th',{},'Despesas'),h('th',{},'Participação'))),
     h('tbody',{},...data.categories.map(c=>h('tr',{key:c.name},
