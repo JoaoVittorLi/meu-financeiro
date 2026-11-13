@@ -1,7 +1,7 @@
 {
-  "version": "D02-V4.1-candidate",
+  "version": "D02-VISUAL-LIBRARY-V3-CONSOLIDATED-20261113",
   "date": "2026-11-13",
-  "status": "DESIGN_MAPPED",
+  "status": "DESIGN_SPECIFIED_BATCH_HANDOFF_READY",
   "issue": 58,
   "synthetic": true,
   "components": [
@@ -12,8 +12,10 @@
       "display": "headline + KPIs + interpretação",
       "kind": "summary",
       "priority": "P0",
-      "approval": "PENDING",
-      "implementation": "NOT_STARTED"
+      "approval": "DESIGN_SPECIFIED_BY_INHERITANCE",
+      "implementation": "NOT_STARTED",
+      "reviewNext": "BATCH_NO_MICRO_REVIEW",
+      "designSpec": "VISUAL_LIBRARY_CONSOLIDATED_V3.md"
     },
     {
       "id": "VR-02",
@@ -22,8 +24,10 @@
       "display": "valor, período e variação",
       "kind": "kpi",
       "priority": "P0",
-      "approval": "PENDING",
-      "implementation": "NOT_STARTED"
+      "approval": "DESIGN_SPECIFIED_BY_INHERITANCE",
+      "implementation": "NOT_STARTED",
+      "reviewNext": "BATCH_NO_MICRO_REVIEW",
+      "designSpec": "VISUAL_LIBRARY_CONSOLIDATED_V3.md"
     },
     {
       "id": "VR-03",
@@ -32,8 +36,10 @@
       "display": "comparação de períodos equivalentes",
       "kind": "compare",
       "priority": "P0",
-      "approval": "PENDING",
-      "implementation": "NOT_STARTED"
+      "approval": "DESIGN_SPECIFIED_BY_INHERITANCE",
+      "implementation": "NOT_STARTED",
+      "reviewNext": "BATCH_NO_MICRO_REVIEW",
+      "designSpec": "VISUAL_LIBRARY_CONSOLIDATED_V3.md"
     },
     {
       "id": "VR-04",
@@ -42,8 +48,10 @@
       "display": "linha/área com drill-down",
       "kind": "trend",
       "priority": "P0",
-      "approval": "PENDING",
-      "implementation": "NOT_STARTED"
+      "approval": "DESIGN_SPECIFIED_BY_INHERITANCE",
+      "implementation": "NOT_STARTED",
+      "reviewNext": "BATCH_NO_MICRO_REVIEW",
+      "designSpec": "VISUAL_LIBRARY_CONSOLIDATED_V3.md"
     },
     {
       "id": "VR-05",
@@ -52,8 +60,10 @@
       "display": "barras agrupadas/empilhadas",
       "kind": "bar",
       "priority": "P0",
-      "approval": "PENDING",
-      "implementation": "NOT_STARTED"
+      "approval": "DESIGN_SPECIFIED_BY_INHERITANCE",
+      "implementation": "NOT_STARTED",
+      "reviewNext": "BATCH_NO_MICRO_REVIEW",
+      "designSpec": "VISUAL_LIBRARY_CONSOLIDATED_V3.md"
     },
     {
       "id": "VR-06",
@@ -62,8 +72,10 @@
       "display": "rosca/legenda acessível",
       "kind": "donut",
       "priority": "P0",
-      "approval": "PENDING",
-      "implementation": "NOT_STARTED"
+      "approval": "DESIGN_SPECIFIED_BY_INHERITANCE",
+      "implementation": "NOT_STARTED",
+      "reviewNext": "BATCH_NO_MICRO_REVIEW",
+      "designSpec": "VISUAL_LIBRARY_CONSOLIDATED_V3.md"
     },
     {
       "id": "VR-07",
@@ -116,9 +128,13 @@
       "display": "categoria → estabelecimento → transação",
       "kind": "drilldown",
       "priority": "P0",
-      "approval": "REVIEW_IN_PROGRESS",
+      "approval": "BASELINE_ACCEPTED_FOR_BATCH",
       "implementation": "NOT_STARTED",
-      "nextPrototype": "V1"
+      "nextPrototype": "V1",
+      "baselineVersion": "V2",
+      "approvalScope": "Owner liked VR-10 V2 and directed consolidated adoption; source prototype remains in chat and does not have verified standalone HTML in repo",
+      "reviewNext": "BATCH_NO_MICRO_REVIEW",
+      "designSpec": "VISUAL_LIBRARY_CONSOLIDATED_V3.md"
     },
     {
       "id": "VR-11",
@@ -127,8 +143,10 @@
       "display": "filtros, seleção, IDs e detalhe",
       "kind": "table",
       "priority": "P0",
-      "approval": "PENDING",
-      "implementation": "NOT_STARTED"
+      "approval": "DESIGN_SPECIFIED_BY_INHERITANCE",
+      "implementation": "NOT_STARTED",
+      "reviewNext": "BATCH_NO_MICRO_REVIEW",
+      "designSpec": "VISUAL_LIBRARY_CONSOLIDATED_V3.md"
     },
     {
       "id": "VR-12",
@@ -137,8 +155,10 @@
       "display": "lista de serviços, datas e cobranças",
       "kind": "recurring",
       "priority": "P1",
-      "approval": "PENDING",
-      "implementation": "NOT_STARTED"
+      "approval": "DESIGN_SPECIFIED_BY_INHERITANCE",
+      "implementation": "NOT_STARTED",
+      "reviewNext": "BATCH_NO_MICRO_REVIEW",
+      "designSpec": "VISUAL_LIBRARY_CONSOLIDATED_V3.md"
     },
     {
       "id": "VR-13",
@@ -147,8 +167,10 @@
       "display": "medidor, velocidade, previsão e ação",
       "kind": "budget",
       "priority": "P0",
-      "approval": "PENDING",
-      "implementation": "NOT_STARTED"
+      "approval": "DESIGN_SPECIFIED_BY_INHERITANCE",
+      "implementation": "NOT_STARTED",
+      "reviewNext": "BATCH_NO_MICRO_REVIEW",
+      "designSpec": "VISUAL_LIBRARY_CONSOLIDATED_V3.md"
     },
     {
       "id": "VR-14",
@@ -157,8 +179,10 @@
       "display": "eventos e saldo diário projetado",
       "kind": "cashflow",
       "priority": "P1",
-      "approval": "PENDING",
-      "implementation": "NOT_STARTED"
+      "approval": "DESIGN_SPECIFIED_BY_INHERITANCE",
+      "implementation": "NOT_STARTED",
+      "reviewNext": "BATCH_NO_MICRO_REVIEW",
+      "designSpec": "VISUAL_LIBRARY_CONSOLIDATED_V3.md"
     },
     {
       "id": "VR-15",
@@ -167,8 +191,10 @@
       "display": "sliders e cálculo reproduzível",
       "kind": "whatif",
       "priority": "P0",
-      "approval": "PENDING",
-      "implementation": "NOT_STARTED"
+      "approval": "DESIGN_SPECIFIED_BY_INHERITANCE",
+      "implementation": "NOT_STARTED",
+      "reviewNext": "BATCH_NO_MICRO_REVIEW",
+      "designSpec": "VISUAL_LIBRARY_CONSOLIDATED_V3.md"
     },
     {
       "id": "VR-16",
@@ -177,8 +203,10 @@
       "display": "A/B/C, premissas e incerteza",
       "kind": "scenario",
       "priority": "P1",
-      "approval": "PENDING",
-      "implementation": "NOT_STARTED"
+      "approval": "DESIGN_SPECIFIED_BY_INHERITANCE",
+      "implementation": "NOT_STARTED",
+      "reviewNext": "BATCH_NO_MICRO_REVIEW",
+      "designSpec": "VISUAL_LIBRARY_CONSOLIDATED_V3.md"
     },
     {
       "id": "VR-17",
@@ -187,8 +215,10 @@
       "display": "linha de progresso e prazo",
       "kind": "goal",
       "priority": "P1",
-      "approval": "PENDING",
-      "implementation": "NOT_STARTED"
+      "approval": "DESIGN_SPECIFIED_BY_INHERITANCE",
+      "implementation": "NOT_STARTED",
+      "reviewNext": "BATCH_NO_MICRO_REVIEW",
+      "designSpec": "VISUAL_LIBRARY_CONSOLIDATED_V3.md"
     },
     {
       "id": "VR-18",
@@ -197,8 +227,10 @@
       "display": "amortização, datas e custos",
       "kind": "debt",
       "priority": "P1",
-      "approval": "PENDING",
-      "implementation": "NOT_STARTED"
+      "approval": "DESIGN_SPECIFIED_BY_INHERITANCE",
+      "implementation": "NOT_STARTED",
+      "reviewNext": "BATCH_NO_MICRO_REVIEW",
+      "designSpec": "VISUAL_LIBRARY_CONSOLIDATED_V3.md"
     },
     {
       "id": "VR-19",
@@ -207,8 +239,10 @@
       "display": "ativos/passivos, tempo e alocação",
       "kind": "portfolio",
       "priority": "P1",
-      "approval": "PENDING",
-      "implementation": "NOT_STARTED"
+      "approval": "DESIGN_SPECIFIED_BY_INHERITANCE",
+      "implementation": "NOT_STARTED",
+      "reviewNext": "BATCH_NO_MICRO_REVIEW",
+      "designSpec": "VISUAL_LIBRARY_CONSOLIDATED_V3.md"
     },
     {
       "id": "VR-20",
@@ -217,8 +251,10 @@
       "display": "recomendações justificadas",
       "kind": "insight",
       "priority": "P1",
-      "approval": "PENDING",
-      "implementation": "NOT_STARTED"
+      "approval": "DESIGN_SPECIFIED_BY_INHERITANCE",
+      "implementation": "NOT_STARTED",
+      "reviewNext": "BATCH_NO_MICRO_REVIEW",
+      "designSpec": "VISUAL_LIBRARY_CONSOLIDATED_V3.md"
     },
     {
       "id": "VR-21",
@@ -227,8 +263,10 @@
       "display": "tarefas, prazos e acompanhamento",
       "kind": "plan",
       "priority": "P0",
-      "approval": "PENDING",
-      "implementation": "NOT_STARTED"
+      "approval": "DESIGN_SPECIFIED_BY_INHERITANCE",
+      "implementation": "NOT_STARTED",
+      "reviewNext": "BATCH_NO_MICRO_REVIEW",
+      "designSpec": "VISUAL_LIBRARY_CONSOLIDATED_V3.md"
     },
     {
       "id": "VR-22",
@@ -237,8 +275,10 @@
       "display": "diff, seleção, exceções e abrangência",
       "kind": "proposal",
       "priority": "P0",
-      "approval": "PENDING",
-      "implementation": "NOT_STARTED"
+      "approval": "DESIGN_SPECIFIED_BY_INHERITANCE",
+      "implementation": "NOT_STARTED",
+      "reviewNext": "BATCH_NO_MICRO_REVIEW",
+      "designSpec": "VISUAL_LIBRARY_CONSOLIDATED_V3.md"
     },
     {
       "id": "VR-23",
@@ -247,8 +287,10 @@
       "display": "reconfirmação, recibo e undo seguro",
       "kind": "approval",
       "priority": "P0",
-      "approval": "PENDING",
-      "implementation": "NOT_STARTED"
+      "approval": "DESIGN_SPECIFIED_BY_INHERITANCE",
+      "implementation": "NOT_STARTED",
+      "reviewNext": "BATCH_NO_MICRO_REVIEW",
+      "designSpec": "VISUAL_LIBRARY_CONSOLIDATED_V3.md"
     },
     {
       "id": "VR-24",
@@ -257,8 +299,10 @@
       "display": "preview, artefato e fontes",
       "kind": "report",
       "priority": "P1",
-      "approval": "PENDING",
-      "implementation": "NOT_STARTED"
+      "approval": "DESIGN_SPECIFIED_BY_INHERITANCE",
+      "implementation": "NOT_STARTED",
+      "reviewNext": "BATCH_NO_MICRO_REVIEW",
+      "designSpec": "VISUAL_LIBRARY_CONSOLIDATED_V3.md"
     },
     {
       "id": "VR-25",
@@ -267,8 +311,10 @@
       "display": "asOf, cobertura, atrasos, conflitos",
       "kind": "quality",
       "priority": "P0",
-      "approval": "PENDING",
-      "implementation": "NOT_STARTED"
+      "approval": "DESIGN_SPECIFIED_BY_INHERITANCE",
+      "implementation": "NOT_STARTED",
+      "reviewNext": "BATCH_NO_MICRO_REVIEW",
+      "designSpec": "VISUAL_LIBRARY_CONSOLIDATED_V3.md"
     },
     {
       "id": "VR-26",
@@ -277,8 +323,20 @@
       "display": "empty, loading, stale, denied, error",
       "kind": "state",
       "priority": "P0",
-      "approval": "PENDING",
-      "implementation": "NOT_STARTED"
+      "approval": "DESIGN_SPECIFIED_BY_INHERITANCE",
+      "implementation": "NOT_STARTED",
+      "reviewNext": "BATCH_NO_MICRO_REVIEW",
+      "designSpec": "VISUAL_LIBRARY_CONSOLIDATED_V3.md"
     }
-  ]
+  ],
+  "reviewMode": "SINGLE_CONSOLIDATED_DELIVERY_NO_PER_FAMILY_PROTOTYPES",
+  "nextScreen": "D03 Inteligência Hoje",
+  "canonical": {
+    "rules": "VISUAL_LIBRARY_CONSOLIDATED_V3.md",
+    "tokens": "VISUAL_LIBRARY_TOKENS_V3.json",
+    "css": "VISUAL_LIBRARY_PREMIUM_V3.css",
+    "handoff": "VISUAL_LIBRARY_HANDOFF_V3.md",
+    "acceptance": "VISUAL_LIBRARY_ACCEPTANCE_V3.md"
+  },
+  "notes": "26 visual families now specified by inheritance of approved D01 and VR-07/08/09 plus direction VR-10 V2. This does not imply 26 individual design approvals or React/Electron implementations."
 }
