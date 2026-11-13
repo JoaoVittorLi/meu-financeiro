@@ -17,6 +17,8 @@
     "src/intelligence-view.ts",
     "src/intelligence-design.ts",
     "src/intelligence-visuals.ts",
+    "src/intelligence-v3-core.ts",
+    "src/intelligence-v3-ui.ts",
     "src/ai-markdown.ts",
     "src/intelligence-integration.ts",
     "src/intelligence-staging.ts",
