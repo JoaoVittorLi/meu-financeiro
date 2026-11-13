@@ -56,6 +56,7 @@ type IntelligenceChatMessage = {
   proposal?:IntelligenceActionProposal|null;
   structuredCard?:IntelligenceStructuredCard|null;
   visual?:MfVisualSnapshot|null;
+  visualV3?:MfV3Card|null;
 };
 type IntelligenceThread = {
   id:string;
@@ -195,8 +196,8 @@ function renderIntelligenceMessageItem(app:any,msg:IntelligenceChatMessage){
       h('span',{},msg.scopeLabel+' · '+msg.periodLabel+' · '+msg.createdAt),
       badge),
     h('div',{className:'mf-ai-msg-body mf-ai-markdown'},...aiMarkdownNodes(msg.text)),
-    msg.structuredCard&&!msg.visual?renderIntelligenceStructuredCard(msg.structuredCard):null,
-    msg.visual?renderMfVisual(app,msg):null,
+    msg.structuredCard&&!msg.visual&&!msg.visualV3?renderIntelligenceStructuredCard(msg.structuredCard):null,
+    msg.visualV3?mfV3Render(app,msg):msg.visual?renderMfVisual(app,msg):null,
     msg.operationalEvidence?h('small',{className:'mf-premium-evidence'},msg.operationalEvidence):null,
     Array.isArray(msg.operationalActions)&&msg.operationalActions.length?h('div',{className:'mf-premium-tile-actions'},...msg.operationalActions.map((action:any)=>intelligencePremiumButton(app,null,action))):null,
     msg.proposal?renderIntelligenceActionProposalCard(app,msg.proposal):null,
