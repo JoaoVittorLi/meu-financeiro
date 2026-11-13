@@ -2,11 +2,25 @@
   "compilerOptions": {
     "target": "ES2019",
     "module": "none",
-    "lib": ["ES2019", "DOM"],
+    "lib": [
+      "ES2019",
+      "DOM"
+    ],
     "outFile": "app/app.js",
     "strict": false,
     "removeComments": true,
     "skipLibCheck": true
   },
-  "files": ["src/app.ts", "src/plan-view.ts", "src/intelligence-view.ts", "src/ai-markdown.ts", "src/intelligence-integration.ts", "src/intelligence-staging.ts", "src/intelligence-local.ts", "src/intelligence-review.ts"]
+  "files": [
+    "src/app.ts",
+    "src/plan-view.ts",
+    "src/intelligence-view.ts",
+    "src/intelligence-design.ts",
+    "src/intelligence-visuals.ts",
+    "src/ai-markdown.ts",
+    "src/intelligence-integration.ts",
+    "src/intelligence-staging.ts",
+    "src/intelligence-local.ts",
+    "src/intelligence-review.ts"
+  ]
 }

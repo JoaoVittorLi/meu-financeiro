@@ -38,7 +38,50 @@ class LocalFinancialIntelligence{
  const warnings=['Uma única origem; valores apenas dos registros locais carregados.','Receitas menos despesas não representam saldo disponível.'];
  if(bank?.truncated)warnings.push('Histórico bancário parcial: a lista local tem limite de 2.500 registros; não representa todo o extrato.');
  const references={engine:'shared/finance-period-ledger.mjs',source:g.source,profile:g.profile,period:p,loaded:records.length,partial:!!bank?.truncated,readAt:new Date(this.clock()).toISOString(),planningRead:false};
+ // INT-DESIGN-01 / VR07–08: additive read-only visual evidence for exactly
+ // the selected authorized source and month. No SQL writes or new IPC.
+ // Per-row deterministic ledger prevents PENDING, transfer, ignore, invalid
+ // split, and duplicate amounts from leaking into category drilldowns.
+ const categoryDetails=new Map(),visualSeenIds=new Set();
+ let visualIdentityVerified=true;
+ if(input.intent==='radar'){
+  for(let i=0;i<rows.length;i++){
+   const item=aggregateFinancePeriod([rows[i]],{...p,source:g.source});
+   // Only records contributing an actual expense to this authorized month
+   // can invalidate visual provenance. Unrelated months, PENDING, transfers,
+   // ignores and income rows do not belong to this diagram.
+   if(!item.expenses.length)continue;
+   const rec=records[i];
+   const rawId=rec?.id??rec?.externalId;
+   const account=g.source==='bank'?String(rec?.accountId||''):'';
+   const identity=String(rawId??'').trim();
+   const stable=identity&&identity.length<=150&&(g.source==='manual'||!!account);
+   const key=g.source+':'+account+':'+identity;
+   if(!stable||visualSeenIds.has(key))visualIdentityVerified=false;
+   else visualSeenIds.add(key);
+   for(const cat of item.expenses){
+    let value=categoryDetails.get(cat.name);
+    if(!value){value={count:0,items:[]};categoryDetails.set(cat.name,value);}
+    value.count++;
+    if(value.items.length<20)value.items.push({
+      id:String(rec.id||rec.externalId||i).slice(0,100),
+      date:String(rec.date||'').slice(0,10),
+      description:String(rec.merchant||rec.description||'Movimentação').slice(0,120),
+      amountCents:cat.amountCents
+    });
+   }
+  }
+ }
  let facts={kind:input.intent,transactionsIncluded:current.transactionsIncluded,excluded:current.excluded,incomeCents:current.incomeCents,expenseCents:current.expenseCents,netCents:current.netCents};
+ if(input.intent==='radar')facts={...facts,
+   expenseCategories:current.expenses.map(x=>{
+     const detail=categoryDetails.get(x.name)||{count:0,items:[]};
+     return {name:x.name,amountCents:x.amountCents,movementCount:detail.count,
+       movements:detail.items,detailsPartial:detail.items.length<detail.count};
+   }),
+   visualSource:visualIdentityVerified?'finance-period-ledger-v1':null,
+   visualLimitation:visualIdentityVerified?null:'Identificadores ausentes ou duplicados; visualização bloqueada até conciliação.'
+ };
  let title='Resumo financeiro local',text='Valores calculados dos registros autorizados.',table=[],headers=['Informação','Valor'],metrics=[];
  const counts=(value,label)=>({label,value:String(value),tone:'neutral'});
  if(input.intent==='category'){

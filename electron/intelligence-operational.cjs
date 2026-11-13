@@ -191,6 +191,7 @@ class IntelligenceOperational{
   let intent=null,category;
   if(/revis|pendentes? de revis|conferir moviment/.test(q))intent='review';
   else if(/compar|mes anterior|aument|diminu/.test(q))intent='compare';
+  else if(/para onde (?:foi|vai) (?:minha |meu |a )?(?:renda|dinheiro)|fluxo de (?:dinheiro|renda)|sankey|treemap|mapa de (?:gastos|despesas|categorias)|distribuicao (?:dos |de )?gastos|despesas por categoria/.test(q))intent='radar';
   else if(/maior(es)? gasto|maior(es)? despesa|mais cara/.test(q))intent='largest';
   else if(/compromiss|proximo mes|venciment|contas futuras/.test(q))intent='commitments';
   else if(/orcament|limites|ultrapass|exced/.test(q))intent='budgets';
