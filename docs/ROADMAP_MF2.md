@@ -571,3 +571,14 @@ Checkpoint integrado #54: R3/R2/R4 funcionais; primeira fatia R5 em e897140. 542
 - **Bloqueio para homologação:** checkout+dependências indisponíveis no ambiente atual, `app/app.js` ainda depende de compilação canônica pelo Integrador, revisão de extensão IC-READ, QA e capturas Electron da branch. Sem CircleCI Windows pago, EXE, merge main, Cloudflare Production ou IA pessoal write.
 
 [Log detalhado](ai-context/logs/2026-11-13-INT-DESIGN-01-D01-VR07-VR08.md). **Próxima ação única:** Integrador executar build/Node/SQLite/Electron com evidências vinculadas ao HEAD do #60 e corrigir regressões antes de revisão do Arquiteto. D02 completo/VR-09 continuam não aprovados.
+
+
+## INT-DESIGN-02 — D02 V3 consolidada (13/11/2026)
+
+**PR #63 Draft** sobre PR #60 HEAD 7a5789e62d39c100e4c9dec64982db1dc9a87244. Design normativo PR #57 HEAD ff9cb052f54b2d5655b9604acfb7e496dfe2ad58.
+
+**C0 / Base #60:** NÃO HOMOLOGADA — sem Node/SQLite/TypeScript/F08/ASAR/Electron no checkout oficial do PR #60. **C1 / VR01–11:** registry único, renderer de chat tipado, validação IC-READ, VR07/08 reutilizados, ranking VR09 com magnitude validada, investigação VR10 e filtros reais; chat principal prioriza conversa, histórico recolhido, sem três tabs permanentes. **C2 / VR12–26:** renderers/estados publicados; VR13 orçamento, VR14 resultado mensal, VR20 concentração, VR21 ponte Planejamento, VR24 tabela, VR25 qualidade, VR26 estados com fatos locais; VR15/16 encaminham ao Simulador original; sem serviços de recorrência/meta/dívida/patrimônio/recibos pessoais fabricados. Estados de design: 3 aprovados individuais, VR10 baseline aceito, 22 herança; **26 códigos visuais ≠ 26 capacidades financeiras homologadas**.
+
+**QA dirigida:** 26/26 asserções V3 do arquivo tests/int-design-v3.test.cjs executadas em V8 isolado PASS, não Node oficial. **0 screenshots Electron #63.** Renderer final app/app.js ainda precisa compilar; não reutilizar PNG do #54 como prova. **Bloqueio**: checkout autenticado/dep Electron indisponível, testes oficiais e revisão de contratos no #49/I2-A #62 pendentes. **Status: IMPLEMENTED_PARTIAL / NOT_HOMOLOGATED / Draft.**
+
+[Log INT-DESIGN-02](ai-context/logs/2026-11-13-INT-DESIGN-02-D02-V3.md). **Próximo gate único:** Integrador executar suite Node/SQLite/TS + F08/ASAR e smoke Electron com dados sintéticos no SHA final do PR #63; corrigir falhas e anexar screenshots reais para decisão de homologação. Sem merge main, Windows CI pago, EXE, Cloudflare Production ou escrita pessoal IA.
