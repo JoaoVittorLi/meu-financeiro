@@ -66,9 +66,12 @@ function mfD01EnterReview(app:any,p:IntelligenceActionProposal):void{
 function mfD01VerifyReview(app:any,p:IntelligenceActionProposal):boolean{
  const edit=mfD01Current(app,p),review:MfD01Review=app.state.mfD01Review;
  if(!review||review.proposalId!==p.id||review.revision!==mfD01Revision(p,edit))return false;
- if(edit.history&&(!edit.selected||!p.txId))return false;
- if(edit.history&&typeof intelligenceVerifyProposalRecord==='function'&&
-   !intelligenceVerifyProposalRecord(app,p)?.ok)return false;
+ // Future-only rule proposals have no authorized transactional preview.
+ // Never allow a checkbox or success message to imply an unimplemented rule
+ // was validated. The currently selected historical record is mandatory.
+ if(!edit.history||!edit.selected||!p.txId||
+  (p.status!=='pending'&&p.status!=='preview_confirmed'))return false;
+ if(typeof intelligenceVerifyProposalRecord!=='function'||!intelligenceVerifyProposalRecord(app,p)?.ok)return false;
  return true;
 }
 function mfD01FormatCents(value:number):string{
