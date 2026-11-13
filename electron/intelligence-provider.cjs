@@ -12,8 +12,9 @@ function validatePlan(plan){
   return {tool:s.tool,params:paramsOf(s.tool,s.params||{})};
  });
  const visualKind=plan.visualKind??null;
- if(visualKind!==null&&!['summary','kpi','compare','treemap','sankey','rank','drilldown',
-   'table','budget','whatif','quality','state'].includes(visualKind))
+ if(visualKind!==null&&!['summary','kpi','compare','trend','bar','donut','treemap','sankey','rank','drilldown',
+   'table','recurring','budget','cashflow','whatif','scenario','goal','debt','portfolio',
+   'insight','plan','proposal','approval','report','quality','state'].includes(visualKind))
   throw Error('Visualização não permitida.');
  return {steps,visualKind};
 }
