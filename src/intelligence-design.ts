@@ -38,7 +38,7 @@ function mfD01EditDiscard(app:any):void{
 }
 function mfD01Original(p:IntelligenceActionProposal,edit:MfD01Edit):boolean{
  const original=mfD01Default(p);
- return edit.name===original.name&&edit.criterion===original.criterion&&
+ return edit.name===original.name&&edit.color===original.color&&edit.criterion===original.criterion&&
   edit.history===original.history&&edit.future===false&&edit.selected===original.selected;
 }
 function mfD01EditSave(app:any,p:IntelligenceActionProposal):void{
@@ -84,7 +84,8 @@ function renderMfD01Proposal(app:any,p:IntelligenceActionProposal):any{
  const signed=p.txKind==='expense'?'-'+money:money;
  const current=p.currentCategory||'Não categorizada';
  const revision=mfD01Revision(p,edit);
- const priorVerified=app.state.mfD01LocalVerified?.proposalId===p.id&&app.state.mfD01LocalVerified?.revision===revision;
+ const priorVerified=app.state.mfD01LocalVerified?.proposalId===p.id&&app.state.mfD01LocalVerified?.revision===revision&&
+  typeof intelligenceVerifyProposalRecord==='function'&&intelligenceVerifyProposalRecord(app,p)?.ok===true;
  const unchanged=mfD01Original(p,edit);
  const activeEdit: MfD01Edit=app.state.mfD01Edit?.proposalId===p.id?app.state.mfD01Edit:null;
  return h('section',{className:'mf-d01-proposal status-'+p.status,role:'region','aria-label':'Proposta de categoria supervisionada'},
@@ -147,7 +148,7 @@ function renderMfD01Proposal(app:any,p:IntelligenceActionProposal):any{
       app.setState({mfD01Review:null,mfD01LocalVerified:{proposalId:p.id,revision}});}},'Validar prévia sem gravar'))):
     null,
   unchanged&&p.resultMessage?h('p',{className:'mf-d01-result',role:'status'},p.resultMessage):null,
-  (priorVerified||(unchanged&&p.status==='preview_confirmed'))?h('p',{className:'mf-d01-readonly',role:'status'},
+  priorVerified?h('p',{className:'mf-d01-readonly',role:'status'},
    'Prévia conferida. Não foi aplicada nenhuma alteração. A aplicação por IA no perfil pessoal permanece indisponível.'):null,
   h('div',{className:'mf-d01-manual'},
    h('p',{},'Para criar uma categoria agora, use o editor manual. Isso é separado desta proposta.'),
