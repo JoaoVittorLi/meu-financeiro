@@ -72,8 +72,12 @@
       "display": "blocos proporcionais com alternativa tabular",
       "kind": "treemap",
       "priority": "P1",
-      "approval": "PENDING",
-      "implementation": "NOT_STARTED"
+      "approval": "DESIGN_APPROVED",
+      "implementation": "NOT_STARTED",
+      "approvedVersion": "V2",
+      "approvedAt": "2026-11-13",
+      "prototypeState": "APPROVED_IN_CHAT",
+      "approvalScope": "Visual design only; Electron implementation pending"
     },
     {
       "id": "VR-08",
@@ -82,8 +86,9 @@
       "display": "Sankey reconciliado",
       "kind": "sankey",
       "priority": "P1",
-      "approval": "PENDING",
-      "implementation": "NOT_STARTED"
+      "approval": "REVIEW_IN_PROGRESS",
+      "implementation": "NOT_STARTED",
+      "nextPrototype": "V1"
     },
     {
       "id": "VR-09",
