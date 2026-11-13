@@ -94,10 +94,12 @@ function mfV3FromOperational(op,kind,prior){
      incomeCents:v.incomeCents,coverage:v.coverage};
  }
  const sourcePartial=original.coverage==='partial_local';
+ const sankeyNotRepresentable=kind==='sankey'&&(original.incomeCents===0||original.netCents<0);
  const blockedPrev=mfV3NeedsPrevious(kind)&&(!prev||prev.coverage==='partial_local'||sourcePartial);
  const unsupported=['recurring','goal','debt','portfolio','approval'].includes(kind);
- const quality=unsupported?'unavailable':blockedPrev||sourcePartial?'partial':original.expenseCents===0?'empty':'ready';
- const reason=unsupported?'Os serviços locais ainda não fornecem fatos verificáveis para esta família. Nenhuma operação foi executada.':
+ const quality=unsupported?'unavailable':blockedPrev||sourcePartial||sankeyNotRepresentable?'partial':original.expenseCents===0?'empty':'ready';
+ const reason=sankeyNotRepresentable?'Receita ausente ou resultado negativo: não há fluxo de receitas que represente estes gastos sem criar dinheiro fictício. Consulte a tabela.':
+  unsupported?'Os serviços locais ainda não fornecem fatos verificáveis para esta família. Nenhuma operação foi executada.':
   blockedPrev?'Comparação indisponível: a fonte e a cobertura dos dois meses não foram verificadas.':
   sourcePartial?'Histórico parcial: valores limitados aos registros locais carregados.':
   original.coverage==='unknown'?'Totais reconciliados dos registros locais; cobertura integral não certificada.':
@@ -105,7 +107,8 @@ function mfV3FromOperational(op,kind,prior){
  return {kind,period:original.period,source:original.source,profile:original.profile,
    coverage:original.coverage,asOf:typeof op.asOf==='string'?op.asOf:null,quality,reason,
    incomeCents:original.incomeCents,expenseCents:original.expenseCents,netCents:original.netCents,
-   categories:original.categories,budgets,previous:prev,original};
+   categories:original.categories,budgets,previous:prev,
+   original:kind==='sankey'?mfVisualFromOperational(op,'sankey'):original};
 }
 function mfV3CompareRows(v){
  if(!v||!v.previous)return[];
