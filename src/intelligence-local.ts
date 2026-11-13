@@ -57,7 +57,10 @@ async function localFinancialSubmit(app:any,question:string){
  if(app.state.localFinancialBusy||!String(question||'').trim())return;
  const access:LocalFinancialAccess=app.state.localFinancialAccess;
  const q=String(question).trim().slice(0,700),scope=intelligencePageScope(app),messages=[...intelligenceHistoryList(app)];
- const v3Kind=mfV3Requested(q);
+ const v3Requested=mfV3Requested(q);
+ // Preserve existing supervised D01 proposals and synthetic audited receipts.
+ // Those paths are NOT ledger radar read-outs and must not be hijacked.
+ const v3Kind=v3Requested&&v3Requested!=='proposal'&&v3Requested!=='approval'?v3Requested:null;
  let previousOperational:any=null;
  const month=app.state.localFinancialMonth||app.state.month,signature=intelligencePremiumSignature(app);
  const request=(app.__localChatRequest||0)+1;app.__localChatRequest=request;
