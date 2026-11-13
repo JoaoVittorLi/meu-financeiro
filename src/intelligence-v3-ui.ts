@@ -13,9 +13,21 @@ function mfV3Bar(label:string,value:string,pct:number,color:string,onClick:any){
   h('div',{className:'mf-v3-bar-head'},h('span',{},label),h('strong',{},value)),
   h('div',{className:'mf-v3-track'},h('span',{style:{width:Math.max(0,Math.min(100,pct||0))+'%',background:color}})));
 }
+function mfV3Live(app:any,d:MfV3Card):boolean{
+ const a:LocalFinancialAccess=app.state.localFinancialAccess;
+ const month=app.state.localFinancialMonth||app.state.month;
+ return !!a?.token&&Number.isFinite(a.expiresAt)&&a.expiresAt>Date.now()&&
+   a.source===d.source&&a.profile===d.profile&&month===d.period&&
+   app.state.mode===d.profile;
+}
 function mfV3Render(app:any,msg:IntelligenceChatMessage):any{
  const d:MfV3Card=msg.visualV3 as MfV3Card;
  if(!d||!mfV3Allowed(d.kind))return null;
+ if(!mfV3Live(app,d))return h('section',{className:'mf-v3-card state-stale',role:'alert',
+   'aria-label':'Análise local desatualizada'},
+   h('strong',{},'Atualize esta consulta para visualizar os números.'),
+   h('p',{},'A autorização, fonte, perfil ou período mudou ou expirou. Abra Permissões de consulta e execute novamente a pergunta.'),
+   h('small',{},'Nenhum dado antigo será exibido nem alterado.'));
  const mode=mfV3Mode(app,msg),kind=d.kind,compact=mode==='compact',analysis=mode==='analysis';
  const cap=analysis?100:compact?5:12;
  const money=mfV3Money;
