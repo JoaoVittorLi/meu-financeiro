@@ -3,7 +3,7 @@ Data: 2026-11-13 · Índice: #55 · Coordenação: #49 · Baseline PR #54 / 55de
 
 | Ordem | Tela | Estado | Issue | Versão |
 |---|---|---|---|---|
-| D01 | Chat Lateral | PROTOTYPING | #56 | V3 base visual; V4 em feedback |
+| D01 | Chat Lateral | **IMPLEMENTATION_READY** (DESIGN_APPROVED) | #56 | **V4.5 FINAL** · protótipo/specs/handoff congelados |
 | D02 | Chat Principal / Expandido | NOT_STARTED | — | — |
 | D03 | Inteligência Hoje | NOT_STARTED | — | — |
 | D04 | Central de Revisão | NOT_STARTED | — | — |
@@ -18,6 +18,6 @@ Data: 2026-11-13 · Índice: #55 · Coordenação: #49 · Baseline PR #54 / 55de
 
 Fluxo de estados: NOT_STARTED → CURRENT_UI_REVIEWED → PROTOTYPING → WAITING_FEEDBACK → DESIGN_APPROVED → IMPLEMENTATION_READY → IN_DEVELOPMENT → IMPLEMENTED → VISUAL_QA → HOMOLOGATED.
 
-**V3 do chat**: aprovada apenas como *base visual*. Não há fonte HTML original recuperada; a V4 preserva decisões, mas não deve ser descrita como idêntica pixel a pixel.
+**V3 do chat:** base visual histórica aprovada; seu HTML original não foi recuperado. A D01 V4.5 é o design aprovado atualmente, sem alegação de equivalência pixel a pixel com a V3.
 
-Critérios para DESIGN_APPROVED: aprovação explícita do proprietário sobre versão exata. Critérios IMPLEMENTATION_READY: prototype.html reproduzível, specs, tokens, fixtures, acceptance, changelog e handoff publicados. O código de produção é responsabilidade do executor em branch separada. Nenhum build pago ou merge em main autorizado.
+**D01 — aprovação do proprietário:** 13/11/2026, protótipo V4.4 com ajustes finais autorizados e consolidados na V4.5. A entrega oficial está no [pacote D01](screens/d01-chat-lateral/) do PR Draft #57. O código Electron não foi alterado; integração, UI real e escrita supervisionada permanecem pendentes.\n\nCritérios para DESIGN_APPROVED: aprovação explícita do proprietário sobre versão exata. Critérios IMPLEMENTATION_READY: prototype.html reproduzível, specs, tokens, fixtures, acceptance, changelog e handoff publicados. O código de produção é responsabilidade do executor em branch separada. Nenhum build pago ou merge em main autorizado.
