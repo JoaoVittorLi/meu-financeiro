@@ -117,3 +117,21 @@ test('VR-07/08 — accessibility: category buttons and tabular alternative exist
 test('VR-07/08 — personal write paths absent from charts',()=>{
  assert.doesNotMatch(src,/\.bankCategorize\(|\.categorySave\(|\.ruleSave\(|\.planCreate\(|\.categoryReviewConfirm\(/);
 });
+
+
+test('VR-07 — Ver movimentações opens inline details without navigating away from chat',()=>{
+ const a=app(),visual=lib.mfVisualFromOperational(report(),'treemap'),m={id:'inline-details',visual};
+ const before=flatten(lib.renderMfVisual(a,m));
+ const trigger=before.find(n=>n.type==='button'&&txt(n)==='Ver movimentações');
+ assert(trigger);
+ trigger.props.onClick();
+ assert.equal(a.lastPage,undefined);
+ assert.equal(a.state.mfVisualDetailsOpen.messageId,m.id);
+ const after=flatten(lib.renderMfVisual(a,m));
+ assert(after.some(n=>n.props?.className==='mf-vr-details'));
+ assert(after.some(n=>n.type==='li'&&txt(n).includes('Moradia')));
+ const hide=after.find(n=>n.type==='button'&&txt(n)==='Ocultar movimentações');
+ assert(hide);
+ hide.props.onClick();
+ assert.equal(a.state.mfVisualDetailsOpen,null);
+});
