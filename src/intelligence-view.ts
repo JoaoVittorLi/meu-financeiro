@@ -112,11 +112,11 @@ function intelligenceHistoryList(app:any):IntelligenceChatMessage[]{
 function intelligenceOpenFullChat(app:any){
  if(typeof intelligenceEnsureHydrated==='function')intelligenceEnsureHydrated(app);
  const scope=app.state.intelligencePanelOpen&&app.state.intelligenceContextSnapshot?app.state.intelligenceContextSnapshot:intelligencePageScope(app);
- app.setState({page:'intelligence',intelligenceTab:'chat',categoryReviewOpen:false,intelligenceDraftScope:scope,intelligencePanelOpen:false,detail:null,planSelected:null},()=>document.scrollingElement?.scrollTo({top:0,behavior:'instant' as ScrollBehavior}));
+ app.setState({page:'intelligence',intelligenceTab:'chat',intelligenceMainMode:'chat',categoryReviewOpen:false,intelligenceDraftScope:scope,intelligencePanelOpen:false,detail:null,planSelected:null},()=>document.scrollingElement?.scrollTo({top:0,behavior:'instant' as ScrollBehavior}));
 }
 function intelligencePrepare(app:any,question:string){
   if(typeof intelligenceEnsureHydrated==='function')intelligenceEnsureHydrated(app);
-  app.setState({page:'intelligence',intelligenceTab:'chat',intelligenceDraft:question,intelligenceDraftScope:app.state.intelligencePanelOpen&&app.state.intelligenceContextSnapshot?app.state.intelligenceContextSnapshot:intelligencePageScope(app),intelligencePanelOpen:false,detail:null,planSelected:null});
+  app.setState({page:'intelligence',intelligenceTab:'chat',intelligenceMainMode:'chat',intelligenceDraft:question,intelligenceDraftScope:app.state.intelligencePanelOpen&&app.state.intelligenceContextSnapshot?app.state.intelligenceContextSnapshot:intelligencePageScope(app),intelligencePanelOpen:false,detail:null,planSelected:null});
 }
 function renderIntelligenceStructuredCard(card:IntelligenceStructuredCard){
   return h('div',{className:'mf-ai-structured-card',role:'region','aria-label':card.title},
@@ -310,7 +310,7 @@ function intelligencePremiumAction(app:any,c:any,a:any):void{
    setTimeout(()=>{const node=document.getElementById('mf-category-editor-heading');node?.scrollIntoView({block:'center'});node?.focus();},0);
    return;
   case 'navigation:intelligence-chat':
-   app.setState({page:'intelligence',intelligenceTab:'chat',categoryReviewOpen:false});return;
+   app.setState({page:'intelligence',intelligenceTab:'chat',intelligenceMainMode:'chat',categoryReviewOpen:false});return;
   case 'navigation:review-history':
    if(app.state.categoryReviewGrant?.token)void categoryReviewOpen(app);return;
   case 'categoryReviewPrepare':
@@ -484,7 +484,7 @@ function renderIntelligenceFollowups(app:any){
 function renderIntelligenceView(app:any){
   if(app.state.workIntelligenceDemo?.enabled&&typeof renderWorkIntelligenceDemo==='function')return renderWorkIntelligenceDemo(app);
   if(typeof intelligenceEnsureHydrated==='function')intelligenceEnsureHydrated(app);
-  const s=app.state,tab=s.intelligenceTab||'today';
+  const s=app.state,tab=['chat','today','actions'].includes(s.intelligenceMainMode)?s.intelligenceMainMode:'chat';
   if(s.categoryReviewOpen)return h('section',{className:'section mf-intelligence-page'},renderCategoryReview(app));
   const tabs=[{id:'today',label:'Hoje'},{id:'chat',label:'Conversar'},{id:'actions',label:'Plano de ação'}];
   const messages=intelligenceHistoryList(app);
@@ -493,10 +493,13 @@ function renderIntelligenceView(app:any){
   const activeScope=s.intelligenceDraftScope||intelligencePageScope(app,s.intelligenceContext||s.page);
   let section:any=null;
   if(tab==='today')section=renderIntelligencePremiumToday(app);
-  if(tab==='chat')section=h('div',{className:'mf-ai-workbench'},
-    renderIntelligenceHistorySidebar(app),
+  if(tab==='chat')section=h('div',{className:'mf-ai-workbench'+(s.intelligenceHistoryOpen?'':' is-history-closed')},
+    s.intelligenceHistoryOpen?renderIntelligenceHistorySidebar(app):null,
     h('div',{className:'mf-ai-chat-main mf-ai-workbench-main'},
       h('div',{className:'mf-ai-workbench-header'},
+        h('button',{type:'button',className:'ghost-button mf-ai-v3-history-toggle',
+          'aria-expanded':!!s.intelligenceHistoryOpen,onClick:()=>app.setState({intelligenceHistoryOpen:!s.intelligenceHistoryOpen})},
+          s.intelligenceHistoryOpen?'Recolher histórico':'Histórico de conversas'),
         h('div',{className:'mf-ai-chat-hero'},
           h('span',{className:'mf-ai-orb'},h(Icon,{name:'spark',size:25})),
           h('h2',{},'Uma conversa, mais clareza.'),
@@ -549,13 +552,19 @@ function renderIntelligenceView(app:any){
         h('h2',{},'Seu centro de comando financeiro'),
         h('p',{},s.localFinancialAccess?.token?'Hoje e chat consultam os registros autorizados; respostas somente nesta sessão.':'Leitura sob autorização, explicações verificáveis e decisões supervisionadas.')),
       h('span',{className:'mf-ai-preview-label'},h(Icon,{name:'shield',size:15}),s.mode==='demo'?'Demonstração isolada':s.localFinancialAccess?.token?'Leitura local autorizada':'Sem consulta externa')),
-    renderIntelligenceAccess(app),
+    h('details',{className:'mf-ai-v3-access'},h('summary',{},'Permissões de consulta'),renderIntelligenceAccess(app)),
     h('button',{type:'button',className:'outlined-action',onClick:()=>void categoryReviewOpen(app)},'Central de revisão · categorização supervisionada'),
     s.categoryReviewPreview?h('div',{className:'mf-review-drawer-pending',role:'status'},h('p',{},'Uma prévia de categorização aguarda sua decisão.'),h('button',{type:'button',className:'primary-button',onClick:()=>void categoryReviewOpen(app)},'Revisar prévia na Central')):null,
-    h('div',{className:'mf-ai-tabbar',role:'tablist','aria-label':'Seções da Inteligência'},
-      tabs.map((item:any)=>h('button',{type:'button',key:item.id,role:'tab','aria-selected':tab===item.id,
-        id:'mf-ai-tab-'+item.id,'aria-controls':'mf-ai-section-'+item.id,tabIndex:tab===item.id?0:-1,className:tab===item.id?'active':'',onClick:()=>app.setState({intelligenceTab:item.id,categoryReviewOpen:false},()=>{if(item.id==='today')void intelligencePremiumLoad(app);}),onKeyDown:(e:any)=>{const next=intelligenceNextTab(item.id,e.key);if(next){e.preventDefault();app.setState({intelligenceTab:next,categoryReviewOpen:false},()=>{document.getElementById('mf-ai-tab-'+next)?.focus();if(next==='today')void intelligencePremiumLoad(app);});}}},item.label))),
-    h('div',{id:'mf-ai-section-'+tab,role:'tabpanel','aria-labelledby':'mf-ai-tab-'+tab,tabIndex:0},section),
+    h('details',{className:'mf-ai-v3-tools'},
+      h('summary',{},'Mais ferramentas'),
+      h('div',{className:'mf-ai-v3-tool-list'},
+        ...tabs.filter(item=>item.id!==tab).map((item:any)=>h('button',{type:'button',key:item.id,
+          className:'ghost-button',onClick:()=>app.setState({intelligenceMainMode:item.id,categoryReviewOpen:false},
+            ()=>{if(item.id==='today')void intelligencePremiumLoad(app);})},
+          item.id==='today'?'Ver panorama existente':item.id==='actions'?'Ver propostas supervisionadas':'Voltar à conversa')),
+        tab!=='chat'?h('button',{type:'button',className:'primary-button',
+          onClick:()=>app.setState({intelligenceMainMode:'chat'})},'Voltar à conversa'):null)),
+    h('div',{className:'mf-ai-v3-content',role:'region','aria-label':tab==='chat'?'Conversa financeira':tab==='today'?'Panorama financeiro':'Propostas supervisionadas'},section),
     h('details',{className:'mf-ai-lab-disclosure'},h('summary',{},h(Icon,{name:'settings',size:17}),h('span',{},'Laboratório de Inteligência'),h('small',{},'Configurações técnicas, conexão OAuth, memória e contexto sintético')),
        renderIntelligenceConnection(app),renderIntelligencePrivacy(app),renderIntelligenceFinancialContext(app)));
 }
