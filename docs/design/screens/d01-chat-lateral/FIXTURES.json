@@ -1,0 +1,85 @@
+{
+  "version": "D01-V4.5",
+  "synthetic": true,
+  "request": "Crie a categoria Streaming e categorize automaticamente Netflix, Spotify e Disney+.",
+  "proposedCategory": {
+    "name": "Streaming",
+    "color": "#53d896"
+  },
+  "rule": {
+    "terms": [
+      "NETFLIX.COM",
+      "SPOTIFY PREMIUM",
+      "DISNEYPLUS.COM"
+    ],
+    "scope": {
+      "past": true,
+      "future": true
+    }
+  },
+  "records": [
+    {
+      "id": "n1",
+      "name": "Netflix",
+      "date": "2026-11-12",
+      "valueCents": 4490,
+      "category": "Outros",
+      "match": "netflix"
+    },
+    {
+      "id": "n2",
+      "name": "Spotify Premium",
+      "date": "2026-11-09",
+      "valueCents": 2190,
+      "category": "Outros",
+      "match": "spotify"
+    },
+    {
+      "id": "n3",
+      "name": "Disney+",
+      "date": "2026-11-05",
+      "valueCents": 4390,
+      "category": "Lazer",
+      "match": "disney"
+    },
+    {
+      "id": "n4",
+      "name": "Netflix",
+      "date": "2026-10-12",
+      "valueCents": 4490,
+      "category": "Outros",
+      "match": "netflix"
+    },
+    {
+      "id": "n5",
+      "name": "Spotify Premium",
+      "date": "2026-10-09",
+      "valueCents": 2190,
+      "category": "Outros",
+      "match": "spotify"
+    },
+    {
+      "id": "n6",
+      "name": "Netflix Gift Card",
+      "date": "2026-10-03",
+      "valueCents": 8990,
+      "category": "Compras",
+      "match": "ambiguous",
+      "included": false
+    },
+    {
+      "id": "n7",
+      "name": "Internet residencial",
+      "date": "2026-11-15",
+      "valueCents": 11990,
+      "category": "Casa",
+      "match": "other",
+      "included": false
+    }
+  ],
+  "expected": {
+    "selectedCount": 5,
+    "reclassifiedCents": 17750,
+    "ambiguousCount": 1
+  }
+}
