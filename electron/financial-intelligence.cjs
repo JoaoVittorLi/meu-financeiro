@@ -56,7 +56,6 @@ class LocalFinancialIntelligence{
    else visualSeenIds.add(key);
    const item=aggregateFinancePeriod([rows[i]],{...p,source:g.source});
    if(!item.expenses.length)continue;
-   const rec=records[i];
    for(const cat of item.expenses){
     let value=categoryDetails.get(cat.name);
     if(!value){value={count:0,items:[]};categoryDetails.set(cat.name,value);}
