@@ -195,7 +195,7 @@ function renderIntelligenceMessageItem(app:any,msg:IntelligenceChatMessage){
       h('span',{},msg.scopeLabel+' · '+msg.periodLabel+' · '+msg.createdAt),
       badge),
     h('div',{className:'mf-ai-msg-body mf-ai-markdown'},...aiMarkdownNodes(msg.text)),
-    msg.structuredCard?renderIntelligenceStructuredCard(msg.structuredCard):null,
+    msg.structuredCard&&!msg.visual?renderIntelligenceStructuredCard(msg.structuredCard):null,
     msg.visual?renderMfVisual(app,msg):null,
     msg.operationalEvidence?h('small',{className:'mf-premium-evidence'},msg.operationalEvidence):null,
     Array.isArray(msg.operationalActions)&&msg.operationalActions.length?h('div',{className:'mf-premium-tile-actions'},...msg.operationalActions.map((action:any)=>intelligencePremiumButton(app,null,action))):null,
