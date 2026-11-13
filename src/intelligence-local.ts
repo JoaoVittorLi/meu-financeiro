@@ -93,9 +93,7 @@ async function localFinancialSubmit(app:any,question:string){
   return;
  }
  const state=operational?.uiState;
- const answerText=v3Kind&&operational?.uiState==='ready'?
-    'Confira os dados do período na visualização baseada em registros locais autorizados.':
-    operational?.answer||reply?.text||error||'Consulta indisponível.';
+ let answerText=operational?.answer||reply?.text||error||'Consulta indisponível.';
  const finalStatus:IntelligenceChatMessage['status']=operational?
   (state==='ready'||state==='empty'?'done':state==='unsupported'?'unsupported':state==='denied'||state==='expired'?'unavailable':'error'):
   reply?'done':'error';
@@ -103,6 +101,12 @@ async function localFinancialSubmit(app:any,question:string){
  const evidence=factsValid?(operational.profile==='synthetic'?'Ambiente sintético':'Fonte '+(operational.source==='bank'?'bancária':'manual'))+
   ' · '+intelligencePremiumCoverage(operational.coverage)+' · '+month:'';
  const visualV3=v3Kind&&factsValid?mfV3FromOperational(operational,v3Kind,previousOperational):null;
+ if(v3Kind){
+  answerText=!visualV3?'Não há evidência suficiente para apresentar esta análise com segurança. Nenhum valor foi estimado.':
+    visualV3.quality==='unavailable'?'Esta família visual não tem serviço financeiro operacional compatível neste momento.':
+    visualV3.quality==='partial'?'Os registros são parciais ou não permitem uma comparação completa. Veja as limitações a seguir.':
+    'Consulte a visualização calculada a partir dos registros locais autorizados.';
+ }
  const visualKind=!v3Kind&&factsValid?mfVisualRequested(q):null;
  const visual=visualKind?mfVisualFromOperational(operational,visualKind):null;
  const answer:IntelligenceChatMessage={
