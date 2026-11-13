@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Meu Financeiro — D03 Inteligência Hoje V2 (Design Aprovado)</title><style>
+
+:root{font-family:"Segoe UI Variable","Segoe UI",system-ui,sans-serif}
+*{box-sizing:border-box}body{margin:0}
+#d03-final{--bg:#141414;--surface:#1a1a1a;--raised:#202328;--hover:#2b2d32;--line:#303034;--text:#fafafa;--muted:#b1b1ba;--green:#53d896;--red:#ff7a88;--warning:#f5bc63;--greenbg:#173329;--shadow:#0006;background:var(--bg);color:var(--text);font:13px/1.55 "Segoe UI Variable","Segoe UI",system-ui,sans-serif;min-height:100vh}
+#d03-final[data-theme="light"]{--bg:#f4f4f6;--surface:#fff;--raised:#f4f4f5;--hover:#ebebed;--line:#e5e5e8;--text:#171717;--muted:#64646e;--green:#087e49;--red:#c92a3c;--warning:#975b00;--greenbg:#e8f8ef;--shadow:#0002}
+#d03-final button,#d03-final input,#d03-final textarea{font:inherit}#d03-final button{color:var(--text);cursor:pointer}#d03-final [hidden]{display:none!important}
+#d03-final button:focus-visible,#d03-final input:focus-visible,#d03-final textarea:focus-visible,#d03-final summary:focus-visible{outline:2px solid var(--green);outline-offset:3px}
+#d03-final .app{display:grid;grid-template-columns:205px minmax(0,1fr);min-height:850px;position:relative;max-width:1560px;margin:auto}
+#d03-final .side{border-right:1px solid var(--line);padding:25px 12px;background:var(--bg)}
+#d03-final .brand{display:flex;align-items:center;gap:11px;margin:0 5px 27px}
+#d03-final .mark{display:flex;gap:3px;align-items:end;width:34px;height:34px;padding:7px 8px;background:var(--text);border-radius:9px}
+#d03-final .mark i{display:block;width:5px;background:var(--bg);border-radius:2px}#d03-final .mark i:nth-child(1){height:8px}#d03-final .mark i:nth-child(2){height:14px}#d03-final .mark i:nth-child(3){height:20px}
+#d03-final .brandname{font-size:14px;letter-spacing:-.4px;font-weight:750}#d03-final .brand small{font-size:8px;color:var(--muted)}
+#d03-final .navsection{font-size:9px;letter-spacing:1.2px;color:var(--muted);font-weight:700;margin:16px 11px 6px}
+#d03-final .navitem{display:flex;gap:10px;align-items:center;border-radius:10px;padding:10px 11px;color:var(--muted);font-size:11.5px;font-weight:600}
+#d03-final .navitem.active{background:var(--hover);color:var(--text)}
+#d03-final .navitem .navico{font-size:17px;width:18px;text-align:center}#d03-final .navitem.active .navico{color:var(--green)}
+#d03-final .main{padding:25px clamp(15px,2.8vw,32px) 32px;min-width:0}
+#d03-final .top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:22px}
+#d03-final .ptitle{font-size:20px;font-weight:790;letter-spacing:-.7px}#d03-final .subtext{font-size:10.5px;color:var(--muted);line-height:1.6}
+#d03-final .actions{display:flex;gap:7px;flex-wrap:wrap}
+#d03-final .btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:9px 12px;min-height:38px;border-radius:10px;background:var(--raised);border:1px solid var(--line);font-size:11px;font-weight:680;transition:background .15s,transform .15s}
+#d03-final .btn:hover:not(:disabled){background:var(--hover);transform:translateY(-1px)}
+#d03-final .btn.primary{color:#10291b;background:var(--green);border-color:var(--green)}
+#d03-final .btn.ghost{background:transparent}
+#d03-final .btn.icon{width:38px;padding:0;font-size:17px}
+#d03-final .btn:disabled{opacity:.5;cursor:not-allowed}
+#d03-final .eyebrow{font-size:9.5px;color:var(--muted);font-weight:770;letter-spacing:1.2px;text-transform:uppercase}
+#d03-final .hero{display:flex;gap:20px;align-items:center;justify-content:space-between;border-radius:19px;border:1px solid var(--line);padding:23px 24px;margin-bottom:22px;background:radial-gradient(ellipse at 85% 20%,color-mix(in srgb,var(--green) 12%,transparent),transparent 58%),var(--surface)}
+#d03-final .hero h1{font-size:clamp(24px,3vw,33px);font-weight:780;letter-spacing:-1px;line-height:1.2;color:var(--text);margin:9px 0}
+#d03-final .hero p{font-size:11.5px;color:var(--muted);line-height:1.75;max-width:550px;margin:0 0 13px}
+#d03-final .hero-number{text-align:right;min-width:140px}#d03-final .hero-number strong{display:block;font-size:clamp(22px,2.6vw,30px);white-space:nowrap;font-weight:790;letter-spacing:-.8px;font-variant-numeric:tabular-nums}
+#d03-final .hero-number strong.good{color:var(--green)}#d03-final .hero-number strong.bad{color:var(--red)}#d03-final .hero-number small{font-size:10px;color:var(--muted);display:block;margin-top:5px}
+#d03-final .cols{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(250px,.85fr);gap:18px;align-items:start}
+#d03-final .stack{display:grid;gap:12px;min-width:0}#d03-final .sectionhead{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:3px}
+#d03-final .sectionhead h2{font-size:15px;margin:0;font-weight:770;letter-spacing:-.2px}#d03-final .sectionhead small{font-size:10px;color:var(--muted)}
+#d03-final .signal{border-radius:17px;padding:18px;border:1px solid color-mix(in srgb,var(--green) 24%,var(--line));background:linear-gradient(115deg,color-mix(in srgb,var(--green) 11%,var(--surface)),var(--surface) 81%);animation:enter .21s ease both;transition:border-color .15s,transform .15s}
+#d03-final .signal:hover{border-color:color-mix(in srgb,var(--green) 48%,var(--line));transform:translateY(-1px)}
+#d03-final .signalhead{display:flex;justify-content:space-between;align-items:center;gap:10px}
+#d03-final .signaltype{display:flex;align-items:center;gap:9px;color:var(--muted);font-size:10.5px;font-weight:670}
+#d03-final .signalicon{width:28px;height:28px;border-radius:9px;background:color-mix(in srgb,var(--green) 17%,var(--raised));display:grid;place-items:center;color:var(--green);font-size:16px}
+#d03-final .tag{padding:4px 8px;border-radius:20px;border:1px solid var(--line);font-size:9px;color:var(--muted)}
+#d03-final .signal h3{color:var(--text);font-size:16px;line-height:1.34;letter-spacing:-.3px;font-weight:770;margin:13px 0 7px}
+#d03-final .signalvalue{font-size:clamp(21px,2.7vw,27px);letter-spacing:-.6px;font-variant-numeric:tabular-nums;font-weight:800;margin:4px 0 9px;line-height:1.2;color:var(--text)}
+#d03-final .signalvalue.good{color:var(--green)}#d03-final .signalvalue.bad{color:var(--red)}#d03-final .signalvalue.warn{color:var(--warning)}
+#d03-final .signal p{font-size:11.5px;color:var(--muted);line-height:1.72;margin:0}#d03-final .signal p strong{color:var(--text);font-weight:720}
+#d03-final .signalfoot{display:flex;justify-content:space-between;align-items:center;gap:9px;margin-top:17px;flex-wrap:wrap}
+#d03-final .link{background:transparent;border:0;padding:5px 0;color:var(--green);font-size:11px;font-weight:750}
+#d03-final .link:hover{text-decoration:underline}
+#d03-final .gauge{margin-top:14px}#d03-final .gaugetop{display:flex;justify-content:space-between;gap:8px;color:var(--muted);font-size:10px;margin-bottom:8px}
+#d03-final .track{height:7px;border-radius:8px;overflow:hidden;background:var(--hover)}#d03-final .track span{display:block;height:100%;background:var(--green);border-radius:8px;transition:width .22s}#d03-final .track span.alert{background:var(--red)}
+#d03-final .card{border:1px solid var(--line);border-radius:16px;background:var(--surface);padding:17px;min-width:0}
+#d03-final .card h3{font-size:14px;font-weight:750;margin:3px 0;color:var(--text)}
+#d03-final .cardhead{display:flex;align-items:start;justify-content:space-between;gap:10px;margin-bottom:11px}
+#d03-final .cardtotal{text-align:right;font-size:15px;font-weight:750;font-variant-numeric:tabular-nums;white-space:nowrap}
+#d03-final .schedule{display:grid;gap:4px}
+#d03-final .schedule button{background:transparent;border:0;border-radius:9px;padding:9px 2px;display:flex;align-items:center;gap:10px;text-align:left;width:100%}
+#d03-final .schedule button:hover{background:var(--raised)}
+#d03-final .date{border-radius:9px;background:var(--raised);border:1px solid var(--line);width:40px;height:43px;flex-shrink:0;display:grid;place-items:center;align-content:center}
+#d03-final .date strong{font-size:16px;line-height:1.2}#d03-final .date small{font-size:9px;color:var(--muted)}
+#d03-final .ev-name{min-width:0;flex:1}#d03-final .ev-name strong{display:block;font-size:11.5px}#d03-final .ev-name small{display:block;color:var(--muted);font-size:9.5px;margin-top:2px}
+#d03-final .ev-value{white-space:nowrap;font-variant-numeric:tabular-nums;font-size:11px;font-weight:760}
+#d03-final .review-summary{display:flex;justify-content:space-between;gap:10px;align-items:center;margin:13px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:13px 0}
+#d03-final .review-summary strong{font-size:12px}#d03-final .review-summary small{color:var(--muted);font-size:10px;display:block}
+#d03-final .review-summary b{font-size:15px;font-variant-numeric:tabular-nums;white-space:nowrap}
+#d03-final .footer{margin-top:19px;border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:9px;flex-wrap:wrap}
+#d03-final .footer span{font-size:11px;color:var(--muted)}
+#d03-final .scrim{position:absolute;inset:0;z-index:10;background:rgba(0,0,0,.52);backdrop-filter:blur(3px)}
+#d03-final .drawer{position:absolute;z-index:11;right:0;top:0;bottom:0;width:min(470px,100%);border-left:1px solid var(--line);background:var(--surface);box-shadow:-12px 0 36px var(--shadow);animation:drawer-enter .24s ease;display:flex;flex-direction:column}
+#d03-final .draw-head{display:flex;align-items:center;justify-content:space-between;gap:9px;border-bottom:1px solid var(--line);padding:17px 19px}
+#d03-final .draw-head strong{font-size:15px}
+#d03-final .draw-body{overflow:auto;min-height:0;flex:1;padding:20px}
+#d03-final .draw-body h3{font-size:20px;line-height:1.3;letter-spacing:-.4px;margin:8px 0 10px}
+#d03-final .draw-desc{font-size:11.5px;line-height:1.72;color:var(--muted);margin:7px 0 17px}
+#d03-final .drawbig{font-size:31px;font-weight:790;letter-spacing:-.7px;font-variant-numeric:tabular-nums}
+#d03-final .drawbig.red{color:var(--red)}#d03-final .drawbig.green{color:var(--green)}
+#d03-final .facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:15px 0}
+#d03-final .fact{padding:13px;background:var(--raised);border:1px solid var(--line);border-radius:12px;min-width:0}
+#d03-final .fact small{display:block;color:var(--muted);font-size:10px}
+#d03-final .fact strong{font-size:16px;display:block;letter-spacing:-.3px;font-variant-numeric:tabular-nums;margin-top:4px;white-space:nowrap}
+#d03-final .drow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 0;border-bottom:1px solid var(--line);font-size:11.5px}
+#d03-final .drow strong{white-space:nowrap;font-variant-numeric:tabular-nums}
+#d03-final .draw-actions{display:flex;gap:8px;flex-wrap:wrap;margin:17px 0}
+#d03-final .hint{border:1px solid color-mix(in srgb,var(--green) 30%,var(--line));border-radius:12px;background:var(--greenbg);padding:13px;line-height:1.7;font-size:11px;margin:16px 0}
+#d03-final .hint.attention{border-color:color-mix(in srgb,var(--red) 25%,var(--line));background:color-mix(in srgb,var(--red) 7%,var(--raised))}
+#d03-final .fields{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:15px 0}
+#d03-final .field{display:grid;gap:6px;font-size:10.5px;color:var(--muted)}
+#d03-final .field input{width:100%;min-width:0;background:var(--raised);color:var(--text);border:1px solid var(--line);border-radius:9px;padding:10px;font-variant-numeric:tabular-nums}
+#d03-final .check{display:flex;align-items:center;gap:9px;padding:8px 0;font-size:11px;cursor:pointer}
+#d03-final input[type="checkbox"],#d03-final input[type="range"]{accent-color:var(--green)}
+#d03-final .preview{border:1px solid var(--line);background:var(--raised);padding:15px;border-radius:13px;margin:15px 0}
+#d03-final .preview small{font-size:10px;color:var(--muted);display:block}
+#d03-final .preview strong{font-size:21px;font-variant-numeric:tabular-nums;display:block;margin:6px 0}
+#d03-final .slider{width:100%;margin:13px 0}
+#d03-final .bubble{font-size:11.5px;background:var(--raised);border:1px solid var(--line);border-radius:12px;padding:11px 13px;line-height:1.7;margin:9px 0}
+#d03-final .bubble.mine{margin-left:22px;background:var(--hover)}
+#d03-final .suggest{border:1px solid var(--line);background:var(--raised);border-radius:10px;padding:10px 12px;display:block;width:100%;text-align:left;margin:7px 0;font-size:11px}
+#d03-final .suggest:hover{background:var(--hover)}
+#d03-final textarea{width:100%;min-height:68px;resize:vertical;background:var(--raised);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:12px;margin-top:14px}
+@keyframes enter{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+@keyframes drawer-enter{from{opacity:.7;transform:translateX(18px)}to{opacity:1;transform:none}}
+@media(max-width:1000px){#d03-final .cols{grid-template-columns:1fr}#d03-final .side-col{grid-template-columns:1fr 1fr}#d03-final .side-col .sectionhead{grid-column:1/-1}}
+@media(max-width:760px){#d03-final .app{grid-template-columns:60px minmax(0,1fr)}#d03-final .side{padding:16px 5px}#d03-final .side .brand{margin:0 7px 20px}#d03-final .brand-info,#d03-final .navsection,#d03-final .navitem .navlabel{display:none}#d03-final .navitem{justify-content:center;padding:10px}#d03-final .main{padding:16px}}
+@media(max-width:540px){#d03-final .app{grid-template-columns:1fr}#d03-final .side{display:none}#d03-final .main{padding:14px 10px}#d03-final .side-col{grid-template-columns:1fr}#d03-final .side-col .sectionhead{grid-column:auto}#d03-final .hero{padding:17px}#d03-final .hero-number{display:none}#d03-final .signal{padding:15px}#d03-final .draw-body{padding:15px}}
+@media(prefers-reduced-motion:reduce){#d03-final *,#d03-final *::before,#d03-final *::after{animation:none!important;transition:none!important;transform:none!important;scroll-behavior:auto!important}}
+
+</style></head><body>
+
+<div id="d03-final" data-theme="dark"><div class="app">
+<aside class="side" aria-label="Seções do Meu Financeiro">
+<div class="brand"><span class="mark" aria-hidden="true"><i></i><i></i><i></i></span><div class="brand-info"><strong class="brandname">Meu Financeiro</strong><small>CONTROLE DO SEU DINHEIRO</small></div></div>
+<div class="navsection">CONTROLE</div><div class="navitem"><span>▦</span><span class="navlabel">Visão geral</span></div><div class="navitem"><span>⇄</span><span class="navlabel">Movimentações</span></div>
+<div class="navsection">ORGANIZAÇÃO</div><div class="navitem"><span>▤</span><span class="navlabel">Planejamento</span></div><div class="navitem"><span>▥</span><span class="navlabel">Minhas contas</span></div><div class="navitem"><span>◫</span><span class="navlabel">Orçamentos</span></div>
+<div class="navsection">FERRAMENTAS</div><div class="navitem"><span>◎</span><span class="navlabel">Simular compra</span></div><div class="navitem active"><span>✦</span><span class="navlabel">Inteligência</span></div><div class="navitem"><span>⚙</span><span class="navlabel">Configurações</span></div>
+</aside>
+<main class="main">
+<header class="top"><div><div class="ptitle">Inteligência</div><div class="subtext">Sexta-feira, 13 de novembro de 2026</div></div><div class="actions"><button class="btn icon" data-action="theme" aria-label="Alternar tema">◐</button><button class="btn" data-open="forecast">◷ Ajustar previsão</button><button class="btn" data-open="chat">✦ Conversar</button></div></header>
+<section class="hero"><div><div class="eyebrow">SEU DIA FINANCEIRO</div><h1 id="d03-h1"></h1><p id="d03-intro"></p><button class="btn ghost" data-open="forecast">Explorar minha previsão ↗</button></div><div class="hero-number"><strong id="d03-projection"></strong><small id="d03-projection-label"></small></div></section>
+<div class="cols"><section class="stack"><div class="sectionhead"><h2>O que merece sua atenção</h2><small id="d03-signal-count"></small></div><div class="stack" id="d03-signals" aria-live="polite"></div></section>
+<aside class="stack side-col"><div class="sectionhead"><h2>Seus próximos dias</h2><small>Compromissos previstos</small></div>
+<section class="card"><div class="cardhead"><div><div class="eyebrow">AGENDA FINANCEIRA</div><h3>O que vem pela frente</h3></div><div class="cardtotal" id="d03-commitment-total"></div></div><div class="schedule" id="d03-commitments"></div><button class="link" data-open="agenda" style="margin-top:13px">Ver compromissos ↗</button></section>
+<section class="card"><div class="eyebrow">REVISÃO SUPERVISIONADA</div><h3 style="margin-top:9px">Uma proposta para conferir</h3><p class="subtext" style="margin:8px 0">Confira quais lançamentos seriam afetados pela categoria Streaming.</p><div class="review-summary"><div><strong>Categoria Streaming</strong><small id="d03-affected-count"></small></div><b id="d03-affected-total"></b></div><button class="btn" data-open="review">Conferir prévia ↗</button></section></aside></div>
+<div class="footer"><span>✦ Quer entender um resultado ou planejar o próximo passo?</span><button class="btn ghost" data-open="chat">Perguntar à Inteligência ↗</button></div>
+<details style="color:var(--muted);font-size:10px;margin-top:15px"><summary>Sobre as informações desta demonstração</summary><p>Os dados desta apresentação são ilustrativos. A versão conectada só poderá gerar alertas com fontes autorizadas e verificadas.</p></details>
+</main><div id="d03-scrim" class="scrim" hidden></div><aside id="d03-drawer" class="drawer" role="dialog" aria-modal="true" aria-label="Detalhes da Inteligência" hidden><div class="draw-head"><strong id="d03-drawer-title"></strong><button class="btn icon" data-action="close" aria-label="Fechar painel">×</button></div><div class="draw-body" id="d03-drawer-body"></div></aside>
+</div></div>
+<script>
+const DATA={"schema":"mf2.d03.approved.v2.1.fixture","approvedDesignVersion":"D03 V2","synthetic":true,"asOf":"2026-11-13T19:46:00-03:00","currency":"BRL","comparisonWindow":{"currentStart":"2026-11-01","currentEnd":"2026-11-13","previousStart":"2026-10-01","previousEnd":"2026-10-13","equalDays":true},"balanceAvailableCents":170000,"incomeExpectedCents":0,"extraOutflowExpectedCents":0,"safetyBufferCents":100000,"coverage":{"balance":"verified","expenses":"verified","futureCommitments":"verified","budgets":"verified","review":"synthetic"},"commitments":[{"id":"energia","due":"2026-11-16","label":"Energia","amountCents":22000,"status":"scheduled_unpaid"},{"id":"internet","due":"2026-11-20","label":"Internet residencial","amountCents":11900,"status":"scheduled_unpaid"},{"id":"academia","due":"2026-11-22","label":"Academia","amountCents":10400,"status":"scheduled_unpaid"}],"expenses":[{"id":"moradia","name":"Moradia","previousCents":100000,"currentCents":100000},{"id":"alimentacao","name":"Alimentação","previousCents":48000,"currentCents":76000,"budgetCents":70000},{"id":"lazer","name":"Lazer","previousCents":25000,"currentCents":38000},{"id":"transporte","name":"Transporte","previousCents":20000,"currentCents":24000},{"id":"saude","name":"Saúde","previousCents":11000,"currentCents":22800},{"id":"servicos","name":"Serviços","previousCents":6000,"currentCents":11900}],"foodGroups":[{"id":"super","name":"Supermercados","currentCents":38900},{"id":"delivery","name":"Delivery","previousCents":15000,"currentCents":34000},{"id":"cafe","name":"Cafeteria","currentCents":3100}],"review":{"ruleName":"Streaming","affected":[{"id":"n","name":"Netflix","cents":4490},{"id":"s","name":"Spotify Premium","cents":2190},{"id":"d","name":"Disney+","cents":4390},{"id":"a","name":"Assinatura A","cents":3340},{"id":"b","name":"Assinatura B","cents":3340}],"applyAllowed":false},"scenarios":[{"id":"headroom","balanceCents":170000,"projectedCents":125700,"marginCents":25700,"reserveSuggestionCents":12850,"signal":"save"},{"id":"tight","balanceCents":115000,"projectedCents":70700,"belowBufferCents":29300,"signal":"tight"},{"id":"deficit","balanceCents":35000,"projectedCents":-9300,"signal":"deficit"},{"id":"near","balanceCents":145000,"projectedCents":100700,"marginCents":700,"signal":"steady"},{"id":"unknown","balanceCents":null,"signal":"unknown"}]};
+
+(function(){
+"use strict";
+const root=document.getElementById("d03-final");if(!root||root.dataset.loaded)return;root.dataset.loaded="1";
+const $=s=>root.querySelector(s);
+const cash=n=>new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(n/100);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const sum=(xs,fn)=>xs.reduce((n,x)=>n+fn(x),0);
+const due=DATA.commitments.filter(x=>x.status==="scheduled_unpaid");
+const dueTotal=sum(due,x=>x.amountCents);
+const food=DATA.expenses.find(x=>x.id==="alimentacao");
+const delivery=DATA.foodGroups.find(x=>x.id==="delivery");
+const initial={balanceCents:DATA.balanceAvailableCents,expectedIncomeCents:DATA.incomeExpectedCents,extraExpectedOutflowCents:DATA.extraOutflowExpectedCents,safetyBufferCents:DATA.safetyBufferCents,hasBalance:true,hasHistory:true,budgetCents:food.budgetCents,coverage:"verified"};
+const st={...initial,panel:null,theme:"dark",reservePct:50,deliveryPct:20,used:new Set(),conversation:[],included:new Set(DATA.review.affected.map(x=>x.id)),reviewNotice:""};
+const projection=s=>s.hasBalance&&s.coverage==="verified"?{known:true,total:s.balanceCents+s.expectedIncomeCents-dueTotal-s.extraExpectedOutflowCents}: {known:false,total:null};
+function derive(s){
+let result=[],p=projection(s);
+function add(id,priority,type,heading,title,value,desc,target,cta){result.push({id,priority,type,heading,title,value,desc,target,cta});}
+if(!p.known){add("unknown",100,"neutral","Informações incompletas","Sua previsão precisa de um saldo confiável","—","Sem essa referência, não vou sugerir guardar ou assumir insuficiência.","forecast","Informar saldo");}
+else{
+const headroom=p.total-s.safetyBufferCents;
+if(p.total<0)add("deficit",110,"bad","Possível insuficiência","Os pagamentos podem superar o disponível",cash(p.total),"A projeção após compromissos ficou abaixo de zero. Isso não é um saldo bancário negativo confirmado.","deficit","Rever compromissos");
+else if(p.total<s.safetyBufferCents)add("tight",105,"warn","Margem de segurança","Vale reorganizar os limites",cash(s.safetyBufferCents-p.total),"Faltaria esse valor para manter a margem desejada após os pagamentos previstos.","tight","Rever limites");
+else if(headroom>=15000)add("save",92,"good","Oportunidade para guardar","Você pode reservar parte da sua folga",cash(Math.round(headroom*.5)),"Sugestão de separar metade da folga acima da margem, sem comprometer pagamentos já previstos.","reserve","Planejar reserva");
+else add("steady",76,"warn","Margem próxima ao limite","Acompanhe os próximos pagamentos",cash(headroom),"A margem desejada está preservada, mas a folga é pequena para uma nova decisão.","forecast","Conferir previsão");
+}
+if(s.hasHistory&&s.coverage==="verified"){
+if(s.budgetCents>0&&food.currentCents>s.budgetCents)add("budget",84,"bad","Orçamento de Alimentação","Alimentação passou do limite",cash(food.currentCents-s.budgetCents),"O gasto registrado ultrapassou o orçamento considerado para esta categoria.","budget","Entender meus gastos");
+if(delivery.currentCents>delivery.previousCents&&DATA.comparisonWindow.equalDays)add("delivery",64,"neutral","Mudança relevante","Delivery foi o maior aumento da categoria",cash(delivery.currentCents-delivery.previousCents),"Compare o gasto em períodos equivalentes para entender a diferença sem inventar sua causa.","delivery","Investigar diferença");
+}
+return result.sort((a,b)=>b.priority-a.priority).slice(0,3);
+}
+function signalCard(x,index){
+const p=projection(st),heat=x.id==="budget"&&st.budgetCents>0?Math.min(100,food.currentCents/st.budgetCents*100):x.id==="delivery"?68:x.id==="save"&&p.known&&p.total>0?Math.min(100,st.safetyBufferCents/p.total*100):null;
+const label=x.id==="budget"?"Consumo do limite":x.id==="delivery"?"Comparativo do período":"Margem a preservar";
+return ['<article class="signal" style="animation-delay:',index*55,'ms"><div class="signalhead"><div class="signaltype"><span class="signalicon">✦</span>',esc(x.heading),'</div><span class="tag">Acompanhar</span></div><h3>',esc(x.title),'</h3><div class="signalvalue ',x.type==="neutral"?"":x.type,'">',x.value,'</div><p>',esc(x.desc),'</p>',
+heat===null?'':'<div class="gauge"><div class="gaugetop"><span>'+label+'</span><strong>'+Math.round(heat)+'%</strong></div><div class="track"><span class="'+(x.type==="bad"?"alert":"")+'" style="width:'+heat+'%"></span></div></div>',
+'<div class="signalfoot"><button class="link" data-open="',x.target,'">',esc(x.cta),' ↗</button><small class="subtext">13 de novembro</small></div></article>'].join("");
+}
+function renderBoard(){
+const p=projection(st),s=derive(st);
+let h,sub,v,vLabel,vType="";
+if(!p.known){h="Clareza começa pelos dados disponíveis.";sub="Sem um saldo confiável, vou mostrar somente as informações que posso confirmar.";v="—";vLabel="Projeção indisponível";}
+else if(p.total<0){h="Organizar os próximos dias é prioridade.";sub="A previsão indica possível insuficiência. Vamos avaliar os pagamentos previstos.";v=cash(p.total);vLabel="Projeção após compromissos";vType="bad";}
+else if(p.total<st.safetyBufferCents){h="Sua margem merece atenção.";sub="A projeção está abaixo da margem de segurança definida para este período.";v=cash(p.total);vLabel="Projeção após compromissos";vType="bad";}
+else if(p.total-st.safetyBufferCents>=15000){h="Há espaço para planejar algo a mais.";sub="Os pagamentos previstos foram considerados e ainda há folga acima da margem desejada.";v=cash(p.total-st.safetyBufferCents);vLabel="Folga acima da margem";vType="good";}
+else {h="Seu planejamento está perto do limite.";sub="A margem mínima está preservada, mas pode valer acompanhar os próximos pagamentos.";v=cash(p.total-st.safetyBufferCents);vLabel="Folga acima da margem";vType="good";}
+$("#d03-h1").textContent=h;$("#d03-intro").textContent=sub;$("#d03-projection").textContent=v;$("#d03-projection").className=vType;$("#d03-projection-label").textContent=vLabel;
+$("#d03-signal-count").textContent=s.length+" "+(s.length===1?"ponto relevante":"pontos relevantes");
+$("#d03-signals").innerHTML=s.map(signalCard).join("");
+$("#d03-commitment-total").textContent=cash(dueTotal);
+$("#d03-commitments").innerHTML=due.map(x=>'<button data-open="agenda"><span class="date"><strong>'+Number(x.due.slice(-2))+'</strong><small>nov</small></span><span class="ev-name"><strong>'+esc(x.label)+'</strong><small>Pagamento previsto</small></span><strong class="ev-value">'+cash(x.amountCents)+'</strong></button>').join("");
+$("#d03-affected-count").textContent=DATA.review.affected.length+" movimentações";$("#d03-affected-total").textContent=cash(sum(DATA.review.affected,x=>x.cents));
+}
+const row=(label,value)=>'<div class="drow"><span>'+label+'</span><strong>'+value+'</strong></div>';
+const facts=(a,b)=>'<div class="facts"><div class="fact"><small>'+a[0]+'</small><strong>'+a[1]+'</strong></div><div class="fact"><small>'+b[0]+'</small><strong>'+b[1]+'</strong></div></div>';
+const hint=(t,alert=false)=>'<div class="hint '+(alert?"attention":"")+'">'+t+'</div>';
+const act=(label,target)=>'<button class="btn" data-open="'+target+'">'+label+' ↗</button>';
+function forecastPanel(){
+const p=projection(st);
+const fields=[["Saldo disponível","balanceCents"],["Entradas previstas","expectedIncomeCents"],["Outras despesas futuras","extraExpectedOutflowCents"],["Margem desejada","safetyBufferCents"]].map(([label,id])=>'<label class="field">'+label+' (R$)<input type="number" min="0" max="1000000" step="10" data-edit="'+id+'" value="'+st[id]/100+'" '+(id==="balanceCents"&&!st.hasBalance?"disabled":"")+'></label>').join("");
+return '<div class="eyebrow">PREVISÃO DO SEU DIA</div><h3>Entenda sua margem</h3><p class="draw-desc">Altere os valores para observar como a Inteligência identifica uma situação diferente. Nada será salvo.</p><div class="fields">'+fields+'</div><label class="check"><input type="checkbox" data-flag="hasBalance" '+(st.hasBalance?"checked":"")+'> Considerar saldo disponível</label><label class="check"><input type="checkbox" data-flag="hasHistory" '+(st.hasHistory?"checked":"")+'> Incluir histórico de despesas</label>'+row("Compromissos futuros não pagos",cash(dueTotal))+'<div class="preview"><small>Projeção após compromissos e extras</small><strong id="d03-forecast-preview">'+(p.known?cash(p.total):"Indisponível")+'</strong><small>Sem descontar despesas já pagas do saldo atual</small></div><div class="draw-actions"><button class="btn primary" data-action="applyForecast">Atualizar panorama</button><button class="btn" data-action="resetForecast">Restaurar</button></div>'+hint("Os valores deste protótipo são demonstrativos. Na aplicação real, o saldo e os pagamentos precisam vir de fontes verificadas.");
+}
+function reservePanel(){
+const p=projection(st),margin=p.known?p.total-st.safetyBufferCents:0;
+if(margin<=0)return forecastPanel();
+const amount=Math.round(margin*st.reservePct/100);
+return '<div class="eyebrow">PLANEJAMENTO DE RESERVA</div><h3>Separe parte da sua folga</h3><p class="draw-desc">A base é o que resta após os compromissos e acima da margem mínima definida.</p>'+facts(["Folga",cash(margin)],["Margem preservada",cash(st.safetyBufferCents)])+'<label class="field">Percentual da folga: <strong id="d03-reserve-pct">'+st.reservePct+'%</strong><input class="slider" type="range" min="0" max="100" step="5" value="'+st.reservePct+'" data-slider="reserve"></label><div class="preview"><small>Reserva hipotética</small><strong id="d03-reserve-val" style="color:var(--green)">'+cash(amount)+'</strong><small id="d03-reserve-left">Folga restante: '+cash(margin-amount)+'</small></div>'+hint("Uma simulação não representa um investimento ou transferência realizada.")+act("Ajustar previsão","forecast");
+}
+function tightPanel(){
+const p=projection(st),gap=Math.max(0,st.safetyBufferCents-p.total);
+return '<div class="eyebrow">AJUSTE DE PLANEJAMENTO</div><h3>Proteja sua margem</h3><div class="drawbig red">'+cash(gap)+'</div><p class="draw-desc">Valor que faltaria para alcançar a margem desejada após os próximos compromissos.</p>'+facts(["Após compromissos",cash(p.total)],["Margem desejada",cash(st.safetyBufferCents)])+hint("Ajustar limites ajuda a organizar o orçamento, mas não aumenta o saldo. Considere rever gastos flexíveis e datas de pagamento.",true)+'<div class="draw-actions">'+act("Rever orçamento","limits")+act("Ajustar previsão","forecast")+'</div>';
+}
+function deficitPanel(){
+const p=projection(st);
+return '<div class="eyebrow">ATENÇÃO AO FLUXO</div><h3>Possível insuficiência futura</h3><div class="drawbig red">'+cash(p.total)+'</div><p class="draw-desc">Projeção após os pagamentos previstos, não um saldo bancário negativo confirmado.</p>'+row("Saldo considerado",cash(st.balanceCents))+row("Entradas esperadas",cash(st.expectedIncomeCents))+row("Compromissos",cash(dueTotal))+row("Outros gastos previstos",cash(st.extraExpectedOutflowCents))+hint("Confira os prazos e os compromissos essenciais. Não recomendo aumentar limites para resolver uma insuficiência de caixa.",true)+act("Revisar previsão","forecast");
+}
+function budgetPanel(){
+return '<div class="eyebrow">ORÇAMENTO DE ALIMENTAÇÃO</div><h3>Entenda o limite</h3><div class="drawbig red">'+cash(food.currentCents)+'</div><p class="draw-desc">Gasto registrado no período considerado na comparação.</p>'+facts(["Limite",cash(st.budgetCents)],["Diferença",cash(food.currentCents-st.budgetCents)])+DATA.foodGroups.map(x=>row(esc(x.name),cash(x.currentCents))).join("")+hint("Mudar o limite altera sua referência de planejamento, não o dinheiro disponível.")+'<div class="draw-actions">'+act("Investigar delivery","delivery")+act("Rever limite","limits")+'</div>';
+}
+function limitPanel(){
+return '<div class="eyebrow">AJUSTE DE ORÇAMENTO</div><h3>Considere outra referência</h3><p class="draw-desc">O novo valor só será usado nesta prévia, sem gravação de orçamento real.</p>'+facts(["Gasto atual",cash(food.currentCents)],["Teto atual",cash(st.budgetCents)])+'<label class="field">Novo teto de Alimentação (R$)<input type="number" data-edit="budgetCents" value="'+st.budgetCents/100+'" min="100" max="100000" step="10"></label><div class="preview"><small>Diferença após ajuste hipotético</small><strong id="d03-limit-preview">'+cash(food.currentCents-st.budgetCents)+'</strong></div><div class="draw-actions"><button class="btn primary" data-action="applyLimit">Atualizar simulação</button>'+act("Ver fluxo","forecast")+'</div>'+hint("Alterar um limite não gera dinheiro em caixa.");
+}
+function deliveryPanel(){
+const delta=delivery.currentCents-delivery.previousCents;
+return '<div class="eyebrow">INVESTIGAÇÃO CONTEXTUAL</div><h3>Delivery no período</h3><div class="drawbig red">+ '+cash(delta)+'</div><p class="draw-desc">Aumento medido em dois intervalos de mesmo tamanho, sem atribuir motivo aos pedidos.</p>'+facts(["1–13 outubro",cash(delivery.previousCents)],["1–13 novembro",cash(delivery.currentCents)])+row("Aumento de Alimentação",cash(food.currentCents-food.previousCents))+'<label class="field">Redução hipotética: <strong id="d03-delivery-pct">'+st.deliveryPct+'%</strong><input class="slider" type="range" min="0" max="50" step="5" value="'+st.deliveryPct+'" data-slider="delivery"></label><div class="preview"><small>Despesa que poderia ser evitada</small><strong style="color:var(--green)" id="d03-delivery-save">'+cash(Math.round(delivery.currentCents*st.deliveryPct/100))+'</strong></div>'+hint("Este valor é uma hipótese para um próximo período equivalente.")+act("Ver orçamento","budget");
+}
+function agendaPanel(){
+const p=projection(st);
+return '<div class="eyebrow">PRÓXIMOS COMPROMISSOS</div><h3>Seu calendário financeiro</h3><div class="drawbig">'+cash(dueTotal)+'</div><p class="draw-desc">Pagamentos previstos, ainda não registrados como quitados.</p>'+due.map(x=>row(esc(x.label)+' · '+x.due.slice(8,10)+'/11',cash(x.amountCents))).join("")+(p.known?facts(["Saldo atual",cash(st.balanceCents)],["Projeção",cash(p.total)]):hint("Sem saldo autorizado, não posso calcular o valor disponível depois dos pagamentos."))+act("Ajustar previsão","forecast");
+}
+function reviewPanel(){
+const selected=DATA.review.affected.filter(x=>st.included.has(x.id));
+return '<div class="eyebrow">REVISÃO SUPERVISIONADA</div><h3>Categoria Streaming</h3><p class="draw-desc">Revise quais lançamentos seriam afetados pela regra sugerida. Nenhuma edição é aplicada aqui.</p>'+facts(["Itens selecionados",selected.length+" de "+DATA.review.affected.length],["Valor envolvido",cash(sum(selected,x=>x.cents))])+DATA.review.affected.map(x=>'<label class="check" style="border-bottom:1px solid var(--line)"><input type="checkbox" data-item="'+x.id+'" '+(st.included.has(x.id)?"checked":"")+'> <span style="flex:1">'+esc(x.name)+'</span><strong>'+cash(x.cents)+'</strong></label>').join("")+'<div class="draw-actions"><button class="btn primary" data-action="prepareReview">Preparar revisão</button></div>'+hint(st.reviewNotice||"A criação da regra requer nova confirmação na Central de Revisão. Este protótipo não tem permissão de escrita.");
+}
+function sourcePanel(){
+return '<div class="eyebrow">QUALIDADE DOS DADOS</div><h3>Recomendações baseadas em informações</h3><p class="draw-desc">Sinais de folga, insuficiência, despesas e categorias devem ter fontes e datas verificáveis.</p>'+row("Compromissos pendentes",cash(dueTotal))+row("Saldo disponível",st.hasBalance?"Considerado":"Não considerado")+row("Histórico",st.hasHistory?"Considerado":"Não considerado")+hint("Os dados desta interface são sintéticos. O aplicativo real não deve oferecer conclusões se a cobertura for insuficiente.")+act("Ajustar previsão","forecast");
+}
+function availablePrompts(){
+const names={save:"Quanto posso guardar sem comprometer o mês?",tight:"Quais gastos posso reorganizar?",deficit:"Como planejar os próximos pagamentos?",steady:"Como preservar minha margem?",unknown:"O que falta para calcular minha previsão?",budget:"Por que Alimentação superou o limite?",delivery:"Como economizar depois desses custos?"};
+return derive(st).filter(x=>names[x.id]&&!st.used.has(x.id)).map(x=>({id:x.id,name:names[x.id]}));
+}
+function reply(id){
+const p=projection(st),headroom=p.known?p.total-st.safetyBufferCents:0;
+switch(id){
+case"save":return "A folga é "+cash(headroom)+". Separar metade, "+cash(Math.round(headroom*.5))+", é uma hipótese que preserva a margem escolhida.";
+case"tight":return "O valor previsto está "+cash(st.safetyBufferCents-p.total)+" abaixo da margem desejada. Revise despesas ajustáveis; elevar o limite do orçamento não cria dinheiro.";
+case"deficit":return "Os compromissos somam "+cash(dueTotal)+", e o saldo projetado é "+cash(p.total)+". Confira primeiro vencimentos e entradas esperadas.";
+case"budget":return "Alimentação totalizou "+cash(food.currentCents)+" contra um limite de "+cash(st.budgetCents)+". O detalhe pode ser explorado por categoria e grupo.";
+case"delivery":return "Delivery subiu "+cash(delivery.currentCents-delivery.previousCents)+". Uma redução hipotética de 20% sobre o valor atual evitaria "+cash(delivery.currentCents*.2)+" em um intervalo equivalente.";
+case"steady":return "A margem está preservada, mas restam apenas "+cash(headroom)+" de folga acima dela. Pode ser prudente acompanhar as próximas contas.";
+default:return "O saldo disponível não está confirmado. Sem isso, a Inteligência não deveria afirmar que sobra ou falta dinheiro.";
+}
+}
+function chatPanel(){
+const prompts=availablePrompts();
+return '<div class="eyebrow">CONVERSA CONTEXTUAL</div><h3>Vamos entender seu momento</h3><p class="draw-desc">As próximas perguntas são derivadas dos sinais atuais; não são sugestões fixas para todas as telas.</p>'+(st.conversation.length?st.conversation.map(x=>'<div class="bubble '+(x.role==="user"?"mine":"")+'">'+esc(x.text)+'</div>').join(""):'<div class="bubble">Encontrei oportunidades e riscos com base nos dados desta demonstração. O que deseja analisar?</div>')+(prompts.length?'<div class="eyebrow" style="margin-top:14px">CONTINUAR ANÁLISE</div>'+prompts.map(x=>'<button class="suggest" data-question="'+x.id+'">'+esc(x.name)+' ↗</button>').join(""):"")+'<textarea id="d03-chat-text" maxlength="500" placeholder="Pergunte sobre despesas, reserva ou compromissos..."></textarea><div class="draw-actions"><button class="btn primary" data-action="sendChat">Enviar</button></div><p class="subtext">Respostas demonstrativas, sem serviço externo.</p>';
+}
+const panels={forecast:forecastPanel,reserve:reservePanel,tight:tightPanel,deficit:deficitPanel,budget:budgetPanel,limits:limitPanel,delivery:deliveryPanel,agenda:agendaPanel,review:reviewPanel,source:sourcePanel,chat:chatPanel,unknown:forecastPanel,steady:forecastPanel};
+const panelNames={forecast:"Ajustar previsão",reserve:"Planejar reserva",tight:"Rever limites",deficit:"Rever fluxo de caixa",budget:"Alimentação",limits:"Rever limite",delivery:"Investigar delivery",agenda:"Agenda financeira",review:"Conferir proposta",source:"Sobre a análise",chat:"Conversar",unknown:"Ajustar previsão",steady:"Sua margem"};
+let focusBefore=null;
+function renderDrawer(keepScroll=false){
+$("#d03-scrim").hidden=!st.panel;$("#d03-drawer").hidden=!st.panel;
+if(!st.panel)return;
+const sc=$("#d03-drawer-body").scrollTop;
+$("#d03-drawer-title").textContent=panelNames[st.panel]||"Inteligência";
+$("#d03-drawer-body").innerHTML=(panels[st.panel]||sourcePanel)();
+$("#d03-drawer-body").scrollTop=keepScroll?sc:0;
+}
+function open(panel){if(!st.panel)focusBefore=document.activeElement;st.panel=panel;renderDrawer();const close=$("#d03-drawer [data-action=close]");if(close)close.focus()}
+function close(){st.panel=null;renderDrawer();if(focusBefore&&focusBefore.isConnected)focusBefore.focus();focusBefore=null}
+const centsFromInput=(el,fallback)=>el&&el.value.trim()!==""&&Number.isFinite(Number(el.value))?Math.min(100000000,Math.max(0,Math.round(Number(el.value)*100))):fallback;
+function getEdit(id){return root.querySelector('[data-edit="'+id+'"]')}
+function previewForecast(){
+const draft={...st};
+for(const k of ["balanceCents","expectedIncomeCents","extraExpectedOutflowCents","safetyBufferCents"])draft[k]=centsFromInput(getEdit(k),st[k]);
+draft.hasBalance=root.querySelector('[data-flag="hasBalance"]')?.checked??st.hasBalance;
+const el=getEdit("balanceCents");if(el)el.disabled=!draft.hasBalance;
+const p=projection(draft),pr=$("#d03-forecast-preview");if(pr)pr.textContent=p.known?cash(p.total):"Indisponível";
+}
+root.addEventListener("click",e=>{
+const op=e.target.closest("[data-open]");if(op){open(op.dataset.open);return}
+const qu=e.target.closest("[data-question]");if(qu){const x=availablePrompts().find(p=>p.id===qu.dataset.question);if(x){st.used.add(x.id);st.conversation.push({role:"user",text:x.name},{role:"assistant",text:reply(x.id)});renderDrawer(true)}return}
+const ac=e.target.closest("[data-action]");if(!ac)return;
+switch(ac.dataset.action){
+case"close":close();break;
+case"theme":st.theme=st.theme==="dark"?"light":"dark";root.dataset.theme=st.theme;ac.textContent=st.theme==="dark"?"◐":"☀";break;
+case"applyForecast":
+for(const k of ["balanceCents","expectedIncomeCents","extraExpectedOutflowCents","safetyBufferCents"])st[k]=centsFromInput(getEdit(k),st[k]);
+st.hasBalance=root.querySelector('[data-flag="hasBalance"]')?.checked??st.hasBalance;st.hasHistory=root.querySelector('[data-flag="hasHistory"]')?.checked??st.hasHistory;
+st.used.clear();renderBoard();close();break;
+case"resetForecast":Object.assign(st,initial);st.used.clear();renderBoard();renderDrawer(true);break;
+case"applyLimit":st.budgetCents=centsFromInput(getEdit("budgetCents"),st.budgetCents);st.used.clear();renderBoard();close();break;
+case"prepareReview":st.reviewNotice="Prévia preparada somente nesta demonstração. Nenhuma categoria ou regra foi salva. A alteração real exigirá reconfirmação.";renderDrawer(true);break;
+case"sendChat":{
+const el=$("#d03-chat-text"),q=el?.value.trim();if(!q)return;
+const lower=q.toLowerCase(),list=availablePrompts();
+let id=list.find(x=>lower.includes("delivery")&&x.id==="delivery"||lower.includes("guard")&&x.id==="save"||lower.includes("limite")&&x.id==="budget")?.id;
+if(!id)id=derive(st)[0]?.id;
+st.conversation.push({role:"user",text:q},{role:"assistant",text:reply(id)});if(id)st.used.add(id);renderDrawer(true);break;
+}
+}
+});
+root.addEventListener("input",e=>{
+if(e.target.matches("[data-edit]")&&st.panel==="forecast")previewForecast();
+if(e.target.matches('[data-edit="budgetCents"]')){const el=$("#d03-limit-preview");if(el)el.textContent=cash(food.currentCents-centsFromInput(e.target,st.budgetCents))}
+if(e.target.dataset.slider==="reserve"){st.reservePct=Number(e.target.value);const p=projection(st),m=p.total-st.safetyBufferCents,a=Math.round(m*st.reservePct/100);$("#d03-reserve-pct").textContent=st.reservePct+"%";$("#d03-reserve-val").textContent=cash(a);$("#d03-reserve-left").textContent="Folga restante: "+cash(m-a)}
+if(e.target.dataset.slider==="delivery"){st.deliveryPct=Number(e.target.value);$("#d03-delivery-pct").textContent=st.deliveryPct+"%";$("#d03-delivery-save").textContent=cash(Math.round(delivery.currentCents*st.deliveryPct/100))}
+});
+root.addEventListener("change",e=>{
+if(e.target.dataset.flag==="hasBalance")previewForecast();
+const item=e.target.dataset.item;if(item){if(e.target.checked)st.included.add(item);else st.included.delete(item);st.reviewNotice="";renderDrawer(true)}
+});
+$("#d03-scrim").addEventListener("click",close);
+root.addEventListener("keydown",e=>{
+if(e.key==="Escape"&&st.panel){close();return}
+if(e.key==="Tab"&&st.panel){const nodes=[...$("#d03-drawer").querySelectorAll('button:not(:disabled),input:not(:disabled),textarea:not(:disabled),[tabindex="0"]')];if(!nodes.length)return;const first=nodes[0],last=nodes[nodes.length-1];if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}}
+});
+if(dueTotal!==44300||sum(DATA.expenses,x=>x.currentCents)!==272700||sum(DATA.foodGroups,x=>x.currentCents)!==food.currentCents){throw Error("Fixture does not reconcile")}
+renderBoard();
+})();
+</script></body></html>
