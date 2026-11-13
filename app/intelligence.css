@@ -3166,3 +3166,14 @@
  .mf-intelligence-page .mf-ai-workbench{grid-template-columns:minmax(0,1fr)!important}
  .mf-intelligence-page .mf-ai-workbench-header{flex-wrap:wrap}
 }
+
+
+/* D02 V3: visible state after selecting a real category or ranking row. */
+.mf-v3-card .mf-v3-selection{display:grid;gap:8px;min-width:0;border:1px solid var(--border);
+ border-radius:11px;padding:12px;background:var(--surface2);color:var(--text)}
+.mf-v3-card .mf-v3-selection>strong{font-size:13px;color:var(--text)}
+.mf-v3-card .mf-v3-selection>p{margin:0;font-size:11px;line-height:1.5;
+ color:var(--muted);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.mf-v3-card .mf-v3-selection summary{font-size:11px;cursor:pointer;color:var(--text)}
+.mf-v3-card .mf-v3-neutral{display:grid;gap:7px}
+.mf-v3-card .mf-v3-neutral>.mf-v3-action{justify-self:start}
