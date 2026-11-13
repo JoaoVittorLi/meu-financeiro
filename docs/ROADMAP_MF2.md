@@ -559,3 +559,15 @@ Sprint Premium R4: espaço de trabalho de Movimentações, visões rápidas, agr
 Sprint Premium R5 iniciado: briefing de prioridades reais no dashboard, consulta contextual e drilldown por natureza/fonte nos indicadores. Ledger/gráficos/agenda/orçamento existentes preservados; saldo desconhecido continua indisponível/parcial. Fatia inicial R5, sem novo serviço I.
 
 Checkpoint integrado #54: R3/R2/R4 funcionais; primeira fatia R5 em e897140. 542/542 Node/SQLite, TypeScript, compile, F08/proveniência, ASAR real e IPC PASS. Evidências nativas e limites em evidence/2026-11-12-premium-sprint. Não equivale a instalador homologado ou escrita pessoal liberada.
+
+
+## INT-DESIGN-01 — checkpoints D01 V4.5 e VR-07/08 (13/11/2026)
+
+**Base:** PR #54 / `55de81c03c3171edd0b325eb66d63630018c23c4`. **Visual aprovado:** PR #57 / `f220cef3f15cbd8373470101b4589535c603a57a`; issue #59. **Entrega:** [PR Draft #60](https://github.com/JoaoVittorLi/meu-financeiro/pull/60), branch `feat/mf2-int-design-01-d01-vr07-vr08-20261113`.
+
+- **C1 D01 V4.5: código implementado; não homologado.** Chat lateral premium compacto (~520 px), editor read-only de propostas com salvar/descartar local, seleção de lançamento, consentimento zerado, validação de identidade/stale, escopos histórico/futuro distintos, navegação para editor manual. **Sem gravação por IA pessoal**, sem recibo/undo fictício.
+- **C2 VR-07/08: código implementado; não homologado.** Treemap de área proporcional aos centavos; Sankey com conservação de receitas/despesas/resultado do período; tabela, drilldown, source+month, partial, zero, keyboard; fatos aditivos `localFinancialQuery(radar)` read-only com ledger compartilhado, travando gráficos sem IDs comprovados ou reconciliação completa.
+- **QA isolado real em V8:** 25/25 probes PASS em funções do código de produção e serviço financeiro/ledger. Testes versionados novos: 9 D01 + 13 VR + 7 financeiros. **Não executados no novo HEAD:** full Node/SQLite 542+, TypeScript compile, F08, ASAR, smoke Electron e screenshots próprios. Os 29 screenshots do PR #54 pertencem à base, **não** ao #60.
+- **Bloqueio para homologação:** checkout+dependências indisponíveis no ambiente atual, `app/app.js` ainda depende de compilação canônica pelo Integrador, revisão de extensão IC-READ, QA e capturas Electron da branch. Sem CircleCI Windows pago, EXE, merge main, Cloudflare Production ou IA pessoal write.
+
+[Log detalhado](ai-context/logs/2026-11-13-INT-DESIGN-01-D01-VR07-VR08.md). **Próxima ação única:** Integrador executar build/Node/SQLite/Electron com evidências vinculadas ao HEAD do #60 e corrigir regressões antes de revisão do Arquiteto. D02 completo/VR-09 continuam não aprovados.
