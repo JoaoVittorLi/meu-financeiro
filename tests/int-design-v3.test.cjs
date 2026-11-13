@@ -45,7 +45,7 @@ function report(month='2026-11',cats=categoriesNov,overrides={}){
  return {...base,...overrides};
 }
 function app(){
- return {state:{intelligencePanelOpen:false,localFinancialAccess:{token:'synthetic-read-only'}},
+ return {state:{mode:'demo',month:'2026-11',intelligencePanelOpen:false,localFinancialAccess:{token:'synthetic-read-only',source:'manual',profile:'demo',expiresAt:Date.now()+600000}},
  setState(p){Object.assign(this.state,p)},navigate(page){this.route=page}};
 }
 function flatten(tree){
@@ -239,4 +239,28 @@ test('D02 — searchable table sort is an actual click handler',()=>{
  const btn=flatten(api.mfV3Render(a,m)).find(x=>x.type==='button'&&txt(x)==='Maior gasto');
  assert(btn);btn.props.onClick();
  assert.equal(a.state.mfV3TableOrder.order,'amount');
+});
+
+
+test('D02 — revoked, expired or replaced grants hide cached personal numbers',()=>{
+ const v=api.mfV3FromOperational(reply,'summary',null);
+ const invalid=[
+  a=>a.state.localFinancialAccess=null,
+  a=>a.state.localFinancialAccess.expiresAt=Date.now()-1000,
+  a=>a.state.localFinancialAccess.source='bank',
+  a=>a.state.localFinancialAccess.profile='real',
+  a=>a.state.localFinancialMonth='2026-10'
+ ];
+ for(const mutate of invalid){
+  const a=app();mutate(a);
+  const tree=api.mfV3Render(a,{id:'secret',visualV3:v});
+  assert.match(tree.props.className,/state-stale/);
+  assert.doesNotMatch(txt(tree),/R\$\s*2\.727,00/);
+ }
+});
+test('D02 — valid current grant still allows cached read-only view until expiry',()=>{
+ const a=app(),v=api.mfV3FromOperational(reply,'summary',null);
+ const tree=api.mfV3Render(a,{id:'fresh',visualV3:v});
+ assert.doesNotMatch(tree.props.className,/state-stale/);
+ assert.match(txt(tree),/R\$\s*2\.727,00/);
 });
