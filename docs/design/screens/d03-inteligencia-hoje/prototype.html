@@ -152,7 +152,7 @@ const headroom=p.total-s.safetyBufferCents;
 if(p.total<0)add("deficit",110,"bad","Possível insuficiência","Os pagamentos podem superar o disponível",cash(p.total),"A projeção após compromissos ficou abaixo de zero. Isso não é um saldo bancário negativo confirmado.","deficit","Rever compromissos");
 else if(p.total<s.safetyBufferCents)add("tight",105,"warn","Margem de segurança","Vale reorganizar os limites",cash(s.safetyBufferCents-p.total),"Faltaria esse valor para manter a margem desejada após os pagamentos previstos.","tight","Rever limites");
 else if(headroom>=15000)add("save",92,"good","Oportunidade para guardar","Você pode reservar parte da sua folga",cash(Math.round(headroom*.5)),"Sugestão de separar metade da folga acima da margem, sem comprometer pagamentos já previstos.","reserve","Planejar reserva");
-else add("steady",76,"warn","Margem próxima ao limite","Acompanhe os próximos pagamentos",cash(headroom),"A margem desejada está preservada, mas a folga é pequena para uma nova decisão.","forecast","Conferir previsão");
+else add("steady",95,"warn","Margem próxima ao limite","Acompanhe os próximos pagamentos",cash(headroom),"A margem desejada está preservada, mas a folga é pequena para uma nova decisão.","forecast","Conferir previsão");
 }
 if(s.hasHistory&&s.coverage==="verified"){
 if(s.budgetCents>0&&food.currentCents>s.budgetCents)add("budget",84,"bad","Orçamento de Alimentação","Alimentação passou do limite",cash(food.currentCents-s.budgetCents),"O gasto registrado ultrapassou o orçamento considerado para esta categoria.","budget","Entender meus gastos");
