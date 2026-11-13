@@ -139,6 +139,8 @@ function renderIntelligenceStructuredCard(card:IntelligenceStructuredCard){
     card.footnote?h('small',{className:'mf-ai-structured-foot'},card.footnote):null);
 }
 function renderIntelligenceActionProposalCard(app:any,proposal:IntelligenceActionProposal){
+  return renderMfD01Proposal(app,proposal);
+  /* Legacy renderer kept for contract compatibility; no longer reached by D01. */
   const moneyFmt=(cents:number)=>new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format((cents||0)/100);
   const isAmbiguous=proposal.status==='ambiguous';
   const isPending=proposal.status==='pending';
@@ -458,8 +460,23 @@ function renderIntelligenceComposer(app:any,drawer=false){
    h('button',{type:'submit',className:'primary-button',disabled:!draft.trim()||session.busy||session.expired},session.busy?'Consultando…':'Enviar',h(Icon,{name:'arrow',size:16}))));
 }
 function renderIntelligenceFollowups(app:any){
- const questions=app.state.categoryReviewGrant?['Revise todas as minhas movimentações pendentes.','Quais regras são recomendadas?']:['Quais foram minhas maiores despesas?','Quais despesas aumentaram?','Que movimentações preciso revisar?'];
- return h('div',{className:'mf-chat-followups','aria-label':'Continuar a análise'},...questions.map(q=>h('button',{type:'button',key:q,disabled:intelligenceChatSession(app).busy||intelligenceChatSession(app).expired,onClick:()=>intelligenceSubmitQuestion(app,q)},q,h(Icon,{name:'arrow',size:13}))));
+ const session=intelligenceChatSession(app);
+ const scope=intelligenceContextFor(app.state.intelligenceContext||app.state.page);
+ const answered=new Set(intelligenceHistoryList(app).filter(m=>m.role==='user')
+  .map(m=>String(m.text||'').trim().toLocaleLowerCase('pt-BR')));
+ const candidates=app.state.categoryReviewGrant?
+  ['Quais regras são recomendadas?','Que movimentações preciso revisar?']:
+  (app.state.localFinancialAccess?.token?[
+    'Quais foram minhas maiores despesas?',
+    'Quais despesas aumentaram?',
+    'Que movimentações preciso revisar?']:(scope.questions||[]));
+ const available=candidates.filter(q=>!answered.has(q.toLocaleLowerCase('pt-BR')))
+   .filter(q=>app.state.categoryReviewGrant||app.state.localFinancialAccess?.token||
+     (!/minhas|meus|foram|minha renda/i.test(q))).slice(0,2);
+ if(!available.length)return null;
+ return h('div',{className:'mf-chat-followups','aria-label':'Continuar a análise'},
+  ...available.map(q=>h('button',{type:'button',key:q,disabled:session.busy||session.expired,
+    onClick:()=>intelligenceSubmitQuestion(app,q)},q,h(Icon,{name:'arrow',size:13}))));
 }
 function renderIntelligenceView(app:any){
   if(app.state.workIntelligenceDemo?.enabled&&typeof renderWorkIntelligenceDemo==='function')return renderWorkIntelligenceDemo(app);
@@ -552,22 +569,24 @@ function renderIntelligencePanel(app:any){
   const busy=Boolean(app.state.aiBusy||app.state.localFinancialBusy||app.state.intelligenceDrawerBusy);
   const draft=String(app.state.intelligenceDraft||'');
   return h('div',{className:'mf-ai-backdrop',role:'presentation',onMouseDown:(e:any)=>{if(e.target===e.currentTarget)app.setState({intelligencePanelOpen:false});}},
-    h('aside',{className:'mf-ai-drawer mf-ai-drawer-compact',role:'dialog','aria-modal':'true','aria-label':'Assistente contextual de '+info.label},
+    h('aside',{className:'mf-ai-drawer mf-ai-drawer-compact mf-d01',role:'dialog','aria-modal':'true','aria-label':'Assistente contextual de '+info.label},
       h('div',{className:'mf-ai-drawer-head'},
         h('div',{className:'mf-ai-drawer-title-wrap'},
           h('div',{className:'mf-ai-drawer-kicker-row'},
-            h('span',{className:'micro-label'},'COPILOTO CONTEXTUAL'),
-            h('span',{className:'mf-ai-conn-pill '+convState.css},app.state.localFinancialAccess?.token?'Leitura local autorizada':convState.pill)),
-          h('h2',{},info.label)),
+            h('span',{className:'mf-d01-spark','aria-hidden':'true'},'✦'),
+            h('span',{className:'micro-label'},'SEU ASSISTENTE')),
+          h('h2',{},'Assistente Financeiro'),
+          h('small',{className:'mf-d01-context-subtitle'},'Ajudando em '+info.label)),
         h('div',{className:'mf-ai-drawer-head-actions'},
           h('button',{type:'button',className:'ghost-button mf-ai-expand-btn','aria-label':'Nova conversa',title:'Iniciar nova conversa',onClick:()=>intelligenceCreateThread(app)},'Nova'),
           h('button',{type:'button',className:'ghost-button mf-ai-expand-btn','aria-label':'Expandir na aba Inteligência',title:'Abrir na aba Inteligência mantendo a conversa ativa',onClick:()=>intelligenceOpenFullChat(app)},'Expandir'),
           h('button',{type:'button',className:'close-button','aria-label':'Fechar assistente',onClick:()=>app.setState({intelligencePanelOpen:false})},'×'))),
-      h('div',{className:'mf-ai-context-meta mf-ai-drawer-scope'},
-        h('span',{},scope.label),
-        h('span',{},scope.period),
-        h('span',{},scope.mode),
-        ...scope.filters.map((filter:string)=>h('span',{key:filter},filter)),
+      h('details',{className:'mf-d01-context-disclosure'},
+        h('summary',{},'Contexto da conversa',h(Icon,{name:'chevron-down',size:14})),
+        h('div',{className:'mf-ai-context-meta mf-ai-drawer-scope'},
+          h('span',{},scope.label),h('span',{},scope.period),h('span',{},scope.mode),
+          ...scope.filters.map((filter:string)=>h('span',{key:filter},filter)),
+          h('span',{},app.state.localFinancialAccess?.token?'Leitura local autorizada':convState.pill)),
         threads.length>1?h('select',{className:'mf-ai-drawer-thread-select','aria-label':'Alternar conversa ativa',value:activeThreadId,onChange:(e:any)=>intelligenceSelectThread(app,e.target.value)},
           ...threads.map((t:IntelligenceThread)=>h('option',{key:t.id,value:t.id},t.title+' ('+t.messages.length+')'))):null),
       renderIntelligenceAccess(app),
@@ -576,7 +595,7 @@ function renderIntelligencePanel(app:any){
         messages.length===0?h('div',{className:'mf-ai-drawer-empty'},
           h('p',{className:'muted-desc'},info.description),
           h('div',{className:'mf-ai-drawer-suggestions','aria-label':'Sugestões rápidas para '+info.label},
-            ...info.questions.map((q:string,i:number)=>h('button',{type:'button',className:'mf-ai-context-prompt',key:i,onClick:()=>intelligenceSubmitQuestion(app,q)},
+            ...info.questions.filter(q=>!intelligenceHistoryList(app).some(m=>m.role==='user'&&m.text===q)).slice(0,2).map((q:string,i:number)=>h('button',{type:'button',className:'mf-ai-context-prompt',key:i,onClick:()=>intelligenceSubmitQuestion(app,q)},
               h('span',{},q),h(Icon,{name:'arrow',size:15}))))):
         h('div',{className:'mf-ai-drawer-messages',role:'log','aria-live':'polite'},
           ...messages.map(m=>renderIntelligenceMessageItem(app,m)),
