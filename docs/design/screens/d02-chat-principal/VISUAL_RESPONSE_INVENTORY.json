@@ -1,0 +1,269 @@
+{
+  "version": "D02-V4.1-candidate",
+  "date": "2026-11-13",
+  "status": "DESIGN_MAPPED",
+  "issue": 58,
+  "synthetic": true,
+  "components": [
+    {
+      "id": "VR-01",
+      "label": "Resumo executivo",
+      "intent": "Como foi meu mês?",
+      "display": "headline + KPIs + interpretação",
+      "kind": "summary",
+      "priority": "P0",
+      "approval": "PENDING",
+      "implementation": "NOT_STARTED"
+    },
+    {
+      "id": "VR-02",
+      "label": "Indicador isolado",
+      "intent": "Quanto gastei com alimentação?",
+      "display": "valor, período e variação",
+      "kind": "kpi",
+      "priority": "P0",
+      "approval": "PENDING",
+      "implementation": "NOT_STARTED"
+    },
+    {
+      "id": "VR-03",
+      "label": "Antes/depois",
+      "intent": "Foi melhor que outubro?",
+      "display": "comparação de períodos equivalentes",
+      "kind": "compare",
+      "priority": "P0",
+      "approval": "PENDING",
+      "implementation": "NOT_STARTED"
+    },
+    {
+      "id": "VR-04",
+      "label": "Tendência temporal",
+      "intent": "Evolução do saldo e gastos",
+      "display": "linha/área com drill-down",
+      "kind": "trend",
+      "priority": "P0",
+      "approval": "PENDING",
+      "implementation": "NOT_STARTED"
+    },
+    {
+      "id": "VR-05",
+      "label": "Barras comparativas",
+      "intent": "Compare meus seis meses",
+      "display": "barras agrupadas/empilhadas",
+      "kind": "bar",
+      "priority": "P0",
+      "approval": "PENDING",
+      "implementation": "NOT_STARTED"
+    },
+    {
+      "id": "VR-06",
+      "label": "Distribuição",
+      "intent": "Como dividi meu dinheiro?",
+      "display": "rosca/legenda acessível",
+      "kind": "donut",
+      "priority": "P0",
+      "approval": "PENDING",
+      "implementation": "NOT_STARTED"
+    },
+    {
+      "id": "VR-07",
+      "label": "Treemap",
+      "intent": "Quais gastos dominam?",
+      "display": "blocos proporcionais com alternativa tabular",
+      "kind": "treemap",
+      "priority": "P1",
+      "approval": "PENDING",
+      "implementation": "NOT_STARTED"
+    },
+    {
+      "id": "VR-08",
+      "label": "Fluxo de dinheiro",
+      "intent": "Para onde foi minha renda?",
+      "display": "Sankey reconciliado",
+      "kind": "sankey",
+      "priority": "P1",
+      "approval": "PENDING",
+      "implementation": "NOT_STARTED"
+    },
+    {
+      "id": "VR-09",
+      "label": "Ranking causal",
+      "intent": "Quem aumentou os gastos?",
+      "display": "deltas por categoria com base comparável",
+      "kind": "rank",
+      "priority": "P0",
+      "approval": "PENDING",
+      "implementation": "NOT_STARTED"
+    },
+    {
+      "id": "VR-10",
+      "label": "Investigação",
+      "intent": "De onde veio essa soma?",
+      "display": "categoria → estabelecimento → transação",
+      "kind": "drilldown",
+      "priority": "P0",
+      "approval": "PENDING",
+      "implementation": "NOT_STARTED"
+    },
+    {
+      "id": "VR-11",
+      "label": "Tabela de transações",
+      "intent": "Mostre compras sem categoria",
+      "display": "filtros, seleção, IDs e detalhe",
+      "kind": "table",
+      "priority": "P0",
+      "approval": "PENDING",
+      "implementation": "NOT_STARTED"
+    },
+    {
+      "id": "VR-12",
+      "label": "Recorrências",
+      "intent": "Quais assinaturas pago?",
+      "display": "lista de serviços, datas e cobranças",
+      "kind": "recurring",
+      "priority": "P1",
+      "approval": "PENDING",
+      "implementation": "NOT_STARTED"
+    },
+    {
+      "id": "VR-13",
+      "label": "Orçamento",
+      "intent": "Vou ultrapassar limite?",
+      "display": "medidor, velocidade, previsão e ação",
+      "kind": "budget",
+      "priority": "P0",
+      "approval": "PENDING",
+      "implementation": "NOT_STARTED"
+    },
+    {
+      "id": "VR-14",
+      "label": "Calendário e fluxo",
+      "intent": "Quanto sobra no dia 20?",
+      "display": "eventos e saldo diário projetado",
+      "kind": "cashflow",
+      "priority": "P1",
+      "approval": "PENDING",
+      "implementation": "NOT_STARTED"
+    },
+    {
+      "id": "VR-15",
+      "label": "Simulação",
+      "intent": "E se cortar 15% de lazer?",
+      "display": "sliders e cálculo reproduzível",
+      "kind": "whatif",
+      "priority": "P0",
+      "approval": "PENDING",
+      "implementation": "NOT_STARTED"
+    },
+    {
+      "id": "VR-16",
+      "label": "Cenários",
+      "intent": "Qual opção compensa?",
+      "display": "A/B/C, premissas e incerteza",
+      "kind": "scenario",
+      "priority": "P1",
+      "approval": "PENDING",
+      "implementation": "NOT_STARTED"
+    },
+    {
+      "id": "VR-17",
+      "label": "Metas",
+      "intent": "Quando alcanço reserva?",
+      "display": "linha de progresso e prazo",
+      "kind": "goal",
+      "priority": "P1",
+      "approval": "PENDING",
+      "implementation": "NOT_STARTED"
+    },
+    {
+      "id": "VR-18",
+      "label": "Dívidas",
+      "intent": "Vale antecipar parcelas?",
+      "display": "amortização, datas e custos",
+      "kind": "debt",
+      "priority": "P1",
+      "approval": "PENDING",
+      "implementation": "NOT_STARTED"
+    },
+    {
+      "id": "VR-19",
+      "label": "Patrimônio",
+      "intent": "Como evoluiu meu patrimônio?",
+      "display": "ativos/passivos, tempo e alocação",
+      "kind": "portfolio",
+      "priority": "P1",
+      "approval": "PENDING",
+      "implementation": "NOT_STARTED"
+    },
+    {
+      "id": "VR-20",
+      "label": "Oportunidades",
+      "intent": "O que devo priorizar?",
+      "display": "recomendações justificadas",
+      "kind": "insight",
+      "priority": "P1",
+      "approval": "PENDING",
+      "implementation": "NOT_STARTED"
+    },
+    {
+      "id": "VR-21",
+      "label": "Plano de ação",
+      "intent": "Monte um plano de economia",
+      "display": "tarefas, prazos e acompanhamento",
+      "kind": "plan",
+      "priority": "P0",
+      "approval": "PENDING",
+      "implementation": "NOT_STARTED"
+    },
+    {
+      "id": "VR-22",
+      "label": "Proposta de IA",
+      "intent": "Crie categoria e regra",
+      "display": "diff, seleção, exceções e abrangência",
+      "kind": "proposal",
+      "priority": "P0",
+      "approval": "PENDING",
+      "implementation": "NOT_STARTED"
+    },
+    {
+      "id": "VR-23",
+      "label": "Aprovação e recibo",
+      "intent": "Confirma esta alteração?",
+      "display": "reconfirmação, recibo e undo seguro",
+      "kind": "approval",
+      "priority": "P0",
+      "approval": "PENDING",
+      "implementation": "NOT_STARTED"
+    },
+    {
+      "id": "VR-24",
+      "label": "Relatório e arquivo",
+      "intent": "Gere relatório; analise CSV",
+      "display": "preview, artefato e fontes",
+      "kind": "report",
+      "priority": "P1",
+      "approval": "PENDING",
+      "implementation": "NOT_STARTED"
+    },
+    {
+      "id": "VR-25",
+      "label": "Qualidade de dados",
+      "intent": "Minhas contas estão atualizadas?",
+      "display": "asOf, cobertura, atrasos, conflitos",
+      "kind": "quality",
+      "priority": "P0",
+      "approval": "PENDING",
+      "implementation": "NOT_STARTED"
+    },
+    {
+      "id": "VR-26",
+      "label": "Estados especiais",
+      "intent": "Não tenho dados suficientes",
+      "display": "empty, loading, stale, denied, error",
+      "kind": "state",
+      "priority": "P0",
+      "approval": "PENDING",
+      "implementation": "NOT_STARTED"
+    }
+  ]
+}
