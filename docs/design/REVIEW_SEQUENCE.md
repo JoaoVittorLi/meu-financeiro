@@ -4,8 +4,8 @@ Data: 2026-11-13 · Índice: #55 · Coordenação: #49 · Baseline PR #54 / 55de
 | Ordem | Tela | Estado | Issue | Versão |
 |---|---|---|---|---|
 | D01 | Chat Lateral | **IMPLEMENTATION_READY** (DESIGN_APPROVED) | #56 | **V4.5 FINAL** · protótipo/specs/handoff congelados |
-| D02 | Chat Principal / Expandido | **PROTOTYPING** | #58 | V4 workspace + Etapa 2 biblioteca visual especificada; aguardando feedback |
-| D03 | Inteligência Hoje | NOT_STARTED | — | — |
+| D02 | Chat Principal / Expandido | **DESIGN HANDOFF V3 CONSOLIDADO** (implementação pendente) | #58 | Biblioteca de 26 famílias especificada por herança; 3 aprovadas individualmente, VR-10 V2 referência; sem mais microscreens |
+| D03 | Inteligência Hoje | **NEXT / READY_FOR_DESIGN_REVIEW** | #61 | Próxima tela principal; não reintroduzir abas pesadas no chat |
 | D04 | Central de Revisão | NOT_STARTED | — | — |
 | D05 | Movimentações | NOT_STARTED | — | — |
 | D06 | Visão Geral | NOT_STARTED | — | — |
@@ -25,9 +25,18 @@ Fluxo de estados: NOT_STARTED → CURRENT_UI_REVIEWED → PROTOTYPING → WAITIN
 Critérios para DESIGN_APPROVED: aprovação explícita do proprietário sobre versão exata. Critérios IMPLEMENTATION_READY: prototype.html reproduzível, specs, tokens, fixtures, acceptance, changelog e handoff publicados. O código de produção é responsabilidade do executor em branch separada. Nenhum build pago ou merge em main autorizado.
 
 
-### D02 — Etapa 2 — Biblioteca Visual (13/11/2026)
+### D02 — Etapa 2 — Biblioteca Visual (histórico, 13/11/2026)
 
 - **Estado:** `DESIGN_SPECIFIED / WAITING_FEEDBACK`, NÃO `DESIGN_APPROVED` e não implementado.
 - **Escopo:** 26 famílias de respostas tipadas; `compact` lateral D01, `standard` principal D02, `analysis` workspace, `mobile` PWA; dark/light e 10 estados demonstráveis.
 - **Fontes:** [Galeria HTML](screens/d02-chat-principal/VISUAL_GALLERY_STAGE2.html), [Design System](screens/d02-chat-principal/VISUAL_DESIGN_SYSTEM_STAGE2.md), [QA/estados](screens/d02-chat-principal/VISUAL_STATES_QA_STAGE2.md), [Evidências](screens/d02-chat-principal/VISUAL_STAGE2_ACCEPTANCE.md).
 - **Gates seguintes:** aprovação visual do proprietário, contratos autorizados, implementação separada e QA Electron real. D01 V4.5 permanece intacta.
+
+### D02 — V3 CONSOLIDADO · Entrega de design em lote (13/11/2026)
+
+**Decisão do proprietário:** encerrar o loop de protótipos por microcomponente e aplicar o padrão premium aprovado às 26 famílias restantes; o próximo design é D03.
+
+- **Status correto:** pacote `DESIGN_SYSTEM_SPECIFIED / HANDOFF_CANDIDATE` entregue; não há implementação Electron nem homologação global. A designação `DESIGN_APPROVED` só existe individualmente em VR-07 V2, VR-08 V1, VR-09 V1.1; VR-10 V2 é referência aceita para a consolidação; 22 famílias herdaram especificação, sem aprovação individual.
+- **Entrega principal:** [D02 V3 — índice único](screens/d02-chat-principal/D02_V3_DELIVERY_INDEX.md), [galeria interativa V3](screens/d02-chat-principal/VISUAL_GALLERY_V3_CONSOLIDATED.html), [sistema visual](screens/d02-chat-principal/VISUAL_LIBRARY_CONSOLIDATED_V3.md), [tokens](screens/d02-chat-principal/VISUAL_LIBRARY_TOKENS_V3.json), [CSS referência](screens/d02-chat-principal/VISUAL_LIBRARY_PREMIUM_V3.css), [handoff](screens/d02-chat-principal/VISUAL_LIBRARY_HANDOFF_V3.md), [aceite/QA](screens/d02-chat-principal/VISUAL_LIBRARY_ACCEPTANCE_V3.md).
+- **Progresso confirmado:** conteúdo da galeria V3 e JS sintaticamente validados, documentação versionada. **Não verificado:** screenshots Chromium dessa V3, testes de clique, QA Electron, integração e escrita financeira real.
+- **Próximo item do roteiro:** [D03 — Inteligência Hoje, issue #61](https://github.com/JoaoVittorLi/meu-financeiro/issues/61). Rever D03 como **uma tela inteira**, sem ciclos de microcomponentes já padronizados; respeitar design principal leve, histórico recolhido e painel opcional.
