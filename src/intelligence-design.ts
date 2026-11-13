@@ -114,7 +114,7 @@ function renderMfD01Proposal(app:any,p:IntelligenceActionProposal):any{
       app.setState({mfD01Committed:{...(app.state.mfD01Committed||{}),[p.id]:{...edit,selected:e.target.checked}},mfD01Review:null});
      }}),
      h('span',{},h('b',{},p.description),h('small',{},p.date+' · '+(p.origin==='bank'?'Banco':'Manual')+' · '+current+' → '+edit.name)),
-     h('strong',{},signed)))),
+     h('strong',{},signed))),
   h('div',{className:'mf-d01-scopes'},
    h('label',{},h('input',{type:'checkbox',checked:edit.history,disabled:ambiguous,onChange:(e:any)=>{
     app.setState({mfD01Committed:{...(app.state.mfD01Committed||{}),[p.id]:{...edit,history:e.target.checked}},mfD01Review:null});
