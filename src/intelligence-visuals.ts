@@ -208,7 +208,7 @@ function renderMfVisual(app:any,msg:IntelligenceChatMessage):any{
    h('p',{},mfVisualMoney(active.amountCents)+' · '+((active.amountCents/data.expenseCents)*100).toFixed(1)+'% das despesas · '+active.movementCount+' movimentação(ões) considerada(s)'),
    detailOpen?h('div',{className:'mf-vr-details',role:'region','aria-label':'Movimentações de '+active.name},
      h('strong',{},'Movimentações de '+active.name),
-     h('ul',{},...active.movements.map(m=>h('li',{key:m.id+'-'+m.date},m.date+' · '+m.description+' · '+mfVisualMoney(m.amountCents))),
+     h('ul',{},...active.movements.map(m=>h('li',{key:m.id+'-'+m.date},m.date+' · '+m.description+' · '+mfVisualMoney(m.amountCents)))),
      active.detailsPartial?h('p',{role:'status'},'Amostra parcial: '+active.movements.length+' de '+active.movementCount+' registros.'):null,
      active.detailsPartial?h('button',{type:'button',onClick:()=>mfVisualOpenTransactions(app,active.name,data.period,data.source)},'Abrir histórico completo'):null):null,
    h('div',{className:'mf-vr-actions'},
