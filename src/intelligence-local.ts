@@ -57,6 +57,8 @@ async function localFinancialSubmit(app:any,question:string){
  if(app.state.localFinancialBusy||!String(question||'').trim())return;
  const access:LocalFinancialAccess=app.state.localFinancialAccess;
  const q=String(question).trim().slice(0,700),scope=intelligencePageScope(app),messages=[...intelligenceHistoryList(app)];
+ const v3Kind=mfV3Requested(q);
+ let previousOperational:any=null;
  const month=app.state.localFinancialMonth||app.state.month,signature=intelligencePremiumSignature(app);
  const request=(app.__localChatRequest||0)+1;app.__localChatRequest=request;
  const user:IntelligenceChatMessage={id:'local-u-'+Date.now(),role:'user',text:q,status:'sent',
@@ -66,9 +68,18 @@ async function localFinancialSubmit(app:any,question:string){
  try{
   const api=localFinancialAPI() as any;
   if(typeof api?.intelligenceOperationalAsk==='function'){
-   operational=await api.intelligenceOperationalAsk({token:access.token,month,question:q});
+   operational=await api.intelligenceOperationalAsk({token:access.token,month,
+     question:v3Kind?'Radar financeiro':q});
    if(operational?.contract!=='IC-v1/I-P0.2-read-only'||operational.readOnly!==true||
       operational.changesApplied!==false||operational.modelCalled!==false)throw Error('Resposta operacional não verificada.');
+   if(v3Kind&&mfV3NeedsPrevious(v3Kind)&&operational?.uiState==='ready'){
+     // The same existing local grant is used; missing previous data stays partial.
+     const priorMonth=mfVisualMonthBefore(month);
+     if(priorMonth){
+       try{previousOperational=await api.intelligenceOperationalAsk({token:access.token,month:priorMonth,question:'Radar financeiro'});}
+       catch{previousOperational=null;}
+     }
+   }
   }else{
    // Compatibility during isolated R branch: I-P0.2 becomes active after integration.
    const parsed=localFinancialParse(q,app.state.categories);
@@ -82,23 +93,27 @@ async function localFinancialSubmit(app:any,question:string){
   return;
  }
  const state=operational?.uiState;
- const answerText=operational?.answer||reply?.text||error||'Consulta indisponível.';
+ const answerText=v3Kind&&operational?.uiState==='ready'?
+    'Confira os dados do período na visualização baseada em registros locais autorizados.':
+    operational?.answer||reply?.text||error||'Consulta indisponível.';
  const finalStatus:IntelligenceChatMessage['status']=operational?
   (state==='ready'||state==='empty'?'done':state==='unsupported'?'unsupported':state==='denied'||state==='expired'?'unavailable':'error'):
   reply?'done':'error';
  const factsValid=operational&&(state==='ready'||state==='empty');
  const evidence=factsValid?(operational.profile==='synthetic'?'Ambiente sintético':'Fonte '+(operational.source==='bank'?'bancária':'manual'))+
   ' · '+intelligencePremiumCoverage(operational.coverage)+' · '+month:'';
- const visualKind=factsValid?mfVisualRequested(q):null;
+ const visualV3=v3Kind&&factsValid?mfV3FromOperational(operational,v3Kind,previousOperational):null;
+ const visualKind=!v3Kind&&factsValid?mfVisualRequested(q):null;
  const visual=visualKind?mfVisualFromOperational(operational,visualKind):null;
  const answer:IntelligenceChatMessage={
   id:'local-a-'+Date.now(),role:'assistant',text:answerText,status:finalStatus,
   createdAt:intelligenceNowTime(),scopeLabel:scope.label,periodLabel:month,
   structuredCard:factsValid&&operational.card?operational.card:reply?.card||null,
-  visual,
-  operationalActions:factsValid&&Array.isArray(operational.actions)?operational.actions:[],
+  visual,visualV3,
+  operationalActions:factsValid&&!visualV3&&Array.isArray(operational.actions)?operational.actions:[],
   operationalEvidence:evidence,
-  details:visualKind&&!visual?'Não há evidências suficientes para desenhar o gráfico com totais reconciliados. Confira fonte e cobertura.':
+  details:v3Kind&&!visualV3?'Os fatos autorizados não permitem esta visualização; nenhuma informação foi estimada.':
+    visualKind&&!visual?'Não há evidências suficientes para desenhar o gráfico com totais reconciliados. Confira fonte e cobertura.':
     factsValid?'Consulta local determinística, sem IA externa. Não foi executada qualquer alteração.':
     reply?JSON.stringify(reply.references):'Nenhuma alteração financeira nem envio externo.'
  };
