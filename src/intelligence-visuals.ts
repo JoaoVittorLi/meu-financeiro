@@ -21,7 +21,7 @@ function mfVisualMoney(cents:number):string{
 }
 function mfVisualRequested(question:string):'treemap'|'sankey'|null{
  const q=String(question||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
- if(/para onde (?:foi|vai) (?:minha |a )?(?:renda|dinheiro)|fluxo de (?:dinheiro|renda)|sankey|distribuicao da renda/.test(q))return 'sankey';
+ if(/para onde (?:foi|vai) (?:minha |meu |a )?(?:renda|dinheiro)|fluxo de (?:dinheiro|renda)|sankey|distribuicao da renda/.test(q))return 'sankey';
  if(/treemap|mapa de (?:gastos|despesas|categorias)|distribuicao (?:dos |de )?gastos|despesas por categoria/.test(q))return 'treemap';
  return null;
 }
@@ -90,10 +90,10 @@ function mfVisualSelected(app:any,messageId:string,data:MfVisualSnapshot):string
 function mfVisualChoose(app:any,messageId:string,name:string):void{
  app.setState({mfVisualSelection:{messageId,name}});
 }
-function mfVisualOpenTransactions(app:any,name:string,month:string):void{
+function mfVisualOpenTransactions(app:any,name:string,month:string,source:'bank'|'manual'):void{
  app.navigate('transactions');
  if(typeof app.setSharedMonth==='function')app.setSharedMonth(month);
- app.setState({txSource:'all',txCategoryFilter:name,txKindFilter:'expense',txReviewOnly:false,
+ app.setState({txSource:source,txCategoryFilter:name,txKindFilter:'expense',txReviewOnly:false,
   txSelected:[],query:''});
 }
 function mfVisualMonthBefore(month:string):string{
@@ -204,7 +204,7 @@ function renderMfVisual(app:any,msg:IntelligenceChatMessage):any{
     h('ul',{},...active.movements.map(m=>h('li',{key:m.id+'-'+m.date},m.date+' · '+m.description+' · '+mfVisualMoney(m.amountCents))),
     active.detailsPartial?h('li',{},'Exibindo '+active.movements.length+' de '+active.movementCount+' registros; consulte Movimentações para o restante.'):null)),
    h('div',{className:'mf-vr-actions'},
-    h('button',{type:'button',onClick:()=>mfVisualOpenTransactions(app,active.name,data.period)},'Ver movimentações'),
+    h('button',{type:'button',onClick:()=>mfVisualOpenTransactions(app,active.name,data.period,data.source)},'Ver movimentações'),
     h('button',{type:'button',disabled:!app.state.localFinancialAccess?.token,
       onClick:()=>void mfVisualComparePrevious(app,msg.id,data,active.name)},'Comparar mês anterior')),
    compare?h('p',{role:'status'},compare.status==='ready'?
