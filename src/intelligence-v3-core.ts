@@ -39,7 +39,7 @@ function mfV3Pct(now,before){return Number.isSafeInteger(now)&&Number.isSafeInte
 function mfV3Fold(q){return String(q||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();}
 function mfV3Requested(q:string):MfV3Kind|null{
  const s=mfV3Fold(q);
- const patterns=[
+ const patterns:Array<[MfV3Kind,RegExp]>=[
   ['sankey',/para onde foi (minha|a) renda|fluxo de dinheiro|sankey/],
   ['treemap',/treemap|mapa de (gastos|despesas|categorias)/],
   ['rank',/quem aumentou|ranking (de )?(aumentos|variac|despesas)|aumentos por categoria/],
@@ -96,8 +96,9 @@ function mfV3FromOperational(op:any,kind:MfV3Kind,prior:any):MfV3Card|null{
  const sourcePartial=original.coverage==='partial_local';
  const sankeyNotRepresentable=kind==='sankey'&&(original.incomeCents===0||original.netCents<0);
  const blockedPrev=mfV3NeedsPrevious(kind)&&(!prev||prev.coverage==='partial_local'||sourcePartial);
- const unsupported=['recurring','goal','debt','portfolio','approval'].includes(kind);
- const quality:MfV3Quality=unsupported?'unavailable':blockedPrev||sourcePartial||sankeyNotRepresentable?'partial':original.expenseCents===0?'empty':'ready';
+ const unsupported=['recurring','goal','debt','portfolio','approval','whatif','scenario'].includes(kind);
+ const quality:MfV3Quality=unsupported?'unavailable':blockedPrev||sourcePartial||sankeyNotRepresentable?'partial':
+   original.expenseCents===0&&original.incomeCents===0?'empty':'ready';
  const reason=sankeyNotRepresentable?'Receita ausente ou resultado negativo: não há fluxo de receitas que represente estes gastos sem criar dinheiro fictício. Consulte a tabela.':
   unsupported?'Os serviços locais ainda não fornecem fatos verificáveis para esta família. Nenhuma operação foi executada.':
   blockedPrev?'Comparação indisponível: a fonte e a cobertura dos dois meses não foram verificadas.':
