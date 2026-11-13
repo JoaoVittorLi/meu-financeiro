@@ -37,7 +37,7 @@ function mfV3Money(n){return Number.isSafeInteger(n)?new Intl.NumberFormat('pt-B
 function mfV3Delta(a,b){return Number.isSafeInteger(a)&&Number.isSafeInteger(b)&&Number.isSafeInteger(a-b)?a-b:null;}
 function mfV3Pct(now,before){return Number.isSafeInteger(now)&&Number.isSafeInteger(before)&&before>0?Math.round((now-before)*1000/before)/10:null;}
 function mfV3Fold(q){return String(q||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();}
-function mfV3Requested(q){
+function mfV3Requested(q:string):MfV3Kind|null{
  const s=mfV3Fold(q);
  const patterns=[
   ['sankey',/para onde foi (minha|a) renda|fluxo de dinheiro|sankey/],
@@ -67,10 +67,10 @@ function mfV3Requested(q){
   ['summary',/resumo executivo|como foi meu mes|meu mes financeiro|panorama financeiro/],
   ['state',/estado da consulta|porque nao aparece/]
  ];
- const found=patterns.find(([kind,re])=>re.test(s));return found?found[0]:null;
+ const found=patterns.find(([kind,re])=>re.test(s));return found?found[0] as MfV3Kind:null;
 }
 function mfV3NeedsPrevious(kind){return kind==='compare'||kind==='rank'||kind==='drilldown'||kind==='trend';}
-function mfV3FromOperational(op,kind,prior){
+function mfV3FromOperational(op:any,kind:MfV3Kind,prior:any):MfV3Card|null{
  if(!mfV3Allowed(kind)||!op||op.contract!=='IC-v1/I-P0.2-read-only'||op.readOnly!==true||
     op.changesApplied!==false||op.modelCalled!==false||!['ready','empty'].includes(op.uiState))return null;
  const original=mfVisualFromOperational(op,'treemap');
@@ -97,7 +97,7 @@ function mfV3FromOperational(op,kind,prior){
  const sankeyNotRepresentable=kind==='sankey'&&(original.incomeCents===0||original.netCents<0);
  const blockedPrev=mfV3NeedsPrevious(kind)&&(!prev||prev.coverage==='partial_local'||sourcePartial);
  const unsupported=['recurring','goal','debt','portfolio','approval'].includes(kind);
- const quality=unsupported?'unavailable':blockedPrev||sourcePartial||sankeyNotRepresentable?'partial':original.expenseCents===0?'empty':'ready';
+ const quality:MfV3Quality=unsupported?'unavailable':blockedPrev||sourcePartial||sankeyNotRepresentable?'partial':original.expenseCents===0?'empty':'ready';
  const reason=sankeyNotRepresentable?'Receita ausente ou resultado negativo: não há fluxo de receitas que represente estes gastos sem criar dinheiro fictício. Consulte a tabela.':
   unsupported?'Os serviços locais ainda não fornecem fatos verificáveis para esta família. Nenhuma operação foi executada.':
   blockedPrev?'Comparação indisponível: a fonte e a cobertura dos dois meses não foram verificadas.':
