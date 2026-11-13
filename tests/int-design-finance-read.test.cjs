@@ -82,3 +82,16 @@ test('INT-DESIGN data — consent is required, expired and wrong-owner grants re
  s.revoke(g.token,17);
  assert.throws(()=>s.query({token:g.token,month:period,intent:'radar'},17));
 });
+
+
+test('INT-DESIGN data — excluded, income and out-of-month missing IDs do not block current expense diagram',()=>{
+ const manual=[
+  tx('valid','expense',2100,'Serviços'),
+  {...tx('inc','income',4000,'Salário'),id:undefined},
+  {...tx('other','expense',6000,'Outros'),id:undefined,date:'2026-10-05'}
+ ];
+ const r=query(service({manual}));
+ assert.equal(r.facts.expenseCents,2100);
+ assert.equal(r.facts.visualSource,'finance-period-ledger-v1');
+ assert.equal(r.facts.expenseCategories.length,1);
+});
