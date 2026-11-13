@@ -123,25 +123,37 @@ class FinancialReadTools{
     explanation:'Contribuição aritmética, não prova de causalidade.'},ref.partial?'Comparação parcial do histórico carregado.':null);
   }
   if(name==='merchants'||name==='transactions'){
+   const previous=period(scope.month,-1);
+   const start=name==='merchants'?previous.start:current.start;
    const detail=[];
    for(const entry of rows){
-    if(entry.row.date<current.start||entry.row.date>current.end)continue;
-    const item=aggregateFinancePeriod([entry.row],{...period(scope.month),source});
+    if(entry.row.date<start||entry.row.date>current.end)continue;
+    const isPrevious=entry.row.date<current.start,range=isPrevious?previous:period(scope.month);
+    const item=aggregateFinancePeriod([entry.row],{...range,source});
     const a=adjust(item,p.excludedCategories);
     const amountCents=a.expenses.filter(categoryMatch).reduce((s,e)=>s+e.amountCents,0);
     if(amountCents>0)detail.push({id:entry.id,merchant:entry.merchant,
-     date:entry.row.date,amountCents,
+     date:entry.row.date,amountCents,isPrevious,
      categories:a.expenses.filter(categoryMatch),source});
    }
-   if(name==='transactions')return wrap(coverage,'table',{items:detail.filter(x=>p.ids.includes(x.id)).slice(0,25),
+   if(name==='transactions')return wrap(coverage,'table',{
+    items:detail.filter(x=>p.ids.includes(x.id)).slice(0,25),
     missingIds:p.ids.filter(id=>!detail.some(x=>x.id===id))});
    const groups=new Map();
    for(const item of detail){
-    const key=fold(item.merchant),g=groups.get(key)||{merchant:item.merchant,amountCents:0,ids:[],count:0};
-    g.amountCents+=item.amountCents;g.count++;if(g.ids.length<25)g.ids.push(item.id);groups.set(key,g);
+    const key=fold(item.merchant),g=groups.get(key)||{
+     merchant:item.merchant,amountCents:0,previousCents:0,deltaCents:0,ids:[],count:0};
+    if(item.isPrevious)g.previousCents+=item.amountCents;
+    else{g.amountCents+=item.amountCents;g.count++;if(g.ids.length<25)g.ids.push(item.id);}
+    g.deltaCents=g.amountCents-g.previousCents;groups.set(key,g);
    }
-   return wrap(coverage,'drilldown',{merchants:[...groups.values()].sort((a,b)=>b.amountCents-a.amountCents).slice(0,25),
-    totalCents:detail.reduce((s,x)=>s+x.amountCents,0)},
+   const merchants=[...groups.values()].sort((a,b)=>b.deltaCents-a.deltaCents||
+    b.amountCents-a.amountCents||a.merchant.localeCompare(b.merchant,'pt-BR'));
+   return wrap(coverage,'drilldown',{merchants:merchants.slice(0,25),
+    totalCents:detail.filter(x=>!x.isPrevious).reduce((s,x)=>s+x.amountCents,0),
+    previousTotalCents:detail.filter(x=>x.isPrevious).reduce((s,x)=>s+x.amountCents,0),
+    deltaCents:merchants.reduce((s,x)=>s+x.deltaCents,0),
+    comparisonPeriod:previous},
     ref.partial?'Drill-down parcial do histórico carregado.':null);
   }
   if(name==='simulate'){
