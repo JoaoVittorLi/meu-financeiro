@@ -72,7 +72,11 @@ function mfV3Render(app:any,msg:IntelligenceChatMessage):any{
         (r.relative===null?'base zero':r.relative.toFixed(1)+'%'),
         r.delta/max*100,r.heat,()=>choose(r.name))),
       rowsPositive.length===0?info('Nenhum aumento confirmado.'):null,
-      rows.filter(r=>r.delta<=0).length?info('Outras categorias sem aumento não recebem cor de alerta.'):null);
+      rows.filter(r=>r.delta<=0).length? h('div',{className:'mf-v3-neutral'},
+       action(app.state.mfV3ShowNeutral===msg.id?'Ocultar sem aumento':'Mostrar sem aumento',
+         ()=>app.setState({mfV3ShowNeutral:app.state.mfV3ShowNeutral===msg.id?null:msg.id})),
+       app.state.mfV3ShowNeutral===msg.id?rows.filter(r=>r.delta<=0).map(r=>
+         mfV3Bar(r.name,money(r.delta),0,'var(--muted)',()=>choose(r.name))):null):null);
    }
   }
  }else if(kind==='bar'){
@@ -96,7 +100,8 @@ function mfV3Render(app:any,msg:IntelligenceChatMessage):any{
   const write=(patch:any)=>app.setState({mfV3Drill:{messageId:msg.id,...current,...patch}});
   const groups=cat?[...new Set(cat.movements.map(m=>m.description))]:[];
   const rows=cat?cat.movements.filter(m=>(!current.group||m.description===current.group)&&
-      (!current.search||m.description.toLowerCase().includes(String(current.search).toLowerCase()))):[];
+      (!current.search||m.description.toLowerCase().includes(String(current.search).toLowerCase())))
+    .sort((a,b)=>current.sort==='amount'?b.amountCents-a.amountCents:b.date.localeCompare(a.date)):[];
   view=h('div',{className:'mf-v3-stack'},
    h('div',{className:'mf-v3-crumb'},
     action('Categorias',()=>write({category:null,group:null,search:''})),
@@ -107,14 +112,20 @@ function mfV3Render(app:any,msg:IntelligenceChatMessage):any{
     h('label',{},'Buscar descrição',h('input',{type:'search',value:current.search||'',
       onChange:(e:any)=>write({search:e.target.value})})),
     !current.group?groups.map(g=>action(g,()=>write({group:g}))):action('Voltar aos grupos',()=>write({group:null})),
+    h('div',{className:'mf-v3-toolbar'},action('Recentes',()=>write({sort:'date'})),action('Maior valor',()=>write({sort:'amount'}))),
     mfV3Table(['Data','Registro','Valor'],rows.slice(0,cap).map(r=>[r.date,r.description,money(r.amountCents)]))):null);
  }else if(kind==='table'||kind==='report'){
   const rows=mfV3Records(d);
   const query=app.state.mfV3Search?.messageId===msg.id?app.state.mfV3Search.value:'';
-  const list=rows.filter(r=>(r.description+' '+r.category).toLowerCase().includes(String(query).toLowerCase()));
+  const order=app.state.mfV3TableOrder?.messageId===msg.id?app.state.mfV3TableOrder.order:'date';
+  const list=rows.filter(r=>(r.description+' '+r.category).toLowerCase().includes(String(query).toLowerCase()))
+   .sort((a,b)=>order==='amount'?b.amountCents-a.amountCents:b.date.localeCompare(a.date));
   view=h('div',{className:'mf-v3-stack'},
     h('label',{},'Pesquisar registros',h('input',{type:'search',value:query,
       onChange:(e:any)=>app.setState({mfV3Search:{messageId:msg.id,value:e.target.value}})})),
+    h('div',{className:'mf-v3-toolbar'},
+      action('Mais recentes',()=>app.setState({mfV3TableOrder:{messageId:msg.id,order:'date'}})),
+      action('Maior gasto',()=>app.setState({mfV3TableOrder:{messageId:msg.id,order:'amount'}}))),
     info((mfV3RecordsPartial(d)?'Amostra parcial; ':'')+'Tabela dos registros locais verificados. Nenhum arquivo foi gerado.'),
     mfV3Table(['Data','Categoria / descrição','Valor'],list.slice(0,cap).map(r=>[r.date,r.category+' · '+r.description,money(r.amountCents)])),
     list.length>cap?action('Mostrar mais registros',expand):null);
@@ -163,13 +174,22 @@ function mfV3Render(app:any,msg:IntelligenceChatMessage):any{
  }else{
   view=missing('Dados financeiros verificáveis ainda não disponíveis para esta família');
  }
+ const detail=selected&&['bar','donut','rank'].includes(kind)?
+  h('div',{className:'mf-v3-selection',role:'region','aria-label':'Detalhes selecionados'},
+    h('strong',{},selected.name),
+    h('p',{},money(selected.amountCents)+' de '+money(d.expenseCents)+' em '+d.period),
+    kind==='rank'&&d.previous?h('p',{},'Antes '+money(d.previous.categories.find(c=>c.name===selected.name)?.amountCents||0)+
+      ' · agora '+money(selected.amountCents)+' · variação '+
+      money(selected.amountCents-(d.previous.categories.find(c=>c.name===selected.name)?.amountCents||0))):null,
+    h('details',{},h('summary',{},'Ver movimentações'+(selected.detailsPartial?' · amostra parcial':'')),
+      mfV3Table(['Data','Descrição','Valor'],selected.movements.map(m=>[m.date,m.description,money(m.amountCents)])))):null;
  return h('section',{className:'mf-v3-card mf-v3-'+kind+' mf-v3-'+mode+' state-'+d.quality,role:'region',
   'aria-label':mfV3Title(kind)+' · '+d.period},
   h('header',{className:'mf-v3-head'},
    h('div',{},h('small',{},d.period+' · '+(d.source==='bank'?'Banco':'Manual')),h('h3',{},mfV3Title(kind))),
    !compact?action(analysis?'Recolher análise':'Explorar análise',expand,['unavailable','expired','denied'].includes(d.quality)):null),
   h('p',{className:'mf-v3-evidence',role:d.quality==='partial'?'status':'note'},d.reason),
-  view,
+  view,detail,
   h('details',{className:'mf-v3-evidence-more'},h('summary',{},'Fonte e limitações'),
     h('p',{},'Origem: '+d.source+' · perfil '+d.profile+' · '+d.period+' · cobertura '+d.coverage+
       ' · atualizado '+(d.asOf||'sem horário registrado'))));
