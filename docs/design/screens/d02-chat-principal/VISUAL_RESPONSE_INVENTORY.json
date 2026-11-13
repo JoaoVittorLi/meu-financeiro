@@ -101,9 +101,13 @@
       "display": "deltas por categoria com base comparável",
       "kind": "rank",
       "priority": "P0",
-      "approval": "REVIEW_IN_PROGRESS",
+      "approval": "DESIGN_APPROVED",
       "implementation": "NOT_STARTED",
-      "nextPrototype": "V1"
+      "nextPrototype": "V1",
+      "approvedVersion": "V1.1",
+      "approvedAt": "2026-11-13",
+      "approvalScope": "Visual prototype screenshot approved conditionally on exact HTML render; pixel-for-pixel match verified at 1260x709, 100% matching pixels",
+      "prototypeState": "APPROVED_HTML_AND_SCREENSHOT"
     },
     {
       "id": "VR-10",
@@ -112,8 +116,9 @@
       "display": "categoria → estabelecimento → transação",
       "kind": "drilldown",
       "priority": "P0",
-      "approval": "PENDING",
-      "implementation": "NOT_STARTED"
+      "approval": "REVIEW_IN_PROGRESS",
+      "implementation": "NOT_STARTED",
+      "nextPrototype": "V1"
     },
     {
       "id": "VR-11",
