@@ -43,7 +43,16 @@ test('D05 E2 — catálogo, IDs, CRUD e normalização de duplicatas com acento'
   const edited=s.updateSubcategory({id:a.id,name:'Café da tarde'});
   assert.equal(edited.id,a.id);assert.equal(edited.name,'Café da tarde');
   assert.throws(()=>s.updateSubcategory({id:'sub:alimentacao/delivery',name:'Outra coisa'}),/imutável/);
-  assert.equal(s.deleteSubcategory({id:a.id}).deleted,a.id);
+  const preview=s.previewSubcategoryDelete({id:a.id});
+  assert.equal(preview.canDelete,true);
+  assert.throws(()=>s.deleteSubcategory({id:a.id}),/prévia/);
+  assert.equal(s.deleteSubcategory({id:a.id,previewVersion:preview.previewVersion}).deleted,a.id);
+  const movable=s.createSubcategory({parentCategoryId:'cat:alimentacao',name:'Assunto exclusivo',iconKey:'tag',hue:24});
+  const proposal=s.previewSubcategoryMove({id:movable.id,parentCategoryId:'cat:moradia'});
+  assert.equal(proposal.canMove,true);
+  assert.throws(()=>s.moveSubcategory({id:movable.id,parentCategoryId:'cat:moradia',previewVersion:'0'.repeat(64)}),/desatualizada/);
+  assert.equal(s.moveSubcategory({...proposal}).id,movable.id);
+  assert.equal(s.resolve({categoryId:'cat:moradia',subcategoryId:movable.id}).child.id,movable.id);
   assert.equal(db.db.prepare('PRAGMA foreign_key_check').all().length,0);
  }finally{db.close();}
 });
