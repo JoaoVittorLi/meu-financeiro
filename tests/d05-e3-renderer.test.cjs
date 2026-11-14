@@ -101,14 +101,14 @@ test('D05 E3 — quatro KPIs, POSTED e PENDING separados, revisão apenas banco 
  assert.equal(reviewButtons.length,1);
  const pending=flat.filter(x=>x.props.className==='d05-pending');
  assert.equal(pending.length,1);
- assert.equal(flat.filter(x=>x.props.className==='d05-row').length,4);
+ assert.equal(flat.filter(x=>String(x.props.className||'').startsWith('d05-row ')).length,4);
 });
 test('D05 E3 — modo demonstração não consulta nem mistura dados bancários reais',()=>{
  const f=fixture();
  f.host.state.mode='demo';
  const tree=f.component.render();
  const flat=flatten(tree);
- assert.equal(flat.filter(x=>x.props.className==='d05-row').length,1);
+ assert.equal(flat.filter(x=>String(x.props.className||'').startsWith('d05-row ')).length,1);
  assert.equal(flat.filter(x=>x.props.className==='d05-review-dot').length,0);
 });
 test('D05 E3 — CSS dark/light, foco e reduced-motion; integração monta no App real',()=>{
