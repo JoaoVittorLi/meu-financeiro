@@ -31,7 +31,7 @@ class LocalFinancialIntelligence{
  const manual=this.db.load(g.profile)||{transactions:[],budgets:{}};
  const bank=g.source==='bank'?this.db.bankOverview():null;
  const records=bank?bank.transactions:manual.transactions;
- const rows=records.map(r=>bank?{date:r.date,status:r.status,nature:r.nature,amountCents:r.amount,category:r.category,splits:!r.splitOutdated&&Array.isArray(r.splits)?r.splits.map(p=>({category:p.category,amountCents:p.amount})):undefined}:{date:r.date,kind:r.kind,amountCents:r.amount,category:r.category});
+ const rows=records.map(r=>bank?{date:r.date,status:r.status,nature:r.nature,amountCents:r.amount,category:r.splitOutdated?null:r.category,splits:!r.splitOutdated&&Array.isArray(r.splits)?r.splits.map(p=>({category:p.category,amountCents:p.amount})):undefined}:{date:r.date,kind:r.kind,amountCents:r.amount,category:r.category});
  const current=aggregateFinancePeriod(rows,{...p,source:g.source});
  const limits=Object.entries(manual.budgets||{}).map(([category,amountCents])=>({category,amountCents}));
  const budgets=budgetProgress(limits,current.expenses);
