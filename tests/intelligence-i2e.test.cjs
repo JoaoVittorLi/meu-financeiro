@@ -300,18 +300,25 @@ test('I2-D/I2-E integration: duplicate proposals cannot be silently applied via 
 });
 
 
-test('I2-D/I2-E + D05: approved parent/child schema blocks legacy name-only drafts',()=>{
+test('I2-D/I2-E + D05: valid evidence stays eligible but flat draft cannot authorize personal write',()=>{
  const f=fixture();try{
-  const id=f.report().quality[0].qualityId;
-  f.db.db.exec('CREATE TABLE subcategories(id TEXT PRIMARY KEY)');
-  const report=f.report();
-  assert.equal(report.quality[0].qualityStatus,'review_required');
-  assert(report.quality[0].reasons.includes('d05_hierarchy_target_unresolved'));
+  const changes=f.db.db.prepare('SELECT total_changes() n').get().n;
+  const report=f.report(),id=report.quality[0].qualityId;
+  // D05 already exists in the real FinanceDB. Its presence cannot erase
+  // the two independent human corrections and the valid I2-E evidence.
+  assert(f.db.db.prepare("SELECT 1 FROM sqlite_master WHERE name='subcategories'").get());
+  assert.equal(report.quality[0].qualityStatus,'eligible_for_preview');
+  assert.equal(report.quality[0].requiresD05Resolution,true);
   const result=f.quality.draft(id,'historical',f.input,1);
-  assert.equal(result.status,'review_required');
+  assert.equal(result.status,'ready');
+  assert.equal(result.requiresD05Resolution,true);
+  assert.equal(result.personalWriteAuthorized,false);
   assert.equal(result.changesApplied,false);
   const composite=f.quality.compose(f.input,1,[{qualityId:id,action:'future'}]);
-  assert.equal(composite.status,'review_required');
-  assert.equal(composite.steps.length,0);
+  assert.equal(composite.status,'proposed');
+  assert.equal(composite.requiresD05Resolution,true);
+  assert.equal(composite.personalWriteAuthorized,false);
+  assert.equal(composite.changesApplied,false);
+  assert.equal(f.db.db.prepare('SELECT total_changes() n').get().n,changes);
  }finally{f.close();}
 });
