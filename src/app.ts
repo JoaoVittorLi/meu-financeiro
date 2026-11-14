@@ -1205,7 +1205,7 @@ class App extends React.Component<any,State>{
    if(this.state.txOrganize)return h('div',{className:'movement-shell'},
      h('button',{type:'button',className:'d05-back',onClick:()=>this.setState({txOrganize:false})},'← Voltar ao histórico'),
      this.renderCategories());
-   return h(D05Movements,{host:this});
+   return h(D05Movements,{host:this,key:this.state.txReviewOnly?'review':'history'});
  }
 
  monthData(){return snapshot(this.state.data,this.state.month);}
