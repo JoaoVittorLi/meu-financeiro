@@ -163,7 +163,7 @@ function mfV3CompareRows(v:MfV3Card|null):MfV3CompareRow[]{
 function mfV3Heat(rows:MfV3CompareRow[]){
  const positive=rows.filter(x=>x.delta!==null&&x.delta>0).sort(
   (a,b)=>(b.delta??0)-(a.delta??0)||a.name.localeCompare(b.name,'pt-BR'));
- const unique=[...new Set<number>(positive.map(x=>x.delta as number))];
+ const unique=[...new Set<number>(positive.flatMap(x=>x.delta===null?[]:[x.delta]))];
  return rows.map(r=>({...r,heat:r.delta===null||r.delta<=0?null:
   MF_V3_HEAT[Math.min(4,unique.indexOf(r.delta))]}));
 }
