@@ -283,5 +283,5 @@ function mfD04Render(app:any):any{
   s.categoryReviewBusy?h('p',{role:'status'},'Conferindo o serviço…'):null,
   s.categoryReviewReceipt&&grantLive?h('p',{className:'mf-d04-receipt',role:'status'},
    'Ação confirmada pelo serviço: '+String(s.categoryReviewReceipt.id)):null,
-  mfD04PreviewModal(app));
+  grantLive?mfD04PreviewModal(app):null);
 }
