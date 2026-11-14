@@ -9,7 +9,7 @@ const CHANNELS=Object.freeze({
  deleteSubcategory:'d05:subcategory-delete',usageSubcategory:'d05:subcategory-usage',
  assignManual:'d05:assign-manual',assignBank:'d05:assign-bank',
  batchPreview:'d05:bank-batch-preview',batchApply:'d05:bank-batch-apply',
- splits:'d05:bank-splits',saveRule:'d05:rule-save',assignPlanned:'d05:planned-assign'
+ splits:'d05:bank-splits',rulePreview:'d05:rule-preview',saveRule:'d05:rule-save',assignPlanned:'d05:planned-assign'
 });
 function installD05Ipc({ipcMain,finance,requireAppSender,authorizeRead,authorizeWrite}={}){
  if(!ipcMain||typeof ipcMain.handle!=='function'||typeof requireAppSender!=='function'||
@@ -38,6 +38,7 @@ function installD05Ipc({ipcMain,finance,requireAppSender,authorizeRead,authorize
  read(CHANNELS.aggregateManual,{source:'manual'},input=>service.aggregateManual(input));
  read(CHANNELS.usageSubcategory,{source:'taxonomy'},input=>service.usage(input?.id));
  read(CHANNELS.batchPreview,{source:'bank'},input=>service.previewBankBatch(input));
+ read(CHANNELS.rulePreview,{source:'rules'},input=>service.previewRule(input));
  write(CHANNELS.createSubcategory,'subcategory.create',input=>service.createSubcategory(input));
  write(CHANNELS.updateSubcategory,'subcategory.update',input=>service.updateSubcategory(input));
  write(CHANNELS.deleteSubcategory,'subcategory.delete',input=>service.deleteSubcategory(input));
