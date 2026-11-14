@@ -136,7 +136,7 @@ class CategoryProposalService{
    const previous=action==='rule.create'?null:rules.find(r=>r.id===params.ruleId);
    if(action!=='rule.create'&&!previous)throw Error('Regra não encontrada.');
    before=previous||null;targetIds=previous?[String(previous.id)]:[];
-   if(action==='rule.delete'){after=null;}
+   if(action==='rule.delete'){after=null;if(!previous?.constraint)conflicts.push('Regra legada não é restrita ao futuro; exclusão exige análise histórica.');}
    else{
     const next={id:previous?.id??null,
      pattern:params.pattern??previous?.pattern,category:params.category??previous?.category,
