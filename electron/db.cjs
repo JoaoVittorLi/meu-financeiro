@@ -139,6 +139,20 @@ class FinanceDB {
    if (!filename || filename === ':memory:') { this.filename = filename || ':memory:'; }
    else { this.filename=path.resolve(filename); fs.mkdirSync(path.dirname(this.filename),{recursive:true,mode:0o700}); }
    this.db = new DatabaseSync(this.filename);
+   // Refuse future SQLite revisions BEFORE migrations, triggers or table DDL.
+   // A v8 backup must never be silently rewritten as a v7 database.
+   try{
+     const hasMeta=this.db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='app_meta'").get();
+     if(hasMeta){
+       const entry=this.db.prepare("SELECT value FROM app_meta WHERE key='schema_version'").get();
+       if(entry){
+         const raw=String(entry.value);
+         if(!/^[0-9]+$/.test(raw)||!Number.isSafeInteger(Number(raw))||Number(raw)<1)
+           throw new Error('Versão SQLite desconhecida; migração cancelada.');
+         if(Number(raw)>7)throw new Error('Versão SQLite futura incompatível; instalação anterior preservada.');
+       }
+     }
+   }catch(err){this.db.close();throw err;}
    this.db.exec('PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000;');
    this.db.exec(`
      CREATE TABLE IF NOT EXISTS app_meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
