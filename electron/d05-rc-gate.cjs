@@ -135,14 +135,16 @@ class D05RCSecureGate{
   if(!db||db.filename===':memory:'||!path.isAbsolute(db.filename))
    throw Error('D05: SQLite de usuário experimental isolado obrigatório');
   const request={...input};delete request.sessionToken;
-  const fingerprint=sha(this.snapshot(action,input,s));
-  const requestHash=sha([s.token,s.owner,s.profile,action,request,fingerprint]);
+  // Replay key is invariant under the mutation itself. The first receipt
+  // is authoritative even when the row has since changed.
+  const requestHash=sha([s.token,s.owner,s.profile,action,request]);
   this.busy=true;
   let begun=false,committed=false;
   try{
    this.initializeReceipt(db.db);
    const prior=db.db.prepare('SELECT id,result_json FROM d05_rc_atomic_receipts WHERE request_hash=?').get(requestHash);
    if(prior)return {...JSON.parse(prior.result_json),rcReceiptId:prior.id,replayed:true};
+   const fingerprint=sha(this.snapshot(action,input,s));
    const allowed=await this.confirm({kind:'write',owner:s.owner,profile:s.profile,
     action,input:request,syntheticOnly:true,fingerprint});
    if(allowed!==true)throw Error('D05: confirmação humana cancelada');
