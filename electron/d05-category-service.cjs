@@ -3,8 +3,7 @@
 // No IPC is exposed here; AI consumers must use the read-only facade.
 const {randomUUID,createHash}=require('node:crypto');
 const {normalizedName}=require('./d05-hierarchy.cjs');
-const {matchRule,categoryDecisionFingerprint,effectiveBankOverride}=require('./db.cjs');
-const ALLOWED_KIND=new Set(['income','expense','both']);
+const {matchRule}=require('./db.cjs');
 const ALLOWED_MATCH=new Set(['exact','starts','contains']);
 const ALLOWED_SCOPE=new Set(['bank','manual','both']);
 function ensureObject(x){if(!x||typeof x!=='object'||Array.isArray(x))throw Error('D05: objeto inválido');return x;}
@@ -297,15 +296,20 @@ class D05CategoryService{
   }
   return {groups:[...groups.values()],truncated:view.truncated,total:view.total,scope:'manual-only'};
  }
- asReadOnlyFacade(){
-  // Pure read methods only: AI adapters never receive a mutable FinanceDB or this service.
+ asReadOnlyFacade({authorize}={}){
+  // The host must verify the ACTUAL owner/session/consent. Renderer/model args are never authority.
+  if(typeof authorize!=='function')throw Error('D05: autorizador de leitura obrigatório');
+  const checked=(scope,run)=>{
+   if(authorize(scope)!==true)throw Error('D05: acesso não autorizado');
+   return run();
+  };
   return Object.freeze({
-   list:()=>this.listCatalog(),
-   resolve:target=>this.resolve(target),
-   manual:(args)=>this.listManual(args),
-   bank:(args)=>this.bankView(args),
-   aggregate:(args)=>this.aggregateManual(args),
-   previewBankBatch:(args)=>this.previewBankBatch(args)
+   list:()=>checked({capability:'taxonomy'},()=>this.listCatalog()),
+   resolve:target=>checked({capability:'taxonomy'},()=>this.resolve(target)),
+   manual:args=>checked({capability:'manual',profile:args?.profile},()=>this.listManual(args)),
+   bank:args=>checked({capability:'bank'},()=>this.bankView(args)),
+   aggregate:args=>checked({capability:'manual',profile:args?.profile},()=>this.aggregateManual(args)),
+   previewBankBatch:args=>checked({capability:'bank'},()=>this.previewBankBatch(args))
   });
  }
 }
