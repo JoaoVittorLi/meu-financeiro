@@ -123,6 +123,21 @@ test('C1: concurrent confirmations cannot duplicate category and receipt',async(
   assert.equal(f.executor.listReceipts(f.a,1).length,1);
  }finally{f.close();}
 });
+test('C1: five identical concurrent nonces produce one COMMIT and one durable receipt',async()=>{
+ const f=fixture();try{
+  const p=create(f);
+  const results=await Promise.all(Array.from({length:5},()=>f.confirm(p)));
+  assert(results.every(v=>v.status==='applied'));
+  assert.equal(results.filter(v=>v.replayed===true).length,4);
+  const ids=new Set(results.map(v=>v.receipt?.proposalId));
+  assert.deepEqual([...ids],[p.proposalId]);
+  assert.equal(f.db.listCategories().categories.filter(c=>c.name==='Pets').length,1);
+  assert.equal(f.db.db.prepare('SELECT COUNT(*) AS n FROM i2c_atomic_receipts').get().n,1);
+  const differentNonce=await f.confirm(p,false,{nonce:'different-nonce-that-must-not-replay'});
+  assert.notEqual(differentNonce.status,'applied');
+  assert.equal(f.db.db.prepare('SELECT COUNT(*) AS n FROM i2c_atomic_receipts').get().n,1);
+ }finally{f.close();}
+});
 test('C1: changing transaction or category after proposal is always stale',async()=>{
  const f=fixture();try{
   const p=create(f);
