@@ -36,6 +36,28 @@ function likelyNameCollision(a,b){
   return {relation:'spelling_similar',confidence:'low'};
  return null;
 }
+function categoryTypeIssues(records,source,categories,references,limit=20){
+ const kinds=new Map(categories.map(c=>[c.name,c.kind]));
+ const issues=[];
+ let found=0;
+ for(const r of records){
+  if(r.date<references.period.start||r.date>references.period.end)continue;
+  if(source==='bank'&&(r.status!=='POSTED'||r.categorySource!=='manual'||
+     r.supervisedOutdated||r.splits?.length||r.splitOutdated))continue;
+  const nature=source==='bank'?natureOf(r):r.kind;
+  if(!['income','expense'].includes(nature))continue;
+  const declared=kinds.get(r.category);
+  if(!declared||declared==='both'||declared===nature)continue;
+  found++;
+  if(issues.length<limit)issues.push({
+   type:'category_kind_mismatch',source,nature,category:r.category,
+   categoryKind:declared,recordId:source==='bank'?rowId(r):r.id,
+   amountCents:Math.abs(r.amount),date:r.date,
+   action:'manual_review_required',canApplyAutomatically:false});
+ }
+ return {totalLoaded:found,examples:issues,truncated:found>issues.length,
+  warning:'Incompatibilidade de natureza não autoriza alterar renda, despesa ou categoria automaticamente.'};
+}
 function normalizedParams(input){
  if(!input||typeof input!=='object'||Array.isArray(input))throw Error('Filtro inválido.');
  if(Object.keys(input).some(k=>!['accountId','limit','includeUnused','includeSimilar'].includes(k)))
@@ -77,13 +99,16 @@ class ProactiveCategoryAdvisor{
    readOnly:true,modelCalled:false,source:scope.source,profile:scope.profile,
    month:scope.month,asOf:references.readAt,
    coverage:references.partial?'partial_local':'local_not_certified',
-   accountId:params.accountId,catalog,opportunities:[],conflicts:[],diagnostics:[],
+   accountId:params.accountId,catalog,opportunities:[],conflicts:[],
+   classificationIssues:{totalLoaded:0,examples:[],truncated:false},diagnostics:[],
    totalRowsLoaded:0,visibleRows:0};
   if(scope.source!=='bank'){
    if(params.accountId)throw Error('Conta bancária não pertence à fonte manual.');
-   return {...base,diagnostics:[
-    'No histórico manual não há um campo que diferencie correções humanas de classificações importadas. Sugestões automáticas foram desabilitadas.',
-    'O catálogo é consultável; nenhum lançamento foi alterado.']};
+   const manual=this.db.load(scope.profile)?.transactions||[];
+   return {...base,classificationIssues:categoryTypeIssues(manual,'manual',
+    this.db.listCategories().categories,references),
+    diagnostics:['No histórico manual não há campo que diferencie correções humanas de classificações importadas. Sugestões automáticas foram desabilitadas.',
+    'O catálogo e incompatibilidades de natureza são consultáveis; nenhuma alteração foi aplicada.']};
   }
   const overview=this.db.bankOverview();
   if(params.accountId&&!overview.accounts.some(x=>x.id===params.accountId))
@@ -92,6 +117,7 @@ class ProactiveCategoryAdvisor{
    r.date>=references.period.start&&r.date<=references.period.end&&
    (!params.accountId||r.accountId===params.accountId));
   base.totalRowsLoaded=overview.transactions.length;base.visibleRows=rows.length;
+  base.classificationIssues=categoryTypeIssues(rows,'bank',this.db.listCategories().categories,references);
   if(overview.truncated){base.coverage='partial_local';base.status='partial';
    base.diagnostics.push('A visão bancária limita a 2500 lançamentos; padrões e contagens são parciais.');}
   if(!rows.length)return {...base,diagnostics:[...base.diagnostics,'Nenhum lançamento elegível foi carregado no período autorizado.']};
@@ -212,4 +238,4 @@ class ProactiveCategoryAdvisor{
    warning:'Futuro somente. A proposta pode permanecer bloqueada até existir adapter sintético de restrição por rowid.'};
  }
 }
-module.exports={ProactiveCategoryAdvisor,likelyNameCollision,distanceAtMostTwo,natureOf,valid,VERSION};
+module.exports={ProactiveCategoryAdvisor,likelyNameCollision,distanceAtMostTwo,natureOf,valid,categoryTypeIssues,VERSION};
