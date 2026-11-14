@@ -124,7 +124,7 @@
 <section class="panel">
 <div class="panelhead"><div class="selection-title" id="sub-selected"></div><button class="btn" data-open="create">+ Adicionar</button></div>
 <div class="childgrid" id="sub-children"></div>
-<div class="listhead"><div><h3 id="sub-list-title">Movimentações</h3><small id="sub-list-count"></small></div><button class="btn ghost" data-action="clear-child">Ver todas desta categoria</button></div>
+<div class="listhead"><div><h3 id="sub-list-title">Movimentações</h3><small id="sub-list-count"></small></div><div class="actions"><button class="btn ghost" data-action="edit-selected-icon" id="sub-edit-icon" hidden>Personalizar ícone</button><button class="btn ghost" data-action="clear-child">Ver todas desta categoria</button></div></div>
 <div id="sub-ledger"></div>
 </section></div>
 <div class="disclaimer">Demonstração com dados sintéticos. Categorias e ícones são personalizáveis nesta tela, mas nenhuma alteração real é gravada. As contas e a IA exigem validação e confirmação no produto.</div>
@@ -191,9 +191,9 @@ $("#sub-children").innerHTML=items.map(c=>'<button class="child" data-child="'+e
  (!q||"Sem subcategoria".toLowerCase().includes(q)?'<button class="child rest" data-child="none" aria-pressed="'+(state.childId==="none")+'">'+icon("shapes",p.hue)+'<strong>Sem subcategoria</strong><small>'+noChild+' registro(s)</small></button>':"");
 }
 function renderLedger(){
-const list=scopeTx().slice().reverse();const p=parent(state.parentId);
+const list=scopeTx().slice();const p=parent(state.parentId);
 $("#sub-list-title").textContent=state.childId==="none"?"Sem subcategoria":state.childId?child(state.childId)?.name||"Movimentações":"Movimentações de "+p.name;
-$("#sub-list-count").textContent=list.length+" lançamento(s) neste detalhe";
+$("#sub-list-count").textContent=list.length+" lançamento(s) neste detalhe";$("#sub-edit-icon").hidden=!state.childId||state.childId==="none";
 $("#sub-ledger").innerHTML=list.length?list.map(t=>{
 const c=child(t.subcategoryId),pa=parent(t.categoryId),hue=c?.hue??pa.hue,key=c?.iconKey??pa.iconKey;
 return '<div class="tx">'+icon(key,hue)+'<button class="tx-main" data-tx="'+t.id+'"><strong>'+esc(t.description)+'</strong><small>'+esc(pa.name)+' › '+esc(labelSub(t))+' · '+t.date+'</small></button><strong class="amount '+(t.kind==="transfer"?"transfer":t.amount>=0?"in":"out")+'">'+(t.amount>=0?"+ ":"− ")+money(Math.abs(t.amount))+'</strong></div>';
@@ -251,6 +251,7 @@ const ac=e.target.closest("[data-action]");if(!ac)return;
 switch(ac.dataset.action){
 case"theme":state.theme=state.theme==="dark"?"light":"dark";root.dataset.theme=state.theme;ac.textContent=state.theme==="dark"?"◐":"☀";render();break;
 case"clear-child":state.childId=null;renderChildren();renderLedger();break;
+case"edit-selected-icon":{const c=child(state.childId);if(c){state.editingId=c.id;state.draft={iconKey:c.iconKey,hue:c.hue};setPanel("editIcon")}break;}
 case"close":closePanel();break;
 case"create-sub":{
 const p=parent(state.parentId),d=state.draft||{},name=String(d.name||"").trim();
