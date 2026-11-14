@@ -220,15 +220,18 @@ app.whenReady().then(()=>{
   confirm:async details=>{
    if(!mainWindow||mainWindow.isDestroyed()||!mainWindow.isFocused())return false;
    const isRead=details.kind==='read';
+   const isAccount=details.kind==='bank-account';
    const dialogResult=await dialog.showMessageBox(mainWindow,{
     type:isRead?'question':'warning',
-    buttons:isRead?['Cancelar','Autorizar consulta local']:['Cancelar','Confirmar somente no teste'],
+    buttons:isRead?['Cancelar','Autorizar consulta local']:isAccount?['Cancelar','Autorizar esta conta']:['Cancelar','Confirmar somente no teste'],
     defaultId:0,cancelId:0,noLink:true,
-    title:isRead?'D05 — autorizar consulta':'D05 — operação supervisionada',
-    message:isRead?'Permitir consulta local do perfil pessoal?':
+    title:isRead?'D05 — autorizar consulta':isAccount?'D05 — autorizar conta bancária':'D05 — operação supervisionada',
+    message:isRead?'Permitir consulta local do perfil pessoal?':isAccount?
+     'Autorizar análise de IA SOMENTE LEITURA da conta '+String(details.accountName||'selecionada')+'?':
      'Aplicar '+details.action+' APENAS em dados de demonstração?',
     detail:isRead?
-     'A leitura é limitada a esta sessão do Meu Financeiro. Nenhuma alteração será aplicada.':
+     'A leitura é limitada a esta sessão do Meu Financeiro. Nenhuma alteração será aplicada.':isAccount?
+     'O MAIN vinculará somente esta conta à análise I2-E por 15 minutos. Não habilita escrita pessoal.':
      'O MAIN fará backup, revalidará os dados e registrará um recibo SQLite. '+
      'Dados pessoais e contas bancárias reais continuam bloqueados.'
    });
@@ -248,6 +251,9 @@ app.whenReady().then(()=>{
   requireAppSender(event);
   if(restoring||syncing||cloudPreparationBusy)throw Error('D05: operação financeira em andamento');
   return d05Gate.authorize(event,input);
+ });
+ ipcMain.handle('d05:account-authorize',async(event,input)=>{
+  requireAppSender(event);return d05Gate.authorizeAccount(event,input);
  });
  ipcMain.handle('d05:receipt',(event,input)=>{
   requireAppSender(event);return d05Gate.receipt(event,input);
