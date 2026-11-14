@@ -38,7 +38,8 @@ test('RC FULL D05 — native-consented synthetic demo write + backup and atomic 
   assert.equal(first.syntheticOnly,true);
   assert.equal(f.finance.db.prepare("SELECT COUNT(*) AS n FROM d05_rc_atomic_receipts").get().n,1);
   const row=f.finance.db.prepare("SELECT category_id AS categoryId,subcategory_id AS subcategoryId FROM transactions WHERE id='manual-1'").get();
-  assert.deepEqual(row,{categoryId:target.categoryId,subcategoryId:target.subcategoryId});
+  assert.equal(row.categoryId,target.categoryId);
+  assert.equal(row.subcategoryId,target.subcategoryId);
   const receipt=f.gate.receipt(f.app,{sessionToken:s.token,receiptId:first.rcReceiptId});
   assert.equal(receipt.status,'applied');
   assert.equal(receipt.result.categoryId,target.categoryId);
