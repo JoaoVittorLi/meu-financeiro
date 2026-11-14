@@ -66,10 +66,22 @@ class RCCategoryGateway{
    reason:'Destino D05 deve ser validado por categoryId e subcategoryId (null permitido) após evidência I2-E; prévia plana bloqueada.'};
   const host={owner,environment:'personal',verifiedGesture:false,
    activeAccountId:typeof mainHost.activeAccountId==='string'?mainHost.activeAccountId:null};
-  if(input.method==='qualityDraft'&&input.target)
+  // Never permit the legacy flat-label proposal surface to bypass the
+  // installed D05 hierarchy, even though its underlying quality analysis
+  // is read-only and may be eligible.
+  if(input.method==='qualityDraft'){
+   if(!input.target)return {contract:'I2-E/D05-HIERARCHY-GATE-V1',
+    status:'review_required',mode:'READ_ONLY_PERSONAL',changesApplied:false,
+    reason:'Escolha explicitamente categoryId e subcategoryId (null permitido).'};
    return this.d05QualityDraft(input,host);
-  if(input.method==='qualityCompose'&&input.items?.some?.(v=>v?.target))
+  }
+  if(input.method==='qualityCompose'){
+   if(!Array.isArray(input.items)||input.items.some(v=>!v?.target))
+    return {contract:'I2-E/D05-HIERARCHY-GATE-V1',
+     status:'review_required',mode:'READ_ONLY_PERSONAL',changesApplied:false,
+     reason:'Cada etapa exige categoria-pai e subcategoria D05 verificadas.'};
    return this.d05QualityCompose(input,host);
+  }
   return this.personal.handle(input,host);
  }
  async d05QualityDraft(input,host){
