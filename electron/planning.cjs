@@ -3,6 +3,7 @@
 // Valores sempre em centavos; extratos originais nunca são alterados.
 const {randomUUID}=require('node:crypto');
 const {migrateHierarchy}=require('./d05-hierarchy.cjs');
+const {D05CategoryService}=require('./d05-category-service.cjs');
 const MAX=100_000_000_000;
 const DATE=/^\d{4}-\d{2}-\d{2}$/;
 const KINDS=['income','expense'];
@@ -77,22 +78,24 @@ class PlanningStore {
   return {title,kind,amount,dueDate,category,notes,certainty,accountId};
  }
  create(input){
-  const base=this.validateInput(input);
+  const destination=input?.target===undefined?null:new D05CategoryService(this.fin).resolve(input.target);
+  if(destination&&input?.category&&input.category!==destination.parentName)throw Error('D05: destino planejado divergente');
+  const base=this.validateInput(destination?{...input,category:destination.parentName}:input);
   const mode=input?.mode||'once';if(!['once','monthly','weekly','yearly','installments'].includes(mode))throw new Error('Repetição inválida.');
   const count=mode==='once'?1:Number(input?.count||12);
   if(!Number.isInteger(count)||count<1||count>36)throw new Error('Escolha de 1 a 36 ocorrências.');
   const now=new Date().toISOString(),group=count>1?randomUUID():null;const ids=[];
   this.db.exec('BEGIN IMMEDIATE');
   try{
-   const stmt=this.db.prepare(`INSERT INTO planned_items(id,group_id,group_type,occurrence,total_occurrences,title,kind,amount_cents,due_date,category,account_id,notes,certainty,status,created_at,updated_at)
-      VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,'planned',?,?)`);
+   const stmt=this.db.prepare(`INSERT INTO planned_items(id,group_id,group_type,occurrence,total_occurrences,title,kind,amount_cents,due_date,category,account_id,notes,certainty,status,created_at,updated_at,category_id,subcategory_id)
+      VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,'planned',?,?,?,?)`);
    for(let i=0;i<count;i++){
     const id=randomUUID();ids.push(id);
     const amount=mode==='installments'?Math.floor(base.amount/count)+(i<base.amount%count?1:0):base.amount;
     if(amount<1)throw new Error('O valor total precisa cobrir todas as parcelas.');
     const date=mode==='once'?base.dueDate:nextOccurrence(base.dueDate,i,mode==='installments'?'monthly':mode);
     requiredDate(date);
-    stmt.run(id,group,mode,i+1,count,base.title,base.kind,amount,date,base.category,base.accountId,base.notes,base.certainty,now,now);
+    stmt.run(id,group,mode,i+1,count,base.title,base.kind,amount,date,base.category,base.accountId,base.notes,base.certainty,now,now,destination?.categoryId??null,destination?.subcategoryId??null);
     this.log(id,'created',`${mode} ${i+1}/${count}`);
    }
    this.db.exec('COMMIT');return {ids,count};
@@ -100,14 +103,16 @@ class PlanningStore {
  }
  item(id){const row=this.db.prepare('SELECT * FROM planned_items WHERE id=?').get(id);if(!row)throw new Error('Lançamento planejado não encontrado.');return row;}
  edit(input){const row=this.item(input?.id);if(row.status==='cancelled')throw new Error('Reative o lançamento antes de editar.');
-  const validated=this.validateInput({...row,title:input.title??row.title,kind:input.kind??row.kind,amount:input.amount??row.amount_cents,dueDate:input.dueDate??row.due_date,category:input.category??row.category,notes:input.notes??row.notes,certainty:input.certainty??row.certainty,accountId:input.accountId===undefined?row.account_id:input.accountId});
+  const destination=input?.target===undefined?null:new D05CategoryService(this.fin).resolve(input.target);
+  if(destination&&input?.category&&input.category!==destination.parentName)throw Error('D05: destino planejado divergente');
+  const validated=this.validateInput({...row,title:input.title??row.title,kind:input.kind??row.kind,amount:input.amount??row.amount_cents,dueDate:input.dueDate??row.due_date,category:destination?.parentName??input.category??row.category,notes:input.notes??row.notes,certainty:input.certainty??row.certainty,accountId:input.accountId===undefined?row.account_id:input.accountId});
   if(row.status!=='planned' && (validated.amount!==row.amount_cents||validated.kind!==row.kind))throw new Error('Desfaça a quitação antes de alterar valor ou tipo.');
   const linked=this.linkedTotal(row.id);if(linked>validated.amount)throw new Error('Valor menor que os pagamentos já vinculados.');
+  const categoryId=destination?.categoryId??(validated.category===row.category?row.category_id:null);
+  const subcategoryId=destination?destination.subcategoryId:(validated.category===row.category?row.subcategory_id:null);
   this.db.prepare(`UPDATE planned_items SET title=?,kind=?,amount_cents=?,due_date=?,category=?,
-    category_id=CASE WHEN category=? THEN category_id ELSE NULL END,
-    subcategory_id=CASE WHEN category=? THEN subcategory_id ELSE NULL END,
-    account_id=?,notes=?,certainty=?,updated_at=? WHERE id=?`)
-    .run(validated.title,validated.kind,validated.amount,validated.dueDate,validated.category,validated.category,validated.category,validated.accountId,validated.notes,validated.certainty,new Date().toISOString(),row.id);
+    category_id=?,subcategory_id=?,account_id=?,notes=?,certainty=?,updated_at=? WHERE id=?`)
+    .run(validated.title,validated.kind,validated.amount,validated.dueDate,validated.category,categoryId,subcategoryId,validated.accountId,validated.notes,validated.certainty,new Date().toISOString(),row.id);
   this.log(row.id,'edited',`Vencimento ${row.due_date} → ${validated.dueDate}; valor ${row.amount_cents} → ${validated.amount}`);return {ok:true};
  }
  setStatus(id,status){const item=this.item(id);if(!['planned','cancelled','settled_manual'].includes(status))throw new Error('Situação inválida.');
