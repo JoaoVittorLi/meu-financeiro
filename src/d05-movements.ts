@@ -113,7 +113,8 @@ class D05Movements extends React.Component<any,any> {
    const authorization=await bridge.d05SessionAuthorize({profile:state.mode});
    if(authorization?.profile!==state.mode)throw Error('D05: sessão vinculada a outro perfil');
    const parentsResult=await bridge.d05Catalog();
-   const bankResult=bridge.d05BankList?await bridge.d05BankList({limit:2500}):{items:[]};
+   const bankResult=state.mode==='demo'?{items:[],truncated:false}:
+    bridge.d05BankList?await bridge.d05BankList({limit:2500}):{items:[]};
    const manualResult=bridge.d05ManualList?await bridge.d05ManualList({profile:state.mode,limit:2500}):{items:[]};
    if(req!==refreshId.current)return;
    if(!parentsResult||!Array.isArray(parentsResult.parents))throw Error('Catálogo D05 inválido');
