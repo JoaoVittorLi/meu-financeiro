@@ -224,11 +224,43 @@ class D05CategoryService{
    return {accountId,externalId,parts:valid.map(p=>({categoryId:p.categoryId,subcategoryId:p.subcategoryId,amount:p.amount})),sumCents:valid.reduce((n,p)=>n+p.amount,0)};
   });
  }
- saveRule({id=null,pattern,matchMode='contains',scope='both',priority=100,enabled=true,target}){
+ previewRule({id=null,pattern,matchMode='contains',scope='both',priority=100,enabled=true,target}){
+  const resolved=this.resolve(target),label=ensureText(pattern,120,'padrão');
+  if(!ALLOWED_MATCH.has(matchMode)||!ALLOWED_SCOPE.has(scope)||
+    !Number.isInteger(priority)||priority<1||priority>999||typeof enabled!=='boolean')
+    throw Error('D05: regra inválida');
+  if(id!==null&&(!Number.isSafeInteger(id)||id<1||
+    !this.db.prepare('SELECT 1 FROM category_rules WHERE id=?').get(id)))
+    throw Error('D05: regra de edição não encontrada');
+  const currentRules=this.db.prepare(`SELECT id,pattern,match_mode,category,scope,priority,enabled,
+    category_id,subcategory_id FROM category_rules ORDER BY priority,id`).all();
+  const banks=this.db.prepare(`SELECT b.rowid,b.account_id,b.external_id,b.description,b.amount_cents,b.status,
+    n.nature FROM bank_transactions b LEFT JOIN bank_transaction_notes n
+    USING(account_id,external_id) ORDER BY b.account_id,b.external_id`).all();
+  const manual=this.db.prepare(`SELECT profile,id,description,kind FROM transactions ORDER BY profile,id`).all();
+  const candidate={id:id??Number.MAX_SAFE_INTEGER,pattern:label,matchMode,scope,priority,enabled:enabled?1:0,
+    category:resolved.parentName};
+  const match=(description,source)=>matchRule(description,source,[candidate])!==null;
+  const bankMatches=scope!=='manual'?banks.filter(x=>x.status==='POSTED'&&match(x.description,'bank')):[];
+  const manualMatches=scope!=='bank'?manual.filter(x=>match(x.description,'manual')):[];
+  const sample=[...bankMatches.slice(0,25).map(x=>({source:'bank',accountId:x.account_id,id:x.external_id})),
+    ...manualMatches.slice(0,25).map(x=>({source:'manual',profile:x.profile,id:x.id}))].slice(0,50);
+  const basis=[id,label,matchMode,scope,priority,enabled,resolved.categoryId,resolved.subcategoryId,
+    currentRules,banks,manual];
+  return {contract:'D05/RULE-PREVIEW-V1',previewVersion:createHash('sha256').update(JSON.stringify(basis)).digest('hex'),
+    categoryId:resolved.categoryId,subcategoryId:resolved.subcategoryId,candidateMatches:bankMatches.length+manualMatches.length,
+    candidateBankMatches:bankMatches.length,candidateManualMatches:manualMatches.length,sample,
+    possiblePrecedenceConflicts:currentRules.filter(r=>r.enabled&&r.priority<=priority&&r.id!==id).length,
+    changesApplied:false};
+ }
+ saveRule({id=null,pattern,matchMode='contains',scope='both',priority=100,enabled=true,target,previewVersion}){
   const r=this.resolve(target);const text=ensureText(pattern,120,'padrão');
   if(!ALLOWED_MATCH.has(matchMode)||!ALLOWED_SCOPE.has(scope)||!Number.isInteger(priority)||priority<1||priority>999||typeof enabled!=='boolean')
    throw Error('D05: regra inválida');
+  if(!/^[a-f0-9]{64}$/.test(String(previewVersion||'')))throw Error('D05: prévia da regra obrigatória');
   return inTransaction(this.db,()=>{
+   const preview=this.previewRule({id,pattern,matchMode,scope,priority,enabled,target});
+   if(preview.previewVersion!==previewVersion)throw Error('D05: prévia da regra desatualizada');
    if(id===null){
     const info=this.db.prepare(`INSERT INTO category_rules
      (pattern,match_mode,category,scope,priority,enabled,category_id,subcategory_id) VALUES(?,?,?,?,?,?,?,?)`)
