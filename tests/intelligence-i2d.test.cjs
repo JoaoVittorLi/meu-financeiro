@@ -175,7 +175,7 @@ test('I2-D: revoked grant, new profile, new month and changed owner deny old sug
  const f=fixture();try{
   const item=f.inspect({accountId:ACCOUNT}).opportunities[0];
   assert.equal(f.advisor.detail(item.id,{...f.scopes.bank,month:'2026-12'},1).status,'stale');
-  assert.equal(f.advisor.detail(item.id,f.scopes.bank,2).status,'stale');
+  assert.throws(()=>f.advisor.detail(item.id,f.scopes.bank,2),/Autoriz/);
   f.local.revoke(f.scopes.bank.token,1);
   assert.throws(()=>f.advisor.propose(item.id,'historical',f.scopes.bank,1),/Autoriza/);
  }finally{f.close();}
