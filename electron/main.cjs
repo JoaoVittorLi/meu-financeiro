@@ -19,6 +19,7 @@ const {IC2ReadQueryGateway}=require('./intelligence-ic2-adapter.cjs');
 const {RCCategoryGateway}=require('./intelligence-category-rc.cjs');
 const {installD05Ipc}=require('./d05-ipc-adapter.cjs');
 const {D05RCSecureGate}=require('./d05-rc-gate.cjs');
+const {D05PersonalWriteGateway}=require('./d05-personal-gate.cjs');
 const {CategoryReviewService}=require('./category-review.cjs');
 const {CategoryReviewBackupGate}=require('./category-review-backup.cjs');
 const {automaticBackup,restoreBackup,listAutoBackups,validateBackupFile}=require('./recovery.cjs');
@@ -29,7 +30,7 @@ const {AIPersonalStore}=require('./ai-personal.cjs');
 const {ChatGPTSignIn}=require('./ai-auth.cjs');
 const {ChatGPTDemoClient}=require('./ai-client.cjs');
 const {buildSyntheticFinancialContext}=require('../shared/ai-financial-context.mjs');
-let planner=null, db=null, mainWindow=null, vault=null, categoryRC=null, d05Gate=null, syncing=false, restoring=false, autoBackupBusy=false, cloudPreparationBusy=false, backupTimer=null, cloudPersonalTimer=null, cloudPersonalBusy=false, cloudAuthPromise=null,cloudAccessAssertion=null;
+let planner=null, db=null, mainWindow=null, vault=null, categoryRC=null, d05Gate=null, d05PersonalGate=null, syncing=false, restoring=false, autoBackupBusy=false, cloudPreparationBusy=false, backupTimer=null, cloudPersonalTimer=null, cloudPersonalBusy=false, cloudAuthPromise=null,cloudAccessAssertion=null;
 function backupsDirectory(){return path.join(app.getPath('userData'),'copias-de-seguranca');}
 async function ensureAutomaticBackup(){
   if(!db||restoring||syncing||autoBackupBusy)return;
@@ -209,6 +210,7 @@ app.whenReady().then(()=>{
   // Restoration replaces services, invalidating prior IC2 contexts.
   ic2ReadQuery=new IC2ReadQueryGateway(localFinancial);
   // Personal category work is preview-only; synthetic sandbox remains separate.
+  if(d05PersonalGate)d05PersonalGate.stopAll();
   if(d05Gate)d05Gate.stopAll();
   if(categoryRC){categoryRC.stopAll();categoryRC.bindPersonal(db,localFinancial);}
   else categoryRC=new RCCategoryGateway({db,localFinancial});
@@ -237,6 +239,37 @@ app.whenReady().then(()=>{
    });
    return dialogResult.response===1&&!mainWindow.isDestroyed();
   }
+ });
+ // Dedicated personal supervision adapter; write flag is permanently false
+ // in this experimental SHA until owner authorizes a separate QA-gated change.
+ d05PersonalGate=new D05PersonalWriteGateway({
+  finance:()=>db,readSession:(event,input)=>d05Gate.require(event,input),
+  backupDirectory:()=>path.join(app.getPath('userData'),'d05-personal-write-backups'),
+  approvedForPersonal:()=>false,
+  confirm:async details=>{
+   if(!mainWindow||mainWindow.isDestroyed()||!mainWindow.isFocused())return false;
+   const result=await dialog.showMessageBox(mainWindow,{
+    type:'warning',buttons:['Cancelar','Confirmar somente após homologação'],
+    defaultId:0,cancelId:0,noLink:true,
+    title:'Escrita financeira supervisionada',
+    message:'Confirmar '+String(details.action)+' no contexto autorizado?',
+    detail:'Antes da confirmação o sistema revalidará IDs, conta, perfil, prévia e backup. '+
+     'A execução pessoal permanece desativada nesta candidata.'
+   });
+   return result.response===1&&!mainWindow.isDestroyed();
+  }
+ });
+ ipcMain.handle('d05:personal-write-preview',(event,input)=>{
+  requireAppSender(event);if(restoring||syncing)throw Error('D05: operação concorrente');
+  return d05PersonalGate.prepare(event,input);
+ });
+ ipcMain.handle('d05:personal-write-confirm',(event,input)=>{
+  requireAppSender(event);if(restoring||syncing||autoBackupBusy)
+   throw Error('D05: operação concorrente');
+  return d05PersonalGate.confirmPreview(event,input);
+ });
+ ipcMain.handle('d05:personal-write-receipt',(event,input)=>{
+  requireAppSender(event);return d05PersonalGate.receipt(event,input);
  });
  // Registered only once; dynamic finance() rebinds after backup/restore.
  installD05Ipc({ipcMain,finance:()=>db,requireAppSender,
@@ -621,4 +654,4 @@ app.whenReady().then(()=>{
  app.on('activate',()=>{if(BrowserWindow.getAllWindows().length===0)createWindow();});
 }).catch(error=>{dialog.showErrorBox('Erro ao iniciar Meu Financeiro','Não foi possível abrir o banco de dados: '+error.message);app.quit();});
 app.on('window-all-closed',()=>{if(process.platform!=='darwin')app.quit();});
-app.on('before-quit',()=>{if(d05Gate)d05Gate.stopAll();if(categoryRC)categoryRC.stopAll();if(backupTimer)clearInterval(backupTimer);if(cloudPersonalTimer)clearInterval(cloudPersonalTimer);cancelBrowserPairing();if(db){db.close();db=null;}});
+app.on('before-quit',()=>{if(d05PersonalGate)d05PersonalGate.stopAll();if(d05Gate)d05Gate.stopAll();if(categoryRC)categoryRC.stopAll();if(backupTimer)clearInterval(backupTimer);if(cloudPersonalTimer)clearInterval(cloudPersonalTimer);cancelBrowserPairing();if(db){db.close();db=null;}});
