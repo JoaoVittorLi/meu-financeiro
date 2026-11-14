@@ -236,3 +236,65 @@ test('I2-E: verdict never presents a probabilistic confidence',()=>{
  assert.equal(r.probabilityCalibrated,false);
  assert.equal(r.confidence,'high');
 });
+
+
+test('I2-D/I2-E integration: legacy advisory routes cannot bypass quality validation',async()=>{
+ const f=fixture();try{
+  const before=f.db.db.prepare('SELECT total_changes() AS n').get().n;
+  for(const method of ['draftOpportunity','advice','discover','inspectOpportunity']){
+   const result=await f.bridge.handle({method,scope:f.scope,
+    opportunityId:'unverified',action:'historical',question:'Crie uma regra futura'},
+    {owner:1,activeAccountId:ACCOUNT});
+   assert.equal(result.status,'denied',method);
+   assert.equal(result.changesApplied,false);
+   assert.match(result.reason,/qualityScan/);
+  }
+  assert.equal(f.db.db.prepare('SELECT total_changes() AS n').get().n,before);
+ }finally{f.close();}
+});
+test('I2-D/I2-E integration: quality bridge is owner+account-bound and read-only',async()=>{
+ const f=fixture();try{
+  const original=f.db.db.prepare('SELECT total_changes() AS n').get().n;
+  for(const [request,host] of [
+   [{method:'qualityScan',scope:f.scope},{owner:2,activeAccountId:ACCOUNT}],
+   [{method:'qualityScan',scope:{...f.scope,month:'2026-12'}},
+    {owner:1,activeAccountId:OTHER}],
+   [{method:'qualityScan',scope:f.scope,filters:{accountId:OTHER}},
+    {owner:1,activeAccountId:ACCOUNT}],
+   [{method:'qualityScan',scope:{...f.scope,token:'revoked'}},
+    {owner:1,activeAccountId:ACCOUNT}]
+  ]){
+   const result=await f.bridge.handle(request,host);
+   assert.notEqual(result.status,'ready');
+   assert.equal(result.changesApplied,false);
+  }
+  assert.equal(f.db.db.prepare('SELECT total_changes() AS n').get().n,original);
+ }finally{f.close();}
+});
+test('I2-D/I2-E integration: stale draft does not return a reviewable proposal',async()=>{
+ const f=fixture();try{
+  const host={owner:1,activeAccountId:ACCOUNT};
+  const report=await f.bridge.handle({method:'qualityScan',scope:f.scope},host);
+  const qualityId=report.data.quality[0].qualityId;
+  f.db.overrideBankCategory({accountId:ACCOUNT,externalId:'c1',category:'Pets'});
+  const result=await f.bridge.handle({method:'qualityDraft',scope:f.scope,
+   qualityId,action:'historical'},host);
+  assert.equal(result.status,'stale');
+  assert.equal(result.changesApplied,false);
+  assert.equal(result.data?.advisoryProposal,undefined);
+ }finally{f.close();}
+});
+test('I2-D/I2-E integration: duplicate proposals cannot be silently applied via bridge',async()=>{
+ const f=fixture();try{
+  const host={owner:1,activeAccountId:ACCOUNT};
+  const before=f.db.db.prepare('SELECT total_changes() AS n').get().n;
+  const scan=await f.bridge.handle({method:'qualityScan',scope:f.scope},host);
+  const qualityId=scan.data.quality[0].qualityId;
+  const combined=await f.bridge.handle({method:'qualityCompose',scope:f.scope,
+   items:[{qualityId,action:'future'},{qualityId,action:'historical'}]},host);
+  assert.equal(combined.status,'partial');
+  assert.equal(combined.changesApplied,false);
+  assert.equal(combined.data.steps[1].status,'blocked_dependency');
+  assert.equal(f.db.db.prepare('SELECT total_changes() AS n').get().n,before);
+ }finally{f.close();}
+});
