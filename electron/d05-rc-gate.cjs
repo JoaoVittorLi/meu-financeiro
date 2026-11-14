@@ -183,7 +183,10 @@ class D05RCSecureGate{
  receipt(event,input){
   const s=this.require(event,input),id=input?.receiptId;
   if(typeof id!=='string'||id.length>100)throw Error('D05: recibo inválido');
-  const row=this.finance().db.prepare('SELECT id,action,committed_at AS committedAt,result_json AS result FROM d05_rc_atomic_receipts WHERE id=? AND owner=? AND scope=?')
+  const sql=this.finance().db;
+  if(!sql.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='d05_rc_atomic_receipts'").get())
+   return {contract,status:'unavailable',changesApplied:false};
+  const row=sql.prepare('SELECT id,action,committed_at AS committedAt,result_json AS result FROM d05_rc_atomic_receipts WHERE id=? AND owner=? AND scope=?')
    .get(id,s.owner,s.profile);
   return row?{contract,status:'applied',syntheticOnly:true,receiptId:row.id,action:row.action,committedAt:row.committedAt,
    result:JSON.parse(row.result)}:{contract,status:'unavailable',changesApplied:false};
