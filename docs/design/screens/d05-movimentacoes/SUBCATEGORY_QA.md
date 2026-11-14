@@ -1,3 +1,5 @@
+> **Aprovação do proprietário (13/11/2026):** “Muito bem! [...] categorias e subcategorias [...] 100% aprovadas.” Congeladas as **14 categorias-pai, 61 subcategorias, pictogramas SVG e cores**. **Isso NÃO significa código funcional implementado**. Executor deve concluir issue #74 com SQLite/IPC/IA, migração e QA. [Relatório dos problemas identificados](BUG_REPORT_AND_IMPLEMENTATION_GATES.md).
+
 # D05-SUBCAT — QA realizado e gates pendentes
 
 **Estado:** `DESIGN_TESTS_PASS / PRODUCT_NOT_IMPLEMENTED`. Não confundir QA de protótipo e homologação Electron/SQLite.
@@ -55,4 +57,4 @@
 
 Falha se subcategoria existir só visualmente, se `subcategoryId` não persistir no SQLite, se um filho puder ser vinculado ao pai errado, se nomes (em vez de IDs estáveis) quebrarem rename, se haver perda de histórico/limites/splits, se ícones ficarem invisíveis no dark ou se a IA aplicar alterações reais sem autorização/preview.
 
-**Issue de fechamento técnico obrigatória:** [#74](https://github.com/JoaoVittorLi/meu-financeiro/issues/74). A D05 visual permanece em revisão [#70](https://github.com/JoaoVittorLi/meu-financeiro/issues/70). **Não gerar EXE nem aprovar engenharia com base nestes testes isolados.**
+**Issue de fechamento técnico obrigatória:** [#74](https://github.com/JoaoVittorLi/meu-financeiro/issues/74). A taxonomia e o sistema de ícones D05 V1.2 estão aprovados visualmente; a tela macro D05 ainda pode exigir outros ajustes [#70](https://github.com/JoaoVittorLi/meu-financeiro/issues/70). **Não gerar EXE nem aprovar engenharia com base nestes testes isolados.**
