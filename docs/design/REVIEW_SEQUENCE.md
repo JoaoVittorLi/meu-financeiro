@@ -7,7 +7,7 @@ Data: 2026-11-13 · Índice: #55 · Coordenação: #49 · Baseline PR #54 / 55de
 | D02 | Chat Principal / Expandido | **DESIGN HANDOFF V3 CONSOLIDADO** (implementação pendente) | #58 | Biblioteca de 26 famílias especificada por herança; 3 aprovadas individualmente, VR-10 V2 referência; sem mais microscreens |
 | D03 | Inteligência Hoje | **IMPLEMENTATION_READY** (DESIGN_APPROVED) | #61 | **V2 FINAL** · cartões premium uniformes + prioridades dinâmicas · HTML/spec/QA/handoff publicados; Electron pendente |
 | D04 | Central de Revisão | **IMPLEMENTATION_READY** (DESIGN_APPROVED) | #67 | **V1.1 FINAL** · fila premium, edição persistente, escopos separados, reconfirmação; Executor #69, QA Electron pendente |
-| D05 | Movimentações | **PROTOTYPING / WAITING_FEEDBACK** | #70 | V1 tela inteira, filtros/detalhes/categorização/revisão/lançamento; não aprovado |
+| D05 | Movimentações | **PROTOTYPING / WAITING_FEEDBACK** | #70 | V1.2 subcategorias premium 14×61 + SVG; **E1/E2/E3 código obrigatório #74**, não aprovado |
 | D06 | Visão Geral | NOT_STARTED | — | — |
 | D07 | Orçamentos | NOT_STARTED | — | — |
 | D08 | Planejamento | NOT_STARTED | — | — |
@@ -83,3 +83,15 @@ Critérios para DESIGN_APPROVED: aprovação explícita do proprietário sobre v
 - [Issue #70](https://github.com/JoaoVittorLi/meu-financeiro/issues/70); auditoria da implementação existente em `src/app.ts` (`renderMovements`, `renderTransactions`), `app/movements-productivity.css` e `app/operations.css`, PR #54 HEAD `55de81c`.
 - Recursos a preservar: histórico/revisão/categorias, busca/filtros, agrupamento por data, origem banco/manual, detalhes, categoria rápida, lotes, nova categoria, importação CSV, status POSTED/PENDING e histórico parcial.
 - V1 é protótipo de **tela completa** apresentado no chat; valores sintéticos, sem escrita real. Aguardar aprovação do proprietário para congelar HTML canônico, specs, QA e handoff ao Executor.
+
+
+### D05 — Subcategorias V1.2 · em revisão (13/11/2026)
+
+**Feedback:** usuário aprovou a evolução dos ícones vetoriais com fundos de cor por categoria e pediu agora **subcategorias reais**, com ícones próprios para cada filho. **A aprovação da taxonomia/da V1.2 ainda não ocorreu**.
+
+- [D05 Design #70](https://github.com/JoaoVittorLi/meu-financeiro/issues/70): V1.2 visual em revisão; [HTML interativo](screens/d05-movimentacoes/prototype-subcategories.html); [14×61](screens/d05-movimentacoes/SUBCATEGORY_TAXONOMY_V1.json); [67 SVG](screens/d05-movimentacoes/SUBCATEGORY_SVG_REGISTRY_V1.json); [identidade visual](screens/d05-movimentacoes/ICON_SYSTEM_SUBCATEGORIES.md).
+- [Issue de ENGENHARIA #74 — BLOQUEANTE](https://github.com/JoaoVittorLi/meu-financeiro/issues/74): [Contrato SQLite/IPC/IA](screens/d05-movimentacoes/SUBCATEGORIES_IMPLEMENTATION_CONTRACT.md) + [Handoff E1/E2/E3](screens/d05-movimentacoes/SUBCATEGORY_EXECUTOR_HANDOFF.md). **O Executor deve criar modelo real no código; protótipo ou documentação não bastam**.
+- [QA isolado](screens/d05-movimentacoes/SUBCATEGORY_QA.md): 25 verificações do catálogo, parsing JS e modelo sintético PASS; **nenhuma migration SQLite nem Electron QA executados**.
+- Subcategoria nula para histórico antigo, vinculação pai/filho por IDs estáveis, sem duplicar orçamentos, pagamentos ou efeitos IA; recolher aprovação antes de congelar UI. O Integrador deve reservar E1 migrator, E2 services e E3 UI como dependências do release D05.
+
+**Não** declarar `DESIGN_APPROVED`, `IMPLEMENTED`, `HOMOLOGATED` ou `READY_FOR_EXE` a partir desta rodada.
