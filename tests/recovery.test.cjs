@@ -129,3 +129,47 @@ test('D1.1 — validação do backup WAL não deixa auxiliares .partial após su
   assert.equal(db.load('real').transactions[0].id,'t-wal-limpo');
  }finally{db.close();fs.rmSync(f.root,{recursive:true,force:true});}
 });
+
+test('Preflight v7 — backup/restore accepts CURRENT D05 schema without accepting future v8',async()=>{
+ const f=fixture();let db=new FinanceDB(f.file);
+ try{
+  db.save('real',dataset('schema-v7'));
+  assert.equal(db.db.prepare("SELECT value FROM app_meta WHERE key='schema_version'").get().value,'7');
+  const backup=path.join(f.root,'snapshot-v7.sqlite');
+  await db.backupTo(backup);
+  assert.equal(validateBackupFile(backup).ok,true);
+  db.save('real',dataset('substituido'));
+  const restored=await restoreBackup(db,backup,f.file,f.backups);
+  db=restored.db;
+  assert.equal(db.load('real').transactions[0].id,'t-schema-v7');
+  assert.deepEqual(db.integrity(),['ok']);
+  const future=path.join(f.root,'future-v8.sqlite');
+  await db.backupTo(future);
+  const {DatabaseSync}=require('node:sqlite');
+  const futureSql=new DatabaseSync(future);
+  futureSql.prepare("UPDATE app_meta SET value='8' WHERE key='schema_version'").run();
+  futureSql.close();
+  assert.throws(()=>validateBackupFile(future),/versão mais recente/);
+  assert.throws(()=>new FinanceDB(future),/futura incompatível/);
+  await assert.rejects(()=>restoreBackup(db,future,f.file,f.backups),/versão mais recente/);
+  assert.equal(db.load('real').transactions[0].id,'t-schema-v7');
+ }finally{db.close();fs.rmSync(f.root,{recursive:true,force:true});}
+});
+test('Preflight v7 — backup with broken foreign keys rejected while valid snapshot survives',async()=>{
+ const f=fixture();let db=new FinanceDB(f.file);
+ try{
+  db.save('real',dataset('validado'));
+  const safe=path.join(f.root,'valid.sqlite');
+  const invalid=path.join(f.root,'broken-fk.sqlite');
+  await db.backupTo(safe);await db.backupTo(invalid);
+  const {DatabaseSync}=require('node:sqlite');
+  const corrupted=new DatabaseSync(invalid);
+  corrupted.exec('PRAGMA foreign_keys=OFF');
+  corrupted.prepare("UPDATE transactions SET profile='missing-profile' WHERE id='t-validado'").run();
+  corrupted.close();
+  assert.equal(validateBackupFile(safe).ok,true);
+  assert.throws(()=>validateBackupFile(invalid),/referências financeiras inválidas/);
+  await assert.rejects(()=>restoreBackup(db,invalid,f.file,f.backups));
+  assert.equal(db.load('real').transactions[0].id,'t-validado');
+ }finally{db.close();fs.rmSync(f.root,{recursive:true,force:true});}
+});
