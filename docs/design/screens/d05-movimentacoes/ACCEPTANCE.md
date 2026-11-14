@@ -13,6 +13,7 @@
 | Fixture: entradas R$3.180,00, saídas R$1.788,80, resultado R$1.391,20 | PASS | Soma dos centavos, sem PENDING/transfer |
 | Fixture: cinco POSTED sem revisão | PASS | b1, b4, b5, b9, b12 |
 | HTML contém círculo custom, switch e indicador azul | PASS | Inspeção estrutural, não teste de browser |
+| Renderização JS em DOM simulado: 12 lançamentos, métricas e aba A conferir com 5 itens | **PASS** | Execução V8 com nós DOM simulados; **não equivale a Chromium/Electron** |
 | Chromium real, cliques, tabulação e screenshots | NOT_RUN | Fora do teste estático |
 | Electron, SQLite, IPC e integração real | NOT_RUN | Responsabilidade Executor E1/E2/E3 |
 | CI, ASAR, instalador Windows | NOT_RUN | Autorização separada do proprietário |
