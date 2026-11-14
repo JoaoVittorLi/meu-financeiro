@@ -14,6 +14,23 @@ type MfV3Card={
  previous?:{period:string;categories:MfVisualCategory[];expenseCents:number;incomeCents:number;coverage:string}|null;
  original:MfVisualSnapshot;
 };
+/* QA-GATE-01 P1: authorization identity is deliberately outside the serialized
+ * MfV3Card. WeakMap data is memory-only: never export a grant/token with a card.
+ * Rebuilt/restored cards have no binding and must remain stale. */
+const MF_V3_GRANT_BINDINGS=new WeakMap<MfV3Card,{
+ access:LocalFinancialAccess;token:string;signature:string
+}>();
+function mfV3BindGrant(card:MfV3Card|null,access:LocalFinancialAccess|null,signature:string):MfV3Card|null{
+ if(card&&access?.token&&typeof signature==='string'){
+  MF_V3_GRANT_BINDINGS.set(card,{access,token:access.token,signature});
+ }
+ return card;
+}
+function mfV3MatchesGrant(card:MfV3Card,access:LocalFinancialAccess|null,signature:string):boolean{
+ const binding=card&&MF_V3_GRANT_BINDINGS.get(card);
+ return !!binding&&binding.access===access&&binding.token===access?.token&&
+  binding.signature===signature;
+}
 const MF_V3_KINDS=[
  ['VR-01','summary','Resumo executivo'],['VR-02','kpi','Indicador financeiro'],
  ['VR-03','compare','Antes e depois'],['VR-04','trend','Tendência temporal'],

@@ -103,7 +103,8 @@ async function localFinancialSubmit(app:any,question:string){
  const factsValid=operational&&(state==='ready'||state==='empty');
  const evidence=factsValid?(operational.profile==='synthetic'?'Ambiente sintético':'Fonte '+(operational.source==='bank'?'bancária':'manual'))+
   ' · '+intelligencePremiumCoverage(operational.coverage)+' · '+month:'';
- const visualV3=v3Kind&&factsValid?mfV3FromOperational(operational,v3Kind,previousOperational):null;
+ const visualV3=v3Kind&&factsValid?mfV3BindGrant(
+   mfV3FromOperational(operational,v3Kind,previousOperational),access,signature):null;
  if(v3Kind){
   answerText=!visualV3?'Não há evidência suficiente para apresentar esta análise com segurança. Nenhum valor foi estimado.':
     visualV3.quality==='unavailable'?'Esta família visual não tem serviço financeiro operacional compatível neste momento.':

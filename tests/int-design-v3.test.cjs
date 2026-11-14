@@ -16,8 +16,11 @@ const js=ts.transpileModule(old+'\n'+core+'\n'+ui,{
  compilerOptions:{target:ts.ScriptTarget.ES2019,module:ts.ModuleKind.None}
 }).outputText;
 const api=new Function('h','desktop','intelligencePremiumSignature','renderMfD01Proposal',js+
- ';return {mfV3Registry,mfV3Schema,mfV3Requested,mfV3FromOperational,mfV3Heat,mfV3CompareRows,mfV3Pct,mfV3Records,mfV3Render,mfV3NeedsPrevious};')(
- h,{},()=>'',()=>h('div',{},'Proposta supervisionada'));
+ ';return {mfV3Registry,mfV3Schema,mfV3Requested,mfV3FromOperational,mfV3Heat,mfV3CompareRows,mfV3Pct,mfV3Records,mfV3Render,mfV3NeedsPrevious,mfV3BindGrant,mfV3MatchesGrant};')(
+ h,{},a=>a?.state?.fakeSignature||'',()=>h('div',{},'Proposta supervisionada'));
+const syntheticGrant={token:'synthetic-read-only',source:'manual',profile:'demo',expiresAt:Date.now()+600000};
+const cardFactory=api.mfV3FromOperational;
+api.mfV3FromOperational=(op,kind,prior)=>api.mfV3BindGrant(cardFactory(op,kind,prior),syntheticGrant,'');
 const categoriesNov=[
  ['Moradia',100000],['Alimentação',76000],['Lazer',38000],
  ['Transporte',24000],['Saúde',22800],['Serviços',11900]
@@ -45,7 +48,7 @@ function report(month='2026-11',cats=categoriesNov,overrides={}){
  return {...base,...overrides};
 }
 function app(){
- return {state:{mode:'demo',month:'2026-11',intelligencePanelOpen:false,localFinancialAccess:{token:'synthetic-read-only',source:'manual',profile:'demo',expiresAt:Date.now()+600000}},
+ return {state:{mode:'demo',month:'2026-11',intelligencePanelOpen:false,localFinancialAccess:syntheticGrant},
  setState(p){Object.assign(this.state,p)},navigate(page){this.route=page}};
 }
 function flatten(tree){
@@ -246,9 +249,9 @@ test('D02 — revoked, expired or replaced grants hide cached personal numbers',
  const v=api.mfV3FromOperational(reply,'summary',null);
  const invalid=[
   a=>a.state.localFinancialAccess=null,
-  a=>a.state.localFinancialAccess.expiresAt=Date.now()-1000,
-  a=>a.state.localFinancialAccess.source='bank',
-  a=>a.state.localFinancialAccess.profile='real',
+  a=>a.state.localFinancialAccess={...a.state.localFinancialAccess,expiresAt:Date.now()-1000},
+  a=>a.state.localFinancialAccess={...a.state.localFinancialAccess,source:'bank'},
+  a=>a.state.localFinancialAccess={...a.state.localFinancialAccess,profile:'real'},
   a=>a.state.localFinancialMonth='2026-10'
  ];
  for(const mutate of invalid){
@@ -263,4 +266,40 @@ test('D02 — valid current grant still allows cached read-only view until expir
  const tree=api.mfV3Render(a,{id:'fresh',visualV3:v});
  assert.doesNotMatch(tree.props.className,/state-stale/);
  assert.match(txt(tree),/R\$\s*2\.727,00/);
+});
+
+test('QA-GATE-01 — grant B cannot resurrect card from grant A with identical scope',()=>{
+ const a=app(),v=api.mfV3FromOperational(reply,'summary',null);
+ assert.match(txt(api.mfV3Render(a,{id:'under-a',visualV3:v})),/R\\$\\s*2\\.727,00/);
+ const grantB={...syntheticGrant,token:'synthetic-grant-b',expiresAt:Date.now()+600000};
+ a.state.localFinancialAccess=grantB; // same source, profile and month
+ const old=api.mfV3Render(a,{id:'under-b',visualV3:v});
+ assert.match(old.props.className,/state-stale/);
+ assert.doesNotMatch(txt(old),/R\\$\\s*2\\.727,00/);
+ const bCard=api.mfV3BindGrant(cardFactory(reply,'summary',null),grantB,'');
+ assert.match(txt(api.mfV3Render(a,{id:'new-b',visualV3:bCard})),/R\\$\\s*2\\.727,00/);
+ // Even an identical token must not make a different grant object the same authorization.
+ a.state.localFinancialAccess={...grantB};
+ assert.match(api.mfV3Render(a,{id:'replaced-b',visualV3:bCard}).props.className,/state-stale/);
+});
+test('QA-GATE-01 — unbound, restored and copied cards fail closed without persisting tokens',()=>{
+ const a=app(),bound=api.mfV3FromOperational(reply,'summary',null);
+ const serialized=JSON.stringify(bound);
+ assert.doesNotMatch(serialized,/synthetic-read-only|synthetic-grant-b/);
+ const restored=JSON.parse(serialized);
+ assert.match(api.mfV3Render(a,{id:'restored',visualV3:restored}).props.className,/state-stale/);
+ assert.match(api.mfV3Render(a,{id:'copied',visualV3:{...bound}}).props.className,/state-stale/);
+ assert.match(api.mfV3Render(a,{id:'unbound',visualV3:cardFactory(reply,'summary',null)}).props.className,/state-stale/);
+});
+test('QA-GATE-01 — account/filter and concurrent contexts cannot reuse old snapshots',()=>{
+ const a=app(),cardA=api.mfV3FromOperational(reply,'summary',null);
+ a.state.fakeSignature='account-b'; // signature represents current account/filter ownership
+ assert.match(api.mfV3Render(a,{id:'other-account',visualV3:cardA}).props.className,/state-stale/);
+ const accessB={...syntheticGrant,token:'concurrent-b'};
+ a.state.localFinancialAccess=accessB;
+ const cardB=api.mfV3BindGrant(cardFactory(reply,'summary',null),accessB,'account-b');
+ assert.doesNotMatch(api.mfV3Render(a,{id:'current',visualV3:cardB}).props.className,/state-stale/);
+ assert.match(api.mfV3Render(a,{id:'old',visualV3:cardA}).props.className,/state-stale/);
+ a.state.fakeSignature='account-c';
+ assert.match(api.mfV3Render(a,{id:'third-scope',visualV3:cardB}).props.className,/state-stale/);
 });
