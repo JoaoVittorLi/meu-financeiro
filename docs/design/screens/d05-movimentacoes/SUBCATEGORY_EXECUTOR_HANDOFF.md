@@ -2,7 +2,7 @@
 
 # HANDOFF AO EXECUTOR — D05-SUBCAT · Backend obrigatório + interface premium
 
-**Urgência:** subcategorias são funcionalidade do produto, **não apenas estilo visual**. Issue de implementação [#74](https://github.com/JoaoVittorLi/meu-financeiro/issues/74). Design D05 [#70](https://github.com/JoaoVittorLi/meu-financeiro/issues/70) **com taxonomia e ícones aprovados; tela completa continua em revisão**. PR design [#57](https://github.com/JoaoVittorLi/meu-financeiro/pull/57); branch `design/mf2-screen-by-screen-20261113`.
+**Urgência:** subcategorias são funcionalidade do produto, **não apenas estilo visual**. Issue de implementação [#74](https://github.com/JoaoVittorLi/meu-financeiro/issues/74). Design D05 [#70](https://github.com/JoaoVittorLi/meu-financeiro/issues/70) **com taxonomia, ícones e tela completa V1.3 aprovadas (DESIGN_APPROVED / IMPLEMENTATION_READY)**. PR design [#57](https://github.com/JoaoVittorLi/meu-financeiro/pull/57); branch `design/mf2-screen-by-screen-20261113`.
 
 ## Documentos canônicos
 
@@ -40,4 +40,7 @@
 - [ ] Evidência real dark/light do aplicativo; ícone vetorial para cada filho escolhido, texto AA e sem card negativo invisível.
 - [ ] `PASS/FAIL/NOT_RUN` por gate; se não executou Electron, não declarar homologado.
 
-**Lembrete obrigatório:** V1.2 visual e catálogo são propostas; o escopo E1–E3 não pode ser encerrado por apenas aprovar mock. Arquiteto/Integrador deve manter issue #74 aberta até **código + migração + testes reais**.
+**Lembrete obrigatório:** V1.2 visual, catálogo e tela completa D05 V1.3 receberam aprovação expressa; o escopo E1–E3 não pode ser encerrado por apenas aprovar mock. Arquiteto/Integrador deve manter issue #74 aberta até **código + migração + testes reais**.
+
+
+**Handoff canônico posterior:** [HANDOFF.md](HANDOFF.md) registra a versão final aprovada da tela inteira (revisão azul, seleção circular, switch, picker por ícone) e a nova obrigatoriedade da D05 para o primeiro EXE. Este documento legado complementa E1/E2/E3 e não substitui a spec aprovada.
