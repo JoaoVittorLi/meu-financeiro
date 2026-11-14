@@ -248,3 +248,37 @@ test('I2-D: fallback intent parsing asks explicit ID when multiple opportunities
  assert.equal(intentOf('Organize minhas categorias').action,'discover');
  assert.equal(intentOf('Olá').status,'needs_clarification');
 });
+
+test('I2-D: manual income classified into expense-only category is flagged without modifying it',()=>{
+ const f=fixture();try{
+  const data=f.db.load('demo');
+  f.db.save('demo',{...data,transactions:[...data.transactions,
+   {id:'mismatch',date:'2026-11-10',description:'Receita sintética',
+    kind:'income',amount:1234,category:'Delivery'}]});
+  const r=f.inspect({},true);
+  assert.equal(r.classificationIssues.totalLoaded,1);
+  assert.equal(r.classificationIssues.examples[0].recordId,'mismatch');
+  assert.equal(r.classificationIssues.examples[0].categoryKind,'expense');
+  assert.equal(r.classificationIssues.examples[0].canApplyAutomatically,false);
+  assert.equal(f.db.load('demo').transactions.find(x=>x.id==='mismatch').category,'Delivery');
+ }finally{f.close();}
+});
+test('I2-D: bank category-kind mismatch requires an explicit human correction',()=>{
+ const f=fixture();try{
+  f.db.ingestBank(ITEM,{item:{status:'UPDATED'},data:[{
+   account:{id:ACCOUNT,name:'SINTETICO A',balance:null},
+   transactions:[row('wrongIncome','RECEITA SINTETICA',100)]}]});
+  f.db.overrideBankCategory({accountId:ACCOUNT,externalId:'wrongIncome',category:'Delivery'});
+  const result=f.inspect({accountId:ACCOUNT});
+  assert(result.classificationIssues.examples.some(x=>
+   x.recordId===ACCOUNT+':wrongIncome'&&x.nature==='income'));
+  assert.equal(result.changesApplied,false);
+ }finally{f.close();}
+});
+test('I2-D: bridge cannot mix proposal service with an unrelated I2-C bridge',()=>{
+ const f=fixture(),other=fixture();try{
+  assert.throws(()=>new ProactiveCategoryBridge({
+   advisor:f.advisor,baseBridge:new IntelligenceCategoryBridge({proposals:other.proposals})
+  }),/mesmo serviço/);
+ }finally{f.close();other.close();}
+});
