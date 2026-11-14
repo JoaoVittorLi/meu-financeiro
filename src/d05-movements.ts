@@ -339,7 +339,7 @@ class D05Movements extends React.Component<any,any> {
     h('p',{},'Confirme novamente as ',h('strong',{},preview?.count||0),' movimentações afetadas.'),
     h('p',{className:'d05-picker-caption'},'Destino: '+labelTarget(picker.categoryId,picker.subcategoryId)),
     h('ul',{className:'d05-preview-items'},(preview?.rows||[]).slice(0,20).map((r:any)=>
-     h('li',{key:r.key},r.merchant,' · ',format(Math.abs(r.amount)))) ,
+     h('li',{key:r.key},r.merchant,' · ',format(Math.abs(r.amount))))) ,
     (preview?.rows?.length||0)>20?h('small',{},'Demais itens incluídos na prévia validada.'):null,
     h('button',{type:'button',className:'d05-confirm',disabled:busy,onClick:()=>void commitBatch()},busy?'Gravando…':'Reconfirmar e aplicar lote')):
    h('div',{className:'d05-confirm-step'},
