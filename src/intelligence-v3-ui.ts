@@ -16,7 +16,8 @@ function mfV3Bar(label:string,value:string,pct:number,color:string,onClick:any){
 function mfV3Live(app:any,d:MfV3Card):boolean{
  const a:LocalFinancialAccess=app.state.localFinancialAccess;
  const month=app.state.localFinancialMonth||app.state.month;
- return !!a?.token&&Number.isFinite(a.expiresAt)&&a.expiresAt>Date.now()&&
+ return !!a?.token&&mfV3MatchesGrant(d,a,intelligencePremiumSignature(app))&&
+   Number.isFinite(a.expiresAt)&&a.expiresAt>Date.now()&&
    a.source===d.source&&a.profile===d.profile&&month===d.period&&
    app.state.mode===d.profile;
 }
