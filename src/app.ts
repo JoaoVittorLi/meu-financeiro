@@ -1235,8 +1235,8 @@ class App extends React.Component<any,State>{
  exportJSON(){const blob=new Blob([JSON.stringify({...this.state.data,exportedAt:new Date().toISOString()},null,2)],{type:'application/json'});download(blob,'meu-financeiro-backup-'+this.state.mode+'-'+iso(new Date())+'.json');this.flash('Backup exportado. Guarde o arquivo em local seguro.');}
  exportCSV(){const cell=(v:string)=>'"'+d05CsvFormulaSafe(v).replace(/"/g,'""')+'"';
   const s=['data;descricao;tipo;valor;categoria',...this.state.data.transactions.map(t=>
-   [cell(t.date),cell(t.description),cell(t.kind),cell(moneyString(t.amount)),cell(t.category)].join(';'))].join('\\r\\n');
-  download(new Blob(['\\ufeff'+s],{type:'text/csv;charset=utf-8'}),'meu-financeiro-extrato.csv');}
+   [cell(t.date),cell(t.description),cell(t.kind),cell(moneyString(t.amount)),cell(t.category)].join(';'))].join('\r\n');
+  download(new Blob(['\ufeff'+s],{type:'text/csv;charset=utf-8'}),'meu-financeiro-extrato.csv');}
  async importJSON(file:File){try{const d=safeData(JSON.parse(await file.text()));if(!confirm('Substituir todos os dados do modo '+(this.state.mode==='real'?'pessoal':'demonstração')+' pelo backup selecionado?'))return;this.updateData(d,'Backup restaurado.');}catch(e:any){this.flash('Não foi possível importar o backup: '+e.message);}}
  async importCSV(file:File){
   try{
