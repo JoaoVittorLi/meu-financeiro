@@ -118,7 +118,9 @@ class D05Movements extends React.Component<any,any> {
    for(const t of bankResult.items||[])b[JSON.stringify([t.accountId,t.id])]={categoryId:t.categoryId,subcategoryId:t.subcategoryId};
    for(const t of manualResult.items||[])m[t.id]={categoryId:t.categoryId,subcategoryId:t.subcategoryId};
    setCatalog(parentsResult);setDecor({bank:b,manual:m});
-   setLoadState('ready');setAccessMessage('');
+   const readComplete=typeof bridge.d05BankList==='function'&&typeof bridge.d05ManualList==='function';
+   setLoadState(readComplete?'ready':'partial');
+   setAccessMessage(readComplete?'':'Consulta hierárquica parcial: as referências de banco/manual não foram registradas no preload. As linhas legadas permanecem visíveis sem inventar subcategorias.');
   }catch(e:any){
    if(req!==refreshId.current)return;
    setLoadState(/autoriz|negado|denied|permiss/i.test(String(e?.message||e))?'denied':'error');
