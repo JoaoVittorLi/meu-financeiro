@@ -43,6 +43,26 @@ class D05RCSecureGate{
   this.sessions.set(owner,{owner,token,profile,expiresAt});
   return {token,profile,expiresAt};
  }
+ async authorizeAccount(event,input){
+  const s=this.require(event,input);
+  if(s.profile!=='real'||typeof input.accountId!=='string'||!input.accountId)
+   throw Error('D05: conta pessoal requer sessão real explícita');
+  const row=this.finance().db.prepare('SELECT name FROM bank_accounts WHERE account_id=?')
+   .get(input.accountId);
+  if(!row)throw Error('D05: conta bancária não encontrada');
+  if(s.activeAccountId===input.accountId)return {accountId:input.accountId,expiresAt:s.expiresAt};
+  const accepted=await this.confirm({kind:'bank-account',owner:s.owner,profile:s.profile,
+   accountId:input.accountId,accountName:row.name});
+  if(accepted!==true||this.require(event,input)!==s)
+   throw Error('D05: autorização da conta negada ou revogada');
+  s.activeAccountId=input.accountId;
+  return {accountId:input.accountId,expiresAt:s.expiresAt};
+ }
+ trustedAccount(event){
+  const s=this.sessions.get(event?.sender?.id);
+  return s?.profile==='real'&&s?.expiresAt>this.clock()?
+   s.activeAccountId||null:null;
+ }
  require(event,input){
   shape(input);
   const owner=event?.sender?.id;
