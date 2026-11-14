@@ -121,6 +121,13 @@ class ProactiveCategoryAdvisor{
   if(overview.truncated){base.coverage='partial_local';base.status='partial';
    base.diagnostics.push('A visão bancária limita a 2500 lançamentos; padrões e contagens são parciais.');}
   if(!rows.length)return {...base,diagnostics:[...base.diagnostics,'Nenhum lançamento elegível foi carregado no período autorizado.']};
+  // The supervised review layer records its own applied labels. Never learn
+  // from those as if they were independent human evidence (feedback loop).
+  const hasReviewLabels=!!this.db.db.prepare(
+   "SELECT 1 FROM sqlite_master WHERE type='table' AND name='category_review_applied_labels'").get();
+  const supervisedKeys=new Set(hasReviewLabels?
+   this.db.db.prepare('SELECT account_id,external_id FROM category_review_applied_labels')
+    .all().map(r=>String(r.account_id)+':'+String(r.external_id)):[]);
   const groups=new Map();
   for(const r of rows){
    if(!valid(r)||!specific(r.description))continue;
@@ -129,7 +136,7 @@ class ProactiveCategoryAdvisor{
    if(!group){group={accountId:r.accountId,nature,pattern:fold(r.description),
     rows:[],votes:new Map(),manuallyCorrected:[]};groups.set(key,group);}
    group.rows.push(r);
-   if(r.categorySource==='manual'&&fold(r.category)!=='OUTROS'){
+   if(r.categorySource==='manual'&&!supervisedKeys.has(rowId(r))&&fold(r.category)!=='OUTROS'){
     const count=group.votes.get(r.category)||0;
     group.votes.set(r.category,count+1);group.manuallyCorrected.push(r);
    }
@@ -199,6 +206,7 @@ class ProactiveCategoryAdvisor{
    continuation:{hasMore:suggestions.length>params.limit,shown:ordered.length},
    diagnostics:[...base.diagnostics,'Somente correções humanas explícitas serviram de âncora.',
     'A confiança representa consistência da amostra, não probabilidade calibrada de acerto.',
+    'Rótulos aplicados pela revisão supervisionada são excluídos do treinamento para evitar retroalimentação.',
     'Sugestões não autorizam lançamentos, regras ou contas fora do escopo.']};
  }
  detail(id,input,owner){
