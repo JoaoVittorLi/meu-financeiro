@@ -37,7 +37,7 @@ function fixture({sameDay=false,duplicate=false,secondPattern=false,large=false}
   tx('p3','PET SHOP LOJA TESTE','2026-11-10',-27,{category:'Groceries'})
  );
  if(large)for(let i=0;i<2530;i++)transactions.push(
-  tx('extra'+i,'OUTRA COMPRA '+i,'2026-11-10',-(i%10+2)));
+  tx('extra'+i,'OUTRA COMPRA '+i,'2026-11-02',-(i%10+2)));
  db.ingestBank(ITEM,{item:{status:'UPDATED'},data:[
   {account:{id:ACCOUNT,name:'SINTETICO A',balance:null},transactions},
   {account:{id:OTHER,name:'SINTETICO B',balance:null},transactions:[
