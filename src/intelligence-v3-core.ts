@@ -138,20 +138,34 @@ function mfV3FromOperational(op:any,kind:MfV3Kind,prior:any):MfV3Card|null{
    categories:original.categories,budgets,previous:prev,
    original:kind==='sankey'?mfVisualFromOperational(op,'sankey'):original};
 }
-function mfV3CompareRows(v){
+type MfV3CompareRow={
+ name:string;before:number;now:number;delta:number|null;relative:number|null
+};
+function mfV3CompareRows(v:MfV3Card|null):MfV3CompareRow[]{
  if(!v||!v.previous)return[];
- const base=new Map(v.previous.categories.map(c=>[c.name,c.amountCents]));
- const current=new Map(v.categories.map(c=>[c.name,c.amountCents]));
- const names=new Set([...base.keys(),...current.keys()]);
- return [...names].map(name=>{
-  const before=base.get(name)||0,now=current.get(name)||0,delta=mfV3Delta(now,before);
+ // Explicit tuple/map types retain the verified category names as strings.
+ // Inference through an untyped Map used to turn Set keys into unknown.
+ const base=new Map<string,number>(v.previous.categories.map(
+  (c:MfVisualCategory):[string,number]=>[c.name,c.amountCents]));
+ const current=new Map<string,number>(v.categories.map(
+  (c:MfVisualCategory):[string,number]=>[c.name,c.amountCents]));
+ const names=new Set<string>([...base.keys(),...current.keys()]);
+ return [...names].map((name:string):MfV3CompareRow=>{
+  const before=base.get(name)??0,now=current.get(name)??0,delta=mfV3Delta(now,before);
   return {name,before,now,delta,relative:mfV3Pct(now,before)};
- }).sort((a,b)=>b.delta-a.delta||a.name.localeCompare(b.name,'pt-BR'));
+ }).sort((a,b)=>{
+  // Unknown/unsafe deltas belong last, never silently converted to R$0.
+  if(a.delta===null)return b.delta===null?a.name.localeCompare(b.name,'pt-BR'):1;
+  if(b.delta===null)return -1;
+  return b.delta-a.delta||a.name.localeCompare(b.name,'pt-BR');
+ });
 }
-function mfV3Heat(rows){
- const positive=rows.filter(x=>x.delta>0).sort((a,b)=>b.delta-a.delta||a.name.localeCompare(b.name,'pt-BR'));
- const unique=[...new Set(positive.map(x=>x.delta))];
- return rows.map(r=>({...r,heat:r.delta<=0?null:MF_V3_HEAT[Math.min(4,unique.indexOf(r.delta))]}));
+function mfV3Heat(rows:MfV3CompareRow[]){
+ const positive=rows.filter(x=>x.delta!==null&&x.delta>0).sort(
+  (a,b)=>(b.delta??0)-(a.delta??0)||a.name.localeCompare(b.name,'pt-BR'));
+ const unique=[...new Set<number>(positive.map(x=>x.delta as number))];
+ return rows.map(r=>({...r,heat:r.delta===null||r.delta<=0?null:
+  MF_V3_HEAT[Math.min(4,unique.indexOf(r.delta))]}));
 }
 function mfV3Records(v){
  const records=[];
