@@ -11,7 +11,7 @@ const MF_D04_PALETTE=['#53d896','#79a6fa','#f5bc63','#ff7a88','#b49be8'];
 function mfD04StableId(r:any):string{return JSON.stringify([r.accountId||'',r.externalId||'']);}
 function mfD04Entries(app:any):MfD04Entry[]{
  const s=app.state,grant=s.categoryReviewGrant,report=s.categoryReviewReport,queue=s.categoryReviewQueue;
- if(!grant?.token||!report)return [];
+ if(!grant?.token||!(Number.isFinite(grant.expiresAt)&&grant.expiresAt>Date.now())||!report)return [];
  const entries:MfD04Entry[]=[];
  for(const r of Array.isArray(report.suggestions)?report.suggestions:[]){
   if(!r||typeof r.id!=='string'||!r.id)continue;
@@ -94,8 +94,10 @@ function mfD04SavedDraft(app:any,entry:MfD04Entry):void{
   categoryReviewPreview:null,categoryReviewConfirmed:false,mfD04Edit:false});
 }
 function mfD04ServiceEligible(app:any,entry:MfD04Entry,draft:MfD04Draft,exclusions:string[]):boolean{
- if(!app.state.categoryReviewGrant?.token||!app.state.categoryReviewAvailable||
-    !mfD04Impact(entry,draft,exclusions).eligible||exclusions.length)return false;
+ if(!app.state.categoryReviewGrant?.token||
+    !(Number.isFinite(app.state.categoryReviewGrant.expiresAt)&&app.state.categoryReviewGrant.expiresAt>Date.now())||
+    !app.state.categoryReviewAvailable||!mfD04Impact(entry,draft,exclusions).eligible||
+    exclusions.length||draft.color!==MF_D04_PALETTE[0])return false;
  if(entry.kind==='category_rule'){
   return !draft.past&&draft.future&&draft.name===entry.title&&
     draft.terms===String(entry.original.pattern||entry.title)&&
