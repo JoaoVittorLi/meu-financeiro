@@ -7,7 +7,7 @@ Data: 2026-11-13 · Índice: #55 · Coordenação: #49 · Baseline PR #54 / 55de
 | D02 | Chat Principal / Expandido | **DESIGN HANDOFF V3 CONSOLIDADO** (implementação pendente) | #58 | Biblioteca de 26 famílias especificada por herança; 3 aprovadas individualmente, VR-10 V2 referência; sem mais microscreens |
 | D03 | Inteligência Hoje | **IMPLEMENTATION_READY** (DESIGN_APPROVED) | #61 | **V2 FINAL** · cartões premium uniformes + prioridades dinâmicas · HTML/spec/QA/handoff publicados; Electron pendente |
 | D04 | Central de Revisão | **IMPLEMENTATION_READY** (DESIGN_APPROVED) | #67 | **V1.1 FINAL** · fila premium, edição persistente, escopos separados, reconfirmação; Executor #69, QA Electron pendente |
-| D05 | Movimentações | **SUBCAT DESIGN_APPROVED** · tela macro em revisão · engenharia #74 bloqueante | #70 | **14 categorias / 61 subcategorias / 67 SVGs 100% APROVADOS**; implementar SQLite/IPC/IA E1–E3, sem EXE ainda |
+| D05 | Movimentações | **SUBCAT DESIGN_APPROVED; LIST UX V1.3 IN_REVIEW**; #74 engenharia bloqueante | #70 | 14 pais / 61 filhos / ícones aprovados; seleção premium, clique direto no ícone e status discreto V1.3 aguardam feedback |
 | D06 | Visão Geral | NOT_STARTED | — | — |
 | D07 | Orçamentos | NOT_STARTED | — | — |
 | D08 | Planejamento | NOT_STARTED | — | — |
@@ -105,3 +105,11 @@ Critérios para DESIGN_APPROVED: aprovação explícita do proprietário sobre v
 **Erros e lacunas detectados:** [Relatório completo por evidência](screens/d05-movimentacoes/BUG_REPORT_AND_IMPLEMENTATION_GATES.md) (C01–C06 no código baseline PR#54; V01–V03 na captura do protótipo). Problemas observados: despesas invisíveis no dark, títulos sem contraste, emojis Unicode irregulares; falta modelo de subcategoria, vínculo por ID e IPC de filhos na branch auditada.
 
 **Obrigação de release:** [Executor #74](https://github.com/JoaoVittorLi/meu-financeiro/issues/74) deve implementar **E1 migrations SQLite, E2 serviços/regras/IA, E3 UI e QA Electron**, incluindo migrar sem perdas com subcategoria null em registros antigos, não classificar histórico automaticamente e preservar regras/overrides/splits/orçamentos. Só encerrar depois de código, tests, SHA/PR e evidências. Coordenação via #49; design issue #70 permanece aberta para quaisquer ajustes restantes da tela macro.
+
+### D05 — Interações V1.3 (14/11/2026, em revisão)
+
+**Feedback explícito do proprietário, com capturas de tela:** checkbox nativo Windows reprovado, botão separado de categoria com seta reprovado, desejo de classificação clicando **diretamente no ícone da categoria**, picker rápido pai→filho opcional, e linha com dupla etiqueta `Confirmada` + `A conferir` visualmente inadequada.
+
+**Nova direção provisória:** botão de seleção customizado acessível; ícone tonal funciona como único gatilho; popover ancorado mostra catálogo aprovado de 14 categorias e 61 filhos, opção sem filho; status POSTED+revisado fica omitido, POSTED não revisado mostra apenas `A revisar`, PENDING mostra apenas `Em processamento`; detalhes abrem os dois eixos separados. [Spec V1.3](screens/d05-movimentacoes/D05_V1_3_INTERACTION_SPEC.md).
+
+**Estado preciso:** taxonomia e ícones V1.2 continuam `DESIGN_APPROVED`. **Interações V1.3 e tela global NÃO aprovadas**, sem QA Electron/SQLite. Engenharia de subcategorias #74 continua aberta e vinculada, com QA e implementação reais obrigatórios.
