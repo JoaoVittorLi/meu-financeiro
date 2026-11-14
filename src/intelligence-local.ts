@@ -131,7 +131,7 @@ async function localFinancialSubmit(app:any,question:string){
  const visualKind=!v3Kind&&factsValid?mfVisualRequested(q):null;
  const visual=visualKind?mfVisualFromOperational(operational,visualKind):null;
  const answer:IntelligenceChatMessage={
-  id:'local-a-'+Date.now(),role:'assistant',text:answerText,status:finalStatus,
+  id:(ic2?'ic2-a-':'local-a-')+Date.now(),role:'assistant',text:answerText,status:finalStatus,
   createdAt:intelligenceNowTime(),scopeLabel:scope.label,periodLabel:month,
   structuredCard:ic2?mfIC2Card(ic2):factsValid&&operational.card?operational.card:reply?.card||null,
   visual,visualV3,
@@ -143,6 +143,7 @@ async function localFinancialSubmit(app:any,question:string){
     factsValid?'Consulta local determinística, sem IA externa. Não foi executada qualquer alteração.':
     reply?JSON.stringify(reply.references):'Nenhuma alteração financeira nem envio externo.'
  };
+ if(ic2)mfIC2BindMessage(answer,access,signature,month);
  intelligenceSyncThreadMessages(app,[...messages,user,answer],scope);
  app.setState({localFinancialBusy:false});
 }
