@@ -1,6 +1,8 @@
+> **Aprovação do proprietário (13/11/2026):** “Muito bem! [...] categorias e subcategorias [...] 100% aprovadas.” Congeladas as **14 categorias-pai, 61 subcategorias, pictogramas SVG e cores**. **Isso NÃO significa código funcional implementado**. Executor deve concluir issue #74 com SQLite/IPC/IA, migração e QA. [Relatório dos problemas identificados](BUG_REPORT_AND_IMPLEMENTATION_GATES.md).
+
 # D05-SUBCAT — Contrato de implementação REAL · Hierarquia categoria → subcategoria
 
-> **Situação:** `DESIGN_PROPOSAL / ENGINEERING_REQUIRED`. Este documento é uma **especificação executável para o Executor**, não alegação de alteração do produto. O protótipo visual e a taxonomia NÃO implementam persistência por si só. Issue bloqueante de engenharia: [#74](https://github.com/JoaoVittorLi/meu-financeiro/issues/74); design ainda em revisão: [#70](https://github.com/JoaoVittorLi/meu-financeiro/issues/70).
+> **Situação:** `DESIGN_APPROVED / ENGINEERING_REQUIRED`. Este documento é uma **especificação executável para o Executor**, não alegação de alteração do produto. O protótipo visual e a taxonomia NÃO implementam persistência por si só. Issue bloqueante de engenharia: [#74](https://github.com/JoaoVittorLi/meu-financeiro/issues/74); design com taxonomia e ícones aprovados; tela completa continua em revisão: [#70](https://github.com/JoaoVittorLi/meu-financeiro/issues/70).
 
 ## 0. Requisito inegociável do proprietário
 
