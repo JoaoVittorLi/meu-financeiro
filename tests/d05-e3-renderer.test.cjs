@@ -129,15 +129,21 @@ test('D05 E3 — bridge preload somente APIs allowlisted, sem IPC genérico ou a
  const {CHANNELS}=require('../electron/d05-ipc-adapter.cjs');
  const calls=[];
  const bridge=createD05PreloadBridge({invoke:(channel,input)=>{
-  calls.push({channel,input});return Promise.resolve({channel,input});
+  calls.push({channel,input});
+  return Promise.resolve(channel==='d05:session-authorize'?
+   {token:'fake-e3-grant',profile:'real',expiresAt:Date.now()+60000}:{channel,input});
  }});
  assert(Object.isFrozen(bridge));
  assert.equal('invoke' in bridge,false);
  assert.equal('ipcRenderer' in bridge,false);
+ await assert.rejects(bridge.d05Catalog(),/autorize sessão/i);
+ await bridge.d05SessionAuthorize({profile:'real'});
  await bridge.d05Catalog();
  await bridge.d05BankBatchPreview({items:[{accountId:'synthetic',externalId:'1'}]});
  await bridge.d05AssignBank({accountId:'synthetic',externalId:'1',
   target:{categoryId:'cat:alimentacao',subcategoryId:null}});
- assert.deepEqual(calls.map(x=>x.channel),[CHANNELS.catalog,CHANNELS.batchPreview,CHANNELS.assignBank]);
+ assert.deepEqual(calls.map(x=>x.channel),[
+  'd05:session-authorize',CHANNELS.catalog,CHANNELS.batchPreview,CHANNELS.assignBank]);
+ assert.equal(calls[1].input.sessionToken,'fake-e3-grant');
  assert.throws(()=>createD05PreloadBridge({}),/IPC do Electron obrigatório/);
 });
