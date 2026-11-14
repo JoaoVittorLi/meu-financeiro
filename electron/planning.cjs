@@ -103,7 +103,11 @@ class PlanningStore {
   const validated=this.validateInput({...row,title:input.title??row.title,kind:input.kind??row.kind,amount:input.amount??row.amount_cents,dueDate:input.dueDate??row.due_date,category:input.category??row.category,notes:input.notes??row.notes,certainty:input.certainty??row.certainty,accountId:input.accountId===undefined?row.account_id:input.accountId});
   if(row.status!=='planned' && (validated.amount!==row.amount_cents||validated.kind!==row.kind))throw new Error('Desfaça a quitação antes de alterar valor ou tipo.');
   const linked=this.linkedTotal(row.id);if(linked>validated.amount)throw new Error('Valor menor que os pagamentos já vinculados.');
-  this.db.prepare(`UPDATE planned_items SET title=?,kind=?,amount_cents=?,due_date=?,category=?,account_id=?,notes=?,certainty=?,updated_at=? WHERE id=?`).run(validated.title,validated.kind,validated.amount,validated.dueDate,validated.category,validated.accountId,validated.notes,validated.certainty,new Date().toISOString(),row.id);
+  this.db.prepare(`UPDATE planned_items SET title=?,kind=?,amount_cents=?,due_date=?,category=?,
+    category_id=CASE WHEN category=? THEN category_id ELSE NULL END,
+    subcategory_id=CASE WHEN category=? THEN subcategory_id ELSE NULL END,
+    account_id=?,notes=?,certainty=?,updated_at=? WHERE id=?`)
+    .run(validated.title,validated.kind,validated.amount,validated.dueDate,validated.category,validated.category,validated.category,validated.accountId,validated.notes,validated.certainty,new Date().toISOString(),row.id);
   this.log(row.id,'edited',`Vencimento ${row.due_date} → ${validated.dueDate}; valor ${row.amount_cents} → ${validated.amount}`);return {ok:true};
  }
  setStatus(id,status){const item=this.item(id);if(!['planned','cancelled','settled_manual'].includes(status))throw new Error('Situação inválida.');
