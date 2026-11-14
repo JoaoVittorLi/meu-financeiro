@@ -1,11 +1,11 @@
 {
   "schema": "mf2.design.taxonomy.v1",
-  "status": "DESIGN_PROPOSAL_NOT_IMPLEMENTED",
+  "status": "DESIGN_APPROVED_IMPLEMENTATION_PENDING",
   "hierarchyLevels": 2,
   "builtInCategoryCount": 14,
   "builtInSubcategoryCount": 61,
   "personalDataMigrationPolicy": "null-subcategory-for-existing-records; no inferred backfill",
-  "note": "Illustrative taxonomy. User custom categories and subcategories extend catalog. Monetary semantics derive from transaction kind/status, not icon hue. 'Sem subcategoria' is virtual null state; not a persisted child.",
+  "note": "Illustrative taxonomy. User custom categories and subcategories extend catalog. Monetary semantics derive from transaction kind/status, not icon hue. 'Sem subcategoria' is virtual null state; not a persisted child. Owner-approved category/subcategory taxonomy and icons; actual code migration pending issue #74.",
   "parents": [
     {
       "id": "cat:moradia",
@@ -621,5 +621,12 @@
         }
       ]
     }
-  ]
+  ],
+  "approval": {
+    "date": "2026-11-13",
+    "scope": "All 14 parent categories, 61 child subcategories, visual iconography and colors",
+    "ownerFeedback": "100% aprovadas",
+    "codeStatus": "NOT_IMPLEMENTED",
+    "electronQA": "NOT_RUN"
+  }
 }
