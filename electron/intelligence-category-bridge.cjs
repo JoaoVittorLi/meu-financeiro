@@ -82,6 +82,9 @@ class IntelligenceCategoryBridge{
       conversationId:request.conversationId,actions:request.actions,
       selectedIds:request.selectedIds,ruleId:request.ruleId,
       proposalId:request.proposalId},owner);
+     if(this.syntheticExecutor&&host?.environment==='synthetic')
+      for(const p of result.proposals||[])if(p.proposalId&&p.status==='ready')
+       this.syntheticExecutor.armProposal(p.proposalId,scope,owner);
      break;
     case 'list':
     case 'analyze':
@@ -99,11 +102,17 @@ class IntelligenceCategoryBridge{
          p.items?.some?.(i=>i.accountId!==host.activeAccountId))
        return {...base,status:'denied',reason:'Seleção pertence a outra conta.'};
      }
-     result=this.proposals.preview(request.action,request.params,scope,owner);break;
+     result=this.syntheticExecutor&&host?.environment==='synthetic'?
+      this.syntheticExecutor.prepare(request.action,request.params,scope,owner):
+      this.proposals.preview(request.action,request.params,scope,owner);break;
     case 'edit':
-     result=this.proposals.revise(request.proposalId,request.patch,scope,owner);break;
+     result=this.proposals.revise(request.proposalId,request.patch,scope,owner);
+     if(this.syntheticExecutor&&host?.environment==='synthetic'&&result.status==='ready')
+      this.syntheticExecutor.armProposal(result.proposalId,scope,owner);
+     break;
     case 'reject':
-     result=this.proposals.discard(request.proposalId,scope,owner);break;
+     result=this.proposals.discard(request.proposalId,scope,owner);
+     this.syntheticExecutor?.armed?.delete(request.proposalId);break;
     case 'inspectRule':
      result=this.proposals.inspectRule(scope,owner,
       {proposalId:request.proposalId,ruleId:request.ruleId});break;
