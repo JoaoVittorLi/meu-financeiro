@@ -212,3 +212,66 @@ test('C2 — renewal must reset cached queue, preview, receipt, confirmation and
  assert.match(legacy,/categoryReviewConfirmed:false,categoryReviewReceipt:null,categoryReviewSelected:\[\]/);
  assert.match(legacy,/mfD04Drafts:\{\},mfD04Excluded:\{\},mfD04Selected:null/);
 });
+
+test('C2 — real disable clears former grant drafts, confirmation, receipt and queued requests',async()=>{
+ const js=ts.transpileModule(legacy,{compilerOptions:{target:ts.ScriptTarget.ES2019,module:ts.ModuleKind.None}}).outputText;
+ const revoked=[];
+ const fn=new Function('desktop',js+';return {categoryReviewDisable,categoryReviewConfirm};')({
+  categoryReviewRevoke:async v=>{revoked.push(v.token);return {revoked:true};},
+  categoryReviewConfirm:async()=>{throw Error('Expired approval must not reach service.');}
+ });
+ const a=reviewApp();
+ Object.assign(a.state,{categoryReviewPreview:{id:'old-preview'},categoryReviewConfirmed:true,
+  categoryReviewReceipt:{id:'old-receipt'},categoryReviewDetail:{id:'old-detail'},
+  categoryReviewFilters:{accountId:'old'},categoryReviewFilterRevision:3,
+  categoryReviewSelected:['old'],mfD04Drafts:{old:{category:'old'}},
+  mfD04Excluded:{old:['tx-1']},mfD04Selected:'old',
+  mfD04Error:'old',mfD04Stage:'history',mfD04Search:'old'});
+ a.categoryReviewRequest=8;
+ fn.categoryReviewDisable(a);
+ assert.equal(a.state.categoryReviewGrant,null);
+ for(const key of ['categoryReviewReport','categoryReviewQueue','categoryReviewPreview',
+  'categoryReviewDetail','categoryReviewReceipt','mfD04Selected'])assert.equal(a.state[key],null);
+ assert.equal(a.state.categoryReviewConfirmed,false);
+ assert.deepEqual(a.state.mfD04Drafts,{});
+ assert.deepEqual(a.state.mfD04Excluded,{});
+ assert.deepEqual(a.state.categoryReviewFilters,{});
+ assert.deepEqual(a.state.categoryReviewSelected,[]);
+ assert.equal(a.state.categoryReviewFilterRevision,4);
+ assert.equal(a.categoryReviewRequest,9);
+ assert.equal(a.state.mfD04Stage,'pending');
+ assert.equal(a.state.mfD04Search,'');
+ await Promise.resolve();
+ assert.deepEqual(revoked,['review-synthetic']);
+ const expired=reviewApp();
+ expired.state.categoryReviewPreview={id:'old',digest:'old'};
+ expired.state.categoryReviewConfirmed=true;
+ expired.state.categoryReviewGrant.expiresAt=Date.now()-1000;
+ await fn.categoryReviewConfirm(expired);
+});
+test('C2 — real reauthorization replaces session state before fetching new queue',async()=>{
+ const js=ts.transpileModule(legacy,{compilerOptions:{target:ts.ScriptTarget.ES2019,module:ts.ModuleKind.None}}).outputText;
+ const calls=[];
+ const fn=new Function('desktop',js+';return {categoryReviewEnable};')({
+  categoryReviewAuthorize:async()=>({token:'review-fresh',expiresAt:Date.now()+600000}),
+  categoryReviewList:async({token})=>{calls.push('list:'+token);return {suggestions:[],audit:[]};},
+  categoryReviewQueue:async({token})=>{calls.push('queue:'+token);return {rows:[],nextCursor:null};}
+ });
+ const a=reviewApp();
+ Object.assign(a.state,{categoryReviewReceipt:{id:'old'},categoryReviewPreview:{id:'old'},
+  categoryReviewConfirmed:true,categoryReviewDetail:{id:'old'},categoryReviewFilters:{accountId:'old'},
+  mfD04Drafts:{old:{category:'old'}},mfD04Excluded:{old:['old']},mfD04Selected:'old',
+  mfD04Stage:'history',mfD04Search:'old'});
+ await fn.categoryReviewEnable(a);
+ assert.equal(a.state.categoryReviewGrant.token,'review-fresh');
+ assert.equal(a.state.categoryReviewReceipt,null);
+ assert.equal(a.state.categoryReviewDetail,null);
+ assert.equal(a.state.categoryReviewPreview,null);
+ assert.equal(a.state.categoryReviewConfirmed,false);
+ assert.deepEqual(a.state.mfD04Drafts,{});
+ assert.deepEqual(a.state.mfD04Excluded,{});
+ assert.equal(a.state.mfD04Selected,null);
+ assert.deepEqual(a.state.categoryReviewFilters,{});
+ assert.equal(a.state.mfD04Stage,'pending');
+ assert.deepEqual(calls,['list:review-fresh','queue:review-fresh']);
+});
