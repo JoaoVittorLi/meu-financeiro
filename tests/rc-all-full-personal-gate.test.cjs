@@ -7,7 +7,7 @@ const {D05PersonalWriteGateway}=require('../electron/d05-personal-gate.cjs');
 const target={categoryId:'cat:alimentacao',subcategoryId:'sub:alimentacao/delivery'};
 const event={sender:{id:18,isDestroyed:()=>false}};
 const SETTINGS={opening:0,income:0,fixed:0,existing:0,reserve:0};
-function fixture({accept=true,synthetic=true}={}){
+function fixture({accept=true,synthetic=true,faults={}}={}){
  const vault=createSyntheticFinanceVault();
  assertSyntheticVault(vault,vault.db);
  vault.db.save('demo',{version:5,settings:SETTINGS,budgets:{},
@@ -19,7 +19,7 @@ function fixture({accept=true,synthetic=true}={}){
  const gateway=new D05PersonalWriteGateway({finance:()=>vault.db,
   readSession:(event,input)=>read.require(event,input),
   confirm:async()=>accept,backupDirectory:()=>folder,
-  approvedForPersonal:()=>false,syntheticVault:synthetic?vault:null});
+  approvedForPersonal:()=>false,syntheticVault:synthetic?vault:null,faults});
  return {vault,folder,read,gateway,close(){
   gateway.stopAll();read.stopAll();vault.destroy();
   fs.rmSync(folder,{recursive:true,force:true});
@@ -93,5 +93,38 @@ test('PersonalGate — production real and demo writes remain disabled without v
   assert.equal(result.status,'denied');
   assert.equal(result.personalWriteAuthorized,false);
   assert.equal(f.vault.db.load('demo').transactions[0].subcategoryId??null,null);
+ }finally{f.close();}
+});
+
+test('PersonalGate — rollback after mutation prevents both row and receipt',async()=>{
+ const f=fixture({faults:{after_apply:true}});try{
+  const s=await f.read.authorize(event,{profile:'demo'});
+  const p=await f.gateway.prepare(event,{sessionToken:s.token,
+   action:'manual.categorize',profile:'demo',id:'test-1',target});
+  const status=await f.gateway.confirmPreview(event,{sessionToken:s.token,
+   proposalId:p.proposalId,nonce:p.nonce});
+  assert.equal(status.status,'stale');assert.equal(status.changesApplied,false);
+  assert.equal(f.vault.db.load('demo').transactions[0].subcategoryId??null,null);
+  assert.equal(f.vault.db.db.prepare(
+   'SELECT COUNT(*) AS n FROM d05_personal_supervised_receipts').get().n,0);
+ }finally{f.close();}
+});
+test('PersonalGate — post-COMMIT interruption returns recovery_required; receipt proves idempotent commit',async()=>{
+ const f=fixture({faults:{after_commit:true}});try{
+  const s=await f.read.authorize(event,{profile:'demo'});
+  const p=await f.gateway.prepare(event,{sessionToken:s.token,
+   action:'manual.categorize',profile:'demo',id:'test-1',target});
+  const status=await f.gateway.confirmPreview(event,{sessionToken:s.token,
+   proposalId:p.proposalId,nonce:p.nonce});
+  assert.equal(status.status,'recovery_required');
+  assert.equal(status.changesApplied,null);
+  const receipt=f.gateway.receipt(event,{sessionToken:s.token,proposalId:p.proposalId});
+  assert.equal(receipt.status,'applied');
+  assert.equal(f.vault.db.load('demo').transactions[0].subcategoryId,target.subcategoryId);
+  const replay=await f.gateway.confirmPreview(event,{
+   sessionToken:s.token,proposalId:p.proposalId,nonce:p.nonce});
+  assert.equal(replay.status,'applied');assert.equal(replay.replayed,true);
+  assert.equal(f.vault.db.db.prepare(
+   'SELECT COUNT(*) AS n FROM d05_personal_supervised_receipts').get().n,1);
  }finally{f.close();}
 });
