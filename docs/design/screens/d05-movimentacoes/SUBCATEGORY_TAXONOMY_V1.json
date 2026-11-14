@@ -5,7 +5,7 @@
   "builtInCategoryCount": 14,
   "builtInSubcategoryCount": 61,
   "personalDataMigrationPolicy": "null-subcategory-for-existing-records; no inferred backfill",
-  "note": "Illustrative taxonomy. User custom categories and subcategories extend catalog. Monetary semantics derive from transaction kind/status, not icon hue.",
+  "note": "Illustrative taxonomy. User custom categories and subcategories extend catalog. Monetary semantics derive from transaction kind/status, not icon hue. 'Sem subcategoria' is virtual null state; not a persisted child.",
   "parents": [
     {
       "id": "cat:moradia",
@@ -424,10 +424,10 @@
       "kind": "both",
       "subcategories": [
         {
-          "id": "sub:outros/sem-subcategoria",
+          "id": "sub:outros/pequenas-despesas",
           "parentId": "cat:outros",
-          "name": "Sem subcategoria",
-          "iconKey": "circle-help",
+          "name": "Pequenas despesas",
+          "iconKey": "coins",
           "hue": 203,
           "default": false
         },
