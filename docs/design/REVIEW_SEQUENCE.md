@@ -7,7 +7,7 @@ Data: 2026-11-13 · Índice: #55 · Coordenação: #49 · Baseline PR #54 / 55de
 | D02 | Chat Principal / Expandido | **DESIGN HANDOFF V3 CONSOLIDADO** (implementação pendente) | #58 | Biblioteca de 26 famílias especificada por herança; 3 aprovadas individualmente, VR-10 V2 referência; sem mais microscreens |
 | D03 | Inteligência Hoje | **IMPLEMENTATION_READY** (DESIGN_APPROVED) | #61 | **V2 FINAL** · cartões premium uniformes + prioridades dinâmicas · HTML/spec/QA/handoff publicados; Electron pendente |
 | D04 | Central de Revisão | **IMPLEMENTATION_READY** (DESIGN_APPROVED) | #67 | **V1.1 FINAL** · fila premium, edição persistente, escopos separados, reconfirmação; Executor #69, QA Electron pendente |
-| D05 | Movimentações | **SUBCAT DESIGN_APPROVED; EXTRATO UX V1.6 IN_REVIEW** · engenharia #74 bloqueante | #70 | 14×61 e SVGs aprovados; revisão sem rótulo com indicador azul, switch agrupar e seleção circular propostos, ainda NÃO aprovados |
+| D05 | Movimentações | **DESIGN_APPROVED / IMPLEMENTATION_READY (V1.3 FINAL)** · #74 E1/E2/E3 bloqueante | #70 | Tela completa, ícones 14×61/67 SVGs e interações premium aprovados; app/SQLite/QA ainda pendentes |
 | D06 | Visão Geral | NOT_STARTED | — | — |
 | D07 | Orçamentos | NOT_STARTED | — | — |
 | D08 | Planejamento | NOT_STARTED | — | — |
@@ -78,7 +78,7 @@ Critérios para DESIGN_APPROVED: aprovação explícita do proprietário sobre v
 
 `DESIGN_APPROVED / IMPLEMENTATION_READY` não implica `IMPLEMENTED`, `VISUAL_QA` ou `HOMOLOGATED`.
 
-### D05 — V1 Movimentações Premium (em revisão)
+### D05 — V1 Movimentações Premium (histórico anterior à aprovação final)
 
 - [Issue #70](https://github.com/JoaoVittorLi/meu-financeiro/issues/70); auditoria da implementação existente em `src/app.ts` (`renderMovements`, `renderTransactions`), `app/movements-productivity.css` e `app/operations.css`, PR #54 HEAD `55de81c`.
 - Recursos a preservar: histórico/revisão/categorias, busca/filtros, agrupamento por data, origem banco/manual, detalhes, categoria rápida, lotes, nova categoria, importação CSV, status POSTED/PENDING e histórico parcial.
@@ -106,7 +106,7 @@ Critérios para DESIGN_APPROVED: aprovação explícita do proprietário sobre v
 
 **Obrigação de release:** [Executor #74](https://github.com/JoaoVittorLi/meu-financeiro/issues/74) deve implementar **E1 migrations SQLite, E2 serviços/regras/IA, E3 UI e QA Electron**, incluindo migrar sem perdas com subcategoria null em registros antigos, não classificar histórico automaticamente e preservar regras/overrides/splits/orçamentos. Só encerrar depois de código, tests, SHA/PR e evidências. Coordenação via #49; design issue #70 permanece aberta para quaisquer ajustes restantes da tela macro.
 
-### D05 — Interações V1.3 (14/11/2026, em revisão)
+### D05 — Interações V1.3 (histórico de rodadas rejeitadas, superado pelo aceite final)
 
 **Feedback explícito do proprietário, com capturas de tela:** checkbox nativo Windows reprovado, botão separado de categoria com seta reprovado, desejo de classificação clicando **diretamente no ícone da categoria**, picker rápido pai→filho opcional, e linha com dupla etiqueta `Confirmada` + `A conferir` visualmente inadequada.
 
@@ -114,8 +114,17 @@ Critérios para DESIGN_APPROVED: aprovação explícita do proprietário sobre v
 
 **Estado preciso:** taxonomia e ícones V1.2 continuam `DESIGN_APPROVED`. **Interações V1.3 e tela global NÃO aprovadas**, sem QA Electron/SQLite. Engenharia de subcategorias #74 continua aberta e vinculada, com QA e implementação reais obrigatórios.
 
-### D05 — Auditoria V1.6 da página inteira (13/11/2026)
+### D05 — Auditoria V1.6 da página inteira (histórico, refinamentos incorporados ao final)
 
 O proprietário enviou **dois prints** da D05 V1.5 e pediu corrigir `Revisar`, visual nativo do checkbox de `Agrupar por dia` e avaliar a página toda com pesquisa de apps premium. [Relatório com 12 itens, evidências e pesquisa](screens/d05-movimentacoes/D05_V1_6_FULL_PAGE_AUDIT_AND_REVIEW_DESIGN.md).
 
 Direção **proposta, não aprovada**: revisão via ponto azul no nome do comerciante, ação rápida, card `A conferir` como atalho; `Agrupar por dia` como switch premium sem checkbox; seleção múltipla circular; corrigir contraste do título `Movimentações recentes`. Fontes: Copilot, Monarch, YNAB, Rocket Money (links no relatório). Preservar categoria/subcategoria 14×61 aprovada e #74 de engenharia até SQLite/IPC/IA/QA reais. Sem regressão banco/PENDING/revisão.
+
+
+### D05 — V1.3 FINAL CONSOLIDADA — DESIGN_APPROVED / IMPLEMENTATION_READY (13/11/2026)
+
+**Aprovação explícita do proprietário da tela completa:** V1.3 final incorpora correções de V1.4–V1.6 (ponto azul e revisão contextual, círculos em seleção múltipla, switch agrupar, valor vermelho/verde isolado, title legível, datas sem contagem, popover premium no ícone), sem redesenhar catálogo 14 pais / 61 filhos / 67 SVGs. Todos os comentários anteriores de “D05 tela em revisão” são registros históricos **substituídos por este aceite**, não pendências atuais de design.
+
+**Pacote final publicado no PR Draft #57:** [Índice canônico](screens/d05-movimentacoes/D05_FINAL_DELIVERY_INDEX.md) · [Protótipo final](screens/d05-movimentacoes/prototype.html) · [Spec aprovada](screens/d05-movimentacoes/DESIGN_SPEC_APPROVED.md) · [Comportamento](screens/d05-movimentacoes/BEHAVIOR_SPEC.md) · [Handoff](screens/d05-movimentacoes/HANDOFF.md) · [QA/aceite](screens/d05-movimentacoes/ACCEPTANCE.md).
+
+**Primeiro EXE obrigatório:** novo Executor D05 implementa E1 SQLite/migração/backup, E2 IPC/regras/IA/autorização, E3 renderer+QA na RC #76 coordenada por #49. A issue **#74 segue aberta e bloqueante**. Não afirmar código implementado, QA Electron PASS, release/exe concluído ou executar CI/build pago sem autorização do proprietário.
