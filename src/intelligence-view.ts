@@ -185,6 +185,10 @@ function renderIntelligenceActionProposalCard(app:any,proposal:IntelligenceActio
     proposal.resultMessage?h('p',{className:'mf-ai-proposal-result',role:'status'},proposal.resultMessage):null);
 }
 function renderIntelligenceMessageItem(app:any,msg:IntelligenceChatMessage){
+  // All IC2 facts are session-owned and vanish after grant/period changes.
+  if(msg.id.startsWith('ic2-a-')&&!mfIC2MessageLive(app,msg))
+    return h('article',{className:'mf-ai-msg is-assistant is-unavailable'},
+      h('p',{role:'status'},'Consulta anterior bloqueada: a autorização mudou ou expirou. Autorize e consulte novamente.'));
   const isUser=msg.role==='user';
   const badge=msg.status==='unavailable'?h('span',{className:'mf-ai-msg-badge is-warn'},'Consulta não autorizada'):
     msg.status==='unsupported'?h('span',{className:'mf-ai-msg-badge is-info'},'Consulta não reconhecida'):
