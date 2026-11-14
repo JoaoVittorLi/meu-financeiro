@@ -2,7 +2,7 @@
 
 # D05-SUBCAT — Contrato de implementação REAL · Hierarquia categoria → subcategoria
 
-> **Situação:** `DESIGN_APPROVED / ENGINEERING_REQUIRED`. Este documento é uma **especificação executável para o Executor**, não alegação de alteração do produto. O protótipo visual e a taxonomia NÃO implementam persistência por si só. Issue bloqueante de engenharia: [#74](https://github.com/JoaoVittorLi/meu-financeiro/issues/74); design com taxonomia e ícones aprovados; tela completa continua em revisão: [#70](https://github.com/JoaoVittorLi/meu-financeiro/issues/70).
+> **Situação:** `DESIGN_APPROVED / ENGINEERING_REQUIRED`. Este documento é uma **especificação executável para o Executor**, não alegação de alteração do produto. O protótipo visual e a taxonomia NÃO implementam persistência por si só. Issue bloqueante de engenharia: [#74](https://github.com/JoaoVittorLi/meu-financeiro/issues/74); design com taxonomia e ícones aprovados; tela inteira V1.3 está DESIGN_APPROVED / IMPLEMENTATION_READY (13/11/2026): [#70](https://github.com/JoaoVittorLi/meu-financeiro/issues/70).
 
 ## 0. Requisito inegociável do proprietário
 
@@ -28,9 +28,9 @@
 
 **Limite factual:** a auditoria foi da branch/PR #54 de referência. Pull requests paralelos podem mudar os HEADs; Executor deve verificar HEADs atuais antes de criar migration e inspecionar PRs posteriores relevantes.
 
-## 2. Taxonomia aprovada apenas como proposta visual
+## 2. Taxonomia aprovada e congelada — ainda requer implementação real
 
-[SUBCATEGORY_TAXONOMY_V1.json](SUBCATEGORY_TAXONOMY_V1.json) tem **14 categorias-pai e 61 subcategorias sugeridas**, com `id`, `parentId`, `name`, `iconKey` e `hue`. As 14 categorias refletem a família padrão do código (`Moradia`, `Alimentação`, `Transporte`, `Saúde`, `Lazer`, `Educação`, `Assinaturas`, `Compras`, `Contas`, `Outros`, `Salário`, `Transferências`, `Rendimentos`, `Reembolsos`). **Nomes/filhos propostos precisam de aceite visual/produto; nenhum registro real deve ser reclassificado automaticamente.**
+[SUBCATEGORY_TAXONOMY_V1.json](SUBCATEGORY_TAXONOMY_V1.json) tem **14 categorias-pai e 61 subcategorias aprovadas**, com `id`, `parentId`, `name`, `iconKey` e `hue`. As 14 categorias refletem a família padrão do código (`Moradia`, `Alimentação`, `Transporte`, `Saúde`, `Lazer`, `Educação`, `Assinaturas`, `Compras`, `Contas`, `Outros`, `Salário`, `Transferências`, `Rendimentos`, `Reembolsos`). **Nomes, filhos, SVGs e cores já receberam aceite visual integral, incluindo a D05 V1.3 final aprovada. Nenhum registro real deve ser reclassificado automaticamente.**
 
 Níveis: `Categoria → Subcategoria → Movimentação` (2 níveis taxonômicos, sem netos); pai é obrigatório, subcategoria é **opcional** nos registros. “Sem subcategoria” é o valor **null** ou um agrupamento de UI, e **não** um filho com ID artificial. Na categoria Outros, **Pequenas despesas** é uma subcategoria real. **Sem subcategoria** é um estado virtual de agrupamento para `subcategory_id IS NULL` — nunca criar ID de filho fictício.
 
@@ -117,3 +117,8 @@ Novos métodos **propostos** (nomes a harmonizar com código real): `subcategori
 `IC-READ` é leitura limitada; `IC-REVIEW` segue isolado/sintético; `IC-CATS`, `IC-RULES`, `IC-MOVE` continuam governando alterações manuais/supervisionadas. A nova taxonomia não autoriza IA a gravar categorias ou subcategorias na conta real sem contrato de apply verificado.
 
 **Critério de fechamento da issue [#74](https://github.com/JoaoVittorLi/meu-financeiro/issues/74):** PR de **código funcional com migração + IPC + leitura/escrita permitidas + UI integrada + testes reais e evidência Electron**, não apenas artefato de design. Owner executa CircleCI quando Integrador fornecer branch, SHA, flags e resultados esperados; não lançar preflight pago por conta própria. Não integrar main nem gerar EXE sem autorização de release.
+
+
+### Atualização de governança final — 13/11/2026
+
+A D05 inteira V1.3, com refinamentos V1.4–V1.6 absorvidos, recebeu aprovação explícita de design. A implementação E1/E2/E3 continua obrigatória para o **primeiro EXE** e a issue #74 permanece **ABERTA** até backend, interface e QA reais. Consulte [HANDOFF.md](HANDOFF.md), [DESIGN_SPEC_APPROVED.md](DESIGN_SPEC_APPROVED.md) e [prototype.html](prototype.html). Qualquer linguagem histórica de “proposta não aprovada” neste arquivo é substituída por esta decisão; a proibição de reclassificar registros reais sem consentimento continua válida.
