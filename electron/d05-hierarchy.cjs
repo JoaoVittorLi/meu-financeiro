@@ -51,6 +51,18 @@ function migrateHierarchy(db) {
   if (!db.prepare('PRAGMA foreign_keys').get().foreign_keys) throw new Error('D05: foreign_keys desabilitadas');
   db.exec('BEGIN IMMEDIATE');
   try {
+    // Refuse ghost foreign keys left by legacy table-renaming migrations:
+    // fabricating categories_old would mask a broken reference chain.
+    for (const table of ['category_rules','bank_category_overrides','bank_transaction_splits',
+      'transactions','budgets','planned_items']) {
+      if (!tableExists(db,table)) continue;
+      const links=db.prepare('PRAGMA foreign_key_list('+table+')').all();
+      if (links.some(link=>link.table==='categories_old'))
+        throw new Error('D05: FK legada para categories_old em '+table+'; reparação dirigida obrigatória');
+    }
+    addColumn(db, 'categories', 'emoji', "TEXT NOT NULL DEFAULT '✨'");
+    addColumn(db, 'categories', 'kind',
+      "TEXT NOT NULL DEFAULT 'expense' CHECK(kind IN ('expense','income','both'))");
     addColumn(db, 'categories', 'id', 'TEXT');
     addColumn(db, 'categories', 'icon_key', 'TEXT');
     addColumn(db, 'categories', 'hue', 'INTEGER');
