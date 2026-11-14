@@ -100,9 +100,10 @@ function migrateHierarchy(db) {
   // SQLite cannot change a foreign-key parent in place. Temporarily suspend
   // enforcement ONLY for the transactional table rebuild; PRAGMA
   // foreign_key_check validates every row before COMMIT, then restore ON.
+  let inTransaction=false;
   if(repairing)db.exec('PRAGMA foreign_keys=OFF');
-  db.exec('BEGIN IMMEDIATE');
   try {
+    db.exec('BEGIN IMMEDIATE');inTransaction=true;
     for(const table of orphaned)repairLegacyFKTable(db,table);
     addColumn(db, 'categories', 'emoji', "TEXT NOT NULL DEFAULT '✨'");
     addColumn(db, 'categories', 'kind',
@@ -173,12 +174,12 @@ function migrateHierarchy(db) {
     db.prepare("UPDATE app_meta SET value='7' WHERE key='schema_version'").run();
     const violations = db.prepare('PRAGMA foreign_key_check').all();
     if (violations.length) throw new Error('D05: foreign_key_check falhou (' + violations.length + ')');
-    db.exec('COMMIT');
+    db.exec('COMMIT');inTransaction=false;
     if(repairing)db.exec('PRAGMA foreign_keys=ON');
     return {parents:14,subcategories:61,version:7};
   } catch (error) {
-    db.exec('ROLLBACK');
-    if(repairing)db.exec('PRAGMA foreign_keys=ON');
+    try{if(inTransaction)db.exec('ROLLBACK');}
+    finally{if(repairing)db.exec('PRAGMA foreign_keys=ON');}
     throw error;
   }
 }
