@@ -193,7 +193,9 @@ class D05PersonalWriteGateway{
    return {status:'denied',changesApplied:false,personalWriteAuthorized:false,
     reason:'Escrita pessoal ainda não homologada/aprovada pelo proprietário.'};
   const db=this.finance();
-  if(p.db!==db||db.filename===':memory:'||!path.isAbsolute(db.filename))
+  // I2-C's factory-signed synthetic vault deliberately uses :memory:.
+  // It is the only exception to the on-disk, isolated personal DB rule.
+  if(p.db!==db||(!synthetic&&(db.filename===':memory:'||!path.isAbsolute(db.filename))))
    return {status:'denied',changesApplied:false,reason:'SQLite sem isolamento comprovado'};
   const sql=db.db,scopeHash=hash([s.owner,s.token,s.profile,s.activeAccountId||null]);
   this.busy=true;let begun=false,committed=false,backup=null;
@@ -211,7 +213,7 @@ class D05PersonalWriteGateway{
     accountId:s.activeAccountId||null,proposalId:id,amountCents:
     this.capture(p.action,p.request,s).amountCents,syntheticOnly:synthetic});
    if(accepted!==true)return {status:'denied',changesApplied:false,reason:'Usuário cancelou'};
-   if(this.verify(event,input).s!==s||this.finance()!==db||
+   if(p.expiresAt<=this.clock()||this.verify(event,input).s!==s||this.finance()!==db||
       hash([this.capture(p.action,p.request,s),this.catalogRevision(db)])!==p.digest)
     return {status:'stale',changesApplied:false,reason:'Alteração durante o consentimento'};
    const folder=this.backupDirectory();fs.mkdirSync(folder,{recursive:true,mode:0o700});
