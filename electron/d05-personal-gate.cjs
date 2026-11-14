@@ -17,7 +17,7 @@ function denyReserved(input){
 }
 class D05PersonalWriteGateway{
  constructor({finance,readSession,confirm,backupDirectory,approvedForPersonal,
-  syntheticVault=null,clock=()=>Date.now(),ttlMs=5*60*1000}={}){
+  syntheticVault=null,clock=()=>Date.now(),ttlMs=5*60*1000,faults={}}={}){
   if(typeof finance!=='function'||typeof readSession!=='function'||
    typeof confirm!=='function'||typeof backupDirectory!=='function'||
    typeof approvedForPersonal!=='function')
@@ -25,9 +25,10 @@ class D05PersonalWriteGateway{
   this.finance=finance;this.readSession=readSession;this.confirm=confirm;
   this.backupDirectory=backupDirectory;this.approvedForPersonal=approvedForPersonal;
   this.syntheticVault=syntheticVault;this.clock=clock;this.ttlMs=ttlMs;
-  this.previews=new Map();this.busy=false;
+  this.previews=new Map();this.busy=false;this.faults=faults;
  }
  stopAll(){this.previews.clear();}
+ fault(stage){const x=this.faults[stage];if(x===true)throw Error('SYNTHETIC_FAULT_'+stage);if(typeof x==='function')x();}
  verify(event,input,action){
   denyReserved(input);
   const s=this.readSession(event,input),owner=event?.sender?.id;
@@ -224,6 +225,7 @@ class D05PersonalWriteGateway{
    if(hash([this.capture(p.action,p.request,s),this.catalogRevision(db)])!==p.digest)
     throw Error('PersonalWrite: prévia stale dentro da transação');
    const result=this.execute(new D05CategoryService(db),p.action,p.request);
+   this.fault('after_apply');
    if(!result||typeof result!=='object'||result instanceof Promise)
     throw Error('PersonalWrite: resultado inválido');
    const receipt={proposalId:id,action:p.action,profile:s.profile,
@@ -232,7 +234,9 @@ class D05PersonalWriteGateway{
    sql.prepare('INSERT INTO d05_personal_supervised_receipts ('+
     'proposal_id,owner,nonce_hash,scope_hash,action,committed_at,result_json,backup_path) VALUES(?,?,?,?,?,?,?,?)')
     .run(id,owner,hash(input.nonce),scopeHash,p.action,receipt.committedAt,JSON.stringify(receipt),backup);
+   this.fault('after_receipt');
    sql.exec('COMMIT');begun=false;committed=true;
+   this.fault('after_commit');
    this.previews.delete(id);
    return {status:'applied',changesApplied:true,syntheticOnly:synthetic,receipt};
   }catch(err){
