@@ -129,7 +129,7 @@ class ProactiveCategoryAdvisor{
    if(!group){group={accountId:r.accountId,nature,pattern:fold(r.description),
     rows:[],votes:new Map(),manuallyCorrected:[]};groups.set(key,group);}
    group.rows.push(r);
-   if(r.categorySource==='manual'){
+   if(r.categorySource==='manual'&&fold(r.category)!=='OUTROS'){
     const count=group.votes.get(r.category)||0;
     group.votes.set(r.category,count+1);group.manuallyCorrected.push(r);
    }
