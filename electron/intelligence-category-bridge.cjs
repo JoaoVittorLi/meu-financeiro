@@ -44,6 +44,8 @@ function taxonomyGate(target){
 class IntelligenceCategoryBridge{
  constructor({proposals,conversation,syntheticExecutor=null}={}){
   if(!proposals)throw Error('Serviço de propostas obrigatório.');
+  if(syntheticExecutor&&syntheticExecutor.proposals!==proposals)
+   throw Error('Executor sintético e propostas devem apontar para o mesmo vault.');
   this.proposals=proposals;
   this.conversation=conversation||new CategoryConversation({proposals});
   this.syntheticExecutor=syntheticExecutor;
