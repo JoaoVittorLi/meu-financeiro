@@ -37,7 +37,7 @@ function parseCategoryIntent(question,{selectedIds=[],selectedAccountId=null,las
   return {status:'needs_clarification',
    answer:'Para propor a regra futura, informe padrão EXATO, categoria, conta autorizada e natureza da movimentação. A prévia não altera o histórico.'};
  if(/movimentac.*(?:alterad|afetad).*(regra)|impacto.*regra/.test(f))
-  return {status:'needs_clarification',answer:'Selecione o ID da regra para verificar sua abrangência e precedência.'};
+  return {type:'rule.inspect'};
  return {status:'unsupported',
   answer:'Posso investigar categorias ou preparar propostas. Especifique a categoria, a regra ou os lançamentos por ID.'};
 }
@@ -66,6 +66,12 @@ class CategoryConversation{
    parseCategoryIntent(input.question||'',{selectedIds:selections,
     selectedAccountId:input.selectedAccountId,lastCategory:ctx.lastCategory});
   if(resolved.status)return answer(resolved.status,resolved.answer);
+  if(resolved.type==='rule.inspect'){
+   if(!Number.isInteger(input.ruleId)&&typeof input.proposalId!=='string')
+    return answer('needs_clarification','Selecione o ID da regra ou da prévia para investigar seu impacto.');
+   const impact=this.proposals.inspectRule(input,owner,{ruleId:input.ruleId,proposalId:input.proposalId});
+   return answer(impact.status,'Abrangência da regra verificada no histórico local autorizado.',{ruleImpact:impact});
+  }
   if(['category.list','category.analyze_usage'].includes(resolved.type)){
    const catalog=this.proposals.catalog(input,owner);
    const likelyUnused=catalog.categories.filter(c=>c.probablyUnused).map(c=>c.name);
