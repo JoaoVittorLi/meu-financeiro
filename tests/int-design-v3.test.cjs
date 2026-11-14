@@ -125,6 +125,25 @@ test('RC-ALL-01 — V3 comparison never converts unrepresentable delta into zero
  assert.equal(rows[1].delta,null);
  assert.equal(api.mfV3Heat(rows)[1].heat,null);
 });
+test('RC P0.2 — rank never turns unrepresentable deltas into zero, neutral or false money',()=>{
+ const a=app(),card=api.mfV3FromOperational(reply,'rank',previous);
+ assert(card&&card.previous);
+ const category=card.categories[0],prior=card.previous.categories[0];
+ card.categories=[{...category,name:'OverflowCase',amountCents:Number.MAX_SAFE_INTEGER}];
+ card.previous.categories=[{...prior,name:'OverflowCase',amountCents:-Number.MAX_SAFE_INTEGER}];
+ const rendered=api.mfV3Render(a,{id:'overflow-render',visualV3:card});
+ assert.match(txt(rendered),/1 variação\\(ões\\) com valor não verificável/);
+ assert.doesNotMatch(txt(rendered),/OverflowCase · R\\$ 0,00/);
+ assert.equal(api.mfV3CompareRows(card)[0].delta,null);
+});
+test('RC P0.2 — comparison omits percentage from genuine zero denominator',()=>{
+ const a=app(),card=api.mfV3FromOperational(reply,'compare',previous);
+ assert(card?.previous);
+ card.previous.expenseCents=0;
+ const rendered=api.mfV3Render(a,{id:'zero-base',visualV3:card});
+ assert.match(txt(rendered),/Base zero ou valores não verificáveis/);
+ assert.doesNotMatch(txt(rendered),/Variação 100.0%/);
+});
 test('D02 — percent with zero denominator is unavailable, never 100%',()=>{
  assert.equal(api.mfV3Pct(20000,0),null);
  assert.equal(api.mfV3Pct(0,0),null);
