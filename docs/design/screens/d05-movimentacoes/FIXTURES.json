@@ -1,0 +1,170 @@
+{
+  "version": "D05-V1.3-APPROVED",
+  "warning": "SYNTHETIC DEMO — no personal records or bank import",
+  "profile": "synthetic",
+  "period": "2026-11",
+  "source": "bank",
+  "entries": [
+    {
+      "id": "b1",
+      "name": "iFood",
+      "date": "2026-11-13",
+      "amountCents": -6800,
+      "kind": "expense",
+      "account": "Itaú",
+      "bankStatus": "POSTED",
+      "reviewed": false,
+      "categoryId": "cat:alimentacao",
+      "subcategoryId": "sub:alimentacao/delivery"
+    },
+    {
+      "id": "b2",
+      "name": "Supermercado Avenida",
+      "date": "2026-11-12",
+      "amountCents": -38900,
+      "kind": "expense",
+      "account": "Itaú",
+      "bankStatus": "POSTED",
+      "reviewed": true,
+      "categoryId": "cat:alimentacao",
+      "subcategoryId": "sub:alimentacao/supermercados"
+    },
+    {
+      "id": "b3",
+      "name": "Salário",
+      "date": "2026-11-12",
+      "amountCents": 300000,
+      "kind": "income",
+      "account": "Itaú",
+      "bankStatus": "POSTED",
+      "reviewed": true,
+      "categoryId": "cat:salario",
+      "subcategoryId": "sub:salario/fixo"
+    },
+    {
+      "id": "b4",
+      "name": "Mercado Central",
+      "date": "2026-11-11",
+      "amountCents": -13000,
+      "kind": "expense",
+      "account": "Itaú",
+      "bankStatus": "POSTED",
+      "reviewed": false,
+      "categoryId": "cat:outros",
+      "subcategoryId": null
+    },
+    {
+      "id": "b5",
+      "name": "Netflix",
+      "date": "2026-11-10",
+      "amountCents": -4490,
+      "kind": "expense",
+      "account": "Nubank",
+      "bankStatus": "POSTED",
+      "reviewed": false,
+      "categoryId": "cat:assinaturas",
+      "subcategoryId": "sub:assinaturas/streaming"
+    },
+    {
+      "id": "b6",
+      "name": "Pix recebido",
+      "date": "2026-11-09",
+      "amountCents": 18000,
+      "kind": "income",
+      "account": "Itaú",
+      "bankStatus": "POSTED",
+      "reviewed": true,
+      "categoryId": "cat:reembolsos",
+      "subcategoryId": "sub:reembolsos/estornos"
+    },
+    {
+      "id": "b7",
+      "name": "Uber",
+      "date": "2026-11-08",
+      "amountCents": -4200,
+      "kind": "expense",
+      "account": "Nubank",
+      "bankStatus": "PENDING",
+      "reviewed": false,
+      "categoryId": "cat:transporte",
+      "subcategoryId": "sub:transporte/aplicativos"
+    },
+    {
+      "id": "b8",
+      "name": "Aluguel",
+      "date": "2026-11-07",
+      "amountCents": -100000,
+      "kind": "expense",
+      "account": "Itaú",
+      "bankStatus": "POSTED",
+      "reviewed": true,
+      "categoryId": "cat:moradia",
+      "subcategoryId": "sub:moradia/aluguel"
+    },
+    {
+      "id": "b9",
+      "name": "Spotify Premium",
+      "date": "2026-11-06",
+      "amountCents": -2190,
+      "kind": "expense",
+      "account": "Nubank",
+      "bankStatus": "POSTED",
+      "reviewed": false,
+      "categoryId": "cat:assinaturas",
+      "subcategoryId": "sub:assinaturas/musica"
+    },
+    {
+      "id": "b10",
+      "name": "Transferência própria",
+      "date": "2026-11-05",
+      "amountCents": -50000,
+      "kind": "transfer",
+      "account": "Itaú",
+      "bankStatus": "POSTED",
+      "reviewed": true,
+      "categoryId": "cat:transferencias",
+      "subcategoryId": "sub:transferencias/entre-contas"
+    },
+    {
+      "id": "b11",
+      "name": "Academia",
+      "date": "2026-11-04",
+      "amountCents": -10400,
+      "kind": "expense",
+      "account": "Itaú",
+      "bankStatus": "POSTED",
+      "reviewed": true,
+      "categoryId": "cat:saude",
+      "subcategoryId": "sub:saude/academia"
+    },
+    {
+      "id": "b12",
+      "name": "Cafeteria",
+      "date": "2026-11-03",
+      "amountCents": -3100,
+      "kind": "expense",
+      "account": "Nubank",
+      "bankStatus": "POSTED",
+      "reviewed": false,
+      "categoryId": "cat:alimentacao",
+      "subcategoryId": "sub:alimentacao/cafeterias"
+    }
+  ],
+  "expected": {
+    "incomeCents": 318000,
+    "expenseCents": 178880,
+    "resultCents": 139120,
+    "needsReviewCount": 5,
+    "excludedFromConfirmed": [
+      "b7",
+      "b10"
+    ],
+    "eligibleToReview": [
+      "b1",
+      "b4",
+      "b5",
+      "b9",
+      "b12"
+    ]
+  }
+}
