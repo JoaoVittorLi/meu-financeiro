@@ -60,3 +60,18 @@
 ## Testes declarados
 
 Documento de requisitos e revisão das capturas; **não foi realizado QA real em navegador/Electron nem migração** neste arquivo. Um protótipo inline é apresentado ao proprietário para interação; não confundir com código instalado.
+
+
+## 14/11/2026 — Feedback V1.3 rejeitado / direção V1.4 em revisão
+
+**Capturas do proprietário:** cabeçalho por dia com `2 registro(s)` isolado à direita, visualmente inadequado; seletor ancorado ao ícone ainda é popover alto/pesado, com blocos cinzas, prévia excessivamente grande, título repetitivo e CTA branco. **V1.3 não aprovada**.
+
+- **DAY-01:** remover `N registro(s)` de todos os cabeçalhos diários. Apenas data discreta e divisória. Contagem geral do filtro pode ir para lugar contextual, sem badge solto por dia.
+- **PICK-01:** clique no ícone colorido da linha é **único gatilho** para classificar. Zero botão `Categoria⌄` ou seta.
+- **PICK-02:** popover compacto, sombras/bordas/tokens D01–D04; cabeçalho enxuto, catálogo de categorias em grade e subcategorias em lista densa e legível. Evitar repetição de títulos, verde maciço na opção, preview gigante, CTA branco.
+- **PICK-03:** primeira etapa busca 14 categorias, segunda `Manter somente [pai]` + filhos; borda/check discreto, proposta `Atual → Novo` minimalista só quando houver alteração; CTA esmeralda. Nada de apply automático.
+- **PICK-04:** ancorar com reposicionamento seguro junto ao ícone e viewport, sem clipping no rodapé, outside/Escape/focus, responsivo e reduced motion.
+- **STATUS-01:** manter uma informação por linha: POSTED revisado sem etiqueta, POSTED não revisado `A revisar`, PENDING `Em processamento`. Banco/revisão separados em detalhe.
+- **SELECT-01:** manter seleção custom premium, não nativo Windows.
+
+**Preservar aprovado:** 14 categorias, 61 subcategorias, ícones/cores e vínculo pai→filho. Não declarar V1.4 aprovada antes do proprietário. Implementação real no SQLite/IPC/regras/IA segue obrigatória na #74; defeitos são do protótipo capturado, não comprovados no Electron.
