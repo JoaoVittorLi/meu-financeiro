@@ -1,3 +1,13 @@
+> ## Meu Financeiro 2.0 — desenvolvimento atual
+>
+> A seção abaixo descreve a **v0.9.4 histórica**, não o estado das branches de desenvolvimento MF2. **O primeiro EXE MF2 ainda não foi lançado.**
+>
+> **[Estado atual do projeto](docs/mf2/STATUS_ATUAL.md)** · **[Plano até o EXE](docs/mf2/PLANO_DE_RELEASE.md)** · **[Mapa de PRs/issues](docs/mf2/GUIA_DE_NAVEGACAO.md)** · **[Release #71](https://github.com/JoaoVittorLi/meu-financeiro/issues/71)**
+>
+> **Em desenvolvimento:** D05 (#81), I2-D/E (#79/#80) ainda a integrar à RC (#76); escrita pessoal por IA depende de homologação. Não misturar builds/QA com a linha v0.9.4.
+
+---
+
 # Meu Financeiro v0.9.4 — Linha do tempo e categorias inteligentes 💜
 
 Aplicativo financeiro pessoal para Windows x64, com Electron, React/TypeScript e SQLite local. Integração bancária somente leitura por meio de uma conta pessoal do Meu Pluggy.
