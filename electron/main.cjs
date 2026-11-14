@@ -77,6 +77,7 @@ function secureCloudFetch(ses){
   };
 }
 async function tickCloudPersonal(){
+  if(app.isPackaged===true)return; // Experimental RC forbids Node-side cloud polling.
   if(!db||cloudPersonalBusy||syncing||restoring||autoBackupBusy||
      cloudPreparationBusy)return;
   // Never replicate from an unapproved local database: the owner must have
@@ -166,6 +167,9 @@ function createWindow(){
 const smokeProfileActive=isolateSmokeProfile(app);
 // Release-candidate binaries never use stable userData; no packaged override.
 const experimentalPackaged=app.isPackaged===true;
+function forbidExperimentalNetwork(){
+ if(experimentalPackaged)throw Error('RC experimental offline: conexão bancária, nuvem e IA externa estão desativadas.');
+}
 if(experimentalPackaged){
  const isolated=path.join(app.getPath('appData'),'MeuFinanceiro-RC-ALL-01-Experimental');
  if(fs.existsSync(isolated)&&fs.lstatSync(isolated).isSymbolicLink())
@@ -283,16 +287,19 @@ app.whenReady().then(()=>{
  });
  ipcMain.handle('cloud:access-status',async(event)=>{
    requireAppSender(event);
+   forbidExperimentalNetwork();
    return previewIdentityStatus();
  });
  ipcMain.handle('cloud:access-connect',async(event)=>{
    requireAppSender(event);
+   forbidExperimentalNetwork();
    if(restoring||cloudPreparationBusy)
      throw new Error('Conclua a operação local antes de entrar na nuvem.');
    return connectPreviewIdentity();
  });
  ipcMain.handle('cloud:quarantine-demo',async(event)=>{
    requireAppSender(event);
+   forbidExperimentalNetwork();
    if(restoring||syncing||cloudPreparationBusy)
      throw new Error('Outra operação financeira está em andamento.');
    const ses=cloudPreviewSession();
@@ -303,6 +310,7 @@ app.whenReady().then(()=>{
  });
  ipcMain.handle('cloud:transfer-personal',async(event)=>{
    requireAppSender(event);
+   forbidExperimentalNetwork();
    if(syncing||restoring||autoBackupBusy||cloudPreparationBusy)
      throw new Error('Existe outra operação em andamento.');
    // This is an explicit data transfer consent, NOT consent for cloud cutover.
@@ -333,6 +341,7 @@ app.whenReady().then(()=>{
  });
  ipcMain.handle('cloud:bank-parity',async(event)=>{
    requireAppSender(event);
+   forbidExperimentalNetwork();
    if(restoring||syncing||cloudPreparationBusy||autoBackupBusy)
      return {ok:false,reason:'local_operation_in_progress',financialSyncEnabled:false};
    const ses=cloudPreviewSession();
@@ -343,6 +352,7 @@ app.whenReady().then(()=>{
  });
  ipcMain.handle('cloud:e1-audit',async(event)=>{
    requireAppSender(event);
+   forbidExperimentalNetwork();
    if(restoring||syncing||cloudPreparationBusy||autoBackupBusy||cloudPersonalBusy)
      return {ok:false,reason:'local_operation_in_progress',financialSyncEnabled:false};
    const ses=cloudPreviewSession();
@@ -362,6 +372,7 @@ app.whenReady().then(()=>{
  });
  ipcMain.handle('cloud:prepare-migration',async(event)=>{
    requireAppSender(event);
+   forbidExperimentalNetwork();
    if(syncing||restoring||autoBackupBusy||cloudPreparationBusy)
      throw new Error('Há outra operação em andamento. Conclua-a antes de preparar a nuvem.');
    cloudPreparationBusy=true;
@@ -413,6 +424,7 @@ app.whenReady().then(()=>{
  });
  ipcMain.handle('bank:configure',async(event,config)=>{
    requireAppSender(event);
+   forbidExperimentalNetwork();
    if(syncing)throw new Error('Sincronização em andamento.');
    const saved=await vault.put(config||{});
    return {config:saved,data:titledBankData()};
@@ -425,6 +437,7 @@ app.whenReady().then(()=>{
  });
  ipcMain.handle('bank:sync',async(event)=>{
    requireAppSender(event);
+   forbidExperimentalNetwork();
    if(syncing)throw new Error('Uma sincronização já está em andamento.');
    const config=await vault.get();
    if(!config)throw new Error('Configure sua conexão Pluggy primeiro.');
@@ -499,38 +512,45 @@ app.whenReady().then(()=>{
  });
  ipcMain.handle('ai:memory-list',async(event)=>{
    requireAppSender(event);
+   forbidExperimentalNetwork();
    return aiPersonal.list(await aiDemo.personalSubject());
  });
  ipcMain.handle('ai:memory-add',async(event,input)=>{
    requireAppSender(event);
+   forbidExperimentalNetwork();
    if(!input||typeof input!=='object'||Array.isArray(input)||typeof input.kind!=='string'||typeof input.text!=='string')
      throw new Error('Memória inválida.');
    return aiPersonal.add(await aiDemo.personalSubject(),{kind:input.kind,text:input.text});
  });
  ipcMain.handle('ai:memory-remove',async(event,id)=>{
    requireAppSender(event);
+   forbidExperimentalNetwork();
    return aiPersonal.remove(await aiDemo.personalSubject(),id);
  });
  ipcMain.handle('ai:memory-clear',async(event)=>{
    requireAppSender(event);
+   forbidExperimentalNetwork();
    return aiPersonal.clearMemories(await aiDemo.personalSubject());
  });
  ipcMain.handle('ai:usage-summary',async(event)=>{
    requireAppSender(event);
+   forbidExperimentalNetwork();
    return aiPersonal.summary(await aiDemo.personalSubject());
  });
  ipcMain.handle('ai:context-preview',(event,input)=>{
    requireAppSender(event);
+   forbidExperimentalNetwork();
    if(!input||typeof input!=='object'||typeof input.caseId!=='string'||
      !['auto','low','medium'].includes(input.effort)||typeof input.useSavedMemories!=='boolean')
      throw new Error('Parâmetros de prévia de contexto inválidos.');
    return aiDemo.contextPreview(input);
  });
- ipcMain.handle('ai:connect',(event)=>{requireAppSender(event);return aiAuth.connect();});
+ ipcMain.handle('ai:connect',(event)=>{requireAppSender(event);forbidExperimentalNetwork();return aiAuth.connect();});
  ipcMain.handle('ai:disconnect',(event)=>{requireAppSender(event);return aiAuth.disconnect();});
- ipcMain.handle('ai:model-available',(event)=>{requireAppSender(event);return aiDemo.modelAvailable();});
+ ipcMain.handle('ai:model-available',(event)=>{requireAppSender(event);forbidExperimentalNetwork();return aiDemo.modelAvailable();});
  ipcMain.handle('ai:run-demo',(event,input)=>{
    requireAppSender(event);
+   forbidExperimentalNetwork();
    if(!input||typeof input!=='object'||typeof input.caseId!=='string'||input.caseId.length>36||!['auto','low','medium'].includes(input.effort)||input.creditsDisabledConfirmed!==true||typeof input.useSavedMemories!=='boolean')
      throw new Error('Confirmação e parâmetros de teste inválidos.');
    return aiDemo.testDemo({caseId:input.caseId,effort:input.effort,creditsDisabledConfirmed:true,useSavedMemories:input.useSavedMemories,
