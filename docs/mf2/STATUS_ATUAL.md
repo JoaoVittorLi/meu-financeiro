@@ -13,8 +13,8 @@
 | I2-D proatividade | [PR #79](https://github.com/JoaoVittorLi/meu-financeiro/pull/79) | Código backend publicado **fora da RC**; 25 testes versionados NOT_RUN |
 | I2-E qualidade/explicabilidade | [PR #80](https://github.com/JoaoVittorLi/meu-financeiro/pull/80) | Código backend e handoff publicado **fora da RC**; 23 testes versionados NOT_RUN |
 | D05 — design inteiro V1.3 | [PR #57](https://github.com/JoaoVittorLi/meu-financeiro/pull/57) / [#70](https://github.com/JoaoVittorLi/meu-financeiro/issues/70) | **DESIGN_APPROVED**; não confundir com Electron implementado |
-| D05 E1 (SQLite/migração) | [PR #81](https://github.com/JoaoVittorLi/meu-financeiro/pull/81) / [#74](https://github.com/JoaoVittorLi/meu-financeiro/issues/74) | Código publicado; suíte oficial/backup/restore reais ainda exigem prova |
-| D05 E2 (serviços, regras, classificação e adaptador IPC) | [PR #81](https://github.com/JoaoVittorLi/meu-financeiro/pull/81) | Código publicado; **adaptador ainda não conectado a MAIN/preload da candidata** |
+| D05 E1 (SQLite/migração) | [PR #81](https://github.com/JoaoVittorLi/meu-financeiro/pull/81) / [#74](https://github.com/JoaoVittorLi/meu-financeiro/issues/74) | Código publicado; 4 cenários E1 versionados, suíte oficial e backup/restore reais ainda exigem prova |
+| D05 E2 (serviços, regras, classificação e adaptador IPC) | [PR #81](https://github.com/JoaoVittorLi/meu-financeiro/pull/81) | Código publicado; 11 testes E2 versionados e handoff de JSON/restore; **adaptador ainda não conectado a MAIN/preload** |
 | D05 E3 (Movimentações + 67 SVGs no renderer real) | [PR #81](https://github.com/JoaoVittorLi/meu-financeiro/pull/81) | Em desenvolvimento; último PR indica **E3 iniciado apenas em assets**, NÃO UI conectada |
 | Escrita pessoal supervisionada pela IA | [issue #71](https://github.com/JoaoVittorLi/meu-financeiro/issues/71) | **Não implementada/homologada**; mecanismo I2-C atual é só sintético |
 | Linux/Node, Electron/Windows QA, ASAR e EXE | [issue #65](https://github.com/JoaoVittorLi/meu-financeiro/issues/65) | **Sem PASS oficial demonstrado no SHA integrado atual; nenhum EXE entregue** |
@@ -24,12 +24,12 @@
 | Fonte | SHA completo |
 |---|---|
 | [#76 RC base](https://github.com/JoaoVittorLi/meu-financeiro/pull/76) | `545ac5e00199ad4969c69b76e433f17f242ad44e` |
-| [#81 D05 Executor](https://github.com/JoaoVittorLi/meu-financeiro/pull/81) | `42765cbfe21c17a7d371cb917b6b77fc53ff5644` |
+| [#81 D05 Executor](https://github.com/JoaoVittorLi/meu-financeiro/pull/81) | **HEAD móvel**, visto em `effe91edf322584022e037fa4f73728a7c72980d` (14/11); conferir PR antes de usar |
 | [#79 I2-D](https://github.com/JoaoVittorLi/meu-financeiro/pull/79) | `fd5aca036ae96ca3aef99be752a2bfdeb9750688` |
 | [#80 I2-E](https://github.com/JoaoVittorLi/meu-financeiro/pull/80) | `c56675d02f6d1b5ac9074fb9039aad3d74ff81e1` |
 | [#57 D05 design](https://github.com/JoaoVittorLi/meu-financeiro/pull/57) | `f93497a86a50470ed3e86bd4c3e3250b2396ab5a` |
 
-**Aviso:** SHA é retrato, não referência móvel nem permissão de executar CI. Revalidar HEAD, branch e árvore antes de qualquer QA ou importação.
+**Aviso:** SHA é retrato, não referência móvel nem permissão de executar CI. **O Executor #81 está publicando commits enquanto esta documentação é escrita.** Revalidar HEAD, branch e árvore antes de qualquer QA ou importação.
 
 ## Pendências para o primeiro EXE — ordem de dependências
 
