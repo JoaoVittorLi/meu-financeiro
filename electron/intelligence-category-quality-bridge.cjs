@@ -12,12 +12,19 @@ class EvidenceQualityBridge{
  }
  async handle(request,host){
   const method=request?.method;
-  if(!METHODS.includes(method))return this.base.handle(request,host);
+  // I2-D can prepare previews without the I2-E evidence gate. Never expose
+  // those proposal routes through the composed bridge used by the RC.
+  // Catalog/manual B1 tools remain owned by the existing integration gateway.
+  const unverified=new Set(['draftOpportunity','advice','discover','inspectOpportunity']);
+  if(!METHODS.includes(method)&&!unverified.has(method))
+   return this.base.handle(request,host);
   const reply=(status,data=null,reason=null)=>({
    contract:CONTRACT,version:1,method,status,mode:'READ_ONLY_PERSONAL',
    changesApplied:false,modelCalled:false,reason,data:data?stripSensitive(data):null});
   const owner=host?.owner;
   if(!Number.isInteger(owner)||owner<0)return reply('denied',null,'Identidade MAIN inválida.');
+  if(unverified.has(method))return reply('denied',null,
+   'Prévia I2-D sem validação I2-E não autorizada; use qualityScan/qualityDetail/qualityDraft.');
   if(method==='qualityCapabilities')return reply('ready',{
    readOnly:true,personalWrites:false,syntheticExecutionExposed:false,
    commands:METHODS.slice(1),requires:['IC-READ','trusted_owner','active_bank_account'],
