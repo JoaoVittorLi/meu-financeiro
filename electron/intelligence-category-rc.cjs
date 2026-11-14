@@ -53,6 +53,17 @@ class RCCategoryGateway{
   if(!PERSONAL.has(input.method))return {contract:'I2-C/ELECTRON-REVIEW-V1',
    version:1,method:input.method,mode:'READ_ONLY_PERSONAL',
    status:'denied',changesApplied:false,reason:'IA sem escrita pessoal.'};
+  // Do not let the legacy flat-name B1 path generate ambiguous bank/rule
+  // proposals once the D05 14x61 hierarchy is active. Proactive plans must
+  // go through qualityDraft with a resolved categoryId/subcategoryId.
+  const ambiguity=(input.method==='propose'&&
+    (/^(transaction\.|rule\.)/.test(String(input.action||''))))||
+   (input.method==='ask'&&(
+    input.actions?.some?.(x=>/^(transaction\.|rule\.)/.test(String(x?.type||'')))||
+    /^\s*(categorize|reclassifique|crie.*regra|criar.*regra)/i.test(String(input.question||''))));
+  if(ambiguity)return {contract:'I2-E/D05-HIERARCHY-GATE-V1',
+   status:'review_required',mode:'READ_ONLY_PERSONAL',changesApplied:false,
+   reason:'Destino D05 deve ser validado por categoryId e subcategoryId (null permitido) após evidência I2-E; prévia plana bloqueada.'};
   const host={owner,environment:'personal',verifiedGesture:false,
    activeAccountId:typeof mainHost.activeAccountId==='string'?mainHost.activeAccountId:null};
   if(input.method==='qualityDraft'&&input.target)
