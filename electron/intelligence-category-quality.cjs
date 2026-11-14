@@ -95,14 +95,13 @@ class EvidenceQualityService{
      rowid:Number.MAX_SAFE_INTEGER,status:'POSTED',hasSplits:false});
    const cents=candidates.reduce((s,r)=>s+Math.abs(r.amount),0);
    const safeCents=Number.isSafeInteger(cents)?cents:-1;
+   // Evidence quality is independent of the destination's shape. D05 parent/child
+   // resolution is a separate mandatory RC MAIN gate before a personal preview
+   // can be considered actionable. Do not downgrade a valid sample to
+   // review_required merely because the D05 schema is installed.
    const verdict=evidenceVerdict({anchors:anchors.length,distinctDates:anchorDays.length,
     suspiciousDuplicates:dupes.length,ruleCollision:existingRule!==null,
-    partial,candidates:candidates.length,unsupported:hierarchyPending,amountCents:safeCents});
-   if(hierarchyPending){
-    verdict.status='review_required';
-    verdict.reasons.push('d05_hierarchy_target_unresolved');
-    verdict.explanation='D05 usa categoryId e subcategoryId; nenhuma ação pode usar categoria plana sem resolver pai e filho.';
-   }
+    partial,candidates:candidates.length,unsupported:false,amountCents:safeCents});
    const factual={owner,scope,opportunityId:opportunity.id,accountId:opportunity.accountId,
     pattern:opportunity.pattern,category:opportunity.category,nature:opportunity.nature,
     anchorIds:anchors.map(key).sort(),candidateIds:candidates.map(key).sort(),
@@ -132,6 +131,7 @@ class EvidenceQualityService{
       .map(r=>({id:r.id,category:r.category,priority:r.priority,matchMode:r.matchMode,scope:r.scope}))
     },evidenceHash,expiresAt:this.clock()+this.ttlMs,coverage:scan.coverage,
     safeForDraft:verdict.status==='eligible_for_preview',
+    requiresD05Resolution:hierarchyPending,personalWriteAuthorized:false,
     explanation:verdict.explanation,changesApplied:false};
    out.push(entry);
    this.entries.set(owner+':'+qualityId,{scope,qualityId,opportunityId:opportunity.id,evidenceHash,
@@ -151,8 +151,8 @@ class EvidenceQualityService{
  draft(qualityId,action,input,owner){
   if(!['historical','future'].includes(action))throw Error('Ação não autorizada.');
   const {scope}=this.proposals.authorize(input,owner);
-  if(unresolvedHierarchy(this.db))return {status:'review_required',changesApplied:false,
-   reasons:['d05_hierarchy_target_unresolved'],reason:'Destino D05 pai/filho não homologado para propostas I2-D/E.'};
+  // Internal B1/D drafts are read-only; the RC boundary refuses any
+  // user-facing draft without a separately verified D05 categoryId+child ID.
   const stored=this.entries.get(owner+':'+qualityId);
   if(!stored||stored.expiresAt<=this.clock()||!sameScope(stored.scope,scope))
    return {status:'stale',changesApplied:false,reason:'Evidência expirada ou pertencente a outro escopo.'};
@@ -167,11 +167,10 @@ class EvidenceQualityService{
   const proposed=this.advisor.propose(current.opportunityId,action,input,owner);
   return {contract:'I2-E/QUALITY-DRAFT-V1',status:proposed.status,changesApplied:false,
    qualityId,action,quality:current,advisoryProposal:proposed,
-   warning:'O comando apenas prepara prévia B1 e não confirma nem altera movimentações.'};
+   requiresD05Resolution:unresolvedHierarchy(this.db),personalWriteAuthorized:false,
+   warning:'Prévia B1 somente leitura. D05 exige destino pai/filho validado no MAIN; nenhuma mutação é autorizada.'};
  }
  compose(input,owner,items){
-  if(unresolvedHierarchy(this.db))return {contract:'I2-E/COMPOSITE-PLAN-V1',status:'review_required',
-   changesApplied:false,steps:[],reasons:['d05_hierarchy_target_unresolved']};
   if(!Array.isArray(items)||!items.length||items.length>3||
    items.some(i=>!i||typeof i.qualityId!=='string'||!['historical','future'].includes(i.action)))
    throw Error('Plano composto inválido (1 a 3 ações tipadas).');
@@ -190,7 +189,8 @@ class EvidenceQualityService{
   }
   return {contract:'I2-E/COMPOSITE-PLAN-V1',status:steps.every(s=>s.status==='ready')?'proposed':'partial',
    steps,changesApplied:false,requiresIndividualConfirmation:true,
-   notice:'Propostas são independentes; nenhum passo aplica ou confirma outro automaticamente.'};
+   requiresD05Resolution:unresolvedHierarchy(this.db),personalWriteAuthorized:false,
+   notice:'Plano somente leitura; nenhum passo confirma ou aplica outro. Resolução D05 obrigatória antes de apresentar ações pessoais.'};
  }
 }
 module.exports={EvidenceQualityService,duplicateHeuristics,evidenceVerdict,sourceLabels,unresolvedHierarchy,CONTRACT};
