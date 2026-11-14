@@ -257,7 +257,9 @@ app.whenReady().then(()=>{
     detail:'Ambiente: arquivo TEMP sintético, isolado do perfil Windows.\n'+
      'Referências: '+String(preview.changes)+' · Valor amostral: '+amount+
      '\nNenhuma categoria, regra ou movimentação pessoal será modificada.'});
-   return choice.response===1&&mainWindow.isFocused();
+   // Native modal owns focus while open; checking window focus afterwards
+   // would incorrectly reject an explicit click on the confirmation button.
+   return choice.response===1&&!mainWindow.isDestroyed();
   });
  });
  ipcMain.handle('intelligence:category-sandbox-stop',(event,sessionId)=>{
