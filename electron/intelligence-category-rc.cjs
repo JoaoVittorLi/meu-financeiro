@@ -4,11 +4,18 @@
 const {randomUUID}=require('node:crypto');
 const {CategoryProposalService}=require('./intelligence-category-proposals.cjs');
 const {IntelligenceCategoryBridge,METHODS}=require('./intelligence-category-bridge.cjs');
+const {ProactiveCategoryAdvisor}=require('./intelligence-category-opportunities.cjs');
+const {ProactiveCategoryBridge}=require('./intelligence-category-advisor-bridge.cjs');
+const {EvidenceQualityService}=require('./intelligence-category-quality.cjs');
+const {EvidenceQualityBridge}=require('./intelligence-category-quality-bridge.cjs');
+const {D05CategoryService}=require('./d05-category-service.cjs');
+const {normalizeLabel}=require('./db.cjs');
 const {AtomicSyntheticCategoryExecutor}=require('./intelligence-category-atomic.cjs');
 const {createSyntheticFinanceVault,assertSyntheticVault}=require('./intelligence-category-vault.cjs');
 const {LocalFinancialIntelligence,CONSENT}=require('./financial-intelligence.cjs');
 const {PlanningStore}=require('./planning.cjs');
-const PERSONAL=new Set(['capabilities','ask','list','analyze','propose','edit','reject','inspectRule']);
+const PERSONAL=new Set(['capabilities','ask','list','analyze','propose','edit','reject','inspectRule',
+ 'qualityCapabilities','qualityScan','qualityDetail','qualityDraft','qualityCompose']);
 const SANDBOX=new Set(METHODS);
 const RESERVED=new Set(['owner','environment','verifiedGesture','token','scope','grant','syntheticExecutor']);
 function safeInput(input,allowed){
@@ -18,7 +25,7 @@ function safeInput(input,allowed){
  return input;
 }
 const PERSONAL_FIELDS=new Set(['method','scope','question','conversationId','actions',
- 'selectedIds','ruleId','proposalId','action','params','patch','target']);
+ 'selectedIds','ruleId','proposalId','action','params','patch','target','qualityId','filters','items']);
 const SANDBOX_FIELDS=new Set(['sessionId','method','question','conversationId','actions',
  'selectedIds','ruleId','proposalId','action','params','patch','target','confirmationNonce']);
 const SETTINGS={opening:0,income:0,fixed:0,existing:0,reserve:0};
@@ -29,11 +36,16 @@ class RCCategoryGateway{
  }
  bindPersonal(db,localFinancial){
   if(!db||!localFinancial)throw Error('FinanceDB e IC-READ necessários.');
-  this.personal=new IntelligenceCategoryBridge({
+  const base=new IntelligenceCategoryBridge({
    proposals:new CategoryProposalService({db,localFinancial,clock:this.clock})
   });
+  const advisor=new ProactiveCategoryAdvisor({proposals:base.proposals,clock:this.clock});
+  const advisory=new ProactiveCategoryBridge({advisor,baseBridge:base});
+  const quality=new EvidenceQualityService({advisor,clock:this.clock});
+  this.personal=new EvidenceQualityBridge({quality,baseBridge:advisory});
+  this.quality=quality;this.qualityBase=base;this.finance=db;
  }
- personalCall(input,owner){
+ async personalCall(input,owner,mainHost={}){
   if(!Number.isInteger(owner))throw Error('Owner inválido.');
   if(!input||typeof input!=='object'||Array.isArray(input)||
      Object.keys(input).some(k=>k!=='scope'&&!PERSONAL_FIELDS.has(k)))
@@ -41,7 +53,83 @@ class RCCategoryGateway{
   if(!PERSONAL.has(input.method))return {contract:'I2-C/ELECTRON-REVIEW-V1',
    version:1,method:input.method,mode:'READ_ONLY_PERSONAL',
    status:'denied',changesApplied:false,reason:'IA sem escrita pessoal.'};
-  return this.personal.handle(input,{owner,environment:'personal',verifiedGesture:false});
+  const host={owner,environment:'personal',verifiedGesture:false,
+   activeAccountId:typeof mainHost.activeAccountId==='string'?mainHost.activeAccountId:null};
+  if(input.method==='qualityDraft'&&input.target)
+   return this.d05QualityDraft(input,host);
+  if(input.method==='qualityCompose'&&input.items?.some?.(v=>v?.target))
+   return this.d05QualityCompose(input,host);
+  return this.personal.handle(input,host);
+ }
+ async d05QualityDraft(input,host){
+  const deny=(status,reason,data=null)=>({contract:'I2-E/D05-RESOLVED-PREVIEW-V1',
+   status,changesApplied:false,modelCalled:false,mode:'READ_ONLY_PERSONAL',reason,data});
+  if(input.action!=='historical')
+   return deny('review_required','Regra bancária futura ainda não possui limite por conta/afterRowid no contrato D05.');
+  const scope=input.scope;
+  if(scope?.source!=='bank'||!host.activeAccountId)
+   return deny('denied','Prévia proativa exige fonte bancária e conta autorizada no MAIN.');
+  const target=input.target;
+  if(!target||typeof target!=='object'||Array.isArray(target)||
+     Object.keys(target).some(k=>!['categoryId','subcategoryId'].includes(k))||
+     typeof target.categoryId!=='string'||!Object.prototype.hasOwnProperty.call(target,'subcategoryId'))
+   return deny('review_required','Selecione categoria-pai e filho explícito ou null; não inferir texto.');
+  let resolved;
+  try{resolved=new D05CategoryService(this.finance).resolve(target);}
+  catch{return deny('review_required','Destino D05 ausente, inativo ou incompatível.');}
+  const detail=await this.personal.handle({...input,method:'qualityDetail'},host);
+  const q=detail?.data?.quality;
+  if(detail.status!=='ready'||!q||q.accountId!==host.activeAccountId)
+   return deny('stale','Evidência de qualidade ausente ou vinculada a outra conta.');
+  // The old advisor label may refer to a child ("Delivery"), not a parent.
+  const label=resolved.child?.name||resolved.parentName;
+  if(normalizeLabel(label)!==normalizeLabel(q.category))
+   return deny('review_required','Destino não corresponde à categoria comprovada pelos ajustes manuais.');
+  const reasons=(q.reasons||[]).filter(x=>!['unsupported_source','d05_hierarchy_target_unresolved'].includes(x));
+  const n=q.candidateSummary?.count;
+  if(reasons.length||q.anchorSummary?.count<2||q.anchorSummary?.independentDates<2||
+     !Number.isSafeInteger(n)||n<1||n>10||
+     q.candidateSummary?.examples?.length!==n||
+     !Number.isSafeInteger(q.candidateSummary?.amountCents)||
+     q.duplicateWarnings?.length||q.rulePrecedence?.willShadowFutureRule)
+   return deny('review_required','Evidência insuficiente ou lote acima de dez IDs verificáveis; não gerar prévia.',{reasons});
+  const fresh=this.quality.analysis({...scope,filters:{accountId:host.activeAccountId}},host.owner);
+  const now=fresh.quality?.find(v=>v.qualityId===q.qualityId);
+  if(!now||now.evidenceHash!==q.evidenceHash)
+   return deny('stale','Evidências ou regras mudaram desde a análise de qualidade.');
+  const items=q.candidateSummary.examples.map(r=>{
+   const id=String(r.id||'');const sep=id.indexOf(':');
+   if(sep<1||id.slice(0,sep)!==host.activeAccountId)throw Error('ID de evidência fora da conta ativa');
+   return {accountId:host.activeAccountId,externalId:id.slice(sep+1)};
+  });
+  const preview=new D05CategoryService(this.finance).previewBankBatch({items,target});
+  if(preview.count!==items.length)
+   return deny('stale','A prévia D05 não corresponde aos IDs da análise de qualidade.');
+  return deny('ready','Prévia D05 de leitura: requer um gateway pessoal homologado para executar.',{
+   quality:q,action:'historical',target:{categoryId:resolved.categoryId,subcategoryId:resolved.subcategoryId},
+   previewVersion:preview.previewVersion,items,
+   count:preview.count,amountCents:preview.amountCents,
+   personalWriteAuthorized:false,requiresExplicitConfirmation:true
+  });
+ }
+ async d05QualityCompose(input,host){
+  const base={contract:'I2-E/D05-COMPOSITE-PREVIEW-V1',changesApplied:false,
+   modelCalled:false,mode:'READ_ONLY_PERSONAL'};
+  if(!Array.isArray(input.items)||!input.items.length||input.items.length>3)
+   return {...base,status:'denied',reason:'Plano de 1 a 3 ações obrigatório.'};
+  const steps=[],seen=new Set();
+  for(const item of input.items){
+   const result=await this.d05QualityDraft({...input,qualityId:item?.qualityId,
+    action:item?.action,target:item?.target},host);
+   const ids=result.data?.items||[];
+   if(ids.some(v=>seen.has(v.accountId+'|'+v.externalId))){
+    steps.push({...result,status:'blocked_dependency',data:null});continue;
+   }
+   for(const v of ids)seen.add(v.accountId+'|'+v.externalId);
+   steps.push(result);
+  }
+  return {...base,status:steps.every(x=>x.status==='ready')?'proposed':'partial',
+   steps,requiresIndividualConfirmation:true};
  }
  startSandbox(month,owner){
   if(!Number.isInteger(owner)||!/^20\d{2}-(0[1-9]|1[0-2])$/.test(month))
