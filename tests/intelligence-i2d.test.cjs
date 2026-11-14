@@ -312,3 +312,20 @@ test('I2-D: clock tick does not invalidate evidence fingerprint when data is unc
   assert.equal(proposed.status,'ready');
  }finally{f.close();}
 });
+
+test('I2-D: supervised self-applied category labels are excluded from human evidence votes',()=>{
+ const {categoryDecisionFingerprint}=require('../electron/db.cjs');
+ const f=fixture({syntheticRules:true});try{
+  const row=f.db.bankOverview().transactions.find(x=>x.id==='anchor2');
+  const fingerprint=categoryDecisionFingerprint({
+   accountId:row.accountId,id:row.id,date:row.date,description:row.description,
+   amount:row.amount,status:row.status,nature:row.nature,overrideCategory:'Delivery'});
+  f.db.db.prepare('INSERT INTO category_review_applied_labels(account_id,external_id,fingerprint,category) VALUES(?,?,?,?)')
+   .run(ACCOUNT,'anchor2',fingerprint,'Delivery');
+  assert.equal(f.db.bankOverview().transactions.find(x=>x.id==='anchor2').categorySource,'manual');
+  const res=f.inspect({accountId:ACCOUNT});
+  assert.equal(res.opportunities.length,0,
+   'Only one independent human override remains; synthetic applied label must not train the advisor');
+  assert.equal(res.changesApplied,false);
+ }finally{f.close();}
+});
