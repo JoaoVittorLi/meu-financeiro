@@ -301,13 +301,13 @@ class D05CategoryService{
   checkProfile(profile);
   const data=this.finance.load(profile);
   if(!data)throw Error('D05: perfil ainda não inicializado');
-  const manualTargets=this.db.prepare(¤SELECT t.id,COALESCE(t.category_id,c.id) AS categoryId,
+  const manualTargets=this.db.prepare(`SELECT t.id,COALESCE(t.category_id,c.id) AS categoryId,
      t.subcategory_id AS subcategoryId FROM transactions t LEFT JOIN categories c ON c.name=t.category COLLATE NOCASE
-     WHERE t.profile=? ORDER BY t.id¤).all(profile);
-  const customParents=this.db.prepare(¤SELECT id,name,color,kind,icon_key AS iconKey,hue FROM categories
-     WHERE built_in=0 ORDER BY id¤).all();
-  const customChildren=this.db.prepare(¤SELECT id,parent_category_id AS parentCategoryId,name,
-    icon_key AS iconKey,hue,active,sort_order AS sortOrder FROM subcategories WHERE built_in=0 ORDER BY id¤).all();
+     WHERE t.profile=? ORDER BY t.id`).all(profile);
+  const customParents=this.db.prepare(`SELECT id,name,color,kind,icon_key AS iconKey,hue FROM categories
+     WHERE built_in=0 ORDER BY id`).all();
+  const customChildren=this.db.prepare(`SELECT id,parent_category_id AS parentCategoryId,name,
+    icon_key AS iconKey,hue,active,sort_order AS sortOrder FROM subcategories WHERE built_in=0 ORDER BY id`).all();
   return {contract:'D05/MANUAL-PORTABLE-V1',version:1,profile,scope:'manual-only',
     data,manualTargets,customParents,customChildren};
  }
@@ -330,8 +330,8 @@ class D05CategoryService{
       !['expense','income','both'].includes(p.kind))throw Error('D05: categoria personalizada inválida');
     const existing=this.db.prepare('SELECT id,name FROM categories WHERE id=? OR name=? COLLATE NOCASE').all(id,name);
     if(existing.some(e=>e.id!==id||e.name!==name))throw Error('D05: conflito com categoria existente');
-    if(!existing.length)this.db.prepare(¤INSERT INTO categories(name,color,built_in,emoji,kind,id,icon_key,hue)
-     VALUES(?,?,0,'✨',?,?,?,?)¤).run(name,p.color,p.kind,id,
+    if(!existing.length)this.db.prepare(`INSERT INTO categories(name,color,built_in,emoji,kind,id,icon_key,hue)
+     VALUES(?,?,0,'✨',?,?,?,?)`).run(name,p.color,p.kind,id,
        p.iconKey==null?null:ensureText(p.iconKey,64,'ícone'),
        p.hue==null?null:ensureHue(p.hue));
    }
@@ -348,9 +348,9 @@ class D05CategoryService{
       .all(id,parent.categoryId,norm);
     if(existing.some(e=>e.id!==id||e.parent_category_id!==parent.categoryId||e.name!==name))
       throw Error('D05: conflito com subcategoria existente');
-    if(!existing.length)this.db.prepare(¤INSERT INTO subcategories
+    if(!existing.length)this.db.prepare(`INSERT INTO subcategories
       (id,parent_category_id,name,normalized_name,icon_key,hue,kind,active,built_in,sort_order)
-      VALUES(?,?,?,?,?,?,?, ?,0,?)¤).run(id,parent.categoryId,name,norm,icon,hue,parent.parent.kind,c.active===0?0:1,
+      VALUES(?,?,?,?,?,?,?, ?,0,?)`).run(id,parent.categoryId,name,norm,icon,hue,parent.parent.kind,c.active===0?0:1,
          Number.isSafeInteger(c.sortOrder)&&c.sortOrder>=0?c.sortOrder:0);
    }
    // FinanceDB.save executes inside this transaction, preserving its old link & profile guards.
@@ -369,7 +369,7 @@ class D05CategoryService{
     if(t.categoryId!==null&&t.categoryId!==undefined){
      const dest=this.resolve({categoryId:t.categoryId,subcategoryId:t.subcategoryId??null},{allowInactive:true});
      if(dest.parentName!==tx.category)throw Error('D05: categoria de backup divergente');
-     this.db.prepare(¤UPDATE transactions SET category_id=?,subcategory_id=? WHERE profile=? AND id=?¤)
+     this.db.prepare(`UPDATE transactions SET category_id=?,subcategory_id=? WHERE profile=? AND id=?`)
       .run(dest.categoryId,dest.subcategoryId,profile,id);
     }else if(t.subcategoryId!==null&&t.subcategoryId!==undefined)
       throw Error('D05: filho sem pai no backup');
