@@ -3,7 +3,7 @@
 // No SQL writes here; FinanceDB remains the single source of validation and truth.
 const {createHash,randomUUID}=require('node:crypto');
 const {scopeOf,sameScope}=require('./intelligence-context.cjs');
-const {normalizeLabel,categoryEmoji}=require('./db.cjs');
+const {normalizeLabel,categoryEmoji,matchRule}=require('./db.cjs');
 const OPS=Object.freeze([
  'category.create','category.update','category.delete',
  'transaction.categorize','rule.create','rule.update','rule.delete'
@@ -219,6 +219,44 @@ class CategoryProposalService{
    expiresAt,source:scope.source,profile:scope.profile,month:scope.month,coverage:state.coverage,
    before,after,targetIds,affected,impact,conflicts,notes,requiredDependencies,
    mayExecuteSynthetic:status==='ready'&&capability==='synthetic_candidate'};
+ }
+ inspectRule(input,owner,{ruleId,proposalId}={}){
+  const {scope,references}=this.authorize(input,owner);
+  const config=this.db.listCategories(),prior=proposalId?this.previews.get(proposalId):null;
+  if(prior&&(!sameScope(prior.scope,scope)||prior.owner!==owner||prior.expiresAt<=this.clock()))
+   throw Error('Prévia de regra expirada.');
+  const rule=prior?.state?.action==='rule.create'?prior.state.after:
+   config.rules.find(x=>x.id===ruleId);
+  if(!rule)throw Error('Regra não encontrada.');
+  if(scope.source!=='bank'||rule.scope==='manual')
+   return {status:'unsupported',reason:'Avaliação desta regra exige histórico bancário autorizado.'};
+  const overview=this.db.bankOverview(),data=overview.transactions;
+  const examples=[],excluded={pending:0,transfer:0,split:0,manualOverride:0,period:0};
+  let matched=0,wouldChange=0,amountCents=0;
+  for(const row of data){
+   if(row.date<references.period.start||row.date>references.period.end){excluded.period++;continue;}
+   const nature=row.nature&&row.nature!=='auto'?row.nature:(row.amount<0?'expense':'income');
+   if(row.status!=='POSTED'){excluded.pending++;continue;}
+   if(!['income','expense'].includes(nature)){excluded.transfer++;continue;}
+   if(row.splits?.length){excluded.split++;continue;}
+   if(row.categorySource==='manual'){excluded.manualOverride++;continue;}
+   const eligible=matchRule(row.description,'bank',[rule],{
+    accountId:row.accountId,nature,rowid:row.rowid,status:row.status,hasSplits:false});
+   if(eligible!==rule.category)continue;
+   matched++;
+   const changed=row.category!==rule.category;
+   if(changed){wouldChange++;amountCents+=Math.abs(row.amount);}
+   if(examples.length<25)examples.push({id:row.accountId+':'+row.id,
+    accountId:row.accountId,externalId:row.id,date:row.date,
+    amountCents:Math.abs(row.amount),before:row.category,after:rule.category,wouldChange:changed});
+  }
+  return {contract:'I2-B/RULE-IMPACT-V1',status:overview.truncated?'partial':'ready',
+   ruleId:rule.id??null,proposalId:proposalId??null,source:scope.source,profile:scope.profile,
+   month:scope.month,asOf:references.readAt,coverage:overview.truncated?'partial_local':'unknown',
+   matchesLoaded:matched,wouldChangeLoaded:wouldChange,amountCents,excluded,examples,
+   historyComplete:false,warning:rule.constraint?
+    'Regra futura respeita conta, natureza e rowid de criação; histórico anterior não será reclassificado.':
+    'Regra sem limite futuro: alterações históricas exigem revisão específica; contagem da amostra não é total.'};
  }
  revise(proposalId,patch,input,owner){
   const {scope}=this.authorize(input,owner),old=this.previews.get(proposalId);
