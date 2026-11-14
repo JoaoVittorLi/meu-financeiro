@@ -277,7 +277,7 @@ function mfD04Render(app:any):any{
      onClick:()=>app.setState({categoryReviewOpen:false,intelligenceMainMode:'chat'})},'Voltar à conversa'),
     grant?h('button',{type:'button',className:'ghost-button',
      onClick:()=>void categoryReviewRun(app,()=>categoryReviewRefresh(app))},'Atualizar fila'):null)),
-  empty,body,
+  empty,body,mfI2CategoryPanel(app),
   s.mfD04Error?h('p',{className:'mf-ai-error',role:'status'},s.mfD04Error):null,
   s.categoryReviewError?h('p',{className:'mf-ai-error',role:'alert'},s.categoryReviewError):null,
   s.categoryReviewBusy?h('p',{role:'status'},'Conferindo o serviço…'):null,
