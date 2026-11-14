@@ -387,6 +387,7 @@ case"reopen":if(p){p.status="pending";p.deferUntil=null;state.filter="pending";s
 });
 root.addEventListener("input",e=>{
 if(e.target.id==="d04-search"){state.query=e.target.value;normalizeSelection();renderQueue();renderDetail();}
+const key=e.target.dataset.edit;if(key&&state.edit){if(key==="terms")state.edit.data.terms=e.target.value.split(",").map(x=>x.trim()).filter(Boolean);else if(key==="proposedLimitCents")state.edit.data.proposedLimitCents=Math.round(Number(e.target.value||"0")*100);else state.edit.data[key]=e.target.value;}
 });
 root.addEventListener("change",e=>{
 const p=current();if(!p)return;
