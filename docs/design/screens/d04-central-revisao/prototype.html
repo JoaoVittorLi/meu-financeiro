@@ -353,13 +353,13 @@ const p=current(),d=state.edit;if(!p||!d||d.id!==p.id)return;
 const getVal=k=>root.querySelector('[data-edit="'+k+'"]')?.value;
 if(p.kind==="category_rule"){
 const name=(getVal("proposedCategory")||"").trim(),terms=(getVal("terms")||"").split(",").map(x=>x.trim()).filter(Boolean);
-if(!name||!terms.length){state.feedback="Informe um nome e pelo menos um termo válido.";renderDetail();return}
+if(!name||!terms.length){state.edit.data.proposedCategory=name;state.edit.data.terms=terms;state.feedback="Informe um nome e pelo menos um termo válido.";renderDetail();return}
 p.proposedCategory=name;p.terms=terms;p.color=d.data.color;
 }else if(p.kind==="category_change"){
 p.proposedCategory=getVal("proposedCategory")||p.proposedCategory;
 }else{
 const value=Number(getVal("proposedLimitCents"));
-if(!Number.isFinite(value)||value<100||value>100000){state.feedback="Informe um limite entre R$ 100 e R$ 100.000.";renderDetail();return}
+if(!Number.isFinite(value)||value<100||value>100000){state.edit.data.proposedLimitCents=Number.isFinite(value)?Math.round(value*100):p.proposedLimitCents;state.feedback="Informe um limite entre R$ 100 e R$ 100.000.";renderDetail();return}
 p.proposedLimitCents=Math.round(value*100);
 }
 state.edit=null;updatePreview();
@@ -367,7 +367,7 @@ state.edit=null;updatePreview();
 root.addEventListener("click",e=>{
 const sel=e.target.closest("[data-select]");if(sel){state.selected=sel.dataset.select;state.edit=null;state.feedback="";render();return}
 const filter=e.target.closest("[data-filter]");if(filter){state.filter=filter.dataset.filter;state.edit=null;state.feedback="";render();return}
-const sw=e.target.closest("[data-color]");if(sw&&state.edit){state.edit.data.color=sw.dataset.color;renderDetail();return}
+const sw=e.target.closest("[data-color]");if(sw&&state.edit){const p=current();if(p?.kind==="category_rule"){state.edit.data.proposedCategory=root.querySelector('[data-edit="proposedCategory"]')?.value??state.edit.data.proposedCategory;state.edit.data.terms=(root.querySelector('[data-edit="terms"]')?.value??state.edit.data.terms.join(", ")).split(",").map(x=>x.trim()).filter(Boolean);}state.edit.data.color=sw.dataset.color;renderDetail();return}
 const defer=e.target.closest("[data-defer]");if(defer&&state.modal==="defer"){finish("deferred",defer.dataset.defer);return}
 const btn=e.target.closest("[data-action]");if(!btn)return;const p=current();
 switch(btn.dataset.action){
