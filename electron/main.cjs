@@ -15,6 +15,7 @@ const {pairViaSystemBrowser,cancelBrowserPairing}=require('./cloud-system-browse
 const {PlanningStore}=require('./planning.cjs');
 const {LocalFinancialIntelligence}=require('./financial-intelligence.cjs');
 const {IntelligenceOperational}=require('./intelligence-operational.cjs');
+const {IC2ReadQueryGateway}=require('./intelligence-ic2-adapter.cjs');
 const {CategoryReviewService}=require('./category-review.cjs');
 const {CategoryReviewBackupGate}=require('./category-review-backup.cjs');
 const {automaticBackup,restoreBackup,listAutoBackups,validateBackupFile}=require('./recovery.cjs');
@@ -162,6 +163,15 @@ function createWindow(){
 // The userData path must be isolated BEFORE the single-instance lock and
 // before FinanceDB or vault initialization. Unavailable in packaged builds.
 const smokeProfileActive=isolateSmokeProfile(app);
+// Release-candidate binaries never use stable userData; no packaged override.
+const experimentalPackaged=app.isPackaged===true;
+if(experimentalPackaged){
+ const isolated=path.join(app.getPath('appData'),'MeuFinanceiro-RC-ALL-01-Experimental');
+ if(fs.existsSync(isolated)&&fs.lstatSync(isolated).isSymbolicLink())
+  throw new Error('Diretório experimental não pode ser link simbólico.');
+ fs.mkdirSync(isolated,{recursive:true});
+ app.setPath('userData',isolated);
+}
 const q1NativeBounds=q1NativeWindow(smokeProfileActive);
 // Preview portable and installed version share one local finance database.
 // Prevent concurrent Electron instances from writing to the same SQLite file.
@@ -175,12 +185,12 @@ app.on('second-instance',()=>{
 });
 app.whenReady().then(()=>{
  if(!isPrimaryInstance)return;
- app.setAppUserModelId('app.local.meufinanceiro');
+ app.setAppUserModelId(experimentalPackaged?'app.local.meufinanceiro.rcall01':'app.local.meufinanceiro');
  const filename=path.join(app.getPath('userData'),'meu-financeiro.sqlite');
  db=new FinanceDB(filename);
  planner=new PlanningStore(db);
  let localFinancial,categoryReview,reviewBackupGate;
- let operationalIntelligence;
+ let operationalIntelligence,ic2ReadQuery;
  function bindLocalFinancialServices(){
   // A restored/recovered database has a new handle. Never retain grants,
   // previews or a service pointing at the closed pre-restore connection.
@@ -189,6 +199,8 @@ app.whenReady().then(()=>{
   categoryReview=smokeProfileActive?new CategoryReviewService(db,{syntheticProfile:true}):null;
   reviewBackupGate=categoryReview?new CategoryReviewBackupGate(categoryReview,path.join(app.getPath('userData'),'review-backups'),{syntheticProfile:true}):null;
   operationalIntelligence=new IntelligenceOperational({localFinancial,categoryReview,db});
+  // Restoration replaces services, invalidating prior IC2 contexts.
+  ic2ReadQuery=new IC2ReadQueryGateway(localFinancial);
  }
  bindLocalFinancialServices();
  ipcMain.handle('finance:review-status',event=>{requireAppSender(event);return {available:!!categoryReview,syntheticOnly:true};});
@@ -209,13 +221,17 @@ app.whenReady().then(()=>{
  ipcMain.handle('intelligence:operational-ask',(event,input)=>{
   requireAppSender(event);return operationalIntelligence.ask(input,event.sender.id);
  });
+ ipcMain.handle('intelligence:ic2-read-query',(event,input)=>{
+  requireAppSender(event);return ic2ReadQuery.ask(input,event.sender.id);
+ });
  vault=new PluggyVault(app.getPath('userData'),safeStorage);
  const aiVault=new AIAuthVault(app.getPath('userData'),safeStorage);
  const aiAuth=new ChatGPTSignIn({vault:aiVault,openExternal:url=>shell.openExternal(url)});
  const aiPersonal=new AIPersonalStore(app.getPath('userData'),safeStorage);
  const aiDemo=new ChatGPTDemoClient({auth:aiAuth,personalStore:aiPersonal});
  session.defaultSession.setPermissionRequestHandler((_wc,_permission,callback)=>callback(false));
- if(smokeProfileActive){
+ if(smokeProfileActive||experimentalPackaged){
+   // RC packaged builds remain offline-only, including Cloudflare/Pluggy/OpenAI.
    // Smoke tests contain invented entries only; forbid outbound HTTP even if
    // a feature unexpectedly attempts to reach Cloudflare/Pluggy/OpenAI.
    for(const ses of [session.defaultSession,session.fromPartition('persist:mf-cloud-preview')])
