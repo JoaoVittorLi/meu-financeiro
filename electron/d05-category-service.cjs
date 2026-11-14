@@ -12,11 +12,22 @@ function ensureText(x,max,label){if(typeof x!=='string'||!x.trim()||x.trim().len
 function ensureHue(v){if(!Number.isInteger(v)||v<0||v>359)throw Error('D05: tonalidade inválida');return v;}
 function checkProfile(p){if(p!=='real'&&p!=='demo')throw Error('D05: perfil inválido');return p;}
 function sameIdPair(a,b){return a.categoryId===b.categoryId&&a.subcategoryId===b.subcategoryId;}
+let d05NestedSequence=0;
 function inTransaction(db, fn) {
- if(db.isTransaction)throw Error('D05: transação aninhada proibida');
- db.exec('BEGIN IMMEDIATE');
- try{const value=fn();db.exec('COMMIT');return value;}
- catch(e){db.exec('ROLLBACK');throw e;}
+ // When the trusted MAIN host owns an outer receipt transaction, the E2
+ // operation uses a SAVEPOINT. Only MAIN may commit mutation and receipt.
+ const nested=!!db.isTransaction;
+ const savepoint=nested?'d05_rc_nested_'+(++d05NestedSequence):null;
+ db.exec(nested?'SAVEPOINT '+savepoint:'BEGIN IMMEDIATE');
+ try{
+  const value=fn();
+  db.exec(nested?'RELEASE SAVEPOINT '+savepoint:'COMMIT');
+  return value;
+ }catch(e){
+  if(nested){db.exec('ROLLBACK TO SAVEPOINT '+savepoint);db.exec('RELEASE SAVEPOINT '+savepoint);}
+  else db.exec('ROLLBACK');
+  throw e;
+ }
 }
 class D05CategoryService{
  constructor(finance){
