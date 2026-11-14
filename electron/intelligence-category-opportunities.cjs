@@ -174,8 +174,8 @@ class ProactiveCategoryAdvisor{
    const id=sha([scope.owner,scope.token,g.accountId,g.nature,g.pattern,category,digest]).slice(0,32);
    const item={id,kind:'merchant_pattern',accountId:g.accountId,nature:g.nature,
     pattern:g.pattern,category,confidence,
-    rationale:anchorCount+' correções manuais explícitas e consistentes para esta descrição exata.',
-    evidence:{manualCorrections:anchorCount,manualExamples:evidence,
+    rationale:anchorCount+' overrides explícitos consistentes no histórico local para esta descrição exata; o autor da alteração não é comprovado.',
+    evidence:{manualCorrections:anchorCount,labelProvenance:'explicit_local_override_actor_unverified',manualExamples:evidence,
      loadedCandidateCount:candidates.length,loadedCandidateAmountCents:cents,
      candidateExamples:shown,candidatePreviewTruncated:candidates.length>shown.length,
      alreadyInCategoryLoaded:compatible.length,alreadyByRuleLoaded:ruleShadowed.length},
@@ -206,6 +206,7 @@ class ProactiveCategoryAdvisor{
    counts:{patterns:groups.size,suggestions:suggestions.length,conflicts:conflicts.length},
    continuation:{hasMore:suggestions.length>params.limit,shown:ordered.length},
    diagnostics:[...base.diagnostics,'Somente correções humanas explícitas serviram de âncora.',
+    'Overwrites locais são evidência de categoria, mas o banco não comprova quem realizou cada alteração.',
     'A confiança representa consistência da amostra, não probabilidade calibrada de acerto.',
     'Rótulos aplicados pela revisão supervisionada são excluídos do treinamento para evitar retroalimentação.',
     'Sugestões não autorizam lançamentos, regras ou contas fora do escopo.']};
