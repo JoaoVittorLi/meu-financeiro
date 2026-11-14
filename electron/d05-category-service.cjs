@@ -219,7 +219,9 @@ class D05CategoryService{
    rows.push(row);
   }
   rows.sort((a,b)=>a.account_id.localeCompare(b.account_id)||a.external_id.localeCompare(b.external_id));
-  const version=createHash('sha256').update(JSON.stringify([r.categoryId,r.subcategoryId,rows])).digest('hex');
+  const rules=this.db.prepare('SELECT id,pattern,match_mode,category,priority,enabled,category_id,subcategory_id FROM category_rules ORDER BY id').all();
+  const splits=this.db.prepare('SELECT account_id,external_id,position,category,amount_cents,category_id,subcategory_id FROM bank_transaction_splits ORDER BY account_id,external_id,position').all();
+  const version=createHash('sha256').update(JSON.stringify([r.categoryId,r.parentName,r.subcategoryId,r.child?.name??null,rows,rules,splits])).digest('hex');
   return {contract:'D05/BANK-BATCH-PREVIEW-V1',previewVersion:version,categoryId:r.categoryId,
     subcategoryId:r.subcategoryId,count:rows.length,posted:rows.filter(x=>x.status==='POSTED').length,
     pending:rows.filter(x=>x.status!=='POSTED').length,changesApplied:false};
