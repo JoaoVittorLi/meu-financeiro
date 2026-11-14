@@ -26,7 +26,7 @@ class AtomicSyntheticCategoryExecutor{
   this.sql.exec('CREATE TABLE IF NOT EXISTS i2c_atomic_receipts ('+
    'proposal_id TEXT PRIMARY KEY, owner INTEGER NOT NULL, scope_hash TEXT NOT NULL,'+
    'source TEXT NOT NULL, profile TEXT NOT NULL, month TEXT NOT NULL,'+
-   'nonce_hash TEXT NOT NULL, action TEXT NOT NULL, state TEXT NOT NULL CHECK(state IN ("committed")),'+
+   "nonce_hash TEXT NOT NULL, action TEXT NOT NULL, state TEXT NOT NULL CHECK(state IN ('committed')),"+
    'committed_at TEXT NOT NULL, receipt_json TEXT NOT NULL)');
  }
  fault(name){
@@ -120,7 +120,7 @@ class AtomicSyntheticCategoryExecutor{
     undoReason:'Reversão não homologada; apenas nova proposta supervisionada.',...delta};
    this.sql.prepare('INSERT INTO i2c_atomic_receipts ('+
     'proposal_id,owner,scope_hash,source,profile,month,nonce_hash,action,state,committed_at,receipt_json) '+
-    'VALUES(?,?,?,?,?,?,?,?,"committed",?,?)').run(
+    "VALUES(?,?,?,?,?,?,?,?,'committed',?,?)").run(
      proposalId,owner,scopeHash,scope.source,scope.profile,scope.month,nonceHash,
      p.state.action,committedAt,JSON.stringify(receipt));
    this.fault('after_receipt');
