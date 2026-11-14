@@ -326,3 +326,22 @@ test('C1: edit during asynchronous authorization cannot confirm original nonce',
   assert.equal(f.db.listCategories().categories.some(c=>c.name==='Pets'),false);
  }finally{f.close();}
 });
+
+test('C1: external SQLite connection mutation invalidates otherwise identical category preview',async()=>{
+ const {DatabaseSync}=require('node:sqlite');
+ const f=fixture();try{
+  const p=create(f);
+  const before=f.db.db.prepare('SELECT total_changes() AS n').get().n;
+  const external=new DatabaseSync(f.vault.filename);
+  try{
+   external.prepare('UPDATE bank_transactions SET description=? WHERE account_id=? AND external_id=?')
+    .run('ALTERADO POR OUTRA CONEXAO',ACCOUNT,'ifood');
+  }finally{external.close();}
+  assert.equal(f.db.db.prepare('SELECT total_changes() AS n').get().n,before,
+   'total_changes of the original connection cannot detect external writes');
+  const result=await f.confirm(p);
+  assert.equal(result.status,'stale');
+  assert.equal(result.changesApplied,false);
+  assert.equal(f.db.listCategories().categories.some(c=>c.name==='Pets'),false);
+ }finally{f.close();}
+});
