@@ -61,12 +61,21 @@ class ProactiveCategoryBridge{
  }
  async handle(request,host){
   const method=request?.method;
-  if(!['discover','inspectOpportunity','draftOpportunity','advice'].includes(method))
+  if(!['advisorCapabilities','discover','inspectOpportunity','draftOpportunity','advice'].includes(method))
    return this.base.handle(request,host);
   const owner=host?.owner,reply=(status,data,reason='')=>({
    contract:CONTRACT,version:1,method,status,mode:'READ_ONLY_PERSONAL',
    changesApplied:false,modelCalled:false,reason,data:stripSensitive(data||{})});
-  if(!Number.isInteger(owner)||owner<0||!request?.scope)return reply('denied',null,'Autorização IC-READ necessária.');
+  if(!Number.isInteger(owner)||owner<0)return reply('denied',null,'Identidade MAIN necessária.');
+  if(method==='advisorCapabilities')return reply('ready',{
+   read:'READ_ONLY_PERSONAL',write:'DISABLED_BY_DEFAULT',modelCalled:false,
+   commands:['discover','inspectOpportunity','draftOpportunity','advice'],
+   evidence:'manual_category_overrides_only',supports:['category_name_similarity','unused_reference_review','category_kind_mismatch','exact_merchant_pattern','historical_id_preview','future_rule_preview'],
+   taxonomy:{d05Visual:'DESIGN_APPROVED',parentCategories:14,proposedSubcategories:61,
+    sqlite:'NOT_IMPLEMENTED',schemaVersion:null,subcategoryWrites:false,
+    categoryIdTarget:'unsupported_until_integrator_migration'},
+   integration:'I2-C/ELECTRON-REVIEW-V1',personalWrites:false});
+  if(!request?.scope)return reply('denied',null,'Autorização IC-READ necessária.');
   const taxonomy=taxonomyGate(request.target);
   if(taxonomy)return reply('unsupported',taxonomy,taxonomy.reason);
   try{
