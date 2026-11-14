@@ -26,18 +26,20 @@ function installD05Ipc({ipcMain,finance,requireAppSender,authorizeRead,authorize
   });
  };
  const write=(channel,action,handler)=>{
-  ipcMain.handle(channel,async(event,input)=>{
+  ipcMain.handle(channel,(event,input)=>{
    requireAppSender(event);
-   // Host can ask the user through Electron's trusted native dialog and
-   // atomically commit the D05 operation with a durable receipt. Never trust
-   // a renderer-supplied approved/owner/consent flag.
+   // Main authorization may return a promise with an already-committed
+   // atomic receipt; legacy E2 test hooks return a synchronous boolean.
    const commit=()=>handler(getService(),input);
-   const permit=await authorizeWrite(event,action,input,commit);
-   // Test/legacy authorizers returning true are still required to pass the
-   // host gate; RC authorization instead owns the atomic commit/receipt.
-   if(permit===true)return commit();
-   if(permit===false||permit===null||permit===undefined)throw Error('D05: confirmação humana obrigatória');
-   return permit;
+   const authorized=authorizeWrite(event,action,input,commit);
+   const finalize=value=>{
+    if(value===true)return commit();
+    if(value===false||value===null||value===undefined)
+     throw Error('D05: confirmação humana obrigatória');
+    return value;
+   };
+   return authorized&&typeof authorized.then==='function'?
+    authorized.then(finalize):finalize(authorized);
   });
  };
  read(CHANNELS.catalog,{source:'taxonomy'},service=>service.listCatalog());
