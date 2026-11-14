@@ -270,14 +270,14 @@ test('D02 — valid current grant still allows cached read-only view until expir
 
 test('QA-GATE-01 — grant B cannot resurrect card from grant A with identical scope',()=>{
  const a=app(),v=api.mfV3FromOperational(reply,'summary',null);
- assert.match(txt(api.mfV3Render(a,{id:'under-a',visualV3:v})),/R\\$\\s*2\\.727,00/);
+ assert.match(txt(api.mfV3Render(a,{id:'under-a',visualV3:v})),/R\$\s*2\.727,00/);
  const grantB={...syntheticGrant,token:'synthetic-grant-b',expiresAt:Date.now()+600000};
  a.state.localFinancialAccess=grantB; // same source, profile and month
  const old=api.mfV3Render(a,{id:'under-b',visualV3:v});
  assert.match(old.props.className,/state-stale/);
- assert.doesNotMatch(txt(old),/R\\$\\s*2\\.727,00/);
+ assert.doesNotMatch(txt(old),/R\$\s*2\.727,00/);
  const bCard=api.mfV3BindGrant(cardFactory(reply,'summary',null),grantB,'');
- assert.match(txt(api.mfV3Render(a,{id:'new-b',visualV3:bCard})),/R\\$\\s*2\\.727,00/);
+ assert.match(txt(api.mfV3Render(a,{id:'new-b',visualV3:bCard})),/R\$\s*2\.727,00/);
  // Even an identical token must not make a different grant object the same authorization.
  a.state.localFinancialAccess={...grantB};
  assert.match(api.mfV3Render(a,{id:'replaced-b',visualV3:bCard}).props.className,/state-stale/);
