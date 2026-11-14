@@ -128,3 +128,37 @@ test('PersonalGate — post-COMMIT interruption returns recovery_required; recei
    'SELECT COUNT(*) AS n FROM d05_personal_supervised_receipts').get().n,1);
  }finally{f.close();}
 });
+
+test('PersonalGate — receipt survives real vault reopen with a freshly owner-bound synthetic session',async()=>{
+ const f=fixture();let restartedRead,restartedGateway;
+ try{
+  const s=await f.read.authorize(event,{profile:'demo'});
+  const p=await f.gateway.prepare(event,{sessionToken:s.token,action:'manual.categorize',
+   profile:'demo',id:'test-1',target});
+  const applied=await f.gateway.confirmPreview(event,{sessionToken:s.token,
+   proposalId:p.proposalId,nonce:p.nonce});
+  assert.equal(applied.status,'applied');
+  f.gateway.stopAll();f.read.stopAll();f.vault.close();f.vault.reopen();
+  const anotherWindow={sender:{id:29,isDestroyed:()=>false}};
+  restartedRead=new D05RCSecureGate({finance:()=>f.vault.db,
+   confirm:async()=>true,backupDirectory:()=>f.folder,isIsolated:()=>true});
+  restartedGateway=new D05PersonalWriteGateway({finance:()=>f.vault.db,
+   readSession:(event,input)=>restartedRead.require(event,input),
+   confirm:async()=>false,backupDirectory:()=>f.folder,syntheticVault:f.vault,
+   approvedForPersonal:()=>false});
+  const newer=await restartedRead.authorize(anotherWindow,{profile:'demo'});
+  const receipt=restartedGateway.receipt(anotherWindow,{
+   sessionToken:newer.token,proposalId:p.proposalId});
+  assert.equal(receipt.status,'applied');
+  assert.equal(receipt.recovered,true);
+  assert.equal(receipt.receipt.proposalId,p.proposalId);
+  assert.equal(f.vault.db.load('demo').transactions[0].subcategoryId,target.subcategoryId);
+  const denied=await restartedGateway.confirmPreview(anotherWindow,{
+   sessionToken:newer.token,proposalId:p.proposalId,nonce:p.nonce});
+  assert.equal(denied.status,'denied'); // never re-execute under changed owner/scope
+  assert.equal(f.vault.db.db.prepare(
+   'SELECT COUNT(*) AS n FROM d05_personal_supervised_receipts').get().n,1);
+ }finally{
+  restartedGateway?.stopAll();restartedRead?.stopAll();f.close();
+ }
+});
