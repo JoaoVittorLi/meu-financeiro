@@ -16,7 +16,12 @@ function stripSensitive(value){
  }));
 }
 function taxonomyGate(target){
- if(!target||target.level===undefined||target.level==='category')return null;
+ if(!target)return null;
+ if(Object.prototype.hasOwnProperty.call(target,'subcategoryId')||
+    Object.prototype.hasOwnProperty.call(target,'categoryId'))
+  return {status:'unsupported',reason:'Destino {categoryId,subcategoryId} D05 ainda não implementado no SQLite; não converter implicitamente para nome de categoria.',
+   needs:'D05_SUBCATEGORY_APPROVED_SCHEMA',changesApplied:false};
+ if(target.level===undefined||target.level==='category')return null;
  if(target.level==='subcategory')return {status:'unsupported',
   reason:'Subcategorias aguardam contrato e homologação D05. Nenhuma migração ou escrita foi feita.',
   needs:'D05_SUBCATEGORY_APPROVED_SCHEMA',changesApplied:false};
