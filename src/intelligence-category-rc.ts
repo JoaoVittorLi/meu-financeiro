@@ -164,6 +164,8 @@ function mfI2CategoryPanel(app:any):any{
    personalLive?h('div',{className:'mf-i2-controls'},
     button('Sem uso ou semelhantes',()=>void mfI2PersonalRequest(app,{method:'analyze'})),
     button('Listar categorias e regras',()=>void mfI2PersonalRequest(app,{method:'list'})),
+    button('Perguntar sobre categorias',()=>void mfI2PersonalRequest(app,{method:'ask',
+     question:String(s.mfI2Question||'').slice(0,700)})),
     button('Prévia pessoal de criação',()=>void mfI2PersonalRequest(app,{method:'propose',
      action:'category.create',params:mfI2Params(app,'category.create')})),
     button('Prévia pessoal de edição',()=>void mfI2PersonalRequest(app,{method:'propose',
