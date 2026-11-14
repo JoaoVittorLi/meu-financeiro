@@ -156,3 +156,46 @@ test('D05 E2 — IA só recebe facade fail-closed com autorização explícita p
   assert.equal(calls.some(x=>x.capability==='bank'),true);
  }finally{db.close();}
 });
+
+test('D05 E2 — JSON portátil manual restaura ID custom e filho, preserva 630 registros e orçamentos',()=>{
+ const source=new FinanceDB(':memory:');const target=new FinanceDB(':memory:');
+ try{
+  source.upsertCategory({name:'Pets',color:'#aabbcc'});
+  const svc=new D05CategoryService(source);
+  const custom=svc.listCatalog().parents.find(p=>p.name==='Pets');
+  const child=svc.createSubcategory({parentCategoryId:custom.id,name:'Veterinário',iconKey:'stethoscope',hue:120});
+  source.save('demo',expenses(630));
+  svc.assignManual({profile:'demo',id:'synthetic-0',target:{categoryId:custom.id,subcategoryId:child.id}});
+  const snap=svc.exportManualProfile('demo');
+  const restored=new D05CategoryService(target);
+  assert.equal(restored.restoreManualProfile('demo',snap).restored,630);
+  const out=restored.listManual({profile:'demo',categoryId:custom.id,subcategoryId:child.id});
+  assert.equal(out.total,1);
+  assert.equal(target.load('demo').transactions.length,630);
+  assert.equal(target.load('demo').budgets['Alimentação'],600000);
+  assert.equal(target.db.prepare('PRAGMA foreign_key_check').all().length,0);
+  const invalid=structuredClone(snap);
+  invalid.manualTargets[0].categoryId='cat:moradia'; // incompatible with original Alimentação
+  assert.throws(()=>restored.restoreManualProfile('demo',invalid),/divergente|incompatível/);
+  assert.equal(restored.listManual({profile:'demo',categoryId:custom.id,subcategoryId:child.id}).total,1);
+ }finally{source.close();target.close();}
+});
+test('D05 E2 — IPC exige sender, escopo e confirmação de escrita pelo processo principal',()=>{
+ const db=new FinanceDB(':memory:');
+ try{
+  const {installD05Ipc,CHANNELS}=require('../electron/d05-ipc-adapter.cjs');
+  const routes=new Map(),ipcMain={handle:(channel,fn)=>routes.set(channel,fn)};
+  const handler=installD05Ipc({ipcMain,finance:db,
+    requireAppSender:ev=>{if(ev?.trusted!==true)throw Error('sender');},
+    authorizeRead:(ev,scope)=>ev.allowed==='read',
+    authorizeWrite:(ev,action)=>ev.allowed==='write'&&action==='subcategory.create'});
+  assert.equal(handler.service.listCatalog().parents.length,14);
+  assert.throws(()=>routes.get(CHANNELS.catalog)({trusted:false,allowed:'read'}),/sender/);
+  assert.throws(()=>routes.get(CHANNELS.catalog)({trusted:true,allowed:'denied'}),/não autorizada/);
+  assert.equal(routes.get(CHANNELS.catalog)({trusted:true,allowed:'read'}).parents.length,14);
+  assert.throws(()=>routes.get(CHANNELS.assignBank)({trusted:true,allowed:'write'},{accountId:'a'}),/obrigatória/);
+  const created=routes.get(CHANNELS.createSubcategory)({trusted:true,allowed:'write'},{
+    parentCategoryId:'cat:moradia',name:'Teste de IPC',iconKey:'house',hue:200});
+  assert(created.id.startsWith('sub:custom:'));
+ }finally{db.close();}
+});
