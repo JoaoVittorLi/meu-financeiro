@@ -197,3 +197,18 @@ test('C2 — source integration preserved legacy review APIs without implementin
  assert.match(view,/return renderMfD03Today\(app\)/);
  assert.match(legacy,/categoryReviewConfirm\(\{token:g.token,id:p.id,digest:p.digest/);
 });
+
+
+test('C2 — expired grant hides old review details and receipt from UI',()=>{
+ const a=reviewApp();a.state.categoryReviewReceipt={id:'old-receipt'};
+ a.state.categoryReviewGrant.expiresAt=Date.now()-1000;
+ const tree=f.mfD04Render(a);
+ assert.equal(deep(tree,x=>x.props?.className==='mf-d04-body').length,0);
+ assert.equal(deep(tree,x=>x.props?.className==='mf-d04-receipt').length,0);
+ assert.match(JSON.stringify(tree),/Autorize uma revisão supervisionada/);
+});
+test('C2 — renewal must reset cached queue, preview, receipt, confirmation and drafts',()=>{
+ assert.match(legacy,/categoryReviewReport:null,categoryReviewQueue:null,categoryReviewPreview:null/);
+ assert.match(legacy,/categoryReviewConfirmed:false,categoryReviewReceipt:null,categoryReviewSelected:\[\]/);
+ assert.match(legacy,/mfD04Drafts:\{\},mfD04Excluded:\{\},mfD04Selected:null/);
+});
