@@ -4,6 +4,7 @@
 const { DatabaseSync, backup } = require('node:sqlite');
 const fs = require('node:fs');
 const path = require('node:path');
+const { migrateHierarchy } = require('./d05-hierarchy.cjs');
 const DEFAULT_CATEGORIES = [
   ['Moradia','#3e9a85'],['Alimentação','#d6934b'],['Transporte','#4489ba'],
   ['Saúde','#cb6d76'],['Lazer','#2aa898'],['Educação','#4c7fb2'],
@@ -132,6 +133,9 @@ function validate(payload) {
 function checkProfile(profile){if(profile!=='real'&&profile!=='demo') throw new Error('Perfil inválido');return profile;}
 class FinanceDB {
  constructor(filename){
+   // Capture the original pre-migration state for on-disk legacy databases.
+   const existingFile = filename && filename !== ':memory:' && path.resolve(filename);
+   const hadLegacyFile = Boolean(existingFile && fs.existsSync(existingFile) && fs.statSync(existingFile).size > 0);
    if (!filename || filename === ':memory:') { this.filename = filename || ':memory:'; }
    else { this.filename=path.resolve(filename); fs.mkdirSync(path.dirname(this.filename),{recursive:true,mode:0o700}); }
    this.db = new DatabaseSync(this.filename);
@@ -303,6 +307,15 @@ class FinanceDB {
      this.db.prepare("INSERT INTO app_meta(key,value) VALUES('budget_zero_migration_094','done')").run();
    }
    this.db.prepare('UPDATE app_meta SET value=? WHERE key=?').run('6','schema_version');
+   if (!this.db.prepare("SELECT 1 FROM app_meta WHERE key='d05_hierarchy_e1'").get() && hadLegacyFile) {
+     const rescuePath = this.filename + '.d05-before-v7.sqlite';
+     if (!fs.existsSync(rescuePath)) {
+       // VACUUM INTO includes committed WAL changes. Never overwrite a rescue copy.
+       this.db.prepare('VACUUM INTO ?').run(rescuePath);
+       try { fs.chmodSync(rescuePath, 0o600); } catch (_) { /* Windows ACL is authoritative */ }
+     }
+   }
+   migrateHierarchy(this.db);
  }
  load(profile){
    checkProfile(profile);
