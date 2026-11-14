@@ -253,10 +253,18 @@ test('C2 — real disable clears former grant drafts, confirmation, receipt and 
 test('C2 — real reauthorization replaces session state before fetching new queue',async()=>{
  const js=ts.transpileModule(legacy,{compilerOptions:{target:ts.ScriptTarget.ES2019,module:ts.ModuleKind.None}}).outputText;
  const calls=[];
- const fn=new Function('desktop',js+';return {categoryReviewEnable};')({
+ // The real renderer bundles localFinancialDisable from intelligence-local.ts.
+ // This isolated VM intentionally loads ONLY intelligence-review.ts, so inject
+ // the true dependency as a test double and assert IC-READ revocation.
+ const revokedLocal=[];
+ const fn=new Function('desktop','localFinancialDisable',js+
+  ';return {categoryReviewEnable};')({
   categoryReviewAuthorize:async()=>({token:'review-fresh',expiresAt:Date.now()+600000}),
   categoryReviewList:async({token})=>{calls.push('list:'+token);return {suggestions:[],audit:[]};},
   categoryReviewQueue:async({token})=>{calls.push('queue:'+token);return {rows:[],nextCursor:null};}
+ },app=>{
+  revokedLocal.push(app.state.localFinancialAccess?.token);
+  app.setState({localFinancialAccess:null});
  });
  const a=reviewApp();
  Object.assign(a.state,{categoryReviewReceipt:{id:'old'},categoryReviewPreview:{id:'old'},
@@ -274,5 +282,7 @@ test('C2 — real reauthorization replaces session state before fetching new que
  assert.equal(a.state.mfD04Selected,null);
  assert.deepEqual(a.state.categoryReviewFilters,{});
  assert.equal(a.state.mfD04Stage,'pending');
+ assert.deepEqual(revokedLocal,['read']);
+ assert.equal(a.state.localFinancialAccess,null);
  assert.deepEqual(calls,['list:review-fresh','queue:review-fresh']);
 });
