@@ -108,7 +108,9 @@ class RCCategoryGateway{
   const label=resolved.child?.name||resolved.parentName;
   if(normalizeLabel(label)!==normalizeLabel(q.category))
    return deny('review_required','Destino não corresponde à categoria comprovada pelos ajustes manuais.');
-  const reasons=(q.reasons||[]).filter(x=>!['unsupported_source','d05_hierarchy_target_unresolved'].includes(x));
+  // No evidence reason can be silently suppressed. D05 destination
+  // resolution is a separate prerequisite, never an exception to quality.
+  const reasons=q.reasons||[];
   const n=q.candidateSummary?.count;
   if(reasons.length||q.anchorSummary?.count<2||q.anchorSummary?.independentDates<2||
      !Number.isSafeInteger(n)||n<1||n>10||
