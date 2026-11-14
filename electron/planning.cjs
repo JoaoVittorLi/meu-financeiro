@@ -2,6 +2,7 @@
 // Central de Planejamento: camada aditiva no SQLite existente.
 // Valores sempre em centavos; extratos originais nunca são alterados.
 const {randomUUID}=require('node:crypto');
+const {migrateHierarchy}=require('./d05-hierarchy.cjs');
 const MAX=100_000_000_000;
 const DATE=/^\d{4}-\d{2}-\d{2}$/;
 const KINDS=['income','expense'];
@@ -59,7 +60,10 @@ class PlanningStore {
   PRIMARY KEY(account_id,external_id),
   FOREIGN KEY(account_id,external_id) REFERENCES bank_transactions(account_id,external_id) ON DELETE CASCADE
  );
- `);}
+ `);
+ // PlanningStore creates planned_items after FinanceDB startup; include D05 refs safely.
+ migrateHierarchy(this.db);
+ }
  log(itemId,action,details=''){this.db.prepare('INSERT INTO planned_audit(item_id,action,details,at) VALUES(?,?,?,?)').run(itemId,action,String(details).slice(0,300),new Date().toISOString());}
  validateInput(input){
   const title=text(input?.title,140,'Nome');const kind=input?.kind;if(!KINDS.includes(kind))throw new Error('Tipo de transação inválido.');
