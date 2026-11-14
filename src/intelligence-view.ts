@@ -370,75 +370,7 @@ function intelligencePremiumBudgetChart(c:any){
      h('span',{className:b.percentage>=100?'is-over':'',style:{width:Math.min(100,Math.max(0,b.percentage))+'%'}})):null)));
 }
 function renderIntelligencePremiumToday(app:any){
- const s=app.state,signature=intelligencePremiumSignature(app);
- const stale=!!s.intelligencePremiumReport&&s.intelligencePremiumSignature!==signature;
- const report=!stale?s.intelligencePremiumReport:null;
- const loading=!!s.intelligencePremiumLoading&&!stale;
- const cards:Array<any>=Array.isArray(report?.cards)?report.cards:[];
- const get=(id:string)=>cards.find(c=>c.id===id)||null;
- const radar=get('UI-03'),review=get('UI-01'),budgets=get('UI-04'),commit=get('UI-05'),
-  rules=get('UI-02'),categories=get('UI-06'),conversation=get('UI-07'),history=get('UI-08');
- const meaningful=radar?.uiState==='ready'&&radar.count>0;
- const sourceLabel=s.categoryReviewGrant?.token?'Revisão sintética':s.localFinancialAccess?.source==='bank'?'Fonte bancária':
-   s.localFinancialAccess?.source==='manual'?'Lançamentos manuais':'Sem leitura autorizada';
- const grant=s.localFinancialAccess?.token||s.categoryReviewGrant?.token;
- return h('div',{className:'mf-ai-premium-today',role:'region','aria-label':'Inteligência Hoje'},
-  h('div',{className:'mf-premium-head'},
-   h('div',{},h('span',{className:'mf-premium-eyebrow'},h(Icon,{name:'spark',size:15}),'VISÃO OPERACIONAL · '+sourceLabel),
-    h('h2',{},'O que merece sua atenção?'),
-    h('p',{},'Sinais verificáveis para transformar informação em decisão. Nenhuma mudança é aplicada sem sua confirmação.')),
-   h('div',{className:'mf-premium-head-controls'},
-    h('span',{className:'mf-premium-period'},s.localFinancialMonth||s.month),
-    h('button',{type:'button',className:'mf-premium-refresh',disabled:loading,
-     onClick:()=>void intelligencePremiumLoad(app)},h(Icon,{name:'arrow',size:15}),loading?'Consultando…':'Atualizar visão'))),
-  !grant?h('div',{className:'mf-premium-consent',role:'status'},h(Icon,{name:'shield',size:20}),
-   h('p',{},s.mode==='real'&&!s.bank?.config?.configured&&s.localFinancialSource!=='manual'?
-    'Nenhuma conexão bancária configurada. Você pode escolher lançamentos manuais na autorização de leitura local acima.':
-    'Autorize a leitura local acima para consultar suas movimentações. Categorias e estados de disponibilidade continuam acessíveis sem autorização financeira.')):null,
-  stale?h('div',{className:'mf-premium-alert',role:'status'},'Fonte, perfil, conta ou período mudou. A consulta anterior foi ocultada. Atualize para ver os novos dados.'):null,
-  s.intelligencePremiumError?h('div',{className:'mf-premium-alert',role:'alert'},s.intelligencePremiumError):null,
-  loading?h('div',{className:'mf-premium-loading',role:'status','aria-label':'Carregando informações financeiras'},
-   h('div',{className:'mf-premium-skeleton'}),h('div',{className:'mf-premium-skeleton'}),h('div',{className:'mf-premium-skeleton'})):null,
-  report?h('div',{className:'mf-premium-dashboard'},
-   h('div',{className:'mf-premium-lead'},
-    h('section',{className:'mf-premium-radar '+(meaningful?'has-attention':''),'aria-labelledby':'mf-premium-radar-title'},
-     h('span',{className:'mf-premium-kicker'},'UI-03 · RADAR FINANCEIRO'),
-     h('h3',{id:'mf-premium-radar-title'},meaningful?'Pontos de atenção encontrados.':'Visão do período'),
-     radar?.uiState==='ready'||radar?.uiState==='empty'?
-      h('div',{},radar.count!==null&&Number.isSafeInteger(radar.count)?
-       h('div',{className:'mf-premium-radar-count'},h('strong',{},String(radar.count)),h('span',{},radar.count===1?'ponto de atenção':'pontos de atenção')):null,
-       Array.isArray(radar.observations)&&radar.observations.length?
-       h('ul',{className:'mf-premium-observations'},...radar.observations.slice(0,3).map((o:any)=>h('li',{key:o.category},
-        h('strong',{},o.category),h('span',{},intelligencePremiumMoney(o.spentCents)+' / '+intelligencePremiumMoney(o.limitCents))))):
-       h('p',{},intelligencePremiumState({...radar,uiState:'empty'})),
-       intelligencePremiumEvidence(radar),
-       h('div',{className:'mf-premium-tile-actions'},...(radar.actions||[]).map((a:any)=>intelligencePremiumButton(app,radar,a)))) :
-      h('p',{className:'mf-premium-state'},intelligencePremiumState(radar))),
-    intelligencePremiumTile(app,review,'filter','mf-premium-review')),
-   h('div',{className:'mf-premium-major-grid'},
-    h('section',{className:'mf-premium-budget-card','aria-labelledby':'mf-premium-budget-title'},
-     h('div',{className:'mf-premium-tile-head'},h('span',{className:'mf-premium-tile-icon'},h(Icon,{name:'pie',size:19})),h('span',{className:'mf-premium-contract'},'UI-04')),
-     h('h3',{id:'mf-premium-budget-title'},'Orçamentos em perspectiva'),
-     budgets?.uiState==='ready'||budgets?.uiState==='empty'?
-      h('div',{},intelligencePremiumBudgetChart(budgets),
-       !budgets?.budgets?.length?h('p',{},'Nenhum limite cadastrado com dados aplicáveis.'):null,
-       intelligencePremiumEvidence(budgets),
-       h('div',{className:'mf-premium-tile-actions'},...(budgets.actions||[]).map((a:any)=>intelligencePremiumButton(app,budgets,a)))) :
-      h('p',{},intelligencePremiumState(budgets))),
-    intelligencePremiumTile(app,commit,'calendar','mf-premium-commitment')),
-   h('div',{className:'mf-premium-lower-grid'},
-    intelligencePremiumTile(app,rules,'spark'),
-    intelligencePremiumTile(app,categories,'filter'),
-    intelligencePremiumTile(app,conversation,'spark'),
-    intelligencePremiumTile(app,history,'calendar')),
-   h('div',{className:'mf-premium-bottom-note'},
-    h(Icon,{name:'shield',size:16}),
-    h('span',{},'Valores em centavos da fonte autorizada. '+
-      intelligencePremiumCoverage(radar?.coverage||'unknown')+
-      '. Revisões e recibos sintéticos nunca representam alterações pessoais.'))):
-   !loading&&!s.intelligencePremiumError&&!stale?
-    h('div',{className:'mf-premium-empty',role:'status'},h('strong',{},'Sua central está pronta para consultar.'),
-     h('p',{},'Use “Atualizar visão” para carregar os contratos reais disponíveis nesta instalação.')):null);
+ return renderMfD03Today(app);
 }
 
 function renderIntelligenceAccess(app:any){

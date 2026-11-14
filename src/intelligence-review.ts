@@ -16,7 +16,7 @@ async function categoryReviewRefresh(app:any,after=0){
  const api=categoryReviewAPI();
  const [report,queue]=await Promise.all([api.categoryReviewList({token:grant.token}),api.categoryReviewQueue({token:grant.token,after,limit:50,filters})]);
  if(app.state.categoryReviewGrant?.token!==grant.token||app.categoryReviewRequest!==request||(app.state.categoryReviewFilterRevision||0)!==revision)return;
- app.setState({categoryReviewReport:report,categoryReviewQueue:queue,categoryReviewCursor:after,categoryReviewFiltersDirty:false,categoryReviewSelected:[]});
+ app.setState({categoryReviewReport:report,categoryReviewQueue:queue,categoryReviewCursor:after,categoryReviewFiltersDirty:false,categoryReviewSelected:[],categoryReviewPreview:null,categoryReviewConfirmed:false});
 }
 function categoryReviewSetFilter(app:any,name:string,value:string){
  app.setState({categoryReviewFilters:{...app.state.categoryReviewFilters,[name]:value},categoryReviewFilterRevision:(app.state.categoryReviewFilterRevision||0)+1,categoryReviewFiltersDirty:true,categoryReviewQueue:null,categoryReviewSelected:[],categoryReviewPreview:null,categoryReviewConfirmed:false,categoryReviewDetail:null});
@@ -43,7 +43,13 @@ async function categoryReviewEnable(app:any){
   const mode=app.state.mode,grant=await categoryReviewAPI().categoryReviewAuthorize({consent:'SYNTHETIC_CATEGORY_REVIEW_V1'});
   if(app.state.mode!==mode){await categoryReviewAPI().categoryReviewRevoke({token:grant.token});return;}
   const backup={intelligenceThreads:app.state.intelligenceThreads,intelligenceMessages:app.state.intelligenceMessages,intelligenceActiveThreadId:app.state.intelligenceActiveThreadId,intelligenceHydratedMode:app.state.intelligenceHydratedMode};
-  app.setState({categoryReviewGrant:grant,categoryReviewBackup:backup,intelligenceThreads:[],intelligenceMessages:[],intelligenceActiveThreadId:null});
+  // A newly issued grant must never display or confirm cached queue/preview/receipt
+  // belonging to the preceding synthetic review session.
+  app.setState({categoryReviewGrant:grant,categoryReviewBackup:backup,
+   categoryReviewReport:null,categoryReviewQueue:null,categoryReviewPreview:null,
+   categoryReviewConfirmed:false,categoryReviewReceipt:null,categoryReviewSelected:[],
+   mfD04Drafts:{},mfD04Excluded:{},mfD04Selected:null,
+   intelligenceThreads:[],intelligenceMessages:[],intelligenceActiveThreadId:null});
   await categoryReviewRefresh(app);
  });
 }
@@ -109,7 +115,7 @@ function renderCategoryReviewRow(app:any,r:any,selected:any[],button:any){
   h('td',{},button('Detalhes',()=>app.setState({categoryReviewDetail:r})),button('Revisar individualmente',()=>void categoryReviewPrepare(app,'classify',{items:[r],category:app.state.categoryReviewCategory||r.suggestedCategory||'Alimentação'}),r.manual||r.hasSplits||r.status!=='POSTED'),
    button('Marcar como revisada',()=>void categoryReviewPrepare(app,'reviewed',{items:[r]}))));
 }
-function renderCategoryReview(app:any){
+function renderCategoryReviewLegacy(app:any){
  const s=app.state,g=s.categoryReviewGrant,report=s.categoryReviewReport,queue=s.categoryReviewQueue,busy=!!s.categoryReviewBusy,selected=s.categoryReviewSelected||[],filters=s.categoryReviewFilters||{};
  const button=(label:string,action:()=>void,disabled=false)=>h('button',{type:'button',className:'ghost-button',disabled:busy||disabled,onClick:action},label);
  const categorySelect=(value:string,onChange:(v:string)=>void,label='Categoria')=>h('select',{'aria-label':label,value,disabled:busy,onChange:(e:any)=>onChange(e.target.value)},...(report?.categories||[]).map((c:any)=>h('option',{key:c.name,value:c.name},c.name)));
@@ -146,4 +152,8 @@ function renderCategoryReview(app:any){
     !s.categoryReviewFiltersDirty&&!queue?.rows?.length?h('p',{className:'mf-review-empty'},'Nenhum registro para estes filtros.'):null),
    h('section',{id:'mf-review-section-2',hidden:tab!==2,tabIndex:-1,'aria-label':'Gestão de regras'},h('h3',{},'Regras ativas e pausadas'),!report.rules.length?h('p',{className:'mf-review-empty'},'Nenhuma regra criada. Aceite uma sugestão após conferir sua prévia.'):null,...report.rules.map((r:any)=>h('div',{className:'mf-review-managed',key:r.id},h('strong',{},r.pattern+' → '+r.category),h('small',{},(r.enabled?'Ativa':'Pausada')+' · prioridade '+r.priority+(r.constraint?' · conta específica · importações futuras':' · regra existente')),r.constraint?h('div',{className:'mf-review-actions'},categorySelect(s.categoryReviewRuleEdits?.[r.id]||r.category,v=>app.setState({categoryReviewRuleEdits:{...s.categoryReviewRuleEdits,[r.id]:v}}),'Categoria da regra '+r.id),button('Simular edição',()=>void categoryReviewPrepare(app,'manage-rule',{ruleId:r.id,change:'edit',category:s.categoryReviewRuleEdits?.[r.id]||r.category})),button(r.enabled?'Pausar':'Reativar',()=>void categoryReviewPrepare(app,'manage-rule',{ruleId:r.id,change:r.enabled?'pause':'resume'})),button('Excluir com prévia',()=>void categoryReviewPrepare(app,'manage-rule',{ruleId:r.id,change:'delete'}))):h('small',{},'Editar em Configurações de categorias.')))),
    h('details',{id:'mf-review-section-3',hidden:tab!==3,tabIndex:-1},h('summary',{},'Decisões e auditoria local'),...report.audit.map((a:any)=>h('div',{className:'mf-review-audit',key:a.id},h('span',{},({rule:'Regra criada',classify:'Classificação',reviewed:'Revisão',decision:'Decisão',undo:'Reversão',forget:'Preferências apagadas','manage-rule':'Regra atualizada'}[a.action]||'Ação')+' · '+new Date(a.appliedAt).toLocaleString('pt-BR')+' · '+({available:'Pode desfazer',undone:'Desfeita',not_applicable:'Registrada'}[a.undoState]||'Registrada')),a.undoState==='available'?button('Preparar desfazer',()=>void categoryReviewPrepare(app,'undo',{commandId:a.id})):null)),h('p',{},report.decisions.length+' decisão(ões) recente(s): '+report.decisions.map((d:any)=>({denied:'negada',deferred:'adiada',accepted:'aceita',edited:'editada'}[d.state])).join(', ')),button('Apagar preferências de sugestões',()=>void categoryReviewPrepare(app,'forget',{})))):null);
+}
+
+function renderCategoryReview(app:any){
+ return mfD04Render(app);
 }
