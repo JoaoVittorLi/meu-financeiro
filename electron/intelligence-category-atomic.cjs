@@ -119,7 +119,23 @@ class AtomicSyntheticCategoryExecutor{
    this.fault('before_transaction');
    this.sql.exec('BEGIN IMMEDIATE');inTransaction=true;
    const replay=this.find(proposalId);
-   if(replay)throw Error('Prévia desatualizada: comando já foi finalizado.');
+   if(replay){
+    // Two confirmations can await the same native authorization. By the
+    // second BEGIN IMMEDIATE the first may already have committed. Resolve
+    // the identical owner/scope/nonce from the durable receipt rather than
+    // reporting a spurious stale or executing twice.
+    this.sql.exec('COMMIT');inTransaction=false;
+    if(replay.owner!==owner||replay.nonceHash!==nonceHash||
+       replay.source!==scope.source||replay.profile!==scope.profile||
+       replay.month!==scope.month)
+     return {status:'denied',proposalId,changesApplied:false,
+      reason:'Confirmação repetida fora do escopo autorizado.'};
+    if(replay.scopeHash!==scopeHash)
+     return {status:'recovery_required',proposalId,changesApplied:null,
+      reason:'Concessão mudou; recupere o recibo antes de qualquer nova ação.'};
+    return {status:'applied',replayed:true,proposalId,
+     changesApplied:true,receipt:JSON.parse(replay.receipt)};
+   }
    const before=this.sql.prepare('SELECT total_changes() AS n').get().n;
    if(this.proposals.previews.get(proposalId)!==p||p.expiresAt<=this.clock()||
       this.armed.get(proposalId)!==armed)
