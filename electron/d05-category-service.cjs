@@ -255,7 +255,8 @@ class D05CategoryService{
   });
  }
  // An authoritative, capped read view; do not silently merge manual and bank data.
- bankView({categoryId=null,subcategoryId=undefined,limit=2500}={}){
+ bankView({categoryId=null,subcategoryId=undefined,accountId=null,limit=2500}={}){
+  if(accountId!==null)ensureId(accountId,'conta');
   if(categoryId!==null)this.resolve({categoryId,subcategoryId:subcategoryId===undefined?null:subcategoryId},{allowInactive:true});
   else if(subcategoryId!==undefined)throw Error('D05: filtro de filho requer pai');
   if(!Number.isInteger(limit)||limit<1||limit>2500)throw Error('D05: limite inválido');
@@ -266,6 +267,14 @@ class D05CategoryService{
     scope,priority,enabled,category_id AS categoryId,subcategory_id AS subcategoryId FROM category_rules
     ORDER BY priority,id`).all();
   const catalog=new Map(this.listCatalog({includeInactive:true}).parents.map(x=>[x.name,x.id]));
+  const splitRows=this.db.prepare(`SELECT account_id,external_id,position,category_id,subcategory_id
+   FROM bank_transaction_splits ORDER BY account_id,external_id,position`).all();
+  const splitMap=new Map();
+  for(const row of splitRows){
+   const key=JSON.stringify([row.account_id,row.external_id]);
+   if(!splitMap.has(key))splitMap.set(key,[]);
+   splitMap.get(key).push(row);
+  }
   const converted=overview.transactions.map(x=>{
    const override=overrides.get(JSON.stringify([x.accountId,x.id]));
    let categoryKey=null,childId=null;
@@ -278,9 +287,15 @@ class D05CategoryService{
    }
    const id=categoryKey||catalog.get(x.category)||null;
    const valid=id?this.resolve({categoryId:id,subcategoryId:childId},{allowInactive:true}):null;
-   return {...x,categoryId:valid?.categoryId??null,subcategoryId:valid?.subcategoryId??null};
+   const partIds=splitMap.get(JSON.stringify([x.accountId,x.id]))||[];
+   const splitView=x.splits.map((part,i)=>({...part,
+     categoryId:partIds[i]?.category_id??catalog.get(part.category)??null,
+     subcategoryId:partIds[i]?.subcategory_id??null}));
+   return {...x,categoryId:valid?.categoryId??null,subcategoryId:valid?.subcategoryId??null,
+     splits:splitView};
   });
-  const filtered=converted.filter(x=>(categoryId===null||x.categoryId===categoryId)&&
+  const filtered=converted.filter(x=>(accountId===null||x.accountId===accountId)&&
+    (categoryId===null||x.categoryId===categoryId)&&
     (subcategoryId===undefined||x.subcategoryId===subcategoryId));
   return {items:filtered.slice(0,limit),visibleCount:filtered.length,truncated:overview.truncated||filtered.length>limit,
     totalBankCount:overview.totalTransactions,source:'bank',scope:'visible-history',status:'partial' in overview?overview.status:'ok'};
@@ -390,9 +405,9 @@ class D05CategoryService{
    list:()=>checked({capability:'taxonomy'},()=>this.listCatalog()),
    resolve:target=>checked({capability:'taxonomy'},()=>this.resolve(target)),
    manual:args=>checked({capability:'manual',profile:args?.profile},()=>this.listManual(args)),
-   bank:args=>checked({capability:'bank'},()=>this.bankView(args)),
+   bank:args=>checked({capability:'bank',accountId:args?.accountId??null},()=>this.bankView(args)),
    aggregate:args=>checked({capability:'manual',profile:args?.profile},()=>this.aggregateManual(args)),
-   previewBankBatch:args=>checked({capability:'bank'},()=>this.previewBankBatch(args))
+   previewBankBatch:args=>checked({capability:'bank',accountIds:args?.items?.map(x=>x.accountId)},()=>this.previewBankBatch(args))
   });
  }
 }
