@@ -161,3 +161,55 @@ test('RC FULL contract — D05, I2-D/E and CSV wired into React16/MAIN without g
  assert.doesNotMatch(preload,/ipcRenderer:\s*ipcRenderer/);
  assert.match(read('src/d05-movements.ts'),/class D05Movements extends React\.Component/);
 });
+
+test('RC FULL D05 — real bank account identity requires trusted MAIN approval',async()=>{
+ const f=fixture();try{
+  const item='11111111-1111-4111-8111-111111111111';
+  const account='22222222-2222-4222-8222-222222222222';
+  f.finance.ingestBank(item,{item:{status:'UPDATED'},data:[{
+   account:{id:account,name:'Conta sintética',balance:500},
+   transactions:[{id:'bank-1',date:'2026-11-05',amount:-45,status:'POSTED',
+    description:'Mercado fictício',category:'Groceries'}]
+  }]});
+  const session=await f.gate.authorize(f.app,{profile:'real'});
+  assert.equal(f.gate.trustedAccount(f.app),null);
+  await assert.rejects(f.gate.authorizeAccount(f.app,{
+   sessionToken:session.token,accountId:'foreign-bank'}),/não encontrada/);
+  const authorized=await f.gate.authorizeAccount(f.app,{
+   sessionToken:session.token,accountId:account});
+  assert.equal(authorized.accountId,account);
+  assert.equal(f.gate.trustedAccount(f.app),account);
+  assert.equal(f.gate.read(f.app,{source:'bank'},{
+   sessionToken:session.token,accountId:account}),true);
+  f.gate.stopAll();
+  assert.equal(f.gate.trustedAccount(f.app),null);
+  await assert.rejects(f.gate.authorizeAccount(f.app,{
+   sessionToken:session.token,accountId:account}),/sessão/);
+ }finally{f.close();}
+});
+test('RC FULL D05 — 632 synthetic movements retain parent/child IDs through backup and reopen',async()=>{
+ const f=fixture();try{
+  const entries=Array.from({length:632},(_,i)=>({
+   id:'mass-'+i,date:'2026-11-'+String(i%27+1).padStart(2,'0'),
+   description:'Compra sintética '+i,kind:'expense',
+   amount:i+1,category:'Alimentação',
+   categoryId:target.categoryId,subcategoryId:target.subcategoryId
+  }));
+  const full={version:5,settings:SETTINGS,budgets:{},transactions:entries};
+  f.finance.save('demo',full);
+  const count=f.finance.db.prepare("SELECT COUNT(*) AS n FROM transactions WHERE profile='demo' AND subcategory_id=?")
+   .get(target.subcategoryId).n;
+  assert.equal(count,632);
+  const backup=path.join(f.dir,'full-backup.sqlite');
+  await f.finance.backupTo(backup);
+  assert(fs.statSync(backup).size>0);
+  const copy=new FinanceDB(backup);try{
+   const svc=new D05CategoryService(copy);
+   const rows=svc.listManual({profile:'demo',limit:1000});
+   assert.equal(rows.total,632);
+   assert.equal(rows.items.length,632);
+   assert(rows.items.every(x=>x.categoryId===target.categoryId&&x.subcategoryId===target.subcategoryId));
+   assert.equal(copy.integrity()[0],'ok');
+  }finally{copy.close();}
+ }finally{f.close();}
+});
