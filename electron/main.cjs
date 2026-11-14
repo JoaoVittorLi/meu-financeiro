@@ -282,7 +282,10 @@ app.whenReady().then(()=>{
  // I2-B/C: explicitly scoped IPCs. Renderer cannot supply owner, environment,
  // a synthetic IC-READ token, verifiedGesture, or a SQLite filename.
  ipcMain.handle('intelligence:category-personal',(event,input)=>{
-  requireAppSender(event);return categoryRC.personalCall(input,event.sender.id);
+  requireAppSender(event);
+  return categoryRC.personalCall(input,event.sender.id,{
+   activeAccountId:d05Gate.trustedAccount(event)
+  });
  });
  ipcMain.handle('intelligence:category-sandbox-start',(event,month)=>{
   requireAppSender(event);
