@@ -344,9 +344,11 @@ class FinanceDB {
      }
    }
  }
- save(profile,payload){
+ save(profile,payload,{inTransaction=false}={}){
    checkProfile(profile);const value=validate(payload);
-   this.db.exec('BEGIN IMMEDIATE');
+   if(inTransaction && !this.db.isTransaction)throw new Error('Transação externa ausente.');
+   if(!inTransaction && this.db.isTransaction)throw new Error('Transação inesperada.');
+   if(!inTransaction)this.db.exec('BEGIN IMMEDIATE');
    try{
      // Verify authoritative bank links BEFORE deleting local rows.
      if(profile==='real')this.assertLinkedManualChangesAllowed(value.transactions);
@@ -382,9 +384,9 @@ class FinanceDB {
      const addSetting=this.db.prepare('INSERT INTO financial_settings(profile,name,value_cents) VALUES (?,?,?)');
      for(const [name,amount] of Object.entries(value.settings))addSetting.run(profile,name,amount);
      if(profile==='real')this.pruneInvalidManualLinks();
-     this.db.exec('COMMIT');
+     if(!inTransaction)this.db.exec('COMMIT');
      return {ok:true,txCount:value.transactions.length};
-   }catch(err){this.db.exec('ROLLBACK');throw err;}
+   }catch(err){if(!inTransaction)this.db.exec('ROLLBACK');throw err;}
  }
  listCategories(){
    const categories=this.db.prepare('SELECT name,color,emoji,kind,built_in AS builtIn FROM categories ORDER BY built_in DESC,name COLLATE NOCASE').all().map(x=>({...x}));
