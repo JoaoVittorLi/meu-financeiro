@@ -28,6 +28,9 @@ function usage(sql,name){
  };
 }
 const referenceCount=u=>Object.entries(u).filter(([k])=>k!=='bankProviderRaw').reduce((s,[,v])=>s+v,0);
+// The demo grant cannot inspect personal transaction counts from the shared category catalog.
+const publicUsage=(u,scope,db)=>scope.profile==='demo'&&db.filename!==':memory:'?
+ {manualDemo:u.manualDemo,otherProfileOrBankReferences:referenceCount(u)-u.manualDemo+u.bankProviderRaw>0,coverage:'restricted'}:u;
 function readGuard(local,scope){
  const r=local.query({token:scope.token,month:scope.month,intent:'radar'},scope.owner);
  if(r?.readOnly!==true||r?.changesApplied!==false||r?.inferenceCalled!==false||
@@ -93,7 +96,7 @@ class CategoryProposalService{
   const categories=config.categories.map(c=>{
    const u=usage(sql,c.name),key=normalizeLabel(c.name);
    if(!groups.has(key))groups.set(key,[]);groups.get(key).push(c.name);
-   return {...c,usage:u,referenceCount:referenceCount(u),probablyUnused:referenceCount(u)===0&&u.bankProviderRaw===0};
+   return {...c,usage:publicUsage(u,scope,this.db),referenceCount:scope.profile==='demo'&&this.db.filename!==':memory:'?null:referenceCount(u),probablyUnused:referenceCount(u)===0&&u.bankProviderRaw===0};
   });
   return {contract:'I2-B/CATEGORY-CATALOG-V1',status:'ready',source:scope.source,profile:scope.profile,
    month:scope.month,coverage:references.partial?'partial_local':'unknown',asOf:references.readAt,
@@ -114,7 +117,7 @@ class CategoryProposalService{
    before=null;after=params;
   }else if(action==='category.update'||action==='category.delete'){
    const cat=categoryDetails(params.name),u=usage(sql,cat.name);
-   before={...cat,usage:u};targetIds=[cat.name];
+   before={...cat,usage:publicUsage(u,scope,this.db)};targetIds=[cat.name];
    if(action==='category.delete'){
     if(cat.builtIn)conflicts.push('Categoria padrão: exclusão proibida.');
     if(referenceCount(u)||u.bankProviderRaw)conflicts.push('Categoria em uso: remova dependências mediante operações separadas.');
@@ -128,7 +131,7 @@ class CategoryProposalService{
      conflicts.push('Nome de destino já existe.');
     if(after.kind!==cat.kind&&referenceCount(u)>0)conflicts.push('Troca de tipo em categoria utilizada requer migração supervisionada.');
     if(cat.name!==after.name){
-     impact={count:referenceCount(u),amountCents:0};
+     impact={count:scope.profile==='demo'&&this.db.filename!==':memory:'?null:referenceCount(u),amountCents:0};
      notes.push('Renomear altera também referências existentes em todos os perfis, orçamentos e planejamento. Revisar impacto explícito.');
     }
    }
