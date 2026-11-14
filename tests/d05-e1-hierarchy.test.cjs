@@ -153,8 +153,8 @@ test('D05 E1 repairs real category_rules FK to categories_old without dropping r
   const foreign=raw.prepare('PRAGMA foreign_key_list(category_rules)').all();
   assert.equal(foreign.find(x=>x.from==='category').table,'categories');
   assert.equal(raw.prepare('SELECT note FROM category_rules WHERE id=7').get().note,'regra existente');
-  assert.equal(raw.prepare("SELECT 1 FROM sqlite_master WHERE name='idx_legacy_rules_note'").get()[1],1);
-  assert.equal(raw.prepare("SELECT 1 FROM sqlite_master WHERE name='trg_rules_note'").get()[1],1);
+  assert(raw.prepare("SELECT 1 FROM sqlite_master WHERE name='idx_legacy_rules_note'").get());
+  assert(raw.prepare("SELECT 1 FROM sqlite_master WHERE name='trg_rules_note'").get());
   assert.equal(raw.prepare('SELECT COUNT(*) AS n FROM transactions').get().n,630);
   assert.equal(raw.prepare('SELECT SUM(amount_cents) AS n FROM transactions').get().n,630*631/2);
   assert.equal(raw.prepare('PRAGMA foreign_key_check').all().length,0);
