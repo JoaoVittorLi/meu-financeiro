@@ -117,7 +117,7 @@ test('D05 E3 — CSS dark/light, foco e reduced-motion; integração monta no Ap
  assert.match(stylesheet,/:focus-visible/);
  assert.match(stylesheet,/d05-review-dot/);
  const app=read('src/app.ts');
- assert.match(app,/return h\(D05Movements,\{host:this\}\)/);
+ assert.match(app,/return h\(D05Movements,\{host:this,key:this.state.txReviewOnly\?'review':'history'\}\)/);
  const config=JSON.parse(read('tsconfig.json'));
  assert(config.files.includes('src/d05-visual-assets.ts'));
  assert(config.files.includes('src/d05-movements.ts'));
