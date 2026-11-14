@@ -135,15 +135,49 @@ test('D05 E1 standalone migration upgrades a genuine pre-v6 category schema atom
   assert.equal(raw.prepare('SELECT COUNT(*) AS n FROM subcategories').get().n,61);
  }finally{cleanup(f,raw);}
 });
-test('D05 E1 refuses a genuine dangling categories_old FK without inventing a fake table',()=>{
+test('D05 E1 repairs real category_rules FK to categories_old without dropping rules or movements',()=>{
  const f=legacy630();let raw;
  try{
   raw=new DatabaseSync(f.file);
   raw.exec("PRAGMA foreign_keys=ON; CREATE TABLE app_meta(key TEXT PRIMARY KEY,value TEXT NOT NULL);"+
-    "CREATE TABLE category_rules(id INTEGER PRIMARY KEY,category TEXT REFERENCES categories_old(name))");
-  assert.throws(()=>migrateHierarchy(raw),/categories_old/);
-  assert.equal(raw.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='categories_old'").get(),undefined);
-  assert.equal(raw.prepare("SELECT COUNT(*) AS n FROM transactions").get().n,630);
+   "INSERT INTO app_meta VALUES('schema_version','6');"+
+   "CREATE TABLE category_rules(id INTEGER PRIMARY KEY,category TEXT REFERENCES categories_old(name),note TEXT);"+
+   "CREATE INDEX idx_legacy_rules_note ON category_rules(note);"+
+   "CREATE TRIGGER trg_rules_note AFTER UPDATE OF note ON category_rules BEGIN SELECT 1; END;");
+  raw.exec('PRAGMA foreign_keys=OFF');
+  raw.prepare('INSERT INTO category_rules(id,category,note) VALUES(?,?,?)').run(7,'Moradia','regra existente');
+  raw.exec('PRAGMA foreign_keys=ON');
+  assert.equal(raw.prepare('PRAGMA foreign_key_list(category_rules)').all()[0].table,'categories_old');
+  const result=migrateHierarchy(raw);
+  assert.equal(result.version,7);
+  const foreign=raw.prepare('PRAGMA foreign_key_list(category_rules)').all();
+  assert.equal(foreign.find(x=>x.from==='category').table,'categories');
+  assert.equal(raw.prepare('SELECT note FROM category_rules WHERE id=7').get().note,'regra existente');
+  assert.equal(raw.prepare("SELECT 1 FROM sqlite_master WHERE name='idx_legacy_rules_note'").get()[1],1);
+  assert.equal(raw.prepare("SELECT 1 FROM sqlite_master WHERE name='trg_rules_note'").get()[1],1);
+  assert.equal(raw.prepare('SELECT COUNT(*) AS n FROM transactions').get().n,630);
+  assert.equal(raw.prepare('SELECT SUM(amount_cents) AS n FROM transactions').get().n,630*631/2);
+  assert.equal(raw.prepare('PRAGMA foreign_key_check').all().length,0);
+  assert.equal(raw.prepare('PRAGMA foreign_keys').get().foreign_keys,1);
+  migrateHierarchy(raw);
+  assert.equal(raw.prepare('SELECT COUNT(*) AS n FROM category_rules').get().n,1);
+ }finally{cleanup(f,raw);}
+});
+test('D05 E1 rolls back mismatched categories_old rows without manufacturing parent or losing money',()=>{
+ const f=legacy630();let raw;
+ try{
+  raw=new DatabaseSync(f.file);
+  raw.exec("PRAGMA foreign_keys=ON; CREATE TABLE app_meta(key TEXT PRIMARY KEY,value TEXT NOT NULL);"+
+   "CREATE TABLE category_rules(id INTEGER PRIMARY KEY,category TEXT REFERENCES categories_old(name))");
+  raw.exec('PRAGMA foreign_keys=OFF');
+  raw.prepare("INSERT INTO category_rules VALUES(?,?)").run(9,'Categoria inexistente');
+  raw.exec('PRAGMA foreign_keys=ON');
+  assert.throws(()=>migrateHierarchy(raw),/foreign_key_check/);
+  assert.equal(raw.prepare('PRAGMA foreign_key_list(category_rules)').all()[0].table,'categories_old');
+  assert.equal(raw.prepare('SELECT category FROM category_rules WHERE id=9').get().category,'Categoria inexistente');
+  assert.equal(raw.prepare('SELECT COUNT(*) AS n FROM transactions').get().n,630);
   assert.equal(raw.prepare('PRAGMA table_info(categories)').all().some(x=>x.name==='id'),false);
+  assert.equal(raw.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='categories_old'").get(),undefined);
+  assert.equal(raw.prepare('PRAGMA foreign_keys').get().foreign_keys,1);
  }finally{cleanup(f,raw);}
 });
