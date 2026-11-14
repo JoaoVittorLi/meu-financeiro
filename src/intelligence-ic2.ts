@@ -86,3 +86,20 @@ function mfIC2Card(r:MfIC2Reply):IntelligenceStructuredCard|null{
    metrics:metrics.slice(0,4),rows:rows.slice(0,12),headers,
    footnote:[notice,'Resultado mensal não equivale ao saldo disponível.',...warnings].join(' ')};
 }
+/* Session-only metadata: the IC2 result must not outlive its original grant.
+ * Copying/restoring a chat message never recovers authorization. */
+const MF_IC2_MESSAGE_GRANTS=new WeakMap<IntelligenceChatMessage,{
+ access:LocalFinancialAccess;token:string;signature:string;month:string
+}>();
+function mfIC2BindMessage(msg:IntelligenceChatMessage,access:LocalFinancialAccess,signature:string,month:string){
+ if(access?.token)MF_IC2_MESSAGE_GRANTS.set(msg,{access,token:access.token,signature,month});
+ return msg;
+}
+function mfIC2MessageLive(app:any,msg:IntelligenceChatMessage):boolean{
+ const b=MF_IC2_MESSAGE_GRANTS.get(msg),access:LocalFinancialAccess=app.state.localFinancialAccess;
+ return !!b&&b.access===access&&b.token===access?.token&&
+  b.signature===intelligencePremiumSignature(app)&&
+  b.month===(app.state.localFinancialMonth||app.state.month)&&
+  access?.profile===(app.state.mode==='demo'?'demo':'real')&&
+  Number.isFinite(access.expiresAt)&&access.expiresAt>Date.now();
+}
