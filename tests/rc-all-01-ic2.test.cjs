@@ -108,3 +108,48 @@ test('RC-ALL-01 — D01-D04 and V3 authorization remain in chain; RC packaged SQ
  assert(tsconfig.files.includes('src/intelligence-today-v2.ts'));
  assert(tsconfig.files.includes('src/intelligence-review-v11.ts'));
 });
+
+test('RC-ALL-01 — IC2 message WeakMap denies stale A/B, expiration, period and copy',()=>{
+ const ts=require('typescript');
+ const source=fs.readFileSync(path.resolve(__dirname,'../src/intelligence-ic2.ts'),'utf8');
+ const js=ts.transpileModule(source,{compilerOptions:{
+  target:ts.ScriptTarget.ES2019,module:ts.ModuleKind.None}}).outputText;
+ const signature=a=>JSON.stringify([a.state.month,a.state.bankFilter||'']);
+ const client=new Function('intelligencePremiumSignature',js+
+  ';return {mfIC2BindMessage,mfIC2MessageLive,mfIC2Card,mfIC2Valid};')(signature);
+ const grantA={token:'grant-A',profile:'demo',source:'manual',expiresAt:Date.now()+600000};
+ const app={state:{mode:'demo',month:MONTH,localFinancialAccess:grantA,bankFilter:''}};
+ const msg={id:'ic2-a-1',role:'assistant',text:'Valor financeiro',status:'done'};
+ client.mfIC2BindMessage(msg,grantA,signature(app),MONTH);
+ assert.equal(client.mfIC2MessageLive(app,msg),true);
+ assert.equal(client.mfIC2MessageLive(app,{...msg}),false);
+ app.state.localFinancialAccess={...grantA}; // same token and scope, different instance
+ assert.equal(client.mfIC2MessageLive(app,msg),false);
+ app.state.localFinancialAccess=grantA;app.state.month='2026-10';
+ assert.equal(client.mfIC2MessageLive(app,msg),false);
+ app.state.month=MONTH;app.state.localFinancialAccess={...grantA,expiresAt:Date.now()-1};
+ assert.equal(client.mfIC2MessageLive(app,msg),false);
+ app.state.localFinancialAccess=grantA;app.state.bankFilter='different-account';
+ assert.equal(client.mfIC2MessageLive(app,msg),false);
+});
+test('RC-ALL-01 — IC2 renderer refuses unsigned/writable facts and never fabricates balance',()=>{
+ const ts=require('typescript');
+ const src=fs.readFileSync(path.resolve(__dirname,'../src/intelligence-ic2.ts'),'utf8');
+ const js=ts.transpileModule(src,{compilerOptions:{target:ts.ScriptTarget.ES2019,module:ts.ModuleKind.None}}).outputText;
+ const api=new Function('intelligencePremiumSignature',js+
+  ';return {mfIC2Card,mfIC2Valid};')(()=>''),access={token:'demo',source:'manual',profile:'demo'};
+ const r={version:2,contract:'I2-A/D02-V3',readOnly:true,changesApplied:false,modelCalled:false,
+  source:'manual',profile:'demo',period:MONTH,status:'ready',answer:'Despesas comprovadas',
+  conversationId:'some-valid-id',facts:[{version:2,id:'i2a:one',tool:'summary',source:'manual',
+    profile:'demo',period:{start:'2026-11-01',end:'2026-11-30'},
+    value:{incomeCents:10000,expenseCents:3000,netCents:7000,
+      categories:[{name:'Delivery',amountCents:3000}]}}],
+  blocks:[{kind:'summary',factRef:'i2a:one',density:'standard'}],actions:[],alerts:[],followUps:[]};
+ assert.equal(api.mfIC2Valid(r,access,MONTH),true);
+ assert.equal(api.mfIC2Valid({...r,modelCalled:true},access,MONTH),false);
+ assert.equal(api.mfIC2Valid({...r,facts:[{...r.facts[0],source:'bank'}]},access,MONTH),false);
+ const card=api.mfIC2Card(r);
+ assert.match(JSON.stringify(card),/R\$\s*30,00/);
+ assert.match(card.footnote,/não equivale ao saldo disponível/);
+ assert.doesNotMatch(JSON.stringify(card),/"Saldo disponível":/);
+});
