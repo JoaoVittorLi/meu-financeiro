@@ -28,7 +28,10 @@ function paramsOf(name,raw){
 function mappedRecords(records,source){
  return records.map(r=>source==='bank'?{
   id:String(r.accountId)+':'+String(r.id),merchant:String(r.merchant||r.description||'Não identificado').slice(0,120),
-  row:{date:r.date,status:r.status,nature:r.nature,amountCents:r.amount,category:r.category,
+  row:{date:r.date,status:r.status,nature:r.nature,amountCents:r.amount,
+   // A stale split must retain the original amount but never attribute the
+   // entire transaction to an arbitrary former parent category.
+   category:r.splitOutdated?null:r.category,
    splits:!r.splitOutdated&&Array.isArray(r.splits)?r.splits.map(p=>({category:p.category,amountCents:p.amount})):undefined}
  }:{
   id:String(r.id),merchant:String(r.description||'Não identificado').slice(0,120),
