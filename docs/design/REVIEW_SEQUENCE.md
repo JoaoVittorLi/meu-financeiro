@@ -6,7 +6,7 @@ Data: 2026-11-13 · Índice: #55 · Coordenação: #49 · Baseline PR #54 / 55de
 | D01 | Chat Lateral | **IMPLEMENTATION_READY** (DESIGN_APPROVED) | #56 | **V4.5 FINAL** · protótipo/specs/handoff congelados |
 | D02 | Chat Principal / Expandido | **DESIGN HANDOFF V3 CONSOLIDADO** (implementação pendente) | #58 | Biblioteca de 26 famílias especificada por herança; 3 aprovadas individualmente, VR-10 V2 referência; sem mais microscreens |
 | D03 | Inteligência Hoje | **IMPLEMENTATION_READY** (DESIGN_APPROVED) | #61 | **V2 FINAL** · cartões premium uniformes + prioridades dinâmicas · HTML/spec/QA/handoff publicados; Electron pendente |
-| D04 | Central de Revisão | **PROTOTYPING / WAITING_FEEDBACK** | #67 | V1 tela completa: fila contextual, antes/depois, escopos, impacto e reconfirmação; NÃO aprovado |
+| D04 | Central de Revisão | **IMPLEMENTATION_READY** (DESIGN_APPROVED) | #67 | **V1.1 FINAL** · fila premium, edição persistente, escopos separados, reconfirmação; Executor #69, QA Electron pendente |
 | D05 | Movimentações | NOT_STARTED | — | — |
 | D06 | Visão Geral | NOT_STARTED | — | — |
 | D07 | Orçamentos | NOT_STARTED | — | — |
@@ -59,8 +59,21 @@ Critérios para DESIGN_APPROVED: aprovação explícita do proprietário sobre v
 
 **Próxima tela principal de Design:** D04 — Central de Revisão. O Executor pode implementar D03 em branch separada conforme contratos e QA; não bloquear o design D04 por build.
 
-### D04 — Central de Revisão V1 (em revisão, 13/11/2026)
+### D04 — Central de Revisão V1 (histórico, direção aprovada em 13/11/2026)
 
 - [Issue de design #67](https://github.com/JoaoVittorLi/meu-financeiro/issues/67): tela principal de fila e decisão, não revisão de microtelas.
 - Legado auditado: `src/intelligence-view.ts`, `app/intelligence-review.css`, contrato IC v1 e D01 V4.5. A disponibilidade de escrita via IA no perfil pessoal **não foi homologada**; mostrar fluxo ilustrativo sem sucesso falso.
-- V1 interativa apresentada no chat: pendências, históricos, busca, seleção, propostas de regra/categorização/orçamento, editar/descartar, seleção de afetados, escopo e reconfirmação. Status `WAITING_FEEDBACK`, sem aprovação nem integração Electron.
+- V1 interativa apresentada no chat: pendências, históricos, busca, seleção, propostas de regra/categorização/orçamento, editar/descartar, seleção de afetados, escopo e reconfirmação. Status histórico da V1. A direção foi aprovada, V1.1 final publicada; Electron ainda não implementado.
+
+### D04 — V1.1 FINAL · direção aprovada e polimento concluído (13/11/2026)
+
+**Aprovação:** proprietário aprovou a direção artística da tela D04 V1 e autorizou explicitamente o polimento final, revisão de interações e handoff. V1.1 preserva a composição da V1, com correções de rascunho, seleção e reconfirmação.
+
+- [Protótipo interativo canônico](screens/d04-central-revisao/prototype.html) · [Design Spec aprovado](screens/d04-central-revisao/DESIGN_SPEC_APPROVED.md) · [Contrato de comportamento](screens/d04-central-revisao/BEHAVIOR_SPEC.md) · [Fixtures](screens/d04-central-revisao/FIXTURES.json).
+- [Critérios de aceite](screens/d04-central-revisao/ACCEPTANCE.md) · [Handoff](screens/d04-central-revisao/HANDOFF.md) · [Changelog](screens/d04-central-revisao/CHANGELOG.md).
+- **Validação realizada:** compilação da sintaxe JS, 12 testes isolados de seleção/escopo/filtros/validade e verificação de fixtures. **Não** houve screenshot de navegador nem QA Electron.
+- **Segurança:** em perfil pessoal a IA não recebeu autorização para escrita financeira; conclusão demonstrativa é estado local apenas.
+- **Executor:** [issue #69](https://github.com/JoaoVittorLi/meu-financeiro/issues/69), checkpoints C1/C2; **design issue #67**.
+- **Próximo design macro:** D05 **Movimentações**. Não reabrir microscreens D04 sem regressão ou feedback novo do proprietário.
+
+`DESIGN_APPROVED / IMPLEMENTATION_READY` não implica `IMPLEMENTED`, `VISUAL_QA` ou `HOMOLOGATED`.
