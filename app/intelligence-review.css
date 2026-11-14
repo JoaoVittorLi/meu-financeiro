@@ -193,7 +193,7 @@
 .mf-i2-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:9px}
 .mf-i2-field{display:grid;gap:5px;min-width:0}
 .mf-i2-field>span{font-size:11px;font-weight:600;color:var(--d04-muted)}
-.mf-i2-field input{width:100%;min-width:0;border:1px solid var(--border);border-radius:10px;
+.mf-i2-field input,.mf-i2-field select{width:100%;min-width:0;border:1px solid var(--border);border-radius:10px;
  padding:9px 10px;background:var(--d04-bg);color:var(--d04-ink);font-size:12px}
 .mf-i2-evidence{display:grid;gap:6px;padding:10px;border-radius:10px;
  border:1px solid var(--border);background:color-mix(in srgb,var(--d04-emerald) 5%,var(--d04-bg));min-width:0}
