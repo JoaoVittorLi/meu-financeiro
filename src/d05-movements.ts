@@ -1,35 +1,82 @@
 // D05 V1.3: the REAL transactions renderer, mounted by App.renderMovements().
 // Do not import prototype fixtures; all amounts and rows are read from App / MAIN.
 // E2 write APIs are capability-gated and never simulated.
-function D05Movements(props:{host:any}){
+class D05Movements extends React.Component<any,any> {
+ private slots:any[]=[];
+ private refs:any[]=[];
+ private registered:any[]=[];
+ private pending:any[]=[];
+ private stateCursor=0;
+ private refCursor=0;
+ private alive=false;
+ constructor(props:any){super(props);this.state={renderVersion:0};}
+ componentDidMount(){this.alive=true;this.flushEffects();}
+ componentDidUpdate(){this.flushEffects();}
+ componentWillUnmount(){
+  this.alive=false;
+  for(const item of this.registered)if(typeof item?.cleanup==='function')item.cleanup();
+ }
+ private flushEffects(){
+  for(let i=0;i<this.pending.length;i++){
+   const next=this.pending[i],before=this.registered[i];
+   const changed=!before||!next.deps||!before.deps||next.deps.length!==before.deps.length||
+     next.deps.some((v:any,j:number)=>!Object.is(v,before.deps[j]));
+   if(!changed)continue;
+   if(typeof before?.cleanup==='function')before.cleanup();
+   const cleanup=next.callback();
+   this.registered[i]={deps:next.deps?next.deps.slice():null,cleanup};
+  }
+ }
+ render(){
+  this.stateCursor=0;this.refCursor=0;this.pending=[];
+  const props=this.props;
+  const useState=(initial:any)=>{
+   const index=this.stateCursor++;
+   if(!(index in this.slots))this.slots[index]=initial;
+   return [this.slots[index],(update:any)=>{
+    if(!this.alive)return;
+    const prior=this.slots[index];
+    const next=typeof update==='function'?update(prior):update;
+    if(Object.is(next,prior))return;
+    this.slots[index]=next;
+    this.setState((s:any)=>({renderVersion:(s.renderVersion||0)+1}));
+   }];
+  };
+  const useRef=(initial:any)=>{
+   const index=this.refCursor++;
+   if(!(index in this.refs))this.refs[index]={current:initial};
+   return this.refs[index];
+  };
+  const useEffect=(callback:any,deps:any[])=>{this.pending.push({callback,deps});};
+
  const host=props.host, state=host.state, bridge=(window as any).financeDesktop||null;
- const [catalog,setCatalog]=React.useState(null as any);
- const [decor,setDecor]=React.useState({bank:{},manual:{}} as any);
- const [loadState,setLoadState]=React.useState('loading');
- const [accessMessage,setAccessMessage]=React.useState('');
- const [search,setSearch]=React.useState('');
- const [source,setSource]=React.useState('all');
- const [metricSource,setMetricSource]=React.useState('bank');
- const [tab,setTab]=React.useState('all');
- const [period,setPeriod]=React.useState(state.month||iso(new Date()).slice(0,7));
- const [account,setAccount]=React.useState('');
- const [kind,setKind]=React.useState('all');
- const [categoryId,setCategoryId]=React.useState('');
- const [subcategoryId,setSubcategoryId]=React.useState('');
- const [sort,setSort]=React.useState('newest');
- const [group,setGroup]=React.useState(true);
- const [advanced,setAdvanced]=React.useState(false);
- const [selected,setSelected]=React.useState(new Set() as Set<string>);
- const [picker,setPicker]=React.useState(null as any);
- const [preview,setPreview]=React.useState(null as any);
- const [review,setReview]=React.useState(null as any);
- const [manual,setManual]=React.useState(null as any);
- const [busy,setBusy]=React.useState(false);
- const [error,setError]=React.useState('');
- const [notice,setNotice]=React.useState('');
- const activeTrigger=React.useRef(null as any);
- const modalRef=React.useRef(null as any);
- const refreshId=React.useRef(0);
+ const [catalog,setCatalog]=useState(null as any);
+ const [decor,setDecor]=useState({bank:{},manual:{}} as any);
+ const [loadState,setLoadState]=useState('loading');
+ const [accessMessage,setAccessMessage]=useState('');
+ const [search,setSearch]=useState('');
+ const [source,setSource]=useState('all');
+ const [metricSource,setMetricSource]=useState('bank');
+ const [tab,setTab]=useState('all');
+ const [period,setPeriod]=useState(state.month||iso(new Date()).slice(0,7));
+ const [account,setAccount]=useState('');
+ const [kind,setKind]=useState('all');
+ const [categoryId,setCategoryId]=useState('');
+ const [subcategoryId,setSubcategoryId]=useState('');
+ const [sort,setSort]=useState('newest');
+ const [group,setGroup]=useState(true);
+ const [advanced,setAdvanced]=useState(false);
+ const [selected,setSelected]=useState(new Set() as Set<string>);
+ const [picker,setPicker]=useState(null as any);
+ const [preview,setPreview]=useState(null as any);
+ const [review,setReview]=useState(null as any);
+ const [manual,setManual]=useState(null as any);
+ const [busy,setBusy]=useState(false);
+ const [error,setError]=useState('');
+ const [notice,setNotice]=useState('');
+ const activeTrigger=useRef(null as any);
+ const modalRef=useRef(null as any);
+ const refreshId=useRef(0);
  const approved=D05_APPROVED_PARENTS;
  const parents=catalog?.parents?.length?catalog.parents:approved;
  const byName=(name:string)=>parents.find((p:any)=>p.name===name)||D05ApprovedParent(name);
@@ -78,12 +125,12 @@ function D05Movements(props:{host:any}){
    setAccessMessage('Catálogo D05 indisponível: '+String(e?.message||e));
   }
  };
- React.useEffect(()=>{
+ useEffect(()=>{
   let current=true;
   if(current)void refreshHierarchy();
   return ()=>{current=false;refreshId.current++;};
  },[state.mode,state.bank.data.transactions,state.data.transactions]);
- React.useEffect(()=>{
+ useEffect(()=>{
   if(!picker&&!review&&!manual)return;
   const onKey=(event:any)=>{if(event.key==='Escape'&&!busy){
    event.preventDefault();event.stopPropagation();setPicker(null);setReview(null);setManual(null);setPreview(null);
@@ -96,7 +143,7 @@ function D05Movements(props:{host:any}){
   window.addEventListener('scroll',onScroll,true);
   return ()=>{window.removeEventListener('keydown',onKey,true);window.removeEventListener('scroll',onScroll,true);};
  },[picker,review,manual,busy]);
- React.useEffect(()=>{if((picker||review||manual)&&modalRef.current)modalRef.current.querySelector('input,button')?.focus();},[picker?.phase,review?.id,manual!==null]);
+ useEffect(()=>{if((picker||review||manual)&&modalRef.current)modalRef.current.querySelector('input,button')?.focus();},[picker?.phase,review?.id,manual!==null]);
  const resetSelected=()=>{setSelected(new Set());setPicker(null);setPreview(null);setError('');};
  const setFilter=(update:()=>void)=>{update();resetSelected();};
  const folded=(text:string)=>String(text||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
@@ -389,7 +436,7 @@ function D05Movements(props:{host:any}){
     const signed=r.kind==='transfer'||r.kind==='ignore'?'neutral':r.amount>=0?'positive':'negative';
     const isSelected=selected.has(r.key);
     const selectAllowed=r.source==='bank';
-    return h(React.Fragment,{key:r.key},
+    return h('div',{className:'d05-list-item',key:r.key},
      group&&(i===0||onScreen[i-1].date!==r.date)?h('div',{className:'d05-day'},pDate(r.date)):null,
      h('article',{className:'d05-row '+(isSelected?'is-selected':'')},
       h('button',{type:'button',className:'d05-select '+(isSelected?'selected':''),
@@ -416,4 +463,5 @@ function D05Movements(props:{host:any}){
       h('button',{type:'button',onClick:()=>{setSearch('');setPeriod('');setAccount('');setCategoryId('');setSubcategoryId('');setKind('all');setTab('all');setSource('all');}},'Limpar filtros')))
   ),
   chooser,reviewPanel,manualPanel);
+ }
 }
