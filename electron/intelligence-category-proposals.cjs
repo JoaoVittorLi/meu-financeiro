@@ -49,9 +49,9 @@ function normalizeAction(action,raw){
   const name=safeName(params.name);
   if(action==='category.delete')return {name};
   const newName=safeName(params.newName??params.name);
-  const chosen=params.color===undefined?null:color(params.color);
-  if(params.kind!==undefined&&!isKind(params.kind))throw Error('Tipo inválido.');
-  if(params.emoji!==undefined)categoryEmoji(params.emoji);
+  const chosen=params.color==null?null:color(params.color);
+  if(params.kind!=null&&!isKind(params.kind))throw Error('Tipo inválido.');
+  if(params.emoji!=null)categoryEmoji(params.emoji);
   return {name,newName,color:chosen,emoji:params.emoji??null,kind:params.kind??null};
  }
  if(action==='transaction.categorize'){
@@ -60,7 +60,7 @@ function normalizeAction(action,raw){
   if(!Array.isArray(items)||items.length>100||items.some(x=>!x||typeof x!=='object'||
      Array.isArray(x)||Object.keys(x).some(k=>!['id','accountId','externalId'].includes(k))))
    throw Error('Seleção inválida.');
-  const selector=params.selector===undefined?null:String(params.selector).trim();
+  const selector=params.selector==null?null:String(params.selector).trim();
   if(selector!==null&&(!selector||selector.length>100))throw Error('Filtro inválido.');
   if(!items.length&&!selector)throw Error('Informe IDs ou um filtro de descrição.');
   if(typeof params.replaceManual!=='boolean'&&params.replaceManual!==undefined)throw Error('Substituição inválida.');
@@ -211,10 +211,11 @@ class CategoryProposalService{
    notes,requiredDependencies,coverage:references.partial?'partial_local':'unknown'};
   const digest=hash(state),expiresAt=now+this.ttlMs;
   if(this.previews.size>=100)this.previews.delete(this.previews.keys().next().value);
-  const record={id,owner,scope,state,digest,expiresAt};
+  const confirmationNonce=randomUUID();
+  const record={id,owner,scope,state,digest,expiresAt,confirmationNonce};
   this.previews.set(id,record);
   return {contract:'I2-B/PROPOSAL-V1',proposalId:id,actionType:action,status,capability,
-   readOnly:true,requiresExplicitConfirmation:true,beforeVersion:version,fingerprint:digest,
+   readOnly:true,requiresExplicitConfirmation:true,confirmationNonce,beforeVersion:version,fingerprint:digest,
    expiresAt,source:scope.source,profile:scope.profile,month:scope.month,coverage:state.coverage,
    before,after,targetIds,affected,impact,conflicts,notes,requiredDependencies,
    mayExecuteSynthetic:status==='ready'&&capability==='synthetic_candidate'};
@@ -222,7 +223,8 @@ class CategoryProposalService{
  revise(proposalId,patch,input,owner){
   const {scope}=this.authorize(input,owner),old=this.previews.get(proposalId);
   if(!old||old.owner!==owner||!sameScope(old.scope,scope)||old.expiresAt<=this.clock())throw Error('Prévia expirada.');
-  return this.preview(old.state.action,{...old.state.params,...patch},input,owner);
+  const next=this.preview(old.state.action,{...old.state.params,...patch},input,owner);
+  this.previews.delete(proposalId);return next;
  }
 }
 module.exports={CategoryProposalService,normalizeAction,usage,referenceCount,readGuard,hash,OPS};
