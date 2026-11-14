@@ -57,7 +57,7 @@ class D05Movements extends React.Component<any,any> {
  const [search,setSearch]=useState('');
  const [source,setSource]=useState('all');
  const [metricSource,setMetricSource]=useState('bank');
- const [tab,setTab]=useState('all');
+ const [tab,setTab]=useState(state.txReviewOnly?'pending':'all');
  const [period,setPeriod]=useState(state.month||iso(new Date()).slice(0,7));
  const [account,setAccount]=useState('');
  const [kind,setKind]=useState('all');
