@@ -282,3 +282,15 @@ test('I2-D: bridge cannot mix proposal service with an unrelated I2-C bridge',()
   }),/mesmo serviço/);
  }finally{f.close();other.close();}
 });
+
+test('I2-D: D05 approved visual taxonomy is advertised without claiming SQLite migration',async()=>{
+ const f=fixture();try{
+  const c=await f.bridge.handle({method:'advisorCapabilities'},{owner:1});
+  assert.equal(c.status,'ready');
+  assert.equal(c.data.taxonomy.d05Visual,'DESIGN_APPROVED');
+  assert.equal(c.data.taxonomy.parentCategories,14);
+  assert.equal(c.data.taxonomy.proposedSubcategories,61);
+  assert.equal(c.data.taxonomy.subcategoryWrites,false);
+  assert.equal(c.data.taxonomy.sqlite,'NOT_IMPLEMENTED');
+ }finally{f.close();}
+});
