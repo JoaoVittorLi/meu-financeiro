@@ -253,10 +253,24 @@ class D05Movements extends React.Component<any,any> {
     const tx=picker.row,current=state.bank.data.transactions.find((t:any)=>t.id===tx.id&&t.accountId===tx.accountId);
     if(!current||current.amount!==tx.amount||current.status!==tx.status)
      throw Error('Movimentação alterada; atualize antes de classificar');
-    const result=await bridge.d05AssignBank({accountId:tx.accountId,externalId:tx.id,target:destination});
-    if(result?.categoryId!==destination.categoryId||result?.subcategoryId!==destination.subcategoryId)
-     throw Error('Recibo de classificação não corresponde ao destino escolhido');
-    await host.refreshBank();await refreshHierarchy();setPicker(null);setNotice('Classificação bancária persistida.');
+    // A personal category assignment must reach the separate supervised
+    // preview contract first. In this experimental SHA the MAIN explicitly
+    // denies real-bank commits; never fall back to the legacy direct write.
+    if(!bridge?.d05BankAccountAuthorize||!bridge?.d05PersonalWritePreview)
+     throw Error('Gateway pessoal supervisionado D05 ainda indisponível');
+    await bridge.d05BankAccountAuthorize({accountId:tx.accountId});
+    const proposed=await bridge.d05PersonalWritePreview({
+     action:'bank.categorize',accountId:tx.accountId,externalId:tx.id,target:destination});
+    if(proposed?.contract!=='D05/PERSONAL-SUPERVISED-PREVIEW-V1'||
+       proposed?.changesApplied!==false||proposed?.after?.categoryId!==destination.categoryId||
+       proposed?.after?.subcategoryId!==destination.subcategoryId)
+     throw Error('Prévia supervisionada inválida; nenhuma alteração foi feita');
+    setPreview(proposed);
+    setPicker(null);
+    setNotice('Prévia conferida: '+String(proposed.before?.[0]?.row?.category||tx.category)+
+     ' → '+labelTarget(destination.categoryId,destination.subcategoryId)+
+     '. A gravação pessoal será liberada somente após homologação e aprovação.');
+
    }
   }catch(e:any){setError(String(e?.message||e));}
   finally{setBusy(false);}
