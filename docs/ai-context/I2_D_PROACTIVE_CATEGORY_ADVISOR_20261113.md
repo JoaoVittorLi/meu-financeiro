@@ -43,7 +43,7 @@ Conforme issue #74 e comentário #49, **o catálogo visual das 14 categorias e 6
 
 ## Testes e QA
 
-**23 testes Node/SQLite versionados** em `tests/intelligence-i2d.test.cjs`, cobrindo evidência manual, contas, conflitos, regras, comparação de nomes, sem uso, anomalias de tipo, exclusão de PENDING/transfer/splits, mudanças e token/owner/mês, histórico parcial, continuidade conversacional, bridge, limitação D05, rejeição de Outros e asOf estável. **NOT_RUN no runner oficial**; `npm run test:db` inclui o novo arquivo pelo glob `tests/*.test.cjs`.
+**24 testes Node/SQLite versionados** em `tests/intelligence-i2d.test.cjs`, cobrindo evidência manual, contas, conflitos, regras, comparação de nomes, sem uso, anomalias de tipo, exclusão de PENDING/transfer/splits, mudanças e token/owner/mês, histórico parcial, continuidade conversacional, bridge, limitação D05, rejeição de Outros e asOf estável. **NOT_RUN no runner oficial**; `npm run test:db` inclui o novo arquivo pelo glob `tests/*.test.cjs`.
 
 **Smoke V8 isolado com módulos I2-D reais e dublês para DB/IC-READ:** 8/8 verificações PASS (padrão, dois anchors, contagem em centavos, nomes similares, proposta histórica, proposta futura, stale após dados alterados, conflito de regras). Este smoke não executa FinanceDB real. **Parser CJS** dos três novos arquivos PASS, incl. testes. **NOT_RUN:** npm ci, test:types, test:db/Node SQLite, compile, F08/proveniência, ASAR, Electron, Windows.
 
