@@ -96,7 +96,7 @@ test('D05 CSV — cancelled mandatory backup does not modify SQLite cents or man
 });
 test('D05 CSV — malicious spreadsheet formula is rejected before preview and without persistence',async()=>{
  const f=fixture();try{
-  await f.ui.importCSV(f.file('data;descricao;valor\n2026-11-04;=HYPERLINK("url");5,99\n'));
+  await f.ui.importCSV(f.file('data;descricao;valor\n2026-11-04;=SUM(2);5,99\n'));
   assert.equal(f.ui.state.csvPreview,null);
   assert.equal(f.backups,0);assert.equal(f.saves,0);
   assert(f.flashes.some(m=>/fórmula/.test(m)));
