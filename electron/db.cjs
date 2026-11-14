@@ -324,7 +324,9 @@ class FinanceDB {
    for(const r of this.db.prepare('SELECT category, amount_cents FROM budgets WHERE profile=?').all(profile))budgets[r.category]=r.amount_cents;
    const settings={opening:0,income:0,fixed:0,existing:0,reserve:0};
    for(const r of this.db.prepare('SELECT name, value_cents FROM financial_settings WHERE profile=?').all(profile))if(KEYS.includes(r.name))settings[r.name]=r.value_cents;
-   const transactions=this.db.prepare('SELECT id,date,description,kind,amount_cents AS amount,category,origin FROM transactions WHERE profile=? ORDER BY date,id').all(profile).map(x=>({...x}));
+   // Expose D05 links on the existing manual read model without hiding
+   // legacy amount/date/type fields or inventing a child for legacy rows.
+   const transactions=this.db.prepare('SELECT id,date,description,kind,amount_cents AS amount,category,origin,category_id AS categoryId,subcategory_id AS subcategoryId FROM transactions WHERE profile=? ORDER BY date,id').all(profile).map(x=>({...x}));
    return {version:5,transactions,budgets,settings};
  }
  /** Guard against stale renderer snapshots; this checks authoritative SQLite links.
@@ -374,7 +376,9 @@ class FinanceDB {
        const keep=prior && prior.category===t.category ? prior : null;
        let categoryId=keep?.category_id??null,subcategoryId=keep?.subcategory_id??null;
        // New D05 writes may provide the pair directly; old renderer payloads keep matching links.
-       if(t.categoryId!==undefined||t.subcategoryId!==undefined){
+       // Null hierarchy from an untouched legacy row is not a request to
+       // reassign a parent; retain old links where text category is unchanged.
+       if(t.categoryId!=null||t.subcategoryId!=null){
          if(typeof t.categoryId!=='string'||!t.categoryId||t.categoryId.length>140)
            throw new Error('D05: categoryId obrigatório');
          const parent=this.db.prepare('SELECT name FROM categories WHERE id=?').get(t.categoryId);
