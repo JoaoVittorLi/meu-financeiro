@@ -55,6 +55,7 @@ class ProactiveCategoryConversation{
 class ProactiveCategoryBridge{
  constructor({advisor,baseBridge,conversation}={}){
   if(!advisor?.scan||!baseBridge?.handle)throw Error('I2-D requer I2-B e I2-C.');
+  if(baseBridge.proposals!==advisor.proposals)throw Error('Bridge I2-D e I2-C precisam compartilhar o mesmo serviço de propostas.');
   this.advisor=advisor;this.base=baseBridge;
   this.conversation=conversation||new ProactiveCategoryConversation({advisor});
  }
@@ -69,7 +70,10 @@ class ProactiveCategoryBridge{
   const taxonomy=taxonomyGate(request.target);
   if(taxonomy)return reply('unsupported',taxonomy,taxonomy.reason);
   try{
-   if(method==='discover')return reply('ready',this.advisor.scan({...request.scope,filters:request.filters},owner));
+   if(method==='discover'){
+    const result=this.advisor.scan({...request.scope,filters:request.filters},owner);
+    return reply(result.status,result);
+   }
    if(method==='inspectOpportunity'){
     const r=this.advisor.detail(request.opportunityId,request.scope,owner);
     return reply(r.status,r);
@@ -78,6 +82,17 @@ class ProactiveCategoryBridge{
     const result=this.conversation.ask({...request.scope,question:request.question,
      conversationId:request.conversationId,filters:request.filters,
      opportunityId:request.opportunityId},owner);
+    const draft=result.proposal?.proposal;
+    if(draft?.proposalId&&draft.status==='ready'){
+     const item=this.advisor.detail(result.proposal.opportunityId,request.scope,owner);
+     if(item.status!=='ready'||typeof host?.activeAccountId!=='string'||
+        host.activeAccountId!==item.opportunity.accountId)
+      return reply('denied',null,'A sugestão não pertence à conta ativa no MAIN.');
+     if(host?.environment==='synthetic'&&this.base.syntheticExecutor){
+      this.base.syntheticExecutor.armProposal(draft.proposalId,request.scope,owner);
+      result.proposal.proposal={...draft,capability:'synthetic_hardened',mayExecuteSynthetic:true};
+     }
+    }
     return reply(result.status,result);
    }
    if(!['historical','future'].includes(request.action))return reply('denied',null,'Tipo de proposta inválido.');
