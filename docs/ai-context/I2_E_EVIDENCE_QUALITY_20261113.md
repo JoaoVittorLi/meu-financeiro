@@ -33,11 +33,11 @@ Critérios conservadores antes de **permitir preparar** uma proposta:
 
 ## Testes e QA
 
-**18 testes Node/SQLite novos foram versionados em** `tests/intelligence-i2e.test.cjs` e entram no `npm run test:db` por `tests/*.test.cjs`. Abrangência: duas datas, mesma data, compras duplicadas, strings de estabelecimentos semelhantes, regras `contains` de prioridade, PENDING/transfer/split, referências de outro mês, stale após reclassificação, propostas históricas e futuras por B1, plano composto com/sem colisão, histórico com +2.530 movimentos, troca de escopo/token/owner, conta MAIN, D05 bloqueada e invariantes de centavos e confidencialidade.
+**23 testes Node/SQLite novos foram versionados em** `tests/intelligence-i2e.test.cjs` e entram no `npm run test:db` por `tests/*.test.cjs`. Abrangência: duas datas, mesma data, compras duplicadas, strings de estabelecimentos semelhantes, regras `contains` de prioridade, PENDING/transfer/split, referências de outro mês, stale após reclassificação, propostas históricas e futuras por B1, plano composto com/sem colisão, histórico com +2.530 movimentos, troca de escopo/token/owner, conta MAIN, D05 bloqueada e invariantes de centavos e confidencialidade.
 
 **Resultados realmente executados no código I2-E:** verificação de sintaxe via parser V8 **3/3 PASS** e smoke V8 isolado com módulos reais e dublês para FinanceDB/IC-READ **10/10 PASS** (qualificação, centavos, draft, composição, mesma data, duplicatas, parcialidade, matchRule, stale e ausência de mutação). O smoke **não é o Node/SQLite integrado**.
 
-**NOT_RUN no repositório completo:** os 18 testes Node/SQLite, npm ci, test:types, test:db, compile, F08, ASAR, Electronic/Playwright e Windows. O checkout do repositório não foi materializado no runtime terminal (resolução DNS GitHub indisponível); Node local v22.16.0/npm 10.9.2 divergem das versões fixadas 22.23.4/10.9.9. Não declarar PASS de gate oficial.
+**NOT_RUN no repositório completo:** os 23 testes Node/SQLite, npm ci, test:types, test:db, compile, F08, ASAR, Electronic/Playwright e Windows. O checkout do repositório não foi materializado no runtime terminal (resolução DNS GitHub indisponível); Node local v22.16.0/npm 10.9.2 divergem das versões fixadas 22.23.4/10.9.9. Não declarar PASS de gate oficial.
 
 ## Handoff e próximos limites
 
@@ -47,3 +47,7 @@ Critérios conservadores antes de **permitir preparar** uma proposta:
 - **Próxima etapa recomendada da IA (após release freeze/gates)**: I2-F integração supervisionada de explicações e métricas de qualidade no D04 em parceria com Integrador; ou auditoria dirigida de falhas reais do CircleCI quando recebidas. Não iniciar um novo PR de feature durante release freeze sem ordem explícita.
 
 **Regra de integridade:** sem escrita pessoal por IA, sem geração de EXE, sem branch de release automática, sem merge main e sem CI pago disparado pelo executor.
+
+## Fechamento para integração RC — revisão dirigida posterior
+
+O PR #80 recebeu correções de segurança sem criar funcionalidades novas: (1) bloqueio, no `EvidenceQualityBridge`, dos métodos legados I2-D `discover/advice/inspectOpportunity/draftOpportunity` quando usados para contornar `qualityScan/qualityDraft` (o fluxo de recomendação precisa passar pelo gate I2-E); (2) bloqueio fail-closed de `draft/compose` baseado em categoria plana ao detectar a tabela oficial D05 `subcategories`, até existir resolvedor canônico `categoryId/subcategoryId`; (3) cinco novos testes de contrato para bypass, owner/conta, stale, plano composto e D05. O módulo não foi ligado ao IPC e não habilita escrita pessoal. Handoff completo: `docs/ai-context/I2_DE_RC_INTEGRATION_HANDOFF_20261113.md`.
