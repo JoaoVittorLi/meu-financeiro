@@ -1,7 +1,7 @@
 # D04 — Central de Revisão · Design V1 em revisão
 
-**Status:** `PROTOTYPING / WAITING_FEEDBACK`; **issue:** #67; **roadmap:** #55; **base:** PR #54 (consultar HEAD atual).  
-**Não aprovado, não implementado no Electron.** Protótipo V1 apresentado **interativamente no chat**, e somente após aprovação será congelado como HTML canônico, com QA e handoff Executor.
+**Histórico:** V1 inicial, cuja **direção foi aprovada pelo proprietário em 13/11/2026**. O polimento V1.1 foi autorizado e publicado em [Design Spec final](DESIGN_SPEC_APPROVED.md), [protótipo canônico](prototype.html), [contrato](BEHAVIOR_SPEC.md), [QA](ACCEPTANCE.md) e [handoff](HANDOFF.md). Issue #67; roadmap #55; Executor #69.  
+**Esta V1 é histórica.** V1.1 está `DESIGN_APPROVED / IMPLEMENTATION_READY`, mas **não implementada/homologada no Electron**. A direção foi aprovada em chat e a versão polida está no GitHub.
 
 ## Referências de design
 - D01 Chat Lateral V4.5: proposta→prévia→edição→reconfirmação→recibo verdadeiro; contrato de segurança para grant/version/fonte/escopo.
