@@ -1,6 +1,8 @@
+> **Aprovação do proprietário (13/11/2026):** “Muito bem! [...] categorias e subcategorias [...] 100% aprovadas.” Congeladas as **14 categorias-pai, 61 subcategorias, pictogramas SVG e cores**. **Isso NÃO significa código funcional implementado**. Executor deve concluir issue #74 com SQLite/IPC/IA, migração e QA. [Relatório dos problemas identificados](BUG_REPORT_AND_IMPLEMENTATION_GATES.md).
+
 # D05 V1.2 — Subcategorias Premium · protótipo e status
 
-**Status:** `PROTOTYPING / WAITING_FEEDBACK`. O proprietário pediu adicionar subcategorias e ícones vetoriais vinculados; **a taxonomia e a tela ainda requerem aprovação final**. O backend/SQLite **NÃO foi alterado** nesta missão de design. Implementação real é bloqueante: [#74](https://github.com/JoaoVittorLi/meu-financeiro/issues/74). Design base: [#70](https://github.com/JoaoVittorLi/meu-financeiro/issues/70).
+**Status:** `DESIGN_APPROVED / ENGINEERING_REQUIRED`. O proprietário pediu adicionar subcategorias e ícones vetoriais vinculados; **a taxonomia e a tela ainda requerem aprovação final**. O backend/SQLite **NÃO foi alterado** nesta missão de design. Implementação real é bloqueante: [#74](https://github.com/JoaoVittorLi/meu-financeiro/issues/74). Design base: [#70](https://github.com/JoaoVittorLi/meu-financeiro/issues/70).
 
 ## Demonstração
 
@@ -33,4 +35,4 @@
 
 **Não** implementar SQLite/IPC, não testar Electron real, não homologar migração, não presumir que os 61 filhos são dados reais ou que a IA já consegue ler/gravar essa hierarquia. O usuário pediu explicitamente que isso **seja codificado**: conferir [#74](https://github.com/JoaoVittorLi/meu-financeiro/issues/74).
 
-A versão permanece em revisão até o proprietário validar a família visual e a taxonomia. O Arquiteto decide integração em branch funcional e QA sem riscos.
+A taxonomia e identidade visual foram aprovadas pelo proprietário; a implementação de produto ainda não começou. O Arquiteto decide integração em branch funcional e QA sem riscos.
