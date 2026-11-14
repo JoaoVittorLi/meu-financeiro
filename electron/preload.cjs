@@ -10,6 +10,7 @@ contextBridge.exposeInMainWorld('financeDesktop', Object.freeze({
   localFinancialRevoke: token => ipcRenderer.invoke('finance:read-revoke',token),
   intelligenceOperationalOverview: input => ipcRenderer.invoke('intelligence:operational-overview',input),
   intelligenceOperationalAsk: input => ipcRenderer.invoke('intelligence:operational-ask',input),
+  intelligenceIC2ReadQuery: input => ipcRenderer.invoke('intelligence:ic2-read-query',input),
   categoryReviewStatus: () => ipcRenderer.invoke('finance:review-status'),
   categoryReviewAuthorize: input => ipcRenderer.invoke('finance:review-authorize',input),
   categoryReviewList: input => ipcRenderer.invoke('finance:review-list',input),
