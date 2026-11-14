@@ -16,6 +16,7 @@ const {PlanningStore}=require('./planning.cjs');
 const {LocalFinancialIntelligence}=require('./financial-intelligence.cjs');
 const {IntelligenceOperational}=require('./intelligence-operational.cjs');
 const {IC2ReadQueryGateway}=require('./intelligence-ic2-adapter.cjs');
+const {RCCategoryGateway}=require('./intelligence-category-rc.cjs');
 const {CategoryReviewService}=require('./category-review.cjs');
 const {CategoryReviewBackupGate}=require('./category-review-backup.cjs');
 const {automaticBackup,restoreBackup,listAutoBackups,validateBackupFile}=require('./recovery.cjs');
@@ -26,7 +27,7 @@ const {AIPersonalStore}=require('./ai-personal.cjs');
 const {ChatGPTSignIn}=require('./ai-auth.cjs');
 const {ChatGPTDemoClient}=require('./ai-client.cjs');
 const {buildSyntheticFinancialContext}=require('../shared/ai-financial-context.mjs');
-let planner=null, db=null, mainWindow=null, vault=null, syncing=false, restoring=false, autoBackupBusy=false, cloudPreparationBusy=false, backupTimer=null, cloudPersonalTimer=null, cloudPersonalBusy=false, cloudAuthPromise=null,cloudAccessAssertion=null;
+let planner=null, db=null, mainWindow=null, vault=null, categoryRC=null, syncing=false, restoring=false, autoBackupBusy=false, cloudPreparationBusy=false, backupTimer=null, cloudPersonalTimer=null, cloudPersonalBusy=false, cloudAuthPromise=null,cloudAccessAssertion=null;
 function backupsDirectory(){return path.join(app.getPath('userData'),'copias-de-seguranca');}
 async function ensureAutomaticBackup(){
   if(!db||restoring||syncing||autoBackupBusy)return;
@@ -201,6 +202,9 @@ app.whenReady().then(()=>{
   operationalIntelligence=new IntelligenceOperational({localFinancial,categoryReview,db});
   // Restoration replaces services, invalidating prior IC2 contexts.
   ic2ReadQuery=new IC2ReadQueryGateway(localFinancial);
+  // Personal category work is preview-only; synthetic sandbox remains separate.
+  if(categoryRC){categoryRC.stopAll();categoryRC.bindPersonal(db,localFinancial);}
+  else categoryRC=new RCCategoryGateway({db,localFinancial});
  }
  bindLocalFinancialServices();
  ipcMain.handle('finance:review-status',event=>{requireAppSender(event);return {available:!!categoryReview,syntheticOnly:true};});
@@ -223,6 +227,37 @@ app.whenReady().then(()=>{
  });
  ipcMain.handle('intelligence:ic2-read-query',(event,input)=>{
   requireAppSender(event);return ic2ReadQuery.ask(input,event.sender.id);
+ });
+ // I2-B/C: explicitly scoped IPCs. Renderer cannot supply owner, environment,
+ // a synthetic IC-READ token, verifiedGesture, or a SQLite filename.
+ ipcMain.handle('intelligence:category-personal',(event,input)=>{
+  requireAppSender(event);return categoryRC.personalCall(input,event.sender.id);
+ });
+ ipcMain.handle('intelligence:category-sandbox-start',(event,month)=>{
+  requireAppSender(event);
+  if(restoring||syncing)throw Error('Operação financeira em andamento.');
+  return categoryRC.startSandbox(month,event.sender.id);
+ });
+ ipcMain.handle('intelligence:category-sandbox-command',async(event,input)=>{
+  requireAppSender(event);
+  if(restoring||syncing)throw Error('Operação financeira em andamento.');
+  return categoryRC.sandboxCall(input,event.sender.id,async preview=>{
+   if(!mainWindow||mainWindow.isDestroyed()||!mainWindow.isFocused())return false;
+   const amount=Number.isSafeInteger(preview.amountCents)?
+    new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(preview.amountCents/100):
+    'não mensurável';
+   const choice=await dialog.showMessageBox(mainWindow,{type:'warning',
+    title:'Confirmar somente no SQLite sintético',buttons:['Cancelar','Confirmar apenas no teste'],
+    defaultId:0,cancelId:0,noLink:true,
+    message:'Aplicar '+String(preview.action)+' APENAS no laboratório?',
+    detail:'Ambiente: arquivo TEMP sintético, isolado do perfil Windows.\n'+
+     'Referências: '+String(preview.changes)+' · Valor amostral: '+amount+
+     '\nNenhuma categoria, regra ou movimentação pessoal será modificada.'});
+   return choice.response===1&&mainWindow.isFocused();
+  });
+ });
+ ipcMain.handle('intelligence:category-sandbox-stop',(event,sessionId)=>{
+  requireAppSender(event);return categoryRC.stopSandbox(sessionId,event.sender.id);
  });
  vault=new PluggyVault(app.getPath('userData'),safeStorage);
  const aiVault=new AIAuthVault(app.getPath('userData'),safeStorage);
@@ -512,4 +547,4 @@ app.whenReady().then(()=>{
  app.on('activate',()=>{if(BrowserWindow.getAllWindows().length===0)createWindow();});
 }).catch(error=>{dialog.showErrorBox('Erro ao iniciar Meu Financeiro','Não foi possível abrir o banco de dados: '+error.message);app.quit();});
 app.on('window-all-closed',()=>{if(process.platform!=='darwin')app.quit();});
-app.on('before-quit',()=>{if(backupTimer)clearInterval(backupTimer);if(cloudPersonalTimer)clearInterval(cloudPersonalTimer);cancelBrowserPairing();if(db){db.close();db=null;}});
+app.on('before-quit',()=>{if(categoryRC)categoryRC.stopAll();if(backupTimer)clearInterval(backupTimer);if(cloudPersonalTimer)clearInterval(cloudPersonalTimer);cancelBrowserPairing();if(db){db.close();db=null;}});
