@@ -6,6 +6,7 @@ const {SyntheticCategoryExecutor,WRITE_CONSENT}=require('./intelligence-category
 const {sameScope}=require('./intelligence-context.cjs');
 const {hash}=require('./intelligence-category-proposals.cjs');
 const {assertSyntheticVault,canonicalSavepointView}=require('./intelligence-category-vault.cjs');
+const {fingerprintSQLite}=require('./intelligence-category-fingerprint.cjs');
 const VALID=new Set(['category.create','category.update','category.delete',
  'rule.create','rule.update','rule.delete','transaction.categorize']);
 function metadata(scope){return {source:scope.source,profile:scope.profile,month:scope.month};}
@@ -21,6 +22,7 @@ class AtomicSyntheticCategoryExecutor{
   assertSyntheticVault(vault,proposals.db);
   this.proposals=proposals;this.db=proposals.db;this.sql=this.db.db;
   this.vault=vault;this.authorizer=authorizer;this.clock=clock;this.faults=faults;
+  this.armed=new Map();
   // Only the synthetic DB gets the existing supervised-rule constraints.
   this.review=new CategoryReviewService(this.db,{syntheticProfile:true,clock});
   this.sql.exec('CREATE TABLE IF NOT EXISTS i2c_atomic_receipts ('+
@@ -42,6 +44,22 @@ class AtomicSyntheticCategoryExecutor{
  find(proposalId){return this.sql.prepare('SELECT proposal_id AS proposalId,owner,scope_hash AS scopeHash,'+
   'source,profile,month,nonce_hash AS nonceHash,action,state,committed_at AS committedAt,'+
   'receipt_json AS receipt FROM i2c_atomic_receipts WHERE proposal_id=?').get(proposalId);}
+ armProposal(proposalId,input,owner){
+  const scope=this.requireScope(input,owner),p=this.proposals.previews.get(proposalId);
+  if(!p||p.owner!==owner||!sameScope(p.scope,scope)||p.expiresAt<=this.clock())
+   throw Error('Prévia inexistente ou expirada para armar.');
+  if(p.state.conflicts.length)return false;
+  const captured=fingerprintSQLite(this.db);
+  this.armed.set(proposalId,{owner,scopeHash:hash(scope),digest:captured.digest,
+   proposalDigest:p.digest,expiresAt:p.expiresAt});
+  if(this.armed.size>150)this.armed.delete(this.armed.keys().next().value);
+  return true;
+ }
+ prepare(action,params,input,owner){
+  const p=this.proposals.preview(action,params,input,owner);
+  if(p.status==='ready')this.armProposal(p.proposalId,input,owner);
+  return p;
+ }
  readReceipt(input,owner){
   try{
    const scope=this.requireScope(input?.scope,owner),row=this.find(input?.proposalId);
@@ -78,9 +96,11 @@ class AtomicSyntheticCategoryExecutor{
      reason:'A autorização mudou. Consulte o recibo com a nova autorização; nunca execute novamente.'};
    return {status:'applied',replayed:true,changesApplied:true,receipt:JSON.parse(prior.receipt)};
   }
-  const p=this.proposals.previews.get(proposalId);
-  if(!p||p.owner!==owner||!sameScope(p.scope,scope)||p.expiresAt<=this.clock()||
-     p.confirmationNonce!==input.nonce||p.state.conflicts.length||!VALID.has(p.state.action))
+  const p=this.proposals.previews.get(proposalId),armed=this.armed.get(proposalId);
+  if(!p||!armed||armed.owner!==owner||armed.scopeHash!==scopeHash||
+     armed.proposalDigest!==p.digest||p.owner!==owner||!sameScope(p.scope,scope)||
+     p.expiresAt<=this.clock()||p.confirmationNonce!==input.nonce||
+     p.state.conflicts.length||!VALID.has(p.state.action))
    return {status:'stale',proposalId,changesApplied:false,reason:'Prévia ausente, bloqueada ou expirada.'};
   try{
    const accountIds=[...new Set([...(p.state.affected||[]).map(x=>x.target?.accountId),
@@ -101,9 +121,12 @@ class AtomicSyntheticCategoryExecutor{
    const replay=this.find(proposalId);
    if(replay)throw Error('Prévia desatualizada: comando já foi finalizado.');
    const before=this.sql.prepare('SELECT total_changes() AS n').get().n;
-   if(this.proposals.previews.get(proposalId)!==p||p.expiresAt<=this.clock())
+   if(this.proposals.previews.get(proposalId)!==p||p.expiresAt<=this.clock()||
+      this.armed.get(proposalId)!==armed)
     throw Error('Prévia desatualizada: rejeitada ou substituída durante a confirmação.');
    if(before!==p.state.version)throw Error('Prévia desatualizada: banco alterado.');
+   if(fingerprintSQLite(this.db).digest!==armed.digest)
+    throw Error('Prévia desatualizada: fingerprint SQLite alterado por outra conexão.');
    const fresh=this.proposals.preview(p.state.action,p.state.params,input.scope,owner);
    freshId=fresh.proposalId;
    const snapshot=this.proposals.previews.get(freshId);
@@ -130,7 +153,7 @@ class AtomicSyntheticCategoryExecutor{
    this.fault('after_receipt');
    this.fault('before_commit');
    this.sql.exec('COMMIT');inTransaction=false;committed=true;
-   this.proposals.previews.delete(proposalId);
+   this.proposals.previews.delete(proposalId);this.armed.delete(proposalId);
    this.fault('after_commit');
    return {status:'applied',proposalId,changesApplied:true,receipt};
   }catch(err){
