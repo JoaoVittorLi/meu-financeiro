@@ -6,7 +6,7 @@
 
 ## Escopo ownership
 
-Apenas cinco novos módulos `electron/intelligence-category-{vault,fingerprint,atomic,bridge}.cjs` mais `tests/intelligence-i2c.test.cjs` e esta documentação. Não foram alterados `electron/db.cjs`, `electron/main.cjs`, `electron/preload.cjs`, arquivos UI/renderer ou módulos I2-A/I2-B. PR #75 não recebeu commits desta missão.
+Apenas quatro novos módulos `electron/intelligence-category-{vault,fingerprint,atomic,bridge}.cjs` mais `tests/intelligence-i2c.test.cjs` e esta documentação. Não foram alterados `electron/db.cjs`, `electron/main.cjs`, `electron/preload.cjs`, arquivos UI/renderer ou módulos I2-A/I2-B. PR #75 não recebeu commits desta missão.
 
 ## C1 — atomicidade e recuperação em SQLite REAL sintético
 
