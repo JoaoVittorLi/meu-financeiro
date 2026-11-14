@@ -14,7 +14,7 @@ const code=ts.transpileModule(source,{compilerOptions:{
  target:ts.ScriptTarget.ES2019,module:ts.ModuleKind.None}}).outputText;
 const liveFuncs=new Function('h','MF_PREMIUM_IDS','intelligencePremiumSignature','intelligencePremiumMoney',
  'Icon','intelligencePremiumEvidence','intelligenceOpenFullChat','categoryReviewOpen',
- 'categoryReviewPrepare','renderCategoryReviewPreview','renderCategoryReviewLegacy','document',
+ 'categoryReviewPrepare','renderCategoryReviewPreview','renderCategoryReviewLegacy','document','mfI2CategoryPanel',
  code+';return {mfD03EligibleReport,mfD03Signals,mfD03SignalCard,mfD03OpenDrawer,renderMfD03Today,'+
  'mfD04StableId,mfD04Entries,mfD04DraftFor,mfD04Impact,mfD04Patch,mfD04Discard,mfD04ServiceEligible,'+
  'mfD04SavedDraft,mfD04Render};'
@@ -25,7 +25,8 @@ const f=liveFuncs(h,['UI-01','UI-02','UI-03','UI-04','UI-05','UI-06','UI-07','UI
  ()=>calls.push('chat'),()=>calls.push('review'),
  (app,action,payload)=>{calls.push(action+':'+JSON.stringify(payload));},
  ()=>h('div',{},'Real service preview'),()=>h('div',{},'Legacy tools'),
- {getElementById:()=>({focus(){}}),activeElement:null});
+ {getElementById:()=>({focus(){}}),activeElement:null},
+ ()=>h('section',{className:'mf-i2-rc'},'Laboratório I2-B/C sintético'));
 const deep=(tree,predicate)=>{
  const out=[];const go=x=>{
   if(Array.isArray(x)){x.forEach(go);return;}
