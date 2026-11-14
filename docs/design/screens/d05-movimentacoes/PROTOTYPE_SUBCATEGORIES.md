@@ -2,7 +2,7 @@
 
 # D05 V1.2 — Subcategorias Premium · protótipo e status
 
-**Status:** `DESIGN_APPROVED / ENGINEERING_REQUIRED`. O proprietário pediu adicionar subcategorias e ícones vetoriais vinculados; **a taxonomia e a tela ainda requerem aprovação final**. O backend/SQLite **NÃO foi alterado** nesta missão de design. Implementação real é bloqueante: [#74](https://github.com/JoaoVittorLi/meu-financeiro/issues/74). Design base: [#70](https://github.com/JoaoVittorLi/meu-financeiro/issues/70).
+**Status:** `DESIGN_APPROVED / ENGINEERING_REQUIRED`. O proprietário pediu adicionar subcategorias e ícones vetoriais vinculados; **a taxonomia e os ícones foram integralmente aprovados; outras partes da tela D05 podem seguir revisão**. O backend/SQLite **NÃO foi alterado** nesta missão de design. Implementação real é bloqueante: [#74](https://github.com/JoaoVittorLi/meu-financeiro/issues/74). Design base: [#70](https://github.com/JoaoVittorLi/meu-financeiro/issues/70).
 
 ## Demonstração
 
