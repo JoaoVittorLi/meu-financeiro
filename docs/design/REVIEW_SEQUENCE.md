@@ -6,7 +6,7 @@ Data: 2026-11-13 · Índice: #55 · Coordenação: #49 · Baseline PR #54 / 55de
 | D01 | Chat Lateral | **IMPLEMENTATION_READY** (DESIGN_APPROVED) | #56 | **V4.5 FINAL** · protótipo/specs/handoff congelados |
 | D02 | Chat Principal / Expandido | **DESIGN HANDOFF V3 CONSOLIDADO** (implementação pendente) | #58 | Biblioteca de 26 famílias especificada por herança; 3 aprovadas individualmente, VR-10 V2 referência; sem mais microscreens |
 | D03 | Inteligência Hoje | **IMPLEMENTATION_READY** (DESIGN_APPROVED) | #61 | **V2 FINAL** · cartões premium uniformes + prioridades dinâmicas · HTML/spec/QA/handoff publicados; Electron pendente |
-| D04 | Central de Revisão | NOT_STARTED | — | — |
+| D04 | Central de Revisão | **PROTOTYPING / WAITING_FEEDBACK** | #67 | V1 tela completa: fila contextual, antes/depois, escopos, impacto e reconfirmação; NÃO aprovado |
 | D05 | Movimentações | NOT_STARTED | — | — |
 | D06 | Visão Geral | NOT_STARTED | — | — |
 | D07 | Orçamentos | NOT_STARTED | — | — |
@@ -58,3 +58,9 @@ Critérios para DESIGN_APPROVED: aprovação explícita do proprietário sobre v
 - **Status:** `DESIGN_APPROVED / IMPLEMENTATION_READY`, produto `NOT_IMPLEMENTED`. Não merge/main/EXE/escrita financeira pessoal por esta aprovação.
 
 **Próxima tela principal de Design:** D04 — Central de Revisão. O Executor pode implementar D03 em branch separada conforme contratos e QA; não bloquear o design D04 por build.
+
+### D04 — Central de Revisão V1 (em revisão, 13/11/2026)
+
+- [Issue de design #67](https://github.com/JoaoVittorLi/meu-financeiro/issues/67): tela principal de fila e decisão, não revisão de microtelas.
+- Legado auditado: `src/intelligence-view.ts`, `app/intelligence-review.css`, contrato IC v1 e D01 V4.5. A disponibilidade de escrita via IA no perfil pessoal **não foi homologada**; mostrar fluxo ilustrativo sem sucesso falso.
+- V1 interativa apresentada no chat: pendências, históricos, busca, seleção, propostas de regra/categorização/orçamento, editar/descartar, seleção de afetados, escopo e reconfirmação. Status `WAITING_FEEDBACK`, sem aprovação nem integração Electron.
