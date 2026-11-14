@@ -145,121 +145,141 @@ function mfD04PreviewModal(app:any):any{
       ref:(node:any)=>{if(node&&!app.mfD04ModalFocused){app.mfD04ModalFocused=true;node.focus();}}},'Fechar')),
    renderCategoryReviewPreview(app)));
 }
+function mfD04Queue(app:any,entries:MfD04Entry[],selected:MfD04Entry|null):any{
+ const s=app.state,stage=s.mfD04Stage||'pending';
+ const q=String(s.mfD04Search||'').toLocaleLowerCase('pt-BR');
+ const visible=entries.filter(e=>(stage==='all'||e.status===stage)&&
+  (e.title+' '+e.category+' '+e.source).toLocaleLowerCase('pt-BR').includes(q));
+ const controls=['pending','history','all'].map(id=>h('button',{key:id,type:'button',
+   className:stage===id?'active':'','aria-pressed':stage===id,
+   onClick:()=>app.setState({mfD04Stage:id,categoryReviewPreview:null,categoryReviewConfirmed:false})},
+  id==='pending'?'Pendentes':id==='history'?'Histórico':'Todas'));
+ const items=visible.slice(0,80).map(entry=>h('button',{type:'button',key:entry.id,
+   className:'mf-d04-item'+(entry.id===selected?.id?' is-selected':''),
+   'aria-pressed':entry.id===selected?.id,
+   onClick:()=>app.setState({mfD04Selected:entry.id,mfD04Edit:false,
+    categoryReviewPreview:null,categoryReviewConfirmed:false,mfD04Error:''})},
+   h('span',{className:'mf-d04-item-head'},h('strong',{},entry.title),
+    h('small',{},entry.status==='history'?'Histórico':'Pendente')),
+   h('span',{},entry.source+' · '+(entry.kind==='category_rule'?'Regra':entry.kind==='category_change'?'Movimentação':'Decisão')),
+   h('small',{},entry.candidates.length+' registro(s) na amostra')));
+ return h('section',{className:'mf-d04-queue','aria-label':'Fila de revisão'},
+  h('div',{className:'mf-d04-queue-top'},h('h3',{},'Fila de decisões'),
+    h('span',{},entries.filter(e=>e.status==='pending').length+' pendentes nesta consulta')),
+  h('label',{className:'mf-d04-search'},'Buscar revisões',
+    h('input',{type:'search',value:s.mfD04Search||'',placeholder:'Nome, origem ou categoria',
+     onChange:(e:any)=>app.setState({mfD04Search:e.target.value,
+      categoryReviewPreview:null,categoryReviewConfirmed:false})})),
+  h('div',{className:'mf-d04-filters',role:'group','aria-label':'Filtrar revisões'},...controls),
+  h('div',{className:'mf-d04-items'},...items,
+    !items.length?h('p',{className:'mf-d04-no-results'},'Nenhuma revisão neste filtro.'):null));
+}
+function mfD04Details(app:any,entry:MfD04Entry|null):any{
+ if(!entry)return h('section',{className:'mf-d04-detail'},h('p',{},'Selecione uma revisão para conferir.'));
+ const s=app.state,d=mfD04DraftFor(app,entry);
+ if(entry.kind==='audit')return h('section',{className:'mf-d04-detail'},
+  h('div',{className:'mf-d04-summary'},h('h3',{},'Decisão auditada: '+entry.title),
+   h('p',{},'ID '+String(entry.original.id)+' · '+String(entry.original.appliedAt||'')),
+   h('p',{},'Desfazer: '+String(entry.original.undoState||'indisponível')),
+   entry.original.undoState==='available'?h('button',{type:'button',className:'ghost-button',
+    onClick:()=>void categoryReviewPrepare(app,'undo',{commandId:entry.original.id})},'Preparar desfazer pelo serviço'):null));
+ const excluded:string[]=s.mfD04Excluded?.[entry.id]||[];
+ const impact=mfD04Impact(entry,d,excluded);
+ const change=(patch:Partial<MfD04Draft>)=>mfD04Patch(app,entry,patch);
+ const canPrepare=mfD04ServiceEligible(app,entry,d,excluded);
+ const fields=[['name','Nome da proposta'],['category','Categoria de destino'],['terms','Critério']].map(([key,label])=>
+  h('label',{key},label,h('input',{type:'text',value:(d as any)[key],
+    onChange:(e:any)=>change({[key]:e.target.value})})));
+ const colorButtons=MF_D04_PALETTE.map(color=>h('button',{key:color,type:'button',
+  style:{background:color},'aria-pressed':d.color===color,'aria-label':'Cor '+color,
+  onClick:()=>change({color})}));
+ const editor=s.mfD04Edit?h('section',{className:'mf-d04-editor','aria-label':'Editor isolado'},
+  ...fields,h('div',{className:'mf-d04-colors'},...colorButtons),
+  h('div',{className:'mf-d04-actions'},
+   h('button',{type:'button',className:'primary-button',onClick:()=>mfD04SavedDraft(app,entry)},'Salvar ajustes locais'),
+   h('button',{type:'button',className:'ghost-button',onClick:()=>mfD04Discard(app,entry)},'Descartar alterações'))):null;
+ const candidates=entry.candidates.map(item=>h('label',{key:item.id},
+  h('input',{type:'checkbox',checked:!excluded.includes(item.id),
+   onChange:(e:any)=>{
+    const old:string[]=app.state.mfD04Excluded?.[entry.id]||[];
+    const next=e.target.checked?old.filter(id=>id!==item.id):[...old,item.id];
+    app.setState({mfD04Excluded:{...app.state.mfD04Excluded,[entry.id]:next},
+     categoryReviewPreview:null,categoryReviewConfirmed:false});
+   }}),
+  h('span',{},item.title+' · '+item.date),
+  h('strong',{},intelligencePremiumMoney(item.amountCents))));
+ const actions=[
+  h('button',{type:'button',className:'primary-button',disabled:!canPrepare,
+    title:canPrepare?'Revalidação real no serviço sintético':'Este rascunho/escopo não possui aplicação segura',
+    onClick:()=>mfD04Prepare(app,entry)},'Preparar no serviço')];
+ if(entry.kind==='category_rule'&&s.categoryReviewAvailable){
+  for(const state of ['denied','deferred']){
+   actions.push(h('button',{key:state,type:'button',className:'ghost-button',
+    onClick:()=>void categoryReviewPrepare(app,'decision',
+     {suggestionId:entry.original.id,state})},state==='denied'?'Recusar':'Adiar'));
+  }
+ }
+ return h('section',{className:'mf-d04-detail','aria-label':'Detalhe da proposta'},
+  h('div',{className:'mf-d04-detail-inner'},
+   h('div',{className:'mf-d04-detail-head'},
+    h('div',{},h('small',{},entry.source),h('h3',{},entry.title)),
+    h('button',{type:'button',className:'ghost-button',
+     onClick:()=>app.setState({mfD04Edit:!s.mfD04Edit})},
+     s.mfD04Edit?'Recolher editor':'Editar rascunho')),
+   h('div',{className:'mf-d04-diff'},
+    h('div',{},h('small',{},'SITUAÇÃO ATUAL'),h('strong',{},String(entry.original.category||'Sem categoria'))),
+    h('span',{'aria-hidden':'true'},'→'),
+    h('div',{},h('small',{},'PROPOSTA'),h('strong',{},d.category||'Sem categoria'))),
+   editor,
+   h('div',{className:'mf-d04-scopes'},
+    h('label',{},h('input',{type:'checkbox',checked:d.past,
+     onChange:(e:any)=>change({past:e.target.checked})}),'Organizar anteriores'),
+    h('label',{},h('input',{type:'checkbox',checked:d.future,
+     onChange:(e:any)=>change({future:e.target.checked})}),'Categorizar futuras')),
+   h('div',{className:'mf-d04-impact'},
+    h('strong',{},impact.count+' registro(s) anteriores nesta amostra'),
+    h('strong',{},impact.cents===null?'Valor indisponível':intelligencePremiumMoney(impact.cents)),
+    h('small',{},impact.samplePartial?'Amostra parcial, não todo o histórico elegível.':'Soma apenas de IDs selecionados.'),
+    !d.past?h('p',{},'Passado desligado: impacto histórico R$ 0,00.'):null,
+    d.future?h('p',{},'Futuro não representa quantidade prevista de transações.'):null),
+   h('div',{className:'mf-d04-candidates'},h('h4',{},'Registros de referência'),...candidates,
+    !candidates.length?h('p',{},'Sem registros elegíveis nesta amostra.'):null),
+   h('div',{className:'mf-d04-actions'},...actions),
+   h('p',{className:'mf-d04-footnote'},
+    'Alterações de termos, cor, escopos ou exclusões que o serviço não consegue revalidar permanecem rascunho, sem escrita pessoal.')));
+}
 function mfD04Render(app:any):any{
  const s=app.state,grant=s.categoryReviewGrant,report=s.categoryReviewReport;
- const entries=mfD04Entries(app);
- const stage=s.mfD04Stage||'pending',q=String(s.mfD04Search||'').toLocaleLowerCase('pt-BR');
- const visible=entries.filter(e=>(stage==='all'||e.status===(stage==='history'?'history':'pending'))&&
-  (e.title+' '+e.category+' '+e.source+' '+e.kind).toLocaleLowerCase('pt-BR').includes(q));
+ const entries=mfD04Entries(app),stage=s.mfD04Stage||'pending';
+ const query=String(s.mfD04Search||'').toLocaleLowerCase('pt-BR');
+ const visible=entries.filter(e=>(stage==='all'||e.status===stage)&&
+  (e.title+' '+e.category+' '+e.source).toLocaleLowerCase('pt-BR').includes(query));
  const selected=visible.find(e=>e.id===s.mfD04Selected)||visible[0]||null;
- const draft=selected?mfD04DraftFor(app,selected):null;
- const exclusions=selected?s.mfD04Excluded?.[selected.id]||[]:[];
- const impact=selected&&draft?mfD04Impact(selected,draft,exclusions):null;
- const change=(patch:Partial<MfD04Draft>)=>{if(selected)mfD04Patch(app,selected,patch);};
- const focus=(id:string)=>app.setState({mfD04Selected:id,mfD04Edit:false,
-    categoryReviewPreview:null,categoryReviewConfirmed:false,mfD04Error:''});
+ const body=grant&&report?h('div',{className:'mf-d04-body'},
+  mfD04Queue(app,entries,selected),mfD04Details(app,selected),
+  h('details',{className:'mf-d04-advanced'},
+   h('summary',{},'Outras ferramentas do serviço de revisão'),
+   renderCategoryReviewLegacy(app))):null;
+ const empty=!grant?h('div',{className:'mf-d04-empty',role:'status'},
+  h('h3',{},s.categoryReviewAvailable===false?'Revisão sintética indisponível':'Autorize uma revisão supervisionada'),
+  h('p',{},'Escrita pela IA no perfil pessoal permanece desativada. A prévia de teste exige perfil sintético validado.'),
+  s.categoryReviewAvailable?h('button',{type:'button',className:'primary-button',
+   disabled:s.categoryReviewBusy,onClick:()=>void categoryReviewEnable(app)},'Autorizar revisão sintética'):null):null;
  return h('section',{className:'mf-d04-review',role:'region','aria-label':'Central de Revisão V1.1'},
   h('header',{className:'mf-d04-heading'},
    h('div',{},h('small',{},'INTELIGÊNCIA / CENTRAL DE REVISÕES'),
     h('h2',{},'Revise antes de decidir.'),
-    h('p',{},'Cada sugestão usa dados e permissões da fonte autorizada. Nenhuma escrita pessoal é realizada pela IA.')),
+    h('p',{},'Sugestões e movimentações do serviço autorizado, com decisão supervisionada.')),
    h('div',{className:'mf-d04-heading-actions'},
-    h('button',{type:'button',className:'ghost-button',onClick:()=>app.setState({categoryReviewOpen:false,intelligenceMainMode:'chat'})},'Voltar à conversa'),
-    grant?h('button',{type:'button',className:'ghost-button',onClick:()=>void categoryReviewRun(app,()=>categoryReviewRefresh(app))},'Atualizar fila'):null)),
-  !grant?h('div',{className:'mf-d04-empty',role:'status'},
-   h('h3',{},s.categoryReviewAvailable===false?'Revisão sintética indisponível neste perfil':'Inicie uma revisão supervisionada'),
-   h('p',{},'O serviço de revisão não oferece escrita pela IA em dados pessoais. Quando existir perfil sintético validado, você poderá inspecionar e preparar operações reais com prévia.'),
-   s.categoryReviewAvailable?h('button',{type:'button',className:'primary-button',disabled:s.categoryReviewBusy,
-    onClick:()=>void categoryReviewEnable(app)},'Autorizar revisão sintética'):null):null,
-  grant&&report?h('div',{className:'mf-d04-body'},
-   h('section',{className:'mf-d04-queue','aria-label':'Fila de revisão'},
-    h('div',{className:'mf-d04-queue-top'},
-     h('h3',{},'Fila de decisões'),
-     h('span',{},entries.filter(x=>x.status==='pending').length+' pendentes nesta consulta')),
-    h('label',{className:'mf-d04-search'},'Buscar revisões',
-     h('input',{type:'search',value:s.mfD04Search||'',placeholder:'Nome, origem ou categoria',
-       onChange:(e:any)=>app.setState({mfD04Search:e.target.value,categoryReviewPreview:null,categoryReviewConfirmed:false})})),
-    h('div',{className:'mf-d04-filters',role:'group','aria-label':'Filtrar a fila'},
-     ...[{id:'pending',label:'Pendentes'},{id:'history',label:'Histórico'},{id:'all',label:'Todas'}].map(t=>
-      h('button',{key:t.id,type:'button',className:stage===t.id?'active':'','aria-pressed':stage===t.id,
-       onClick:()=>app.setState({mfD04Stage:t.id,categoryReviewPreview:null,categoryReviewConfirmed:false})},t.label))),
-    h('div',{className:'mf-d04-items'},...visible.slice(0,80).map(e=>h('button',{type:'button',key:e.id,
-      className:'mf-d04-item'+(selected?.id===e.id?' is-selected':''),'aria-pressed':selected?.id===e.id,
-      onClick:()=>focus(e.id)},
-      h('span',{className:'mf-d04-item-head'},h('strong',{},e.title),h('small',{},e.status==='history'?'Histórico':'Pendente')),
-      h('span',{},e.source+' · '+(e.kind==='category_rule'?'Regra':e.kind==='category_change'?'Movimentação':'Decisão')),
-      e.candidates.length?h('small',{},e.candidates.length+' registro(s) de amostra'):null))),
-    !visible.length?h('p',{className:'mf-d04-no-results'},stage==='history'?'Sem decisões auditadas neste filtro.':'Nenhuma revisão disponível para este filtro.'):null,
-    entries.length>80?h('small',{},'Mostrando até 80 registros desta página de origem.'):null),
-   h('section',{className:'mf-d04-detail','aria-label':'Detalhe da proposta'},
-    selected&&draft? h('div',{className:'mf-d04-detail-inner'},
-     h('div',{className:'mf-d04-detail-head'},h('div',{},h('small',{},selected.source),h('h3',{},selected.title)),
-      selected.kind!=='audit'?h('button',{type:'button',className:'ghost-button',
-       onClick:()=>app.setState({mfD04Edit:!s.mfD04Edit})},s.mfD04Edit?'Recolher editor':'Editar rascunho'):null),
-     selected.kind==='audit'? h('div',{className:'mf-d04-summary'},
-      h('strong',{},'Registro de auditoria do serviço'),
-      h('p',{},'Ação: '+selected.original.action+' · ID '+selected.original.id),
-      h('p',{},'Desfazer: '+(selected.original.undoState||'não informado')),
-      selected.original.undoState==='available'?h('button',{type:'button',className:'ghost-button',
-       onClick:()=>void categoryReviewPrepare(app,'undo',{commandId:selected.original.id})},'Preparar desfazer com o serviço'):null):
-      h('div',{className:'mf-d04-stack'},
-       h('div',{className:'mf-d04-diff'},h('div',{},h('small',{},'SITUAÇÃO ATUAL'),
-        h('strong',{},String(selected.original.category||'Sem categoria'))),
-        h('span',{'aria-hidden':'true'},'→'),h('div',{},h('small',{},'PROPOSTA'),
-         h('strong',{},draft.category||'Sem categoria'))),
-       s.mfD04Edit?h('div',{className:'mf-d04-editor','aria-label':'Editar rascunho'},
-        h('label',{},'Nome da proposta',h('input',{type:'text',value:draft.name,onChange:(e:any)=>change({name:e.target.value})})),
-        h('label',{},'Categoria de destino',h('input',{type:'text',value:draft.category,onChange:(e:any)=>change({category:e.target.value})})),
-        h('label',{},'Critério',h('input',{type:'text',value:draft.terms,onChange:(e:any)=>change({terms:e.target.value})})),
-        h('div',{className:'mf-d04-colors','aria-label':'Cor do rascunho'},
-         ...MF_D04_PALETTE.map(color=>h('button',{key:color,type:'button',
-           style:{background:color},'aria-label':'Cor '+color,'aria-pressed':draft.color===color,
-           onClick:()=>change({color})}))),
-        h('div',{className:'mf-d04-actions'},
-         h('button',{type:'button',className:'primary-button',onClick:()=>mfD04SavedDraft(app,selected)},'Salvar ajustes locais'),
-         h('button',{type:'button',className:'ghost-button',onClick:()=>mfD04Discard(app,selected)},'Descartar alterações'))):null,
-       h('div',{className:'mf-d04-scopes'},
-        h('label',{},h('input',{type:'checkbox',checked:draft.past,onChange:(e:any)=>change({past:e.target.checked})}),'Organizar anteriores'),
-        h('label',{},h('input',{type:'checkbox',checked:draft.future,onChange:(e:any)=>change({future:e.target.checked})}),'Categorizar futuras')),
-       h('div',{className:'mf-d04-impact'},
-        h('strong',{},String(impact?.count||0)+' registro(s) históricos nesta amostra'),
-        h('strong',{},impact?.cents!=null?intelligencePremiumMoney(impact.cents):'Valor indisponível'),
-        h('small',{},impact?.samplePartial?'Amostra parcial — não representa todo o histórico elegível.':'Valores calculados apenas dos IDs desta seleção.'),
-        !draft.past?h('p',{},'Escopo histórico desligado: impacto passado R$ 0,00.'):null,
-        draft.future?h('p',{},'Escopo futuro não prevê quantas transações ocorrerão.'):null),
-       h('div',{className:'mf-d04-candidates'},
-        h('h4',{},'Registros de referência'),
-        ...selected.candidates.map(item=>h('label',{key:item.id},
-         h('input',{type:'checkbox',checked:!exclusions.includes(item.id),
-          onChange:(e:any)=>{
-           const old=s.mfD04Excluded?.[selected.id]||[];
-           const next=e.target.checked?old.filter((x:string)=>x!==item.id):[...old,item.id];
-           app.setState({mfD04Excluded:{...app.state.mfD04Excluded,[selected.id]:next},
-            categoryReviewPreview:null,categoryReviewConfirmed:false});
-          }}),
-         h('span',{},item.title+' · '+item.date),h('strong',{},intelligencePremiumMoney(item.amountCents)))),
-        !selected.candidates.length?h('p',{},'Sem registros para quantificar nesta consulta.'):null),
-       h('div',{className:'mf-d04-actions'},
-        h('button',{type:'button',className:'primary-button',
-          disabled:!mfD04ServiceEligible(app,selected,draft,exclusions),
-          title:mfD04ServiceEligible(app,selected,draft,exclusions)?'Serviço sintético valida novamente a prévia':
-           'Sem contrato operacional para aplicar este rascunho ou escopo',
-          onClick:()=>mfD04Prepare(app,selected)},'Preparar no serviço'),
-        selected.kind==='category_rule'?h('button',{type:'button',className:'ghost-button',
-         disabled:!s.categoryReviewAvailable,onClick:()=>void categoryReviewPrepare(app,'decision',
-          {suggestionId:selected.original.id,state:'denied'})},'Recusar'):null,
-        selected.kind==='category_rule'?h('button',{type:'button',className:'ghost-button',
-         disabled:!s.categoryReviewAvailable,onClick:()=>void categoryReviewPrepare(app,'decision',
-          {suggestionId:selected.original.id,state:'deferred'})},'Adiar'):null),
-       h('p',{className:'mf-d04-footnote'},'Rascunhos, critérios alterados, exclusões e histórico só podem ser aplicados após um contrato que revalide exatamente os mesmos IDs. A versão atual permite prévia do serviço para ações suportadas, sem escrita pessoal.'))
-       ):h('div',{className:'mf-d04-no-results'},'Selecione uma proposta para inspecionar seus dados e permissões.')),
-   h('details',{className:'mf-d04-advanced'},
-    h('summary',{},'Outras ferramentas do serviço de revisão'),
-    renderCategoryReviewLegacy(app))):null,
+    h('button',{type:'button',className:'ghost-button',
+     onClick:()=>app.setState({categoryReviewOpen:false,intelligenceMainMode:'chat'})},'Voltar à conversa'),
+    grant?h('button',{type:'button',className:'ghost-button',
+     onClick:()=>void categoryReviewRun(app,()=>categoryReviewRefresh(app))},'Atualizar fila'):null)),
+  empty,body,
   s.mfD04Error?h('p',{className:'mf-ai-error',role:'status'},s.mfD04Error):null,
-  s.categoryReviewError?h('p',{role:'alert',className:'mf-ai-error'},s.categoryReviewError):null,
-  s.categoryReviewBusy?h('p',{role:'status'},'Conferindo o serviço de revisão…'):null,
-  s.categoryReviewReceipt&&grant?h('p',{role:'status',className:'mf-d04-receipt'},
-    'O serviço registrou a ação '+String(s.categoryReviewReceipt.id)+'. Confira o histórico para elegibilidade de desfazer.'):null,
+  s.categoryReviewError?h('p',{className:'mf-ai-error',role:'alert'},s.categoryReviewError):null,
+  s.categoryReviewBusy?h('p',{role:'status'},'Conferindo o serviço…'):null,
+  s.categoryReviewReceipt&&grant?h('p',{className:'mf-d04-receipt',role:'status'},
+   'Ação confirmada pelo serviço: '+String(s.categoryReviewReceipt.id)):null,
   mfD04PreviewModal(app));
 }
