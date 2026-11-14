@@ -1,6 +1,8 @@
+> **Aprovação do proprietário (13/11/2026):** “Muito bem! [...] categorias e subcategorias [...] 100% aprovadas.” Congeladas as **14 categorias-pai, 61 subcategorias, pictogramas SVG e cores**. **Isso NÃO significa código funcional implementado**. Executor deve concluir issue #74 com SQLite/IPC/IA, migração e QA. [Relatório dos problemas identificados](BUG_REPORT_AND_IMPLEMENTATION_GATES.md).
+
 # HANDOFF AO EXECUTOR — D05-SUBCAT · Backend obrigatório + interface premium
 
-**Urgência:** subcategorias são funcionalidade do produto, **não apenas estilo visual**. Issue de implementação [#74](https://github.com/JoaoVittorLi/meu-financeiro/issues/74). Design D05 [#70](https://github.com/JoaoVittorLi/meu-financeiro/issues/70) **ainda em revisão**. PR design [#57](https://github.com/JoaoVittorLi/meu-financeiro/pull/57); branch `design/mf2-screen-by-screen-20261113`.
+**Urgência:** subcategorias são funcionalidade do produto, **não apenas estilo visual**. Issue de implementação [#74](https://github.com/JoaoVittorLi/meu-financeiro/issues/74). Design D05 [#70](https://github.com/JoaoVittorLi/meu-financeiro/issues/70) **com taxonomia e ícones aprovados; tela completa continua em revisão**. PR design [#57](https://github.com/JoaoVittorLi/meu-financeiro/pull/57); branch `design/mf2-screen-by-screen-20261113`.
 
 ## Documentos canônicos
 
