@@ -77,7 +77,7 @@ class RCCategoryGateway{
   let resolved;
   try{resolved=new D05CategoryService(this.finance).resolve(target);}
   catch{return deny('review_required','Destino D05 ausente, inativo ou incompatível.');}
-  const detail=await this.personal.handle({...input,method:'qualityDetail'},host);
+  const detail=await this.personal.handle({method:'qualityDetail',scope,qualityId:input.qualityId},host);
   const q=detail?.data?.quality;
   if(detail.status!=='ready'||!q||q.accountId!==host.activeAccountId)
    return deny('stale','Evidência de qualidade ausente ou vinculada a outra conta.');
