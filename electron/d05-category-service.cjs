@@ -296,6 +296,89 @@ class D05CategoryService{
   }
   return {groups:[...groups.values()],truncated:view.truncated,total:view.total,scope:'manual-only'};
  }
+ // Portable manual-profile JSON is distinct from full SQLite bank/sync backups.
+ exportManualProfile(profile){
+  checkProfile(profile);
+  const data=this.finance.load(profile);
+  if(!data)throw Error('D05: perfil ainda não inicializado');
+  const manualTargets=this.db.prepare(¤SELECT t.id,COALESCE(t.category_id,c.id) AS categoryId,
+     t.subcategory_id AS subcategoryId FROM transactions t LEFT JOIN categories c ON c.name=t.category COLLATE NOCASE
+     WHERE t.profile=? ORDER BY t.id¤).all(profile);
+  const customParents=this.db.prepare(¤SELECT id,name,color,kind,icon_key AS iconKey,hue FROM categories
+     WHERE built_in=0 ORDER BY id¤).all();
+  const customChildren=this.db.prepare(¤SELECT id,parent_category_id AS parentCategoryId,name,
+    icon_key AS iconKey,hue,active,sort_order AS sortOrder FROM subcategories WHERE built_in=0 ORDER BY id¤).all();
+  return {contract:'D05/MANUAL-PORTABLE-V1',version:1,profile,scope:'manual-only',
+    data,manualTargets,customParents,customChildren};
+ }
+ restoreManualProfile(profile,snapshot){
+  checkProfile(profile);ensureObject(snapshot);
+  if(snapshot.contract!=='D05/MANUAL-PORTABLE-V1'||snapshot.version!==1||
+   snapshot.profile!==profile||snapshot.scope!=='manual-only'||
+   !snapshot.data||!Array.isArray(snapshot.manualTargets)||
+   !Array.isArray(snapshot.customParents)||!Array.isArray(snapshot.customChildren)||
+   snapshot.customParents.length>200||snapshot.customChildren.length>1000)
+    throw Error('D05: backup manual incompatível');
+  // This endpoint is a MUTATION. IPC host must verify user intent and a verified pre-restore SQLite backup.
+  return inTransaction(this.db,()=>{
+   for(const p of snapshot.customParents){
+    ensureObject(p);
+    const id=ensureId(p.id,'ID pai');
+    if(!id.startsWith('cat:custom:'))throw Error('D05: ID personalizado inválido');
+    const name=ensureText(p.name,50,'categoria personalizada');
+    if(typeof p.color!=='string'||!/^#[a-f0-9]{6}$/i.test(p.color)||
+      !['expense','income','both'].includes(p.kind))throw Error('D05: categoria personalizada inválida');
+    const existing=this.db.prepare('SELECT id,name FROM categories WHERE id=? OR name=? COLLATE NOCASE').all(id,name);
+    if(existing.some(e=>e.id!==id||e.name!==name))throw Error('D05: conflito com categoria existente');
+    if(!existing.length)this.db.prepare(¤INSERT INTO categories(name,color,built_in,emoji,kind,id,icon_key,hue)
+     VALUES(?,?,0,'✨',?,?,?,?)¤).run(name,p.color,p.kind,id,
+       p.iconKey==null?null:ensureText(p.iconKey,64,'ícone'),
+       p.hue==null?null:ensureHue(p.hue));
+   }
+   for(const c of snapshot.customChildren){
+    ensureObject(c);
+    const id=ensureId(c.id,'ID filho');
+    if(!id.startsWith('sub:custom:'))throw Error('D05: ID de filho personalizado inválido');
+    const parent=this.resolve({categoryId:c.parentCategoryId,subcategoryId:null});
+    const name=ensureText(c.name,80,'nome do filho'),norm=normalizedName(name);
+    const icon=ensureText(c.iconKey,64,'ícone');
+    if(!/^[a-z0-9-]+$/.test(icon))throw Error('D05: ícone não permitido');
+    const hue=ensureHue(c.hue);
+    const existing=this.db.prepare('SELECT id,parent_category_id,name FROM subcategories WHERE id=? OR (parent_category_id=? AND normalized_name=?)')
+      .all(id,parent.categoryId,norm);
+    if(existing.some(e=>e.id!==id||e.parent_category_id!==parent.categoryId||e.name!==name))
+      throw Error('D05: conflito com subcategoria existente');
+    if(!existing.length)this.db.prepare(¤INSERT INTO subcategories
+      (id,parent_category_id,name,normalized_name,icon_key,hue,kind,active,built_in,sort_order)
+      VALUES(?,?,?,?,?,?,?, ?,0,?)¤).run(id,parent.categoryId,name,norm,icon,hue,parent.parent.kind,c.active===0?0:1,
+         Number.isSafeInteger(c.sortOrder)&&c.sortOrder>=0?c.sortOrder:0);
+   }
+   // FinanceDB.save executes inside this transaction, preserving its old link & profile guards.
+   const out=this.finance.save(profile,snapshot.data,{inTransaction:true});
+   const targets=new Map();
+   if(snapshot.manualTargets.length!==snapshot.data.transactions.length)
+    throw Error('D05: mapa de IDs de backup incompleto');
+   for(const t of snapshot.manualTargets){
+    ensureObject(t);const id=ensureId(t.id,'ID de transação');
+    if(targets.has(id))throw Error('D05: ID duplicado no backup');
+    targets.set(id,t);
+   }
+   for(const tx of snapshot.data.transactions){
+    const id=ensureId(tx.id,'movimento'),t=targets.get(id);
+    if(!t)throw Error('D05: movimentação ausente no mapa do backup');
+    if(t.categoryId!==null&&t.categoryId!==undefined){
+     const dest=this.resolve({categoryId:t.categoryId,subcategoryId:t.subcategoryId??null},{allowInactive:true});
+     if(dest.parentName!==tx.category)throw Error('D05: categoria de backup divergente');
+     this.db.prepare(¤UPDATE transactions SET category_id=?,subcategory_id=? WHERE profile=? AND id=?¤)
+      .run(dest.categoryId,dest.subcategoryId,profile,id);
+    }else if(t.subcategoryId!==null&&t.subcategoryId!==undefined)
+      throw Error('D05: filho sem pai no backup');
+   }
+   if(this.db.prepare('PRAGMA foreign_key_check').all().length)
+     throw Error('D05: backup com vínculos inválidos');
+   return {contract:'D05/MANUAL-PORTABLE-V1',profile,restored:out.txCount,changesApplied:true};
+  });
+ }
  asReadOnlyFacade({authorize}={}){
   // The host must verify the ACTUAL owner/session/consent. Renderer/model args are never authority.
   if(typeof authorize!=='function')throw Error('D05: autorizador de leitura obrigatório');
