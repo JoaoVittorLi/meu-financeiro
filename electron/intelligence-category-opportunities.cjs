@@ -136,7 +136,7 @@ class ProactiveCategoryAdvisor{
    const evidence=g.manuallyCorrected.slice(0,8).map(safeSummary);
    const cents=candidates.reduce((sum,r)=>sum+Math.abs(r.amount),0);
    const digest=sha({scope,sourceIds:g.rows.map(rowId),evidence,candidates:candidates.map(safeSummary),
-    category,pattern:g.pattern,asOf:references.readAt,ruleIds:collisions.map(x=>x.id)});
+    category,pattern:g.pattern,ruleIds:collisions.map(x=>x.id)});
    const id=sha([scope.owner,scope.token,g.accountId,g.nature,g.pattern,category,digest]).slice(0,32);
    const item={id,kind:'merchant_pattern',accountId:g.accountId,nature:g.nature,
     pattern:g.pattern,category,confidence,
@@ -163,7 +163,6 @@ class ProactiveCategoryAdvisor{
    b.evidence.loadedCandidateAmountCents-a.evidence.loadedCandidateAmountCents||
    a.id.localeCompare(b.id));
   const ordered=suggestions.slice(0,params.limit);
-  const selectedIds=new Set(ordered.map(x=>x.id));
   for(const [key,v] of this.opportunities)
    if(v.expiresAt<=this.clock())this.opportunities.delete(key);
   while(this.opportunities.size>this.max){
