@@ -14,7 +14,7 @@ function parseCategoryIntent(question,{selectedIds=[],selectedAccountId=null,las
   return {type:'category.analyze_usage'};
  if(/^(liste|mostre|quais sao|ver).*(categorias|regras)/.test(f))
   return {type:'category.list'};
- let m=q.match(new RegExp('^(?:crie|criar|adicione|adicionar)\\s+(?:uma?\\s+)?categoria\\s+'+nameGroup+'(?=\\s+na cor\\b|\\s+com a cor\\b|\\s+de cor\\b|[.!?]?$)','iu'));
+ let m=q.match(new RegExp('^(?:crie|criar|adicione|adicionar)\\s+(?:uma?\\s+)?categoria\\s+'+nameGroup+'(?=\\s*,?\\s+na cor\\b|\\s*,?\\s+com a cor\\b|\\s*,?\\s+de cor\\b|[.!?]?$)','iu'));
  if(m){
   const name=m[1].trim(),colorWord=f.match(/(?:na cor|com a cor|de cor)\s+(verde|azul|vermelho|amarelo|laranja|roxo|cinza)\b/);
   return {type:'category.create',params:{name,color:colorWord?COLOR_NAMES[colorWord[1]]:'#87929c',
