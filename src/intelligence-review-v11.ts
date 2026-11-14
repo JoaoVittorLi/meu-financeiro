@@ -255,7 +255,7 @@ function mfD04Render(app:any):any{
        ):h('div',{className:'mf-d04-no-results'},'Selecione uma proposta para inspecionar seus dados e permissões.')),
    h('details',{className:'mf-d04-advanced'},
     h('summary',{},'Outras ferramentas do serviço de revisão'),
-    renderCategoryReviewLegacy(app)):null,
+    renderCategoryReviewLegacy(app))):null,
   s.mfD04Error?h('p',{className:'mf-ai-error',role:'status'},s.mfD04Error):null,
   s.categoryReviewError?h('p',{role:'alert',className:'mf-ai-error'},s.categoryReviewError):null,
   s.categoryReviewBusy?h('p',{role:'status'},'Conferindo o serviço de revisão…'):null,
