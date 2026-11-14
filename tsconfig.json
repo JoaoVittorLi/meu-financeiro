@@ -19,6 +19,7 @@
     "src/intelligence-view.ts",
     "src/intelligence-today-v2.ts",
     "src/intelligence-category-rc.ts",
+    "src/intelligence-quality-rc.ts",
     "src/intelligence-review-v11.ts",
     "src/intelligence-design.ts",
     "src/intelligence-visuals.ts",
