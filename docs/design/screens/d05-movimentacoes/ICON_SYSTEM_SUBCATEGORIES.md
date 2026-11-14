@@ -1,6 +1,8 @@
+> **Aprovação do proprietário (13/11/2026):** “Muito bem! [...] categorias e subcategorias [...] 100% aprovadas.” Congeladas as **14 categorias-pai, 61 subcategorias, pictogramas SVG e cores**. **Isso NÃO significa código funcional implementado**. Executor deve concluir issue #74 com SQLite/IPC/IA, migração e QA. [Relatório dos problemas identificados](BUG_REPORT_AND_IMPLEMENTATION_GATES.md).
+
 # D05-SUBCAT · Sistema de ícones premium — Categoria / Subcategoria
 
-**Estado:** `DESIGN_EXPLORATION / WAITING_FEEDBACK`. Requisito de implementação real: [#74](https://github.com/JoaoVittorLi/meu-financeiro/issues/74). Design D05: [#70](https://github.com/JoaoVittorLi/meu-financeiro/issues/70). Catálogo: [SUBCATEGORY_TAXONOMY_V1.json](SUBCATEGORY_TAXONOMY_V1.json).
+**Estado:** `DESIGN_APPROVED / ENGINEERING_REQUIRED`. Requisito de implementação real: [#74](https://github.com/JoaoVittorLi/meu-financeiro/issues/74). Design D05: [#70](https://github.com/JoaoVittorLi/meu-financeiro/issues/70). Catálogo: [SUBCATEGORY_TAXONOMY_V1.json](SUBCATEGORY_TAXONOMY_V1.json).
 
 ## Origem da solicitação e problemas confirmados
 
