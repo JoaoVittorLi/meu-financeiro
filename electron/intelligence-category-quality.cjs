@@ -42,6 +42,13 @@ function evidenceVerdict({anchors,distinctDates,suspiciousDuplicates,ruleCollisi
   explanation:reasons.length?'Revisão humana necessária; a evidência não autoriza preparar uma ação automática.':
    'Histórico local e evidências atendem aos critérios mínimos; a proposta ainda exige conferência e confirmação independentes.'};
 }
+// D05 introduces categoryId+subcategoryId rather than category names alone.
+// Block legacy name-only drafts until the Integrator provides a verified resolver.
+function unresolvedHierarchy(db){
+ const sql=db?.db;
+ if(!sql?.prepare)throw Error('SQLite indisponível para verificação D05.');
+ return !!sql.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='subcategories'").get();
+}
 function sourceLabels(db){
  const sql=db?.db;
  if(!sql?.prepare)throw Error('FinanceDB e SQLite obrigatórios.');
@@ -71,6 +78,7 @@ class EvidenceQualityService{
   const labels=sourceLabels(this.db),rules=this.db.listCategories().rules;
   const rulesVersion=sha(rules);
   const partial=!!overview.truncated||!!references.partial;
+  const hierarchyPending=unresolvedHierarchy(this.db);
   const out=[];
   for(const opportunity of scan.opportunities){
    const related=records.filter(r=>r.accountId===opportunity.accountId&&
@@ -89,7 +97,12 @@ class EvidenceQualityService{
    const safeCents=Number.isSafeInteger(cents)?cents:-1;
    const verdict=evidenceVerdict({anchors:anchors.length,distinctDates:anchorDays.length,
     suspiciousDuplicates:dupes.length,ruleCollision:existingRule!==null,
-    partial,candidates:candidates.length,unsupported:false,amountCents:safeCents});
+    partial,candidates:candidates.length,unsupported:hierarchyPending,amountCents:safeCents});
+   if(hierarchyPending){
+    verdict.status='review_required';
+    verdict.reasons.push('d05_hierarchy_target_unresolved');
+    verdict.explanation='D05 usa categoryId e subcategoryId; nenhuma ação pode usar categoria plana sem resolver pai e filho.';
+   }
    const factual={owner,scope,opportunityId:opportunity.id,accountId:opportunity.accountId,
     pattern:opportunity.pattern,category:opportunity.category,nature:opportunity.nature,
     anchorIds:anchors.map(key).sort(),candidateIds:candidates.map(key).sort(),
@@ -138,6 +151,8 @@ class EvidenceQualityService{
  draft(qualityId,action,input,owner){
   if(!['historical','future'].includes(action))throw Error('Ação não autorizada.');
   const {scope}=this.proposals.authorize(input,owner);
+  if(unresolvedHierarchy(this.db))return {status:'review_required',changesApplied:false,
+   reasons:['d05_hierarchy_target_unresolved'],reason:'Destino D05 pai/filho não homologado para propostas I2-D/E.'};
   const stored=this.entries.get(owner+':'+qualityId);
   if(!stored||stored.expiresAt<=this.clock()||!sameScope(stored.scope,scope))
    return {status:'stale',changesApplied:false,reason:'Evidência expirada ou pertencente a outro escopo.'};
@@ -155,6 +170,8 @@ class EvidenceQualityService{
    warning:'O comando apenas prepara prévia B1 e não confirma nem altera movimentações.'};
  }
  compose(input,owner,items){
+  if(unresolvedHierarchy(this.db))return {contract:'I2-E/COMPOSITE-PLAN-V1',status:'review_required',
+   changesApplied:false,steps:[],reasons:['d05_hierarchy_target_unresolved']};
   if(!Array.isArray(items)||!items.length||items.length>3||
    items.some(i=>!i||typeof i.qualityId!=='string'||!['historical','future'].includes(i.action)))
    throw Error('Plano composto inválido (1 a 3 ações tipadas).');
@@ -176,4 +193,4 @@ class EvidenceQualityService{
    notice:'Propostas são independentes; nenhum passo aplica ou confirma outro automaticamente.'};
  }
 }
-module.exports={EvidenceQualityService,duplicateHeuristics,evidenceVerdict,sourceLabels,CONTRACT};
+module.exports={EvidenceQualityService,duplicateHeuristics,evidenceVerdict,sourceLabels,unresolvedHierarchy,CONTRACT};
