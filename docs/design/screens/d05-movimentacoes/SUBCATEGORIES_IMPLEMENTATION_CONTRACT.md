@@ -30,7 +30,7 @@
 
 [SUBCATEGORY_TAXONOMY_V1.json](SUBCATEGORY_TAXONOMY_V1.json) tem **14 categorias-pai e 61 subcategorias sugeridas**, com `id`, `parentId`, `name`, `iconKey` e `hue`. As 14 categorias refletem a família padrão do código (`Moradia`, `Alimentação`, `Transporte`, `Saúde`, `Lazer`, `Educação`, `Assinaturas`, `Compras`, `Contas`, `Outros`, `Salário`, `Transferências`, `Rendimentos`, `Reembolsos`). **Nomes/filhos propostos precisam de aceite visual/produto; nenhum registro real deve ser reclassificado automaticamente.**
 
-Níveis: `Categoria → Subcategoria → Movimentação` (2 níveis taxonômicos, sem netos); pai é obrigatório, subcategoria é **opcional** nos registros. “Sem subcategoria” é o valor **null** ou um agrupamento de UI, e **não** um filho com ID artificial. No catálogo há um rótulo sugestivo em Outros: `Sem subcategoria`; esse item **não deve ser persistido como subcategoria real** — removê-lo da seed e tratar apenas como estado virtual antes de produção. Não fazer migration criando esse filho.
+Níveis: `Categoria → Subcategoria → Movimentação` (2 níveis taxonômicos, sem netos); pai é obrigatório, subcategoria é **opcional** nos registros. “Sem subcategoria” é o valor **null** ou um agrupamento de UI, e **não** um filho com ID artificial. Na categoria Outros, **Pequenas despesas** é uma subcategoria real. **Sem subcategoria** é um estado virtual de agrupamento para `subcategory_id IS NULL` — nunca criar ID de filho fictício.
 
 ## 3. Modelo de IDs (não usar nomes como chave de identidade)
 
