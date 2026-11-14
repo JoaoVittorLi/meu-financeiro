@@ -132,8 +132,8 @@ test('RC P0.2 — rank never turns unrepresentable deltas into zero, neutral or 
  card.categories=[{...category,name:'OverflowCase',amountCents:Number.MAX_SAFE_INTEGER}];
  card.previous.categories=[{...prior,name:'OverflowCase',amountCents:-Number.MAX_SAFE_INTEGER}];
  const rendered=api.mfV3Render(a,{id:'overflow-render',visualV3:card});
- assert.match(txt(rendered),/1 variação\\(ões\\) com valor não verificável/);
- assert.doesNotMatch(txt(rendered),/OverflowCase · R\\$ 0,00/);
+ assert.match(txt(rendered),/1 variação\(ões\) com valor não verificável/);
+ assert.doesNotMatch(txt(rendered),/OverflowCase · R\$ 0,00/);
  assert.equal(api.mfV3CompareRows(card)[0].delta,null);
 });
 test('RC P0.2 — comparison omits percentage from genuine zero denominator',()=>{
