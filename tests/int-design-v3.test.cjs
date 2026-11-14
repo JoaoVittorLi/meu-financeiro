@@ -100,6 +100,31 @@ test('D02 — exact monthly ranking deltas from October and November',()=>{
  ['#ff516a','#ff7470','#fa935d','#f4b350','#f4d363',null]);
  assert.equal(rows[0].relative,58.3);
 });
+test('RC-ALL-01 — V3 comparison sorts validated string category names deterministically',()=>{
+ const sample=api.mfV3FromOperational(reply,'rank',previous);
+ const proto=sample.categories[0];
+ const other={...sample,previous:{...sample.previous,categories:[]},categories:[
+  {...proto,name:'Zebra',amountCents:5000},{...proto,name:'Abacaxi',amountCents:5000}
+ ]};
+ const rows=api.mfV3CompareRows(other);
+ assert.deepEqual(rows.map(x=>x.name),['Abacaxi','Zebra']);
+ assert.deepEqual(rows.map(x=>x.delta),[5000,5000]);
+ assert.deepEqual(api.mfV3Heat(rows).map(x=>x.heat),['#ff516a','#ff516a']);
+});
+test('RC-ALL-01 — V3 comparison never converts unrepresentable delta into zero',()=>{
+ const sample=api.mfV3FromOperational(reply,'rank',previous);
+ const proto=sample.categories[0];
+ const extreme={...sample,previous:{...sample.previous,categories:[
+  {...proto,name:'Indeterminado',amountCents:-Number.MAX_SAFE_INTEGER}
+ ]},categories:[
+  {...proto,name:'Indeterminado',amountCents:Number.MAX_SAFE_INTEGER},
+  {...proto,name:'Disponível',amountCents:1000}
+ ]};
+ const rows=api.mfV3CompareRows(extreme);
+ assert.deepEqual(rows.map(x=>x.name),['Disponível','Indeterminado']);
+ assert.equal(rows[1].delta,null);
+ assert.equal(api.mfV3Heat(rows)[1].heat,null);
+});
 test('D02 — percent with zero denominator is unavailable, never 100%',()=>{
  assert.equal(api.mfV3Pct(20000,0),null);
  assert.equal(api.mfV3Pct(0,0),null);
