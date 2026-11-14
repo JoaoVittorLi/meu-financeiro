@@ -68,9 +68,16 @@ test('I2-A/drilldown: ID is real and monetary split is not duplicated',()=>{
   assert.equal(merchants.facts.deltaCents,6000);
   assert.equal(merchants.facts.merchants[0].deltaCents,6000);
   assert.equal(merchants.facts.merchants[0].ids[0],ACCOUNT+':split');
-  const rows=f.tools.execute('transactions',{ids:[ACCOUNT+':split']},scope);
+  // This drilldown is explicitly scoped to the selected category.
+  // Without the category filter the honest value of the whole transaction
+  // is 10_000, never an invented 6_000 gross amount.
+  const rows=f.tools.execute('transactions',{ids:[ACCOUNT+':split'],category:'Alimentação'},scope);
   assert.equal(rows.facts.items[0].amountCents,6000);
   assert.equal(rows.facts.items[0].categories[0].amountCents,6000);
+  const unfiltered=f.tools.execute('transactions',{ids:[ACCOUNT+':split']},scope);
+  assert.equal(unfiltered.facts.items[0].amountCents,10000);
+  assert.equal(unfiltered.facts.items[0].categories.reduce((n,v)=>n+v.amountCents,0),10000);
+  assert.deepEqual(unfiltered.facts.items[0].categories.map(v=>v.amountCents).sort((x,y)=>x-y),[4000,6000]);
  }finally{f.db.close();}
 });
 test('I2-A/simulation: integer hypothetical savings, budget zero',()=>{
@@ -145,5 +152,27 @@ test('I2-A/context expiry: state is ephemeral, never exports grant in visual fac
   const store=new ConversationContextStore({clock:()=>NOW,ttlMs:1});
   assert.equal(store.open(f.input,71).wasReset,false);
   assert.throws(()=>scopeOf({...f.input,accountId:'some-bank'},71),/conta individual/);
+ }finally{f.db.close();}
+});
+
+test('I2-A/drilldown: outdated split is not misattributed to the original category',()=>{
+ const f=fixture();try{
+  // Simulate a bank correction after a previously valid 6_000+4_000 split.
+  f.db.db.prepare('UPDATE bank_transactions SET amount_cents=? WHERE account_id=? AND external_id=?')
+   .run(-11000,ACCOUNT,'split');
+  const live=f.db.bankOverview().transactions.find(r=>r.id==='split');
+  assert.equal(live.amount,-11000);
+  assert.equal(live.splitOutdated,true);
+  assert.deepEqual(live.splits,[]);
+  const scope=scopeOf(f.input,71);
+  const summary=f.tools.execute('summary',{},scope);
+  assert.equal(summary.facts.expenseCents,14000); // -11_000 + -3_000.
+  const pending=summary.facts.expenses.find(x=>x.name==='A classificar');
+  assert.equal(pending.amountCents,11000);
+  const old=f.tools.execute('categories',{category:'Alimentação'},scope);
+  assert.equal(old.facts.selectedCents,0);
+  const detail=f.tools.execute('transactions',{ids:[ACCOUNT+':split']},scope);
+  assert.equal(detail.facts.items[0].amountCents,11000);
+  assert.equal(detail.facts.items[0].categories[0].name,'A classificar');
  }finally{f.db.close();}
 });
