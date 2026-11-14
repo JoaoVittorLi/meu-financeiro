@@ -123,3 +123,21 @@ test('D05 E3 — CSS dark/light, foco e reduced-motion; integração monta no Ap
  assert(config.files.includes('src/d05-movements.ts'));
  assert.match(read('app/index.html'),/d05-movements\.css/);
 });
+
+test('D05 E3 — bridge preload somente APIs allowlisted, sem IPC genérico ou autorização no renderer',async()=>{
+ const {createD05PreloadBridge}=require('../electron/d05-preload-bridge.cjs');
+ const {CHANNELS}=require('../electron/d05-ipc-adapter.cjs');
+ const calls=[];
+ const bridge=createD05PreloadBridge({invoke:(channel,input)=>{
+  calls.push({channel,input});return Promise.resolve({channel,input});
+ }});
+ assert(Object.isFrozen(bridge));
+ assert.equal('invoke' in bridge,false);
+ assert.equal('ipcRenderer' in bridge,false);
+ await bridge.d05Catalog();
+ await bridge.d05BankBatchPreview({items:[{accountId:'synthetic',externalId:'1'}]});
+ await bridge.d05AssignBank({accountId:'synthetic',externalId:'1',
+  target:{categoryId:'cat:alimentacao',subcategoryId:null}});
+ assert.deepEqual(calls.map(x=>x.channel),[CHANNELS.catalog,CHANNELS.batchPreview,CHANNELS.assignBank]);
+ assert.throws(()=>createD05PreloadBridge({}),/IPC do Electron obrigatório/);
+});
