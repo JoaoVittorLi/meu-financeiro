@@ -181,3 +181,27 @@ test('D05 E1 rolls back mismatched categories_old rows without manufacturing par
   assert.equal(raw.prepare('PRAGMA foreign_keys').get().foreign_keys,1);
  }finally{cleanup(f,raw);}
 });
+
+test('D05 E1 FinanceDB constructor repairs legacy categories_old rule FK and preserves 630 transactions',()=>{
+ const f=legacy630();let db,raw;
+ try{
+  raw=new DatabaseSync(f.file);
+  raw.exec("PRAGMA foreign_keys=ON;"+
+   "CREATE TABLE category_rules(id INTEGER PRIMARY KEY,pattern TEXT NOT NULL,"+
+   "match_mode TEXT NOT NULL,category TEXT REFERENCES categories_old(name),"+
+   "scope TEXT NOT NULL,priority INTEGER NOT NULL,enabled INTEGER DEFAULT 1);"+
+   "CREATE INDEX idx_legacy_rules_pattern ON category_rules(pattern)");
+  raw.exec('PRAGMA foreign_keys=OFF');
+  raw.prepare('INSERT INTO category_rules(id,pattern,match_mode,category,scope,priority,enabled) VALUES(?,?,?,?,?,?,?)')
+    .run(4,'MORADIA','exact','Moradia','manual',1,1);
+  raw.exec('PRAGMA foreign_keys=ON');raw.close();raw=null;
+  db=new FinanceDB(f.file);
+  assert.equal(db.db.prepare('PRAGMA foreign_key_list(category_rules)').all().find(x=>x.from==='category').table,'categories');
+  assert.equal(db.listCategories().rules.find(r=>r.id===4).category,'Moradia');
+  assert.equal(db.db.prepare('SELECT COUNT(*) AS n FROM transactions').get().n,630);
+  assert.equal(db.db.prepare('SELECT SUM(amount_cents) AS n FROM transactions').get().n,630*631/2);
+  assert(db.db.prepare("SELECT 1 FROM sqlite_master WHERE name='idx_legacy_rules_pattern'").get());
+  assert.deepEqual(db.integrity(),['ok']);
+  assert(fs.existsSync(f.file+'.d05-before-v7.sqlite'));
+ }finally{cleanup(f,db||raw);}
+});
