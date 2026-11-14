@@ -16,6 +16,7 @@ function createD05PreloadBridge(ipcRenderer){
    access=result;return {profile:result.profile,expiresAt:result.expiresAt};
   },
   d05Receipt:input=>invoke('d05:receipt',input),
+  d05BankAccountAuthorize:input=>invoke('d05:account-authorize',input),
   d05Catalog:()=>invoke('d05:catalog'),
   d05Resolve:target=>invoke('d05:resolve',target),
   d05ManualList:input=>invoke('d05:manual-list',input),
