@@ -158,7 +158,7 @@ function mfI2CategoryPanel(app:any):any{
  return h('section',{className:'mf-i2-rc mf-d04-advanced','aria-label':'Laboratório de categorias I2-B e I2-C'},
   h('small',{},'I2-B / I2-C · RECURSOS JÁ DESENVOLVIDOS'),
   h('h3',{},'Categorias, regras e propostas verificáveis'),
-  h('p',{},'Perfil pessoal: investigação e prévia sem gravação. Confirmação disponível exclusivamente no banco sintético TEMP, por diálogo nativo. D05 não implementada.'),
+  h('p',{},'Perfil pessoal: investigação e prévia sem gravação. Confirmação disponível exclusivamente no banco sintético TEMP, por diálogo nativo. D05 14×61 conectado ao SQLite, sujeito a QA.'),
   h('div',{className:'mf-i2-group'},
    h('strong',{},'1. Investigar categorias autorizadas (somente leitura)'),
    personalLive?h('div',{className:'mf-i2-controls'},
@@ -176,8 +176,9 @@ function mfI2CategoryPanel(app:any):any{
      ruleId:Number(s.mfI2RuleId)}),!Number.isInteger(Number(s.mfI2RuleId))||Number(s.mfI2RuleId)<=0)
    ):h('p',{},'Autorize a leitura local no painel de permissões da Inteligência para habilitar dados pessoais.'),
    mfI2PersonalVisible(app)?mfI2Evidence(s.mfI2PersonalResult):null),
+  mfI2QualityPanel(app),
   h('div',{className:'mf-i2-group'},
-   h('strong',{},'2. Experimentar no banco sintético isolado'),
+   h('strong',{},'3. Experimentar no banco sintético isolado'),
    active?h('p',{},'Sessão TEMP · '+String(s.mfI2Sandbox.month)+
     ' · três registros inventados · gravação exclusivamente sintética'):
     h('p',{},'Nenhum dado pessoal será copiado. Uma nova sessão cria um SQLite TEMP independente.'),
