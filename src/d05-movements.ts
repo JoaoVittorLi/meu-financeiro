@@ -3,7 +3,7 @@
 // E2 write APIs are capability-gated and never simulated.
 class D05Movements extends React.Component<any,any> {
  private slots:any[]=[];
- private refs:any[]=[];
+ private refSlots:any[]=[];
  private registered:any[]=[];
  private pending:any[]=[];
  private stateCursor=0;
@@ -44,8 +44,8 @@ class D05Movements extends React.Component<any,any> {
   };
   const useRef=(initial:any)=>{
    const index=this.refCursor++;
-   if(!(index in this.refs))this.refs[index]={current:initial};
-   return this.refs[index];
+   if(!(index in this.refSlots))this.refSlots[index]={current:initial};
+   return this.refSlots[index];
   };
   const useEffect=(callback:any,deps:any[])=>{this.pending.push({callback,deps});};
 
