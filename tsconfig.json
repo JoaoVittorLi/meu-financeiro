@@ -24,6 +24,7 @@
     "src/ai-markdown.ts",
     "src/intelligence-integration.ts",
     "src/intelligence-staging.ts",
+    "src/intelligence-ic2.ts",
     "src/intelligence-local.ts",
     "src/intelligence-review.ts"
   ]
