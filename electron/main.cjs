@@ -564,8 +564,10 @@ app.whenReady().then(()=>{
  createWindow();
  void ensureAutomaticBackup();
  backupTimer=setInterval(()=>void ensureAutomaticBackup(),60*60*1000);
- cloudPersonalTimer=setInterval(()=>void tickCloudPersonal(),60*1000);
- void tickCloudPersonal();
+ if(!experimentalPackaged){
+  cloudPersonalTimer=setInterval(()=>void tickCloudPersonal(),60*1000);
+  void tickCloudPersonal();
+ }
  app.on('activate',()=>{if(BrowserWindow.getAllWindows().length===0)createWindow();});
 }).catch(error=>{dialog.showErrorBox('Erro ao iniciar Meu Financeiro','Não foi possível abrir o banco de dados: '+error.message);app.quit();});
 app.on('window-all-closed',()=>{if(process.platform!=='darwin')app.quit();});
