@@ -131,8 +131,24 @@ class CategoryProposalService{
      conflicts.push('Nome de destino já existe.');
     if(after.kind!==cat.kind&&referenceCount(u)>0)conflicts.push('Troca de tipo em categoria utilizada requer migração supervisionada.');
     if(cat.name!==after.name){
-     impact={count:scope.profile==='demo'&&this.db.filename!==':memory:'?null:referenceCount(u),amountCents:0};
-     notes.push('Renomear altera também referências existentes em todos os perfis, orçamentos e planejamento. Revisar impacto explícito.');
+     const masked=scope.profile==='demo'&&this.db.filename!==':memory:';
+     impact={count:masked?null:referenceCount(u),amountCents:0};
+     if(!masked){
+      const manual=sql.prepare('SELECT profile,id,amount_cents AS amountCents FROM transactions WHERE category=? LIMIT 30').all(cat.name);
+      const overrides=sql.prepare('SELECT account_id AS accountId,external_id AS externalId FROM bank_category_overrides WHERE category=? LIMIT 30').all(cat.name);
+      const splits=sql.prepare('SELECT account_id AS accountId,external_id AS externalId FROM bank_transaction_splits WHERE category=? LIMIT 30').all(cat.name);
+      const rules=sql.prepare('SELECT id FROM category_rules WHERE category=? LIMIT 30').all(cat.name);
+      const budgets=sql.prepare('SELECT profile FROM budgets WHERE category=? LIMIT 30').all(cat.name);
+      affected=[
+       ...manual.map(r=>({type:'manual',id:r.profile+':'+r.id,amountCents:r.amountCents})),
+       ...overrides.map(r=>({type:'bank_override',id:r.accountId+':'+r.externalId})),
+       ...splits.map(r=>({type:'bank_split',id:r.accountId+':'+r.externalId})),
+       ...rules.map(r=>({type:'rule',id:String(r.id)})),
+       ...budgets.map(r=>({type:'budget',id:r.profile}))
+      ].slice(0,30);
+      if(impact.count>affected.length)notes.push('Amostra limitada a 30 referências; os totais vêm do SQLite.');
+     }else notes.push('Referências de outros perfis ocultadas pela autorização de demonstração.');
+     notes.push('Renomear altera referências de todos os perfis, orçamentos e planejamento. Impacto total em reais: zero (reclassificação de rótulos).');
     }
    }
   }else if(action.startsWith('rule.')){
