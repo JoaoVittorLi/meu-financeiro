@@ -350,6 +350,10 @@ class FinanceDB {
    try{
      // Verify authoritative bank links BEFORE deleting local rows.
      if(profile==='real')this.assertLinkedManualChangesAllowed(value.transactions);
+     // A legacy flat renderer must never silently erase existing D05 child links.
+     const oldCategoryLinks = new Map(this.db.prepare(
+       'SELECT id,category,category_id,subcategory_id FROM transactions WHERE profile=?'
+     ).all(profile).map(row => [row.id,row]));
      this.db.prepare('INSERT OR IGNORE INTO profiles(profile) VALUES (?)').run(profile);
      this.db.prepare('DELETE FROM transactions WHERE profile=?').run(profile);
      this.db.prepare('DELETE FROM budgets WHERE profile=?').run(profile);
@@ -362,8 +366,13 @@ class FinanceDB {
          existingCategories.add(name);
        }
      }
-     const addTx=this.db.prepare('INSERT INTO transactions (profile,id,date,description,kind,amount_cents,category,origin) VALUES (?,?,?,?,?,?,?,?)');
-     for(const t of value.transactions) addTx.run(profile,t.id,t.date,t.description,t.kind,t.amount,t.category,t.origin);
+     const addTx=this.db.prepare('INSERT INTO transactions (profile,id,date,description,kind,amount_cents,category,origin,category_id,subcategory_id) VALUES (?,?,?,?,?,?,?,?,?,?)');
+     for(const t of value.transactions) {
+       const prior=oldCategoryLinks.get(t.id);
+       const keep=prior && prior.category===t.category ? prior : null;
+       addTx.run(profile,t.id,t.date,t.description,t.kind,t.amount,t.category,t.origin,
+         keep?.category_id ?? null, keep?.subcategory_id ?? null);
+     }
      const addBudget=this.db.prepare('INSERT INTO budgets(profile,category,amount_cents) VALUES(?,?,?)');
      const allowed=new Set(this.listCategories().categories.map(x=>x.name));
      for(const [name,amount] of Object.entries(value.budgets)){
