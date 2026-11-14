@@ -87,7 +87,7 @@ async function mfI2SandboxCommand(app:any,method:string,additional:any={}){
    mfI2Error:String(err?.message||'Operação de laboratório indisponível.').slice(0,240)});
  }finally{app.setState({mfI2Busy:false});}
 }
-function mfI2Params(app:any,action:string):any{
+function mfI2Params(app:any,action:string,source:'manual'|'bank'='manual'):any{
  const name=String(app.state.mfI2Name||'').trim();
  const next=String(app.state.mfI2NewName||'').trim();
  if(action==='category.create')return {name,color:'#2aa898',kind:'expense',emoji:'✨'};
@@ -95,7 +95,13 @@ function mfI2Params(app:any,action:string):any{
  if(action==='category.delete')return {name};
  if(action==='transaction.categorize'){
   const ids=[...new Set(String(app.state.mfI2Ids||'').split(',').map(x=>x.trim()).filter(Boolean))];
-  return {category:next||name,items:ids.map(id=>({id}))};
+  return {category:next||name,items:ids.map(id=>{
+   if(source==='bank'){
+    const sep=id.indexOf('|');return {accountId:sep>=0?id.slice(0,sep):'',
+     externalId:sep>=0?id.slice(sep+1):''};
+   }
+   return {id};
+  })};
  }
  return {};
 }
@@ -159,6 +165,8 @@ function mfI2CategoryPanel(app:any):any{
      action:'category.create',params:mfI2Params(app,'category.create')})),
     button('Prévia pessoal de edição',()=>void mfI2PersonalRequest(app,{method:'propose',
      action:'category.update',params:mfI2Params(app,'category.update')})),
+    button('Prévia pessoal de reclassificação por ID',()=>void mfI2PersonalRequest(app,{method:'propose',
+     action:'transaction.categorize',params:mfI2Params(app,'transaction.categorize',access.source)})),
     button('Investigar regra por ID',()=>void mfI2PersonalRequest(app,{method:'inspectRule',
      ruleId:Number(s.mfI2RuleId)}),!Number.isInteger(Number(s.mfI2RuleId))||Number(s.mfI2RuleId)<=0)
    ):h('p',{},'Autorize a leitura local no painel de permissões da Inteligência para habilitar dados pessoais.'),
@@ -176,7 +184,7 @@ function mfI2CategoryPanel(app:any):any{
    h('div',{className:'mf-i2-fields'},
     field('Categoria atual ou nova','mfI2Name','Ex.: Pets'),
     field('Novo nome ou categoria destino','mfI2NewName','Ex.: Alimentação'),
-    field('IDs sintéticos, separados por vírgula','mfI2Ids','demo-market, demo-delivery'),
+    field('IDs por vírgula (banco: conta|ID; teste: demo-market)','mfI2Ids','demo-market, demo-delivery'),
     field('ID numérico de regra','mfI2RuleId','Ex.: 1'),
     field('Pergunta de categorias ou regras','mfI2Question','Quais categorias estão sem uso?')),
    active?h('div',{className:'mf-i2-controls'},
