@@ -108,17 +108,56 @@ class D05CategoryService{
   }
   return {subcategoryId,byTable:items,total:Object.values(items).reduce((a,b)=>a+b,0)};
  }
+ previewSubcategoryDelete({id}){
+  ensureId(id,'id');
+  const row=this.db.prepare(`SELECT id,name,parent_category_id,built_in FROM subcategories WHERE id=?`).get(id);
+  if(!row)throw Error('D05: subcategoria inexistente');
+  const impact=this.usage(id);
+  return {contract:'D05/SUBCATEGORY-DELETE-PREVIEW-V1',id,impact,
+    canDelete:!row.built_in&&impact.total===0,
+    previewVersion:createHash('sha256').update(JSON.stringify([row,impact])).digest('hex'),
+    changesApplied:false};
+ }
+ previewSubcategoryMove({id,parentCategoryId}){
+  ensureId(id,'id');
+  const dest=this.resolve({categoryId:parentCategoryId,subcategoryId:null});
+  const row=this.db.prepare('SELECT id,name,normalized_name,parent_category_id,built_in FROM subcategories WHERE id=?').get(id);
+  if(!row)throw Error('D05: subcategoria inexistente');
+  const impact=this.usage(id);
+  const collision=this.db.prepare('SELECT id FROM subcategories WHERE parent_category_id=? AND normalized_name=?')
+   .get(parentCategoryId,row.normalized_name);
+  const canMove=!row.built_in&&impact.total===0&&(!collision||collision.id===id)&&row.parent_category_id!==parentCategoryId;
+  return {contract:'D05/SUBCATEGORY-MOVE-PREVIEW-V1',id,parentCategoryId,
+   impact,canMove,previewVersion:createHash('sha256').update(JSON.stringify([row,impact,parentCategoryId,dest.parent.kind,collision])).digest('hex'),
+   changesApplied:false};
+ }
+ moveSubcategory({id,parentCategoryId,previewVersion}){
+  if(!/^[a-f0-9]{64}$/.test(String(previewVersion||'')))throw Error('D05: prévia de mudança de pai obrigatória');
+  return inTransaction(this.db,()=>{
+   const p=this.previewSubcategoryMove({id,parentCategoryId});
+   if(previewVersion!==p.previewVersion)throw Error('D05: prévia de mudança desatualizada');
+   if(!p.canMove)throw Error('D05: subcategoria aprovada, em uso ou nome duplicado; mudança negada');
+   const dest=this.resolve({categoryId:parentCategoryId,subcategoryId:null});
+   // Transactional DDL ensures trigger is restored even if the update fails and rolls back.
+   this.db.exec('DROP TRIGGER d05_subcategories_identity_immutable');
+   this.db.prepare(`UPDATE subcategories SET parent_category_id=?,kind=?,updated_at=CURRENT_TIMESTAMP WHERE id=?`)
+    .run(parentCategoryId,dest.parent.kind,id);
+   this.db.exec(`CREATE TRIGGER d05_subcategories_identity_immutable
+     BEFORE UPDATE OF id,parent_category_id ON subcategories
+     WHEN NEW.id IS NOT OLD.id OR NEW.parent_category_id IS NOT OLD.parent_category_id
+     BEGIN SELECT RAISE(ABORT, 'D05: reparenting requer contrato E2'); END;`);
+   return {id,parentCategoryId,changed:true};
+  });
+ }
  deleteSubcategory(input){
   ensureObject(input);
   return inTransaction(this.db,()=>{
-   const id=ensureId(input.id,'id');
-   const row=this.db.prepare('SELECT built_in FROM subcategories WHERE id=?').get(id);
-   if(!row)throw Error('D05: subcategoria inexistente');
-   if(row.built_in)throw Error('D05: catálogo aprovado não pode ser removido');
-   const impact=this.usage(id);
-   if(impact.total)throw Error('D05: remova os vínculos antes de excluir a subcategoria');
-   this.db.prepare('DELETE FROM subcategories WHERE id=?').run(id);
-   return {deleted:id,impact};
+   const preview=this.previewSubcategoryDelete({id:input.id});
+   if(!/^[a-f0-9]{64}$/.test(String(input.previewVersion||''))||
+      input.previewVersion!==preview.previewVersion)throw Error('D05: prévia de exclusão obrigatória ou desatualizada');
+   if(!preview.canDelete)throw Error('D05: subcategoria aprovada ou em uso');
+   this.db.prepare('DELETE FROM subcategories WHERE id=?').run(preview.id);
+   return {deleted:preview.id,impact:preview.impact};
   });
  }
  listManual({profile,categoryId=null,subcategoryId=undefined,limit=1000}){
