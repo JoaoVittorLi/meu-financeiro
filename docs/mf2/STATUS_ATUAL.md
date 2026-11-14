@@ -7,9 +7,15 @@
 
 **PR único:** [#76 — RC-ALL-FULL](https://github.com/JoaoVittorLi/meu-financeiro/pull/76), branch `integration/mf2-rc-all-01-i2a-20261113`.
 
-**HEAD de integração publicado:** `25621fb002cc95c212cd12ff48996f92ba8483a7`. É um SHA fixo: revalidar antes do preflight.
+**HEAD de integração publicado:** `049537fbe352a3c9b23c883d23cecdfa5f6b91ed`. É um SHA fixo: revalidar antes do preflight.
 
 **Estado comprovado:** `D01-D05+I2-A/B/C/D/E CODE_INTEGRATED` / `UI_PARTIALLY_FUNCTIONAL` / `LINUX_NOT_RUN` / `PERSONAL_AI_WRITES_DISABLED` / `WINDOWS_NOT_RUN` / `NO_GO_EXE`.
+
+## P0 — primeiro preflight Linux falhou; hotfix publicado
+
+**CircleCI no SHA anterior `25621fb002cc95c212cd12ff48996f92ba8483a7`: FAILED.** [Job de referência](https://app.circleci.com/workflow/523c4484-68d3-4dff-88b9-bb7f6236efcb/job/659806d7-dddc-435e-a466-e6c651555dd3). O Integrador corrigiu código de backup v7, migração/colunas/FKs D05, leitura de IDs, splits I2-A, confirmação concorrente I2-C, reconsulta de recibos sintéticos e compatibilidade dos testes CSV/VM. **Novo SHA candidato `049537fbe352a3c9b23c883d23cecdfa5f6b91ed`**, [relatório técnico](https://github.com/JoaoVittorLi/meu-financeiro/blob/integration/mf2-rc-all-01-i2a-20261113/docs/ai-context/RC_ALL_FULL_PREFLIGHT_HOTFIX_20261114.md), [registro na issue #71](https://github.com/JoaoVittorLi/meu-financeiro/issues/71#issuecomment-6878982192).
+
+**107 arquivos de testes Node versionados; execução oficial no novo SHA: NOT_RUN.** Não há evidência de `npm ci`, TypeScript, SQLite, ASAR ou F08 PASS no SHA atualizado. **NO-GO para QA Windows e EXE**, sem escrita pessoal real; CircleCI Linux só pelo proprietário.
 
 ## Matriz de frentes e evidências
 
@@ -30,7 +36,7 @@
 
 ## Bloqueios até GO
 
-1. **Préflight Linux no HEAD da RC ainda não executado.** `test:types`, `test:db`, `compile`, proveniência/F08 e ASAR precisam PASS em Node oficial, inclusive 21 testes D05, 48 I2-D/E e regressões completas. Há **105 arquivos** de testes Node versionados no GitHub, mas versão não significa PASS.
+1. **Préflight Linux no HEAD da RC ainda não executado.** `test:types`, `test:db`, `compile`, proveniência/F08 e ASAR precisam PASS em Node oficial, inclusive 21 testes D05, 48 I2-D/E e regressões completas. Há **107 arquivos** de testes Node versionados no GitHub, mas versão não significa PASS.
 2. **QA Electron Windows real** 1366×768 e 1920×1080 em claro/escuro e screenshots autênticos NOT_RUN; verificar 67 SVGs, seletor, indicadores, POSTED/PENDING, persistência, filtros e lote.
 3. **Escritas pessoais reais/bancárias por IA desligadas até homologação e nova autorização.** A D05 individual e o lote exibem prévias, mas commits em dados reais não devem ser anunciados como disponíveis. O backend de supervisão não deve ser confundido com autorização do proprietário.
 4. **Nem todos os controles de regras, splits e planejamento D05 são formulários independentes na E3.** Serviços SQLite/IPC existem; a UI precisa homologação dirigida para declarar paridade.
@@ -42,7 +48,7 @@
 
 | PR | SHA |
 |---|---|
-| [#76 integração final](https://github.com/JoaoVittorLi/meu-financeiro/pull/76) | `25621fb002cc95c212cd12ff48996f92ba8483a7` |
+| [#76 integração final](https://github.com/JoaoVittorLi/meu-financeiro/pull/76) | `049537fbe352a3c9b23c883d23cecdfa5f6b91ed` |
 | [#81 D05](https://github.com/JoaoVittorLi/meu-financeiro/pull/81) | `316a818fcdd6a6227e3d00352de0822d1c3d5017` |
 | [#79 I2-D](https://github.com/JoaoVittorLi/meu-financeiro/pull/79) | `fd5aca036ae96ca3aef99be752a2bfdeb9750688` |
 | [#80 I2-E](https://github.com/JoaoVittorLi/meu-financeiro/pull/80) | `c56675d02f6d1b5ac9074fb9039aad3d74ff81e1` |
