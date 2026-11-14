@@ -16,42 +16,44 @@ function installD05Ipc({ipcMain,finance,requireAppSender,authorizeRead,authorize
  if(!ipcMain||typeof ipcMain.handle!=='function'||typeof requireAppSender!=='function'||
   typeof authorizeRead!=='function'||typeof authorizeWrite!=='function')
   throw Error('D05: owner, session and access control hooks required');
- const service=new D05CategoryService(finance);
+ // Dynamic DB binding avoids keeping a closed handle after SQLite restore.
+ const getService=()=>new D05CategoryService(typeof finance==='function'?finance():finance);
  const read=(channel,scope,handler)=>{
   ipcMain.handle(channel,(event,input)=>{
    requireAppSender(event);
    if(authorizeRead(event,scope,input)!==true)throw Error('D05: leitura não autorizada');
-   return handler(input);
+   return handler(getService(),input);
   });
  };
  const write=(channel,action,handler)=>{
-  ipcMain.handle(channel,(event,input)=>{
+  ipcMain.handle(channel,async(event,input)=>{
    requireAppSender(event);
-   // Must verify owner, session, scope, human gesture and any backup/preview requirements in MAIN.
-   if(authorizeWrite(event,action,input)!==true)throw Error('D05: confirmação humana obrigatória');
-   return handler(input);
+   // Host can ask the user through Electron's trusted native dialog and
+   // atomically commit the D05 operation with a durable receipt. Never trust
+   // a renderer-supplied approved/owner/consent flag.
+   return authorizeWrite(event,action,input,()=>handler(getService(),input));
   });
  };
- read(CHANNELS.catalog,{source:'taxonomy'},()=>service.listCatalog());
- read(CHANNELS.resolve,{source:'taxonomy'},input=>service.resolve(input));
- read(CHANNELS.manualList,{source:'manual'},input=>service.listManual(input));
- read(CHANNELS.bankList,{source:'bank'},input=>service.bankView(input));
- read(CHANNELS.aggregateManual,{source:'manual'},input=>service.aggregateManual(input));
- read(CHANNELS.usageSubcategory,{source:'taxonomy'},input=>service.usage(input?.id));
- read(CHANNELS.subcategoryDeletePreview,{source:'taxonomy'},input=>service.previewSubcategoryDelete(input));
- read(CHANNELS.subcategoryMovePreview,{source:'taxonomy'},input=>service.previewSubcategoryMove(input));
- read(CHANNELS.batchPreview,{source:'bank'},input=>service.previewBankBatch(input));
- read(CHANNELS.rulePreview,{source:'rules'},input=>service.previewRule(input));
- write(CHANNELS.createSubcategory,'subcategory.create',input=>service.createSubcategory(input));
- write(CHANNELS.updateSubcategory,'subcategory.update',input=>service.updateSubcategory(input));
- write(CHANNELS.deleteSubcategory,'subcategory.delete',input=>service.deleteSubcategory(input));
- write(CHANNELS.moveSubcategory,'subcategory.move',input=>service.moveSubcategory(input));
- write(CHANNELS.assignManual,'manual.categorize',input=>service.assignManual(input));
- write(CHANNELS.assignBank,'bank.categorize',input=>service.assignBank(input));
- write(CHANNELS.batchApply,'bank.batch-categorize',input=>service.assignBankBatch(input));
- write(CHANNELS.splits,'bank.split',input=>service.setBankSplits(input));
- write(CHANNELS.saveRule,'rule.save',input=>service.saveRule(input));
- write(CHANNELS.assignPlanned,'planning.categorize',input=>service.assignPlanned(input));
+ read(CHANNELS.catalog,{source:'taxonomy'},service=>service.listCatalog());
+ read(CHANNELS.resolve,{source:'taxonomy'},(service,input)=>service.resolve(input));
+ read(CHANNELS.manualList,{source:'manual'},(service,input)=>service.listManual(input));
+ read(CHANNELS.bankList,{source:'bank'},(service,input)=>service.bankView(input));
+ read(CHANNELS.aggregateManual,{source:'manual'},(service,input)=>service.aggregateManual(input));
+ read(CHANNELS.usageSubcategory,{source:'taxonomy'},(service,input)=>service.usage(input?.id));
+ read(CHANNELS.subcategoryDeletePreview,{source:'taxonomy'},(service,input)=>service.previewSubcategoryDelete(input));
+ read(CHANNELS.subcategoryMovePreview,{source:'taxonomy'},(service,input)=>service.previewSubcategoryMove(input));
+ read(CHANNELS.batchPreview,{source:'bank'},(service,input)=>service.previewBankBatch(input));
+ read(CHANNELS.rulePreview,{source:'rules'},(service,input)=>service.previewRule(input));
+ write(CHANNELS.createSubcategory,'subcategory.create',(service,input)=>service.createSubcategory(input));
+ write(CHANNELS.updateSubcategory,'subcategory.update',(service,input)=>service.updateSubcategory(input));
+ write(CHANNELS.deleteSubcategory,'subcategory.delete',(service,input)=>service.deleteSubcategory(input));
+ write(CHANNELS.moveSubcategory,'subcategory.move',(service,input)=>service.moveSubcategory(input));
+ write(CHANNELS.assignManual,'manual.categorize',(service,input)=>service.assignManual(input));
+ write(CHANNELS.assignBank,'bank.categorize',(service,input)=>service.assignBank(input));
+ write(CHANNELS.batchApply,'bank.batch-categorize',(service,input)=>service.assignBankBatch(input));
+ write(CHANNELS.splits,'bank.split',(service,input)=>service.setBankSplits(input));
+ write(CHANNELS.saveRule,'rule.save',(service,input)=>service.saveRule(input));
+ write(CHANNELS.assignPlanned,'planning.categorize',(service,input)=>service.assignPlanned(input));
  return {channels:CHANNELS,service};
 }
 module.exports={installD05Ipc,CHANNELS};
