@@ -158,10 +158,24 @@ class D05PersonalWriteGateway{
   const sql=this.finance().db;
   if(!sql.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='d05_personal_supervised_receipts'").get())
    return {status:'unavailable',changesApplied:false};
-  const receipt=sql.prepare('SELECT * FROM d05_personal_supervised_receipts WHERE proposal_id=? AND owner=? AND scope_hash=?')
-   .get(input.proposalId,owner,hash([s.owner,s.token,s.profile,s.activeAccountId||null]));
-  if(!receipt)return {status:'unavailable',changesApplied:false};
-  return {status:'applied',changesApplied:true,receipt:JSON.parse(receipt.result_json)};
+  const scopeHash=hash([s.owner,s.token,s.profile,s.activeAccountId||null]);
+  let row=sql.prepare('SELECT * FROM d05_personal_supervised_receipts WHERE proposal_id=? AND owner=? AND scope_hash=?')
+   .get(input.proposalId,owner,scopeHash);
+  if(row)return {status:'applied',changesApplied:true,receipt:JSON.parse(row.result_json)};
+  // After a TEST vault restart, webContents.id and token necessarily change.
+  // Only the factory-signed synthetic vault may recover a receipt under a
+  // newly consented session matching both profile and account identity.
+  // This does NOT reopen personal/production receipts across owners.
+  if(!this.syntheticVault)return {status:'unavailable',changesApplied:false};
+  this.ensureSynthetic();
+  row=sql.prepare('SELECT * FROM d05_personal_supervised_receipts WHERE proposal_id=?')
+   .get(input.proposalId);
+  if(!row)return {status:'unavailable',changesApplied:false};
+  const persisted=JSON.parse(row.result_json);
+  if(persisted.syntheticOnly!==true||persisted.profile!==s.profile||
+     (persisted.accountId||null)!==(s.activeAccountId||null))
+   return {status:'unavailable',changesApplied:false};
+  return {status:'applied',recovered:true,changesApplied:true,receipt:persisted};
  }
  async confirmPreview(event,input){
   const {s,owner}=this.verify(event,input);
