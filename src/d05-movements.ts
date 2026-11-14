@@ -378,6 +378,8 @@ class D05Movements extends React.Component<any,any> {
   h('button',{type:'button',className:'d05-confirm',disabled:busy,onClick:()=>void saveManual()},busy?'Salvando…':'Confirmar lançamento'),
   error?h('p',{className:'d05-message is-error',role:'alert'},error):null
  ),Math.max(12,Math.floor((window.innerWidth-540)/2)),22,540):null;
+ if(state.booting)return h('section',{className:'d05-screen',id:'d05-movements',role:'status'},
+  h('p',{className:'d05-notice'},'Carregando registros financeiros…'));
  return h('section',{className:'d05-screen',id:'d05-movements'},
   h('header',{className:'d05-head'},
    h('div',{},h('h1',{},'Movimentações'),h('p',{},'Seu histórico organizado, com contexto e controle.')),
