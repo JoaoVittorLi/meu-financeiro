@@ -15,6 +15,20 @@ function stripSensitive(value){
   return v;
  }));
 }
+function accountIdsFromProposal(p){
+ const ids=new Set();
+ for(const row of p?.state?.affected||[])if(row?.target?.accountId)ids.add(row.target.accountId);
+ if(p?.state?.after?.constraint?.accountId)ids.add(p.state.after.constraint.accountId);
+ return [...ids];
+}
+function decoratePreview(result,synthetic){
+ if(!synthetic)return result;
+ const apply=p=>p?.proposalId&&p?.status==='ready'?
+  {...p,capability:'synthetic_hardened',mayExecuteSynthetic:true}:p;
+ if(Array.isArray(result?.proposals))
+  return {...result,proposals:result.proposals.map(apply)};
+ return apply(result);
+}
 function taxonomyGate(target){
  if(!target)return null;
  if(Object.prototype.hasOwnProperty.call(target,'subcategoryId')||
@@ -76,6 +90,15 @@ class IntelligenceCategoryBridge{
      break;
     case 'propose':
      if(!OPS.includes(request.action))return {...base,status:'unsupported'};
+     if(scope.source==='bank'&&host?.environment==='synthetic'&&
+        ['rule.create','transaction.categorize'].includes(request.action)){
+      if(typeof host.activeAccountId!=='string'||!host.activeAccountId)
+       return {...base,status:'denied',reason:'Conta ativa não vinculada pelo MAIN.'};
+      const p=request.params||{};
+      if((p.accountId&&p.accountId!==host.activeAccountId)||
+         p.items?.some?.(i=>i.accountId!==host.activeAccountId))
+       return {...base,status:'denied',reason:'Seleção pertence a outra conta.'};
+     }
      result=this.proposals.preview(request.action,request.params,scope,owner);break;
     case 'edit':
      result=this.proposals.revise(request.proposalId,request.patch,scope,owner);break;
@@ -89,6 +112,13 @@ class IntelligenceCategoryBridge{
       reason:'Execução pessoal pela IA não autorizada.'};
      if(host?.verifiedGesture!==true||host?.environment!=='synthetic')
       return {...base,status:'denied',reason:'Gesto humano no MAIN e ambiente sintético obrigatórios.'};
+     if(scope.source==='bank'){
+      const p=this.proposals.previews.get(request.proposalId);
+      const ids=accountIdsFromProposal(p);
+      if(typeof host.activeAccountId!=='string'||!host.activeAccountId||
+         (ids.length>0&&(ids.length!==1||ids[0]!==host.activeAccountId)))
+       return {...base,status:'denied',reason:'Conta ativa não corresponde à proposta supervisionada.'};
+     }
      result=await this.syntheticExecutor.confirm({scope,proposalId:request.proposalId,
       nonce:request.confirmationNonce,consent:WRITE_CONSENT},owner);
      return {...base,mode:'SYNTHETIC_WRITE_ONLY',status:result.status,
@@ -107,7 +137,9 @@ class IntelligenceCategoryBridge{
      return {...base,mode:'SYNTHETIC_WRITE_ONLY',status:'ready',data:stripSensitive(result)};
     default:return {...base,status:'unsupported'};
    }
-   return {...base,status:result.status??'ready',data:stripSensitive(result)};
+   const synthetic=this.syntheticExecutor&&host?.environment==='synthetic';
+   return {...base,mode:synthetic?'SYNTHETIC_PREVIEW':'READ_ONLY_PERSONAL',
+    status:result.status??'ready',data:stripSensitive(decoratePreview(result,synthetic))};
   }catch(err){
    const str=String(err?.message||'');
    const status=/expirad|desatualizad|não pertence|escopo/.test(str)?'stale':
@@ -116,4 +148,4 @@ class IntelligenceCategoryBridge{
   }
  }
 }
-module.exports={IntelligenceCategoryBridge,METHODS,VERSION,taxonomyGate,stripSensitive};
+module.exports={IntelligenceCategoryBridge,METHODS,VERSION,taxonomyGate,stripSensitive,accountIdsFromProposal,decoratePreview};
