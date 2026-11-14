@@ -298,3 +298,20 @@ test('I2-D/I2-E integration: duplicate proposals cannot be silently applied via 
   assert.equal(f.db.db.prepare('SELECT total_changes() AS n').get().n,before);
  }finally{f.close();}
 });
+
+
+test('I2-D/I2-E + D05: approved parent/child schema blocks legacy name-only drafts',()=>{
+ const f=fixture();try{
+  const id=f.report().quality[0].qualityId;
+  f.db.db.exec('CREATE TABLE subcategories(id TEXT PRIMARY KEY)');
+  const report=f.report();
+  assert.equal(report.quality[0].qualityStatus,'review_required');
+  assert(report.quality[0].reasons.includes('d05_hierarchy_target_unresolved'));
+  const result=f.quality.draft(id,'historical',f.input,1);
+  assert.equal(result.status,'review_required');
+  assert.equal(result.changesApplied,false);
+  const composite=f.quality.compose(f.input,1,[{qualityId:id,action:'future'}]);
+  assert.equal(composite.status,'review_required');
+  assert.equal(composite.steps.length,0);
+ }finally{f.close();}
+});
