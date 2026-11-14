@@ -116,7 +116,7 @@ function validate(payload) {
         !['income','expense'].includes(t.kind) || !isCents(t.amount) || t.amount === 0 ||
         typeof t.description !== 'string' || !t.description.trim() || t.description.length > 180 ||
         typeof t.category !== 'string' || !t.category.trim() || t.category.length > 70) throw new Error('Lançamento inválido.');
-    return {id:t.id,date:t.date,kind:t.kind,amount:t.amount,description:t.description,category:t.category,origin:String(t.origin||'manual').slice(0,40)};
+    return {id:t.id,date:t.date,kind:t.kind,amount:t.amount,description:t.description,category:t.category,origin:String(t.origin||'manual').slice(0,40),categoryId:t.categoryId,subcategoryId:t.subcategoryId};
   });
   if (new Set(transactions.map(t=>t.id)).size !== transactions.length) throw new Error('Identificadores duplicados.');
   const budgets = {};
@@ -372,8 +372,22 @@ class FinanceDB {
      for(const t of value.transactions) {
        const prior=oldCategoryLinks.get(t.id);
        const keep=prior && prior.category===t.category ? prior : null;
+       let categoryId=keep?.category_id??null,subcategoryId=keep?.subcategory_id??null;
+       // New D05 writes may provide the pair directly; old renderer payloads keep matching links.
+       if(t.categoryId!==undefined||t.subcategoryId!==undefined){
+         if(typeof t.categoryId!=='string'||!t.categoryId||t.categoryId.length>140)
+           throw new Error('D05: categoryId obrigatório');
+         const parent=this.db.prepare('SELECT name FROM categories WHERE id=?').get(t.categoryId);
+         if(!parent||parent.name!==t.category)throw new Error('D05: categoria-pai divergente');
+         if(t.subcategoryId!==undefined&&t.subcategoryId!==null){
+           if(typeof t.subcategoryId!=='string'||!this.db.prepare(
+             'SELECT 1 FROM subcategories WHERE id=? AND parent_category_id=? AND active=1'
+           ).get(t.subcategoryId,t.categoryId))throw new Error('D05: subcategoria incompatível');
+         }
+         categoryId=t.categoryId;subcategoryId=t.subcategoryId??null;
+       }
        addTx.run(profile,t.id,t.date,t.description,t.kind,t.amount,t.category,t.origin,
-         keep?.category_id ?? null, keep?.subcategory_id ?? null);
+         categoryId,subcategoryId);
      }
      const addBudget=this.db.prepare('INSERT INTO budgets(profile,category,amount_cents) VALUES(?,?,?)');
      const allowed=new Set(this.listCategories().categories.map(x=>x.name));
