@@ -191,7 +191,7 @@ class CategoryProposalService{
     if(bank&&(r.status!=='POSTED'||!['income','expense'].includes(kind))){
      conflicts.push('Movimentação pendente, transferência ou ignorada: '+key);continue;
     }
-    if(bank&&r.splits?.length){conflicts.push('Movimentação dividida exige edição específica: '+key);continue;}
+    if(bank&&(r.splits?.length||r.splitOutdated)){conflicts.push('Movimentação dividida ou split desatualizado exige edição específica: '+key);continue;}
     if(!matchKind(target.kind,kind)){conflicts.push('Categoria incompatível com natureza: '+key);continue;}
     if(bank&&r.categorySource==='manual'&&!params.replaceManual){
      conflicts.push('Correção manual preexistente: escolha explicitamente a substituição ('+key+').');continue;
