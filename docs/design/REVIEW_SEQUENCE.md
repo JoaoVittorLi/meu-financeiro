@@ -7,7 +7,7 @@ Data: 2026-11-13 · Índice: #55 · Coordenação: #49 · Baseline PR #54 / 55de
 | D02 | Chat Principal / Expandido | **DESIGN HANDOFF V3 CONSOLIDADO** (implementação pendente) | #58 | Biblioteca de 26 famílias especificada por herança; 3 aprovadas individualmente, VR-10 V2 referência; sem mais microscreens |
 | D03 | Inteligência Hoje | **IMPLEMENTATION_READY** (DESIGN_APPROVED) | #61 | **V2 FINAL** · cartões premium uniformes + prioridades dinâmicas · HTML/spec/QA/handoff publicados; Electron pendente |
 | D04 | Central de Revisão | **IMPLEMENTATION_READY** (DESIGN_APPROVED) | #67 | **V1.1 FINAL** · fila premium, edição persistente, escopos separados, reconfirmação; Executor #69, QA Electron pendente |
-| D05 | Movimentações | NOT_STARTED | — | — |
+| D05 | Movimentações | **PROTOTYPING / WAITING_FEEDBACK** | #70 | V1 tela inteira, filtros/detalhes/categorização/revisão/lançamento; não aprovado |
 | D06 | Visão Geral | NOT_STARTED | — | — |
 | D07 | Orçamentos | NOT_STARTED | — | — |
 | D08 | Planejamento | NOT_STARTED | — | — |
@@ -77,3 +77,9 @@ Critérios para DESIGN_APPROVED: aprovação explícita do proprietário sobre v
 - **Próximo design macro:** D05 **Movimentações**. Não reabrir microscreens D04 sem regressão ou feedback novo do proprietário.
 
 `DESIGN_APPROVED / IMPLEMENTATION_READY` não implica `IMPLEMENTED`, `VISUAL_QA` ou `HOMOLOGATED`.
+
+### D05 — V1 Movimentações Premium (em revisão)
+
+- [Issue #70](https://github.com/JoaoVittorLi/meu-financeiro/issues/70); auditoria da implementação existente em `src/app.ts` (`renderMovements`, `renderTransactions`), `app/movements-productivity.css` e `app/operations.css`, PR #54 HEAD `55de81c`.
+- Recursos a preservar: histórico/revisão/categorias, busca/filtros, agrupamento por data, origem banco/manual, detalhes, categoria rápida, lotes, nova categoria, importação CSV, status POSTED/PENDING e histórico parcial.
+- V1 é protótipo de **tela completa** apresentado no chat; valores sintéticos, sem escrita real. Aguardar aprovação do proprietário para congelar HTML canônico, specs, QA e handoff ao Executor.
