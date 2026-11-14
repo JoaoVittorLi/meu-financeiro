@@ -45,21 +45,65 @@ function ensureRelationshipTriggers(db, table) {
       BEGIN SELECT RAISE(ABORT, 'D05: categoria/subcategoria incompatível'); END;`);
   }
 }
+// Repair only proven legacy foreign-key metadata from an old SQLite
+// categories -> categories_old table rename. Rebuild the real child table;
+// never fabricate the missing parent or discard its records/rules.
+const LEGACY_FK_TABLES=Object.freeze([
+ 'category_rules','bank_category_overrides','bank_transaction_splits',
+ 'transactions','budgets','planned_items'
+]);
+function legacyFKTables(db){
+ return LEGACY_FK_TABLES.filter(table=>tableExists(db,table)&&
+  db.prepare('PRAGMA foreign_key_list('+table+')').all().some(ref=>ref.table==='categories_old'));
+}
+function repairLegacyFKTable(db,table){
+ if(!LEGACY_FK_TABLES.includes(table))throw Error('D05: tabela FK não permitida');
+ const sqlRow=db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name=?").get(table);
+ const original=sqlRow?.sql;
+ if(typeof original!=='string'||!/^CREATE\s+TABLE\s+/i.test(original))
+  throw Error('D05: definição da tabela legada indisponível: '+table);
+ const temporary='d05_fk_rebuild_'+table;
+ if(tableExists(db,temporary))throw Error('D05: reparação anterior incompleta: '+temporary);
+ const prefix=/^CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?:"[^"]+"|`[^`]+`|\[[^\]]+\]|[\w]+)/i;
+ const reference=/\bREFERENCES\s+(?:"categories_old"|`categories_old`|\[categories_old\]|categories_old)(?=\s*\()/gi;
+ if(!prefix.test(original)||!reference.test(original))
+  throw Error('D05: FK legada requer reparação manual: '+table);
+ const newSQL=original.replace(prefix,'CREATE TABLE '+temporary).replace(reference,'REFERENCES categories');
+ if(/\bcategories_old\b/i.test(newSQL))
+  throw Error('D05: há referências legadas adicionais não verificadas: '+table);
+ const objects=db.prepare("SELECT type,name,sql FROM sqlite_master WHERE tbl_name=? AND type IN ('index','trigger') AND sql IS NOT NULL").all(table);
+ if(objects.some(o=>/\bcategories_old\b/i.test(o.sql)))
+  throw Error('D05: índice/trigger legado requer revisão: '+table);
+ const columns=db.prepare('PRAGMA table_xinfo('+table+')').all().filter(c=>c.hidden===0);
+ if(!columns.length||columns.some(c=>!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(c.name)))
+  throw Error('D05: colunas legadas não verificadas: '+table);
+ const names=columns.map(c=>'"'+c.name+'"').join(',');
+ const before=db.prepare('SELECT COUNT(*) AS n FROM '+table).get().n;
+ db.exec(newSQL);
+ db.exec('INSERT INTO '+temporary+'('+names+') SELECT '+names+' FROM '+table);
+ const after=db.prepare('SELECT COUNT(*) AS n FROM '+temporary).get().n;
+ if(after!==before)throw Error('D05: contagem de linhas divergente em '+table);
+ db.exec('DROP TABLE '+table);
+ db.exec('ALTER TABLE '+temporary+' RENAME TO '+table);
+ for(const object of objects)db.exec(object.sql);
+ const links=db.prepare('PRAGMA foreign_key_list('+table+')').all();
+ if(links.some(ref=>ref.table==='categories_old')||!links.some(ref=>ref.table==='categories'))
+  throw Error('D05: referência legada não reparada: '+table);
+ if(db.prepare('SELECT COUNT(*) AS n FROM '+table).get().n!==before)
+  throw Error('D05: registros alterados durante reparação: '+table);
+}
 function migrateHierarchy(db) {
   assertCatalog();
   // The host opens the connection with PRAGMA foreign_keys=ON before this migration.
   if (!db.prepare('PRAGMA foreign_keys').get().foreign_keys) throw new Error('D05: foreign_keys desabilitadas');
+  const orphaned=legacyFKTables(db),repairing=orphaned.length>0;
+  // SQLite cannot change a foreign-key parent in place. Temporarily suspend
+  // enforcement ONLY for the transactional table rebuild; PRAGMA
+  // foreign_key_check validates every row before COMMIT, then restore ON.
+  if(repairing)db.exec('PRAGMA foreign_keys=OFF');
   db.exec('BEGIN IMMEDIATE');
   try {
-    // Refuse ghost foreign keys left by legacy table-renaming migrations:
-    // fabricating categories_old would mask a broken reference chain.
-    for (const table of ['category_rules','bank_category_overrides','bank_transaction_splits',
-      'transactions','budgets','planned_items']) {
-      if (!tableExists(db,table)) continue;
-      const links=db.prepare('PRAGMA foreign_key_list('+table+')').all();
-      if (links.some(link=>link.table==='categories_old'))
-        throw new Error('D05: FK legada para categories_old em '+table+'; reparação dirigida obrigatória');
-    }
+    for(const table of orphaned)repairLegacyFKTable(db,table);
     addColumn(db, 'categories', 'emoji', "TEXT NOT NULL DEFAULT '✨'");
     addColumn(db, 'categories', 'kind',
       "TEXT NOT NULL DEFAULT 'expense' CHECK(kind IN ('expense','income','both'))");
@@ -130,7 +174,12 @@ function migrateHierarchy(db) {
     const violations = db.prepare('PRAGMA foreign_key_check').all();
     if (violations.length) throw new Error('D05: foreign_key_check falhou (' + violations.length + ')');
     db.exec('COMMIT');
+    if(repairing)db.exec('PRAGMA foreign_keys=ON');
     return {parents:14,subcategories:61,version:7};
-  } catch (error) { db.exec('ROLLBACK'); throw error; }
+  } catch (error) {
+    db.exec('ROLLBACK');
+    if(repairing)db.exec('PRAGMA foreign_keys=ON');
+    throw error;
+  }
 }
 module.exports = { migrateHierarchy, normalizedName };
