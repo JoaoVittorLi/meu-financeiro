@@ -115,6 +115,14 @@ test('RC FULL I2-E — quality-only personal entry and bank owner permission, no
   assert.equal(denied.status,'denied');
   const quality=await gateway.personalCall({method:'qualityScan',scope},OWNER);
   assert.equal(quality.changesApplied,false);
+  const flatDraft=await gateway.personalCall({method:'qualityDraft',scope,
+   action:'historical',qualityId:'fake'},OWNER);
+  assert.equal(flatDraft.status,'review_required');
+  assert.equal(flatDraft.changesApplied,false);
+  const flatCompose=await gateway.personalCall({method:'qualityCompose',scope,
+   items:[{qualityId:'fake',action:'future'}]},OWNER);
+  assert.equal(flatCompose.status,'review_required');
+  assert.equal(flatCompose.changesApplied,false);
   const unsupported=await gateway.personalCall({method:'qualityDraft',scope,action:'historical',
    qualityId:'fake',target:{categoryId:'cat:fake',subcategoryId:null}},OWNER);
   assert(['denied','review_required','stale'].includes(unsupported.status));
