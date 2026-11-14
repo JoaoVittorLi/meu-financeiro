@@ -54,6 +54,6 @@ function installD05Ipc({ipcMain,finance,requireAppSender,authorizeRead,authorize
  write(CHANNELS.splits,'bank.split',(service,input)=>service.setBankSplits(input));
  write(CHANNELS.saveRule,'rule.save',(service,input)=>service.saveRule(input));
  write(CHANNELS.assignPlanned,'planning.categorize',(service,input)=>service.assignPlanned(input));
- return {channels:CHANNELS,service};
+ return {channels:CHANNELS,get service(){return getService();}};
 }
 module.exports={installD05Ipc,CHANNELS};
