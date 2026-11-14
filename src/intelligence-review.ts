@@ -47,15 +47,23 @@ async function categoryReviewEnable(app:any){
   // belonging to the preceding synthetic review session.
   app.setState({categoryReviewGrant:grant,categoryReviewBackup:backup,
    categoryReviewReport:null,categoryReviewQueue:null,categoryReviewPreview:null,
-   categoryReviewConfirmed:false,categoryReviewReceipt:null,categoryReviewSelected:[],
-   mfD04Drafts:{},mfD04Excluded:{},mfD04Selected:null,
+   categoryReviewConfirmed:false,categoryReviewReceipt:null,categoryReviewSelected:[],categoryReviewDetail:null,
+   categoryReviewFilters:{},categoryReviewFilterRevision:(app.state.categoryReviewFilterRevision||0)+1,
+   mfD04Drafts:{},mfD04Excluded:{},mfD04Selected:null,mfD04Error:'',mfD04Stage:'pending',mfD04Search:'',
    intelligenceThreads:[],intelligenceMessages:[],intelligenceActiveThreadId:null});
   await categoryReviewRefresh(app);
  });
 }
 function categoryReviewDisable(app:any){
  const grant=app.state.categoryReviewGrant;
- app.setState({...app.state.categoryReviewBackup,categoryReviewGrant:null,categoryReviewBackup:null,categoryReviewReport:null,categoryReviewQueue:null,categoryReviewPreview:null,categoryReviewSelected:[],categoryReviewReceipt:null,categoryReviewOpen:false,categoryReviewError:'',categoryReviewBusy:false});
+ // Invalidate in-flight queue replies and all state owned by the old grant.
+ app.categoryReviewRequest=(app.categoryReviewRequest||0)+1;
+ app.setState({...app.state.categoryReviewBackup,categoryReviewGrant:null,categoryReviewBackup:null,
+  categoryReviewReport:null,categoryReviewQueue:null,categoryReviewPreview:null,categoryReviewSelected:[],
+  categoryReviewConfirmed:false,categoryReviewReceipt:null,categoryReviewDetail:null,
+  categoryReviewFilters:{},categoryReviewFilterRevision:(app.state.categoryReviewFilterRevision||0)+1,
+  mfD04Drafts:{},mfD04Excluded:{},mfD04Selected:null,mfD04Error:'',mfD04Stage:'pending',mfD04Search:'',
+  categoryReviewOpen:false,categoryReviewError:'',categoryReviewBusy:false});
  if(grant)void categoryReviewAPI()?.categoryReviewRevoke({token:grant.token}).catch(()=>{});
 }
 async function categoryReviewPrepare(app:any,action:string,payload:any){
@@ -68,7 +76,7 @@ async function categoryReviewPrepare(app:any,action:string,payload:any){
 }
 async function categoryReviewConfirm(app:any){
  const p=app.state.categoryReviewPreview,g=app.state.categoryReviewGrant;
- if(!p||!g||!app.state.categoryReviewConfirmed)return;
+ if(!p||!g||!Number.isFinite(g.expiresAt)||g.expiresAt<=Date.now()||!app.state.categoryReviewConfirmed)return;
  await categoryReviewRun(app,async()=>{
   const receipt=await categoryReviewAPI().categoryReviewConfirm({token:g.token,id:p.id,digest:p.digest,consent:'CONFIRM_CATEGORY_PREVIEW_V1'});
   if(app.state.categoryReviewGrant?.token!==g.token)return;

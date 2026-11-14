@@ -13,9 +13,14 @@
   },
   "files": [
     "src/app.ts",
+    "src/d05-visual-assets.ts",
+    "src/d05-csv.ts",
+    "src/d05-movements.ts",
     "src/plan-view.ts",
     "src/intelligence-view.ts",
     "src/intelligence-today-v2.ts",
+    "src/intelligence-category-rc.ts",
+    "src/intelligence-quality-rc.ts",
     "src/intelligence-review-v11.ts",
     "src/intelligence-design.ts",
     "src/intelligence-visuals.ts",
@@ -24,6 +29,7 @@
     "src/ai-markdown.ts",
     "src/intelligence-integration.ts",
     "src/intelligence-staging.ts",
+    "src/intelligence-ic2.ts",
     "src/intelligence-local.ts",
     "src/intelligence-review.ts"
   ]

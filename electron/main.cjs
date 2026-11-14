@@ -15,6 +15,11 @@ const {pairViaSystemBrowser,cancelBrowserPairing}=require('./cloud-system-browse
 const {PlanningStore}=require('./planning.cjs');
 const {LocalFinancialIntelligence}=require('./financial-intelligence.cjs');
 const {IntelligenceOperational}=require('./intelligence-operational.cjs');
+const {IC2ReadQueryGateway}=require('./intelligence-ic2-adapter.cjs');
+const {RCCategoryGateway}=require('./intelligence-category-rc.cjs');
+const {installD05Ipc}=require('./d05-ipc-adapter.cjs');
+const {D05RCSecureGate}=require('./d05-rc-gate.cjs');
+const {D05PersonalWriteGateway}=require('./d05-personal-gate.cjs');
 const {CategoryReviewService}=require('./category-review.cjs');
 const {CategoryReviewBackupGate}=require('./category-review-backup.cjs');
 const {automaticBackup,restoreBackup,listAutoBackups,validateBackupFile}=require('./recovery.cjs');
@@ -25,7 +30,7 @@ const {AIPersonalStore}=require('./ai-personal.cjs');
 const {ChatGPTSignIn}=require('./ai-auth.cjs');
 const {ChatGPTDemoClient}=require('./ai-client.cjs');
 const {buildSyntheticFinancialContext}=require('../shared/ai-financial-context.mjs');
-let planner=null, db=null, mainWindow=null, vault=null, syncing=false, restoring=false, autoBackupBusy=false, cloudPreparationBusy=false, backupTimer=null, cloudPersonalTimer=null, cloudPersonalBusy=false, cloudAuthPromise=null,cloudAccessAssertion=null;
+let planner=null, db=null, mainWindow=null, vault=null, categoryRC=null, d05Gate=null, d05PersonalGate=null, syncing=false, restoring=false, autoBackupBusy=false, cloudPreparationBusy=false, backupTimer=null, cloudPersonalTimer=null, cloudPersonalBusy=false, cloudAuthPromise=null,cloudAccessAssertion=null;
 function backupsDirectory(){return path.join(app.getPath('userData'),'copias-de-seguranca');}
 async function ensureAutomaticBackup(){
   if(!db||restoring||syncing||autoBackupBusy)return;
@@ -75,6 +80,7 @@ function secureCloudFetch(ses){
   };
 }
 async function tickCloudPersonal(){
+  if(app.isPackaged===true)return; // Experimental RC forbids Node-side cloud polling.
   if(!db||cloudPersonalBusy||syncing||restoring||autoBackupBusy||
      cloudPreparationBusy)return;
   // Never replicate from an unapproved local database: the owner must have
@@ -162,6 +168,18 @@ function createWindow(){
 // The userData path must be isolated BEFORE the single-instance lock and
 // before FinanceDB or vault initialization. Unavailable in packaged builds.
 const smokeProfileActive=isolateSmokeProfile(app);
+// Release-candidate binaries never use stable userData; no packaged override.
+const experimentalPackaged=app.isPackaged===true;
+function forbidExperimentalNetwork(){
+ if(experimentalPackaged)throw Error('RC experimental offline: conexão bancária, nuvem e IA externa estão desativadas.');
+}
+if(experimentalPackaged){
+ const isolated=path.join(app.getPath('appData'),'MeuFinanceiro-RC-ALL-01-Experimental');
+ if(fs.existsSync(isolated)&&fs.lstatSync(isolated).isSymbolicLink())
+  throw new Error('Diretório experimental não pode ser link simbólico.');
+ fs.mkdirSync(isolated,{recursive:true});
+ app.setPath('userData',isolated);
+}
 const q1NativeBounds=q1NativeWindow(smokeProfileActive);
 // Preview portable and installed version share one local finance database.
 // Prevent concurrent Electron instances from writing to the same SQLite file.
@@ -175,12 +193,12 @@ app.on('second-instance',()=>{
 });
 app.whenReady().then(()=>{
  if(!isPrimaryInstance)return;
- app.setAppUserModelId('app.local.meufinanceiro');
+ app.setAppUserModelId(experimentalPackaged?'app.local.meufinanceiro.rcall01':'app.local.meufinanceiro');
  const filename=path.join(app.getPath('userData'),'meu-financeiro.sqlite');
  db=new FinanceDB(filename);
  planner=new PlanningStore(db);
  let localFinancial,categoryReview,reviewBackupGate;
- let operationalIntelligence;
+ let operationalIntelligence,ic2ReadQuery;
  function bindLocalFinancialServices(){
   // A restored/recovered database has a new handle. Never retain grants,
   // previews or a service pointing at the closed pre-restore connection.
@@ -189,8 +207,90 @@ app.whenReady().then(()=>{
   categoryReview=smokeProfileActive?new CategoryReviewService(db,{syntheticProfile:true}):null;
   reviewBackupGate=categoryReview?new CategoryReviewBackupGate(categoryReview,path.join(app.getPath('userData'),'review-backups'),{syntheticProfile:true}):null;
   operationalIntelligence=new IntelligenceOperational({localFinancial,categoryReview,db});
+  // Restoration replaces services, invalidating prior IC2 contexts.
+  ic2ReadQuery=new IC2ReadQueryGateway(localFinancial);
+  // Personal category work is preview-only; synthetic sandbox remains separate.
+  if(d05PersonalGate)d05PersonalGate.stopAll();
+  if(d05Gate)d05Gate.stopAll();
+  if(categoryRC){categoryRC.stopAll();categoryRC.bindPersonal(db,localFinancial);}
+  else categoryRC=new RCCategoryGateway({db,localFinancial});
  }
  bindLocalFinancialServices();
+ d05Gate=new D05RCSecureGate({
+  finance:()=>db,isIsolated:()=>experimentalPackaged||smokeProfileActive,
+  backupDirectory:()=>path.join(app.getPath('userData'),'d05-supervised-backups'),
+  confirm:async details=>{
+   if(!mainWindow||mainWindow.isDestroyed()||!mainWindow.isFocused())return false;
+   const isRead=details.kind==='read';
+   const isAccount=details.kind==='bank-account';
+   const dialogResult=await dialog.showMessageBox(mainWindow,{
+    type:isRead?'question':'warning',
+    buttons:isRead?['Cancelar','Autorizar consulta local']:isAccount?['Cancelar','Autorizar esta conta']:['Cancelar','Confirmar somente no teste'],
+    defaultId:0,cancelId:0,noLink:true,
+    title:isRead?'D05 — autorizar consulta':isAccount?'D05 — autorizar conta bancária':'D05 — operação supervisionada',
+    message:isRead?'Permitir consulta local do perfil pessoal?':isAccount?
+     'Autorizar análise de IA SOMENTE LEITURA da conta '+String(details.accountName||'selecionada')+'?':
+     'Aplicar '+details.action+' APENAS em dados de demonstração?',
+    detail:isRead?
+     'A leitura é limitada a esta sessão do Meu Financeiro. Nenhuma alteração será aplicada.':isAccount?
+     'O MAIN vinculará somente esta conta à análise I2-E por 15 minutos. Não habilita escrita pessoal.':
+     'O MAIN fará backup, revalidará os dados e registrará um recibo SQLite. '+
+     'Dados pessoais e contas bancárias reais continuam bloqueados.'
+   });
+   return dialogResult.response===1&&!mainWindow.isDestroyed();
+  }
+ });
+ // Dedicated personal supervision adapter; write flag is permanently false
+ // in this experimental SHA until owner authorizes a separate QA-gated change.
+ d05PersonalGate=new D05PersonalWriteGateway({
+  finance:()=>db,readSession:(event,input)=>d05Gate.require(event,input),
+  backupDirectory:()=>path.join(app.getPath('userData'),'d05-personal-write-backups'),
+  approvedForPersonal:()=>false,
+  confirm:async details=>{
+   if(!mainWindow||mainWindow.isDestroyed()||!mainWindow.isFocused())return false;
+   const result=await dialog.showMessageBox(mainWindow,{
+    type:'warning',buttons:['Cancelar','Confirmar somente após homologação'],
+    defaultId:0,cancelId:0,noLink:true,
+    title:'Escrita financeira supervisionada',
+    message:'Confirmar '+String(details.action)+' no contexto autorizado?',
+    detail:'Antes da confirmação o sistema revalidará IDs, conta, perfil, prévia e backup. '+
+     'A execução pessoal permanece desativada nesta candidata.'
+   });
+   return result.response===1&&!mainWindow.isDestroyed();
+  }
+ });
+ ipcMain.handle('d05:personal-write-preview',(event,input)=>{
+  requireAppSender(event);if(restoring||syncing)throw Error('D05: operação concorrente');
+  return d05PersonalGate.prepare(event,input);
+ });
+ ipcMain.handle('d05:personal-write-confirm',(event,input)=>{
+  requireAppSender(event);if(restoring||syncing||autoBackupBusy)
+   throw Error('D05: operação concorrente');
+  return d05PersonalGate.confirmPreview(event,input);
+ });
+ ipcMain.handle('d05:personal-write-receipt',(event,input)=>{
+  requireAppSender(event);return d05PersonalGate.receipt(event,input);
+ });
+ // Registered only once; dynamic finance() rebinds after backup/restore.
+ installD05Ipc({ipcMain,finance:()=>db,requireAppSender,
+  authorizeRead:(event,scope,input)=>!restoring&&!syncing&&d05Gate.read(event,scope,input),
+  authorizeWrite:(event,action,input,execute)=>{
+   if(restoring||syncing||cloudPreparationBusy||autoBackupBusy)
+    throw Error('D05: operação financeira concorrente');
+   return d05Gate.write(event,action,input,execute);
+  }
+ });
+ ipcMain.handle('d05:session-authorize',async(event,input)=>{
+  requireAppSender(event);
+  if(restoring||syncing||cloudPreparationBusy)throw Error('D05: operação financeira em andamento');
+  return d05Gate.authorize(event,input);
+ });
+ ipcMain.handle('d05:account-authorize',async(event,input)=>{
+  requireAppSender(event);return d05Gate.authorizeAccount(event,input);
+ });
+ ipcMain.handle('d05:receipt',(event,input)=>{
+  requireAppSender(event);return d05Gate.receipt(event,input);
+ });
  ipcMain.handle('finance:review-status',event=>{requireAppSender(event);return {available:!!categoryReview,syntheticOnly:true};});
  for(const [channel,method] of [['authorize','authorize'],['list','list'],['queue','queue'],['prepare','prepare'],['confirm','confirm'],['revoke','revoke']]){
   ipcMain.handle('finance:review-'+channel,(event,input)=>{
@@ -209,13 +309,53 @@ app.whenReady().then(()=>{
  ipcMain.handle('intelligence:operational-ask',(event,input)=>{
   requireAppSender(event);return operationalIntelligence.ask(input,event.sender.id);
  });
+ ipcMain.handle('intelligence:ic2-read-query',(event,input)=>{
+  requireAppSender(event);return ic2ReadQuery.ask(input,event.sender.id);
+ });
+ // I2-B/C: explicitly scoped IPCs. Renderer cannot supply owner, environment,
+ // a synthetic IC-READ token, verifiedGesture, or a SQLite filename.
+ ipcMain.handle('intelligence:category-personal',(event,input)=>{
+  requireAppSender(event);
+  return categoryRC.personalCall(input,event.sender.id,{
+   activeAccountId:d05Gate.trustedAccount(event)
+  });
+ });
+ ipcMain.handle('intelligence:category-sandbox-start',(event,month)=>{
+  requireAppSender(event);
+  if(restoring||syncing)throw Error('Operação financeira em andamento.');
+  return categoryRC.startSandbox(month,event.sender.id);
+ });
+ ipcMain.handle('intelligence:category-sandbox-command',async(event,input)=>{
+  requireAppSender(event);
+  if(restoring||syncing)throw Error('Operação financeira em andamento.');
+  return categoryRC.sandboxCall(input,event.sender.id,async preview=>{
+   if(!mainWindow||mainWindow.isDestroyed()||!mainWindow.isFocused())return false;
+   const amount=Number.isSafeInteger(preview.amountCents)?
+    new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(preview.amountCents/100):
+    'não mensurável';
+   const choice=await dialog.showMessageBox(mainWindow,{type:'warning',
+    title:'Confirmar somente no SQLite sintético',buttons:['Cancelar','Confirmar apenas no teste'],
+    defaultId:0,cancelId:0,noLink:true,
+    message:'Aplicar '+String(preview.action)+' APENAS no laboratório?',
+    detail:'Ambiente: arquivo TEMP sintético, isolado do perfil Windows.\n'+
+     'Referências: '+String(preview.changes)+' · Valor amostral: '+amount+
+     '\nNenhuma categoria, regra ou movimentação pessoal será modificada.'});
+   // Native modal owns focus while open; checking window focus afterwards
+   // would incorrectly reject an explicit click on the confirmation button.
+   return choice.response===1&&!mainWindow.isDestroyed();
+  });
+ });
+ ipcMain.handle('intelligence:category-sandbox-stop',(event,sessionId)=>{
+  requireAppSender(event);return categoryRC.stopSandbox(sessionId,event.sender.id);
+ });
  vault=new PluggyVault(app.getPath('userData'),safeStorage);
  const aiVault=new AIAuthVault(app.getPath('userData'),safeStorage);
  const aiAuth=new ChatGPTSignIn({vault:aiVault,openExternal:url=>shell.openExternal(url)});
  const aiPersonal=new AIPersonalStore(app.getPath('userData'),safeStorage);
  const aiDemo=new ChatGPTDemoClient({auth:aiAuth,personalStore:aiPersonal});
  session.defaultSession.setPermissionRequestHandler((_wc,_permission,callback)=>callback(false));
- if(smokeProfileActive){
+ if(smokeProfileActive||experimentalPackaged){
+   // RC packaged builds remain offline-only, including Cloudflare/Pluggy/OpenAI.
    // Smoke tests contain invented entries only; forbid outbound HTTP even if
    // a feature unexpectedly attempts to reach Cloudflare/Pluggy/OpenAI.
    for(const ses of [session.defaultSession,session.fromPartition('persist:mf-cloud-preview')])
@@ -232,16 +372,19 @@ app.whenReady().then(()=>{
  });
  ipcMain.handle('cloud:access-status',async(event)=>{
    requireAppSender(event);
+   forbidExperimentalNetwork();
    return previewIdentityStatus();
  });
  ipcMain.handle('cloud:access-connect',async(event)=>{
    requireAppSender(event);
+   forbidExperimentalNetwork();
    if(restoring||cloudPreparationBusy)
      throw new Error('Conclua a operação local antes de entrar na nuvem.');
    return connectPreviewIdentity();
  });
  ipcMain.handle('cloud:quarantine-demo',async(event)=>{
    requireAppSender(event);
+   forbidExperimentalNetwork();
    if(restoring||syncing||cloudPreparationBusy)
      throw new Error('Outra operação financeira está em andamento.');
    const ses=cloudPreviewSession();
@@ -252,6 +395,7 @@ app.whenReady().then(()=>{
  });
  ipcMain.handle('cloud:transfer-personal',async(event)=>{
    requireAppSender(event);
+   forbidExperimentalNetwork();
    if(syncing||restoring||autoBackupBusy||cloudPreparationBusy)
      throw new Error('Existe outra operação em andamento.');
    // This is an explicit data transfer consent, NOT consent for cloud cutover.
@@ -282,6 +426,7 @@ app.whenReady().then(()=>{
  });
  ipcMain.handle('cloud:bank-parity',async(event)=>{
    requireAppSender(event);
+   forbidExperimentalNetwork();
    if(restoring||syncing||cloudPreparationBusy||autoBackupBusy)
      return {ok:false,reason:'local_operation_in_progress',financialSyncEnabled:false};
    const ses=cloudPreviewSession();
@@ -292,6 +437,7 @@ app.whenReady().then(()=>{
  });
  ipcMain.handle('cloud:e1-audit',async(event)=>{
    requireAppSender(event);
+   forbidExperimentalNetwork();
    if(restoring||syncing||cloudPreparationBusy||autoBackupBusy||cloudPersonalBusy)
      return {ok:false,reason:'local_operation_in_progress',financialSyncEnabled:false};
    const ses=cloudPreviewSession();
@@ -311,6 +457,7 @@ app.whenReady().then(()=>{
  });
  ipcMain.handle('cloud:prepare-migration',async(event)=>{
    requireAppSender(event);
+   forbidExperimentalNetwork();
    if(syncing||restoring||autoBackupBusy||cloudPreparationBusy)
      throw new Error('Há outra operação em andamento. Conclua-a antes de preparar a nuvem.');
    cloudPreparationBusy=true;
@@ -362,6 +509,7 @@ app.whenReady().then(()=>{
  });
  ipcMain.handle('bank:configure',async(event,config)=>{
    requireAppSender(event);
+   forbidExperimentalNetwork();
    if(syncing)throw new Error('Sincronização em andamento.');
    const saved=await vault.put(config||{});
    return {config:saved,data:titledBankData()};
@@ -374,6 +522,7 @@ app.whenReady().then(()=>{
  });
  ipcMain.handle('bank:sync',async(event)=>{
    requireAppSender(event);
+   forbidExperimentalNetwork();
    if(syncing)throw new Error('Uma sincronização já está em andamento.');
    const config=await vault.get();
    if(!config)throw new Error('Configure sua conexão Pluggy primeiro.');
@@ -448,38 +597,45 @@ app.whenReady().then(()=>{
  });
  ipcMain.handle('ai:memory-list',async(event)=>{
    requireAppSender(event);
+   forbidExperimentalNetwork();
    return aiPersonal.list(await aiDemo.personalSubject());
  });
  ipcMain.handle('ai:memory-add',async(event,input)=>{
    requireAppSender(event);
+   forbidExperimentalNetwork();
    if(!input||typeof input!=='object'||Array.isArray(input)||typeof input.kind!=='string'||typeof input.text!=='string')
      throw new Error('Memória inválida.');
    return aiPersonal.add(await aiDemo.personalSubject(),{kind:input.kind,text:input.text});
  });
  ipcMain.handle('ai:memory-remove',async(event,id)=>{
    requireAppSender(event);
+   forbidExperimentalNetwork();
    return aiPersonal.remove(await aiDemo.personalSubject(),id);
  });
  ipcMain.handle('ai:memory-clear',async(event)=>{
    requireAppSender(event);
+   forbidExperimentalNetwork();
    return aiPersonal.clearMemories(await aiDemo.personalSubject());
  });
  ipcMain.handle('ai:usage-summary',async(event)=>{
    requireAppSender(event);
+   forbidExperimentalNetwork();
    return aiPersonal.summary(await aiDemo.personalSubject());
  });
  ipcMain.handle('ai:context-preview',(event,input)=>{
    requireAppSender(event);
+   forbidExperimentalNetwork();
    if(!input||typeof input!=='object'||typeof input.caseId!=='string'||
      !['auto','low','medium'].includes(input.effort)||typeof input.useSavedMemories!=='boolean')
      throw new Error('Parâmetros de prévia de contexto inválidos.');
    return aiDemo.contextPreview(input);
  });
- ipcMain.handle('ai:connect',(event)=>{requireAppSender(event);return aiAuth.connect();});
+ ipcMain.handle('ai:connect',(event)=>{requireAppSender(event);forbidExperimentalNetwork();return aiAuth.connect();});
  ipcMain.handle('ai:disconnect',(event)=>{requireAppSender(event);return aiAuth.disconnect();});
- ipcMain.handle('ai:model-available',(event)=>{requireAppSender(event);return aiDemo.modelAvailable();});
+ ipcMain.handle('ai:model-available',(event)=>{requireAppSender(event);forbidExperimentalNetwork();return aiDemo.modelAvailable();});
  ipcMain.handle('ai:run-demo',(event,input)=>{
    requireAppSender(event);
+   forbidExperimentalNetwork();
    if(!input||typeof input!=='object'||typeof input.caseId!=='string'||input.caseId.length>36||!['auto','low','medium'].includes(input.effort)||input.creditsDisabledConfirmed!==true||typeof input.useSavedMemories!=='boolean')
      throw new Error('Confirmação e parâmetros de teste inválidos.');
    return aiDemo.testDemo({caseId:input.caseId,effort:input.effort,creditsDisabledConfirmed:true,useSavedMemories:input.useSavedMemories,
@@ -491,9 +647,11 @@ app.whenReady().then(()=>{
  createWindow();
  void ensureAutomaticBackup();
  backupTimer=setInterval(()=>void ensureAutomaticBackup(),60*60*1000);
- cloudPersonalTimer=setInterval(()=>void tickCloudPersonal(),60*1000);
- void tickCloudPersonal();
+ if(!experimentalPackaged){
+  cloudPersonalTimer=setInterval(()=>void tickCloudPersonal(),60*1000);
+  void tickCloudPersonal();
+ }
  app.on('activate',()=>{if(BrowserWindow.getAllWindows().length===0)createWindow();});
 }).catch(error=>{dialog.showErrorBox('Erro ao iniciar Meu Financeiro','Não foi possível abrir o banco de dados: '+error.message);app.quit();});
 app.on('window-all-closed',()=>{if(process.platform!=='darwin')app.quit();});
-app.on('before-quit',()=>{if(backupTimer)clearInterval(backupTimer);if(cloudPersonalTimer)clearInterval(cloudPersonalTimer);cancelBrowserPairing();if(db){db.close();db=null;}});
+app.on('before-quit',()=>{if(d05PersonalGate)d05PersonalGate.stopAll();if(d05Gate)d05Gate.stopAll();if(categoryRC)categoryRC.stopAll();if(backupTimer)clearInterval(backupTimer);if(cloudPersonalTimer)clearInterval(cloudPersonalTimer);cancelBrowserPairing();if(db){db.close();db=null;}});

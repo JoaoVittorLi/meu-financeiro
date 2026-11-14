@@ -23,8 +23,8 @@
     "@electron/asar": "4.3.1"
   },
   "build": {
-    "appId": "app.local.meufinanceiro",
-    "productName": "Meu Financeiro",
+    "appId": "app.local.meufinanceiro.rcall01",
+    "productName": "Meu Financeiro RC Experimental",
     "asar": true,
     "files": [
       "app/**/*",
