@@ -249,18 +249,20 @@ function mfD04Details(app:any,entry:MfD04Entry|null):any{
     'Alterações de termos, cor, escopos ou exclusões que o serviço não consegue revalidar permanecem rascunho, sem escrita pessoal.')));
 }
 function mfD04Render(app:any):any{
- const s=app.state,grant=s.categoryReviewGrant,report=s.categoryReviewReport;
+ const s=app.state,grant=s.categoryReviewGrant;
+ const grantLive=!!grant?.token&&Number.isFinite(grant.expiresAt)&&grant.expiresAt>Date.now();
+ const report=grantLive?s.categoryReviewReport:null;
  const entries=mfD04Entries(app),stage=s.mfD04Stage||'pending';
  const query=String(s.mfD04Search||'').toLocaleLowerCase('pt-BR');
  const visible=entries.filter(e=>(stage==='all'||e.status===stage)&&
   (e.title+' '+e.category+' '+e.source).toLocaleLowerCase('pt-BR').includes(query));
  const selected=visible.find(e=>e.id===s.mfD04Selected)||visible[0]||null;
- const body=grant&&report?h('div',{className:'mf-d04-body'},
+ const body=grantLive&&report?h('div',{className:'mf-d04-body'},
   mfD04Queue(app,entries,selected),mfD04Details(app,selected),
   h('details',{className:'mf-d04-advanced'},
    h('summary',{},'Outras ferramentas do serviço de revisão'),
    renderCategoryReviewLegacy(app))):null;
- const empty=!grant?h('div',{className:'mf-d04-empty',role:'status'},
+ const empty=!grantLive?h('div',{className:'mf-d04-empty',role:'status'},
   h('h3',{},s.categoryReviewAvailable===false?'Revisão sintética indisponível':'Autorize uma revisão supervisionada'),
   h('p',{},'Escrita pela IA no perfil pessoal permanece desativada. A prévia de teste exige perfil sintético validado.'),
   s.categoryReviewAvailable?h('button',{type:'button',className:'primary-button',
@@ -279,7 +281,7 @@ function mfD04Render(app:any):any{
   s.mfD04Error?h('p',{className:'mf-ai-error',role:'status'},s.mfD04Error):null,
   s.categoryReviewError?h('p',{className:'mf-ai-error',role:'alert'},s.categoryReviewError):null,
   s.categoryReviewBusy?h('p',{role:'status'},'Conferindo o serviço…'):null,
-  s.categoryReviewReceipt&&grant?h('p',{className:'mf-d04-receipt',role:'status'},
+  s.categoryReviewReceipt&&grantLive?h('p',{className:'mf-d04-receipt',role:'status'},
    'Ação confirmada pelo serviço: '+String(s.categoryReviewReceipt.id)):null,
-  mfD04PreviewModal(app));
+  grantLive?mfD04PreviewModal(app):null);
 }
