@@ -164,8 +164,24 @@ class D05PersonalWriteGateway{
  }
  async confirmPreview(event,input){
   const {s,owner}=this.verify(event,input);
-  const id=input.proposalId,p=this.previews.get(id);
-  if(typeof id!=='string'||!p||p.owner!==owner||p.session!==s||
+  const id=input.proposalId;
+  if(typeof id!=='string'||typeof input.nonce!=='string')
+   return {status:'denied',changesApplied:false};
+  // A committed operation is idempotent across retries and process restart;
+  // do not require an in-memory proposal after the first successful COMMIT.
+  const knownSql=this.finance().db;
+  if(knownSql.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='d05_personal_supervised_receipts'").get()){
+   const previous=knownSql.prepare('SELECT * FROM d05_personal_supervised_receipts WHERE proposal_id=?').get(id);
+   if(previous){
+    const scopeHash=hash([s.owner,s.token,s.profile,s.activeAccountId||null]);
+    if(previous.owner!==owner||previous.nonce_hash!==hash(input.nonce)||
+       previous.scope_hash!==scopeHash)
+     return {status:'denied',changesApplied:false};
+    return {status:'applied',replayed:true,changesApplied:true,receipt:JSON.parse(previous.result_json)};
+   }
+  }
+  const p=this.previews.get(id);
+  if(!p||p.owner!==owner||p.session!==s||
      p.expiresAt<=this.clock()||p.nonce!==input.nonce)
    return {status:'stale',changesApplied:false};
   if(this.busy)return {status:'denied',changesApplied:false,reason:'Confirmação em andamento'};
