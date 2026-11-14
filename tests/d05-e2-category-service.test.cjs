@@ -112,8 +112,13 @@ test('D05 E2 — regras por filho seguem precedência e override manual vence',(
  const {db,service:s}=setup();
  try{
   seedBank(db);
-  s.saveRule({pattern:'IFOOD',matchMode:'contains',scope:'bank',priority:10,target:{categoryId:'cat:alimentacao',subcategoryId:'sub:alimentacao/delivery'}});
-  s.saveRule({pattern:'IFOOD',matchMode:'contains',scope:'bank',priority:20,target:{categoryId:'cat:compras',subcategoryId:null}});
+  const ruleA={pattern:'IFOOD',matchMode:'contains',scope:'bank',priority:10,target:{categoryId:'cat:alimentacao',subcategoryId:'sub:alimentacao/delivery'}};
+  const ruleB={pattern:'IFOOD',matchMode:'contains',scope:'bank',priority:20,target:{categoryId:'cat:compras',subcategoryId:null}};
+  assert.equal(s.previewRule(ruleA).candidateBankMatches,1);
+  assert.throws(()=>s.saveRule(ruleA),/prévia/);
+  s.saveRule({...ruleA,previewVersion:s.previewRule(ruleA).previewVersion});
+  assert.throws(()=>s.saveRule({...ruleB,previewVersion:'0'.repeat(64)}),/desatualizada/);
+  s.saveRule({...ruleB,previewVersion:s.previewRule(ruleB).previewVersion});
   let bank=s.bankView();
   let row=bank.items.find(x=>x.id==='posted');
   assert.equal(row.categoryId,'cat:alimentacao');
