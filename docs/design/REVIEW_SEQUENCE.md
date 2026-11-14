@@ -7,7 +7,7 @@ Data: 2026-11-13 · Índice: #55 · Coordenação: #49 · Baseline PR #54 / 55de
 | D02 | Chat Principal / Expandido | **DESIGN HANDOFF V3 CONSOLIDADO** (implementação pendente) | #58 | Biblioteca de 26 famílias especificada por herança; 3 aprovadas individualmente, VR-10 V2 referência; sem mais microscreens |
 | D03 | Inteligência Hoje | **IMPLEMENTATION_READY** (DESIGN_APPROVED) | #61 | **V2 FINAL** · cartões premium uniformes + prioridades dinâmicas · HTML/spec/QA/handoff publicados; Electron pendente |
 | D04 | Central de Revisão | **IMPLEMENTATION_READY** (DESIGN_APPROVED) | #67 | **V1.1 FINAL** · fila premium, edição persistente, escopos separados, reconfirmação; Executor #69, QA Electron pendente |
-| D05 | Movimentações | **SUBCAT DESIGN_APPROVED; LIST UX V1.3 IN_REVIEW**; #74 engenharia bloqueante | #70 | 14 pais / 61 filhos / ícones aprovados; seleção premium, clique direto no ícone e status discreto V1.3 aguardam feedback |
+| D05 | Movimentações | **SUBCAT DESIGN_APPROVED; EXTRATO UX V1.6 IN_REVIEW** · engenharia #74 bloqueante | #70 | 14×61 e SVGs aprovados; revisão sem rótulo com indicador azul, switch agrupar e seleção circular propostos, ainda NÃO aprovados |
 | D06 | Visão Geral | NOT_STARTED | — | — |
 | D07 | Orçamentos | NOT_STARTED | — | — |
 | D08 | Planejamento | NOT_STARTED | — | — |
@@ -113,3 +113,9 @@ Critérios para DESIGN_APPROVED: aprovação explícita do proprietário sobre v
 **Nova direção provisória:** botão de seleção customizado acessível; ícone tonal funciona como único gatilho; popover ancorado mostra catálogo aprovado de 14 categorias e 61 filhos, opção sem filho; status POSTED+revisado fica omitido, POSTED não revisado mostra apenas `A revisar`, PENDING mostra apenas `Em processamento`; detalhes abrem os dois eixos separados. [Spec V1.3](screens/d05-movimentacoes/D05_V1_3_INTERACTION_SPEC.md).
 
 **Estado preciso:** taxonomia e ícones V1.2 continuam `DESIGN_APPROVED`. **Interações V1.3 e tela global NÃO aprovadas**, sem QA Electron/SQLite. Engenharia de subcategorias #74 continua aberta e vinculada, com QA e implementação reais obrigatórios.
+
+### D05 — Auditoria V1.6 da página inteira (13/11/2026)
+
+O proprietário enviou **dois prints** da D05 V1.5 e pediu corrigir `Revisar`, visual nativo do checkbox de `Agrupar por dia` e avaliar a página toda com pesquisa de apps premium. [Relatório com 12 itens, evidências e pesquisa](screens/d05-movimentacoes/D05_V1_6_FULL_PAGE_AUDIT_AND_REVIEW_DESIGN.md).
+
+Direção **proposta, não aprovada**: revisão via ponto azul no nome do comerciante, ação rápida, card `A conferir` como atalho; `Agrupar por dia` como switch premium sem checkbox; seleção múltipla circular; corrigir contraste do título `Movimentações recentes`. Fontes: Copilot, Monarch, YNAB, Rocket Money (links no relatório). Preservar categoria/subcategoria 14×61 aprovada e #74 de engenharia até SQLite/IPC/IA/QA reais. Sem regressão banco/PENDING/revisão.
