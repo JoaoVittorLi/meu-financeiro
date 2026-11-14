@@ -31,7 +31,7 @@ function fixture(){
  };
  const document={body:{},addEventListener(){},removeEventListener(){},activeElement:null};
  const win={financeDesktop:null,innerWidth:1366,innerHeight:768,addEventListener(){},removeEventListener(){}};
- const sandbox={React,ReactDOM:{createPortal:child=>child},window:win,document,
+ const sandbox={React,h:React.createElement,ReactDOM:{createPortal:child=>child},window:win,document,
   iso:()=> '2026-11-14',fromISO:()=>new Date('2026-11-14T00:00:00Z'),
   pDate:d=>d,fmt:n=>'R$'+(n/100).toFixed(2),parsePositiveBRLInput:()=>100,
   console,Set,Map,Date,Math,Object,Array,String,Number};
@@ -88,7 +88,7 @@ test('D05 E3 — quatro KPIs, POSTED e PENDING separados, revisão apenas banco 
  const tree=f.component.render();
  const flat=flatten(tree);
  const text=texts(tree).join(' ');
- const metricElements=flat.filter(x=>typeof x.props.className==='string'&&x.props.className.includes('d05-metric'));
+ const metricElements=flat.filter(x=>typeof x.props.className==='string'&&x.props.className.startsWith('d05-metric is-'));
  assert.equal(metricElements.length,4);
  assert.match(text,/Entradas confirmadas/);
  assert.match(text,/Saídas confirmadas/);
