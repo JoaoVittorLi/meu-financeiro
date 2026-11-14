@@ -153,6 +153,23 @@ test('RC I2-B/C: Electron binds explicit IPC and userData remains isolated',()=>
  assert.doesNotMatch(preload,/ipcRenderer:\s*ipcRenderer/);
  assert.match(ui,/mfI2CategoryPanel\(app\)/);
  assert.match(tsconfig,/src\/intelligence-category-rc\.ts/);
- assert.match(gateway,/this\.personal=new IntelligenceCategoryBridge/);
+ // The PR #79/#80 composition intentionally places the quality gate on
+ // top of the existing B1 bridge; the old direct assignment is no longer the
+ // production architecture.
+ assert.match(gateway,/const base=new IntelligenceCategoryBridge/);
+ assert.match(gateway,/this\.personal=new EvidenceQualityBridge/);
+ assert.match(gateway,/new ProactiveCategoryBridge/);
  assert.match(gateway,/createSyntheticFinanceVault\(\)/);
+});
+
+test('RC I2-B/C/D/E: production bridge owns one shared proposal engine and mandatory quality gate',()=>{
+ const f=fixture();try{
+  const {EvidenceQualityBridge}=require('../electron/intelligence-category-quality-bridge.cjs');
+  const {IntelligenceCategoryBridge}=require('../electron/intelligence-category-bridge.cjs');
+  assert(f.gateway.personal instanceof EvidenceQualityBridge);
+  assert(f.gateway.qualityBase instanceof IntelligenceCategoryBridge);
+  assert.equal(f.gateway.quality.advisor.proposals,f.gateway.qualityBase.proposals);
+  assert.equal(f.gateway.personal.quality,f.gateway.quality);
+  assert.equal(f.gateway.qualityBase.proposals.db,f.personalDb);
+ }finally{f.close();}
 });
