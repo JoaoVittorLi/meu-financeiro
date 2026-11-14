@@ -19,7 +19,7 @@ function app(vault,{faults={},authorize=true}={}){
  const bank=local.authorize({consent:CONSENT,profile:'real',source:'bank'},2);
  const a={month:'2026-11',source:'manual',profile:'demo',token:manual.token};
  const b={month:'2026-11',source:'bank',profile:'real',token:bank.token};
- const preview=(action,params,useBank=false)=>proposals.preview(action,params,useBank?b:a,useBank?2:1);
+ const preview=(action,params,useBank=false)=>executor.prepare(action,params,useBank?b:a,useBank?2:1);
  const confirm=(p,useBank=false,extra={})=>executor.confirm({
   proposalId:p.proposalId,nonce:p.confirmationNonce,consent:WCONSENT,
   scope:useBank?b:a,...extra},useBank?2:1);
