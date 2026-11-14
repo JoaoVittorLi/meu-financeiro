@@ -169,8 +169,8 @@ function mfI2CategoryPanel(app:any):any{
     ' · três registros inventados · gravação exclusivamente sintética'):
     h('p',{},'Nenhum dado pessoal será copiado. Uma nova sessão cria um SQLite TEMP independente.'),
    h('div',{className:'mf-i2-controls'},
-    active?button('Encerrar e destruir teste',()=>void mfI2SandboxStop(app)):
-     button('Iniciar laboratório sintético',()=>void mfI2SandboxStart(app),!!s.mfI2Sandbox),
+    s.mfI2Sandbox?button('Encerrar e destruir teste',()=>void mfI2SandboxStop(app)):
+     button('Iniciar laboratório sintético',()=>void mfI2SandboxStart(app)),
     active?button('Analisar categorias de teste',()=>void mfI2SandboxCommand(app,'analyze')):null,
     active?button('Listar categorias e regras de teste',()=>void mfI2SandboxCommand(app,'list')):null),
    h('div',{className:'mf-i2-fields'},
