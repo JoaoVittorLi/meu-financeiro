@@ -13,6 +13,7 @@ const valid= r=>r.status==='POSTED'&&['income','expense'].includes(natureOf(r))&
   Number.isSafeInteger(r.amount)&&r.amount!==0&&!r.splits?.length&&!r.splitOutdated&&
   !r.linkedManualId&&!r.supervisedOutdated;
 const rowId=r=>String(r.accountId)+':'+String(r.id);
+const rowKey=r=>JSON.stringify([r.accountId,r.id]);
 const safeSummary=r=>({id:rowId(r),accountId:r.accountId,externalId:r.id,
  date:r.date,description:r.description,category:r.category,
  amountCents:Math.abs(r.amount),nature:natureOf(r),categorySource:r.categorySource});
@@ -127,7 +128,7 @@ class ProactiveCategoryAdvisor{
    "SELECT 1 FROM sqlite_master WHERE type='table' AND name='category_review_applied_labels'").get();
   const supervisedKeys=new Set(hasReviewLabels?
    this.db.db.prepare('SELECT account_id,external_id FROM category_review_applied_labels')
-    .all().map(r=>String(r.account_id)+':'+String(r.external_id)):[]);
+    .all().map(r=>JSON.stringify([r.account_id,r.external_id])):[]);
   const groups=new Map();
   for(const r of rows){
    if(!valid(r)||!specific(r.description))continue;
@@ -136,7 +137,7 @@ class ProactiveCategoryAdvisor{
    if(!group){group={accountId:r.accountId,nature,pattern:fold(r.description),
     rows:[],votes:new Map(),manuallyCorrected:[]};groups.set(key,group);}
    group.rows.push(r);
-   if(r.categorySource==='manual'&&!supervisedKeys.has(rowId(r))&&fold(r.category)!=='OUTROS'){
+   if(r.categorySource==='manual'&&!supervisedKeys.has(rowKey(r))&&fold(r.category)!=='OUTROS'){
     const count=group.votes.get(r.category)||0;
     group.votes.set(r.category,count+1);group.manuallyCorrected.push(r);
    }
