@@ -16,7 +16,7 @@ async function categoryReviewRefresh(app:any,after=0){
  const api=categoryReviewAPI();
  const [report,queue]=await Promise.all([api.categoryReviewList({token:grant.token}),api.categoryReviewQueue({token:grant.token,after,limit:50,filters})]);
  if(app.state.categoryReviewGrant?.token!==grant.token||app.categoryReviewRequest!==request||(app.state.categoryReviewFilterRevision||0)!==revision)return;
- app.setState({categoryReviewReport:report,categoryReviewQueue:queue,categoryReviewCursor:after,categoryReviewFiltersDirty:false,categoryReviewSelected:[]});
+ app.setState({categoryReviewReport:report,categoryReviewQueue:queue,categoryReviewCursor:after,categoryReviewFiltersDirty:false,categoryReviewSelected:[],categoryReviewPreview:null,categoryReviewConfirmed:false});
 }
 function categoryReviewSetFilter(app:any,name:string,value:string){
  app.setState({categoryReviewFilters:{...app.state.categoryReviewFilters,[name]:value},categoryReviewFilterRevision:(app.state.categoryReviewFilterRevision||0)+1,categoryReviewFiltersDirty:true,categoryReviewQueue:null,categoryReviewSelected:[],categoryReviewPreview:null,categoryReviewConfirmed:false,categoryReviewDetail:null});
