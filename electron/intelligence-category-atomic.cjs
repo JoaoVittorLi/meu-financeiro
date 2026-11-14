@@ -101,6 +101,8 @@ class AtomicSyntheticCategoryExecutor{
    const replay=this.find(proposalId);
    if(replay)throw Error('Prévia desatualizada: comando já foi finalizado.');
    const before=this.sql.prepare('SELECT total_changes() AS n').get().n;
+   if(this.proposals.previews.get(proposalId)!==p||p.expiresAt<=this.clock())
+    throw Error('Prévia desatualizada: rejeitada ou substituída durante a confirmação.');
    if(before!==p.state.version)throw Error('Prévia desatualizada: banco alterado.');
    const fresh=this.proposals.preview(p.state.action,p.state.params,input.scope,owner);
    freshId=fresh.proposalId;
