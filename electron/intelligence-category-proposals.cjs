@@ -261,6 +261,12 @@ class CategoryProposalService{
     'Regra futura respeita conta, natureza e rowid de criação; histórico anterior não será reclassificado.':
     'Regra sem limite futuro: alterações históricas exigem revisão específica; contagem da amostra não é total.'};
  }
+ discard(proposalId,input,owner){
+  const {scope}=this.authorize(input,owner),p=this.previews.get(proposalId);
+  if(!p||p.owner!==owner||!sameScope(p.scope,scope))throw Error('Prévia não pertence à sessão.');
+  this.previews.delete(proposalId);
+  return {contract:'I2-B/PROPOSAL-V1',proposalId,status:'discarded',changesApplied:false};
+ }
  revise(proposalId,patch,input,owner){
   const {scope}=this.authorize(input,owner),old=this.previews.get(proposalId);
   if(!old||old.owner!==owner||!sameScope(old.scope,scope)||old.expiresAt<=this.clock())throw Error('Prévia expirada.');
