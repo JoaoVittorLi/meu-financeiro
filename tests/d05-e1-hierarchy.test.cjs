@@ -69,6 +69,11 @@ test('D05 E1 rejeita filhos cruzados, duplicatas normalizadas, IDs alterados e d
       subcategory_id='sub:moradia/aluguel' WHERE profile='real' AND id='t-000'`).run(),/incompatível/);
     assert.equal(sql.prepare(`UPDATE transactions SET category_id='cat:moradia',
       subcategory_id='sub:moradia/aluguel' WHERE profile='real' AND id='t-000'`).run().changes,1);
+    // Loading the new D05 pair must not lose all the original legacy fields.
+    const linked=db.load('real').transactions.find(x=>x.id==='t-000');
+    assert.equal(linked.categoryId,'cat:moradia');
+    assert.equal(linked.subcategoryId,'sub:moradia/aluguel');
+    assert.equal(linked.amount,1);
     // The flat legacy renderer must not erase a reviewed child on save.
     db.save('real',db.load('real'));
     assert.equal(sql.prepare("SELECT subcategory_id FROM transactions WHERE profile='real' AND id='t-000'").get().subcategory_id,'sub:moradia/aluguel');
@@ -107,4 +112,38 @@ test('D05 E1 rollback atômico quando catálogo aprovado colide com dados anteri
     assert.equal(raw.prepare('PRAGMA table_info(categories)').all().some(x=>x.name==='id'),false);
     assert.equal(raw.prepare('PRAGMA table_info(transactions)').all().some(x=>x.name==='subcategory_id'),false);
   } finally {cleanup(f,raw);}
+});
+
+test('D05 E1 standalone migration upgrades a genuine pre-v6 category schema atomically',()=>{
+ const f=legacy630();let raw;
+ try{
+  raw=new DatabaseSync(f.file);
+  raw.exec("PRAGMA foreign_keys=ON; CREATE TABLE app_meta(key TEXT PRIMARY KEY,value TEXT NOT NULL);"+
+   "INSERT INTO app_meta VALUES('schema_version','6')");
+  assert.equal(raw.prepare('PRAGMA table_info(categories)').all().some(x=>x.name==='emoji'),false);
+  const out=migrateHierarchy(raw);
+  assert.equal(out.version,7);
+  const columns=raw.prepare('PRAGMA table_info(categories)').all().map(x=>x.name);
+  assert(columns.includes('emoji'));assert(columns.includes('kind'));
+  assert.equal(raw.prepare('SELECT COUNT(*) AS n FROM transactions').get().n,630);
+  assert.equal(raw.prepare('SELECT SUM(amount_cents) AS n FROM transactions').get().n,630*631/2);
+  assert.equal(raw.prepare('SELECT COUNT(*) AS n FROM subcategories').get().n,61);
+  assert.equal(raw.prepare("SELECT kind FROM categories WHERE name='Salário'").get().kind,'income');
+  assert.equal(raw.prepare("SELECT value FROM app_meta WHERE key='schema_version'").get().value,'7');
+  assert.equal(raw.prepare('PRAGMA foreign_key_check').all().length,0);
+  migrateHierarchy(raw);
+  assert.equal(raw.prepare('SELECT COUNT(*) AS n FROM subcategories').get().n,61);
+ }finally{cleanup(f,raw);}
+});
+test('D05 E1 refuses a genuine dangling categories_old FK without inventing a fake table',()=>{
+ const f=legacy630();let raw;
+ try{
+  raw=new DatabaseSync(f.file);
+  raw.exec("PRAGMA foreign_keys=ON; CREATE TABLE app_meta(key TEXT PRIMARY KEY,value TEXT NOT NULL);"+
+    "CREATE TABLE category_rules(id INTEGER PRIMARY KEY,category TEXT REFERENCES categories_old(name))");
+  assert.throws(()=>migrateHierarchy(raw),/categories_old/);
+  assert.equal(raw.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='categories_old'").get(),undefined);
+  assert.equal(raw.prepare("SELECT COUNT(*) AS n FROM transactions").get().n,630);
+  assert.equal(raw.prepare('PRAGMA table_info(categories)').all().some(x=>x.name==='id'),false);
+ }finally{cleanup(f,raw);}
 });
