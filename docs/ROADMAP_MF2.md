@@ -582,3 +582,15 @@ Checkpoint integrado #54: R3/R2/R4 funcionais; primeira fatia R5 em e897140. 542
 **QA dirigida:** 26/26 asserções V3 do arquivo tests/int-design-v3.test.cjs executadas em V8 isolado PASS, não Node oficial. **0 screenshots Electron #63.** Renderer final app/app.js ainda precisa compilar; não reutilizar PNG do #54 como prova. **Bloqueio**: checkout autenticado/dep Electron indisponível, testes oficiais e revisão de contratos no #49/I2-A #62 pendentes. **Status: IMPLEMENTED_PARTIAL / NOT_HOMOLOGATED / Draft.**
 
 [Log INT-DESIGN-02](ai-context/logs/2026-11-13-INT-DESIGN-02-D02-V3.md). **Próximo gate único:** Integrador executar suite Node/SQLite/TS + F08/ASAR e smoke Electron com dados sintéticos no SHA final do PR #63; corrigir falhas e anexar screenshots reais para decisão de homologação. Sem merge main, Windows CI pago, EXE, Cloudflare Production ou escrita pessoal IA.
+
+## RC-ALL-01 — Implementação D03/D04 (Executor 1, 13/11/2026)
+
+**PR Draft #73**, empilhado no PR #68 SHA bf08ec54fbcaf498eff12f1edeea5949cee1a524. Handoffs de design aprovados #66 D03 V2 e #69 D04 V1.1, PR #57 SHA fc53498e390e23356baf9e928fc9c15bd10af853.
+
+**C1 D03 CODE_PUBLISHED / NOT_HOMOLOGATED:** UI nova, SignalCards uniformes esmeralda, prioridades 0–3 derivadas de fatos IC-v1 autorizados (orçamento, compromissos, revisão de banco/sintética), drawer contextual, navegação. Não foram fabricadas projeções de saldo/reserva enquanto backend não comprova saldo disponível/compromissos futuros únicos no mesmo escopo.
+
+**C2 D04 CODE_PUBLISHED / NOT_HOMOLOGATED:** fila/filtro/busca/inspeção, drafts isolados, exclusões por ID, escopo histórico/futuro independente e impacto em centavos, modal de prévia real somente no backend sintético onde o contrato garante IDs/condições; fluxos antigos mantidos. IA pessoal não escreve.
+
+**QA real neste chat:** 17/17 checks em V8 isolado PASS sobre produção + arquivo versionado tests/rc-all-01-ui.test.cjs, após corrigir regressão concreta de parênteses/estrutura de render. **NOT_RUN:** TypeScript oficial, Node/SQLite completos, F08, ASAR, Electron/screenshot. Status RC-ALL-01 continua BLOCKED até Integrador #65 consolidar e proprietário disparar preflight CircleCI no SHA final.
+
+[Log técnico](ai-context/logs/2026-11-13-RC-ALL-01-D03-D04-EXECUTOR1.md). Sem merge main, Windows build pago, EXE, Cloudflare Production ou I2-A #64 integrado sem revisão.
