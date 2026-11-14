@@ -1,0 +1,409 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Meu Financeiro — D04 Central de revisões V1.1 (Design)</title><style>
+*{box-sizing:border-box}body{margin:0;background:#141414;font-family:"Segoe UI Variable","Segoe UI",system-ui,sans-serif}
+#mfD04{--bg:#141414;--surface:#1a1a1a;--raised:#202328;--hover:#2b2d32;--line:#303034;--text:#fafafa;--muted:#b1b1ba;--green:#53d896;--red:#ff7a88;--amber:#f5bc63;--greenbg:#173329;--shadow:rgba(0,0,0,.4);font:12px/1.6 "Segoe UI Variable","Segoe UI",system-ui,sans-serif;color:var(--text);background:var(--bg);min-height:100vh}
+#mfD04[data-theme="light"]{--bg:#f4f4f6;--surface:#fff;--raised:#f4f4f5;--hover:#ebebed;--line:#e5e5e8;--text:#171717;--muted:#64646e;--green:#087e49;--red:#c92a3c;--amber:#975b00;--greenbg:#e8f8ef;--shadow:rgba(0,0,0,.12)}
+#mfD04 button,#mfD04 input,#mfD04 select{font:inherit}
+#mfD04 button{cursor:pointer;color:var(--text)}
+#mfD04 [hidden]{display:none!important}
+#mfD04 :is(button,input,select):focus-visible{outline:2px solid var(--green);outline-offset:3px}
+#mfD04 button:disabled{opacity:.45;cursor:not-allowed}
+#mfD04 .app{display:grid;grid-template-columns:198px minmax(0,1fr);max-width:1500px;margin:auto;min-height:850px;position:relative}
+#mfD04 .nav{padding:24px 12px;border-right:1px solid var(--line);min-width:0}
+#mfD04 .brand{display:flex;align-items:center;gap:10px;margin:0 5px 28px}
+#mfD04 .brand-icon{width:33px;height:33px;border-radius:10px;background:var(--text);display:flex;align-items:end;gap:3px;padding:7px 9px;flex-shrink:0}
+#mfD04 .brand-icon i{display:block;width:5px;background:var(--bg);border-radius:2px}
+#mfD04 .brand-icon i:nth-child(1){height:8px}
+#mfD04 .brand-icon i:nth-child(2){height:14px}
+#mfD04 .brand-icon i:nth-child(3){height:20px}
+#mfD04 .brand-name{font-size:13px;font-weight:790;letter-spacing:-.3px;white-space:nowrap}
+#mfD04 .brand small{color:var(--muted);display:block;font-size:8px}
+#mfD04 .navcap{font-size:9px;letter-spacing:1.1px;color:var(--muted);font-weight:740;margin:15px 11px 7px}
+#mfD04 .navitem{display:flex;align-items:center;gap:10px;padding:10px;border-radius:10px;color:var(--muted);font-size:11px;font-weight:640}
+#mfD04 .navitem.on{color:var(--text);background:var(--hover)}
+#mfD04 .navitem .n-icon{width:18px;font-size:16px;text-align:center}
+#mfD04 .navitem.on .n-icon{color:var(--green)}
+#mfD04 .main{padding:26px clamp(15px,2.8vw,32px) 30px;min-width:0}
+#mfD04 .top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:22px}
+#mfD04 .bread{font-size:10px;color:var(--muted);margin-bottom:7px}
+#mfD04 .bread strong{color:var(--text)}
+#mfD04 .title{font-size:clamp(22px,2.6vw,28px);font-weight:790;letter-spacing:-.7px;line-height:1.26}
+#mfD04 .desc{color:var(--muted);font-size:11px;margin-top:5px}
+#mfD04 .btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:9px 12px;border:1px solid var(--line);background:var(--raised);border-radius:10px;min-height:39px;font-weight:700;font-size:11px;transition:background .15s,transform .15s}
+#mfD04 .btn:hover:not(:disabled){transform:translateY(-1px);background:var(--hover)}
+#mfD04 .btn.primary{background:var(--green);color:#10291b;border-color:var(--green)}
+#mfD04 .btn.danger{color:var(--red);background:transparent;border-color:color-mix(in srgb,var(--red) 26%,var(--line))}
+#mfD04 .btn.quiet{background:transparent}
+#mfD04 .btn.icon{width:39px;padding:0;font-size:17px}
+#mfD04 .eyebrow{font-size:9px;color:var(--muted);font-weight:790;letter-spacing:1.12px;text-transform:uppercase}
+#mfD04 .hero{border:1px solid var(--line);border-radius:19px;background:radial-gradient(ellipse at 90% 15%,color-mix(in srgb,var(--green) 12%,transparent),transparent 58%),var(--surface);padding:20px 23px;margin-bottom:17px;display:flex;align-items:center;justify-content:space-between;gap:17px}
+#mfD04 .hero h2{font-size:17px;letter-spacing:-.35px;font-weight:770;margin:6px 0}
+#mfD04 .hero p{color:var(--muted);font-size:11px;margin:0;line-height:1.7}
+#mfD04 .hero-number{font-size:32px;font-weight:800;letter-spacing:-.8px;color:var(--green);text-align:right;line-height:1.1;font-variant-numeric:tabular-nums}
+#mfD04 .hero-number small{display:block;font-size:10px;color:var(--muted);font-weight:500;letter-spacing:0;margin-top:7px;white-space:nowrap}
+#mfD04 .workspace{display:grid;grid-template-columns:minmax(230px,.78fr) minmax(0,1.22fr);gap:15px;align-items:start}
+#mfD04 .panel{min-width:0;border:1px solid var(--line);background:var(--surface);border-radius:17px;padding:17px}
+#mfD04 .panelhead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}
+#mfD04 .panelhead h3{font-size:14px;font-weight:770;margin:0}
+#mfD04 .panelhead small{color:var(--muted);font-size:10px}
+#mfD04 .search{display:flex;gap:8px;align-items:center;background:var(--raised);border:1px solid var(--line);border-radius:11px;padding:10px 12px}
+#mfD04 .search:focus-within{border-color:var(--green)}
+#mfD04 .search input{border:0;outline:none;background:transparent;color:var(--text);min-width:0;width:100%;font-size:11px}
+#mfD04 .search input::placeholder{color:var(--muted)}
+#mfD04 .filters{display:flex;gap:5px;padding:4px;border-radius:10px;border:1px solid var(--line);background:var(--raised);margin:12px 0 14px}
+#mfD04 .filters button{border:0;border-radius:7px;padding:7px 5px;flex:1;background:transparent;color:var(--muted);font-size:10px;font-weight:720}
+#mfD04 .filters button[aria-pressed="true"]{color:var(--text);background:var(--hover)}
+#mfD04 .queue{display:grid;gap:9px}
+#mfD04 .queueitem{width:100%;text-align:left;border:1px solid var(--line);background:var(--raised);border-radius:13px;padding:13px;transition:background .16s,border-color .16s,transform .16s}
+#mfD04 .queueitem:hover{background:var(--hover);transform:translateY(-1px)}
+#mfD04 .queueitem[aria-pressed="true"]{background:linear-gradient(115deg,color-mix(in srgb,var(--green) 11%,var(--raised)),var(--raised));border-color:color-mix(in srgb,var(--green) 51%,var(--line))}
+#mfD04 .queueitem strong{display:block;font-size:12px;font-weight:770;color:var(--text)}
+#mfD04 .queueitem small{display:block;color:var(--muted);font-size:10px;margin-top:5px}
+#mfD04 .queue-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+#mfD04 .glyph{display:grid;place-items:center;width:31px;height:31px;border-radius:10px;background:var(--greenbg);color:var(--green);font-size:16px;flex-shrink:0}
+#mfD04 .status{font-size:9px;border:1px solid var(--line);padding:4px 8px;border-radius:20px;color:var(--muted);white-space:nowrap}
+#mfD04 .status.pending{color:var(--green)}
+#mfD04 .status.rejected{color:var(--red)}
+#mfD04 .status.deferred{color:var(--amber)}
+#mfD04 .queue-foot{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:11px;padding-top:9px;border-top:1px solid var(--line)}
+#mfD04 .queue-foot b{font-size:11px;font-variant-numeric:tabular-nums;white-space:nowrap}
+#mfD04 .empty{padding:29px 14px;border:1px dashed var(--line);border-radius:12px;color:var(--muted);text-align:center;font-size:11px}
+#mfD04 .detail-head{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-bottom:16px}
+#mfD04 .detail-id{display:flex;align-items:center;gap:12px;min-width:0}
+#mfD04 .detail-id h3{font-size:19px;letter-spacing:-.3px;line-height:1.3;margin:4px 0 0;color:var(--text)}
+#mfD04 .detail-intro{color:var(--muted);font-size:11px;line-height:1.7;margin:0 0 16px}
+#mfD04 .sectionhead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:18px 0 10px}
+#mfD04 .sectionhead h4{font-size:12.5px;margin:0;font-weight:770}
+#mfD04 .sectionhead small{color:var(--muted);font-size:10px}
+#mfD04 .diff{display:grid;grid-template-columns:minmax(0,1fr) 22px minmax(0,1fr);gap:8px;align-items:stretch}
+#mfD04 .diffcol{padding:14px;background:var(--raised);border:1px solid var(--line);border-radius:12px;min-width:0}
+#mfD04 .diffcol.after{background:linear-gradient(115deg,var(--greenbg),var(--raised));border-color:color-mix(in srgb,var(--green) 27%,var(--line))}
+#mfD04 .diffcol small{display:block;font-size:10px;color:var(--muted);margin-bottom:7px}
+#mfD04 .diffcol strong{font-size:16px;line-height:1.35;display:block;overflow-wrap:anywhere;color:var(--text)}
+#mfD04 .diffarrow{display:grid;place-items:center;color:var(--muted);font-size:18px}
+#mfD04 .metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:13px 0}
+#mfD04 .metric{padding:12px;border-radius:11px;border:1px solid var(--line);background:var(--raised);min-width:0}
+#mfD04 .metric small{color:var(--muted);display:block;font-size:10px}
+#mfD04 .metric strong{display:block;margin-top:3px;font-size:18px;letter-spacing:-.4px;font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap}
+#mfD04 .scope{display:flex;align-items:flex-start;gap:10px;padding:11px 12px;background:var(--raised);border:1px solid var(--line);border-radius:11px;margin:7px 0;cursor:pointer}
+#mfD04 input[type="checkbox"]{width:16px;height:16px;accent-color:var(--green);flex-shrink:0;margin-top:2px}
+#mfD04 .scope strong{font-size:11px;display:block}
+#mfD04 .scope small{color:var(--muted);display:block;font-size:10px;line-height:1.6;margin-top:3px}
+#mfD04 .records{border:1px solid var(--line);border-radius:12px;overflow:hidden}
+#mfD04 .record{display:flex;align-items:center;gap:10px;padding:11px 12px;background:var(--raised);border-bottom:1px solid var(--line);cursor:pointer}
+#mfD04 .record:last-child{border-bottom:0}
+#mfD04 .record:hover{background:var(--hover)}
+#mfD04 .record span{flex:1;min-width:0}
+#mfD04 .record strong{display:block;font-size:11px;color:var(--text)}
+#mfD04 .record small{display:block;font-size:9.5px;color:var(--muted);margin-top:3px}
+#mfD04 .record b{white-space:nowrap;font-size:11px;font-variant-numeric:tabular-nums}
+#mfD04 .summary{border:1px solid color-mix(in srgb,var(--green) 29%,var(--line));background:linear-gradient(110deg,var(--greenbg),var(--raised));padding:14px;border-radius:12px;margin-top:18px}
+#mfD04 .summary strong{font-size:12px;display:block;color:var(--text)}
+#mfD04 .summary p{margin:7px 0 0;font-size:10.5px;line-height:1.75;color:var(--muted)}
+#mfD04 .detail-actions{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:19px;padding-top:15px;border-top:1px solid var(--line)}
+#mfD04 .detail-actions>div{display:flex;gap:8px;flex-wrap:wrap}
+#mfD04 .editbox{padding:14px;border-radius:12px;background:var(--raised);border:1px solid var(--line);display:grid;gap:12px;margin-top:13px}
+#mfD04 .field{display:grid;gap:6px;font-size:10.5px;color:var(--muted)}
+#mfD04 .field input,#mfD04 .field select{background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:10px;color:var(--text);min-width:0;width:100%}
+#mfD04 .color-options{display:flex;gap:10px}
+#mfD04 .swatch{width:25px;height:25px;border-radius:9px;border:2px solid transparent;font-weight:700;color:#14291d!important}
+#mfD04 .swatch[aria-pressed="true"]{outline:2px solid var(--text);outline-offset:2px}
+#mfD04 .reviewed{background:linear-gradient(115deg,var(--greenbg),var(--surface));border:1px solid color-mix(in srgb,var(--green) 30%,var(--line));border-radius:14px;padding:20px}
+#mfD04 .reviewed h3{font-size:17px;margin:10px 0}
+#mfD04 .reviewed p{font-size:11px;color:var(--muted);line-height:1.7}
+#mfD04 .note{color:var(--muted);font-size:10.5px;line-height:1.7;margin:13px 0 0}
+#mfD04 .footnote{color:var(--muted);font-size:10px;line-height:1.65;margin-top:15px}
+#mfD04 .scrim{position:absolute;inset:0;z-index:10;background:rgba(0,0,0,.56);backdrop-filter:blur(3px)}
+#mfD04 .modalstage{position:absolute;inset:0;z-index:11;display:flex;align-items:center;justify-content:center;padding:14px}
+#mfD04 .modal{background:var(--surface);border:1px solid var(--line);border-radius:19px;max-width:465px;width:100%;padding:22px;box-shadow:0 20px 65px var(--shadow);max-height:calc(100% - 15px);overflow:auto;animation:enter .2s ease both}
+#mfD04 .modalhead{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+#mfD04 .modal h3{font-size:20px;letter-spacing:-.5px;line-height:1.3;margin:7px 0}
+#mfD04 .modal p{color:var(--muted);font-size:11px;line-height:1.72}
+#mfD04 .modalinfo{background:var(--raised);border:1px solid var(--line);border-radius:12px;padding:11px;margin:16px 0}
+#mfD04 .modalrow{display:flex;align-items:start;justify-content:space-between;gap:12px;font-size:11px;padding:7px 0}
+#mfD04 .modalrow strong{text-align:right;font-variant-numeric:tabular-nums}
+#mfD04 .consent{display:flex;align-items:start;gap:10px;padding:13px;border:1px solid color-mix(in srgb,var(--green) 25%,var(--line));background:var(--greenbg);border-radius:11px;cursor:pointer;font-size:11px;line-height:1.65}
+#mfD04 .modalactions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin-top:17px}
+#mfD04 .delaygrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:16px 0}
+#mfD04 .delaygrid button{background:var(--raised);border:1px solid var(--line);border-radius:10px;padding:12px;text-align:left}
+#mfD04 .delaygrid button:hover{background:var(--hover)}
+@keyframes enter{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+@media(max-width:1040px){#mfD04 .app{grid-template-columns:62px minmax(0,1fr)}#mfD04 .nav{padding:16px 5px}#mfD04 .brand{margin:0 8px 20px}#mfD04 .brand-text,#mfD04 .navcap,#mfD04 .navitem .navlabel{display:none}#mfD04 .navitem{justify-content:center}#mfD04 .workspace{grid-template-columns:minmax(215px,.77fr) minmax(0,1.23fr)}}
+@media(max-width:750px){#mfD04 .workspace{grid-template-columns:1fr}#mfD04 .queue{grid-template-columns:repeat(2,minmax(0,1fr))}#mfD04 .main{padding:18px}}
+@media(max-width:480px){#mfD04 .app{grid-template-columns:1fr}#mfD04 .nav{display:none}#mfD04 .main{padding:15px 11px}#mfD04 .hero{padding:16px}#mfD04 .hero-number{font-size:24px}#mfD04 .queue{grid-template-columns:1fr}#mfD04 .diff{gap:5px;grid-template-columns:minmax(0,1fr) 18px minmax(0,1fr)}#mfD04 .diffcol{padding:9px}#mfD04 .diffcol strong{font-size:12px}#mfD04 .metric strong{font-size:16px}#mfD04 .modal{padding:16px}}
+@media(prefers-reduced-motion:reduce){#mfD04 *,#mfD04 *::before,#mfD04 *::after{animation:none!important;transition:none!important;transform:none!important}}
+</style></head><body>
+<div id="mfD04" data-theme="dark"><div class="app">
+<aside class="nav"><div class="brand"><span class="brand-icon" aria-hidden="true"><i></i><i></i><i></i></span><div class="brand-text"><div class="brand-name">Meu Financeiro</div><small>CONTROLE DO SEU DINHEIRO</small></div></div>
+<div class="navcap">CONTROLE</div><div class="navitem"><span class="n-icon">▦</span><span class="navlabel">Visão geral</span></div><div class="navitem"><span class="n-icon">⇄</span><span class="navlabel">Movimentações</span></div>
+<div class="navcap">ORGANIZAÇÃO</div><div class="navitem"><span class="n-icon">▤</span><span class="navlabel">Planejamento</span></div><div class="navitem"><span class="n-icon">◫</span><span class="navlabel">Orçamentos</span></div>
+<div class="navcap">FERRAMENTAS</div><div class="navitem on"><span class="n-icon">✦</span><span class="navlabel">Inteligência</span></div><div class="navitem"><span class="n-icon">⚙</span><span class="navlabel">Configurações</span></div></aside>
+<main class="main">
+<div class="top"><div><div class="bread">Inteligência › <strong>Central de revisões</strong></div><div class="title">Central de revisões</div><div class="desc">Entenda cada sugestão antes de decidir.</div></div><button class="btn icon" data-action="theme" aria-label="Alternar tema" title="Alternar tema">◐</button></div>
+<section class="hero"><div><div class="eyebrow">SUAS DECISÕES, COM CLAREZA</div><h2 id="d04-hero">Revise com confiança.</h2><p id="d04-intro">As propostas estão organizadas para você entender cada impacto e escolher o próximo passo.</p></div><div class="hero-number"><span id="d04-pending"></span><small id="d04-pending-label"></small></div></section>
+<div class="workspace">
+<section class="panel"><div class="panelhead"><h3>Sugestões</h3><small id="d04-total"></small></div>
+<label class="search"><span>⌕</span><input type="search" id="d04-search" maxlength="80" placeholder="Buscar proposta…" aria-label="Buscar proposta"></label>
+<div class="filters" role="group" aria-label="Estado das propostas"><button data-filter="pending" aria-pressed="true">Pendentes</button><button data-filter="history" aria-pressed="false">Histórico</button><button data-filter="all" aria-pressed="false">Todas</button></div>
+<div id="d04-queue" class="queue"></div>
+</section>
+<section class="panel" id="d04-detail" aria-label="Detalhes da proposta" aria-live="polite"></section>
+</div>
+<div class="footnote">Esta apresentação é uma demonstração interativa. Revisões e confirmações aqui não alteram transações, categorias ou regras reais.</div>
+</main>
+<div class="scrim" id="d04-scrim" hidden></div><div class="modalstage" id="d04-modalstage" hidden><div role="dialog" aria-modal="true" aria-label="Conferir decisão" class="modal" id="d04-modal"></div></div>
+</div></div><script>const DATA={
+  "schema": "mf2.design.d04.v1.1",
+  "designStatus": "APPROVED_DIRECTION_POLISHED",
+  "synthetic": true,
+  "personalWriteAllowed": false,
+  "asOf": "2026-11-13",
+  "currency": "BRL",
+  "proposals": [
+    {
+      "id": "streaming",
+      "kind": "category_rule",
+      "status": "pending",
+      "source": "Inteligência",
+      "currentCategory": "Outros",
+      "proposedCategory": "Streaming",
+      "color": "#53d896",
+      "matchTerms": [
+        "Netflix",
+        "Spotify",
+        "Disney",
+        "Streaming"
+      ],
+      "pastScope": true,
+      "futureScope": true,
+      "revision": 1,
+      "previewVersion": "synthetic-streaming-v1",
+      "coverage": "synthetic_complete",
+      "candidates": [
+        {
+          "id": "netflix",
+          "name": "Netflix",
+          "date": "2026-11-04",
+          "amountCents": 4490
+        },
+        {
+          "id": "spotify",
+          "name": "Spotify Premium",
+          "date": "2026-11-06",
+          "amountCents": 2190
+        },
+        {
+          "id": "disney",
+          "name": "Disney+",
+          "date": "2026-11-08",
+          "amountCents": 4390
+        },
+        {
+          "id": "stream-a",
+          "name": "Streaming A",
+          "date": "2026-11-10",
+          "amountCents": 3340
+        },
+        {
+          "id": "stream-b",
+          "name": "Streaming B",
+          "date": "2026-11-12",
+          "amountCents": 3340
+        }
+      ]
+    },
+    {
+      "id": "market",
+      "kind": "category_change",
+      "status": "pending",
+      "source": "Movimentações",
+      "currentCategory": "Outros",
+      "proposedCategory": "Alimentação",
+      "revision": 1,
+      "previewVersion": "synthetic-market-v1",
+      "coverage": "synthetic_complete",
+      "candidates": [
+        {
+          "id": "market-one",
+          "name": "Mercado Central",
+          "date": "2026-11-11",
+          "amountCents": 38900
+        }
+      ]
+    },
+    {
+      "id": "budget",
+      "kind": "budget_change",
+      "status": "pending",
+      "source": "Inteligência Hoje",
+      "currentLimitCents": 70000,
+      "proposedLimitCents": 80000,
+      "spentCents": 76000,
+      "revision": 1,
+      "previewVersion": "synthetic-budget-v1",
+      "coverage": "synthetic_complete",
+      "candidates": []
+    }
+  ]
+};
+
+(function(){
+"use strict";
+const root=document.getElementById("mfD04");if(!root||root.dataset.init)return;root.dataset.init="1";
+const $=s=>root.querySelector(s);
+const brl=n=>new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(n/100);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const candidates=p=>p.kind==="category_rule"?p.candidates.filter(x=>p.terms.some(k=>k&&x.name.toLowerCase().includes(k.toLowerCase()))):p.candidates||[];
+const activeEntries=p=>p.kind==="category_rule"&&!p.pastScope?[]:candidates(p).filter(x=>!p.excluded.has(x.id));
+const summary=p=>({count:activeEntries(p).length,total:activeEntries(p).reduce((n,x)=>n+x.amountCents,0)});
+const proposals=DATA.proposals.map(p=>({...p,terms:p.matchTerms||[],excluded:new Set(),deferUntil:null}));
+const state={selected:"streaming",filter:"pending",query:"",theme:"dark",edit:null,modal:null,modalId:null,modalRev:null,consented:false,feedback:""};
+const get=id=>proposals.find(p=>p.id===id);
+const current=()=>get(state.selected);
+function label(p){return ({pending:"A revisar",reviewed:"Revisada",rejected:"Recusada",deferred:"Adiada"})[p.status]||"A revisar"}
+function title(p){return p.id==="streaming"?"Organizar suas assinaturas":p.id==="market"?"Mercado Central":"Limite de Alimentação"}
+function subtitle(p){return p.id==="streaming"?"Categoria e regra de identificação":p.id==="market"?"Correção de categoria":"Revisão de orçamento"}
+function icon(p){return p.kind==="category_rule"?"✧":p.kind==="category_change"?"⇄":"◫"}
+function changed(p){return p.id==="streaming"?brl(p.candidates.reduce((n,x)=>n+x.amountCents,0)):p.id==="market"?brl(38900):brl(p.proposedLimitCents)}
+function visible(p){return (state.filter==="all"||state.filter==="pending"&&p.status==="pending"||state.filter==="history"&&p.status!=="pending")&&(title(p)+" "+subtitle(p)+" "+p.source).toLowerCase().includes(state.query.toLowerCase())}
+function visibleItems(){return proposals.filter(visible)}
+function normalizeSelection(){if(!current()||!visible(current()))state.selected=visibleItems()[0]?.id||null}
+function canReview(p){if(!p||p.status!=="pending")return false;if(p.kind==="category_rule")return !!p.proposedCategory.trim()&&p.terms.some(Boolean)&&(p.futureScope||(p.pastScope&&summary(p).count>0));if(p.kind==="category_change")return summary(p).count>0&&p.proposedCategory!==p.currentCategory;if(p.kind==="budget_change")return Number.isSafeInteger(p.proposedLimitCents)&&p.proposedLimitCents>=10000&&p.proposedLimitCents!==p.currentLimitCents;return false}
+function renderQueue(){
+const pend=proposals.filter(x=>x.status==="pending").length;
+$("#d04-pending").textContent=pend;$("#d04-pending-label").textContent=pend===1?"decisão pendente":"decisões pendentes";
+$("#d04-hero").textContent=pend?"Revise com confiança.":"Suas decisões estão organizadas.";
+$("#d04-intro").textContent=pend?"Veja o que mudaria, confira os lançamentos e escolha como prosseguir.":"Você pode consultar as decisões anteriores no histórico.";
+$("#d04-total").textContent=proposals.length+" propostas";
+const arr=visibleItems();
+$("#d04-queue").innerHTML=arr.length?arr.map(p=>'<button class="queueitem" aria-pressed="'+(state.selected===p.id)+'" data-select="'+p.id+'"><div class="queue-top"><span class="glyph">'+icon(p)+'</span><span class="status '+p.status+'">'+label(p)+'</span></div><strong>'+esc(title(p))+'</strong><small>'+esc(subtitle(p))+'</small><div class="queue-foot"><small>'+esc(p.source)+'</small><b>'+changed(p)+'</b></div></button>').join(""):'<div class="empty">Nenhuma proposta encontrada.<div style="margin-top:12px"><button class="btn" data-action="showAll">Ver todas</button></div></div>';
+root.querySelectorAll("[data-filter]").forEach(x=>x.setAttribute("aria-pressed",String(x.dataset.filter===state.filter)));
+}
+const diff=(a,b)=>'<div class="diff"><div class="diffcol"><small>Como está</small><strong>'+esc(a)+'</strong></div><span class="diffarrow">→</span><div class="diffcol after"><small>Como ficaria</small><strong>'+esc(b)+'</strong></div></div>';
+const metrics=(a,b)=>'<div class="metrics"><div class="metric"><small>'+a[0]+'</small><strong>'+a[1]+'</strong></div><div class="metric"><small>'+b[0]+'</small><strong>'+b[1]+'</strong></div></div>';
+const section=(title,right="")=>'<div class="sectionhead"><h4>'+title+'</h4><small>'+right+'</small></div>';
+function editor(p){
+if(!state.edit||state.edit.id!==p.id)return "";
+const d=state.edit.data;
+const controls=p.kind==="category_rule"?
+'<label class="field">Nome da categoria<input data-edit="proposedCategory" maxlength="32" value="'+esc(d.proposedCategory)+'"></label><label class="field">Termos reconhecidos, separados por vírgula<input data-edit="terms" maxlength="140" value="'+esc(d.terms.join(", "))+'"></label><div class="field">Cor da categoria<div class="color-options">'+["#53d896","#8bb9ff","#ffbf70","#ef8eaa"].map(c=>'<button type="button" class="swatch" data-color="'+c+'" style="background:'+c+'" aria-pressed="'+(d.color===c)+'">'+(d.color===c?"✓":"")+'</button>').join("")+'</div></div>':
+p.kind==="category_change"?'<label class="field">Categoria proposta<select data-edit="proposedCategory">'+["Alimentação","Moradia","Lazer","Transporte","Saúde","Outros"].map(c=>'<option '+(d.proposedCategory===c?"selected":"")+'>'+c+'</option>').join("")+'</select></label>':
+'<label class="field">Novo limite mensal (R$)<input type="number" min="100" max="100000" step="10" data-edit="proposedLimitCents" value="'+d.proposedLimitCents/100+'"></label>';
+return '<div class="editbox"><div class="eyebrow">PERSONALIZAR PROPOSTA</div>'+controls+'<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" data-action="saveEdit">Salvar ajustes</button><button class="btn" data-action="cancelEdit">Descartar</button></div></div>';
+}
+function rows(p){
+const matches=candidates(p);
+return '<div class="records">'+(matches.length?matches.map(x=>'<label class="record"><input type="checkbox" data-row="'+x.id+'" '+(!p.excluded.has(x.id)?"checked":"")+' '+(p.kind==="category_rule"&&!p.pastScope?"disabled":"")+'><span><strong>'+esc(x.name)+'</strong><small>'+esc(x.date)+" · "+(p.kind==="category_rule"?"Atual: Outros":"Categoria atual: Outros")+'</small></span><b>'+brl(x.amountCents)+'</b></label>').join(""):'<div class="empty">Nenhuma movimentação corresponde aos critérios atuais.</div>')+'</div>';
+}
+function proposalBody(p){
+const sc=summary(p),isRule=p.kind==="category_rule";
+if(isRule){
+return section("O que mudaria","Nova categoria")+diff(p.currentCategory,p.proposedCategory)+metrics(["Selecionadas no histórico",String(sc.count)],["Valor histórico",brl(sc.total)])+
+editor(p)+section("Critérios da regra","Compras compatíveis")+'<div class="metric"><small>Identificar descrições contendo</small><strong style="white-space:normal;font-size:12px">'+esc(p.terms.join(", ")||"Nenhum termo")+'</strong></div>'+
+section("Escolha o alcance","Independentes")+
+'<label class="scope"><input type="checkbox" data-scope="pastScope" '+(p.pastScope?"checked":"")+'><span><strong>Organizar compras anteriores</strong><small>Somente os registros selecionados abaixo entram na prévia.</small></span></label>'+
+'<label class="scope"><input type="checkbox" data-scope="futureScope" '+(p.futureScope?"checked":"")+'><span><strong>Categorizar próximas compras similares</strong><small>Regra para ocorrências futuras elegíveis; sem estimar valores futuros.</small></span></label>'+
+section("Lançamentos elegíveis",sc.count+" de "+candidates(p).length+" selecionados")+rows(p)+
+'<div class="summary"><strong>✦ Impacto da proposta</strong><p>'+(p.pastScope?sc.count+" registro(s) anteriores, totalizando "+brl(sc.total)+", seriam incluídos.":"Nenhum registro anterior seria alterado.")+" "+(p.futureScope?"Também seria solicitada uma regra futura.":"Sem regra para compras futuras.")+'</p></div>';
+}
+if(p.kind==="category_change")return section("Alteração sugerida","Uma movimentação")+diff(p.currentCategory,p.proposedCategory)+metrics(["Selecionados",String(sc.count)],["Valor abrangido",brl(sc.total)])+editor(p)+section("Conferir lançamento","") + rows(p)+
+'<div class="summary"><strong>✦ Somente esta compra</strong><p>A proposta muda a categoria dos registros selecionados. Ela não cria uma regra automática.</p></div>';
+const current=p.currentLimitCents,next=p.proposedLimitCents,spent=p.spentCents,percentage=next>0?spent/next*100:0;
+return section("Limite de Alimentação","Referência mensal")+diff(brl(current),brl(next))+metrics(["Gasto observado",brl(spent)],["Variação no limite",(next>=current?"+ ":"")+brl(next-current)])+editor(p)+section("Como ficaria o acompanhamento","")+'<div class="metric"><div style="display:flex;justify-content:space-between;gap:9px"><small>Consumo do novo limite</small><strong style="font-size:12px">'+percentage.toFixed(1).replace(".",",")+'%</strong></div><div class="gauge" style="height:7px;background:var(--hover);border-radius:8px;overflow:hidden;margin-top:9px"><span style="display:block;width:'+Math.max(0,Math.min(100,percentage))+'%;height:100%;background:'+(spent>next?"var(--red)":"var(--green)")+'"></span></div></div>'+
+'<div class="summary"><strong>✦ Revisão de limite</strong><p>Alterar o orçamento muda a referência de acompanhamento, não o saldo bancário nem a economia realizada.</p></div>';
+}
+function renderDetail(){
+const p=current();
+if(!p){$("#d04-detail").innerHTML='<div class="empty">Escolha uma proposta para conferir os detalhes.</div>';return}
+const head='<div class="detail-head"><div class="detail-id"><span class="glyph" style="width:42px;height:42px">'+icon(p)+'</span><div><div class="eyebrow">'+esc(subtitle(p))+'</div><h3>'+esc(title(p))+'</h3></div></div><span class="status '+p.status+'">'+label(p)+'</span></div>';
+if(p.status!=="pending"){
+$("#d04-detail").innerHTML=head+'<div class="reviewed"><div style="font-size:25px;color:var(--green)">✓</div><h3>'+({reviewed:"Revisão demonstrativa concluída",deferred:"Proposta adiada",rejected:"Proposta recusada"})[p.status]+'</h3><p>'+ (p.status==="reviewed"?"Esta conclusão ficou apenas nesta demonstração. Nenhuma categoria, transação ou regra pessoal foi modificada.":p.status==="deferred"?"A proposta está no histórico. Não foi criado nenhum lembrete externo.":"A recusa foi registrada somente neste protótipo.")+'</p>'+(p.deferUntil?'<p>Retomar sugestão: '+esc(p.deferUntil)+' (referência demonstrativa).</p>':"")+'<button class="btn" data-action="reopen" style="margin-top:13px">Reabrir proposta</button></div>';return;
+}
+$("#d04-detail").innerHTML=head+'<p class="detail-intro">'+esc(p.kind==="category_rule"?"Uma categoria e uma regra foram propostas para suas assinaturas. Confira os dois alcances separadamente.":p.kind==="category_change"?"Confira a categoria sugerida para a compra antes de aceitar qualquer alteração.":"Revise a nova referência orçamentária e o que ela significa para o acompanhamento.")+'</p>'+proposalBody(p)+(state.feedback?'<p class="note" role="status">'+esc(state.feedback)+'</p>':"")+
+'<div class="detail-actions"><div><button class="btn danger" data-action="reject">Recusar</button><button class="btn" data-action="defer">Adiar</button></div><div>'+(state.edit?'' : '<button class="btn" data-action="startEdit">Editar</button>')+'<button class="btn primary" data-action="review" '+(!canReview(p)||!!state.edit?"disabled":"")+'>Revisar alterações ↗</button></div></div>'+
+(!canReview(p)?'<p class="note">A proposta precisa de um escopo ou alteração válida antes de prosseguir.</p>':"");
+}
+function render(){normalizeSelection();renderQueue();renderDetail();renderModal()}
+let focusBeforeModal=null;
+function openModal(type){state.modal=type;state.modalId=state.selected;state.modalRev=current()?.revision??null;state.consented=false;focusBeforeModal=document.activeElement;renderModal();$("#d04-modal button")?.focus()}
+function closeModal(){state.modal=null;state.consented=false;renderModal();if(focusBeforeModal&&focusBeforeModal.isConnected)focusBeforeModal.focus();focusBeforeModal=null}
+function renderModal(){
+$("#d04-scrim").hidden=!state.modal;$("#d04-modalstage").hidden=!state.modal;if(!state.modal)return;
+const p=current();if(!p||p.id!==state.modalId){closeModal();return}
+const x=(label,value)=>'<div class="modalrow"><span>'+label+'</span><strong>'+value+'</strong></div>';
+const close='<button class="btn icon" data-action="closeModal" aria-label="Fechar">×</button>';
+let body;
+if(state.modal==="review"){
+const s=summary(p),target=p.kind==="category_rule"?esc(p.proposedCategory):p.kind==="category_change"?esc(p.proposedCategory):brl(p.proposedLimitCents);
+body='<div class="modalhead"><div><div class="eyebrow">CONFERÊNCIA FINAL</div><h3>Confirmar esta decisão?</h3></div>'+close+'</div><p>Confira as informações mais importantes da proposta. A confirmação vale somente para esta versão da prévia.</p><div class="modalinfo">'+x("Proposta",esc(title(p)))+x("Alteração sugerida",target)+(p.kind==="budget_change"?x("Gasto observado",brl(p.spentCents)):x("Compras anteriores",String(s.count))+x("Valor histórico",brl(s.total)))+(p.kind==="category_rule"?x("Regra futura",p.futureScope?"Sim, se autorizada":"Não"):"")+'</div><label class="consent"><input type="checkbox" id="d04-consent"><span>Revisei a proposta, seus valores e alcance. Quero concluir esta revisão ilustrativa.</span></label><div class="modalactions"><button class="btn" data-action="closeModal">Voltar</button><button class="btn primary" id="d04-confirm" data-action="confirm" disabled>Concluir revisão da demonstração</button></div>';
+}else if(state.modal==="reject"){
+body='<div class="modalhead"><div><div class="eyebrow">RECUSAR</div><h3>Não seguir com esta proposta?</h3></div>'+close+'</div><p>A recusa será mostrada somente no histórico desta apresentação.</p><div class="modalactions"><button class="btn" data-action="closeModal">Voltar</button><button class="btn danger" data-action="finishReject">Recusar proposta</button></div>';
+}else{
+body='<div class="modalhead"><div><div class="eyebrow">ADIAR DECISÃO</div><h3>Avaliar mais tarde?</h3></div>'+close+'</div><p>Escolha uma referência para retomar esta revisão. Isso não cria um lembrete externo.</p><div class="delaygrid"><button data-defer="14/11/2026"><strong>Amanhã</strong><br><small>14 de novembro</small></button><button data-defer="20/11/2026"><strong>Próxima semana</strong><br><small>20 de novembro</small></button></div><div class="modalactions"><button class="btn" data-action="closeModal">Voltar</button></div>';
+}
+$("#d04-modal").innerHTML=body;
+}
+function updatePreview(){const p=current();if(!p)return;p.revision++;state.feedback="Prévia atualizada. Qualquer confirmação anterior foi invalidada.";closeModal();render()}
+function finish(status,until=null){
+const p=current();if(!p)return;p.status=status;p.deferUntil=until;state.edit=null;state.filter="all";state.feedback="";state.modal=null;state.consented=false;render();
+}
+function startEdit(){const p=current();if(!p)return;state.edit={id:p.id,data:{...p,terms:[...p.terms]}};state.feedback="";renderDetail();}
+function saveEdit(){
+const p=current(),d=state.edit;if(!p||!d||d.id!==p.id)return;
+const getVal=k=>root.querySelector('[data-edit="'+k+'"]')?.value;
+if(p.kind==="category_rule"){
+const name=(getVal("proposedCategory")||"").trim(),terms=(getVal("terms")||"").split(",").map(x=>x.trim()).filter(Boolean);
+if(!name||!terms.length){state.feedback="Informe um nome e pelo menos um termo válido.";renderDetail();return}
+p.proposedCategory=name;p.terms=terms;p.color=d.data.color;
+}else if(p.kind==="category_change"){
+p.proposedCategory=getVal("proposedCategory")||p.proposedCategory;
+}else{
+const value=Number(getVal("proposedLimitCents"));
+if(!Number.isFinite(value)||value<100||value>100000){state.feedback="Informe um limite entre R$ 100 e R$ 100.000.";renderDetail();return}
+p.proposedLimitCents=Math.round(value*100);
+}
+state.edit=null;updatePreview();
+}
+root.addEventListener("click",e=>{
+const sel=e.target.closest("[data-select]");if(sel){state.selected=sel.dataset.select;state.edit=null;state.feedback="";render();return}
+const filter=e.target.closest("[data-filter]");if(filter){state.filter=filter.dataset.filter;state.edit=null;state.feedback="";render();return}
+const sw=e.target.closest("[data-color]");if(sw&&state.edit){state.edit.data.color=sw.dataset.color;renderDetail();return}
+const defer=e.target.closest("[data-defer]");if(defer&&state.modal==="defer"){finish("deferred",defer.dataset.defer);return}
+const btn=e.target.closest("[data-action]");if(!btn)return;const p=current();
+switch(btn.dataset.action){
+case"theme":state.theme=state.theme==="dark"?"light":"dark";root.dataset.theme=state.theme;btn.textContent=state.theme==="dark"?"◐":"☀";break;
+case"showAll":state.query="";$("#d04-search").value="";state.filter="all";render();break;
+case"startEdit":startEdit();break;
+case"cancelEdit":state.edit=null;state.feedback="Alterações descartadas.";renderDetail();break;
+case"saveEdit":saveEdit();break;
+case"review":if(canReview(p)&&!state.edit)openModal("review");break;
+case"reject":openModal("reject");break;
+case"defer":openModal("defer");break;
+case"closeModal":closeModal();break;
+case"confirm":if(state.modal==="review"&&state.consented&&p&&p.id===state.modalId&&p.revision===state.modalRev&&canReview(p)){finish("reviewed")}break;
+case"finishReject":if(state.modal==="reject")finish("rejected");break;
+case"reopen":if(p){p.status="pending";p.deferUntil=null;state.filter="pending";state.feedback="";render()}break;
+}
+});
+root.addEventListener("input",e=>{
+if(e.target.id==="d04-search"){state.query=e.target.value;normalizeSelection();renderQueue();renderDetail();}
+});
+root.addEventListener("change",e=>{
+const p=current();if(!p)return;
+if(e.target.id==="d04-consent"){state.consented=e.target.checked;$("#d04-confirm").disabled=!state.consented;return}
+if(e.target.dataset.scope&&p.kind==="category_rule"){
+p[e.target.dataset.scope]=e.target.checked;updatePreview();return;
+}
+if(e.target.dataset.row&&p.kind!=="budget_change"){
+if(e.target.checked)p.excluded.delete(e.target.dataset.row);else p.excluded.add(e.target.dataset.row);
+updatePreview();return;
+}
+});
+$("#d04-scrim").addEventListener("click",closeModal);
+root.addEventListener("keydown",e=>{
+if(e.key==="Escape"){if(state.modal){closeModal();return}if(state.edit){state.edit=null;state.feedback="Edição descartada.";renderDetail();}}
+if(e.key==="Tab"&&state.modal){const list=[...$("#d04-modal").querySelectorAll("button:not(:disabled),input:not(:disabled)")];if(list.length){const first=list[0],last=list[list.length-1];if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}}}
+});
+if(proposals[0].candidates.reduce((n,x)=>n+x.amountCents,0)!==17750||DATA.personalWriteAllowed!==false)throw Error("Unsafe/invalid fixture");
+render();
+})();</script></body></html>
