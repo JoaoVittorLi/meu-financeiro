@@ -294,3 +294,21 @@ test('I2-D: D05 approved visual taxonomy is advertised without claiming SQLite m
   assert.equal(c.data.taxonomy.sqlite,'NOT_IMPLEMENTED');
  }finally{f.close();}
 });
+
+test('I2-D: generic Outros manual labels are not training evidence',()=>{
+ const f=fixture();try{
+  for(const id of ['anchor1','anchor2'])f.db.overrideBankCategory({
+   accountId:ACCOUNT,externalId:id,category:'Outros'});
+  const result=f.inspect({accountId:ACCOUNT});
+  assert.equal(result.opportunities.length,0);
+  assert.equal(result.modelCalled,false);
+ }finally{f.close();}
+});
+test('I2-D: clock tick does not invalidate evidence fingerprint when data is unchanged',()=>{
+ const f=fixture();try{
+  const item=f.inspect({accountId:ACCOUNT}).opportunities[0];
+  f.setClock(Date.parse('2026-11-13T18:00:01Z'));
+  const proposed=f.advisor.propose(item.id,'historical',f.scopes.bank,1);
+  assert.equal(proposed.status,'ready');
+ }finally{f.close();}
+});
