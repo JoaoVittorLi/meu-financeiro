@@ -230,3 +230,30 @@ test('I2-B/rollback: failed preview write does not mutate categories',async()=>{
   assert.equal(f.db.listCategories().categories.find(x=>x.name==='Pets').color,'#87929c');
  }finally{f.close();}
 });
+test('I2-B/rule impact: uses verified matcher, IDs and respects future-only guard',async()=>{
+ const f=fixture();try{
+  const p=f.prepare('rule.create',{pattern:'IFOOD TESTE',category:'Delivery',
+   accountId:ACCOUNT,nature:'expense'},true);
+  const before=f.proposals.inspectRule(f.b,2,{proposalId:p.proposalId});
+  assert.equal(before.matchesLoaded,0);
+  assert.equal(before.wouldChangeLoaded,0);
+  const receipt=await f.confirm(p,true);
+  const impact=f.proposals.inspectRule(f.b,2,{ruleId:receipt.ruleId});
+  assert.equal(impact.matchesLoaded,0);
+  assert.equal(impact.historyComplete,false);
+  const chat=new CategoryConversation({proposals:f.proposals});
+  const response=chat.ask({...f.b,question:'Mostre movimentações afetadas por essa regra',
+   ruleId:receipt.ruleId,conversationId:'rule-impact-session'},2);
+  assert.equal(response.status,'ready');
+  assert.equal(response.ruleImpact.ruleId,receipt.ruleId);
+ }finally{f.close();}
+});
+test('I2-B/reject: discarded proposals cannot be confirmed later',async()=>{
+ const f=fixture();try{
+  const p=f.prepare('category.create',{name:'Pets',color:'#2aa898'});
+  const declined=f.proposals.discard(p.proposalId,f.a,1);
+  assert.equal(declined.changesApplied,false);
+  await assert.rejects(f.confirm(p),/Prévia inválida/);
+  assert.equal(f.db.listCategories().categories.some(x=>x.name==='Pets'),false);
+ }finally{f.close();}
+});
