@@ -27,7 +27,9 @@ function mfD03Signals(report:any,app:any):MfD03Signal[]{
  const cards=report.cards,get=(id:string)=>cards.find((c:any)=>c.id===id);
  const result:MfD03Signal[]=[];
  const budgets=get('UI-04');
- if(activeGrant&&(budgets?.uiState==='ready'||budgets?.uiState==='empty')&&
+ if(activeGrant&&budgets?.source===s.localFinancialAccess.source&&
+    budgets.profile===s.localFinancialAccess.profile&&
+    (budgets.uiState==='ready'||budgets.uiState==='empty')&&
     budgets.capability==='available_read_only'&&Array.isArray(budgets.budgets)){
   const b=budgets.budgets.filter((r:any)=>r&&typeof r.category==='string'&&
     Number.isSafeInteger(r.spentCents)&&r.spentCents>=0&&
@@ -53,6 +55,7 @@ function mfD03Signals(report:any,app:any):MfD03Signal[]{
  }
  const commitments=get('UI-05');
  if(activeGrant&&s.localFinancialAccess?.planning===true&&
+   commitments?.profile===s.mode&&commitments?.source==='planning'&&
    commitments?.uiState==='ready'&&commitments.capability==='available_read_only'&&
    Number.isSafeInteger(commitments.valueCents)&&commitments.valueCents>=0&&
    Number.isSafeInteger(commitments.count)&&commitments.count>0)
