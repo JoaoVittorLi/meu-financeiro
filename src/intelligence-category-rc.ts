@@ -53,7 +53,7 @@ async function mfI2SandboxStart(app:any){
      typeof session.sessionId!=='string'||session.expiresAt<=Date.now())
    throw Error('Sessão de laboratório inválida.');
   if(mfI2Month(app)!==month){void api.intelligenceCategorySandboxStop(session.sessionId);return;}
-  app.setState({mfI2Sandbox:session,mfI2SandboxResult:null,mfI2Proposal:null,
+  app.setState({mfI2Sandbox:session,mfI2SandboxResult:null,mfI2Proposal:null,mfI2LastProposalId:null,
    mfI2Action:'category.create',mfI2Name:'Pets',mfI2NewName:'',
    mfI2Ids:'demo-market',mfI2RuleId:'',mfI2Question:'Quais categorias estão sem uso?'});
  }catch(err:any){app.setState({mfI2Error:String(err?.message||'Laboratório indisponível.').slice(0,240)});}
@@ -61,7 +61,7 @@ async function mfI2SandboxStart(app:any){
 }
 async function mfI2SandboxStop(app:any){
  const s=app.state.mfI2Sandbox,api=desktop as any;
- app.setState({mfI2Sandbox:null,mfI2SandboxResult:null,mfI2Proposal:null,mfI2Error:''});
+ app.setState({mfI2Sandbox:null,mfI2SandboxResult:null,mfI2Proposal:null,mfI2LastProposalId:null,mfI2Error:''});
  if(s?.sessionId)try{await api?.intelligenceCategorySandboxStop?.(s.sessionId);}catch{}
 }
 async function mfI2SandboxCommand(app:any,method:string,additional:any={}){
@@ -81,7 +81,8 @@ async function mfI2SandboxCommand(app:any,method:string,additional:any={}){
    data.proposals.find((x:any)=>x?.proposalId):null;
   const selected=method==='propose'||method==='ask'||method==='edit'?
    p||null:method==='reject'||response?.status==='applied'?null:app.state.mfI2Proposal;
-  app.setState({mfI2SandboxResult:response,mfI2Proposal:selected});
+  app.setState({mfI2SandboxResult:response,mfI2Proposal:selected,
+   mfI2LastProposalId:additional.proposalId||p?.proposalId||app.state.mfI2LastProposalId||null});
  }catch(err:any){
   if(app.state.mfI2Sandbox===s)app.setState({
    mfI2Error:String(err?.message||'Operação de laboratório indisponível.').slice(0,240)});
@@ -131,6 +132,8 @@ function mfI2Evidence(result:any):any{
    h('p',{},'Antes: '+JSON.stringify(p.before??null).slice(0,300)),
    h('p',{},'Depois: '+JSON.stringify(p.after??null).slice(0,300)),
    ...reasons.map((line:any)=>h('p',{},String(line).slice(0,240)))):null,
+  Array.isArray(v)?h('p',{},'Recibos sintéticos: '+String(v.length)+' · '+
+   v.slice(0,8).map((row:any)=>String(row.proposalId||'')+' ('+String(row.state||'')+')').join(' · ')):null,
   v?.receipt?h('div',{},h('strong',{},'Recibo somente sintético · '+String(v.status||result.status)),
    h('p',{},'ID: '+String(v.receipt.proposalId||'')+' · '+String(v.receipt.confirmedAt||''))):null,
   v?.ruleImpact?h('p',{},'Abrangência de regra: '+String(v.ruleImpact.matchesLoaded||0)+
@@ -180,7 +183,10 @@ function mfI2CategoryPanel(app:any):any{
     s.mfI2Sandbox?button('Encerrar e destruir teste',()=>void mfI2SandboxStop(app)):
      button('Iniciar laboratório sintético',()=>void mfI2SandboxStart(app)),
     active?button('Analisar categorias de teste',()=>void mfI2SandboxCommand(app,'analyze')):null,
-    active?button('Listar categorias e regras de teste',()=>void mfI2SandboxCommand(app,'list')):null),
+    active?button('Listar categorias e regras de teste',()=>void mfI2SandboxCommand(app,'list')):null,
+    active?button('Histórico de recibos sintéticos',()=>void mfI2SandboxCommand(app,'history')):null,
+    active&&s.mfI2LastProposalId?button('Consultar último recibo',()=>void mfI2SandboxCommand(app,'receipt',
+     {proposalId:s.mfI2LastProposalId})):null),
    h('div',{className:'mf-i2-fields'},
     field('Categoria atual ou nova','mfI2Name','Ex.: Pets'),
     field('Novo nome ou categoria destino','mfI2NewName','Ex.: Alimentação'),
