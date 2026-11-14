@@ -83,8 +83,10 @@ class AtomicSyntheticCategoryExecutor{
      p.confirmationNonce!==input.nonce||p.state.conflicts.length||!VALID.has(p.state.action))
    return {status:'stale',proposalId,changesApplied:false,reason:'Prévia ausente, bloqueada ou expirada.'};
   try{
+   const accountIds=[...new Set([...(p.state.affected||[]).map(x=>x.target?.accountId),
+    p.state.after?.constraint?.accountId].filter(Boolean))];
    const approved=await this.authorizer({owner,proposalId,action:p.state.action,
-    scope:metadata(scope),gestureVerified:true});
+    scope:metadata(scope),affectedAccountIds:accountIds,gestureVerified:true});
    if(approved!==true)return {status:'denied',proposalId,changesApplied:false,
     reason:'A interface confiável não confirmou esta ação.'};
   }catch(err){return {status:'denied',proposalId,changesApplied:false,
