@@ -13,6 +13,8 @@
   },
   "files": [
     "src/app.ts",
+    "src/d05-visual-assets.ts",
+    "src/d05-movements.ts",
     "src/plan-view.ts",
     "src/intelligence-view.ts",
     "src/intelligence-today-v2.ts",
