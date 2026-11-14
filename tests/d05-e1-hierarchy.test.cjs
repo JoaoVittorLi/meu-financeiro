@@ -205,3 +205,19 @@ test('D05 E1 FinanceDB constructor repairs legacy categories_old rule FK and pre
   assert(fs.existsSync(f.file+'.d05-before-v7.sqlite'));
  }finally{cleanup(f,db||raw);}
 });
+
+test('D05 E1 restores foreign_keys ON if the legacy FK repair cannot acquire BEGIN IMMEDIATE',()=>{
+ const f=legacy630();let raw,writer;
+ try{
+  raw=new DatabaseSync(f.file);
+  raw.exec('PRAGMA foreign_keys=ON; PRAGMA busy_timeout=0;'+
+   'CREATE TABLE category_rules(id INTEGER PRIMARY KEY,category TEXT REFERENCES categories_old(name))');
+  writer=new DatabaseSync(f.file);writer.exec('BEGIN IMMEDIATE');
+  assert.throws(()=>migrateHierarchy(raw),/locked|busy/i);
+  assert.equal(raw.prepare('PRAGMA foreign_keys').get().foreign_keys,1);
+  assert.equal(raw.prepare('PRAGMA table_info(categories)').all().some(c=>c.name==='id'),false);
+ }finally{
+  try{writer?.exec('ROLLBACK');}catch{}
+  writer?.close();cleanup(f,raw);
+ }
+});
