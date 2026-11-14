@@ -132,7 +132,16 @@ class D05Movements extends React.Component<any,any> {
  },[state.mode,state.bank.data.transactions,state.data.transactions]);
  useEffect(()=>{
   if(!picker&&!review&&!manual)return;
-  const onKey=(event:any)=>{if(event.key==='Escape'&&!busy){
+  const onKey=(event:any)=>{
+   if(event.key==='Tab'&&modalRef.current){
+    const controls=Array.from(modalRef.current.querySelectorAll('button:not([disabled]),input:not([disabled]),select:not([disabled]),[tabindex="0"]')) as any[];
+    if(controls.length){
+     const first=controls[0],last=controls[controls.length-1];
+     if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}
+     else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}
+    }
+   }
+   if(event.key==='Escape'&&!busy){
    event.preventDefault();event.stopPropagation();setPicker(null);setReview(null);setManual(null);setPreview(null);
    (activeTrigger.current as any)?.focus?.();
   }};
@@ -144,6 +153,8 @@ class D05Movements extends React.Component<any,any> {
   return ()=>{window.removeEventListener('keydown',onKey,true);window.removeEventListener('scroll',onScroll,true);};
  },[picker,review,manual,busy]);
  useEffect(()=>{if((picker||review||manual)&&modalRef.current)modalRef.current.querySelector('input,button')?.focus();},[picker?.phase,review?.id,manual!==null]);
+ useEffect(()=>{if(!picker&&!review&&!manual)activeTrigger.current?.focus?.();},
+  [!!picker,!!review,!!manual]);
  const resetSelected=()=>{setSelected(new Set());setPicker(null);setPreview(null);setError('');};
  const setFilter=(update:()=>void)=>{update();resetSelected();};
  const folded=(text:string)=>String(text||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
@@ -451,7 +462,7 @@ class D05Movements extends React.Component<any,any> {
         h('button',{type:'button',className:'d05-merchant',onClick:()=>r.source==='bank'?host.openBankDetail(r.raw):host.openManualDetail(r.raw)},r.merchant),
         isReview?h('button',{type:'button',className:'d05-review-dot','aria-label':'Conferir movimentação '+r.merchant,
          title:'A conferir',onClick:(e:any)=>{activeTrigger.current=e.currentTarget;setError('');setReview(r);}},h('span',{'aria-hidden':'true'})):null,
-        r.source==='bank'&&r.status==='PENDING'?h('span',{className:'d05-pending',title:'Em processamento','aria-label':'Em processamento'},'◷'):null),
+        r.source==='bank'&&r.status==='PENDING'?h('span',{className:'d05-pending',title:'Em processamento','aria-label':'Em processamento'},h(D05VectorIcon,{iconKey:'clock-3',hue:37,size:16})):null),
        h('small',{},r.account+' · '+(p?.name||r.category)+(child?' › '+child.name:''),
         r.source==='manual'?' · Manual':''),
        r.merchant!==r.description?h('small',{className:'d05-desc'},r.description):null),
