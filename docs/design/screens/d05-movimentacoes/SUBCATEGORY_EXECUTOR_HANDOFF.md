@@ -6,7 +6,7 @@
 
 ## Documentos canônicos
 
-1. [SUBCATEGORY_TAXONOMY_V1.json](SUBCATEGORY_TAXONOMY_V1.json) — propostas de 14 pais / 61 filhos; nomes, ícones, hue, IDs estáveis (sem aceite final).
+1. [SUBCATEGORY_TAXONOMY_V1.json](SUBCATEGORY_TAXONOMY_V1.json) — **APROVADOS** 14 pais / 61 filhos, nomes, ícones, cores e associações; implementar no banco (ainda não implementado).
 2. [ICON_SYSTEM_SUBCATEGORIES.md](ICON_SYSTEM_SUBCATEGORIES.md) — desenho vetorial premium, tonalidades por filho, contraste, identidade visual, classes CSS.
 3. [SUBCATEGORIES_IMPLEMENTATION_CONTRACT.md](SUBCATEGORIES_IMPLEMENTATION_CONTRACT.md) — auditoria real de `electron/db.cjs` e `src/app.ts`, migration, IPC, tipos, regras, orçamento, IA e testes.
 4. [PROTOTYPE_SUBCATEGORIES.md](PROTOTYPE_SUBCATEGORIES.md) — interface e interação de catálogo (após publicação da rodada).
