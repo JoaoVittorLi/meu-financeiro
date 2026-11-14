@@ -43,7 +43,13 @@ async function categoryReviewEnable(app:any){
   const mode=app.state.mode,grant=await categoryReviewAPI().categoryReviewAuthorize({consent:'SYNTHETIC_CATEGORY_REVIEW_V1'});
   if(app.state.mode!==mode){await categoryReviewAPI().categoryReviewRevoke({token:grant.token});return;}
   const backup={intelligenceThreads:app.state.intelligenceThreads,intelligenceMessages:app.state.intelligenceMessages,intelligenceActiveThreadId:app.state.intelligenceActiveThreadId,intelligenceHydratedMode:app.state.intelligenceHydratedMode};
-  app.setState({categoryReviewGrant:grant,categoryReviewBackup:backup,intelligenceThreads:[],intelligenceMessages:[],intelligenceActiveThreadId:null});
+  // A newly issued grant must never display or confirm cached queue/preview/receipt
+  // belonging to the preceding synthetic review session.
+  app.setState({categoryReviewGrant:grant,categoryReviewBackup:backup,
+   categoryReviewReport:null,categoryReviewQueue:null,categoryReviewPreview:null,
+   categoryReviewConfirmed:false,categoryReviewReceipt:null,categoryReviewSelected:[],
+   mfD04Drafts:{},mfD04Excluded:{},mfD04Selected:null,
+   intelligenceThreads:[],intelligenceMessages:[],intelligenceActiveThreadId:null});
   await categoryReviewRefresh(app);
  });
 }
