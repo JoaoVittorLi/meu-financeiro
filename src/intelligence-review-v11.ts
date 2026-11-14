@@ -252,7 +252,7 @@ function mfD04Render(app:any):any{
          disabled:!s.categoryReviewAvailable,onClick:()=>void categoryReviewPrepare(app,'decision',
           {suggestionId:selected.original.id,state:'deferred'})},'Adiar'):null),
        h('p',{className:'mf-d04-footnote'},'Rascunhos, critérios alterados, exclusões e histórico só podem ser aplicados após um contrato que revalide exatamente os mesmos IDs. A versão atual permite prévia do serviço para ações suportadas, sem escrita pessoal.'))
-       ):h('div',{className:'mf-d04-no-results'},'Selecione uma proposta para inspecionar seus dados e permissões.'))),
+       ):h('div',{className:'mf-d04-no-results'},'Selecione uma proposta para inspecionar seus dados e permissões.')),
    h('details',{className:'mf-d04-advanced'},
     h('summary',{},'Outras ferramentas do serviço de revisão'),
     renderCategoryReviewLegacy(app)):null,
