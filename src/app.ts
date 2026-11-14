@@ -1201,14 +1201,11 @@ class App extends React.Component<any,State>{
    txSelected:[],quickCategory:null});
  }
  renderMovements(){
-   const count=this.state.bank.data.transactions.filter(t=>!t.reviewed).length;
-   const review=this.state.txReviewOnly,organized=this.state.txOrganize;
-   return h('div',{className:'movement-shell'},
-     h('div',{className:'mf-tx-tabs mf-unified-tabs',role:'group','aria-label':'Seções de movimentações'},
-       h('button',{type:'button',className:!review&&!organized?'active':'',onClick:()=>this.setState({txReviewOnly:false,txOrganize:false,txSelected:[]})},'Histórico'),
-       h('button',{type:'button',className:review?'active':'',onClick:()=>this.setState({txReviewOnly:true,txOrganize:false,txSelected:[]})},'A revisar ('+count+')'),
-       h('button',{type:'button',className:organized?'active':'',onClick:()=>this.setState({txOrganize:true,txReviewOnly:false,txSelected:[]})},'Categorias e regras')),
-     organized?this.renderCategories():this.renderTransactions());
+   // Official D05 V1.3 mounts inside the existing Movimentações route, never a second demo screen.
+   if(this.state.txOrganize)return h('div',{className:'movement-shell'},
+     h('button',{type:'button',className:'d05-back',onClick:()=>this.setState({txOrganize:false})},'← Voltar ao histórico'),
+     this.renderCategories());
+   return h(D05Movements,{host:this});
  }
 
  monthData(){return snapshot(this.state.data,this.state.month);}
