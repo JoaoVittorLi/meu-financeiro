@@ -452,7 +452,10 @@ class FinanceDB {
    if(input?.id!=null){
      const id=Number(input.id);
      if(!Number.isInteger(id)||id<=0||!this.db.prepare('SELECT 1 FROM category_rules WHERE id=?').get(id))throw new Error('Regra não encontrada.');
-     this.db.prepare('UPDATE category_rules SET pattern=?,match_mode=?,category=?,scope=?,priority=? WHERE id=?').run(pattern,matchMode,category,scope,priority,id);
+     this.db.prepare(`UPDATE category_rules SET pattern=?,match_mode=?,category=?,scope=?,priority=?,
+      category_id=CASE WHEN category=? THEN category_id ELSE NULL END,
+      subcategory_id=CASE WHEN category=? THEN subcategory_id ELSE NULL END WHERE id=?`)
+       .run(pattern,matchMode,category,scope,priority,category,category,id);
    }else this.db.prepare('INSERT INTO category_rules(pattern,match_mode,category,scope,priority) VALUES(?,?,?,?,?)').run(pattern,matchMode,category,scope,priority);
    return this.listCategories();
  }
@@ -469,7 +472,11 @@ class FinanceDB {
    }else{
      const name=categoryName(category);
      if(!this.db.prepare('SELECT 1 FROM categories WHERE name=?').get(name))throw new Error('Categoria inexistente.');
-     this.db.prepare('INSERT INTO bank_category_overrides(account_id,external_id,category) VALUES(?,?,?) ON CONFLICT(account_id,external_id) DO UPDATE SET category=excluded.category').run(accountId,externalId,name);
+     this.db.prepare(`INSERT INTO bank_category_overrides(account_id,external_id,category) VALUES(?,?,?)
+      ON CONFLICT(account_id,external_id) DO UPDATE SET
+      category_id=CASE WHEN category=excluded.category THEN category_id ELSE NULL END,
+      subcategory_id=CASE WHEN category=excluded.category THEN subcategory_id ELSE NULL END,
+      category=excluded.category`).run(accountId,externalId,name);
    }
    // An explicit human correction supersedes supervised provenance, including
    // when the user deliberately chooses the same category again.
@@ -554,7 +561,10 @@ class FinanceDB {
      for(const key of keys){
        this.getBankTransaction(key);
        if(category!==null)this.db.prepare(`INSERT INTO bank_category_overrides(account_id,external_id,category) VALUES(?,?,?)
-         ON CONFLICT(account_id,external_id) DO UPDATE SET category=excluded.category`).run(key.accountId,key.externalId,category);
+         ON CONFLICT(account_id,external_id) DO UPDATE SET
+          category_id=CASE WHEN category=excluded.category THEN category_id ELSE NULL END,
+          subcategory_id=CASE WHEN category=excluded.category THEN subcategory_id ELSE NULL END,
+          category=excluded.category`).run(key.accountId,key.externalId,category);
        if(category!==null&&this.db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='category_review_applied_labels'").get())this.db.prepare('DELETE FROM category_review_applied_labels WHERE account_id=? AND external_id=?').run(key.accountId,key.externalId);
        if(typeof reviewed==='boolean'||nature!==null){
          this.db.prepare(`INSERT OR IGNORE INTO bank_transaction_notes(account_id,external_id) VALUES (?,?)`).run(key.accountId,key.externalId);
