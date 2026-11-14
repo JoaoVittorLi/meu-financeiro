@@ -297,3 +297,32 @@ test('C2: D05 ID-based category target (including null child) cannot silently do
   }
  }finally{f.close();}
 });
+
+test('C1: rejection during asynchronous authorization invalidates in-flight command',async()=>{
+ let approve;
+ const decision=new Promise(resolve=>{approve=resolve;});
+ const f=fixture({authorize:decision});try{
+  const p=create(f);
+  const pending=f.confirm(p);
+  f.proposals.discard(p.proposalId,f.a,1);
+  approve(true);
+  const result=await pending;
+  assert.equal(result.status,'stale');
+  assert.equal(result.changesApplied,false);
+  assert.equal(f.db.listCategories().categories.some(c=>c.name==='Pets'),false);
+ }finally{f.close();}
+});
+test('C1: edit during asynchronous authorization cannot confirm original nonce',async()=>{
+ let approve;
+ const decision=new Promise(resolve=>{approve=resolve;});
+ const f=fixture({authorize:decision});try{
+  const p=create(f);
+  const pending=f.confirm(p);
+  const revised=f.proposals.revise(p.proposalId,{color:'#4489ba'},f.a,1);
+  assert.equal(revised.after.color,'#4489ba');
+  approve(true);
+  const result=await pending;
+  assert.equal(result.status,'stale');
+  assert.equal(f.db.listCategories().categories.some(c=>c.name==='Pets'),false);
+ }finally{f.close();}
+});
