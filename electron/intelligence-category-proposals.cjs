@@ -129,7 +129,8 @@ class CategoryProposalService{
     if(cat.builtIn&&cat.kind!==after.kind)conflicts.push('Categoria padrão não pode trocar de tipo.');
     if(categoryFor(after.name)&&normalizeLabel(after.name)!==normalizeLabel(cat.name))
      conflicts.push('Nome de destino já existe.');
-    if(after.kind!==cat.kind&&referenceCount(u)>0)conflicts.push('Troca de tipo em categoria utilizada requer migração supervisionada.');
+    if(after.kind!==cat.kind&&(referenceCount(u)>0||u.bankProviderRaw>0))conflicts.push('Troca de tipo em categoria utilizada requer migração supervisionada.');
+    if(cat.name!==after.name&&u.bankProviderRaw>0)conflicts.push('O provedor bancário referencia este nome diretamente; renomeação poderia alterar categorias implícitas.');
     if(cat.name!==after.name){
      const masked=scope.profile==='demo'&&this.db.filename!==':memory:';
      impact={count:masked?null:referenceCount(u),amountCents:0};
