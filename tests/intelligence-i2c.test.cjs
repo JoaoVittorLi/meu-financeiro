@@ -260,3 +260,40 @@ test('C2: bridge denies model-supplied owner and arbitrary commands',async()=>{
    {owner:1})).status,'unsupported');
  }finally{f.close();}
 });
+
+test('C2: bank rule proposal cannot cross trusted active account',async()=>{
+ const f=fixture();try{
+  const host={owner:2,environment:'synthetic',verifiedGesture:true,activeAccountId:ACCOUNT};
+  const params={pattern:'IFOOD TESTE',category:'Delivery',accountId:ACCOUNT,
+   nature:'expense',matchMode:'exact',scope:'bank',futureOnly:true};
+  const preview=await f.bridge.handle({method:'propose',scope:f.b,
+   action:'rule.create',params},host);
+  assert.equal(preview.status,'ready');
+  assert.equal(preview.data.capability,'synthetic_hardened');
+  assert.equal(preview.mode,'SYNTHETIC_PREVIEW');
+  const forbidden=await f.bridge.handle({method:'confirm',scope:f.b,
+   proposalId:preview.data.proposalId,confirmationNonce:preview.data.confirmationNonce},
+   {...host,activeAccountId:'different-account'});
+  assert.equal(forbidden.status,'denied');
+  assert.equal(f.db.listCategories().rules.length,0);
+  const allowed=await f.bridge.handle({method:'confirm',scope:f.b,
+   proposalId:preview.data.proposalId,confirmationNonce:preview.data.confirmationNonce},host);
+  assert.equal(allowed.status,'applied');
+  assert.equal(f.db.listCategories().rules.length,1);
+ }finally{f.close();}
+});
+test('C2: D05 ID-based category target (including null child) cannot silently downgrade',async()=>{
+ const f=fixture();try{
+  for(const target of [
+   {categoryId:'cat:alimentacao',subcategoryId:null},
+   {categoryId:'cat:alimentacao',subcategoryId:'sub:alimentacao/delivery'},
+   {level:'subcategory',parentId:'cat:alimentacao',subcategoryId:'sub:alimentacao/delivery'}
+  ]){
+   const reply=await f.bridge.handle({method:'propose',scope:f.a,
+    target,action:'transaction.categorize',params:{
+     category:'Alimentação',items:[{id:'m1'}]}},{owner:1,environment:'synthetic'});
+   assert.equal(reply.status,'unsupported');
+   assert.equal(reply.changesApplied,false);
+  }
+ }finally{f.close();}
+});
