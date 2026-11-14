@@ -98,9 +98,12 @@ class RCCategoryGateway{
   if(!now||now.evidenceHash!==q.evidenceHash)
    return deny('stale','Evidências ou regras mudaram desde a análise de qualidade.');
   const items=q.candidateSummary.examples.map(r=>{
-   const id=String(r.id||'');const sep=id.indexOf(':');
-   if(sep<1||id.slice(0,sep)!==host.activeAccountId)throw Error('ID de evidência fora da conta ativa');
-   return {accountId:host.activeAccountId,externalId:id.slice(sep+1)};
+   let pair;
+   try{pair=JSON.parse(String(r.id||''));}catch{throw Error('Evidência I2-E com ID inválido');}
+   if(!Array.isArray(pair)||pair.length!==2||pair[0]!==host.activeAccountId||
+      typeof pair[1]!=='string'||!pair[1])
+    throw Error('ID de evidência fora da conta ativa');
+   return {accountId:host.activeAccountId,externalId:pair[1]};
   });
   const preview=new D05CategoryService(this.finance).previewBankBatch({items,target});
   if(preview.count!==items.length)
