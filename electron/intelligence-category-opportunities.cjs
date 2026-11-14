@@ -119,7 +119,7 @@ class ProactiveCategoryAdvisor{
    (!params.accountId||r.accountId===params.accountId));
   base.totalRowsLoaded=overview.transactions.length;base.visibleRows=rows.length;
   base.classificationIssues=categoryTypeIssues(rows,'bank',this.db.listCategories().categories,references);
-  if(overview.truncated){base.coverage='partial_local';base.status='partial';
+  if(overview.truncated||references.partial){base.coverage='partial_local';base.status='partial';
    base.diagnostics.push('A visão bancária limita a 2500 lançamentos; padrões e contagens são parciais.');}
   if(!rows.length)return {...base,diagnostics:[...base.diagnostics,'Nenhum lançamento elegível foi carregado no período autorizado.']};
   // The supervised review layer records its own applied labels. Never learn
@@ -182,12 +182,12 @@ class ProactiveCategoryAdvisor{
     precedence:{blocking:collisions.length>0,matchedRules:collisions.map(x=>({
      id:x.id,pattern:x.pattern,priority:x.priority,category:x.category,scope:x.scope}))},
     actions:{
-     historical:candidates.length&&candidates.length<=100&&!overview.truncated&&!collisions.length?
+     historical:candidates.length&&candidates.length<=100&&!overview.truncated&&!references.partial&&!collisions.length?
       'preview_explicit_ids':'manual_review_only',
      future:collisions.length?'review_precedence':'future_exact_rule_candidate'},
     scope:{source:scope.source,profile:scope.profile,month:scope.month,
      accountId:g.accountId,nature:g.nature},expiresAt:this.clock()+this.ttlMs,
-    coverage:overview.truncated?'partial_local':'loaded_local'};
+    coverage:overview.truncated||references.partial?'partial_local':'loaded_local'};
    suggestions.push(item);
    this.opportunities.set(owner+':'+id,{scope,record:item,digest,
     candidateIds:candidates.slice(0,100).map(r=>({accountId:r.accountId,externalId:r.id})),
