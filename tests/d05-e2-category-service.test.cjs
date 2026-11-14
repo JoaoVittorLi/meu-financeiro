@@ -199,3 +199,32 @@ test('D05 E2 — IPC exige sender, escopo e confirmação de escrita pelo proces
   assert(created.id.startsWith('sub:custom:'));
  }finally{db.close();}
 });
+
+test('D05 E2 — FinanceDB.save valida e persiste hierarquia sem segunda gravação',()=>{
+ const db=new FinanceDB(':memory:');const svc=new D05CategoryService(db);
+ try{
+  const content=expenses(3);
+  content.transactions[0].categoryId='cat:alimentacao';
+  content.transactions[0].subcategoryId='sub:alimentacao/delivery';
+  assert.equal(db.save('demo',content).txCount,3);
+  assert.equal(svc.listManual({profile:'demo',categoryId:'cat:alimentacao',subcategoryId:'sub:alimentacao/delivery'}).total,1);
+  const invalid=structuredClone(content);
+  invalid.transactions[0].categoryId='cat:moradia';
+  assert.throws(()=>db.save('demo',invalid),/divergente/);
+  assert.equal(svc.listManual({profile:'demo',categoryId:'cat:alimentacao',subcategoryId:'sub:alimentacao/delivery'}).total,1);
+ }finally{db.close();}
+});
+test('D05 E2 — PlanningStore.create aceita alvo hierárquico validado no mesmo COMMIT',()=>{
+ const db=new FinanceDB(':memory:');
+ try{
+  const p=new PlanningStore(db);
+  const created=p.create({title:'Delivery de teste',kind:'expense',amount:2151,
+   dueDate:'2026-12-10',target:{categoryId:'cat:alimentacao',subcategoryId:'sub:alimentacao/delivery'}});
+  const item=p.item(created.ids[0]);
+  assert.equal(item.category,'Alimentação');
+  assert.equal(item.category_id,'cat:alimentacao');
+  assert.equal(item.subcategory_id,'sub:alimentacao/delivery');
+  assert.throws(()=>p.create({title:'Incorreto',kind:'expense',amount:100,
+   dueDate:'2026-12-12',category:'Moradia',target:{categoryId:'cat:alimentacao'}}),/divergente/);
+ }finally{db.close();}
+});
