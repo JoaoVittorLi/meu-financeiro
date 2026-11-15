@@ -30,6 +30,8 @@ test('desktop creates 207-row migration plan and sends to fake Cloudflare batch 
  const pkg=await createLargeSyntheticPersonalPackage();
  const id='7532671a-5441-4f92-ad16-684aff5849e2';
  const plan=buildTransferPlan(pkg,{importId:id});
+ assert.equal(pkg.schemaVersion,7);
+ assert.equal(plan.manifest.schemaVersion,7);
  assert.equal(plan.summary.tableCount,17);
  assert.equal(plan.summary.rowCount,207);
  assert.equal(plan.summary.chunkCount,19);
@@ -67,6 +69,16 @@ test('desktop creates 207-row migration plan and sends to fake Cloudflare batch 
  }finally{storage.close();}
 });
 
+test('desktop transfer planner rejects stale schema v6 without activating owner data',async()=>{
+ const {createSyntheticPersonalPackage}=await import('../mobile-push/src/finance-synthetic-quarantine.js');
+ const pkg=await createSyntheticPersonalPackage();
+ assert.equal(pkg.schemaVersion,7);
+ assert.throws(()=>buildTransferPlan({...pkg,schemaVersion:6}),/Pacote de migração incompleto/);
+ const plan=buildTransferPlan(pkg);
+ assert.equal(plan.manifest.schemaVersion,7);
+ assert.equal(plan.summary.realRecordsUploaded,0);
+ assert.equal(FINANCIAL_TRANSFER_ACTIVE,false);
+});
 test('the Windows real-data sender is blocked unconditionally, regardless of any environment variable',async()=>{
  assert.equal(FINANCIAL_TRANSFER_ACTIVE,false);
  const original=process.env.FINANCE_SYNC_ENABLED;
