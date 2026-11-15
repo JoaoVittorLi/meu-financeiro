@@ -35,5 +35,16 @@ test('migração de banco anterior adiciona emoji sem perder as regras ou as tra
  assert.equal(db.load('real').transactions.length,1);
  assert.equal(db.listCategories().categories.find(x=>x.name==='Pets').emoji,'✨');
  assert.equal(db.listCategories().categories.find(x=>x.name==='Moradia').emoji,'🏠');
+ assert.equal(db.listCategories().rules.find(r=>r.pattern==='IFOOD')?.category,'Pets');
+ assert.equal(db.load('real').transactions[0].amount,2200);
+ assert.equal(db.db.prepare('SELECT COUNT(*) AS n FROM subcategories').get().n,61);
+ const childFk=db.db.prepare('PRAGMA foreign_key_list(subcategories)').all();
+ assert(childFk.some(x=>x.table==='categories'));
+ assert(!childFk.some(x=>x.table==='categories_old'));
+ const rewritten=db.db.prepare("SELECT name,sql FROM sqlite_master WHERE type='trigger' AND name LIKE 'd05_%_relationship'").all();
+ assert(rewritten.length>0);
+ assert(rewritten.every(x=>!x.sql.includes('categories_old')));
+ assert.equal(db.db.prepare('PRAGMA foreign_key_check').all().length,0);
+ assert.deepEqual(db.integrity(),['ok']);
  db.close();fs.rmSync(dir,{recursive:true,force:true});
 });
