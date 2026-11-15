@@ -121,6 +121,24 @@ function validRow(table,row,columns){
 function verifyReferences(tables){
   const profiles=new Set(tables.profiles.rows.map(x=>x.profile));
   const category=new Set(tables.categories.rows.map(x=>x.name.toLowerCase()));
+  // The D05 parent IDs are part of the v7 payload even though the 61-child
+  // catalog is not eligible for cutover in this 17-table quarantine contract.
+  // Never accept a forged or orphaned parent/child reference as verified.
+  const categoryIds=new Set();
+  for(const row of tables.categories.rows){
+    if(typeof row.id!=='string'||!row.id.trim()||categoryIds.has(row.id))
+      fail('ID de categoria D05 ausente ou duplicado.');
+    categoryIds.add(row.id);
+  }
+  for(const table of ['transactions','category_rules','bank_category_overrides',
+    'bank_transaction_splits','planned_items']){
+    for(const row of tables[table].rows){
+      if(row.subcategory_id!==null&&row.category_id===null)
+        fail('Referência D05 sem categoria-pai em '+table);
+      if(row.category_id!==null&&!categoryIds.has(row.category_id))
+        fail('Referência D05 de categoria inexistente em '+table);
+    }
+  }
   const plans=new Set(tables.planned_items.rows.map(x=>x.id));
   const manualIds=new Set(tables.transactions.rows.map(x=>x.id));
   for(const table of ['transactions','budgets','financial_settings']){
