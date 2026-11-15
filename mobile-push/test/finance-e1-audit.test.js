@@ -60,6 +60,7 @@ test('E1 cloud evidence verifies 17-table transferred snapshot, IDs and sidecar 
   const {db,storage}=memory();
   try{
     const pack=await imported(storage);
+    assert.equal(pack.schemaVersion,7);
     bank(storage);
     const before=db.prepare('SELECT COUNT(*) AS n FROM mf_bank_staging_transactions').get().n;
     const result=await cloudE1Evidence(storage);
@@ -98,6 +99,19 @@ test('E1 cloud evidence verifies 17-table transferred snapshot, IDs and sidecar 
     assert.equal(db.prepare('SELECT COUNT(*) AS n FROM mf_bank_staging_transactions').get().n,before);
     assert.doesNotMatch(JSON.stringify(result),/fictional-acct|fictional-bank|Locador fictício|Título editado fictício|Fictícia/);
   }finally{db.close();}
+});
+test('E1 refuses a forged legacy v6 manifest even after quarantine verification',async()=>{
+ const {db,storage}=memory();
+ try{
+  await imported(storage);
+  const row=storage.sql.exec('SELECT import_id,manifest_json FROM mf_transfer_session WHERE state=?','verified').one();
+  const manifest=JSON.parse(row.manifest_json);
+  manifest.schemaVersion=6;
+  storage.sql.exec('UPDATE mf_transfer_session SET manifest_json=? WHERE import_id=?',
+   JSON.stringify(manifest),row.import_id);
+  await assert.rejects(()=>cloudE1Evidence(storage),/Manifesto pessoal incompatível/);
+  assert.equal(storage.sql.exec('SELECT state FROM mf_transfer_session WHERE import_id=?',row.import_id).one().state,'verified');
+ }finally{db.close();}
 });
 test('E1 does not invent categories or a verified snapshot after partial metadata',async()=>{
   const {db,storage}=memory();
