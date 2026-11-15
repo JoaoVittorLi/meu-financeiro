@@ -4,7 +4,6 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {createRequire} from 'node:module';
-import {DatabaseSync} from 'node:sqlite';
 import {validatePersonalMigrationPackage,PERSONAL_COLUMNS} from '../src/finance-personal-validate.js';
 const require=createRequire(import.meta.url);
 const {FinanceDB}=require('../../electron/db.cjs');
