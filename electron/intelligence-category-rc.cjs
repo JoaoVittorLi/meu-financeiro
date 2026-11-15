@@ -26,7 +26,7 @@ function safeInput(input,allowed){
 }
 const PERSONAL_FIELDS=new Set(['method','scope','question','conversationId','actions',
  'selectedIds','ruleId','proposalId','action','params','patch','target','qualityId','filters','items',
- 'opportunityId']);
+ 'opportunityId','confirmationNonce']);
 const SANDBOX_FIELDS=new Set(['sessionId','method','question','conversationId','actions',
  'selectedIds','ruleId','proposalId','action','params','patch','target','confirmationNonce']);
 const SETTINGS={opening:0,income:0,fixed:0,existing:0,reserve:0};
