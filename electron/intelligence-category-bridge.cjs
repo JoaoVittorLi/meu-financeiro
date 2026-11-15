@@ -22,9 +22,16 @@ function accountIdsFromProposal(p){
  return [...ids];
 }
 function decoratePreview(result,synthetic){
- if(!synthetic)return result;
- const apply=p=>p?.proposalId&&p?.status==='ready'?
-  {...p,capability:'synthetic_hardened',mayExecuteSynthetic:true}:p;
+ // The storage medium alone does not authorize a synthetic write. A personal
+ // review can use :memory: SQLite in tests; it MUST NOT expose the proposal's
+ // raw mayExecuteSynthetic flag unless an actual MAIN synthetic executor exists.
+ const apply=p=>{
+  if(!p?.proposalId)return p;
+  const {mayExecuteSynthetic:unused,...safe}=p;
+  return synthetic&&p.status==='ready'
+   ?{...safe,capability:'synthetic_hardened',mayExecuteSynthetic:true}
+   :{...safe,capability:'proposal_only'};
+ };
  if(Array.isArray(result?.proposals))
   return {...result,proposals:result.proposals.map(apply)};
  return apply(result);
