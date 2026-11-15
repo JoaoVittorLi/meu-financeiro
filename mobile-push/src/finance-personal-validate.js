@@ -121,9 +121,9 @@ function validRow(table,row,columns){
 function verifyReferences(tables){
   const profiles=new Set(tables.profiles.rows.map(x=>x.profile));
   const category=new Set(tables.categories.rows.map(x=>x.name.toLowerCase()));
-  // The D05 parent IDs are part of the v7 payload even though the 61-child
-  // catalog is not eligible for cutover in this 17-table quarantine contract.
-  // Never accept a forged or orphaned parent/child reference as verified.
+  // Verify D05 parent IDs and reject child IDs without a parent. The 61-child
+  // catalog is NOT in this 17-table quarantine contract, so actual child
+  // membership cannot be verified and financial cutover remains forbidden.
   const categoryIds=new Set();
   for(const row of tables.categories.rows){
     if(typeof row.id!=='string'||!row.id.trim()||categoryIds.has(row.id))
