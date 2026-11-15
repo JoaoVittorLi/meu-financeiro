@@ -34,7 +34,11 @@ async function categoryReviewOpen(app:any){
  await categoryReviewRun(app,async()=>{
   const status=await categoryReviewAPI()?.categoryReviewStatus?.();
   app.setState({categoryReviewAvailable:status?.available===true});
-  if(app.state.categoryReviewGrant)await categoryReviewRefresh(app);
+  // Reopening main/drawer must preserve a pending preview under the same
+  // authorized grant. An explicit refresh/filter change still invalidates it.
+  if(app.state.categoryReviewGrant&&(!app.state.categoryReviewReport||
+     !app.state.categoryReviewQueue||app.state.categoryReviewFiltersDirty))
+   await categoryReviewRefresh(app);
  });
 }
 async function categoryReviewEnable(app:any){
