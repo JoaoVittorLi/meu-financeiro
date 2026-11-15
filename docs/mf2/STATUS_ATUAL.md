@@ -7,7 +7,7 @@
 
 **PR único:** [#76 — RC-ALL-FULL](https://github.com/JoaoVittorLi/meu-financeiro/pull/76), branch `integration/mf2-rc-all-01-i2a-20261113`.
 
-**HEAD de integração publicado:** `5e244d381ccaad408cb1daf6afa42d9889b7ee08`. É um SHA fixo: revalidar antes do preflight.
+**HEAD de integração publicado:** `d12a14a35910e4edf089fe6e2d3ea59f3301d177`. É um SHA fixo: revalidar antes do preflight.
 
 **Estado comprovado:** `D01-D05+I2-A/B/C/D/E CODE_INTEGRATED` / `UI_PARTIALLY_FUNCTIONAL` / `LINUX_NOT_RUN` / `PERSONAL_AI_WRITES_DISABLED` / `WINDOWS_NOT_RUN` / `NO_GO_EXE`.
 
@@ -45,13 +45,27 @@ O SHA 10baa5272a8bb452dc379106d143e5eae8f1b7e8 também corrige comparações V3 
 
 ## P0.4 — transação I2-B e gatilho fantasma D05
 
-**HEAD atual para novo Linux:** `5e244d381ccaad408cb1daf6afa42d9889b7ee08` — substitui `10baa5272a8bb452dc379106d143e5eae8f1b7e8`. O proprietário relatou quatro falhas: I2-B manual `FinanceDB.save` sem transação, RC personal confirm rejeitado por campo nonce, e migração D05 `ALTER TABLE` falhando porque **outro trigger D05** ainda apontava para `categories_old` inexistente.
+**SHA anterior P0.4 (substituído por P0.5):** `5e244d381ccaad408cb1daf6afa42d9889b7ee08` — substitui `10baa5272a8bb452dc379106d143e5eae8f1b7e8`. O proprietário relatou quatro falhas: I2-B manual `FinanceDB.save` sem transação, RC personal confirm rejeitado por campo nonce, e migração D05 `ALTER TABLE` falhando porque **outro trigger D05** ainda apontava para `categories_old` inexistente.
 
 **Corrigido na branch #76:** executor I2-B agora abre `BEGIN IMMEDIATE` também para transações manuais e comita categoria+recibo atomicamente; pessoal aceita `confirmationNonce` como campo inerte e retorna `denied`, sem liberar escrita; D05 remove **apenas triggers D05 conhecidos e obsoletos** antes de reconstruir FKs filhas, recriando-os a partir do código canônico na mesma transação. Custom triggers, saldos e taxonomia preservados; checagem FK + integridade exigida.
 
 **Evidência:** novos testes versionados de rollback com receipt fault e de confirmação pessoal negada; teste legado `reliability` agora demonstra o trigger `categories_old` antes de reparar. Cenários representativos em SQLite real Node 22.16.0 **PASS pontual** (FK reparada, valores/índice/triggers mantidos; falha de recibo causa rollback), parser CJS PASS. **Node22.23.4 / `npm ci`, `test:types`, `test:db`, `compile`, F08, ASAR, CircleCI no novo HEAD NOT_RUN**; resultado oficial Linux ainda pendente. **NO-GO EXE**.
 
 [Relatório técnico completo P0.4](https://github.com/JoaoVittorLi/meu-financeiro/blob/integration/mf2-rc-all-01-i2a-20261113/docs/ai-context/RC_ALL_FULL_PREFLIGHT_4FAIL_HOTFIX_20261114.md) · [Issue #71](https://github.com/JoaoVittorLi/meu-financeiro/issues/71#issuecomment-6887872132).
+
+## P0.5 — Colunas de transferência pessoal v6 × banco D05 v7 (11 FAIL)
+
+**HEAD para novo preflight Linux:** `d12a14a35910e4edf089fe6e2d3ea59f3301d177`, PR #76 Draft. SHA anterior com falhas reportadas: `5e244d381ccaad408cb1daf6afa42d9889b7ee08`.
+
+**Causa-raiz:** snapshot Electron inclui colunas físicas D05 v7, porém o validador e a transferência pessoal Cloudflare exigiam v6. A diferença começava nas 10 colunas reais de `transactions` (em vez das oito antigas), e mais cinco tabelas tinham novos IDs e campos. Erro precoce de colunas mascarava falhas específicas de hash, contagem, duplicação e tipo.
+
+**Correções versionadas:** `PERSONAL_COLUMNS` de **17 tabelas** agora coincide exatamente com o DDL Electron/Planning e D05; `schemaVersion=7` único no snapshot, transfer-plan, lote Cloudflare, validador, E1 e fixtures de 17/207 registros. Campos D05 nulos válidos; pai duplicado/ausente e filho sem pai rejeitados; versões v6 rejeitadas. Não se relaxa validação de checksum e colunas extras.
+
+**Limite de segurança:** subcategorias D05 (61 filhos) **não são exportadas no contrato de quarentena de 17 tabelas**, portanto nenhuma migração definitiva/cutover pode ser autorizada. Transferência real no desktop continua desativada, Windows e dados pessoais não alterados, issue #74 aberta.
+
+**Evidências:** **17/17 layouts MATCH em conferência estática de DDL e ordem**, V8 sintático PASS em 11 arquivos, validador isolado aceitou fixture fake e negou v6/colunas incompletas/`clientSecret` (SHA **simulado nesse ensaio**, não prova hash real). Regressões adicionadas em cinco suítes reais. **Node22.23.4, `npm ci`, `test:types`, `test:db`, `compile`, proveniência/F08, ASAR, `mobile-push npm test` e novo CircleCI NOT_RUN**. **NO-GO EXE**.
+
+[Relatório P0.5 completo](https://github.com/JoaoVittorLi/meu-financeiro/blob/integration/mf2-rc-all-01-i2a-20261113/docs/ai-context/RC_ALL_FULL_PERSONAL_TRANSFER_SCHEMA_V7_HOTFIX_20261115.md) · [Issue #71](https://github.com/JoaoVittorLi/meu-financeiro/issues/71#issuecomment-6888555179).
 
 ## Matriz de frentes e evidências
 
@@ -84,7 +98,7 @@ O SHA 10baa5272a8bb452dc379106d143e5eae8f1b7e8 também corrige comparações V3 
 
 | PR | SHA |
 |---|---|
-| [#76 integração final](https://github.com/JoaoVittorLi/meu-financeiro/pull/76) | `5e244d381ccaad408cb1daf6afa42d9889b7ee08` |
+| [#76 integração final](https://github.com/JoaoVittorLi/meu-financeiro/pull/76) | `d12a14a35910e4edf089fe6e2d3ea59f3301d177` |
 | [#81 D05](https://github.com/JoaoVittorLi/meu-financeiro/pull/81) | `316a818fcdd6a6227e3d00352de0822d1c3d5017` |
 | [#79 I2-D](https://github.com/JoaoVittorLi/meu-financeiro/pull/79) | `fd5aca036ae96ca3aef99be752a2bfdeb9750688` |
 | [#80 I2-E](https://github.com/JoaoVittorLi/meu-financeiro/pull/80) | `c56675d02f6d1b5ac9074fb9039aad3d74ff81e1` |
