@@ -41,6 +41,23 @@ test('RC I2-B: personal catalog and category preview are read-only, confirm deni
   assert.equal(hasCategory(f.personalDb,'PersonalDraftOnly'),false);
  }finally{f.close();}
 });
+test('RC I2-B: a well-formed personal confirmation nonce is explicitly denied, not rejected as malformed input',async()=>{
+ const f=fixture();try{
+  const p=await f.gateway.personalCall({method:'propose',scope:f.scope,
+   action:'category.create',params:{name:'NeverPersistPersonal',color:'#2aa898'}},OWNER);
+  assert.equal(p.status,'ready');
+  const reply=await f.gateway.personalCall({method:'confirm',scope:f.scope,
+   proposalId:p.data.proposalId,confirmationNonce:p.data.confirmationNonce},OWNER);
+  assert.equal(reply.status,'denied');
+  assert.equal(reply.changesApplied,false);
+  assert.equal(reply.mode,'READ_ONLY_PERSONAL');
+  assert.equal(hasCategory(f.personalDb,'NeverPersistPersonal'),false);
+  await assert.rejects(f.gateway.personalCall({method:'confirm',scope:f.scope,
+   proposalId:p.data.proposalId,confirmationNonce:p.data.confirmationNonce,
+   verifiedGesture:true},OWNER),/Comando pessoal inválido/);
+  assert.equal(hasCategory(f.personalDb,'NeverPersistPersonal'),false);
+ }finally{f.close();}
+});
 test('RC I2-C: native rejection then explicit consent changes only file-backed synthetic SQLite',async()=>{
  const f=fixture();try{
   const s=f.gateway.startSandbox(MONTH,OWNER);
