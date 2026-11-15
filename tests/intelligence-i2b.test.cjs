@@ -107,6 +107,27 @@ test('I2-B/B2: supervised manual classification changes only target IDs',async()
   assert.equal(tx.reduce((s,x)=>s+x.amount,0),7500);
  }finally{f.close();}
 });
+test('I2-B/B2: failed receipt UPDATE rolls back manual category and leaves original cents',async()=>{
+ const f=fixture();try{
+  const p=f.prepare('transaction.categorize',{items:[{id:'m1'}],category:'Delivery'});
+  assert.equal(p.status,'ready');
+  f.db.db.exec(`CREATE TRIGGER i2b_fault_receipt BEFORE UPDATE OF state ON i2b_synthetic_receipts
+    WHEN NEW.state='applied' BEGIN SELECT RAISE(ABORT,'INJECTED_RECEIPT_FAILURE'); END;`);
+  await assert.rejects(f.confirm(p),/INJECTED_RECEIPT_FAILURE/);
+  const after=f.db.load('demo').transactions;
+  assert.equal(after.find(t=>t.id==='m1').category,'Alimentação');
+  assert.equal(after.find(t=>t.id==='m2').category,'Alimentação');
+  assert.equal(after.reduce((sum,t)=>sum+t.amount,0),7500);
+  assert.equal(f.db.db.prepare('SELECT COUNT(*) AS n FROM i2b_synthetic_receipts').get().n,0);
+  assert.equal(f.db.db.isTransaction,false);
+  assert.deepEqual(f.db.integrity(),['ok']);
+  f.db.db.exec('DROP TRIGGER i2b_fault_receipt');
+  const retry=f.prepare('transaction.categorize',{items:[{id:'m1'}],category:'Delivery'});
+  await f.confirm(retry);
+  assert.equal(f.db.load('demo').transactions.find(t=>t.id==='m1').category,'Delivery');
+  assert.equal(f.db.db.prepare("SELECT COUNT(*) AS n FROM i2b_synthetic_receipts WHERE state='applied'").get().n,1);
+ }finally{f.close();}
+});
 test('I2-B/B2: bank classification uses account+externalId without rewriting raw',async()=>{
  const f=fixture();try{
   const p=f.prepare('transaction.categorize',{items:[{accountId:ACCOUNT,externalId:'ifood'}],category:'Delivery'},true);
