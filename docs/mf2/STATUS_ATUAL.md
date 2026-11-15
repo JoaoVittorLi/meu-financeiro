@@ -7,7 +7,7 @@
 
 **PR único:** [#76 — RC-ALL-FULL](https://github.com/JoaoVittorLi/meu-financeiro/pull/76), branch `integration/mf2-rc-all-01-i2a-20261113`.
 
-**HEAD de integração publicado:** `10baa5272a8bb452dc379106d143e5eae8f1b7e8`. É um SHA fixo: revalidar antes do preflight.
+**HEAD de integração publicado:** `5e244d381ccaad408cb1daf6afa42d9889b7ee08`. É um SHA fixo: revalidar antes do preflight.
 
 **Estado comprovado:** `D01-D05+I2-A/B/C/D/E CODE_INTEGRATED` / `UI_PARTIALLY_FUNCTIONAL` / `LINUX_NOT_RUN` / `PERSONAL_AI_WRITES_DISABLED` / `WINDOWS_NOT_RUN` / `NO_GO_EXE`.
 
@@ -19,7 +19,7 @@
 
 ## P0.2 — símbolos do bundle, I2-E e FK legadas corrigidos em código
 
-**Novo HEAD exato do PR #76:** `10baa5272a8bb452dc379106d143e5eae8f1b7e8`. Base do segundo hotfix: `049537fbe352a3c9b23c883d23cecdfa5f6b91ed`; job CircleCI anterior continua FAILED no SHA `25621fb002cc95c212cd12ff48996f92ba8483a7`.
+**SHA da rodada anterior P0.2/P0.3:** `10baa5272a8bb452dc379106d143e5eae8f1b7e8`. Base do segundo hotfix: `049537fbe352a3c9b23c883d23cecdfa5f6b91ed`; job CircleCI anterior continua FAILED no SHA `25621fb002cc95c212cd12ff48996f92ba8483a7`.
 
 Regressões resolvidas em arquivos: harness R3 carrega o renderer legado real e confere D04 no `app/app.js`; os harnesses financeiros carregam os verdadeiros módulos V3/D03/IC2; integração B→D→E preserva motor de propostas compartilhado; I2-E distingue qualidade de evidência (`eligible_for_preview`) de autorização D05 pai/filho obrigatória; CSS compact tolera classe D01 adicional; tabelas filhas com FK para `categories_old` são reconstruídas transacionalmente sem tabela-pai fictícia, preservando regras, índice, trigger, valores e restauração `foreign_keys=ON` até em lock.
 
@@ -33,7 +33,7 @@ O SHA 10baa5272a8bb452dc379106d143e5eae8f1b7e8 também corrige comparações V3 
 
 ## P0.3 — 10 falhas do preflight de 798 testes corrigidas na candidata
 
-**Novo HEAD para próximo Linux:** `10baa5272a8bb452dc379106d143e5eae8f1b7e8`, PR #76 (Draft). SHA com dez FAIL: `61e2829c2e8a583df17cc52d9abf8c4e299595b1`.
+**SHA P0.3, substituído pelo P0.4:** `10baa5272a8bb452dc379106d143e5eae8f1b7e8`, PR #76 (Draft). SHA com dez FAIL: `61e2829c2e8a583df17cc52d9abf8c4e299595b1`.
 
 **Causas-raiz corrigidas no código:** (1) reabertura de revisão zerava prévia ainda válida; (2–3–8) escrita manual I2-C iniciava transação SQLite duplicada em vez de compartilhar o COMMIT/recibo; (4) categorias customizadas sem uso eram ocultadas pela paginação built-in; (5) I2-E retornava `ready` sem nenhuma linha bancária na conta/mês; (6) harness do chat R2 omitia `intelligence-visuals.ts` real; (7) proposta pessoal `:memory:` anunciava indevidamente execução sintética; (9) método proativo proibido com campo `opportunityId` lançava exceção de validação em vez de `denied`; (10) a reparação da FK `categories_old` não cobria `subcategories` nem recriava os triggers D05 legítimos.
 
@@ -42,6 +42,16 @@ O SHA 10baa5272a8bb452dc379106d143e5eae8f1b7e8 também corrige comparações V3 
 **Evidência:** testes de regressão acrescidos/reforçados (I2-C, I2-E, D05 E1, reliability); parser CJS e smoke isolado de funções reais PASS, mas **`npm ci`, `test:types`, `test:db`, `compile`, F08, ASAR e Linux CircleCI no novo SHA NOT_RUN**. Não declarar zero bugs nem GO para EXE. Issue #74 segue aberta.
 
 **Handoff detalhado:** [P0.3 — dez falhas / causas, arquivos e matriz](https://github.com/JoaoVittorLi/meu-financeiro/blob/integration/mf2-rc-all-01-i2a-20261113/docs/ai-context/RC_ALL_FULL_PREFLIGHT_10FAIL_HOTFIX_20261114.md). [Issue #71 — comentário do hotfix](https://github.com/JoaoVittorLi/meu-financeiro/issues/71#issuecomment-6887298562).
+
+## P0.4 — transação I2-B e gatilho fantasma D05
+
+**HEAD atual para novo Linux:** `5e244d381ccaad408cb1daf6afa42d9889b7ee08` — substitui `10baa5272a8bb452dc379106d143e5eae8f1b7e8`. O proprietário relatou quatro falhas: I2-B manual `FinanceDB.save` sem transação, RC personal confirm rejeitado por campo nonce, e migração D05 `ALTER TABLE` falhando porque **outro trigger D05** ainda apontava para `categories_old` inexistente.
+
+**Corrigido na branch #76:** executor I2-B agora abre `BEGIN IMMEDIATE` também para transações manuais e comita categoria+recibo atomicamente; pessoal aceita `confirmationNonce` como campo inerte e retorna `denied`, sem liberar escrita; D05 remove **apenas triggers D05 conhecidos e obsoletos** antes de reconstruir FKs filhas, recriando-os a partir do código canônico na mesma transação. Custom triggers, saldos e taxonomia preservados; checagem FK + integridade exigida.
+
+**Evidência:** novos testes versionados de rollback com receipt fault e de confirmação pessoal negada; teste legado `reliability` agora demonstra o trigger `categories_old` antes de reparar. Cenários representativos em SQLite real Node 22.16.0 **PASS pontual** (FK reparada, valores/índice/triggers mantidos; falha de recibo causa rollback), parser CJS PASS. **Node22.23.4 / `npm ci`, `test:types`, `test:db`, `compile`, F08, ASAR, CircleCI no novo HEAD NOT_RUN**; resultado oficial Linux ainda pendente. **NO-GO EXE**.
+
+[Relatório técnico completo P0.4](https://github.com/JoaoVittorLi/meu-financeiro/blob/integration/mf2-rc-all-01-i2a-20261113/docs/ai-context/RC_ALL_FULL_PREFLIGHT_4FAIL_HOTFIX_20261114.md) · [Issue #71](https://github.com/JoaoVittorLi/meu-financeiro/issues/71#issuecomment-6887872132).
 
 ## Matriz de frentes e evidências
 
@@ -74,7 +84,7 @@ O SHA 10baa5272a8bb452dc379106d143e5eae8f1b7e8 também corrige comparações V3 
 
 | PR | SHA |
 |---|---|
-| [#76 integração final](https://github.com/JoaoVittorLi/meu-financeiro/pull/76) | `10baa5272a8bb452dc379106d143e5eae8f1b7e8` |
+| [#76 integração final](https://github.com/JoaoVittorLi/meu-financeiro/pull/76) | `5e244d381ccaad408cb1daf6afa42d9889b7ee08` |
 | [#81 D05](https://github.com/JoaoVittorLi/meu-financeiro/pull/81) | `316a818fcdd6a6227e3d00352de0822d1c3d5017` |
 | [#79 I2-D](https://github.com/JoaoVittorLi/meu-financeiro/pull/79) | `fd5aca036ae96ca3aef99be752a2bfdeb9750688` |
 | [#80 I2-E](https://github.com/JoaoVittorLi/meu-financeiro/pull/80) | `c56675d02f6d1b5ac9074fb9039aad3d74ff81e1` |
