@@ -188,6 +188,11 @@ function migrateHierarchy(db) {
     db.prepare("UPDATE app_meta SET value='7' WHERE key='schema_version'").run();
     const violations = db.prepare('PRAGMA foreign_key_check').all();
     if (violations.length) throw new Error('D05: foreign_key_check falhou (' + violations.length + ')');
+    const ghosts=db.prepare("SELECT type,name FROM sqlite_master WHERE type IN ('table','trigger','view','index') AND sql LIKE '%categories_old%'").all();
+    if(ghosts.length)throw Error('D05: referências categories_old remanescentes em '+ghosts.map(x=>x.type+':'+x.name).join(', '));
+    const integrity=db.prepare('PRAGMA integrity_check').all();
+    if(integrity.length!==1||integrity[0].integrity_check!=='ok')
+      throw Error('D05: integrity_check falhou; transação revertida');
     db.exec('COMMIT');inTransaction=false;
     if(repairing)db.exec('PRAGMA foreign_keys=ON');
     return {parents:14,subcategories:61,version:7};
