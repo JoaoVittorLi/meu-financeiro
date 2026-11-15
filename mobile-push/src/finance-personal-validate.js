@@ -1,24 +1,26 @@
-// Cloud-side validation for the EXACT 17 personal SQLite v0.9.4 tables.
+// Cloud-side validation for the EXACT 17 personal SQLite tables in D05 schema v7.
 //
 // IMPORTANT: This is NOT registered as an HTTP route and cannot upload money
 // or switch the source of truth. It validates a future authenticated import
 // in a pure, side-effect-free manner. Bank/provider rows are excluded and
 // bank-related links remain pending Pluggy reconciliation.
 export const PERSONAL_FORMAT='mf-personal-snapshot-v1';
+// Versioned physical column contract. Never reinterpret v6 rows as v7.
+export const PERSONAL_SCHEMA_VERSION=7;
 export const PERSONAL_COLUMNS=Object.freeze({
   profiles:['profile','initialized_at'],
-  transactions:['profile','id','date','description','kind','amount_cents','category','origin'],
+  transactions:['profile','id','date','description','kind','amount_cents','category','origin','category_id','subcategory_id'],
   budgets:['profile','category','amount_cents'],
   financial_settings:['profile','name','value_cents'],
-  categories:['name','color','built_in','created_at','emoji','kind'],
-  category_rules:['id','pattern','match_mode','category','scope','priority','enabled'],
-  bank_category_overrides:['account_id','external_id','category'],
+  categories:['name','color','built_in','created_at','emoji','kind','id','icon_key','hue'],
+  category_rules:['id','pattern','match_mode','category','scope','priority','enabled','category_id','subcategory_id'],
+  bank_category_overrides:['account_id','external_id','category','category_id','subcategory_id'],
   bank_transaction_notes:['account_id','external_id','merchant','note','nature','reviewed_at'],
-  bank_transaction_splits:['account_id','external_id','position','category','amount_cents'],
+  bank_transaction_splits:['account_id','external_id','position','category','amount_cents','category_id','subcategory_id'],
   bank_manual_links:['account_id','external_id','manual_id','linked_at'],
   merchant_aliases:['id','pattern','display_name','created_at'],
   bank_duplicate_dismissals:['pair_key','dismissed_at'],
-  planned_items:['id','group_id','group_type','occurrence','total_occurrences','title','kind','amount_cents','due_date','category','account_id','notes','certainty','status','created_at','updated_at','settled_at'],
+  planned_items:['id','group_id','group_type','occurrence','total_occurrences','title','kind','amount_cents','due_date','category','account_id','notes','certainty','status','created_at','updated_at','settled_at','category_id','subcategory_id'],
   planned_bank_links:['item_id','account_id','external_id','linked_at'],
   planned_rejected_matches:['item_id','account_id','external_id'],
   planned_audit:['id','item_id','action','details','at'],
@@ -38,7 +40,7 @@ const PRIMARY_KEYS=Object.freeze({
 });
 const INTEGER_FIELDS=Object.freeze({
   transactions:['amount_cents'],budgets:['amount_cents'],
-  financial_settings:['value_cents'],categories:['built_in'],
+  financial_settings:['value_cents'],categories:['built_in','hue'],
   category_rules:['id','priority','enabled'],
   bank_transaction_splits:['position','amount_cents'],
   merchant_aliases:['id'],
@@ -46,8 +48,15 @@ const INTEGER_FIELDS=Object.freeze({
   planned_audit:['id']
 });
 const NULLABLE=Object.freeze({
+  // D05 legacy rows are legitimately unclassified. Custom categories may
+  // leave icon_key/hue unset. Never substitute a fabricated parent/child.
+  transactions:['category_id','subcategory_id'],
+  categories:['icon_key','hue'],
+  category_rules:['category_id','subcategory_id'],
+  bank_category_overrides:['category_id','subcategory_id'],
+  bank_transaction_splits:['category_id','subcategory_id'],
   bank_transaction_notes:['reviewed_at'],
-  planned_items:['group_id','account_id','settled_at']
+  planned_items:['group_id','account_id','settled_at','category_id','subcategory_id']
 });
 const MAX_ROWS=100000,MAX_BYTES=32*1024*1024;
 const enc=new TextEncoder();
@@ -130,7 +139,7 @@ function verifyReferences(tables){
     if(!manualIds.has(row.manual_id))fail('Transação manual vinculada ausente.');
 }
 export async function validatePersonalMigrationPackage(packageData){
-  if(!packageData||packageData.format!==PERSONAL_FORMAT||packageData.schemaVersion!==6)
+  if(!packageData||packageData.format!==PERSONAL_FORMAT||packageData.schemaVersion!==PERSONAL_SCHEMA_VERSION)
     fail('Versão do pacote não reconhecida.');
   const names=Object.keys(PERSONAL_COLUMNS);
   assertKeys(packageData.tables,names,'Tabelas');
