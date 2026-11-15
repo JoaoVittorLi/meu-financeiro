@@ -7,7 +7,7 @@
 // Rows stay in mf_transfer_* quarantine, not the live financial database.
 // Finalization validates every original table digest and relational invariant.
 // Aborting removes every row and cannot be silently reversed.
-import {PERSONAL_COLUMNS,PERSONAL_FORMAT,validatePersonalMigrationPackage} from './finance-personal-validate.js';
+import {PERSONAL_COLUMNS,PERSONAL_FORMAT,PERSONAL_SCHEMA_VERSION,validatePersonalMigrationPackage} from './finance-personal-validate.js';
 
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const DIGEST=/^[a-f0-9]{64}$/i;
@@ -25,7 +25,7 @@ function get(storage,id){
 }
 function validateManifest(summary){
  if(!summary||typeof summary!=='object'||Array.isArray(summary))fail('resumo ausente.');
- if(summary.format!==PERSONAL_FORMAT||summary.schemaVersion!==6||summary.tables!==17)
+ if(summary.format!==PERSONAL_FORMAT||summary.schemaVersion!==PERSONAL_SCHEMA_VERSION||summary.tables!==17)
    fail('versão do pacote não reconhecida.');
  if(!Number.isSafeInteger(summary.rows)||summary.rows<0||summary.rows>MAX_TOTAL_ROWS||
     !Number.isSafeInteger(summary.bytes)||summary.bytes<0||summary.bytes>MAX_TOTAL_BYTES||
@@ -47,7 +47,7 @@ function validateManifest(summary){
  }
  if(total!==summary.rows)fail('contagem total inconsistente.');
  // Normalized compile-time table order prevents silent additions/deletions.
- return {format:summary.format,schemaVersion:6,tables:17,
+ return {format:summary.format,schemaVersion:PERSONAL_SCHEMA_VERSION,tables:17,
    rows:summary.rows,bytes:summary.bytes,digest:summary.digest.toLowerCase(),
    byTable:Object.fromEntries(names.map(t=>[t,{
      rows:summary.byTable[t].rows,digest:summary.byTable[t].digest.toLowerCase()
@@ -164,7 +164,7 @@ export async function verifyPersonalTransfer(storage,importId){
    tables[table]={columns:[...PERSONAL_COLUMNS[table]],rows};
  }
  const valid=await validatePersonalMigrationPackage({format:PERSONAL_FORMAT,
-   schemaVersion:6,tables,manifest});
+   schemaVersion:PERSONAL_SCHEMA_VERSION,tables,manifest});
  if(!valid.valid||valid.personalRecords!==manifest.rows)
    fail('validação cruzada não passou.');
  return storage.transactionSync(()=>{
