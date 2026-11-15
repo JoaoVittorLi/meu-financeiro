@@ -7,7 +7,7 @@
 // Tests inject a fake transport for synthetic rows only.
 const {randomUUID}=require('node:crypto');
 const {PERSONAL_TABLES}=require('./cloud-data-routing.cjs');
-const {FORMAT}=require('./cloud-personal-snapshot.cjs');
+const {FORMAT,TRANSFER_SCHEMA_VERSION}=require('./cloud-personal-snapshot.cjs');
 
 const MAX_CHUNK_ROWS=80;
 const MAX_CHUNK_BYTES=192*1024;
@@ -15,7 +15,7 @@ const FINANCIAL_TRANSFER_ACTIVE=false;
 const ID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function assertPackage(snap){
-  if(!snap||snap.format!==FORMAT||snap.schemaVersion!==6||
+  if(!snap||snap.format!==FORMAT||snap.schemaVersion!==TRANSFER_SCHEMA_VERSION||
      snap.manifest?.tables!==17||!Number.isSafeInteger(snap.manifest.rows)||
      snap.manifest.rows<0||!snap.tables||Object.keys(snap.tables).length!==17)
     throw new Error('Pacote de migração incompleto.');
@@ -54,7 +54,7 @@ function buildTransferPlan(snapshot,{importId=randomUUID()}={}){
     total+=rows.length;
   }
   if(total!==snapshot.manifest.rows)throw new Error('Quantidade de registros divergente.');
-  const manifest={format:snapshot.format,schemaVersion:6,
+  const manifest={format:snapshot.format,schemaVersion:TRANSFER_SCHEMA_VERSION,
     ...snapshot.manifest};
   return {importId,manifest,chunks,
     summary:{tableCount:17,rowCount:total,chunkCount:chunks.length,
