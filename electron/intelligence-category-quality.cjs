@@ -73,6 +73,10 @@ class EvidenceQualityService{
    quality:[],classificationIssues:scan.classificationIssues,catalog:scan.catalog,
    conflicts:scan.conflicts,diagnostics:scan.diagnostics,
    notice:'Score é heurístico, não é uma probabilidade ou recomendação executada.'};
+  // A valid IC-READ grant is not proof of relevant rows in this account
+  // and period. No observed records means empty, never a ready analysis.
+  if(scope.source==='bank'&&scan.visibleRows===0)
+   return {...base,status:'empty',quality:[],changesApplied:false};
   if(scope.source!=='bank'||!scan.opportunities.length)return base;
   const overview=this.db.bankOverview(),records=overview.transactions;
   const labels=sourceLabels(this.db),rules=this.db.listCategories().rules;
