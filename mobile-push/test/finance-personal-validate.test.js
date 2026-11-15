@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {createRequire} from 'node:module';
+import {DatabaseSync} from 'node:sqlite';
 import {validatePersonalMigrationPackage,PERSONAL_COLUMNS} from '../src/finance-personal-validate.js';
 const require=createRequire(import.meta.url);
 const {FinanceDB}=require('../../electron/db.cjs');
@@ -99,4 +100,51 @@ test('bank-linked personal overrides remain deferred until their provider IDs ar
   assert.equal(result.bankIdsRequireReconciliation,true);
   assert.equal(result.deferredBankReferences,1);
   assert.equal(result.storedInCloud,false);
+});
+
+test('D05 v7: all 17 snapshot columns match actual SQLite PRAGMA order; hierarchy IDs and legacy nulls survive',async()=>{
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'mf-v7-transfer-contract-'));
+ const file=path.join(dir,'finance.sqlite'),backup=path.join(dir,'backup.sqlite');
+ const fin=new FinanceDB(file);
+ try{
+  new PlanningStore(fin);
+  for(const [table,columns] of Object.entries(PERSONAL_COLUMNS)){
+   const actual=fin.db.prepare('PRAGMA table_info("'+table+'")').all().map(r=>r.name);
+   assert.deepEqual(actual,columns,'Schema mismatch in '+table);
+  }
+  const parent=fin.db.prepare("SELECT id,name FROM categories WHERE name='Moradia'").get();
+  const child=fin.db.prepare('SELECT id FROM subcategories WHERE parent_category_id=? LIMIT 1').get(parent.id);
+  assert(child?.id);
+  fin.db.prepare("INSERT INTO profiles(profile,initialized_at) VALUES('real','2026-11-07')").run();
+  fin.db.prepare('INSERT INTO transactions(profile,id,date,description,kind,amount_cents,category,origin,category_id,subcategory_id) VALUES(?,?,?,?,?,?,?,?,?,?)')
+   .run('real','d05-child','2026-11-07','Aluguel simulado','expense',151234,parent.name,'manual',parent.id,child.id);
+  fin.db.prepare('INSERT INTO transactions(profile,id,date,description,kind,amount_cents,category,origin) VALUES(?,?,?,?,?,?,?,?)')
+   .run('real','legacy-null','2026-11-08','Legado','expense',3700,parent.name,'manual');
+  fin.upsertCategory({name:'Custom Sem Ícone',color:'#4489ba',emoji:'✨',kind:'expense'});
+  await fin.backupTo(backup);
+  const snap=createPersonalSnapshotFromBackup(backup);
+  assert.equal(snap.schemaVersion,7);
+  assert.deepEqual(snap.tables.transactions.columns,PERSONAL_COLUMNS.transactions);
+  assert.equal(snap.tables.transactions.rows.find(r=>r.id==='d05-child').subcategory_id,child.id);
+  assert.equal(snap.tables.transactions.rows.find(r=>r.id==='d05-child').category_id,parent.id);
+  assert.equal(snap.tables.transactions.rows.find(r=>r.id==='legacy-null').subcategory_id,null);
+  assert.equal(snap.tables.transactions.rows.find(r=>r.id==='legacy-null').category_id,null);
+  assert.equal(snap.tables.categories.rows.find(r=>r.name==='Custom Sem Ícone').icon_key,null);
+  const verified=await validatePersonalMigrationPackage(snap);
+  assert.equal(verified.valid,true);
+  assert.equal(verified.cutoverAllowed,false);
+  assert.equal(verified.storedInCloud,false);
+ }finally{fin.close();fs.rmSync(dir,{recursive:true,force:true});}
+});
+test('D05 v7: signed payload with a missing hierarchy column or stale schema version is rejected before import',async()=>{
+ const old=await snapshot();
+ old.schemaVersion=6;
+ await assert.rejects(()=>validatePersonalMigrationPackage(old),/Versão do pacote não reconhecida/);
+ const missing=await snapshot();
+ missing.tables.transactions.columns=missing.tables.transactions.columns.filter(c=>c!=='subcategory_id');
+ await assert.rejects(()=>validatePersonalMigrationPackage(missing),/Colunas divergentes em transactions/);
+ const altered=await snapshot();
+ delete altered.tables.transactions.rows[0].category_id;
+ await resign(altered);
+ await assert.rejects(()=>validatePersonalMigrationPackage(altered),/colunas inesperadas/);
 });
