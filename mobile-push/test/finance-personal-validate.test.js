@@ -147,4 +147,13 @@ test('D05 v7: signed payload with a missing hierarchy column or stale schema ver
  delete altered.tables.transactions.rows[0].category_id;
  await resign(altered);
  await assert.rejects(()=>validatePersonalMigrationPackage(altered),/colunas inesperadas/);
+ const unknown=await snapshot();
+ unknown.tables.transactions.rows[0].category_id='cat:nonexistent';
+ await resign(unknown);
+ await assert.rejects(()=>validatePersonalMigrationPackage(unknown),/Referência D05 de categoria inexistente/);
+ const orphan=await snapshot();
+ orphan.tables.transactions.rows[0].subcategory_id='sub:orphan';
+ orphan.tables.transactions.rows[0].category_id=null;
+ await resign(orphan);
+ await assert.rejects(()=>validatePersonalMigrationPackage(orphan),/Referência D05 sem categoria-pai/);
 });
