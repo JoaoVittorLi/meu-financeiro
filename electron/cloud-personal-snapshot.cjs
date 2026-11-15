@@ -1,6 +1,6 @@
 'use strict';
 
-// Lossless *in-memory only* snapshot of the 17 personal SQLite v0.9.4 tables.
+// Lossless *in-memory only* snapshot of 17 allowlisted personal tables at SQLite D05 v7.
 // This is not a public export: no UI bridge or network route exposes rows.
 // It reads a consistent, already verified backup in read-only mode. The
 // retained Pluggy transaction/account identifiers must be reconciled before
@@ -12,6 +12,7 @@ const {inspectMigrationContract,TABLE_KEYS}=require('./cloud-migration-contract.
 const {PERSONAL_TABLES}=require('./cloud-data-routing.cjs');
 
 const FORMAT='mf-personal-snapshot-v1';
+const TRANSFER_SCHEMA_VERSION=7;
 const MAX_TOTAL_ROWS=100000;
 const MAX_JSON_BYTES=32*1024*1024;
 const SYSTEM_ONLY_KEYS=new Set(['api_key','apiKey','client_secret','clientSecret','access_token','accessToken','password','api-key']);
@@ -41,6 +42,11 @@ function createPersonalSnapshotFromBackup(backupPath,options={}){
   validateBackupFile(backupPath);
   const db=new DatabaseSync(backupPath,{readOnly:true});
   try{
+    // Do not stamp a physically old v6 backup as v7. Both sides must agree
+    // on the exact PRAGMA table_info column contract before any transfer.
+    const entry=db.prepare("SELECT value FROM app_meta WHERE key='schema_version'").get();
+    if(String(entry?.value)!==String(TRANSFER_SCHEMA_VERSION))
+      throw new Error('Backup pessoal incompatível: é necessário o SQLite D05 v7; nenhuma linha exportada.');
     const contract=inspectMigrationContract(db);
     if(!contract.structuralContractOK||!contract.integrityOK||
       contract.foreignKeyViolationCount!==0)
@@ -84,7 +90,7 @@ function createPersonalSnapshotFromBackup(backupPath,options={}){
     }
     return {
       format:FORMAT,
-      schemaVersion:6,
+      schemaVersion:TRANSFER_SCHEMA_VERSION,
       tables,
       manifest:{
         tables:PERSONAL_TABLES.length,
@@ -102,7 +108,7 @@ function createPersonalSnapshotFromBackup(backupPath,options={}){
 }
 
 function personalSnapshotSummary(snapshot){
-  if(snapshot?.format!==FORMAT||snapshot?.schemaVersion!==6||
+  if(snapshot?.format!==FORMAT||snapshot?.schemaVersion!==TRANSFER_SCHEMA_VERSION||
     snapshot?.manifest?.tables!==PERSONAL_TABLES.length)
     throw new Error('Snapshot pessoal incompatível.');
   // Only summary may cross into the UI; never include rows, identifiers,
