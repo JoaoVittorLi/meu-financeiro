@@ -271,6 +271,17 @@ test('I2-D/I2-E integration: quality bridge is owner+account-bound and read-only
   assert.equal(f.db.db.prepare('SELECT total_changes() AS n').get().n,original);
  }finally{f.close();}
 });
+test('I2-E: trusted account with zero in-period bank rows has empty quality, never ready',async()=>{
+ const f=fixture();try{
+  const reply=await f.bridge.handle({method:'qualityScan',
+   scope:{...f.scope,month:'2026-12'}},
+   {owner:1,activeAccountId:OTHER});
+  assert.equal(reply.status,'empty');
+  assert.equal(reply.changesApplied,false);
+  assert.equal(reply.data.quality.length,0);
+  assert.equal(reply.data.readOnly,true);
+ }finally{f.close();}
+});
 test('I2-D/I2-E integration: stale draft does not return a reviewable proposal',async()=>{
  const f=fixture();try{
   const host={owner:1,activeAccountId:ACCOUNT};
