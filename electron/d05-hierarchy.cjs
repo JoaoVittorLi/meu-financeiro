@@ -34,6 +34,12 @@ function assertCatalog() {
 function ensureRelationshipTriggers(db, table) {
   if (!tableExists(db, table)) return;
   for (const action of ['INSERT', 'UPDATE']) {
+    const triggerName='d05_'+table+'_'+action.toLowerCase()+'_relationship';
+    const prior=db.prepare("SELECT sql FROM sqlite_master WHERE type='trigger' AND name=?").get(triggerName);
+    // The legacy SQLite table rename also rewrites this generated trigger.
+    // Regenerate only our known D05 trigger, never arbitrary trigger SQL.
+    if(prior && /\bcategories_old\b/i.test(prior.sql))
+      db.exec('DROP TRIGGER "'+triggerName+'"');
     db.exec(`CREATE TRIGGER IF NOT EXISTS d05_${table}_${action.toLowerCase()}_relationship
       BEFORE ${action} ON ${table}
       WHEN (NEW.category_id IS NOT NULL AND NOT EXISTS
@@ -50,7 +56,7 @@ function ensureRelationshipTriggers(db, table) {
 // never fabricate the missing parent or discard its records/rules.
 const LEGACY_FK_TABLES=Object.freeze([
  'category_rules','bank_category_overrides','bank_transaction_splits',
- 'transactions','budgets','planned_items'
+ 'transactions','budgets','planned_items','subcategories'
 ]);
 function legacyFKTables(db){
  return LEGACY_FK_TABLES.filter(table=>tableExists(db,table)&&
@@ -72,7 +78,12 @@ function repairLegacyFKTable(db,table){
  if(/\bcategories_old\b/i.test(newSQL))
   throw Error('D05: há referências legadas adicionais não verificadas: '+table);
  const objects=db.prepare("SELECT type,name,sql FROM sqlite_master WHERE tbl_name=? AND type IN ('index','trigger') AND sql IS NOT NULL").all(table);
- if(objects.some(o=>/\bcategories_old\b/i.test(o.sql)))
+ // Only known generated relationship triggers may be recreated from
+ // canonical code. Preserve custom triggers/indexes exactly or fail closed.
+ const generatedNames=new Set(['d05_'+table+'_insert_relationship',
+  'd05_'+table+'_update_relationship']);
+ if(objects.some(o=>/\bcategories_old\b/i.test(o.sql)&&
+   !(o.type==='trigger'&&generatedNames.has(o.name))))
   throw Error('D05: índice/trigger legado requer revisão: '+table);
  const columns=db.prepare('PRAGMA table_xinfo('+table+')').all().filter(c=>c.hidden===0);
  if(!columns.length||columns.some(c=>!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(c.name)))
@@ -85,7 +96,10 @@ function repairLegacyFKTable(db,table){
  if(after!==before)throw Error('D05: contagem de linhas divergente em '+table);
  db.exec('DROP TABLE '+table);
  db.exec('ALTER TABLE '+temporary+' RENAME TO '+table);
- for(const object of objects)db.exec(object.sql);
+ for(const object of objects){
+  if(object.type==='trigger'&&generatedNames.has(object.name))continue;
+  db.exec(object.sql);
+ }
  const links=db.prepare('PRAGMA foreign_key_list('+table+')').all();
  if(links.some(ref=>ref.table==='categories_old')||!links.some(ref=>ref.table==='categories'))
   throw Error('D05: referência legada não reparada: '+table);
