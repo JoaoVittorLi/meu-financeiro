@@ -62,6 +62,26 @@ function legacyFKTables(db){
  return LEGACY_FK_TABLES.filter(table=>tableExists(db,table)&&
   db.prepare('PRAGMA foreign_key_list('+table+')').all().some(ref=>ref.table==='categories_old'));
 }
+// SQLite parses every active trigger while ALTER TABLE rebuilds a child.
+// A legacy table rename may have rewritten *other* D05 relationship triggers
+// to categories_old. Drop only verified, generated D05 triggers inside the
+// same transaction before touching any table; ensureRelationshipTriggers()
+// reinstalls them from canonical code after all child tables are repaired.
+function removeGhostD05Triggers(db){
+ const supported=['transactions','bank_category_overrides',
+  'bank_transaction_splits','category_rules','planned_items'];
+ const actions=['insert','update'];
+ for(const table of supported)for(const action of actions){
+  const name='d05_'+table+'_'+action+'_relationship';
+  const row=db.prepare("SELECT tbl_name AS tableName,sql FROM sqlite_master WHERE type='trigger' AND name=?").get(name);
+  if(!row||!/\bcategories_old\b/i.test(row.sql))continue;
+  const canonical=row.tableName===table&&
+   /D05: categoria\/subcategoria incompatível/.test(row.sql)&&
+   /NEW\.category_id/.test(row.sql)&&/NEW\.subcategory_id/.test(row.sql);
+  if(!canonical)throw Error('D05: trigger legado não reconhecido: '+name);
+  db.exec('DROP TRIGGER "'+name+'"');
+ }
+}
 function repairLegacyFKTable(db,table){
  if(!LEGACY_FK_TABLES.includes(table))throw Error('D05: tabela FK não permitida');
  const sqlRow=db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name=?").get(table);
@@ -118,6 +138,7 @@ function migrateHierarchy(db) {
   if(repairing)db.exec('PRAGMA foreign_keys=OFF');
   try {
     db.exec('BEGIN IMMEDIATE');inTransaction=true;
+    if(repairing)removeGhostD05Triggers(db);
     for(const table of orphaned)repairLegacyFKTable(db,table);
     addColumn(db, 'categories', 'emoji', "TEXT NOT NULL DEFAULT '✨'");
     addColumn(db, 'categories', 'kind',
