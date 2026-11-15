@@ -89,6 +89,11 @@ class ProactiveCategoryAdvisor{
    .map(x=>({name:x.name,builtIn:!!x.builtIn,reason:'no_explicit_local_reference',
     action:'review_only',canDeleteAutomatically:false,
     warning:'Classificação implícita, histórico não carregado e vínculos futuros podem existir.'})):[];
+  // The catalog lists built-ins first, but a capped review sample must not
+  // hide custom unused categories behind standard categories (which are
+  // protected from deletion regardless of usage).
+  unused.sort((a,b)=>Number(a.builtIn)-Number(b.builtIn)||
+   a.name.localeCompare(b.name,'pt-BR'));
   return {similar:similar.slice(0,params.limit),unused:unused.slice(0,params.limit),
    counts:{similarFound:similar.length,unusedCandidates:unused.length},
    note:'Nunca mesclar, apagar ou renomear apenas por semelhança/ausência de referências.'};
