@@ -221,3 +221,20 @@ test('D05 E1 restores foreign_keys ON if the legacy FK repair cannot acquire BEG
   writer?.close();cleanup(f,raw);
  }
 });
+
+test('D05 E1 does not silently rewrite user-authored triggers that still reference categories_old',()=>{
+ const f=legacy630();let raw;
+ try{
+  raw=new DatabaseSync(f.file);
+  raw.exec("PRAGMA foreign_keys=ON; CREATE TABLE app_meta(key TEXT PRIMARY KEY,value TEXT NOT NULL);"+
+   "CREATE TABLE category_rules(id INTEGER PRIMARY KEY,category TEXT REFERENCES categories_old(name));"+
+   "CREATE TRIGGER user_rule_check AFTER INSERT ON category_rules BEGIN "+
+   "SELECT COUNT(*) FROM categories_old; END;");
+  assert.throws(()=>migrateHierarchy(raw),/índice\/trigger legado requer revisão/);
+  assert(raw.prepare("SELECT 1 FROM sqlite_master WHERE name='user_rule_check'").get());
+  assert.equal(raw.prepare('PRAGMA foreign_key_list(category_rules)').all()[0].table,'categories_old');
+  assert.equal(raw.prepare('PRAGMA table_info(categories)').all().some(r=>r.name==='id'),false);
+  assert.equal(raw.prepare('SELECT COUNT(*) AS n FROM transactions').get().n,630);
+  assert.equal(raw.prepare('PRAGMA foreign_keys').get().foreign_keys,1);
+ }finally{cleanup(f,raw);}
+});
