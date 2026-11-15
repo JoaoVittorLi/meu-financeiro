@@ -213,6 +213,13 @@ test('C1: manual save is atomic with its receipt; financial amounts unchanged',a
   const tx=f.db.load('demo').transactions;
   assert.equal(tx.find(x=>x.id==='m1').category,'Delivery');
   assert.equal(tx.reduce((s,x)=>s+x.amount,0),7500);
+  assert.equal(f.db.db.prepare('SELECT COUNT(*) AS n FROM i2c_atomic_receipts').get().n,1);
+  assert.equal(f.executor.readReceipt({scope:f.a,proposalId:p.proposalId},1).status,'applied');
+  const again=await f.confirm(p);
+  assert.equal(again.status,'applied');
+  assert.equal(again.replayed,true);
+  assert.equal(f.db.db.prepare('SELECT COUNT(*) AS n FROM i2c_atomic_receipts').get().n,1);
+  assert.deepEqual(f.db.integrity(),['ok']);
  }finally{f.close();}
 });
 test('C2: personal path never executes without synthetic bridge',async()=>{
