@@ -12,8 +12,9 @@ const source=fs.readFileSync(filename,'utf8');
 // The production renderer uses module:none/outFile; load its actual D03
 // component and V3 dispatcher instead of inventing exports for this VM.
 const d03=fs.readFileSync(path.join(__dirname,'../src/intelligence-today-v2.ts'),'utf8');
+const visuals=fs.readFileSync(path.join(__dirname,'../src/intelligence-visuals.ts'),'utf8');
 const v3=fs.readFileSync(path.join(__dirname,'../src/intelligence-v3-core.ts'),'utf8');
-const output=ts.transpileModule(v3+'\n'+source+'\n'+d03,{
+const output=ts.transpileModule(visuals+'\n'+v3+'\n'+source+'\n'+d03,{
  compilerOptions:{target:ts.ScriptTarget.ES2019,module:ts.ModuleKind.None}
 }).outputText;
 const h=(tag,props,...children)=>({tag,props:props||{},children:children.flat(8).filter(x=>x!==null&&x!==undefined)});
