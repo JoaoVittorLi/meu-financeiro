@@ -120,4 +120,4 @@ function personalSnapshotSummary(snapshot){
     financialSyncEnabled:false};
 }
 
-module.exports={FORMAT,MAX_TOTAL_ROWS,MAX_JSON_BYTES,createPersonalSnapshotFromBackup,personalSnapshotSummary};
+module.exports={FORMAT,TRANSFER_SCHEMA_VERSION,MAX_TOTAL_ROWS,MAX_JSON_BYTES,createPersonalSnapshotFromBackup,personalSnapshotSummary};
