@@ -130,7 +130,9 @@ class SyntheticCategoryExecutor{
     const ids=new Set(state.affected.map(x=>x.id));
     const transactions=data.transactions.map(t=>ids.has(t.id)?{...t,category:p.category}:t);
     if(transactions.filter(t=>ids.has(t.id)).length!==ids.size)throw Error('IDs da prévia não encontrados.');
-    this.db.save('demo',{...data,transactions});
+    // I2-C owns BEGIN IMMEDIATE and the durable receipt COMMIT. The
+    // canonical FinanceDB.save must not start a second transaction.
+    this.db.save('demo',{...data,transactions},{inTransaction:true});
    }
    return {reclassified:state.affected.length};
   }
