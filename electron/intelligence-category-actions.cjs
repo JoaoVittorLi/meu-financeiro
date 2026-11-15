@@ -62,7 +62,10 @@ class SyntheticCategoryExecutor{
   const action=p.state.action;
   let transaction=false;
   try{
-   if(action.startsWith('rule.')||(action==='transaction.categorize'&&scope.source==='bank')){
+   // Every transaction reclassification (bank OR manual) must share the
+   // transaction with its receipt update. Category create/update/delete own
+   // their own FinanceDB transaction and are deliberately excluded.
+   if(action.startsWith('rule.')||action==='transaction.categorize'){
     this.sql.exec('BEGIN IMMEDIATE');transaction=true;
    }
    const delta=this.apply(p.state,scope);
@@ -74,7 +77,7 @@ class SyntheticCategoryExecutor{
    return receipt;
   }catch(err){
    if(transaction){this.sql.exec('ROLLBACK');transaction=false;}
-   if(action.startsWith('rule.')||(action==='transaction.categorize'&&scope.source==='bank')){
+   if(action.startsWith('rule.')||action==='transaction.categorize'){
     this.sql.prepare('DELETE FROM i2b_synthetic_receipts WHERE proposal_id=?').run(p.id);
    }
    throw err;
@@ -130,8 +133,9 @@ class SyntheticCategoryExecutor{
     const ids=new Set(state.affected.map(x=>x.id));
     const transactions=data.transactions.map(t=>ids.has(t.id)?{...t,category:p.category}:t);
     if(transactions.filter(t=>ids.has(t.id)).length!==ids.size)throw Error('IDs da prévia não encontrados.');
-    // I2-C owns BEGIN IMMEDIATE and the durable receipt COMMIT. The
-    // canonical FinanceDB.save must not start a second transaction.
+    // I2-B owns BEGIN IMMEDIATE for manual writes. I2-C invokes this same
+    // canonical method under its independently verified outer transaction.
+    // Both must use one receipt/financial COMMIT, never nested BEGIN.
     this.db.save('demo',{...data,transactions},{inTransaction:true});
    }
    return {reclassified:state.affected.length};
