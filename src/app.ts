@@ -684,6 +684,7 @@ class App extends React.Component<any,State>{
      const persisted=await desktop.load(this.state.mode);
      this.setState({categories:state.categories,rules:state.rules,categoryEditor:{previousName:'',name:'',color:'#3e9a85',emoji:'✨',kind:'expense'},categoryMessage:'Categoria salva.',data:persisted?safeData(persisted):this.state.data});
      await this.refreshBank();
+     void this.loadQA84VisualCatalog();
      if(context&&this.state.contextCategory===context){
       const same=this.state.mode===context.mode&&this.state.bankFilter===context.account&&this.state.query===context.query;
       this.setState({contextCategory:undefined,categoryEditor:context.editor,...(same?(context.target==='entry'?{entry:{...this.state.entry,category:value.name.trim()},entryCategoryTouched:true}:context.target==='quick'?{quickCategoryQuery:value.name.trim(),quickCategoryIndex:0}:{txBatchCategory:value.name.trim()}):{} )});
@@ -694,7 +695,7 @@ class App extends React.Component<any,State>{
  }
  async deleteCategory(name:string){
    if(!desktop||this.state.mode==='demo'||!confirm('Excluir a categoria '+name+'? A exclusão será impedida se ela estiver em uso.'))return;
-   try{const state=await desktop.categoryDelete(name);const persisted=await desktop.load(this.state.mode);this.setState({categories:state.categories,rules:state.rules,data:persisted?safeData(persisted):this.state.data,categoryMessage:'Categoria excluída.'});}
+   try{const state=await desktop.categoryDelete(name);const persisted=await desktop.load(this.state.mode);this.setState({categories:state.categories,rules:state.rules,data:persisted?safeData(persisted):this.state.data,categoryMessage:'Categoria excluída.'});void this.loadQA84VisualCatalog();}
    catch(e:any){this.setState({categoryMessage:String(e?.message||e)});}
  }
  async saveRule(){
@@ -1797,7 +1798,7 @@ class App extends React.Component<any,State>{
          onClick:()=>this.setState({showAllBudgetCategories:!this.state.showAllBudgetCategories})},
          this.state.showAllBudgetCategories?'Ocultar outras categorias':'Ver outras categorias ('+quiet.length+')',h(Icon,{name:this.state.showAllBudgetCategories?'chevron-up':'chevron-down',size:16})),
        this.state.showAllBudgetCategories?h('div',{className:'mf-budget-quiet-grid'},quiet.map(c=>h('div',{className:'mf-budget-quiet-row',key:c.name},
-          h('span',{},c.emoji||'✨','  ',c.name),mode==='expense'?h('button',{className:'small-link',onClick:()=>this.setState({editModal:{type:'budget',key:c.name,title:'Definir limite · '+c.name,value:''}})},'Definir limite'):h('span',{className:'muted'},'Sem receitas neste mês')))):null):null,
+          h('span',{className:'qa84-category-combo'},h(CategoryVisualGlyph,{identity:resolveCategoryVisualIdentity({categoryName:c.name,catalog:this.state.qa84VisualCatalog||[],aggregate:true}),size:17}),c.name),mode==='expense'?h('button',{className:'small-link',onClick:()=>this.setState({editModal:{type:'budget',key:c.name,title:'Definir limite · '+c.name,value:''}})},'Definir limite'):h('span',{className:'muted'},'Sem receitas neste mês')))):null):null,
      h('p',{className:'mf-budget-disclaimer'},'Pix para terceiros continuam como entradas ou saídas até que sejam identificados como transferências próprias. Reembolsos sem vínculo são mostrados como entradas, não abatimentos automáticos de gastos.'));
  }
 
