@@ -118,3 +118,45 @@ test('B03/B04: right drawer delegates without legacy bank category bypass; CSS a
  assert.match(css,/repeat\(3,minmax\(0,1fr\)\)/);
  assert.match(css,/repeat\(2,minmax\(0,1fr\)\)/);
 });
+
+test('B04: outside cancellation does not persist or open drawer',()=>{
+ const f=fixture();let t=f.comp.render();
+ one(t,'d05-row-icon').props.onClick(trigger());t=f.comp.render();
+ const overlay=one(t,'d05-overlay'),target={};
+ overlay.props.onMouseDown({target,currentTarget:target});
+ assert.match(words(f.comp.render()).join(' '),/Categoria da movimentação/);
+ overlay.props.onMouseDown({target,currentTarget:target});
+ assert.equal(f.clicks.drawer,0);
+ // A true backdrop hit closes the picker without invoking financial methods.
+ overlay.props.onMouseDown({target,currentTarget:target});
+ const actually={};
+ overlay.props.onMouseDown({target:actually,currentTarget:actually});
+ assert.doesNotMatch(words(f.comp.render()).join(' '),/Categoria da movimentação/);
+});
+test('B04: personal bank assignment is preview-only and never calls a write IPC',async()=>{
+ const f=fixture();let confirmed=0,previewed=0;
+ f.win.financeDesktop={
+  d05BankAccountAuthorize:async()=>({accountId:'bank-1'}),
+  d05PersonalWritePreview:async input=>{
+   previewed++;return {contract:'D05/PERSONAL-SUPERVISED-PREVIEW-V1',
+    changesApplied:false,after:input.target,before:[{row:{category:'Assinaturas'}}]};
+  },d05PersonalWriteConfirm:async()=>{confirmed++;return {status:'applied'};}
+ };
+ let t=f.comp.render();one(t,'d05-row-icon').props.onClick(trigger());
+ t=f.comp.render();
+ const parent=nodes(t).find(n=>n.props.className?.includes?.('d05-catalog-choice')&&
+  words(n).includes('Assinaturas'));
+ assert(parent);parent.props.onClick();
+ t=f.comp.render();
+ const only=nodes(t).find(n=>n.props.className==='d05-child'&&
+  words(n).join(' ').includes('Somente Assinaturas'));
+ assert(only);only.props.onClick();
+ t=f.comp.render();
+ const confirm=one(t,'d05-confirm');await confirm.props.onClick();
+ await Promise.resolve();await Promise.resolve();
+ t=f.comp.render();
+ assert.equal(previewed,1);
+ assert.equal(confirmed,0);
+ assert.match(words(t).join(' '),/Nenhum dado foi alterado/);
+ assert.equal(f.clicks.drawer,0);
+});
