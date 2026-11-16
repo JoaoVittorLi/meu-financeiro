@@ -54,14 +54,17 @@ class D05Movements extends React.Component<any,any> {
  const [decor,setDecor]=useState({bank:{},manual:{}} as any);
  const [loadState,setLoadState]=useState('loading');
  const [accessMessage,setAccessMessage]=useState('');
- const [search,setSearch]=useState('');
- const [source,setSource]=useState('all');
+ const incomingCategory=state.qa84TransactionsCategory||state.txCategoryFilter||'';
+  const incomingIdentity=incomingCategory?resolveCategoryVisualIdentity({categoryName:incomingCategory,
+   catalog:state.qa84VisualCatalog||[],aggregate:true}):null;
+  const [search,setSearch]=useState(incomingIdentity?.source==='fallback'?incomingCategory:'');
+ const [source,setSource]=useState(state.txSource||'all');
  const [metricSource,setMetricSource]=useState('bank');
  const [tab,setTab]=useState(state.txReviewOnly?'pending':'all');
- const [period,setPeriod]=useState(state.month||iso(new Date()).slice(0,7));
+ const [period,setPeriod]=useState(state.qa84TransactionsSpan?'':state.month||iso(new Date()).slice(0,7));
  const [account,setAccount]=useState('');
  const [kind,setKind]=useState('all');
- const [categoryId,setCategoryId]=useState('');
+ const [categoryId,setCategoryId]=useState(incomingIdentity&&incomingIdentity.source!=='fallback'?incomingIdentity.categoryId:'');
  const [subcategoryId,setSubcategoryId]=useState('');
  const [sort,setSort]=useState('newest');
  const [group,setGroup]=useState(true);
@@ -82,7 +85,8 @@ class D05Movements extends React.Component<any,any> {
  const byName=(name:string)=>parents.find((p:any)=>p.name===name)||D05ApprovedParent(name);
  const byId=(id:string)=>parents.find((p:any)=>p.id===id)||approved.find((p:any)=>p.id===id);
  const format=(cents:number)=>fmt(cents);
- const inRange=(date:string)=>!period||date.slice(0,7)===period;
+ const inRange=(date:string)=>period?date.slice(0,7)===period:state.qa84TransactionsSpan?
+  date>=state.qa84TransactionsSpan.start&&date<=state.qa84TransactionsSpan.end:true;
  const bankData=state.mode==='demo'?[]:state.bank.data.transactions||[];
  const realBank=bankData.map((tx:any)=>{
   const key=JSON.stringify([tx.accountId,tx.id]),data=decor.bank[key]||{};
@@ -464,7 +468,8 @@ class D05Movements extends React.Component<any,any> {
     h('button',{type:'button',onClick:()=>setSelected(new Set())},'Limpar seleção')):null,
    filtered.length?h('div',{className:'d05-list'},onScreen.map((r:any,i:number)=>{
     const p=byId(r.categoryId)||byName(r.category),child=p?.subcategories?.find((c:any)=>c.id===r.subcategoryId);
-    const icon=child||p||{iconKey:'circle-dot',hue:155};
+    const icon=resolveCategoryVisualIdentity({categoryId:r.categoryId||null,
+     subcategoryId:r.subcategoryId||null,categoryName:r.category,catalog:parents});
     const isReview=r.source==='bank'&&r.status==='POSTED'&&!r.reviewed;
     const signed=r.kind==='transfer'||r.kind==='ignore'?'neutral':r.amount>=0?'positive':'negative';
     const isSelected=selected.has(r.key);
@@ -478,7 +483,7 @@ class D05Movements extends React.Component<any,any> {
        h('span',{'aria-hidden':'true'},isSelected?'✓':'')),
       h('button',{type:'button',className:'d05-row-icon','aria-label':'Alterar categoria de '+r.merchant,
        onClick:(e:any)=>openPicker(e,r)},
-       h(D05VectorIcon,{iconKey:icon.iconKey,hue:icon.hue,size:23})),
+       h(CategoryVisualGlyph,{identity:icon,size:23})),
       h('div',{className:'d05-row-info'},
        h('div',{className:'d05-merchant-line'},
         h('button',{type:'button',className:'d05-merchant',onClick:()=>r.source==='bank'?host.openBankDetail(r.raw):host.openManualDetail(r.raw)},r.merchant),

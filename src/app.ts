@@ -36,7 +36,7 @@ type BankState = {config:BankConfig;data:{accounts:BankAccount[];transactions:Ba
 const EMPTY_BANK:BankState={config:{configured:false,clientId:'',itemIds:[],secure:false},data:{accounts:[],transactions:[],items:[],last:null}};
 type E1Report = {ok:boolean;reason?:string;stage?:string;verifiedCount?:number;pendingCount?:number;mismatchCount?:number;checks?:Record<string,{status:'verified'|'mismatch'|'pending';reason:string}>;counts?:{bankWindows:number;bankCloud:number;accountsWindows:number;accountsCloud:number;personalOriginalRows:number;overlayEditsCloud:number;missingBankRefsCloud:number;missingPlanningAccountsCloud:number};e1Completed?:boolean;cloudCutoverAllowed?:boolean;monthDeltas?:{ok:boolean;stage:string;totalDifferenceMonths?:number;limitedResults:boolean;items:{month:string;windowsCount:number;cloudCount:number;difference:number;status:string}[]}};
 type QuickCategoryTarget = {origin:'bank'|'manual';id:string;accountId?:string;left:number;top:number;width:number};
-type State = {csvPreview?:any;contextCategory?:{target:'entry'|'quick'|'batch';editor:CategoryEditor;mode:string;account:string;query:string};categoryContextBusy?:boolean;txGroupByDate?:boolean; txAdvancedOpen?:boolean;txCategoryFilter?:string;txKindFilter?:'all'|'income'|'expense';txReviewFilter?:'all'|'pending'|'reviewed';txSort?:'date_desc'|'date_asc'|'amount_desc'|'amount_asc';quickCategory:QuickCategoryTarget|null;quickCategoryQuery:string;quickCategoryIndex:number;quickCategoryBusy:boolean;quickCategoryError:string; budgetFocus?:'all'|'attention'|'unlimited';budgetSearch?:string;accountFocus?:'all'|'attention';bankIntegrationsOpen?:boolean;simSaved?:{result:any;input:Sim};simBusy?:boolean;simCalculatedInput?:Sim|null;simResultStale?:boolean;simError?:string; txSummarySource?:'bank'|'manual';planPresentation?:'agenda'|'calendar'|'projection'; overviewHideValues?:boolean;overviewChart?:string; intelligenceContextSnapshot?:any;intelligenceDraftScope?:any;settingsSection?:string; fatal?:string; booting?:boolean; mode:'real'|'demo'; data:Data; page:string; month:string; showEntry:boolean; entry:{date:string;description:string;kind:Kind;category:string;value:string}; sim:Sim; outcome:any; query:string; toast:string; budgetEdit:string; busy:boolean; editModal:null|{type:'budget'|'setting';key:string;title:string;value:string};bank:BankState;bankForm:{clientId:string;clientSecret:string;itemIds:string};bankBusy:boolean;bankMessage:string;bankFilter:string;txSource:'all'|'bank'|'manual';txReviewOnly:boolean;txOrganize:boolean;categoryMoreEmojis:boolean;quickAddOpen:boolean;dashboardSource:'bank'|'manual';sourceDetailsOpen:boolean;budgetTab:'expense'|'income';showAllBudgetCategories:boolean;
+type State = {csvPreview?:any;contextCategory?:{target:'entry'|'quick'|'batch';editor:CategoryEditor;mode:string;account:string;query:string};categoryContextBusy?:boolean;txGroupByDate?:boolean; txAdvancedOpen?:boolean;txCategoryFilter?:string;txKindFilter?:'all'|'income'|'expense';txReviewFilter?:'all'|'pending'|'reviewed';txSort?:'date_desc'|'date_asc'|'amount_desc'|'amount_asc';quickCategory:QuickCategoryTarget|null;quickCategoryQuery:string;quickCategoryIndex:number;quickCategoryBusy:boolean;quickCategoryError:string; budgetFocus?:'all'|'attention'|'unlimited';budgetSearch?:string;qa84VisualCatalog?:any[];qa84OverviewExpanded?:boolean;qa84OverviewSelected?:string|null;qa84TransactionsSpan?:DateSpan;qa84TransactionsCategory?:string;qa84BudgetDrill?:{categoryName:string;month:string;mode:string;bank:boolean;subcategoryId:string|null;showChild:boolean;returnScroll:number}|null;qa84BudgetRows?:QA84BudgetPart[];qa84BudgetLoading?:boolean;qa84BudgetPartial?:boolean;qa84BudgetReadError?:string;qa84BudgetShowAll?:boolean;qa84BudgetPage?:number;accountFocus?:'all'|'attention';bankIntegrationsOpen?:boolean;simSaved?:{result:any;input:Sim};simBusy?:boolean;simCalculatedInput?:Sim|null;simResultStale?:boolean;simError?:string; txSummarySource?:'bank'|'manual';planPresentation?:'agenda'|'calendar'|'projection'; overviewHideValues?:boolean;overviewChart?:string; intelligenceContextSnapshot?:any;intelligenceDraftScope?:any;settingsSection?:string; fatal?:string; booting?:boolean; mode:'real'|'demo'; data:Data; page:string; month:string; showEntry:boolean; entry:{date:string;description:string;kind:Kind;category:string;value:string}; sim:Sim; outcome:any; query:string; toast:string; budgetEdit:string; busy:boolean; editModal:null|{type:'budget'|'setting';key:string;title:string;value:string};bank:BankState;bankForm:{clientId:string;clientSecret:string;itemIds:string};bankBusy:boolean;bankMessage:string;bankFilter:string;txSource:'all'|'bank'|'manual';txReviewOnly:boolean;txOrganize:boolean;categoryMoreEmojis:boolean;quickAddOpen:boolean;dashboardSource:'bank'|'manual';sourceDetailsOpen:boolean;budgetTab:'expense'|'income';showAllBudgetCategories:boolean;
  categories:CategoryInfo[];rules:RuleInfo[];categoryEditor:CategoryEditor;ruleEditor:RuleEditor;ruleTest:string;categoryMessage:string;entryCategoryTouched:boolean;bankConfigOpen:boolean;overviewPeriod:PeriodMode;customStart:string;customEnd:string;backupInfo:{copies:number;last:string|null};detail:DetailSelection;detailDraft:DetailDraft;manualDraft:null|{description:string;date:string;value:string;category:string};detailBusy:boolean;categorySaving:string[];txSelected:string[];txBatchCategory:string; planning:PlanOverview;planMonth:string;planDay:string;planSelected:string|null;planOpen:boolean;planForm:PlanForm;planBusy:boolean;planView:string;planTerm:string;planIncludeEstimated:boolean;planBankTitle:string;planMatchQuery:string;planHistory:{action:string;details:string;at:string}[];cloudStage:string;cloudBusy:boolean;cloudMessage:string;cloudIdentityConnected:boolean;cloudQuarantineVerified:boolean;cloudPersonalTransferred:boolean;cloudParityBusy:boolean;cloudParityMessage:string;cloudE1Report:E1Report|null; intelligenceTab:'today'|'chat'|'actions';intelligenceDraft:string;intelligencePreparedQuestion:string;intelligencePanelOpen:boolean;intelligenceContext:string;intelligenceExpandedAction:string|null; aiStatus:{connected:boolean;secure:boolean;email?:string|null;scopeGranted?:boolean};aiBusy:boolean;aiError:string;aiDemoCase:string;aiEffort:'auto'|'low'|'medium';aiCreditsConfirmed:boolean;aiResult:any;aiStreaming:string;aiCapabilities:any;aiMemories:any[];aiMemoryDraft:string;aiMemoryKind:string;aiMemoryBusy:boolean;aiMemoryError:string;aiUseMemories:boolean;aiPreview:any;aiUsageStats:any;aiFinancialDemoSource:'bank'|'manual';aiFinancialDemo:any;aiFinancialDemoBusy:boolean;aiFinancialDemoError:string };
 // Bridge com o processo principal Electron. No preview web, mantém o armazenamento legado.
 interface DesktopBridge {load:(mode:'real'|'demo')=>Promise<Data|null>;save:(mode:'real'|'demo',data:Data)=>Promise<any>;info:()=>Promise<any>;backupSQLite:()=>Promise<{cancelled?:boolean;ok?:boolean}>;cloudMigrationStatus:()=>Promise<{stage:string;cloudConnected:boolean;financialSyncEnabled:boolean;backupPresent:boolean;latestBackupAt:string|null}>;prepareCloudMigration:()=>Promise<{stage:string;checkedTables:number;checkedRecords:number;recordsSent:number;backupVerified:boolean;personalTablesReady:number;personalRecordsReady:number}>;cloudAccessStatus:()=>Promise<{connected:boolean;stage?:string;reason?:string;financialSyncEnabled:boolean;recordsTransferred:number}>;connectCloudAccess:()=>Promise<{connected:boolean;stage?:string;reason?:string;financialSyncEnabled:boolean;recordsTransferred:number}>;previewQuarantineDemo:()=>Promise<{ok:boolean;stage?:string;reason?:string;personalTables?:number;fictionalRecords?:number;realRecordsSent:number;financialSyncEnabled:boolean}>;transferPersonalCloud:()=>Promise<{cancelled?:boolean;stage?:string;recordsSent?:number;personalTablesReady?:number;personalRecordsReady?:number;backupVerified?:boolean;financialSyncEnabled:boolean}>;cloudPersonalSyncStatus?:()=>Promise<{cursor:number;conflicts:number;financialSyncEnabled:boolean}>;cloudBankParity?:()=>Promise<{ok:boolean;reason?:string;localCount?:number;cloudCount?:number;exactIdentities?:boolean;exactDatesAndCents?:boolean;exactDescriptionsAndStatuses?:boolean;matched?:boolean;financialSyncEnabled:boolean}>;cloudE1Audit?:()=>Promise<E1Report>;onCloudPersonalUpdated?:(callback:(data:{inbound:number;conflicts:number})=>void)=>(()=>void);restoreSQLite:()=>Promise<{cancelled?:boolean;ok?:boolean}>;backupStatus:()=>Promise<{copies:number;last:string|null}>;openBackupsFolder:()=>Promise<string>;openDataFolder:()=>Promise<string>;bankStatus:()=>Promise<BankState>;bankConfigure:(c:any)=>Promise<BankState>;bankSync:()=>Promise<BankState & {newCount:number;totalCount:number}>;bankForget:()=>Promise<BankState>;importCategoryPack?:()=>Promise<any>;categoriesStatus:()=>Promise<{categories:CategoryInfo[];rules:RuleInfo[]}>;
@@ -570,6 +570,7 @@ class App extends React.Component<any,State>{
      const persisted=await desktop.load('real');
      this.setState({data:persisted?safeData(persisted):starter(),busy:false,booting:false});
      await this.refreshCategories();
+     void this.loadQA84VisualCatalog();
      const currentBank=await this.refreshBank();
      await this.refreshPlanning();
      this.unsubscribePersonalCloud=desktop.onCloudPersonalUpdated?.((event)=>{
@@ -642,6 +643,7 @@ class App extends React.Component<any,State>{
    if(this.state.detail){this.setState({detail:null});return;}
    if(this.state.planOpen){this.setState({planOpen:false});return;}
    if(this.state.editModal){this.setState({editModal:null});return;}
+   if(this.state.page==='budgets'&&this.state.qa84BudgetDrill){event.preventDefault();qa84BudgetReturn(this,!!this.state.qa84BudgetDrill.showChild);return;}
    if(this.state.showEntry)this.setState({showEntry:false});
  };
  maybeAutoSync(bank:BankState=this.state.bank){
@@ -659,8 +661,15 @@ class App extends React.Component<any,State>{
      if(result?.cancelled)return;
      this.setState({categories:result.categories.categories,rules:result.categories.rules,bank:{...this.state.bank,data:result.data},
        categoryMessage:`Sugestões aplicadas: ${result.rulesAdded} regras, ${result.overridesAdded} classificações. Outras movimentações continuam disponíveis para revisão.`});
+     void this.loadQA84VisualCatalog();
      await this.refreshPlanning();
    }catch(e:any){this.setState({categoryMessage:'Não foi possível importar as sugestões: '+String(e?.message||e)});}
+ }
+ async loadQA84VisualCatalog(){
+  const api=desktop as any;
+  if(!api?.d05Catalog)return;
+  try{const result=await api.d05Catalog();if(result&&Array.isArray(result.parents))this.setState({qa84VisualCatalog:result.parents});}
+  catch(_){/* Deterministic visual fallback; no fabricated permission. */}
  }
  async refreshCategories(){
    if(!desktop?.categoriesStatus)return;
@@ -677,6 +686,7 @@ class App extends React.Component<any,State>{
      const persisted=await desktop.load(this.state.mode);
      this.setState({categories:state.categories,rules:state.rules,categoryEditor:{previousName:'',name:'',color:'#3e9a85',emoji:'✨',kind:'expense'},categoryMessage:'Categoria salva.',data:persisted?safeData(persisted):this.state.data});
      await this.refreshBank();
+     void this.loadQA84VisualCatalog();
      if(context&&this.state.contextCategory===context){
       const same=this.state.mode===context.mode&&this.state.bankFilter===context.account&&this.state.query===context.query;
       this.setState({contextCategory:undefined,categoryEditor:context.editor,...(same?(context.target==='entry'?{entry:{...this.state.entry,category:value.name.trim()},entryCategoryTouched:true}:context.target==='quick'?{quickCategoryQuery:value.name.trim(),quickCategoryIndex:0}:{txBatchCategory:value.name.trim()}):{} )});
@@ -687,7 +697,7 @@ class App extends React.Component<any,State>{
  }
  async deleteCategory(name:string){
    if(!desktop||this.state.mode==='demo'||!confirm('Excluir a categoria '+name+'? A exclusão será impedida se ela estiver em uso.'))return;
-   try{const state=await desktop.categoryDelete(name);const persisted=await desktop.load(this.state.mode);this.setState({categories:state.categories,rules:state.rules,data:persisted?safeData(persisted):this.state.data,categoryMessage:'Categoria excluída.'});}
+   try{const state=await desktop.categoryDelete(name);const persisted=await desktop.load(this.state.mode);this.setState({categories:state.categories,rules:state.rules,data:persisted?safeData(persisted):this.state.data,categoryMessage:'Categoria excluída.'});void this.loadQA84VisualCatalog();}
    catch(e:any){this.setState({categoryMessage:String(e?.message||e)});}
  }
  async saveRule(){
@@ -1167,7 +1177,7 @@ class App extends React.Component<any,State>{
    const span=dateSpan(this.state.overviewPeriod,this.state.customStart,this.state.customEnd);
    const newMonth=span.end.slice(0,7),useMonth=newMonth>=nowYM&&newMonth<=shiftMonth(nowYM,12);
    const enteringPlan=target==='planning'&&this.state.page!=='planning'&&useMonth;
-   this.setState({page:target,txReviewOnly:page==='review',txOrganize:page==='categories',quickAddOpen:false,quickCategory:null,
+   this.setState({page:target,...(target==='budgets'&&pageChanged?{qa84BudgetDrill:null}:{}),txReviewOnly:page==='review',txOrganize:page==='categories',quickAddOpen:false,quickCategory:null,
       month:newMonth, ...(enteringPlan?{planMonth:newMonth,planDay:newMonth===nowYM?iso(new Date()):newMonth+'-01'}:{}),
       showEntry:false,outcome:null,simBusy:false},()=>{
        if(pageChanged)document.scrollingElement?.scrollTo({top:0,left:0,behavior:'instant' as ScrollBehavior});
@@ -1471,8 +1481,6 @@ class App extends React.Component<any,State>{
  const totalLimit=limits.reduce((n,c)=>n+c.limit,0),spentLimited=limits.reduce((n,c)=>n+c.total,0),budgetCoverage=overviewCoverage(budget.expense,spentLimited),used=totalLimit>0?Math.round(spentLimited/totalLimit*100):spentLimited>0?100:0;
  const recent=useBank?bank.data.transactions.filter(x=>x.date>=start&&x.date<=end&&x.status==='POSTED'&&['income','expense'].includes(effectiveNature(x))).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5).map(x=>({key:x.accountId+'|'+x.id,title:x.customTitle||x.merchant||x.description,original:x.description,date:x.date,category:x.category,amount:Math.abs(x.amount),kind:effectiveNature(x),raw:x})):d.transactions.filter(x=>x.date>=start&&x.date<=end).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5).map(x=>({key:x.id,title:x.description,original:'',date:x.date,category:x.category,amount:x.amount,kind:x.kind,raw:x}));
  const openBudget=()=>{this.setState({month});this.navigate('budgets');};
- const palette=['#8066d5','#329b89','#d29844','#5a8fc9','#c7759c'];
- const categoryColor=(name:string,index:number)=>{const info=this.getCategories().find(c=>c.name===name);return info&&(!info.builtIn||info.color.toLowerCase()!=='#3e9a85')?info.color:palette[index];};
  const metric=(label:string,value:number,icon:string,hint:string,tone:string)=>h('button',{type:'button',className:'u1-metric mf-border-reveal mf-tone-'+(tone==='net'?'net':tone)+' '+tone+' mf-overview-metric'+(tone==='net'?(value>0?' is-positive':value<0?' is-negative':' is-neutral'):''),'aria-label':label+' · '+money(value)+' · ver movimentações',onClick:()=>this.openOverviewTransactions(tone==='income'?'income':tone==='expense'?'expense':'all')},h('div',{className:'u1-metric-label'},h(Icon,{name:icon,size:16}),label,h(Icon,{name:'arrow',size:13})),h('strong',{},money(value)),h('small',{},hint));
  const reviewCount=useBank?bank.data.transactions.filter(t=>!t.reviewed).length:null;
  return h('div',{className:'overview-content u1-overview mf-premium-overview '+(hidden?'u1-values-hidden':'')},
@@ -1494,8 +1502,7 @@ class App extends React.Component<any,State>{
     h('div',{className:'u1-rhythm-summary'},h('div',{},h('strong',{},money(s.expense)),h('span',{},'gastos no período')),h('div',{className:'u1-comparison '+(comparison.percent!==null&&comparison.percent<=0?'is-lower':'')},hidden?'Valores ocultos':comparison.label,h('small',{},compareAvailable?date(previous.start)+' a '+date(previous.end)+' · mesma fonte':'Comparação exige histórico disponível nos dois intervalos'))),
     hidden?h('div',{className:'u1-chart-hidden'},h(Icon,{name:'eye-off',size:26}),h('p',{},'Mostre os valores para visualizar o gráfico.')):(state.overviewChart||'spending')==='flow'?h(Chart,{data:flowSegments(start,end,range)}):h(OverviewSpendingChart,{rows:points,compare:compareAvailable}),
     h('div',{className:'u1-chart-footer'},h('span',{},h('i',{className:'u1-current-dot'}),'Período selecionado'),compareAvailable?h('span',{},h('i',{className:'u1-previous-dot'}),'Intervalo anterior'):null,h('span',{className:'u1-daily-average'},'Média diária ',h('b',{},money(Math.round(s.expense/daysInSpan(start,end))))))),h('section',{className:'u1-panel u1-categories'},h('div',{className:'u1-panel-head'},h('div',{},h('h2',{},'Para onde foi seu dinheiro'),h('p',{},'Categorias do período selecionado')),h('span',{className:'u1-count'},s.categories.length+' categorias')),
-    s.categories.length?h('div',{className:'u1-category-list'},s.categories.slice(0,5).map((cat,i)=>h('button',{type:'button',className:'u1-category-row',key:cat.name,onClick:()=>{this.setState({query:cat.name,txSource:useBank?'bank':'manual',txReviewOnly:false,txOrganize:false,bankFilter:''});this.navigate('transactions');}},h('span',{className:'u1-category-dot',style:{background:categoryColor(cat.name,i)}}),h('span',{className:'u1-category-name'},cat.name),h('span',{className:'u1-category-bar'},h('i',{style:{width:hidden?'0%':Math.round(cat.total/Math.max(1,s.expense)*100)+'%',background:categoryColor(cat.name,i)}})),h('strong',{},money(cat.total)),h('small',{},hidden?'••••':Math.round(cat.total/Math.max(1,s.expense)*100)+'%')))):h('p',{className:'u1-empty'},'Nenhuma despesa nesta fonte e período.'),
-    s.categories.length>5?h('p',{className:'u1-microcopy'},'Mostrando as 5 maiores categorias. Consulte todas em Movimentações.'):null)),
+    renderQA84OverviewCategories(this,s.categories,s.expense,useBank,hidden)),
    h('aside',{className:'u1-side-stack'},
     h('section',{className:'mf-plan-shortcut'},h('div',{className:'u1-panel-head'},h('div',{},h('h2',{},'Na sua agenda'),h('p',{},'Hoje e próximos 7 dias · compromissos cadastrados')),h('button',{type:'button',className:'u1-icon-button','aria-label':'Abrir Planejamento',onClick:()=>this.navigate('planning')},h(Icon,{name:'arrow',size:17}))),
      generated?h('div',{className:'u1-agenda-stats'},h('div',{},h('strong',{},overdue.length),h('span',{},'vencidos')),h('div',{},h('strong',{},money(upcoming.reduce((n,x)=>n+x.remaining,0))),h('span',{},'a pagar · inclui vencidos'))):null,
@@ -1753,6 +1760,7 @@ class App extends React.Component<any,State>{
      // +10% de folga, arredondado para R$ 10. Não cria orçamento sem confirmação.
      return Math.max(2000,Math.ceil(average*1.1/1000)*1000);
    };
+   if(this.state.qa84BudgetDrill)return renderQA84BudgetDetail(this,{});
    return h('div',{className:'section mf-budget-section u3-budgets'},
      h('div',{className:'mf-budget-heading'},
        h('div',{},h('p',{},mode==='expense'?'Acompanhe seus limites por categoria.':'Veja a composição das receitas recebidas.')),
@@ -1784,44 +1792,7 @@ class App extends React.Component<any,State>{
        'Há '+fmt(unclassified)+' em '+(mode==='expense'?'despesas':'receitas')+' com categorias incompatíveis ou ainda não identificadas. Confira em Movimentações.'):null,
      h('div',{className:'u3-budget-toolbar'},h('div',{className:'u2-view-tabs','aria-label':'Filtro de categorias'},(mode==='income'?[{value:'all',label:'Recebimentos'}]:[{value:'all',label:'Todas'},{value:'attention',label:'Atenção'},{value:'unlimited',label:'Sem limite'}]).map(x=>h('button',{type:'button','aria-pressed':focus===x.value,onClick:()=>this.setState({budgetFocus:x.value})},x.label))),h('div',{className:'search-box'},h(Icon,{name:'search',size:16}),h('input',{'aria-label':'Buscar categoria no orçamento',placeholder:'Buscar categoria',value:search,onChange:(e:any)=>this.setState({budgetSearch:e.target.value})}))),
      h('div',{className:'u3-budget-list-heading'},h('h2',{},mode==='expense'?'Limites por categoria':'Origens da sua renda'),h('span',{role:'status'},visible.length+' categoria(s)')),
-     visible.length?h('div',{className:'budget-grid'},
-       visible.map(({info,total:spent,hasLimit,limit},index)=>{
-         const pct=hasLimit&&limit>0?Math.round(spent/limit*100):hasLimit?(spent>0?100:0):0;
-         const share=total>0?Math.round(spent/total*100):0;
-         const status=!hasLimit?'unlimited':spent>limit?'exceeded':limit>0&&spent/limit>=.9?'near':'within';
-         const gauge=mode==='expense'&&hasLimit&&limit>0?budgetB3Visual(spent,limit):null;
-         const remaining=limit-spent;
-         const row=h(Card,{className:'budget-item mf-budget-card mf-budget-'+status+(gauge?' mf-budget-card-b3':''),key:info.name},
-           h('div',{className:'budget-item-top'},h('span',{className:'cat-symbol',style:{background:info.color+'28',color:info.color}},info.emoji||'✨'),
-             h('div',{},h('h3',{},info.name),h('small',{className:'u3-budget-state'},mode==='income'?'Recebimentos do mês':status==='exceeded'?'Acima do limite':status==='near'?'Próximo do limite':status==='unlimited'?'Sem limite':'Dentro do limite'))),
-           gauge?h('div',{className:'mf-budget-b3',role:'group','aria-label':'Orçamento de '+info.name+': '+gauge.percent+'% utilizado; gasto '+fmt(spent)+' de '+fmt(limit)+(remaining<0?'; excedido em '+fmt(-remaining):'; restante '+fmt(remaining))},
-             h('div',{className:'mf-budget-b3-dial',style:{'--mf-budget-b3-color':gauge.color}},
-               h('svg',{className:'mf-budget-b3-svg',viewBox:'0 0 200 110','aria-hidden':true,focusable:'false'},
-                 h('path',{className:'mf-budget-b3-track',d:'M 14 96 A 86 86 0 0 1 186 96',pathLength:100}),
-                 gauge.fill>0?h('path',{className:'mf-budget-b3-fill',d:'M 14 96 A 86 86 0 0 1 186 96',pathLength:100,strokeDasharray:gauge.fill+' 100'}):null),
-               h('strong',{className:'mf-budget-b3-percent'},gauge.percent+'%'),
-               h('span',{className:'mf-budget-b3-caption'},'do limite utilizado')),
-             h('div',{className:'mf-budget-b3-values'},
-               h('div',{},h('small',{},'Gasto atual'),h('strong',{},fmt(spent))),
-               h('div',{},h('small',{},'Limite configurado'),h('strong',{},fmt(limit)))),
-             h('p',{className:'mf-budget-b3-remaining'+(remaining<0?' is-exceeded':'')},remaining<0?'Limite ultrapassado · excesso de '+fmt(-remaining):'Restam '+fmt(remaining))):
-           h('div',{className:'mf-budget-money'},h('strong',{},fmt(spent)),
-             h('span',{},mode==='expense'?'gasto até agora':'recebido no período')),
-           mode==='income'?h('div',{className:'mf-income-share'},
-             h('div',{className:'progress-track'},h('div',{className:'progress-bar',style:{background:info.color,width:(spent>0?Math.max(2,Math.min(share,100)):0)+'%'}})),
-             h('small',{},share===0&&spent>0?'Menos de 1% das receitas':share+'% das receitas')):
-           gauge?null:hasLimit?h('div',{className:'mf-budget-limit'},
-             h('div',{className:'mf-budget-limit-head'},
-               h('span',{},'Limite '+fmt(limit)),h('strong',{className:spent>limit?'bad-text':''},limit===0?(spent>0?'Acima do limite':'Limite zero definido'):pct+'% utilizado')),
-             limit>0?h('div',{className:'progress-track'},h('div',{className:'progress-bar',style:{width:Math.min(pct,100)+'%'}})):null,
-             h('small',{},spent>limit?'Ultrapassou em '+fmt(spent-limit):status==='near'?'Próximo do limite · restam '+fmt(limit-spent):limit===0?'Limite zero definido':'Restam '+fmt(limit-spent))):
-           h('div',{className:'mf-no-budget'},h('span',{},'Sem limite definido'),
-             h('div',{className:'mf-budget-limit-actions'},suggestLimit(info.name)?h('button',{type:'button',className:'small-link',title:'Sugestão: média dos últimos três meses com 10% de margem, arredondada para R$ 10. Você confirma antes de salvar.',onClick:()=>this.setState({editModal:{type:'budget',key:info.name,title:'Limite sugerido · '+info.name,value:moneyString(suggestLimit(info.name)!)}})},'Sugerir '+fmt(suggestLimit(info.name)!)):null,
-             h('button',{type:'button',className:'small-link',onClick:()=>this.setState({editModal:{type:'budget',key:info.name,title:'Definir limite · '+info.name,value:''}})},'Definir limite'))),
-           mode==='expense'&&hasLimit?h('div',{className:'budget-item-bottom'},h('button',{className:'small-link',onClick:()=>this.setState({editModal:{type:'budget',key:info.name,title:'Editar limite · '+info.name,value:moneyString(limit)}})},'Editar limite')):null);
-         const group=mode==='expense'&&(index===0||hasLimit!==visible[index-1].hasLimit);
-         return group?[h('h3',{className:'mf-budget-group-title',key:'group-'+info.name},hasLimit?'Categorias com limite':'Gastos sem limite'),row]:row;
-       })):h(Card,{className:'mf-budget-empty'},
+     visible.length?renderQA84BudgetCards(this,visible,mode,total,useBank,suggestLimit):h(Card,{className:'mf-budget-empty'},
          h('h3',{},entries.length?'Nenhuma categoria para estes filtros':mode==='income'?'Nenhuma receita neste período':'Nenhum gasto neste período'),
          h('p',{},entries.length?'Altere o filtro ou a busca para ver outras categorias.':mode==='income'?'As receitas aparecerão aqui depois de serem registradas ou sincronizadas.':'Suas despesas aparecerão aqui quando houver movimentações.')),
      quiet.length?h('div',{className:'mf-budget-quiet'},
@@ -1829,7 +1800,7 @@ class App extends React.Component<any,State>{
          onClick:()=>this.setState({showAllBudgetCategories:!this.state.showAllBudgetCategories})},
          this.state.showAllBudgetCategories?'Ocultar outras categorias':'Ver outras categorias ('+quiet.length+')',h(Icon,{name:this.state.showAllBudgetCategories?'chevron-up':'chevron-down',size:16})),
        this.state.showAllBudgetCategories?h('div',{className:'mf-budget-quiet-grid'},quiet.map(c=>h('div',{className:'mf-budget-quiet-row',key:c.name},
-          h('span',{},c.emoji||'✨','  ',c.name),mode==='expense'?h('button',{className:'small-link',onClick:()=>this.setState({editModal:{type:'budget',key:c.name,title:'Definir limite · '+c.name,value:''}})},'Definir limite'):h('span',{className:'muted'},'Sem receitas neste mês')))):null):null,
+          h('span',{className:'qa84-category-combo'},h(CategoryVisualGlyph,{identity:resolveCategoryVisualIdentity({categoryName:c.name,catalog:this.state.qa84VisualCatalog||[],aggregate:true}),size:17}),c.name),mode==='expense'?h('button',{className:'small-link',onClick:()=>this.setState({editModal:{type:'budget',key:c.name,title:'Definir limite · '+c.name,value:''}})},'Definir limite'):h('span',{className:'muted'},'Sem receitas neste mês')))):null):null,
      h('p',{className:'mf-budget-disclaimer'},'Pix para terceiros continuam como entradas ou saídas até que sejam identificados como transferências próprias. Reembolsos sem vínculo são mostrados como entradas, não abatimentos automáticos de gastos.'));
  }
 
