@@ -113,3 +113,8 @@ candidate = {
 Preferir orquestração simples/pequena a “agente irrestrito”; consultas paginadas seguras a carregar histórico inteiro; cálculo local replicável a números gerados por LLM; proatividade baseada em eventos versionados a notificações diárias sem utilidade. Depender de integração UI apenas como contrato, não bloquear M0/M1 por B05.
 
 **Fronteira deste PR:** apenas documentação, nenhuma alteração em Electron, preload, database, secrets, API, CircleCI ou main.
+
+
+## Adendo V2.1 — encaixe real do B05 no PR #94
+
+O fluxo da V2.1 deverá partir de PR #94 HEAD `d6693b42b21a1e4bf957f882dc3321506eaaa3c8`. Conversar V5 (`src/intelligence-b05-chat.ts`) renderiza `renderIntelligenceMessageItem` e o composer `renderIntelligenceComposer`; o envio com grant de leitura vai para `localFinancialSubmit` em `src/intelligence-local.ts`, que usa `intelligenceIC2ReadQuery` (preload já existente). O gateway `electron/intelligence-ic2-adapter.cjs` limita a resposta a quatro fatos/três blocos e revalida grant. A investigação pode ser uma extensão do orquestrador IC2, sem inventar chat ou novo IPC. A ligação do Pulso Financeiro V6 ao snapshot composto ainda tem dependência própria: **não** habilitar nem declarar implementada em M1-S1. Não alterar #94 nesta branch documental.
