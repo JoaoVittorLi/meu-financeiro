@@ -263,7 +263,7 @@ function mfD04Render(app:any):any{
    h('summary',{},'Outras ferramentas do serviço de revisão'),
    renderCategoryReviewLegacy(app))):null;
  const empty=!grantLive?h('div',{className:'mf-d04-empty',role:'status'},
-  h('h3',{},s.categoryReviewAvailable===false?'Revisão sintética indisponível':'Autorize uma revisão supervisionada'),
+  h('h3',{},s.categoryReviewAvailable===false?'Revisão legada indisponível neste perfil':'Autorize uma revisão supervisionada'),
   h('p',{},'Escrita pela IA no perfil pessoal permanece desativada. A prévia de teste exige perfil sintético validado.'),
   s.categoryReviewAvailable?h('button',{type:'button',className:'primary-button',
    disabled:s.categoryReviewBusy,onClick:()=>void categoryReviewEnable(app)},'Autorizar revisão sintética'):null):null;
@@ -277,7 +277,7 @@ function mfD04Render(app:any):any{
      onClick:()=>app.setState({categoryReviewOpen:false,intelligenceMainMode:'chat'})},'Voltar à conversa'),
     grant?h('button',{type:'button',className:'ghost-button',
      onClick:()=>void categoryReviewRun(app,()=>categoryReviewRefresh(app))},'Atualizar fila'):null)),
-  empty,body,
+  empty,body,mfI2CategoryPanel(app),
   s.mfD04Error?h('p',{className:'mf-ai-error',role:'status'},s.mfD04Error):null,
   s.categoryReviewError?h('p',{className:'mf-ai-error',role:'alert'},s.categoryReviewError):null,
   s.categoryReviewBusy?h('p',{role:'status'},'Conferindo o serviço…'):null,

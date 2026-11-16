@@ -8,6 +8,7 @@ const {DatabaseSync} = require('node:sqlite');
 const {FinanceDB} = require('./db.cjs');
 
 const REQUIRED = ['profiles', 'transactions', 'budgets', 'financial_settings'];
+const MAX_SUPPORTED_SCHEMA_VERSION=7; // D05 SQLite hierarchy v7; reject future formats.
 const verifiedDailyBackups=new Map();
 // The automatic backup timer runs hourly. Check complete SQLite integrity only
 // when a daily file is first observed or its metadata has changed.
@@ -33,7 +34,14 @@ function validateBackupFile(filename){
     if(!present.has('app_meta'))throw new Error('Formato de cópia não reconhecido.');
     const tables=check.prepare('SELECT value FROM app_meta WHERE key=?').get('schema_version');
     if(!tables || !/^\d+$/.test(String(tables.value)))throw new Error('Versão da cópia não reconhecida.');
-    if(Number(tables.value)>6)throw new Error('Esta cópia pertence a uma versão mais recente do aplicativo.');
+    const version=Number(tables.value);
+    if(!Number.isSafeInteger(version)||version<1)throw new Error('Versão da cópia inválida.');
+    if(version>MAX_SUPPORTED_SCHEMA_VERSION)
+      throw new Error('Esta cópia pertence a uma versão mais recente do aplicativo.');
+    if(check.prepare('PRAGMA integrity_check').get().integrity_check!=='ok')
+      throw new Error('A cópia está danificada.');
+    const invalidLinks=check.prepare('PRAGMA foreign_key_check').all();
+    if(invalidLinks.length)throw new Error('A cópia apresenta referências financeiras inválidas.');
   }finally{check.close();}
   return {ok:true,bytes:info.size};
 }

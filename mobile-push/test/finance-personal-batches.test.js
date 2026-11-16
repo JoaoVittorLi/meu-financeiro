@@ -148,3 +148,26 @@ test('a missing block cannot be hidden by claiming all counters are complete',as
   await assert.rejects(()=>verifyPersonalTransfer(storage,ID),/tabela não foi recebida|transferência incompleta|Hash ou contagem/);
  }finally{storage.close();}
 });
+
+test('D05 v7 bounded transfer rejects old v6 manifests and truncated hierarchy rows without storing data',async()=>{
+ const snap=await makePackage(2),storage=memoryDO();
+ try{
+  assert.equal(snap.schemaVersion,7);
+  assert.throws(()=>beginPersonalTransfer(storage,{importId:ID,
+   manifest:{...manifest(snap),schemaVersion:6}}),/versão do pacote não reconhecida/);
+  assert.equal(storage.sql.exec("SELECT COUNT(*) AS n FROM sqlite_master WHERE name='mf_transfer_session'").one().n,0);
+  beginPersonalTransfer(storage,{importId:ID,manifest:manifest(snap)});
+  const original=snap.tables.transactions.rows[0];
+  const truncated={...original};
+  delete truncated.subcategory_id;
+  assert.throws(()=>applyPersonalChunk(storage,{importId:ID,table:'transactions',
+   offset:0,rows:[truncated]}),/colunas não conferem/);
+  assert.throws(()=>applyPersonalChunk(storage,{importId:ID,table:'transactions',
+   offset:0,rows:[{...original,clientSecret:'forbidden'}]}),/colunas não conferem/);
+  assert.equal(storage.sql.exec('SELECT COUNT(*) AS n FROM mf_transfer_rows').one().n,0);
+  const payload={importId:ID,table:'transactions',offset:0,rows:[original]};
+  assert.equal(applyPersonalChunk(storage,payload).inserted,1);
+  assert.equal(applyPersonalChunk(storage,payload).replayed,1);
+  assert.equal(storage.sql.exec('SELECT COUNT(*) AS n FROM mf_transfer_rows').one().n,1);
+ }finally{storage.close();}
+});

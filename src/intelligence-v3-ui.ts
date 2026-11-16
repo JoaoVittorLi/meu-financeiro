@@ -60,12 +60,13 @@ function mfV3Render(app:any,msg:IntelligenceChatMessage):any{
   if(!d.previous||d.quality==='partial')view=missing('Comparação sem cobertura verificável');
   else {
    const rows=mfV3Heat(mfV3CompareRows(d));
+   const changePct=mfV3Pct(d.expenseCents,d.previous.expenseCents);
    if(kind==='compare')view=h('div',{className:'mf-v3-stack'},
      h('div',{className:'mf-v3-kpis'},kpi(d.previous.period,d.previous.expenseCents),kpi(d.period,d.expenseCents),
        kpi('Diferença',mfV3Delta(d.expenseCents,d.previous.expenseCents))),
-     info(mfV3Pct(d.expenseCents,d.previous.expenseCents)===null?
-       'Base zero: taxa percentual omitida; diferença em reais preservada.':
-       'Variação '+mfV3Pct(d.expenseCents,d.previous.expenseCents).toFixed(1)+'%'),
+     info(changePct===null?
+       'Base zero ou valores não verificáveis: percentual omitido.':
+       'Variação '+changePct.toFixed(1)+'%'),
      action('Explorar diferenças por categoria',expand),analysis?mfV3DeltaList(app,msg,rows):null);
    else if(kind==='trend')view=h('div',{className:'mf-v3-stack'},
      info('Somente dois meses estão disponíveis: comparação factual, não tendência de longo prazo.'),
@@ -73,8 +74,11 @@ function mfV3Render(app:any,msg:IntelligenceChatMessage):any{
      mfV3DeltaList(app,msg,rows.slice(0,cap)));
    else{
     const sort=app.state.mfV3Sort?.messageId===msg.id?app.state.mfV3Sort.mode:'absolute';
-    const rowsPositive=rows.filter(r=>r.delta>0).sort((a,b)=>sort==='relative'?
-      (b.relative??-Infinity)-(a.relative??-Infinity)||b.delta-a.delta:b.delta-a.delta);
+    // An unsafe delta is NOT zero, neutral or a valid ranked increase.
+    const rowsUnknown=rows.filter(r=>r.delta===null);
+    const rowsPositive=rows.filter((r):r is typeof r&{delta:number}=>r.delta!==null&&r.delta>0)
+      .sort((a,b)=>sort==='relative'?
+        (b.relative??-Infinity)-(a.relative??-Infinity)||b.delta-a.delta:b.delta-a.delta);
     const max=rowsPositive.reduce((m,r)=>Math.max(m,r.delta),1);
     view=h('div',{className:'mf-v3-stack'},
       h('div',{className:'mf-v3-toolbar'},
@@ -85,10 +89,11 @@ function mfV3Render(app:any,msg:IntelligenceChatMessage):any{
         (r.relative===null?'base zero':r.relative.toFixed(1)+'%'),
         r.delta/max*100,r.heat,()=>choose(r.name))),
       rowsPositive.length===0?info('Nenhum aumento confirmado.'):null,
-      rows.filter(r=>r.delta<=0).length? h('div',{className:'mf-v3-neutral'},
+      rowsUnknown.length?info(rowsUnknown.length+' variação(ões) com valor não verificável, omitidas do ranking.'):null,
+      rows.filter(r=>r.delta!==null&&r.delta<=0).length? h('div',{className:'mf-v3-neutral'},
        action(app.state.mfV3ShowNeutral===msg.id?'Ocultar sem aumento':'Mostrar sem aumento',
          ()=>app.setState({mfV3ShowNeutral:app.state.mfV3ShowNeutral===msg.id?null:msg.id})),
-       app.state.mfV3ShowNeutral===msg.id?rows.filter(r=>r.delta<=0).map(r=>
+       app.state.mfV3ShowNeutral===msg.id?rows.filter(r=>r.delta!==null&&r.delta<=0).map(r=>
          mfV3Bar(r.name,money(r.delta),0,'var(--muted)',()=>choose(r.name))):null):null);
    }
   }
@@ -193,7 +198,8 @@ function mfV3Render(app:any,msg:IntelligenceChatMessage):any{
     h('p',{},money(selected.amountCents)+' de '+money(d.expenseCents)+' em '+d.period),
     kind==='rank'&&d.previous?h('p',{},'Antes '+money(d.previous.categories.find(c=>c.name===selected.name)?.amountCents||0)+
       ' · agora '+money(selected.amountCents)+' · variação '+
-      money(selected.amountCents-(d.previous.categories.find(c=>c.name===selected.name)?.amountCents||0))):null,
+      money(mfV3Delta(selected.amountCents,
+       d.previous.categories.find(c=>c.name===selected.name)?.amountCents??0))):null,
     h('details',{},h('summary',{},'Ver movimentações'+(selected.detailsPartial?' · amostra parcial':'')),
       mfV3Table(['Data','Descrição','Valor'],selected.movements.map(m=>[m.date,m.description,money(m.amountCents)])))):null;
  return h('section',{className:'mf-v3-card mf-v3-'+kind+' mf-v3-'+mode+' state-'+d.quality,role:'region',

@@ -1,7 +1,9 @@
 'use strict';
 const {contextBridge,ipcRenderer}=require('electron');
+const {createD05PreloadBridge}=require('./d05-preload-bridge.cjs');
 // Exposição mínima: nada de ipcRenderer genérico ou acesso a arquivos pelo renderer.
 contextBridge.exposeInMainWorld('financeDesktop', Object.freeze({
+  ...createD05PreloadBridge(ipcRenderer),
   load: (profile) => ipcRenderer.invoke('finance:load',profile),
   save: (profile,data) => ipcRenderer.invoke('finance:save',profile,data),
   info: () => ipcRenderer.invoke('finance:info'),
@@ -10,6 +12,11 @@ contextBridge.exposeInMainWorld('financeDesktop', Object.freeze({
   localFinancialRevoke: token => ipcRenderer.invoke('finance:read-revoke',token),
   intelligenceOperationalOverview: input => ipcRenderer.invoke('intelligence:operational-overview',input),
   intelligenceOperationalAsk: input => ipcRenderer.invoke('intelligence:operational-ask',input),
+  intelligenceIC2ReadQuery: input => ipcRenderer.invoke('intelligence:ic2-read-query',input),
+  intelligenceCategoryPersonal: input => ipcRenderer.invoke('intelligence:category-personal',input),
+  intelligenceCategorySandboxStart: month => ipcRenderer.invoke('intelligence:category-sandbox-start',month),
+  intelligenceCategorySandboxCommand: input => ipcRenderer.invoke('intelligence:category-sandbox-command',input),
+  intelligenceCategorySandboxStop: sessionId => ipcRenderer.invoke('intelligence:category-sandbox-stop',sessionId),
   categoryReviewStatus: () => ipcRenderer.invoke('finance:review-status'),
   categoryReviewAuthorize: input => ipcRenderer.invoke('finance:review-authorize',input),
   categoryReviewList: input => ipcRenderer.invoke('finance:review-list',input),

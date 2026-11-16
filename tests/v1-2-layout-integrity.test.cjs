@@ -73,7 +73,13 @@ test('V1.2 — chat lateral encolhe corretamente; modal mantém scroll interno e
  assert.match(scoped,/\.mf-ai-drawer\.mf-ai-drawer-compact \.mf-ai-drawer-composer\s*\{\s*flex:\s*0 0 auto/);
  assert.doesNotMatch(scoped,/display:\s*none|overflow:\s*hidden/);
  assert.match(ai,/className:'mf-ai-backdrop'/);
- assert.match(ai,/className:'mf-ai-drawer mf-ai-drawer-compact'/);
+ // D01 adds a third semantic class while retaining the responsive V1.2
+ // drawer. Assert tokens, not equality with an obsolete two-class literal.
+ const match=ai.match(/h\('aside',\{className:'(mf-ai-drawer [^']+)'/);
+ assert(match,'A real assistant drawer must exist');
+ const tokens=new Set(match[1].split(/\s+/));
+ assert(tokens.has('mf-ai-drawer'));
+ assert(tokens.has('mf-ai-drawer-compact'));
 });
 test('V1.2 — BUG-02 respeita superfície e contraste do tema claro sem afetar a V1.1',()=>{
  const scoped=premium.slice(premium.indexOf('/* V1.2 / BUG-02'));

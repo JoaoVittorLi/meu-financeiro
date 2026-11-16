@@ -12,14 +12,24 @@ function fixture(){
  const code=ts.transpile(fs.readFileSync(path.join(__dirname,'../src/intelligence-review.ts'),'utf8'),{target:ts.ScriptTarget.ES2020});vm.runInContext(code,context);
  return {db,service,context,app,directory,close(){db.close();fs.rmSync(directory,{recursive:true,force:true});}};
 }
+// Original R3 behavior regressions use the actual retained legacy renderer.
+// The approved D04 path is independently asserted in the compiled outFile.
+function renderLegacyReview(f){return f.context.renderCategoryReviewLegacy(f.app);}
 function nodes(tree,match,out=[]){if(tree&&typeof tree==='object'){if(match(tree))out.push(tree);for(const c of tree.children||[])nodes(c,match,out);}return out;}
 const text=n=>typeof n==='string'?n:(n?.children||[]).map(text).join('');
 const settle=()=>new Promise(resolve=>setImmediate(resolve));
+test('R3/D04: compiled production bundle keeps both legacy R3 and approved D04 delegates',()=>{
+ const bundle=fs.readFileSync(path.join(__dirname,'../app/app.js'),'utf8');
+ assert(bundle.includes('function renderCategoryReviewLegacy('));
+ assert(bundle.includes('function mfD04Render('));
+ assert(bundle.includes('function renderCategoryReview('));
+ assert(bundle.includes('return mfD04Render(app);'));
+});
 test('R3 inspection and page search preserve protected rows, and filter changes close the inspector',async()=>{
  const f=fixture();try{
   await authorize(f);await click(f,'Detalhes');assert(f.app.state.categoryReviewDetail);
   f.context.categoryReviewSetFilter(f.app,'accountId','other');assert.equal(f.app.state.categoryReviewDetail,null);
-  const sections=nodes(f.context.renderCategoryReview(f.app),n=>n.props.id==='mf-review-section-0');assert.equal(sections[0].props.hidden,true);
+  const sections=nodes(renderLegacyReview(f),n=>n.props.id==='mf-review-section-0');assert.equal(sections[0].props.hidden,true);
  }finally{f.close();}
 });
 test('R3 prepared response from an earlier account context is discarded',async()=>{
@@ -38,9 +48,9 @@ test('history handoff applies the approved account and exact pattern then focuse
   assert.equal(f.app.state.categoryReviewFilters.pattern,'CAFETERIA FLORESTA');assert(f.app.state.categoryReviewQueue.rows.every(r=>r.description==='CAFETERIA FLORESTA'));assert(calls.includes('mf-review-section-1'));assert(calls.includes('focus'));
  }finally{f.close();}
 });
-async function click(f,label,index=0){const tree=f.context.renderCategoryReview(f.app),button=nodes(tree,n=>n.tag==='button'&&text(n)===label)[index];assert(button,'Botão ausente: '+label);assert(!button.props.disabled,'Botão desativado: '+label);button.props.onClick();await settle();await settle();}
+async function click(f,label,index=0){const tree=renderLegacyReview(f),button=nodes(tree,n=>n.tag==='button'&&text(n)===label)[index];assert(button,'Botão ausente: '+label);assert(!button.props.disabled,'Botão desativado: '+label);button.props.onClick();await settle();await settle();}
 async function authorize(f){await f.context.categoryReviewOpen(f.app);await click(f,'Autorizar revisão dos dados sintéticos');}
-async function confirm(f){const checkbox=nodes(f.context.renderCategoryReview(f.app),n=>n.tag==='input'&&n.props.type==='checkbox'&&String(n.props.onChange).includes('categoryReviewConfirmed'))[0];assert(checkbox);checkbox.props.onChange({target:{checked:true}});await click(f,'Confirmar esta ação');}
+async function confirm(f){const checkbox=nodes(renderLegacyReview(f),n=>n.tag==='input'&&n.props.type==='checkbox'&&String(n.props.onChange).includes('categoryReviewConfirmed'))[0];assert(checkbox);checkbox.props.onChange({target:{checked:true}});await click(f,'Confirmar esta ação');}
 test('component callbacks run real FinanceDB: suggest, simulate, approve, future import, select history, apply and undo',async()=>{
  const f=fixture();try{
   await authorize(f);assert.equal(f.app.state.categoryReviewReport.suggestionsTotal,2);
@@ -73,7 +83,7 @@ test('main and drawer chat reuse the same pending operation and do not execute n
   await f.context.categoryReviewOpen(f.app);assert.equal(f.app.state.categoryReviewPreview.id,p.id);assert.equal(f.db.listCategories().rules.length,0);
   assert.equal(f.context.categoryReviewHandleQuestion(f.app,'Transfira meu dinheiro'),false);
   f.app.state.categoryReviewAvailable=false;f.context.categoryReviewDisable(f.app);
-  const rendered=text(f.context.renderCategoryReview(f.app));assert.match(rendered,/Aguardando homologação/);
+  const rendered=text(renderLegacyReview(f));assert.match(rendered,/Aguardando homologação/);
  }finally{f.close();}
 });
 test('existing history persistence short-circuits during a review grant, even if storage is inaccessible',()=>{
@@ -92,7 +102,7 @@ test('changing an account invalidates visible rows, selection and preview before
   f.app.state.categoryReviewSelected=old.slice(0,1);f.app.state.categoryReviewPreview={id:'old'};
   f.context.categoryReviewSetFilter(f.app,'accountId','33333333-3333-4333-8333-333333333333');
   assert.equal(f.app.state.categoryReviewQueue,null);assert.equal(f.app.state.categoryReviewSelected.length,0);assert.equal(f.app.state.categoryReviewPreview,null);
-  assert.match(text(f.context.renderCategoryReview(f.app)),/Filtros alterados/);
+  assert.match(text(renderLegacyReview(f)),/Filtros alterados/);
   await click(f,'Aplicar filtros');assert.equal(f.app.state.categoryReviewFiltersDirty,false);
   assert(f.app.state.categoryReviewQueue.rows.every(r=>r.accountId==='33333333-3333-4333-8333-333333333333'));
  }finally{f.close();}

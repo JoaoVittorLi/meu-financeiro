@@ -30,10 +30,28 @@ test('migração de banco anterior adiciona emoji sem perder as regras ou as tra
  legacy.exec(`CREATE TABLE categories (name TEXT PRIMARY KEY COLLATE NOCASE,color TEXT NOT NULL,built_in INTEGER NOT NULL DEFAULT 0,created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);
  INSERT INTO categories(name,color,built_in,created_at) SELECT name,color,built_in,created_at FROM categories_old;`);
  // Teste isolado: abandona estrutura reconstruída e reinstala a versão de tabela antiga sem exigir relações de FK.
- legacy.exec('PRAGMA foreign_keys=OFF; DROP TABLE categories_old;');legacy.close();
+ legacy.exec('PRAGMA foreign_keys=OFF; DROP TABLE categories_old;');
+ // Prove the exact historical failure: a D05 trigger can still reference
+ // the now-missing parent even though the real categories table exists.
+ const damaged=legacy.prepare("SELECT name,sql FROM sqlite_master WHERE type='trigger' AND sql LIKE '%categories_old%'").all();
+ assert(damaged.some(x=>x.name==='d05_transactions_insert_relationship'));
+ const invalidFK=legacy.prepare('PRAGMA foreign_key_list(subcategories)').all();
+ assert(invalidFK.some(x=>x.table==='categories_old'));
+ legacy.close();
  db=new FinanceDB(file);
  assert.equal(db.load('real').transactions.length,1);
  assert.equal(db.listCategories().categories.find(x=>x.name==='Pets').emoji,'✨');
  assert.equal(db.listCategories().categories.find(x=>x.name==='Moradia').emoji,'🏠');
+ assert.equal(db.listCategories().rules.find(r=>r.pattern==='IFOOD')?.category,'Pets');
+ assert.equal(db.load('real').transactions[0].amount,2200);
+ assert.equal(db.db.prepare('SELECT COUNT(*) AS n FROM subcategories').get().n,61);
+ const childFk=db.db.prepare('PRAGMA foreign_key_list(subcategories)').all();
+ assert(childFk.some(x=>x.table==='categories'));
+ assert(!childFk.some(x=>x.table==='categories_old'));
+ const rewritten=db.db.prepare("SELECT name,sql FROM sqlite_master WHERE type='trigger' AND name LIKE 'd05_%_relationship'").all();
+ assert(rewritten.length>0);
+ assert(rewritten.every(x=>!x.sql.includes('categories_old')));
+ assert.equal(db.db.prepare('PRAGMA foreign_key_check').all().length,0);
+ assert.deepEqual(db.integrity(),['ok']);
  db.close();fs.rmSync(dir,{recursive:true,force:true});
 });

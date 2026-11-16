@@ -9,7 +9,12 @@ const vm=require('node:vm');
 const ts=require('typescript');
 const filename=path.join(__dirname,'../src/intelligence-view.ts');
 const source=fs.readFileSync(filename,'utf8');
-const output=ts.transpileModule(source,{
+// The production renderer uses module:none/outFile; load its actual D03
+// component and V3 dispatcher instead of inventing exports for this VM.
+const d03=fs.readFileSync(path.join(__dirname,'../src/intelligence-today-v2.ts'),'utf8');
+const visuals=fs.readFileSync(path.join(__dirname,'../src/intelligence-visuals.ts'),'utf8');
+const v3=fs.readFileSync(path.join(__dirname,'../src/intelligence-v3-core.ts'),'utf8');
+const output=ts.transpileModule(visuals+'\n'+v3+'\n'+source+'\n'+d03,{
  compilerOptions:{target:ts.ScriptTarget.ES2019,module:ts.ModuleKind.None}
 }).outputText;
 const h=(tag,props,...children)=>({tag,props:props||{},children:children.flat(8).filter(x=>x!==null&&x!==undefined)});
@@ -38,7 +43,8 @@ function report({profile='real'}={}){
  cards[0].evidence=[{}, {posted:1,pendingBank:1}];
  cards[2].observations=[{category:'Alimentação',spentCents:22000,limitCents:30000}];
  cards[3].budgets=[{category:'Alimentação',spentCents:22000,limitCents:30000,percentage:73}];
- return {contract:'IC-v1/I-P0.1',privacy:{changesApplied:false,personalAIWritingEnabled:false},cards};
+ cards[4].count=1; // one confirmed R$45.00 commitment
+ return {contract:'IC-v1/I-P0.1',privacy:{readOnly:true,changesApplied:false,modelCalled:false,personalAIWritingEnabled:false},cards};
 }
 function flatten(value,all=[]){
  if(!value||typeof value!=='object')return all;
@@ -46,15 +52,20 @@ function flatten(value,all=[]){
  for(const child of value.children||[])flatten(child,all);
  return all;
 }
-test('R1: handles all eight cards without fabricating missing financial figures',()=>{
- const ctx=context(),a=app({intelligencePremiumReport:report()});
+test('R1/D03: eight verified source cards produce only permitted and factual Today priorities',()=>{
+ const ctx=context(),grant={token:'local-qa',source:'bank',profile:'real',
+  expiresAt:Date.now()+60000,planning:true};
+ const a=app({intelligencePremiumReport:report(),localFinancialAccess:grant});
  a.state.intelligencePremiumSignature=ctx.intelligencePremiumSignature(a);
  const tree=ctx.renderIntelligencePremiumToday(a),nodes=flatten(tree);
- assert.equal(nodes.filter(n=>n.props.className?.includes('mf-premium-tile')).length>=5,true);
+ const signals=nodes.filter(n=>n.props.className==='mf-d03-signal');
+ assert.equal(signals.length,2); // verified review + confirmed planning
  const rendered=JSON.stringify(tree);
- for(const id of ['UI-01','UI-02','UI-03','UI-04','UI-05','UI-06','UI-07','UI-08'])assert.ok(rendered.includes(id));
- assert.ok(!rendered.includes('dados fictícios'));
- assert.ok(rendered.includes('45,00')); // 4.500 centavos, not 4.500 reais.
+ assert(rendered.includes('Compromissos futuros confirmados'));
+ assert(rendered.includes('45,00')); // R$45.00, not R$4,500
+ assert(rendered.includes('Há movimentações para conferir'));
+ assert(!rendered.includes('Saldo disponível:'));
+ assert(!rendered.includes('dados fictícios'));
 });
 test('R1: without a grant Today remains permission-driven',async()=>{
  let payload=null;
@@ -63,7 +74,9 @@ test('R1: without a grant Today remains permission-driven',async()=>{
  await ctx.intelligencePremiumLoad(a);
  assert.equal(payload.token,null);
  assert.equal(a.state.intelligencePremiumReport.cards.length,8);
- assert.equal(JSON.stringify(ctx.renderIntelligencePremiumToday(a)).includes('Autorize a leitura local'),true);
+ const today=JSON.stringify(ctx.renderIntelligencePremiumToday(a));
+ assert(today.includes('Sem leitura financeira habilitada.'));
+ assert(!today.includes('45,00'));
 });
 test('R1: stale previous-month reply cannot reach the current profile',async()=>{
  let resolve;
@@ -142,10 +155,10 @@ test('R2: authorized chat uses operational endpoint and shows source, period and
  const ctx=chatContext(api);
  const a=app({page:'intelligence',localFinancialAccess:{token:'private-session-token',source:'bank',profile:'real'},
   intelligenceMessages:[],categories:[]});
- await ctx.localFinancialSubmit(a,'Compare minhas despesas com o mês anterior');
+ await ctx.localFinancialSubmit(a,'Quais despesas precisam de conferência?');
  assert.equal(request.token,'private-session-token');
  assert.equal(request.month,'2026-11');
- assert.equal(request.question,'Compare minhas despesas com o mês anterior');
+ assert.equal(request.question,'Quais despesas precisam de conferência?');
  assert.equal(a.state.intelligenceMessages.length,2);
  assert.equal(a.state.intelligenceMessages[1].operationalActions[0].handler,'navigation:transactions');
  assert.equal(a.state.intelligenceMessages[1].status,'done');

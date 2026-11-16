@@ -56,9 +56,10 @@ function launch(profile,port){
    '--remote-allow-origins=*','--user-data-dir='+profile,project];
  const child=spawn(electron,args,{cwd:project,env,windowsHide:true,stdio:['ignore','pipe','pipe']});
  const recent=[];
- child.on('error',error=>recent.push(error.message));
+ const remember=value=>{recent.push(String(value).slice(0,1000));if(recent.length>30)recent.shift();};
+ child.on('error',error=>remember(error.message));
  for(const stream of [child.stdout,child.stderr])
-  stream.on('data',chunk=>{if(recent.length<30)recent.push(String(chunk).slice(0,500))});
+  stream.on('data',remember);
  return {child,logs:()=>recent.slice(-12).join('')};
 }
 async function awaitTarget(port,child){
@@ -127,17 +128,38 @@ async function start(profile){
  const port=await availablePort(),running=launch(profile,port);
  try{
   const endpoint=await awaitTarget(port,running.child),cdp=await connect(endpoint);
+  const issues=[];
+  const record=value=>{issues.push(String(value).slice(0,800));if(issues.length>18)issues.shift();};
+  cdp.socket.addEventListener('message',event=>{
+   let msg;try{msg=JSON.parse(event.data)}catch{return;}
+   if(msg.method==='Runtime.exceptionThrown')
+    record('[JS_ERROR] '+(msg.params?.exceptionDetails?.exception?.description||
+      msg.params?.exceptionDetails?.text||'unidentified'));
+   if(msg.method==='Runtime.consoleAPICalled'&&msg.params?.type==='error')
+    record('[CONSOLE_ERROR] '+(msg.params.args||[]).map(a=>a.value||a.description||'').join(' '));
+   if(msg.method==='Log.entryAdded'&&msg.params?.entry?.level==='error')
+    record('[LOG_ERROR] '+msg.params.entry.text);
+  });
   await cdp.send('Runtime.enable');
-  // A Chrome tab exists before React and preload have finished loading.
-  // Assert actual bridge + DOM readiness instead of relying on a sleep.
-  for(let i=0;i<80;i++){
+  try{await cdp.send('Log.enable')}catch{}
+  // Slow Windows runners may require extra time; always expose startup failures.
+  let last=null,lastError=null;
+  const deadline=Date.now()+40000;
+  while(Date.now()<deadline){
+   if(running.child.exitCode!==null)
+    throw Error('Electron encerrou durante a inicialização: '+running.child.exitCode);
    try{
-    const ready=await evaluate(cdp,'return !!(window.financeDesktop && document.querySelector(\"button.nav-item[aria-label=\\\"Visão geral\\\"]\"))');
-    if(ready)return {...running,cdp};
-   }catch{}
+    last=await evaluate(cdp,
+     'return {bridge:!!(window.financeDesktop&&typeof window.financeDesktop.info==="function"),'+
+     'nav:[...document.querySelectorAll("button.nav-item")].some(b=>b.getAttribute("aria-label")==="Visão geral"),'+
+     'root:document.getElementById("app")?.textContent?.slice(0,120)||""}');
+    if(last?.bridge&&last?.nav)return {...running,cdp};
+   }catch(error){lastError=String(error.message||error).slice(0,300);}
    await delay(250);
   }
-  throw Error('Renderer/preload não ficaram prontos em 20 s');
+  throw Error('Renderer/preload não ficaram prontos em 40 s; estado='+
+   JSON.stringify(last)+'; erro CDP='+(lastError||'nenhum')+
+   '; diagnósticos='+JSON.stringify(issues));
  }catch(error){
   running.child.kill();
   throw Error(error.message+'; Electron output: '+running.logs());

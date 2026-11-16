@@ -1,7 +1,7 @@
 // E1: Server-side read-only, owner-only integrity evidence.
 // No raw IDs, balances, transaction labels, personal records or secrets leave this module.
 // Digest comparisons across Windows and Cloudflare are useful evidence, not a cutover approval.
-import {PERSONAL_COLUMNS} from './finance-personal-validate.js';
+import {PERSONAL_COLUMNS,PERSONAL_SCHEMA_VERSION} from './finance-personal-validate.js';
 import {auditVerifiedBankReferences} from './finance-reference-audit.js';
 import {bankIngestionStatus,ensureBankStaging} from './finance-bank-ingestion.js';
 import {bankMonthlyEvidence} from '../../shared/e1-monthly-evidence.mjs';
@@ -86,7 +86,7 @@ export async function cloudE1Evidence(storage){
   };
   if(transfer){
     const manifest=JSON.parse(transfer.manifest_json);
-    if(manifest?.tables!==17||manifest?.schemaVersion!==6||
+    if(manifest?.tables!==17||manifest?.schemaVersion!==PERSONAL_SCHEMA_VERSION||
        !SHA.test(manifest.digest||'')||!manifest.byTable||
        tableNames.some(t=>!Number.isSafeInteger(manifest.byTable[t]?.rows)))
       throw new Error('Manifesto pessoal incompatível.');

@@ -40,10 +40,14 @@ test('D1.5.1 — ambos os caminhos humanos usam o parser estrito',()=>{
  assert.match(saveManual,/máximo duas casas decimais/);
  assert.match(saveEntry,/máximo duas casas decimais/);
 });
-test('D1.5.1 — parser legado de CSV, orçamentos e backups não foi substituído',()=>{
+test('D1.5.1 — CSV usa coerção segura e preserva conversão de centavos legada de orçamento',()=>{
  const legacy=src.slice(src.indexOf('function parseMoney('),src.indexOf('function parsePositiveBRLInput('));
  assert.match(legacy,/Math\.round\(x\*100\)/);
  const csv=src.slice(src.indexOf('async importCSV('),src.indexOf('setSimulation('));
- assert.match(csv,/parseMoney\(row\[va\]/);
+ // Import now checks the raw value with String(...) before the canonical
+ // cent-to-BRL legacy parser. Functional import/persistence is tested separately.
+ assert.match(csv,/parseMoney\(String\(row\[va\]\|\|''\)\)/);
+ assert.match(csv,/d05CsvTable\(raw\)/);
+ assert.match(csv,/d05CsvDigest\(raw\)/);
  assert(src.includes("const v=value===''?null:parseMoney(value);"),'Legacy budget parser unchanged');
 });

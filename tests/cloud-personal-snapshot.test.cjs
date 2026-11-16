@@ -4,6 +4,7 @@ const assert=require('node:assert/strict');
 const os=require('node:os');
 const fs=require('node:fs');
 const path=require('node:path');
+const {DatabaseSync}=require('node:sqlite');
 const {FinanceDB}=require('../electron/db.cjs');
 const {PlanningStore}=require('../electron/planning.cjs');
 const {PERSONAL_TABLES}=require('../electron/cloud-data-routing.cjs');
@@ -31,6 +32,11 @@ test('creates full 17-table personal snapshot from immutable backup with exact v
     const first=createPersonalSnapshotFromBackup(backup);
     const second=createPersonalSnapshotFromBackup(backup);
     assert.deepEqual(first,second);
+    assert.equal(first.schemaVersion,7);
+    assert.deepEqual(first.tables.transactions.columns.slice(-2),['category_id','subcategory_id']);
+    assert.equal(first.tables.transactions.rows[0].category_id,null);
+    assert.equal(first.tables.transactions.rows[0].subcategory_id,null);
+    assert.equal(first.tables.subcategories,undefined,'D05 child catalog not in 17-table quarantine; no cutover');
     assert.equal(first.manifest.tables,17);
     assert.deepEqual(new Set(Object.keys(first.tables)),new Set(PERSONAL_TABLES));
     assert.equal(first.tables.transactions.rows.length,1);
@@ -80,4 +86,19 @@ test('refuses snapshot if backup misses planning tables or has invalid sqlite by
 test('snapshot summary rejects malicious objects or wrong version',()=>{
   assert.throws(()=>personalSnapshotSummary({format:'wrong'}));
   assert.throws(()=>personalSnapshotSummary({format:'mf-personal-snapshot-v1',schemaVersion:99,manifest:{tables:17}}));
+});
+
+test('D05 v7 snapshot refuses an older backup version before exposing personal records',async()=>{
+ const temp=fs.mkdtempSync(path.join(os.tmpdir(),'mf-snapshot-version-'));
+ const fin=new FinanceDB(path.join(temp,'live.sqlite'));
+ try{
+  new PlanningStore(fin);
+  const stale=path.join(temp,'schema-6.sqlite');
+  await fin.backupTo(stale);
+  const sqlite=new DatabaseSync(stale);
+  try{sqlite.prepare("UPDATE app_meta SET value='6' WHERE key='schema_version'").run();}
+  finally{sqlite.close();}
+  assert.throws(()=>createPersonalSnapshotFromBackup(stale),/SQLite D05 v7/);
+  assert.equal(fs.readdirSync(temp).some(name=>name.endsWith('.json')),false);
+ }finally{fin.close();fs.rmSync(temp,{recursive:true,force:true});}
 });

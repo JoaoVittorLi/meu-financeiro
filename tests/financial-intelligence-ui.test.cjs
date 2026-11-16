@@ -4,7 +4,11 @@ const {FinanceDB}=require('../electron/db.cjs'),{PlanningStore}=require('../elec
 function harness(){
  const db=new FinanceDB(':memory:'),planner=new PlanningStore(db);db.save('real',{transactions:[{id:'synthetic',date:'2026-11-10',description:'Mercado synthetic',kind:'expense',category:'Alimentação',amount:4215}],budgets:{Alimentação:4000},settings:{opening:0,income:0,fixed:0,existing:0,reserve:0}});
  const service=new LocalFinancialIntelligence(db,planner),api={localFinancialAuthorize:x=>Promise.resolve(service.authorize(x,1)),localFinancialQuery:x=>Promise.resolve(service.query(x,1)),localFinancialRevoke:x=>Promise.resolve(service.revoke(x,1))};
- const names=['ai-markdown.ts','intelligence-view.ts','intelligence-integration.ts','intelligence-local.ts'];
+ // The renderer is a single module:none/outFile. Its real V3 dispatcher
+ // comes from intelligence-v3-core.ts; this harness must include it instead
+ // of inventing an export or leaving mfV3Requested undefined.
+ const names=['ai-markdown.ts','intelligence-visuals.ts','intelligence-v3-core.ts',
+  'intelligence-view.ts','intelligence-integration.ts','intelligence-local.ts'];
  const js=ts.transpileModule(names.map(n=>fs.readFileSync('src/'+n,'utf8')).join('\n'),{compilerOptions:{module:ts.ModuleKind.None,target:ts.ScriptTarget.ES2020}}).outputText;
  const h=(name,props,...children)=>({name,props:props||{},children:children.flat()});
  const cats=[{name:'Alimentação',kind:'expense'}];

@@ -4,6 +4,7 @@
 const { DatabaseSync, backup } = require('node:sqlite');
 const fs = require('node:fs');
 const path = require('node:path');
+const { migrateHierarchy } = require('./d05-hierarchy.cjs');
 const DEFAULT_CATEGORIES = [
   ['Moradia','#3e9a85'],['Alimentação','#d6934b'],['Transporte','#4489ba'],
   ['Saúde','#cb6d76'],['Lazer','#2aa898'],['Educação','#4c7fb2'],
@@ -115,7 +116,7 @@ function validate(payload) {
         !['income','expense'].includes(t.kind) || !isCents(t.amount) || t.amount === 0 ||
         typeof t.description !== 'string' || !t.description.trim() || t.description.length > 180 ||
         typeof t.category !== 'string' || !t.category.trim() || t.category.length > 70) throw new Error('Lançamento inválido.');
-    return {id:t.id,date:t.date,kind:t.kind,amount:t.amount,description:t.description,category:t.category,origin:String(t.origin||'manual').slice(0,40)};
+    return {id:t.id,date:t.date,kind:t.kind,amount:t.amount,description:t.description,category:t.category,origin:String(t.origin||'manual').slice(0,40),categoryId:t.categoryId,subcategoryId:t.subcategoryId};
   });
   if (new Set(transactions.map(t=>t.id)).size !== transactions.length) throw new Error('Identificadores duplicados.');
   const budgets = {};
@@ -132,9 +133,26 @@ function validate(payload) {
 function checkProfile(profile){if(profile!=='real'&&profile!=='demo') throw new Error('Perfil inválido');return profile;}
 class FinanceDB {
  constructor(filename){
+   // Capture the original pre-migration state for on-disk legacy databases.
+   const existingFile = filename && filename !== ':memory:' && path.resolve(filename);
+   const hadLegacyFile = Boolean(existingFile && fs.existsSync(existingFile) && fs.statSync(existingFile).size > 0);
    if (!filename || filename === ':memory:') { this.filename = filename || ':memory:'; }
    else { this.filename=path.resolve(filename); fs.mkdirSync(path.dirname(this.filename),{recursive:true,mode:0o700}); }
    this.db = new DatabaseSync(this.filename);
+   // Refuse future SQLite revisions BEFORE migrations, triggers or table DDL.
+   // A v8 backup must never be silently rewritten as a v7 database.
+   try{
+     const hasMeta=this.db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='app_meta'").get();
+     if(hasMeta){
+       const entry=this.db.prepare("SELECT value FROM app_meta WHERE key='schema_version'").get();
+       if(entry){
+         const raw=String(entry.value);
+         if(!/^[0-9]+$/.test(raw)||!Number.isSafeInteger(Number(raw))||Number(raw)<1)
+           throw new Error('Versão SQLite desconhecida; migração cancelada.');
+         if(Number(raw)>7)throw new Error('Versão SQLite futura incompatível; instalação anterior preservada.');
+       }
+     }
+   }catch(err){this.db.close();throw err;}
    this.db.exec('PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000;');
    this.db.exec(`
      CREATE TABLE IF NOT EXISTS app_meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
@@ -303,6 +321,15 @@ class FinanceDB {
      this.db.prepare("INSERT INTO app_meta(key,value) VALUES('budget_zero_migration_094','done')").run();
    }
    this.db.prepare('UPDATE app_meta SET value=? WHERE key=?').run('6','schema_version');
+   if (!this.db.prepare("SELECT 1 FROM app_meta WHERE key='d05_hierarchy_e1'").get() && hadLegacyFile) {
+     const rescuePath = this.filename + '.d05-before-v7.sqlite';
+     if (!fs.existsSync(rescuePath)) {
+       // VACUUM INTO includes committed WAL changes. Never overwrite a rescue copy.
+       this.db.prepare('VACUUM INTO ?').run(rescuePath);
+       try { fs.chmodSync(rescuePath, 0o600); } catch (_) { /* Windows ACL is authoritative */ }
+     }
+   }
+   migrateHierarchy(this.db);
  }
  load(profile){
    checkProfile(profile);
@@ -311,7 +338,9 @@ class FinanceDB {
    for(const r of this.db.prepare('SELECT category, amount_cents FROM budgets WHERE profile=?').all(profile))budgets[r.category]=r.amount_cents;
    const settings={opening:0,income:0,fixed:0,existing:0,reserve:0};
    for(const r of this.db.prepare('SELECT name, value_cents FROM financial_settings WHERE profile=?').all(profile))if(KEYS.includes(r.name))settings[r.name]=r.value_cents;
-   const transactions=this.db.prepare('SELECT id,date,description,kind,amount_cents AS amount,category,origin FROM transactions WHERE profile=? ORDER BY date,id').all(profile).map(x=>({...x}));
+   // Expose D05 links on the existing manual read model without hiding
+   // legacy amount/date/type fields or inventing a child for legacy rows.
+   const transactions=this.db.prepare('SELECT id,date,description,kind,amount_cents AS amount,category,origin,category_id AS categoryId,subcategory_id AS subcategoryId FROM transactions WHERE profile=? ORDER BY date,id').all(profile).map(x=>({...x}));
    return {version:5,transactions,budgets,settings};
  }
  /** Guard against stale renderer snapshots; this checks authoritative SQLite links.
@@ -331,12 +360,18 @@ class FinanceDB {
      }
    }
  }
- save(profile,payload){
+ save(profile,payload,{inTransaction=false}={}){
    checkProfile(profile);const value=validate(payload);
-   this.db.exec('BEGIN IMMEDIATE');
+   if(inTransaction && !this.db.isTransaction)throw new Error('Transação externa ausente.');
+   if(!inTransaction && this.db.isTransaction)throw new Error('Transação inesperada.');
+   if(!inTransaction)this.db.exec('BEGIN IMMEDIATE');
    try{
      // Verify authoritative bank links BEFORE deleting local rows.
      if(profile==='real')this.assertLinkedManualChangesAllowed(value.transactions);
+     // A legacy flat renderer must never silently erase existing D05 child links.
+     const oldCategoryLinks = new Map(this.db.prepare(
+       'SELECT id,category,category_id,subcategory_id FROM transactions WHERE profile=?'
+     ).all(profile).map(row => [row.id,row]));
      this.db.prepare('INSERT OR IGNORE INTO profiles(profile) VALUES (?)').run(profile);
      this.db.prepare('DELETE FROM transactions WHERE profile=?').run(profile);
      this.db.prepare('DELETE FROM budgets WHERE profile=?').run(profile);
@@ -349,8 +384,29 @@ class FinanceDB {
          existingCategories.add(name);
        }
      }
-     const addTx=this.db.prepare('INSERT INTO transactions (profile,id,date,description,kind,amount_cents,category,origin) VALUES (?,?,?,?,?,?,?,?)');
-     for(const t of value.transactions) addTx.run(profile,t.id,t.date,t.description,t.kind,t.amount,t.category,t.origin);
+     const addTx=this.db.prepare('INSERT INTO transactions (profile,id,date,description,kind,amount_cents,category,origin,category_id,subcategory_id) VALUES (?,?,?,?,?,?,?,?,?,?)');
+     for(const t of value.transactions) {
+       const prior=oldCategoryLinks.get(t.id);
+       const keep=prior && prior.category===t.category ? prior : null;
+       let categoryId=keep?.category_id??null,subcategoryId=keep?.subcategory_id??null;
+       // New D05 writes may provide the pair directly; old renderer payloads keep matching links.
+       // Null hierarchy from an untouched legacy row is not a request to
+       // reassign a parent; retain old links where text category is unchanged.
+       if(t.categoryId!=null||t.subcategoryId!=null){
+         if(typeof t.categoryId!=='string'||!t.categoryId||t.categoryId.length>140)
+           throw new Error('D05: categoryId obrigatório');
+         const parent=this.db.prepare('SELECT name FROM categories WHERE id=?').get(t.categoryId);
+         if(!parent||parent.name!==t.category)throw new Error('D05: categoria-pai divergente');
+         if(t.subcategoryId!==undefined&&t.subcategoryId!==null){
+           if(typeof t.subcategoryId!=='string'||!this.db.prepare(
+             'SELECT 1 FROM subcategories WHERE id=? AND parent_category_id=? AND active=1'
+           ).get(t.subcategoryId,t.categoryId))throw new Error('D05: subcategoria incompatível');
+         }
+         categoryId=t.categoryId;subcategoryId=t.subcategoryId??null;
+       }
+       addTx.run(profile,t.id,t.date,t.description,t.kind,t.amount,t.category,t.origin,
+         categoryId,subcategoryId);
+     }
      const addBudget=this.db.prepare('INSERT INTO budgets(profile,category,amount_cents) VALUES(?,?,?)');
      const allowed=new Set(this.listCategories().categories.map(x=>x.name));
      for(const [name,amount] of Object.entries(value.budgets)){
@@ -360,9 +416,9 @@ class FinanceDB {
      const addSetting=this.db.prepare('INSERT INTO financial_settings(profile,name,value_cents) VALUES (?,?,?)');
      for(const [name,amount] of Object.entries(value.settings))addSetting.run(profile,name,amount);
      if(profile==='real')this.pruneInvalidManualLinks();
-     this.db.exec('COMMIT');
+     if(!inTransaction)this.db.exec('COMMIT');
      return {ok:true,txCount:value.transactions.length};
-   }catch(err){this.db.exec('ROLLBACK');throw err;}
+   }catch(err){if(!inTransaction)this.db.exec('ROLLBACK');throw err;}
  }
  listCategories(){
    const categories=this.db.prepare('SELECT name,color,emoji,kind,built_in AS builtIn FROM categories ORDER BY built_in DESC,name COLLATE NOCASE').all().map(x=>({...x}));
@@ -430,7 +486,10 @@ class FinanceDB {
    if(input?.id!=null){
      const id=Number(input.id);
      if(!Number.isInteger(id)||id<=0||!this.db.prepare('SELECT 1 FROM category_rules WHERE id=?').get(id))throw new Error('Regra não encontrada.');
-     this.db.prepare('UPDATE category_rules SET pattern=?,match_mode=?,category=?,scope=?,priority=? WHERE id=?').run(pattern,matchMode,category,scope,priority,id);
+     this.db.prepare(`UPDATE category_rules SET pattern=?,match_mode=?,category=?,scope=?,priority=?,
+      category_id=CASE WHEN category=? THEN category_id ELSE NULL END,
+      subcategory_id=CASE WHEN category=? THEN subcategory_id ELSE NULL END WHERE id=?`)
+       .run(pattern,matchMode,category,scope,priority,category,category,id);
    }else this.db.prepare('INSERT INTO category_rules(pattern,match_mode,category,scope,priority) VALUES(?,?,?,?,?)').run(pattern,matchMode,category,scope,priority);
    return this.listCategories();
  }
@@ -447,7 +506,11 @@ class FinanceDB {
    }else{
      const name=categoryName(category);
      if(!this.db.prepare('SELECT 1 FROM categories WHERE name=?').get(name))throw new Error('Categoria inexistente.');
-     this.db.prepare('INSERT INTO bank_category_overrides(account_id,external_id,category) VALUES(?,?,?) ON CONFLICT(account_id,external_id) DO UPDATE SET category=excluded.category').run(accountId,externalId,name);
+     this.db.prepare(`INSERT INTO bank_category_overrides(account_id,external_id,category) VALUES(?,?,?)
+      ON CONFLICT(account_id,external_id) DO UPDATE SET
+      category_id=CASE WHEN category=excluded.category THEN category_id ELSE NULL END,
+      subcategory_id=CASE WHEN category=excluded.category THEN subcategory_id ELSE NULL END,
+      category=excluded.category`).run(accountId,externalId,name);
    }
    // An explicit human correction supersedes supervised provenance, including
    // when the user deliberately chooses the same category again.
@@ -532,7 +595,10 @@ class FinanceDB {
      for(const key of keys){
        this.getBankTransaction(key);
        if(category!==null)this.db.prepare(`INSERT INTO bank_category_overrides(account_id,external_id,category) VALUES(?,?,?)
-         ON CONFLICT(account_id,external_id) DO UPDATE SET category=excluded.category`).run(key.accountId,key.externalId,category);
+         ON CONFLICT(account_id,external_id) DO UPDATE SET
+          category_id=CASE WHEN category=excluded.category THEN category_id ELSE NULL END,
+          subcategory_id=CASE WHEN category=excluded.category THEN subcategory_id ELSE NULL END,
+          category=excluded.category`).run(key.accountId,key.externalId,category);
        if(category!==null&&this.db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='category_review_applied_labels'").get())this.db.prepare('DELETE FROM category_review_applied_labels WHERE account_id=? AND external_id=?').run(key.accountId,key.externalId);
        if(typeof reviewed==='boolean'||nature!==null){
          this.db.prepare(`INSERT OR IGNORE INTO bank_transaction_notes(account_id,external_id) VALUES (?,?)`).run(key.accountId,key.externalId);

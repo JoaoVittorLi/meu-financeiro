@@ -1,0 +1,632 @@
+{
+  "schema": "mf2.design.taxonomy.v1",
+  "status": "DESIGN_APPROVED_IMPLEMENTATION_PENDING",
+  "hierarchyLevels": 2,
+  "builtInCategoryCount": 14,
+  "builtInSubcategoryCount": 61,
+  "personalDataMigrationPolicy": "null-subcategory-for-existing-records; no inferred backfill",
+  "note": "Illustrative taxonomy. User custom categories and subcategories extend catalog. Monetary semantics derive from transaction kind/status, not icon hue. 'Sem subcategoria' is virtual null state; not a persisted child. Owner-approved category/subcategory taxonomy and icons; actual code migration pending issue #74.",
+  "parents": [
+    {
+      "id": "cat:moradia",
+      "name": "Moradia",
+      "iconKey": "house",
+      "hue": 264,
+      "kind": "expense",
+      "subcategories": [
+        {
+          "id": "sub:moradia/aluguel",
+          "parentId": "cat:moradia",
+          "name": "Aluguel",
+          "iconKey": "key",
+          "hue": 252,
+          "default": false
+        },
+        {
+          "id": "sub:moradia/condominio",
+          "parentId": "cat:moradia",
+          "name": "Condomínio",
+          "iconKey": "building",
+          "hue": 259,
+          "default": false
+        },
+        {
+          "id": "sub:moradia/energia",
+          "parentId": "cat:moradia",
+          "name": "Energia elétrica",
+          "iconKey": "zap",
+          "hue": 268,
+          "default": false
+        },
+        {
+          "id": "sub:moradia/agua",
+          "parentId": "cat:moradia",
+          "name": "Água e saneamento",
+          "iconKey": "droplet",
+          "hue": 275,
+          "default": false
+        },
+        {
+          "id": "sub:moradia/internet",
+          "parentId": "cat:moradia",
+          "name": "Internet residencial",
+          "iconKey": "wifi",
+          "hue": 281,
+          "default": false
+        },
+        {
+          "id": "sub:moradia/manutencao",
+          "parentId": "cat:moradia",
+          "name": "Manutenção da casa",
+          "iconKey": "wrench",
+          "hue": 287,
+          "default": false
+        }
+      ]
+    },
+    {
+      "id": "cat:alimentacao",
+      "name": "Alimentação",
+      "iconKey": "utensils",
+      "hue": 26,
+      "kind": "expense",
+      "subcategories": [
+        {
+          "id": "sub:alimentacao/supermercados",
+          "parentId": "cat:alimentacao",
+          "name": "Supermercados",
+          "iconKey": "shopping-basket",
+          "hue": 14,
+          "default": false
+        },
+        {
+          "id": "sub:alimentacao/delivery",
+          "parentId": "cat:alimentacao",
+          "name": "Delivery",
+          "iconKey": "bike",
+          "hue": 21,
+          "default": false
+        },
+        {
+          "id": "sub:alimentacao/restaurantes",
+          "parentId": "cat:alimentacao",
+          "name": "Restaurantes",
+          "iconKey": "utensils",
+          "hue": 30,
+          "default": false
+        },
+        {
+          "id": "sub:alimentacao/cafeterias",
+          "parentId": "cat:alimentacao",
+          "name": "Cafeterias",
+          "iconKey": "coffee",
+          "hue": 37,
+          "default": false
+        },
+        {
+          "id": "sub:alimentacao/feiras",
+          "parentId": "cat:alimentacao",
+          "name": "Feiras e hortifruti",
+          "iconKey": "apple",
+          "hue": 43,
+          "default": false
+        }
+      ]
+    },
+    {
+      "id": "cat:transporte",
+      "name": "Transporte",
+      "iconKey": "car-front",
+      "hue": 205,
+      "kind": "expense",
+      "subcategories": [
+        {
+          "id": "sub:transporte/combustivel",
+          "parentId": "cat:transporte",
+          "name": "Combustível",
+          "iconKey": "fuel",
+          "hue": 193,
+          "default": false
+        },
+        {
+          "id": "sub:transporte/aplicativos",
+          "parentId": "cat:transporte",
+          "name": "Aplicativos de transporte",
+          "iconKey": "car-taxi-front",
+          "hue": 200,
+          "default": false
+        },
+        {
+          "id": "sub:transporte/publico",
+          "parentId": "cat:transporte",
+          "name": "Transporte público",
+          "iconKey": "bus-front",
+          "hue": 209,
+          "default": false
+        },
+        {
+          "id": "sub:transporte/estacionamento",
+          "parentId": "cat:transporte",
+          "name": "Estacionamento",
+          "iconKey": "parking-square",
+          "hue": 216,
+          "default": false
+        },
+        {
+          "id": "sub:transporte/manutencao-veiculo",
+          "parentId": "cat:transporte",
+          "name": "Manutenção do veículo",
+          "iconKey": "wrench",
+          "hue": 222,
+          "default": false
+        }
+      ]
+    },
+    {
+      "id": "cat:saude",
+      "name": "Saúde",
+      "iconKey": "heart-pulse",
+      "hue": 166,
+      "kind": "expense",
+      "subcategories": [
+        {
+          "id": "sub:saude/farmacia",
+          "parentId": "cat:saude",
+          "name": "Farmácia",
+          "iconKey": "pill",
+          "hue": 154,
+          "default": false
+        },
+        {
+          "id": "sub:saude/consultas",
+          "parentId": "cat:saude",
+          "name": "Consultas",
+          "iconKey": "stethoscope",
+          "hue": 161,
+          "default": false
+        },
+        {
+          "id": "sub:saude/exames",
+          "parentId": "cat:saude",
+          "name": "Exames",
+          "iconKey": "microscope",
+          "hue": 170,
+          "default": false
+        },
+        {
+          "id": "sub:saude/academia",
+          "parentId": "cat:saude",
+          "name": "Academia e atividade física",
+          "iconKey": "dumbbell",
+          "hue": 177,
+          "default": false
+        }
+      ]
+    },
+    {
+      "id": "cat:lazer",
+      "name": "Lazer",
+      "iconKey": "ticket",
+      "hue": 332,
+      "kind": "expense",
+      "subcategories": [
+        {
+          "id": "sub:lazer/cinema",
+          "parentId": "cat:lazer",
+          "name": "Cinema",
+          "iconKey": "clapperboard",
+          "hue": 320,
+          "default": false
+        },
+        {
+          "id": "sub:lazer/jogos",
+          "parentId": "cat:lazer",
+          "name": "Jogos",
+          "iconKey": "gamepad-2",
+          "hue": 327,
+          "default": false
+        },
+        {
+          "id": "sub:lazer/viagens",
+          "parentId": "cat:lazer",
+          "name": "Viagens",
+          "iconKey": "plane",
+          "hue": 336,
+          "default": false
+        },
+        {
+          "id": "sub:lazer/eventos",
+          "parentId": "cat:lazer",
+          "name": "Eventos e passeios",
+          "iconKey": "tickets",
+          "hue": 343,
+          "default": false
+        }
+      ]
+    },
+    {
+      "id": "cat:educacao",
+      "name": "Educação",
+      "iconKey": "graduation-cap",
+      "hue": 231,
+      "kind": "expense",
+      "subcategories": [
+        {
+          "id": "sub:educacao/faculdade",
+          "parentId": "cat:educacao",
+          "name": "Faculdade",
+          "iconKey": "graduation-cap",
+          "hue": 219,
+          "default": false
+        },
+        {
+          "id": "sub:educacao/cursos",
+          "parentId": "cat:educacao",
+          "name": "Cursos",
+          "iconKey": "monitor-play",
+          "hue": 226,
+          "default": false
+        },
+        {
+          "id": "sub:educacao/livros",
+          "parentId": "cat:educacao",
+          "name": "Livros",
+          "iconKey": "book-open",
+          "hue": 235,
+          "default": false
+        },
+        {
+          "id": "sub:educacao/material",
+          "parentId": "cat:educacao",
+          "name": "Material de estudo",
+          "iconKey": "pencil-ruler",
+          "hue": 242,
+          "default": false
+        }
+      ]
+    },
+    {
+      "id": "cat:assinaturas",
+      "name": "Assinaturas",
+      "iconKey": "repeat-2",
+      "hue": 282,
+      "kind": "expense",
+      "subcategories": [
+        {
+          "id": "sub:assinaturas/streaming",
+          "parentId": "cat:assinaturas",
+          "name": "Streaming de vídeo",
+          "iconKey": "tv",
+          "hue": 270,
+          "default": false
+        },
+        {
+          "id": "sub:assinaturas/musica",
+          "parentId": "cat:assinaturas",
+          "name": "Música e áudio",
+          "iconKey": "headphones",
+          "hue": 277,
+          "default": false
+        },
+        {
+          "id": "sub:assinaturas/software",
+          "parentId": "cat:assinaturas",
+          "name": "Software e aplicativos",
+          "iconKey": "app-window",
+          "hue": 286,
+          "default": false
+        },
+        {
+          "id": "sub:assinaturas/nuvem",
+          "parentId": "cat:assinaturas",
+          "name": "Armazenamento em nuvem",
+          "iconKey": "cloud",
+          "hue": 293,
+          "default": false
+        }
+      ]
+    },
+    {
+      "id": "cat:compras",
+      "name": "Compras",
+      "iconKey": "shopping-bag",
+      "hue": 37,
+      "kind": "expense",
+      "subcategories": [
+        {
+          "id": "sub:compras/roupas",
+          "parentId": "cat:compras",
+          "name": "Roupas e acessórios",
+          "iconKey": "shirt",
+          "hue": 25,
+          "default": false
+        },
+        {
+          "id": "sub:compras/eletronicos",
+          "parentId": "cat:compras",
+          "name": "Eletrônicos",
+          "iconKey": "smartphone",
+          "hue": 32,
+          "default": false
+        },
+        {
+          "id": "sub:compras/presentes",
+          "parentId": "cat:compras",
+          "name": "Presentes",
+          "iconKey": "gift",
+          "hue": 41,
+          "default": false
+        },
+        {
+          "id": "sub:compras/casa",
+          "parentId": "cat:compras",
+          "name": "Itens para casa",
+          "iconKey": "lamp-desk",
+          "hue": 48,
+          "default": false
+        },
+        {
+          "id": "sub:compras/pets",
+          "parentId": "cat:compras",
+          "name": "Pets e animais",
+          "iconKey": "paw-print",
+          "hue": 54,
+          "default": false
+        }
+      ]
+    },
+    {
+      "id": "cat:contas",
+      "name": "Contas",
+      "iconKey": "receipt-text",
+      "hue": 193,
+      "kind": "expense",
+      "subcategories": [
+        {
+          "id": "sub:contas/telefonia",
+          "parentId": "cat:contas",
+          "name": "Telefonia",
+          "iconKey": "phone",
+          "hue": 181,
+          "default": false
+        },
+        {
+          "id": "sub:contas/impostos",
+          "parentId": "cat:contas",
+          "name": "Impostos e tributos",
+          "iconKey": "landmark",
+          "hue": 188,
+          "default": false
+        },
+        {
+          "id": "sub:contas/tarifas",
+          "parentId": "cat:contas",
+          "name": "Tarifas bancárias",
+          "iconKey": "credit-card",
+          "hue": 197,
+          "default": false
+        },
+        {
+          "id": "sub:contas/seguros",
+          "parentId": "cat:contas",
+          "name": "Seguros",
+          "iconKey": "shield-check",
+          "hue": 204,
+          "default": false
+        }
+      ]
+    },
+    {
+      "id": "cat:outros",
+      "name": "Outros",
+      "iconKey": "shapes",
+      "hue": 215,
+      "kind": "both",
+      "subcategories": [
+        {
+          "id": "sub:outros/pequenas-despesas",
+          "parentId": "cat:outros",
+          "name": "Pequenas despesas",
+          "iconKey": "coins",
+          "hue": 203,
+          "default": false
+        },
+        {
+          "id": "sub:outros/doacoes",
+          "parentId": "cat:outros",
+          "name": "Doações",
+          "iconKey": "hand-heart",
+          "hue": 210,
+          "default": false
+        },
+        {
+          "id": "sub:outros/ajustes",
+          "parentId": "cat:outros",
+          "name": "Ajustes diversos",
+          "iconKey": "sliders-horizontal",
+          "hue": 219,
+          "default": false
+        },
+        {
+          "id": "sub:outros/servicos",
+          "parentId": "cat:outros",
+          "name": "Serviços diversos",
+          "iconKey": "package",
+          "hue": 226,
+          "default": false
+        }
+      ]
+    },
+    {
+      "id": "cat:salario",
+      "name": "Salário",
+      "iconKey": "wallet",
+      "hue": 151,
+      "kind": "income",
+      "subcategories": [
+        {
+          "id": "sub:salario/fixo",
+          "parentId": "cat:salario",
+          "name": "Salário fixo",
+          "iconKey": "wallet",
+          "hue": 139,
+          "default": false
+        },
+        {
+          "id": "sub:salario/horas-extras",
+          "parentId": "cat:salario",
+          "name": "Horas extras",
+          "iconKey": "clock-3",
+          "hue": 146,
+          "default": false
+        },
+        {
+          "id": "sub:salario/comissoes",
+          "parentId": "cat:salario",
+          "name": "Comissões",
+          "iconKey": "badge-percent",
+          "hue": 155,
+          "default": false
+        },
+        {
+          "id": "sub:salario/bonus",
+          "parentId": "cat:salario",
+          "name": "Bônus e gratificações",
+          "iconKey": "award",
+          "hue": 162,
+          "default": false
+        }
+      ]
+    },
+    {
+      "id": "cat:transferencias",
+      "name": "Transferências",
+      "iconKey": "arrow-left-right",
+      "hue": 203,
+      "kind": "both",
+      "subcategories": [
+        {
+          "id": "sub:transferencias/entre-contas",
+          "parentId": "cat:transferencias",
+          "name": "Entre contas próprias",
+          "iconKey": "arrow-left-right",
+          "hue": 191,
+          "default": false
+        },
+        {
+          "id": "sub:transferencias/reserva",
+          "parentId": "cat:transferencias",
+          "name": "Para reserva própria",
+          "iconKey": "piggy-bank",
+          "hue": 198,
+          "default": false
+        },
+        {
+          "id": "sub:transferencias/aportes",
+          "parentId": "cat:transferencias",
+          "name": "Aporte em investimentos",
+          "iconKey": "chart-no-axes-combined",
+          "hue": 207,
+          "default": false
+        },
+        {
+          "id": "sub:transferencias/ajuste-interno",
+          "parentId": "cat:transferencias",
+          "name": "Ajuste entre contas",
+          "iconKey": "refresh-cw",
+          "hue": 214,
+          "default": false
+        }
+      ]
+    },
+    {
+      "id": "cat:rendimentos",
+      "name": "Rendimentos",
+      "iconKey": "trending-up",
+      "hue": 135,
+      "kind": "income",
+      "subcategories": [
+        {
+          "id": "sub:rendimentos/juros",
+          "parentId": "cat:rendimentos",
+          "name": "Juros",
+          "iconKey": "percent",
+          "hue": 123,
+          "default": false
+        },
+        {
+          "id": "sub:rendimentos/dividendos",
+          "parentId": "cat:rendimentos",
+          "name": "Dividendos",
+          "iconKey": "coins",
+          "hue": 130,
+          "default": false
+        },
+        {
+          "id": "sub:rendimentos/renda-fixa",
+          "parentId": "cat:rendimentos",
+          "name": "Renda fixa",
+          "iconKey": "landmark",
+          "hue": 139,
+          "default": false
+        },
+        {
+          "id": "sub:rendimentos/aluguel-recebido",
+          "parentId": "cat:rendimentos",
+          "name": "Aluguel recebido",
+          "iconKey": "house-plus",
+          "hue": 146,
+          "default": false
+        }
+      ]
+    },
+    {
+      "id": "cat:reembolsos",
+      "name": "Reembolsos",
+      "iconKey": "rotate-ccw",
+      "hue": 174,
+      "kind": "income",
+      "subcategories": [
+        {
+          "id": "sub:reembolsos/estornos",
+          "parentId": "cat:reembolsos",
+          "name": "Estornos",
+          "iconKey": "rotate-ccw",
+          "hue": 162,
+          "default": false
+        },
+        {
+          "id": "sub:reembolsos/devolucoes",
+          "parentId": "cat:reembolsos",
+          "name": "Devoluções de compras",
+          "iconKey": "package-check",
+          "hue": 169,
+          "default": false
+        },
+        {
+          "id": "sub:reembolsos/reembolso-saude",
+          "parentId": "cat:reembolsos",
+          "name": "Reembolso de saúde",
+          "iconKey": "heart-handshake",
+          "hue": 178,
+          "default": false
+        },
+        {
+          "id": "sub:reembolsos/reembolso-trabalho",
+          "parentId": "cat:reembolsos",
+          "name": "Reembolso de trabalho",
+          "iconKey": "briefcase-business",
+          "hue": 185,
+          "default": false
+        }
+      ]
+    }
+  ],
+  "approval": {
+    "date": "2026-11-13",
+    "scope": "All 14 parent categories, 61 child subcategories, visual iconography and colors",
+    "ownerFeedback": "100% aprovadas",
+    "codeStatus": "NOT_IMPLEMENTED",
+    "electronQA": "NOT_RUN"
+  }
+}

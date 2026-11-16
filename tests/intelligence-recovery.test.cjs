@@ -8,11 +8,25 @@ for(const synthetic of [false,true])for(const recovered of [false,true])test('re
  const file=path.join(dir,'meu-financeiro.sqlite');let db=new FinanceDB(file);
  try{
   if(!synthetic)db.db.exec('DROP TABLE IF EXISTS category_review_applied_labels; DROP TABLE IF EXISTS category_rule_constraints; DROP TABLE IF EXISTS category_review_decisions; DROP TABLE IF EXISTS category_review_commands');
-  const source=fs.readFileSync(path.join(__dirname,'../electron/main.cjs'),'utf8'),start=source.indexOf(' let localFinancial,categoryReview,reviewBackupGate;'),end=source.indexOf(" ipcMain.handle('finance:review-status'",start);
-  assert(start>0&&end>start);
-  const c=vm.createContext({db,planner:new PlanningStore(db),LocalFinancialIntelligence,CategoryReviewService,CategoryReviewBackupGate,IntelligenceOperational:require('../electron/intelligence-operational.cjs').IntelligenceOperational,smokeProfileActive:synthetic,path,app:{getPath:()=>dir}});
-  vm.runInContext(source.slice(start,end)+';this.services=()=>({localFinancial,categoryReview,reviewBackupGate,operationalIntelligence});this.rebind=bindLocalFinancialServices;',c);
+  const source=fs.readFileSync(path.join(__dirname,'../electron/main.cjs'),'utf8'),
+   start=source.indexOf(' let localFinancial,categoryReview,reviewBackupGate;'),
+   bindEnd=source.indexOf('\n bindLocalFinancialServices();',start);
+  assert(start>0&&bindEnd>start);
+  // Extract ONLY the production binding function, not the later D05 IPC
+  // registrations. Bind its actual CommonJS classes in the VM (no fake
+  // exports or stubs), as MAIN's top-level imports do at runtime.
+  const c=vm.createContext({db,planner:new PlanningStore(db),
+   LocalFinancialIntelligence,CategoryReviewService,CategoryReviewBackupGate,
+   IntelligenceOperational:require('../electron/intelligence-operational.cjs').IntelligenceOperational,
+   IC2ReadQueryGateway:require('../electron/intelligence-ic2-adapter.cjs').IC2ReadQueryGateway,
+   RCCategoryGateway:require('../electron/intelligence-category-rc.cjs').RCCategoryGateway,
+   d05PersonalGate:null,d05Gate:null,categoryRC:null,
+   smokeProfileActive:synthetic,path,app:{getPath:()=>dir}});
+  vm.runInContext(source.slice(start,bindEnd+'\n bindLocalFinancialServices();'.length)+
+   ';this.services=()=>({localFinancial,categoryReview,reviewBackupGate,operationalIntelligence,ic2ReadQuery,categoryRC});this.rebind=bindLocalFinancialServices;',c);
   const before=c.services(),read=before.localFinancial.authorize({consent:'LOCAL_FINANCIAL_READ_V1',source:'bank',profile:'real',planning:true},1);
+  assert(before.ic2ReadQuery instanceof require('../electron/intelligence-ic2-adapter.cjs').IC2ReadQueryGateway);
+  assert.equal(before.ic2ReadQuery.local,before.localFinancial);
   const oldReview=synthetic?before.categoryReview.authorize({consent:'SYNTHETIC_CATEGORY_REVIEW_V1'},1):null;
   const backup=path.join(dir,'snapshot.sqlite');await db.backupTo(backup);
   let handler,reloads=0;
@@ -26,7 +40,11 @@ for(const synthetic of [false,true])for(const recovered of [false,true])test('re
   if(synthetic){before.reviewBackupGate.pending.set('in-flight',Promise.resolve());await assert.rejects(handler({sender:{id:1}}),/Conclua/);before.reviewBackupGate.pending.clear();}
   if(recovered)await assert.rejects(handler({sender:{id:1}}),/Synthetic recovered failure/);else await handler({sender:{id:1}});
   db=c.db;assert.equal(reloads,recovered?0:1);
-  const after=c.services();assert.notEqual(after.operationalIntelligence,before.operationalIntelligence);assert.equal(after.operationalIntelligence.db,db);const stale=after.operationalIntelligence.overview({month:'2026-11',token:read.token},1);assert(stale.cards.some(r=>r.uiState==='denied'||r.uiState==='expired'));const newGrant=after.localFinancial.authorize({consent:'LOCAL_FINANCIAL_READ_V1',source:'bank',profile:'real',planning:true},1);assert.equal(after.operationalIntelligence.overview({month:'2026-11',token:newGrant.token},1).cards.length,8);assert.doesNotThrow(()=>after.operationalIntelligence.ask({month:'2026-11',token:newGrant.token,question:'Mostre meu radar'},1));assert.notEqual(after.localFinancial,before.localFinancial);
+  const after=c.services();assert.notEqual(after.ic2ReadQuery,before.ic2ReadQuery);
+  assert.equal(after.ic2ReadQuery.local,after.localFinancial);
+  assert.equal(after.categoryRC,before.categoryRC);
+  assert.equal(after.categoryRC.finance,db);
+  assert.notEqual(after.operationalIntelligence,before.operationalIntelligence);assert.equal(after.operationalIntelligence.db,db);const stale=after.operationalIntelligence.overview({month:'2026-11',token:read.token},1);assert(stale.cards.some(r=>r.uiState==='denied'||r.uiState==='expired'));const newGrant=after.localFinancial.authorize({consent:'LOCAL_FINANCIAL_READ_V1',source:'bank',profile:'real',planning:true},1);assert.equal(after.operationalIntelligence.overview({month:'2026-11',token:newGrant.token},1).cards.length,8);assert.doesNotThrow(()=>after.operationalIntelligence.ask({month:'2026-11',token:newGrant.token,question:'Mostre meu radar'},1));assert.notEqual(after.localFinancial,before.localFinancial);
   assert.throws(()=>after.localFinancial.query({token:read.token,intent:'radar',month:'2026-11'},1),/Autorização/);
   const fresh=after.localFinancial.authorize({consent:'LOCAL_FINANCIAL_READ_V1',source:'bank',profile:'real',planning:true},1);
   assert.doesNotThrow(()=>after.localFinancial.query({token:fresh.token,intent:'radar',month:'2026-11'},1));

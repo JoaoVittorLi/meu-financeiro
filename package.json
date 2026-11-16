@@ -5,7 +5,7 @@
   "description": "Meu Financeiro — transações, conciliação, planejamento e simulação de compra usando fluxo de caixa diário",
   "main": "electron/main.cjs",
   "scripts": {
-    "compile": "tsc --project tsconfig.json && node scripts/build-finance-ledger.cjs",
+    "compile": "tsc --project tsconfig.json && node scripts/build-finance-ledger.cjs && node scripts/build-preload.cjs build",
     "test:db": "npm run compile && node --test tests/*.test.cjs",
     "test:asar": "node --test tests/renderer-asar.integration.cjs",
     "test:electron-smoke": "node scripts/d1-electron-smoke.cjs",
@@ -23,8 +23,8 @@
     "@electron/asar": "4.3.1"
   },
   "build": {
-    "appId": "app.local.meufinanceiro",
-    "productName": "Meu Financeiro",
+    "appId": "app.local.meufinanceiro.rcall01",
+    "productName": "Meu Financeiro RC Experimental",
     "asar": true,
     "files": [
       "app/**/*",
