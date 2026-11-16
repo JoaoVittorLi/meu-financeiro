@@ -200,16 +200,36 @@ class D05Movements extends React.Component<any,any> {
  }
  const partial=state.mode==='real'&&!!state.bank.data.truncated;
  const openPicker=(event:any,row:any=null,kindName:string='row')=>{
-  activeTrigger.current=event.currentTarget;
-  const rect=event.currentTarget.getBoundingClientRect();
+  event?.stopPropagation?.();
+  const trigger=event?.currentTarget;
+  if(!trigger?.getBoundingClientRect)return;
+  activeTrigger.current=trigger;
+  const geometry=qa84B04Geometry(trigger.getBoundingClientRect(),
+   {width:window.innerWidth,height:window.innerHeight});
   const old=row?byId(row.categoryId):null;
-  const popupWidth=Math.min(355,window.innerWidth-24);
-  const left=Math.max(12,Math.min(rect.left,window.innerWidth-popupWidth-12));
-  const top=Math.max(12,Math.min(rect.bottom+7,window.innerHeight-465));
-  setError('');setPreview(null);
+  setError('');setNotice('');setPreview(null);
   setPicker({kind:kindName,row,phase:'parent',query:'',categoryId:old?.id||null,
-   subcategoryId:row?.subcategoryId||null,left,top,width:popupWidth});
+   subcategoryId:row?.subcategoryId||null,...geometry,
+   originalFingerprint:qa84B04Fingerprint(row),
+   selectionSignature:kindName==='batch'?JSON.stringify(Array.from(selected).sort()):null});
  };
+ // A single selector belongs to D05; the App-owned drawer requests it through
+ // a scoped UI event instead of mounting a second classifier or authorizer.
+ useEffect(()=>{
+  const fromDrawer=(event:any)=>{
+   const request=event?.detail;
+   if(!request||!['bank','manual'].includes(request.source)||!request.id)return;
+   const row=rows.find((r:any)=>r.source===request.source&&r.id===request.id&&
+    (r.source==='manual'||r.accountId===request.accountId));
+   if(!row){setError('Movimentação não encontrada; atualize o histórico.');return;}
+   openPicker({currentTarget:request.trigger,stopPropagation:()=>{}},row,'drawer');
+  };
+  window.addEventListener('mf2:d05:open-picker',fromDrawer);
+  return ()=>window.removeEventListener('mf2:d05:open-picker',fromDrawer);
+ },[state.mode,state.data.transactions,state.bank.data.transactions,catalog,decor,selected]);
+ const openDetail=(r:any)=>r.source==='bank'?
+  host.openBankDetail(r.raw,{categoryId:r.categoryId,subcategoryId:r.subcategoryId}):
+  host.openManualDetail(r.raw,{categoryId:r.categoryId,subcategoryId:r.subcategoryId});
  const setParent=(p:any)=>{
   setPreview(null);setError('');
   setPicker((old:any)=>({...old,categoryId:p.id,subcategoryId:null,phase:'child',query:''}));
