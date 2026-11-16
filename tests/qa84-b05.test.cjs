@@ -197,3 +197,77 @@ test('B05 security: B05 source files contain no direct personal financial writes
   assert(!/\b(bankCategorize|bankBatch|bankSplit|planCreate|planEdit|categoryReviewConfirm|db\.save)\s*\(/.test(source),name);
  }
 });
+
+test('RC2/B05-17: an explicit zero budget is labeled zero, never undefined',()=>{
+ const {ctx}=runtime(),a=app({localFinancialAccess:{token:'test',expiresAt:Date.now()+60000},
+  intelligencePremiumReport:{cards:[]},mockSignals:[{id:'budget-excess',kind:'budget',
+   title:'Revise o orçamento de Alimentação',detail:'Excesso observado',
+   meaning:'Excesso',sourceId:'UI-04',action:'budgets',
+   sourceCard:{budgets:[{category:'Alimentação',spentCents:76000,limitCents:0}]}}]});
+ const tree=ctx.renderMfB05Actions(a,[]),serialized=JSON.stringify(tree);
+ assert(serialized.includes('Limite explícito: R$ 0,00'));
+ assert(!serialized.includes('Limite não definido'));
+});
+test('RC2/B05-30: budget scenario invalidated when source facts change within same grant',()=>{
+ const {ctx}=runtime(),build=(limit,spent)=>({id:'budget-excess',kind:'budget',
+   title:'Revise o orçamento de Alimentação',detail:'Excesso observado',
+   meaning:'Excesso',sourceId:'UI-04',action:'budgets',
+   sourceCard:{budgets:[{category:'Alimentação',spentCents:spent,limitCents:limit}]}});
+ const a=app({localFinancialAccess:{token:'test',expiresAt:Date.now()+60000},
+   intelligencePremiumReport:{cards:[]},mockSignals:[build(70000,76000)],
+   mfB05ActionStage:'simulate'});
+ const slider=nodes(ctx.renderMfB05Actions(a,[])).find(n=>n.props.id==='mf-b05-budget-slider');
+ assert(slider);slider.props.onChange({target:{value:'850'}});
+ assert(JSON.stringify(ctx.renderMfB05Actions(a,[])).includes('850,00'));
+ a.state.mockSignals=[build(10000,99999)];
+ const updated=JSON.stringify(ctx.renderMfB05Actions(a,[]));
+ assert(!updated.includes('850,00'));
+ assert(updated.includes('prévia foi invalidada'));
+});
+test('RC2/B05-19: delivery comparison rejects unequal source expense window',()=>{
+ const {ctx}=runtime(),input=JSON.parse(JSON.stringify(verified));
+ assert.equal(ctx.mfB05DeliveryEvidence(input).deltaCents,11000);
+ const item=input.currentExpenses.value.find(x=>x.categoryId==='sub:alimentacao/delivery');
+ item.periodStart='2026-11-04';
+ assert.equal(ctx.mfB05DeliveryEvidence(input),null);
+});
+test('RC2/B05-30: changing future bills invalidates Today scenario override',()=>{
+ const {ctx}=runtime(),a=app({mfB05SelectedDate:'2026-11-30'});
+ const original=ctx.renderMfB05Today(a,verified);
+ nodes(original).find(n=>n.props.id==='mf-b05-adjust').props.onClick();
+ const slider=nodes(ctx.renderMfB05Today(a,verified))
+  .find(n=>n.props.id==='mf-b05-slider-mfB05ScenarioBalanceCents');
+ slider.props.onChange({target:{value:'1800'}});
+ assert(JSON.stringify(ctx.renderMfB05Today(a,verified)).includes('1.357,00'));
+ const changed=JSON.parse(JSON.stringify(verified));
+ changed.unpaidFutureCommitments.value[0].amountCents=12000;
+ assert(JSON.stringify(ctx.renderMfB05Today(a,changed)).includes('1.256,00'));
+});
+test('RC2/B05-36: twenty milestone selections preserve only last state',()=>{
+ const {ctx}=runtime(),a=app(),dates=ctx.mfB05Project(verified).timeline.map(x=>x.date);
+ for(let i=0;i<20;i++){
+   const date=dates[i%dates.length],tree=ctx.renderMfB05Today(a,verified);
+   const button=nodes(tree).find(n=>n.props.id==='mf-b05-date-'+date.replace(/-/g,''));
+   assert(button);button.props.onClick();
+ }
+ assert.equal(a.state.mfB05SelectedDate,dates[19%dates.length]);
+});
+test('RC2/B05-24: expired local read grants hide prior financial chat answers',()=>{
+ const source=read('src/intelligence-view.ts');
+ const compiled=ts.transpileModule(source,{compilerOptions:{
+   target:ts.ScriptTarget.ES2019,module:ts.ModuleKind.None
+ }}).outputText;
+ const sandbox={h,Date,Intl,Math,Number,JSON,Array,Set,Map,console};
+ vm.createContext(sandbox);vm.runInContext(compiled,sandbox,{timeout:1500});
+ const msg={id:'local-a-old',role:'assistant',text:'Dado financeiro sensível de sessão',
+  status:'done',scopeLabel:'Inteligência',periodLabel:'2026-11',createdAt:'18:00'};
+ const render=grant=>JSON.stringify(sandbox.renderIntelligenceMessageItem(
+  app({mode:'real',localFinancialMonth:'2026-11',localFinancialAccess:grant}),msg));
+ const expired=render({token:'old',profile:'real',expiresAt:Date.now()-1000});
+ assert(expired.includes('Resposta anterior indisponível'));
+ assert(!expired.includes('Dado financeiro sensível'));
+ const changed=JSON.stringify(sandbox.renderIntelligenceMessageItem(
+  app({mode:'real',localFinancialMonth:'2026-12',localFinancialAccess:
+    {token:'valid',profile:'real',expiresAt:Date.now()+60000}}),msg));
+ assert(!changed.includes('Dado financeiro sensível'));
+});
