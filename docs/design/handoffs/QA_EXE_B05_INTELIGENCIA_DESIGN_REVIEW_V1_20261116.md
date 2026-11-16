@@ -1,6 +1,8 @@
-# Meu Financeiro 2.0 — B05: Inteligência Geral · Design V1 em revisão
+> **ATUALIZAÇÃO 16/11/2026 — DESIGN APROVADO.** Este arquivo registra o **histórico V1, superado pelas iterações V2–V6**. A versão aprovada é **Hoje V6 + Conversar V5 + Plano de Ação V5**; consultar o [handoff final](./QA_EXE_B05_INTELLIGENCE_APPROVED_V6_20261116.md), o [mapa de implementação](./B05_INTELLIGENCE_IMPLEMENTATION_MAP_V6.md), os [testes de aceite](./B05_INTELLIGENCE_ACCEPTANCE_V6.md) e o [contrato de motion](./B05_INTELLIGENCE_MOTION_SPEC_V6.md). **Aprovação visual não comprova implementação ou QA Electron.**
 
-**Status:** `DESIGN_IN_REVIEW / NOT_APPROVED / CODE_NOT_STARTED`. **Data:** 16/11/2026.  
+# Meu Financeiro 2.0 — B05: Inteligência Geral · Histórico V1 (substituído)
+
+**Status original da V1 (histórico):** `DESIGN_IN_REVIEW / NOT_APPROVED / CODE_NOT_STARTED`. **Data:** 16/11/2026.  
 **Escopo:** QA do primeiro EXE, issue #84, integração PR #76. **Base lida:** `src/intelligence-view.ts` 370–550 no HEAD `1bc1b89bf5bdefc0196b0851e690a99f825ca85a`; refazer leitura de HEAD antes de implementar.
 
 ## Problema objetivo
