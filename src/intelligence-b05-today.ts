@@ -93,8 +93,15 @@ function mfB05Timeline(app,projection,selected) {
     onClick:()=>mfB05OpenDrawer(app,'commitments','mf-b05-events')},'Conferir compromissos')));
 }
 function mfB05ScenarioKey(app,input) {
- return intelligencePremiumSignature(app)+'|'+String(input?.availableBalance?.sourceId||'')+
-  '|'+String(input?.asOf||'')+'|'+String(input?.period?.to||'');
+ // Bind UI overrides to actual underlying facts, not merely the same month/token.
+ const records=value=>Array.isArray(value?.value)?
+  value.value.map(x=>[x?.id,x?.due,x?.amountCents,x?.status]):value?.value??null;
+ return JSON.stringify([intelligencePremiumSignature(app),input?.snapshotVersion||'',
+  input?.coverage||'',input?.asOf||'',input?.period?.from||'',input?.period?.to||'',
+  input?.availableBalance?.sourceId||'',input?.availableBalance?.value??null,
+  input?.safetyBufferCents??null,
+  records(input?.unpaidFutureCommitments),records(input?.expectedIncome),
+  records(input?.plannedOtherOutflow)]);
 }
 function mfB05ScenarioInput(app,input) {
  if(!input)return null;
