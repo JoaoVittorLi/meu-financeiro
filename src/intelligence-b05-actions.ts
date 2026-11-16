@@ -8,13 +8,29 @@ function mfB05ActionBudget(signal) {
  if(!signal||signal.kind!=='budget')return null;
  const list=Array.isArray(signal.sourceCard?.budgets)?signal.sourceCard.budgets:[];
  const matched=list.find(b=>signal.title.endsWith(String(b.category||'')));
- const b=matched||list[0];
+ const b=matched; // Do not simulate a different category when the signal cannot be matched.
  if(!b||typeof b.category!=='string')return null;
  const values=mfB05Budget(b.spentCents,b.limitCents);
  return values?{...values,category:b.category}:null;
 }
+function mfB05ActionSnapshotKey(app,signal,budget) {
+ const c=signal?.sourceCard,report=app.state.intelligencePremiumReport;
+ return JSON.stringify([intelligencePremiumSignature(app),report?.snapshotVersion||'',
+  report?.asOf||'',c?.asOf||'',c?.period?.start||'',c?.period?.end||'',
+  signal?.id||'',signal?.sourceId||'',budget?.category||'',
+  budget?.spentCents??null,budget?.limitCents??null]);
+}
 function mfB05ActionStage(app,step) {
  if(!['understand','simulate','review'].includes(step))return;
+ const current=mfB05ActionSignals(app).find(x=>x.id===app.state.mfB05ActionId)||
+  mfB05ActionSignals(app)[0]||null;
+ const key=mfB05ActionSnapshotKey(app,current,mfB05ActionBudget(current));
+ const stale=!!app.state.mfB05ActionSourceSig&&app.state.mfB05ActionSourceSig!==key;
+ if(stale) {
+  app.setState({mfB05ActionStage:step==='review'?'understand':step,
+   mfB05ActionSourceSig:null,mfB05ActionPreviewCents:null});
+  return;
+ }
  app.setState({mfB05ActionStage:step});
 }
 function mfB05ActionFocus(app,signal) {
@@ -31,7 +47,7 @@ function mfB05ActionVisual(app,signal,budget,signature) {
   return h('div',{className:'mf-b05-plan-visual',role:'group','aria-label':'Orçamento da categoria'},
     h('div',{className:'mf-b05-plan-orbit',style:{'--mf-b05-progress':Math.min(100,usage||0)+'%'}},
      h('small',{},'GASTO VERIFICADO'),h('strong',{},mfB05Money(budget.spentCents)),
-     h('span',{},usage===null?'Limite não definido':Math.round(usage)+'% do limite simulado')),
+     h('span',{},usage===null?'Limite explícito: R$ 0,00':Math.round(usage)+'% do limite simulado')),
     h('div',{className:'mf-b05-plan-parts'},
      h('span',{},'Limite atual'),h('strong',{},mfB05Money(budget.limitCents)),
      h('span',{},'Limite no cenário'),h('strong',{},mfB05Money(proposed)),
@@ -50,9 +66,11 @@ function renderMfB05Actions(app,proposals) {
  const s=app.state,signals=mfB05ActionSignals(app),
   items=Array.isArray(proposals)?proposals:[],
   selected=signals.find(x=>x.id===s.mfB05ActionId)||signals[0]||null,
-  stage=['understand','simulate','review'].includes(s.mfB05ActionStage)?s.mfB05ActionStage:'understand',
-  signature=intelligencePremiumSignature(app),
-  budget=mfB05ActionBudget(selected);
+  budget=mfB05ActionBudget(selected),
+  signature=mfB05ActionSnapshotKey(app,selected,budget),
+  scenarioStale=!!s.mfB05ActionSourceSig&&s.mfB05ActionSourceSig!==signature,
+  stage=scenarioStale?'understand':
+   ['understand','simulate','review'].includes(s.mfB05ActionStage)?s.mfB05ActionStage:'understand';
  return h('section',{className:'mf-b05-plan',role:'region','aria-label':'Plano de Ação'},
   h('header',{className:'mf-b05-plan-head'},
    h('span',{className:'mf-b05-kicker'},'INTELLIGENCE ALIVE · PLANO DE AÇÃO'),
@@ -79,6 +97,7 @@ function renderMfB05Actions(app,proposals) {
     h('div',{className:'mf-b05-stage',role:'tabpanel','aria-live':'polite'},
      stage==='understand'?h('div',{},
       h('h4',{},'O que os registros mostram'),
+      scenarioStale?h('p',{className:'mf-b05-warning',role:'alert'},'Os dados do cenário mudaram. A prévia foi invalidada; faça uma nova simulação.'):null,
       h('p',{},selected.meaning+' · '+selected.detail),
       intelligencePremiumEvidence(selected.sourceCard),
       h('button',{type:'button',className:'primary-button',onClick:()=>mfB05ActionStage(app,'simulate')},'Explorar cenário')):null,
