@@ -661,6 +661,7 @@ class App extends React.Component<any,State>{
      if(result?.cancelled)return;
      this.setState({categories:result.categories.categories,rules:result.categories.rules,bank:{...this.state.bank,data:result.data},
        categoryMessage:`Sugestões aplicadas: ${result.rulesAdded} regras, ${result.overridesAdded} classificações. Outras movimentações continuam disponíveis para revisão.`});
+     void this.loadQA84VisualCatalog();
      await this.refreshPlanning();
    }catch(e:any){this.setState({categoryMessage:'Não foi possível importar as sugestões: '+String(e?.message||e)});}
  }
