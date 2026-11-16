@@ -1,0 +1,301 @@
+{
+  "schema": "B05_DESIGN_FIXTURES_V6_NOT_RUNTIME_API",
+  "version": "6.0",
+  "currency": "BRL",
+  "timeZone": "America/Sao_Paulo",
+  "message": "FICTITIOUS TEST DATA ONLY. Do not ship to personal profile; does not authorize ledger writes.",
+  "asOf": "2026-11-16",
+  "period": {
+    "from": "2026-11-16",
+    "to": "2026-11-30"
+  },
+  "primary": {
+    "id": "verified_2026_11",
+    "profile": "synthetic",
+    "coverage": "verified",
+    "availableBalance": {
+      "value": 170000,
+      "coverage": "verified",
+      "sourceId": "fixture:bank:1",
+      "asOf": "2026-11-16T12:00:00-03:00"
+    },
+    "safetyBufferCents": 100000,
+    "expectedIncome": {
+      "value": 0,
+      "coverage": "verified",
+      "sourceId": "fixture:income:none",
+      "asOf": "2026-11-16T12:00:00-03:00"
+    },
+    "plannedOtherOutflow": {
+      "value": 0,
+      "coverage": "verified",
+      "sourceId": "fixture:other:none",
+      "asOf": "2026-11-16T12:00:00-03:00"
+    },
+    "unpaidFutureCommitments": {
+      "coverage": "verified",
+      "sourceId": "fixture:planning",
+      "asOf": "2026-11-16T12:00:00-03:00",
+      "value": [
+        {
+          "id": "c1",
+          "due": "2026-11-21",
+          "amountCents": 11900,
+          "status": "scheduled_unpaid",
+          "description": "Internet residencial"
+        },
+        {
+          "id": "c2",
+          "due": "2026-11-23",
+          "amountCents": 14500,
+          "status": "scheduled_unpaid",
+          "description": "Energia elétrica"
+        },
+        {
+          "id": "c3",
+          "due": "2026-11-28",
+          "amountCents": 17900,
+          "status": "scheduled_unpaid",
+          "description": "Assinaturas"
+        }
+      ]
+    },
+    "currentExpenses": {
+      "coverage": "verified",
+      "sourceId": "fixture:expenses",
+      "value": [
+        {
+          "categoryId": "cat:alimentacao",
+          "postedCents": 76000,
+          "periodStart": "2026-11-01",
+          "periodEnd": "2026-11-16"
+        },
+        {
+          "categoryId": "sub:alimentacao/delivery",
+          "postedCents": 34000,
+          "periodStart": "2026-11-01",
+          "periodEnd": "2026-11-16"
+        }
+      ]
+    },
+    "budgets": {
+      "coverage": "verified",
+      "sourceId": "fixture:budgets",
+      "value": [
+        {
+          "categoryId": "cat:alimentacao",
+          "limitCents": 70000,
+          "periodStart": "2026-11-01",
+          "periodEnd": "2026-11-30"
+        }
+      ]
+    },
+    "comparisons": {
+      "periodA": {
+        "from": "2026-10-01",
+        "to": "2026-10-16"
+      },
+      "periodB": {
+        "from": "2026-11-01",
+        "to": "2026-11-16"
+      },
+      "equalDays": true,
+      "deliveryPreviousCents": 23000,
+      "deliveryCurrentCents": 34000
+    },
+    "selectedDateInitial": "2026-11-30",
+    "timelineExpected": [
+      {
+        "date": "2026-11-16",
+        "consideredCommitmentsCents": 0,
+        "projectedCents": 170000,
+        "protectedCents": 100000,
+        "headroomCents": 70000,
+        "freeCents": 70000
+      },
+      {
+        "date": "2026-11-21",
+        "consideredCommitmentsCents": 11900,
+        "projectedCents": 158100,
+        "protectedCents": 100000,
+        "headroomCents": 58100,
+        "freeCents": 58100
+      },
+      {
+        "date": "2026-11-23",
+        "consideredCommitmentsCents": 26400,
+        "projectedCents": 143600,
+        "protectedCents": 100000,
+        "headroomCents": 43600,
+        "freeCents": 43600
+      },
+      {
+        "date": "2026-11-28",
+        "consideredCommitmentsCents": 44300,
+        "projectedCents": 125700,
+        "protectedCents": 100000,
+        "headroomCents": 25700,
+        "freeCents": 25700
+      },
+      {
+        "date": "2026-11-30",
+        "consideredCommitmentsCents": 44300,
+        "projectedCents": 125700,
+        "protectedCents": 100000,
+        "headroomCents": 25700,
+        "freeCents": 25700
+      }
+    ],
+    "expected": {
+      "totalCommitmentsCents": 44300,
+      "endingProjectedCents": 125700,
+      "endingHeadroomCents": 25700,
+      "suggestedReserveCents": 12850,
+      "budgetExcessCents": 6000,
+      "budgetUsagePctRounded": 109,
+      "deliveryDeltaCents": 11000,
+      "deliveryChangePct1dp": 47.8
+    }
+  },
+  "exceptions": [
+    {
+      "id": "partial",
+      "coverage": "partial",
+      "allowed": [
+        "budget_excess_if_budget_verified",
+        "delivery_comparison_if_equal_periods_verified"
+      ],
+      "mustHide": [
+        "projected_balance",
+        "reserve_suggestion",
+        "timeline_of_future_balance"
+      ]
+    },
+    {
+      "id": "no_access",
+      "coverage": "denied",
+      "allowed": [
+        "general_planning_chat"
+      ],
+      "mustHide": [
+        "all_personal_values",
+        "personally_resolved_prompts"
+      ]
+    },
+    {
+      "id": "stale",
+      "coverage": "stale",
+      "allowed": [
+        "reconnect_refresh_cta"
+      ],
+      "mustHide": [
+        "personal_future_forecast",
+        "live_financial_claims"
+      ]
+    },
+    {
+      "id": "expired",
+      "coverage": "expired",
+      "allowed": [
+        "renew_access_cta"
+      ],
+      "mustHide": [
+        "fresh_personal_claims"
+      ]
+    },
+    {
+      "id": "buffer_not_defined",
+      "safetyBufferCents": null,
+      "allowed": [
+        "projected_balance_if_verified",
+        "set_buffer_cta"
+      ],
+      "mustHide": [
+        "safety_margin_slice",
+        "reserve_suggestion"
+      ]
+    },
+    {
+      "id": "deficit",
+      "availableBalanceCents": 30000,
+      "safetyBufferCents": 100000,
+      "commitmentsCents": 44300,
+      "expectedProjectedCents": -14300,
+      "expectedShortfallCents": 14300,
+      "mustHide": [
+        "false_closed_three_slice_ring",
+        "positive_reserve_suggestion"
+      ]
+    },
+    {
+      "id": "buffer_shortfall",
+      "availableBalanceCents": 100000,
+      "safetyBufferCents": 100000,
+      "commitmentsCents": 44300,
+      "expectedProjectedCents": 55700,
+      "expectedBelowBufferCents": 44300,
+      "mustHide": [
+        "positive_reserve_suggestion"
+      ]
+    },
+    {
+      "id": "no_due_items",
+      "commitments": [],
+      "expectedNextCommitments": 0,
+      "expectedTimeline": "flat_and_well_labeled"
+    },
+    {
+      "id": "duplicate_due_id",
+      "commitments": [
+        {
+          "id": "a",
+          "amountCents": 11900
+        },
+        {
+          "id": "a",
+          "amountCents": 11900
+        }
+      ],
+      "expectedConsideredCommitmentsCents": 11900
+    },
+    {
+      "id": "zero_budget",
+      "postedSpendCents": 76000,
+      "budgetLimitCents": 0,
+      "expected": "do_not_divide_by_zero_or_show_fake_109pct"
+    },
+    {
+      "id": "zero_previous_delivery",
+      "currentCents": 34000,
+      "previousCents": 0,
+      "expected": "delta_is_valid_but_percentage_is_unavailable"
+    },
+    {
+      "id": "unequal_comparison",
+      "periodA": {
+        "from": "2026-10-01",
+        "to": "2026-10-16"
+      },
+      "periodB": {
+        "from": "2026-11-01",
+        "to": "2026-11-08"
+      },
+      "equalDays": false,
+      "expected": "do_not_claim_comparable_increase"
+    },
+    {
+      "id": "revoked_grant",
+      "transition": "verified_to_denied",
+      "expected": "clear_cached_live_values_and_disable_pending_confirmations"
+    },
+    {
+      "id": "snapshot_changed_during_preview",
+      "transition": "new_snapshot_version",
+      "expected": "invalidate_preview_confirmation"
+    },
+    {
+      "id": "reduced_motion",
+      "expected": "all_information_operable_without_animations"
+    }
+  ]
+}
