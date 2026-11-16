@@ -4,7 +4,7 @@
 
 ## 1. Diagrama de fluxo proposto
 
-\`\`\`mermaid
+```mermaid
 flowchart TD
   UI["B05: Hoje / Conversar / Plano / Central"] --> Scope["Escopo + grant local MAIN"]
   Scope --> Router["Roteador de intenção único"]
@@ -25,7 +25,7 @@ flowchart TD
   Draft --> Review["Central de revisão"]
   Review --> Gate["Gateway nativo por domínio, bloqueado no perfil real até homologação"]
   Gate --> Receipt["Recibo idempotente + leitura pós-COMMIT"]
-\`\`\`
+```
 
 **Interpretar e explicar nunca equivalem a determinar valor contábil.** Modelo de linguagem não recebe token, owner, extrato pessoal bruto, SQL livre nem capacidade de escrever. O MAIN/serviço controla leitura, calcula e revalida; renderer não emite permissão.
 
@@ -41,13 +41,13 @@ flowchart TD
 | F — Execução supervisionada | D05PersonalWriteGateway com sandbox, backup, nonce e receipts | drafts de orçamento/planejamento, gateways específicos após QA | copiar approvedForPersonal true; escrever no ledger por IPC genérico |
 
 ## 3. Envelope único de evidência (proposta v1)
-\`\`\`json
+```json
 {
   "version": 1,
   "queryId": "q-synthetic-001",
   "status": "ready",
   "readOnly": true,
-  "scope": {"source": "bank", "profile": "demo", "accountRef": "acc-fixture", "start": "2026-10-01", "end": "2026-11-30"},
+  "scope": {"source": "bank", "profile": "real", "accountRef": "acc-fixture", "start": "2026-10-01", "end": "2026-11-30"},
   "dataVersion": "fixture-v1",
   "asOf": "2026-11-30T23:59:59Z",
   "coverage": {"state": "complete", "readRows": 14, "hasMore": false, "missingPeriods": []},
@@ -58,8 +58,8 @@ flowchart TD
   "simulations": [],
   "insightIds": []
 }
-\`\`\`
-Este é um exemplo de **saída-alvo**, não prova de endpoint pronto. A mesma evidência canonicalizada serve Hoje, Conversar, Plano e Central. status permitido: ready / partial / no_data / denied / stale / unsupported / error. Gráficos não devem ignorar partial.
+```
+Este é um exemplo de **saída-alvo em fixture bancária sintética isolada com rótulo real**, não prova de endpoint pronto nem autorização para banco pessoal. A mesma evidência canonicalizada serve Hoje, Conversar, Plano e Central. status permitido: ready / partial / no_data / denied / stale / unsupported / error. Gráficos não devem ignorar partial.
 
 ## 4. Contrato de escopo e dataVersion
 - Scope contém owner **interno ao MAIN**, profile, source, accountIds permitidos, período e planningConsent separado. owner e token não são argumentos fabricáveis pelo modelo; os campos expostos ao planejador são IDs de escopo opacos.
@@ -75,14 +75,14 @@ Este é um exemplo de **saída-alvo**, não prova de endpoint pronto. A mesma ev
 - Evitar ampliar diretamente regex V3/IC2; criar seam de roteamento que preserva compatibilidade enquanto migra famílias com golden tests.
 
 ## 6. Motor de oportunidades e explicabilidade
-\`\`\`text
+```text
 scan(scope, dataVersion) -> candidate[]
 candidate = {
  insightId, evidenceFingerprint, type, title, importance,
  evidenceIds, uncertainty, impactCentsMin, impactCentsMax,
  overlapGroup, assumptions, nextAction, generatedAt, expiresAt
 }
-\`\`\`
+```
 - Tipos iniciais: category_delta, merchant_growth, recurring_candidate, budget_risk, discretionary_savings, upcoming_commitment, category_review.
 - Impacto usa métodos puros sobre fatos reconciliados. Não soma duas propostas que cortam o mesmo conjunto de lançamentos; registrar overlapGroup e selecionar uma alternativa.
 - Candidata recorrente exige observações em ciclos diferentes; nome parecido é hipótese, não assinatura confirmada. Cancelamento externo não é ação disponível.
