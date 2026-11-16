@@ -73,6 +73,24 @@ test('B05-08/36: repeated last date wins and ring/route/selected card share one 
  assert(text.includes('443,00'));
  assert(nodes(page).some(n=>n.props['aria-pressed']===true&&n.props.id==='mf-b05-date-20261128'));
 });
+test('B05-09/10: scenario drawer edits only local overrides and recomputes all values',()=>{
+ const {ctx}=runtime(),a=app({mfB05SelectedDate:'2026-11-30'});
+ let page=ctx.renderMfB05Today(a,verified);
+ const open=nodes(page).find(n=>n.props.id==='mf-b05-adjust');
+ assert(open);open.props.onClick();
+ page=ctx.renderMfB05Today(a,verified);
+ assert(nodes(page).some(n=>n.props.role==='dialog'));
+ const slider=nodes(page).find(n=>n.props.id==='mf-b05-slider-mfB05ScenarioBalanceCents');
+ assert(slider);slider.props.onChange({target:{value:'1800'}});
+ assert.equal(a.state.mfB05ScenarioBalanceCents,180000);
+ page=ctx.renderMfB05Today(a,verified);
+ assert(JSON.stringify(page).includes('1.357,00'));
+ const reset=nodes(page).find(n=>n.tag==='button'&&n.children.includes('Restaurar premissas verificadas'));
+ assert(reset);reset.props.onClick();
+ assert.equal(a.state.mfB05ScenarioSignature,null);
+ assert(JSON.stringify(ctx.renderMfB05Today(a,verified)).includes('1.257,00'));
+ assert.equal(a.navigation.length,0);
+});
 test('B05-11: insufficient balance and negative future balance do not fake positive ring',()=>{
  const {ctx}=runtime();
  const p=ctx.mfB05Project({...verified,availableBalance:{...verified.availableBalance,value:30000}});
