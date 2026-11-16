@@ -125,10 +125,8 @@ test('B04: outside cancellation does not persist or open drawer',()=>{
  const overlay=one(t,'d05-overlay'),target={};
  overlay.props.onMouseDown({target,currentTarget:target});
  assert.match(words(f.comp.render()).join(' '),/Categoria da movimentação/);
- overlay.props.onMouseDown({target,currentTarget:target});
  assert.equal(f.clicks.drawer,0);
- // A true backdrop hit closes the picker without invoking financial methods.
- overlay.props.onMouseDown({target,currentTarget:target});
+ // Only an actual backdrop hit closes the picker without any write.
  const actually={};
  overlay.props.onMouseDown({target:actually,currentTarget:actually});
  assert.doesNotMatch(words(f.comp.render()).join(' '),/Categoria da movimentação/);
@@ -153,7 +151,7 @@ test('B04: personal bank assignment is preview-only and never calls a write IPC'
  assert(only);only.props.onClick();
  t=f.comp.render();
  const confirm=one(t,'d05-confirm');await confirm.props.onClick();
- await Promise.resolve();await Promise.resolve();
+ await new Promise(resolve=>setImmediate(resolve));
  t=f.comp.render();
  assert.equal(previewed,1);
  assert.equal(confirmed,0);
