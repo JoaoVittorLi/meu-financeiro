@@ -119,8 +119,18 @@ test('B04 V2: accent-insensitive global search resolves child under its true par
  assert.equal(f.calls.some(c=>c.action==='save'),false);
 });
 test('B04 V2: read-only real manual selection never mutates personal SQLite just by choosing',async()=>{
- const f=fixture('real'),manualIcon=f.render().find(n=>
-  String(n.props.className||'').includes('d05-row-icon')&&textOf(n).length>0);
+ const bridge={
+  d05SessionAuthorize:async()=>({profile:'real'}),
+  d05Catalog:async()=>({parents:[]}),
+  d05BankList:async()=>({items:[]}),
+  d05ManualList:async()=>({items:[]}),
+  d05PersonalWritePreview:async()=>({
+   contract:'D05/PERSONAL-SUPERVISED-PREVIEW-V1',changesApplied:false,
+   before:{category:'Assinaturas'},after:{categoryId:'cat:assinaturas',
+    subcategoryId:'sub:assinaturas/streaming'}
+  })
+ };
+ const f=fixture('real',bridge);
  // There are two records: choose manual by the second icon.
  const icons=f.render().filter(n=>String(n.props.className||'').includes('d05-row-icon'));
  assert.equal(icons.length,2);
@@ -131,11 +141,10 @@ test('B04 V2: read-only real manual selection never mutates personal SQLite just
  f.click(child);
  const confirm=f.render().find(n=>n.props.className==='d05-confirm');
  f.click(confirm);
- await Promise.resolve();
+ await new Promise(resolve=>setImmediate(resolve));
  const tree=f.render();
- assert.match(textOf(tree),/Classificação pessoal indisponível até homologação/);
- const save=f.render().find(n=>n.props.className==='d05-confirm');
- assert.equal(save.props.disabled,true);
+ assert.match(textOf(tree),/Gravação pessoal ainda não autorizada/);
+ assert.equal(f.render().filter(n=>n.props.className==='d05-confirm').length,0);
  assert.equal(f.calls.filter(c=>c.action==='save').length,0);
 });
 test('B04 V2: official B01/B02 global identity takes precedence without second palette',()=>{
