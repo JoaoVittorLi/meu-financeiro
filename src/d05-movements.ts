@@ -262,7 +262,12 @@ class D05Movements extends React.Component<any,any> {
     setPicker((old:any)=>({...old,phase:'batch-verify'}));
    }else if(picker.row?.source==='manual'){
     const tx=picker.row,existing=state.data.transactions.find((t:any)=>t.id===tx.id);
-    if(!existing)throw Error('Lançamento desatualizado: atualize o histórico');
+    if(!existing||existing.amount!==Math.abs(tx.amount)||
+       existing.kind!==tx.kind||existing.date!==tx.date||
+       existing.category!==tx.category||
+       (existing.categoryId||'')!==(tx.raw.categoryId||'')||
+       (existing.subcategoryId||null)!==(tx.raw.subcategoryId||null))
+      throw Error('Lançamento alterado: feche a prévia e confira a classificação antes de salvar');
     const parent=byId(destination.categoryId);
     if(!parent)throw Error('Categoria não encontrada');
     if(!bridge?.save)throw Error('Persistência manual indisponível neste ambiente');
@@ -289,7 +294,9 @@ class D05Movements extends React.Component<any,any> {
        proposed?.after?.subcategoryId!==destination.subcategoryId)
      throw Error('Prévia supervisionada inválida; nenhuma alteração foi feita');
     setPreview(proposed);
-    setPicker(null);
+    // Keep the disabled personal preview visible even when opened from
+    // the drawer. No Main confirmation is attempted for real bank writes.
+    setPicker((old:any)=>({...old,phase:'personal-preview'}));
     setNotice('Prévia conferida: '+String(proposed.before?.[0]?.row?.category||tx.category)+
      ' → '+labelTarget(destination.categoryId,destination.subcategoryId)+
      '. A gravação pessoal será liberada somente após homologação e aprovação.');
@@ -391,6 +398,11 @@ class D05Movements extends React.Component<any,any> {
        h(D05VectorIcon,{iconKey:parent?.iconKey,hue:parent?.hue}), 'Somente '+parent?.name),
       children.map((child:any)=>h('button',{type:'button',className:'d05-child',key:child.id,onClick:()=>setDestination(child)},
        h(D05VectorIcon,{iconKey:child.iconKey,hue:child.hue}),child.name)))):
+   picker.phase==='personal-preview'?h('div',{className:'d05-confirm-step',role:'status'},
+    h('p',{},'Antes: ',h('strong',{},String(preview?.before?.[0]?.row?.category||picker.row?.category||'Categoria atual'))),
+    h('p',{},'Depois: ',h('strong',{},labelTarget(picker.categoryId,picker.subcategoryId))),
+    h('p',{className:'d05-message'},'A classificação bancária pessoal ainda não está homologada. Nenhum dado foi alterado.'),
+    h('button',{type:'button',className:'d05-back',onClick:()=>{setPicker(null);setPreview(null);}},'Fechar sem alterar')) :
    picker.phase==='batch-verify'?h('div',{},
     h('p',{},'Confirme novamente as ',h('strong',{},preview?.count||0),' movimentações afetadas.'),
     h('p',{className:'d05-picker-caption'},'Destino: '+labelTarget(picker.categoryId,picker.subcategoryId)),
