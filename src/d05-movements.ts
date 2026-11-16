@@ -408,31 +408,70 @@ class D05Movements extends React.Component<any,any> {
    h(D05VectorIcon,{iconKey:p.iconKey,hue:p.hue,size:20}),h('span',{},p.name))));
  const chooser=picker?(()=>{
   const parent=byId(picker.categoryId),children=parent?.subcategories||[];
+  const matches=qa84B04Search(parents,picker.query||'');
+  const searchable=h('label',{className:'d05-picker-search'},h('span',{},'Buscar categoria ou subcategoria'),
+   h('input',{className:'d05-search',type:'search',autoFocus:true,value:picker.query,
+    placeholder:'Ex.: Streaming, alimentação, transporte',
+    onChange:(e:any)=>setPicker({...picker,query:e.target.value})}));
+  const resultGrid=h('div',{className:'d05-catalog-grid',role:'group','aria-label':'Categorias principais'},
+   matches.map((entry:any)=>h('div',{className:'d05-catalog-result',key:entry.parent.id},
+    h('button',{type:'button',className:'d05-catalog-choice '+(entry.parent.id===picker.categoryId?'is-current':''),
+     'aria-pressed':entry.parent.id===picker.categoryId,
+     onClick:()=>setParent(entry.parent)},
+     h(D05VectorIcon,{iconKey:entry.parent.iconKey,hue:entry.parent.hue,size:21}),
+     h('span',{},entry.parent.name)),
+    entry.children.length?h('div',{className:'d05-catalog-match'},
+     entry.children.map((child:any)=>h('button',{type:'button',key:child.id,
+       onClick:()=>{setPreview(null);setError('');
+        setPicker((prior:any)=>({...prior,categoryId:entry.parent.id,
+         subcategoryId:child.id,phase:'confirm',query:''}));}},
+       h(D05VectorIcon,{iconKey:child.iconKey,hue:child.hue,size:17}),
+       entry.parent.name+' › '+child.name))):null))),
+    !matches.length?h('p',{className:'d05-message',role:'status'},'Nenhuma categoria encontrada.'):null);
   return portal(h('div',{className:'d05-picker'},
    h('header',{className:'d05-floating-head'},h('div',{},h('small',{},'CLASSIFICAÇÃO'),h('h3',{},picker.kind==='batch'?'Classificar seleção':'Categoria da movimentação')),
     h('button',{type:'button','aria-label':'Cancelar classificação',onClick:()=>{setPicker(null);setPreview(null);}},'×')),
-   picker.phase==='parent'?h('div',{},
-    h('input',{className:'d05-search',autoFocus:true,value:picker.query,placeholder:'Buscar categoria',onChange:(e:any)=>setPicker({...picker,query:e.target.value})}),
-    categoryGrid(picker.categoryId,setParent,picker.query)):
+   ['parent','child'].includes(picker.phase)?searchable:null,
+   picker.phase==='parent'?resultGrid:
    picker.phase==='child'?h('div',{},
-    h('button',{className:'d05-back',onClick:()=>setPicker({...picker,phase:'parent'})},'← Categorias'),
-    h('p',{className:'d05-picker-caption'},'Escolha uma subcategoria, se desejar'),
+    h('button',{type:'button',className:'d05-back',onClick:()=>setPicker({...picker,phase:'parent',query:''})},'← Todas as categorias'),
+    h('p',{className:'d05-picker-caption'},'Escolha uma subcategoria ou mantenha apenas '+parent?.name),
     h('div',{className:'d05-child-list'},
       h('button',{type:'button',className:'d05-child',onClick:()=>setDestination(null)},
        h(D05VectorIcon,{iconKey:parent?.iconKey,hue:parent?.hue}), 'Somente '+parent?.name),
-      children.map((child:any)=>h('button',{type:'button',className:'d05-child',key:child.id,onClick:()=>setDestination(child)},
+      children.filter((child:any)=>qa84B04Fold(child.name).includes(qa84B04Fold(picker.query||'')))
+       .map((child:any)=>h('button',{type:'button',className:'d05-child',key:child.id,onClick:()=>setDestination(child)},
        h(D05VectorIcon,{iconKey:child.iconKey,hue:child.hue}),child.name)))):
    picker.phase==='batch-verify'?h('div',{},
-    h('p',{},'Confirme novamente as ',h('strong',{},preview?.count||0),' movimentações afetadas.'),
+    h('p',{},'Prévia: ',h('strong',{},preview?.count||0),' movimentações na seleção.'),
+    h('p',{className:'d05-picker-caption'},'POSTED: '+String(preview?.posted||0)+
+      ' · PENDING: '+String(preview?.pending||0)+' · Valor total: '+format(preview?.totalCents||0)),
     h('p',{className:'d05-picker-caption'},'Destino: '+labelTarget(picker.categoryId,picker.subcategoryId)),
     h('ul',{className:'d05-preview-items'},(preview?.rows||[]).slice(0,20).map((r:any)=>
      h('li',{key:r.key},r.merchant,' · ',format(Math.abs(r.amount))))) ,
     (preview?.rows?.length||0)>20?h('small',{},'Demais itens incluídos na prévia validada.'):null,
-    h('button',{type:'button',className:'d05-confirm',disabled:busy,onClick:()=>void commitBatch()},busy?'Gravando…':'Reconfirmar e aplicar lote')):
-   h('div',{className:'d05-confirm-step'},
-    h('p',{},'Antes: ',h('b',{},picker.row?.category||'Várias categorias')),
+    state.mode!=='demo'?h('p',{className:'d05-message',role:'status'},
+     'Classificação em lote pessoal ainda não homologada. Prévia somente para consulta.'):null,
+    h('button',{type:'button',className:'d05-confirm',disabled:busy||state.mode!=='demo',
+     onClick:()=>void commitBatch()},busy?'Gravando…':'Reconfirmar e aplicar lote')):
+   picker.phase==='manual-verify'?h('div',{className:'d05-confirm-step'},
+    h('p',{},'Antes: ',h('b',{},preview?.before?.category||'Categoria anterior')),
+    h('p',{},'Depois: ',h('b',{},labelTarget(preview?.after?.categoryId,preview?.after?.subcategoryId))),
+    h('p',{className:'d05-picker-caption'},picker.row?.date+' · '+format(Math.abs(preview?.amount||0))),
+    state.mode!=='demo'?h('p',{className:'d05-message',role:'status'},
+     'Classificação pessoal indisponível até homologação; nenhuma alteração será gravada.'):null,
+    h('button',{type:'button',className:'d05-confirm',disabled:busy||state.mode!=='demo',
+     onClick:()=>void commitManual()},busy?'Gravando…':'Reconfirmar e salvar demonstração')):
+   picker.phase==='personal-locked'?h('div',{className:'d05-confirm-step'},
+    h('p',{},'Antes: ',h('b',{},picker.row?.category||'Categoria atual')),
     h('p',{},'Depois: ',h('b',{},labelTarget(picker.categoryId,picker.subcategoryId))),
-    h('button',{type:'button',className:'d05-confirm',disabled:busy,onClick:()=>void handleClassify()},busy?'Validando…':picker.kind==='batch'?'Ver prévia do lote':'Confirmar classificação')),
+    h('p',{className:'d05-message',role:'status'},
+     'Prévia supervisionada concluída. Gravação pessoal ainda não autorizada; nenhum dado foi alterado.')):
+   h('div',{className:'d05-confirm-step'},
+    h('p',{},'Antes: ',h('b',{},picker.row?.category||'Seleção atual')),
+    h('p',{},'Depois: ',h('b',{},labelTarget(picker.categoryId,picker.subcategoryId))),
+    h('button',{type:'button',className:'d05-confirm',disabled:busy,onClick:()=>void handleClassify()},
+     busy?'Conferindo…':'Conferir prévia antes de salvar')),
    error?h('p',{className:'d05-message is-error',role:'alert'},error):null,
    !bridge?.d05AssignBank&&picker.row?.source==='bank'?h('p',{className:'d05-message',role:'status'},'Salvar no banco indisponível até a conexão segura do processo principal.'):null
   ),picker.left,picker.top,picker.width);
