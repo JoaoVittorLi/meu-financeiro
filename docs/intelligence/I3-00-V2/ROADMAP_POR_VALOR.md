@@ -76,3 +76,8 @@ Esforços S/M/L/XL são relativos e não representam horas/prazos garantidos. N�
 
 ## Ordem de entregas e aprovação
 M0 (documentação) → aprovação do proprietário → M1-S1 em PR de código → QA dirigido → M2-S1 → M3-S1 → M4-S1 PREPARE_ONLY. A prova de conceito LLM sintética pode ser testada em missão separada após aprovar o POC_LLM_PLAN.md, sem bloquear o M1 determinístico. Não fazer merge automático no PR #76.
+
+
+## Dependência de estabilização RC-ALL-02 — V2.1
+
+Implementação M1-S1 deve ramificar do PR #94 HEAD `d6693b42b21a1e4bf957f882dc3321506eaaa3c8` apenas como snapshot de compatibilidade; PR de código separado mirando branch do #94. Handoff do integrador precisará reconciliar SHA e QA após evolução da RC; não executar merge automático. Responsável pelo MAIN/preload/renderer compartilhados permanece issue #49. Evitar modificar o Pulso V6 ou inferir snapshot financeiro composto pronto, pois não integra esta fatia.
