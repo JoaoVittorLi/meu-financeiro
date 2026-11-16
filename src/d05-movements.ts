@@ -159,7 +159,12 @@ class D05Movements extends React.Component<any,any> {
   window.addEventListener('scroll',onScroll,true);
   return ()=>{window.removeEventListener('keydown',onKey,true);window.removeEventListener('scroll',onScroll,true);};
  },[picker,review,manual,busy]);
- useEffect(()=>{if((picker||review||manual)&&modalRef.current)modalRef.current.querySelector('input,button')?.focus();},[picker?.phase,review?.id,manual!==null]);
+ useEffect(()=>{
+  if(!(picker||review||manual)||!modalRef.current)return;
+  const searchField=picker&&['parent','child'].includes(picker.phase)?
+   modalRef.current.querySelector('.d05-picker-search input'):null;
+  (searchField||modalRef.current.querySelector('input,button'))?.focus();
+ },[picker?.phase,review?.id,manual!==null]);
  useEffect(()=>{if(!picker&&!review&&!manual)activeTrigger.current?.focus?.();},
   [!!picker,!!review,!!manual]);
  const resetSelected=()=>{setSelected(new Set());setPicker(null);setPreview(null);setError('');};
