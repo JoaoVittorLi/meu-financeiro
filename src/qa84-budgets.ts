@@ -141,7 +141,7 @@ function renderQA84BudgetCards(host:any,visible:any[],mode:string,total:number,b
    const tone=model.status==='exceeded'?'exceeded':model.status==='near'?'near':
     model.status==='within'?'within':'neutral';
    const center=mode==='income'?'Receita':model.status==='unlimited'?'Sem limite':
-    model.status==='zero'?(spent>0?'Excedido':'Limite zero'):
+    model.status==='zero'?fmt(spent):
     (model.remaining as number)<0?fmt(-(model.remaining as number)):fmt(model.remaining as number);
    const caption=mode==='income'?'Recebido':model.status==='exceeded'||model.status==='zero'&&spent>0?'Excedido':
     model.status==='unlimited'?'Não definido':model.status==='zero'?'Definido':'Restante';
@@ -150,7 +150,8 @@ function renderQA84BudgetCards(host:any,visible:any[],mode:string,total:number,b
    return h('button',{type:'button',role:'listitem',key:info.name,id:'qa84-card-'+info.name,
     className:'qa84-budget-card tone-'+tone,'aria-label':info.name+' · '+pctLabel+
       ' · gasto '+fmt(spent)+(hasLimit?' · limite '+fmt(limit):' · sem limite'),
-    onClick:()=>qa84BudgetOpen(host,info.name,mode,bank)},
+    onClick:()=>mode==='income'?(host.setState({txSource:bank?'bank':'manual',txKindFilter:'income',txCategoryFilter:info.name}),host.navigate('transactions')):
+     qa84BudgetOpen(host,info.name,mode,bank)},
     h('div',{className:'qa84-budget-card-head'},
       h(CategoryVisualGlyph,{identity,size:22}),
       h('div',{},h('h3',{},info.name),h('small',{},pctLabel)),
@@ -185,7 +186,7 @@ function renderQA84BudgetDetail(host:any,context:any){
    resolveCategoryVisualIdentity({categoryId:identity.categoryId,subcategoryId:drill.subcategoryId,catalog}):null;
  const parent=drill.categoryName,hasChild=!!drill.showChild;
  const groupLabel=drill.subcategoryId===null?'Sem subcategoria':childIdentity?.label||'Subcategoria';
- const center=model.status==='unlimited'?'Sem limite':model.status==='zero'?(total?'Excedido':'Limite zero'):
+ const center=model.status==='unlimited'?'Sem limite':model.status==='zero'?fmt(total):
     (model.remaining as number)<0?fmt(-(model.remaining as number)):fmt(model.remaining as number);
  const contentTotal=hasChild?(selected?.total||0):total;
  const share=total>0?100*contentTotal/total:0;
