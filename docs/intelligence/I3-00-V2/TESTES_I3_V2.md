@@ -145,3 +145,8 @@ Cada dimensão recebe 0 (falha), 1 (parcial comprovada), 2 (completa comprovada)
 - Validar JSON Schemas dos contratos com casos válidos e inválidos.
 - Executar ledger oracle da fixture FM separado do orquestrador; bloquear “pass” se o oracle não reconciliar colunas e deltas.
 - Provar status NOT_RUN sem logs; nenhuma rubrica transformada em taxa de aprovação fictícia.
+
+
+## Notas de consistência D05 — V2.1
+
+A fixture F1 usa **Alimentação = `cat:alimentacao`**, **Transporte = `cat:transporte`**, **Assinaturas = `cat:assinaturas`** e **Seguros = `cat:contas` / `sub:contas/seguros`**. Nenhum `cat:seguros` é canônico; casos de histórico legado sem ID explícito são classificados como UNKNOWN/ambíguos até resolução. A resposta `denied/stale/no_data/unsupported/error` dos contratos novos **não** contém valores financeiros; respostas `ready/partial` contêm `data` validado. T-001 a T-050 e marco M0–M4 preservados. A ferramenta M1 `compare_spending_breakdown` fornece decomposição agregada para evitar consulta isolada por 14 categorias.
