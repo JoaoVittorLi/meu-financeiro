@@ -46,3 +46,8 @@ Data: 2026-11-16. Natureza: revisão estática/documental; nenhum teste de runti
 5. Contratos e testes não afirmam execução ou acesso real; revisão por owner + homologação por gate antes de qualquer merge.
 
 Fontes: [V1/ESTADO_ATUAL](https://github.com/JoaoVittorLi/meu-financeiro/blob/research/mf2-i3-00-capability-audit-20261116/docs/intelligence/I3-00/ESTADO_ATUAL.md), [V1/MATRIZ](https://github.com/JoaoVittorLi/meu-financeiro/blob/research/mf2-i3-00-capability-audit-20261116/docs/intelligence/I3-00/MATRIZ_CAPACIDADES.md), [V1/TESTES](https://github.com/JoaoVittorLi/meu-financeiro/blob/research/mf2-i3-00-capability-audit-20261116/docs/intelligence/I3-00/TESTES_DE_ACEITACAO.md).
+
+
+## Adendo V2.1 — baseline RC-ALL-02 B01–B05
+
+A baseline do produto para implementar I3-01 passou a ser o PR #94, branch `integration/mf2-rc-all-02-b01-b05-20261116`, HEAD `d6693b42b21a1e4bf957f882dc3321506eaaa3c8` consultado em 16/11/2026. A V2 usou #76 para auditoria estática histórica; isso não autoriza transportar arquivos ou sobrescrever a integração. #94 contém `src/intelligence-b05-chat.ts`, `src/intelligence-b05-finance.ts`, `src/intelligence-b05-actions.ts`, `src/intelligence-b05-today.ts`, `src/intelligence-b05-motion.ts`, além de `src/intelligence-local.ts`, `src/intelligence-view.ts` e testes. B05 Conversar reutiliza `localFinancialSubmit` e IC2 pelo preload; a função financeira composta do Pulso V6 permanece dependência separada e fora de M1-S1. QA Node/Windows da candidata precisa ser comprovado por logs, não por snapshot.
