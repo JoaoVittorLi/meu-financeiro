@@ -12,7 +12,8 @@ function mfB05SafeCents(value) {
  return Number.isSafeInteger(value)&&value>=0?value:null;
 }
 function mfB05Unavailable(reason) {
- return {available:false,reason,timeline:[],ending:null,commitments:[],reserveSuggestionCents:null};
+ return {available:false,reason,timeline:[],ending:null,commitments:[],reserveSuggestionCents:null,
+  availableBalanceCents:null,bufferCents:null,sourceId:null,asOf:null,period:null};
 }
 function mfB05VerifiedNumber(value) {
  return value&&value.coverage==='verified'&&mfB05SafeCents(value.value)!==null?value.value:null;
@@ -78,7 +79,7 @@ function mfB05Project(input) {
    canRenderSegments:simpleReconciled,isFutureProjection:date>input.asOf});
  }
  const ending=timeline[timeline.length-1];
- return {available:true,sourceId:String(input.availableBalance.sourceId||''),
+ return {available:true,reason:null,sourceId:String(input.availableBalance.sourceId||''),
   asOf:input.asOf,period:input.period,availableBalanceCents:baseline,
   bufferCents:buffer,commitments:future,timeline,ending,
   reserveSuggestionCents:ending&&ending.canRenderSegments?Math.floor(ending.freeCents/2):null};
