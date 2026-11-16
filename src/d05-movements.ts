@@ -454,7 +454,7 @@ class D05Movements extends React.Component<any,any> {
         setPicker((prior:any)=>({...prior,categoryId:entry.parent.id,
          subcategoryId:child.id,phase:'confirm',query:''}));}},
        h(D05VectorIcon,{iconKey:child.iconKey,hue:child.hue,size:17}),
-       entry.parent.name+' › '+child.name))):null))),
+       entry.parent.name+' › '+child.name))):null)),
     !matches.length?h('p',{className:'d05-message',role:'status'},'Nenhuma categoria encontrada.'):null);
   return portal(h('div',{className:'d05-picker'},
    h('header',{className:'d05-floating-head'},h('div',{},h('small',{},'CLASSIFICAÇÃO'),h('h3',{},picker.kind==='batch'?'Classificar seleção':'Categoria da movimentação')),
