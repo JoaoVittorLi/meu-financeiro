@@ -4,6 +4,27 @@ type LocalFinancialIntent='radar'|'category'|'largest'|'budgets'|'commitments'|'
 type LocalFinancialScope={source:'bank'|'manual';profile:'real'|'demo';planning:boolean;consent:'LOCAL_FINANCIAL_READ_V1'};
 type LocalFinancialReferences={engine:'shared/finance-period-ledger.mjs';source:'bank'|'manual';profile:'real'|'demo';period:{start:string;end:string};loaded:number;partial:boolean;readAt:string;planningRead:boolean;planningPeriod?:{start:string;end:string}};
 type LocalFinancialReply={version:1;readOnly:true;inferenceCalled:false;changesApplied:false;text:string;references:LocalFinancialReferences;card:IntelligenceStructuredCard};
+/* RC-ALL-02.1: A local answer belongs to the exact grant that produced it.
+ * WeakMap is intentionally not serialized to chat storage / SQLite. Reloaded
+ * messages can never reacquire an authorization from the current app state. */
+const MF_LOCAL_MESSAGE_GRANTS=new WeakMap<IntelligenceChatMessage,{
+ access:LocalFinancialAccess;token:string;signature:string;month:string
+}>();
+function mfLocalBindMessage(msg:IntelligenceChatMessage,access:LocalFinancialAccess,
+ signature:string,month:string){
+ if(access?.token)MF_LOCAL_MESSAGE_GRANTS.set(msg,{access,token:access.token,signature,month});
+ return msg;
+}
+function mfLocalMessageLive(app:any,msg:IntelligenceChatMessage):boolean{
+ const b=MF_LOCAL_MESSAGE_GRANTS.get(msg);
+ const access:LocalFinancialAccess=app.state.localFinancialAccess;
+ return !!b&&b.access===access&&b.token===access?.token&&
+  b.signature===intelligencePremiumSignature(app)&&
+  b.month===(app.state.localFinancialMonth||app.state.month)&&
+  msg.periodLabel===b.month&&
+  access?.profile===(app.state.mode==='demo'?'demo':'real')&&
+  Number.isFinite(access?.expiresAt)&&access.expiresAt>Date.now();
+}
 function localFinancialAPI(){return desktop as typeof desktop & {localFinancialAuthorize?:(v:LocalFinancialScope)=>Promise<Omit<LocalFinancialAccess,'backup'>>;localFinancialQuery?:(v:{token:string;intent:LocalFinancialIntent;category?:string;month:string})=>Promise<LocalFinancialReply>;localFinancialRevoke?:(token:string)=>Promise<any>};}
 function localFinancialParse(question:string,categories:any[]=[]):{intent:LocalFinancialIntent;category?:string}|null{
  const q=intelligenceFoldText(question);
@@ -147,6 +168,7 @@ async function localFinancialSubmit(app:any,question:string){
     reply?JSON.stringify(reply.references):'Nenhuma alteração financeira nem envio externo.'
  };
  if(ic2)mfIC2BindMessage(answer,access,signature,month);
+ else mfLocalBindMessage(answer,access,signature,month);
  intelligenceSyncThreadMessages(app,[...messages,user,answer],scope);
  app.setState({localFinancialBusy:false});
 }
