@@ -2063,8 +2063,9 @@ class App extends React.Component<any,State>{
    const category=tx?.category||manual?.category||'Outros';
    const cats=this.getCategories();
    const current=(tx||manual) as any;
-   const identityInput={categoryId:current?.categoryId||null,
-    subcategoryId:current?.subcategoryId||null,categoryName:category};
+   const live=(this as any).d05Movements?.identityForDetail?.(selected.origin,current);
+   const identityInput={categoryId:live?.categoryId||current?.categoryId||null,
+    subcategoryId:live?.subcategoryId??current?.subcategoryId??null,categoryName:category};
    // B01/B02's shared resolver wins after integration; current approved
    // taxonomy is only the local compatibility fallback, not another catalog.
    const shared=(window as any).resolveCategoryVisualIdentity;
