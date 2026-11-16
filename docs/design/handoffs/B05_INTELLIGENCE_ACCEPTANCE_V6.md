@@ -10,7 +10,7 @@
 
 | ID | Cenário | Resultado esperado | Status neste handoff |
 | --- | --- | --- | --- |
-| B05-01 | Abrir Inteligência | Três áreas `Hoje | Conversar | Plano de Ação` no topo, 1 clique, sem `Mais ferramentas` duplicado; permissões acessíveis | NOT_RUN |
+| B05-01 | Abrir Inteligência | Três áreas **Hoje, Conversar e Plano de Ação** no topo, 1 clique, sem `Mais ferramentas` duplicado; permissões acessíveis | NOT_RUN |
 | B05-02 | Contexto pessoal com grants válidos | Valores obtidos de fatos com `sourceId/period/asOf/coverage`, nunca de fixture | NOT_RUN |
 | B05-03 | Fixture verified `asOf 16/11`, marco `16/11` | Considerados R$0; projeção R$1700; margem R$1000; folga R$700 | NOT_RUN |
 | B05-04 | Marco 21/11 | Considerados R$119; projeção R$1581; folga R$581; três áreas sincronizadas (gráfico, anel, ficha) | NOT_RUN |
