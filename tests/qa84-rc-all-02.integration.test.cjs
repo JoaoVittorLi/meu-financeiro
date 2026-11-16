@@ -8,7 +8,7 @@ function jsonLiteral(source,prefix,suffix){
  assert(start>=0,'source declaration missing: '+prefix);
  const a=start+prefix.length,b=source.indexOf(suffix,a);
  assert(b>a,'source terminator missing: '+prefix);
- return JSON.parse(source.slice(a,b+1));
+ return JSON.parse(source.slice(a,b));
 }
 test('RC2/D05: 14 approved parents, 61 distinct subcategories and 67 local glyphs',()=>{
  const source=read('src/d05-visual-assets.ts'),
