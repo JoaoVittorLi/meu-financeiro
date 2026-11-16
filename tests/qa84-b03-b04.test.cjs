@@ -11,7 +11,7 @@ const renderer=read('src/d05-movements.ts');
 const compiled=transpile(visual,'d05-visual-assets.ts')+'\n'+transpile(adapter,'qa84-b03-b04-bridge.ts')+
  '\n'+transpile(renderer,'d05-movements.ts')+'\nthis.Component=D05Movements;'+
  'this.D05_APPROVED_PARENTS=D05_APPROVED_PARENTS;'+
- 'this.search=qa84B04Search;this.geometry=qa84B04Geometry;this.identity=qa84B03Visual;';
+ 'this.search=qa84B04Search;this.geometry=qa84B04Geometry;this.identity=qa84B03Visual;this.fingerprint=qa84B04Fingerprint;';
 function flat(node,out=[]){
  if(node==null||node===false)return out;
  if(Array.isArray(node)){node.forEach(x=>flat(x,out));return out;}
@@ -250,6 +250,41 @@ test('B04 V2: responsive geometry never clips and batch flow retains previewVers
  assert.match(source,/selectionSignature/);
  assert.match(source,/if\(state.mode!=='demo'\)/);
  assert.match(source,/setPicker\(\(old:any\)=>\(\{\.\.\.old,phase:'personal-locked'/);
+});
+test('B03 V2: safeData reload preserves D05 IDs and cents without assigning a legacy subcategory',()=>{
+ const app=read('src/app.ts');
+ const start=app.indexOf('function safeData('),end=app.indexOf('\nfunction load(',start);
+ assert(start>=0&&end>start);
+ const fn=transpile(app.slice(start,end),'safe-data.ts');
+ const state={starter:()=>({version:5,transactions:[],budgets:{},settings:{
+  opening:0,income:0,fixed:0,existing:0,reserve:0}})};
+ vm.createContext(state);vm.runInContext(fn+';this.restore=safeData;',state);
+ const restored=state.restore({version:5,transactions:[
+  {id:'one',date:'2026-11-11',kind:'expense',description:'Streaming fake',amount:6000,
+   category:'Assinaturas',categoryId:'cat:assinaturas',subcategoryId:'sub:assinaturas/streaming'},
+  {id:'legacy',date:'2026-11-12',kind:'expense',description:'Sem filho',amount:3300,
+   category:'Assinaturas'}],budgets:{},settings:{}});
+ assert.equal(restored.transactions[0].amount,6000);
+ assert.equal(restored.transactions[0].categoryId,'cat:assinaturas');
+ assert.equal(restored.transactions[0].subcategoryId,'sub:assinaturas/streaming');
+ assert.equal(restored.transactions[1].category,'Assinaturas');
+ assert.equal(restored.transactions[1].subcategoryId,null);
+});
+test('B04 V2: fresh preview fingerprints bind the full transaction account, amount, status and category',()=>{
+ const f=fixture(),row={source:'bank',accountId:'account-1',id:'bank-1',
+  date:'2026-11-10',amount:-10000,status:'POSTED',kind:'expense',
+  categoryId:'cat:assinaturas',subcategoryId:null,category:'Assinaturas'};
+ const original=f.ctx.fingerprint(row);
+ for(const change of [
+  {accountId:'account-2'},{amount:-9000},{status:'PENDING'},
+  {subcategoryId:'sub:assinaturas/streaming'},{id:'bank-2'},{date:'2026-11-11'}]){
+  assert.notEqual(f.ctx.fingerprint({...row,...change}),original);
+ }
+ const app=read('src/app.ts');
+ assert.match(app,/qa84BankCategoryGateAuthorized=false/);
+ assert.match(app,/Regra de categoria requer prévia D05 homologada/);
+ assert.match(app,/Divisão por categoria requer prévia D05 homologada/);
+ assert.match(read('src/d05-movements.ts'),/d05PersonalWritePreview/);
 });
 test('B03 V2: drawer is an overlay, bank legacy category write is absent and order of Escape remains enforced',()=>{
  const app=read('src/app.ts'),d05=read('src/d05-movements.ts');
