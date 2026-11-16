@@ -408,11 +408,14 @@ class D05Movements extends React.Component<any,any> {
   finally{setBusy(false);}
  };
  const portal=(body:any,left:number=20,top:number=60,width:number=355)=>{
+  const safeTop=Math.max(12,Math.min(top,Math.max(12,window.innerHeight-130)));
+  const safeWidth=Math.max(0,Math.min(width,window.innerWidth-24));
   return ReactDOM.createPortal(h('div',{className:'d05-overlay',onMouseDown:(e:any)=>{
     if(e.target===e.currentTarget&&!busy){setPicker(null);setReview(null);setManual(null);setPreview(null);activeTrigger.current?.focus?.();}
    }},
    h('section',{ref:modalRef,className:'d05-floating',role:'dialog','aria-modal':'true',
-    style:{left:Math.max(12,Math.min(left,window.innerWidth-width-12)),top:Math.max(12,Math.min(top,window.innerHeight-130)),width:Math.min(width,window.innerWidth-24)}},
+    style:{left:Math.max(12,Math.min(left,window.innerWidth-safeWidth-12)),top:safeTop,
+     width:safeWidth,maxHeight:Math.max(80,window.innerHeight-safeTop-12)}},
     body)),document.body);
  };
  const categoryGrid=(selectedId:string,onSelect:(p:any)=>void,searchText:string)=>h('div',{className:'d05-catalog-grid',role:'group','aria-label':'Categorias principais'},
