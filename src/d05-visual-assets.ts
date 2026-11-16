@@ -15,3 +15,74 @@ function D05VectorIcon(props:{iconKey?:string;size?:number;hue?:number;label?:st
 function D05ApprovedParent(name:string):any{
  return D05_APPROVED_PARENTS.find(p=>p.name===name)||null;
 }
+
+
+/** QA-84 / global visual identity: sole resolver for B01, B02 and transactional UI.
+ * Never infer category from merchant text, palette index, nature or financial sign.
+ * Approved icons/hues always take precedence over legacy UI color and emoji.
+ */
+type CategoryVisualIdentity=Readonly<{
+ categoryId:string|null;subcategoryId:string|null;source:'sub'|'parent'|'custom'|'legacy'|'fallback';
+ label:string;parentLabel:string;iconKey:string;hue:number;
+ kind:'income'|'expense'|'both'|'unknown';
+}>;
+type CategoryIdentityInput={
+ categoryId?:string|null;subcategoryId?:string|null;categoryName?:string|null;
+ categoryKind?:string|null;catalog?:any[];custom?:any;
+ aggregate?:boolean;
+};
+function qa84LegacyName(text:string):string{
+ return String(text||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+ .trim().toLocaleLowerCase('pt-BR');
+}
+function qa84SafeHue(value:any,fallback:number=215):number{
+ return Number.isInteger(value)&&value>=0&&value<=360?value:fallback;
+}
+function qa84SafeIcon(value:any,fallback:string='shapes'):string{
+ return typeof value==='string'&&Object.prototype.hasOwnProperty.call(D05_APPROVED_GLYPHS,value)?value:fallback;
+}
+function resolveCategoryVisualIdentity(input:CategoryIdentityInput={}):CategoryVisualIdentity{
+ const approved=D05_APPROVED_PARENTS;
+ const customized=(Array.isArray(input.catalog)?input.catalog:[]).filter((p:any)=>p?.id&&
+  !approved.some((native:any)=>native.id===p.id));
+ const all=approved.concat(customized);
+ const requestedId=typeof input.categoryId==='string'&&input.categoryId?input.categoryId:null;
+ const requestedChild=typeof input.subcategoryId==='string'&&input.subcategoryId?input.subcategoryId:null;
+ const rawLabel=String(input.categoryName||'').trim();
+ // An ID, even unknown, must never be overridden by a possibly stale legacy name.
+ let p:any=requestedId?all.find((x:any)=>x.id===requestedId):null;
+ const resolvedByLegacy=!requestedId&&!!rawLabel;
+ if(!requestedId&&rawLabel)p=all.find((x:any)=>qa84LegacyName(x.name)===qa84LegacyName(rawLabel));
+ if(!p&&requestedId&&input.custom?.id===requestedId)p=input.custom;
+ const defaultParent=approved.find((x:any)=>x.id==='cat:outros');
+ if(!p){
+  return Object.freeze({categoryId:defaultParent?.id||'cat:outros',subcategoryId:null,source:'fallback',
+   label:rawLabel||'Categoria não identificada',parentLabel:rawLabel||'Categoria não identificada',
+   iconKey:qa84SafeIcon(defaultParent?.iconKey),hue:qa84SafeHue(defaultParent?.hue),
+   kind:'unknown'});
+ }
+ const builtin=approved.some((x:any)=>x.id===p.id);
+ const custom=!builtin;
+ const selectedChild=!input.aggregate&&requestedChild&&Array.isArray(p.subcategories)?
+  p.subcategories.find((c:any)=>c.id===requestedChild&&
+   (c.parentId===p.id||c.parentCategoryId===p.id)&&c.active!==0):null;
+ const visual=selectedChild||p;
+ const label=String(visual.name||p.name||rawLabel||'Categoria');
+ const kind=['income','expense','both'].includes(String(p.kind))?p.kind:'unknown';
+ return Object.freeze({categoryId:String(p.id),subcategoryId:selectedChild?String(selectedChild.id):null,
+  source:custom?'custom':selectedChild?'sub':resolvedByLegacy?'legacy':'parent',
+  label,parentLabel:String(p.name||label),
+  iconKey:qa84SafeIcon(visual.iconKey),hue:qa84SafeHue(visual.hue),
+  kind:kind as CategoryVisualIdentity['kind']});
+}
+/** Use the SAME resolved descriptor wherever a category is displayed.
+ * aggregate must be true for the parent chart, budgets and summary cards.
+ */
+function CategoryVisualGlyph(props:{identity:CategoryVisualIdentity;size?:number;variant?:'icon'|'iconLabel'|'compact'}){
+ const d=props.identity;
+ const icon=h('span',{className:'qa84-category-glyph',
+  style:{'--qa-cat-hue':String(d.hue)} as any},
+  h(D05VectorIcon,{iconKey:d.iconKey,hue:d.hue,size:props.size||20}));
+ if(props.variant==='iconLabel')return h('span',{className:'qa84-category-combo'},icon,h('span',{},d.label));
+ return icon;
+}
