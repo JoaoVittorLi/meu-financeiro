@@ -14,7 +14,7 @@ Um planejador que só escolhe ferramentas tipadas e parâmetros autorizados cons
 - Segredos e acesso a rede permanecem em teste isolado separado e só após aprovação futura.
 
 ## Interface esperada do planejador (contrato de laboratório)
-\`\`\`json
+```json
 {
   "plannerVersion": 1,
   "requestId": "synthetic-q-001",
@@ -23,18 +23,18 @@ Um planejador que só escolhe ferramentas tipadas e parâmetros autorizados cons
   "allowedTools": ["read_transactions_range", "aggregate_category_spend", "compare_merchant_periods", "read_budget_tree", "read_commitments", "detect_recurring_candidates", "recommend_savings", "simulate_savings", "build_evidence_answer"],
   "limits": {"maxSteps": 4, "maxToolCalls": 6, "maxWallMs": 5000}
 }
-\`\`\`
+```
 **Importante:** limits são **parâmetros de teto propostos para POC**, não medições de tempo real. Na primeira revisão, oferecer 4 passos para comparabilidade com validatePlan() existente; experimentar até seis chamadas somente em outro gate e com logs. Nunca dar token/owner real ao planner.
 
 ### Formato de saída sujeito a validação
-\`\`\`json
+```json
 {
   "steps": [
     {"stepId": "s1", "tool": "read_transactions_range", "params": {"scopeRef": "scope-fixture-f1", "start": "2026-10-01", "end": "2026-11-30", "limit": 100}},
     {"stepId": "s2", "tool": "aggregate_category_spend", "params": {"scopeRef": "scope-fixture-f1", "start": "2026-11-01", "end": "2026-11-30", "categoryId": "food", "subcategoryId": null}}
   ]
 }
-\`\`\`
+```
 - A saída não contém cálculo, SQL, JS, chaves, endpoint, nomes de arquivos, owner nem instrução de escrita.
 - Qualquer propriedade extra, ID inválido, tool não listada ou referência fora de escopo implica rejeição.
 - A orquestração usa results produzidos pelo motor, nunca números propostos pelo modelo.
