@@ -114,3 +114,21 @@ test('RC2.1/UI structure: Overview detail grid is sibling, D05 empty search belo
  assert(ts.isConditionalExpression(resultGrid.arguments[3]),
   'D05 empty-state must be rendered within the result grid');
 });
+
+test('RC2.1/B05 contract: verified Today input is optional in production and never synthesized',()=>{
+ const file='src/intelligence-b05-today.ts';
+ const source=read(file),ast=ts.createSourceFile(file,source,ts.ScriptTarget.ES2019,true);
+ assert.equal(ast.parseDiagnostics.length,0,'B05 Today must parse');
+ let today=null;
+ function walk(node){
+  if(ts.isFunctionDeclaration(node)&&node.name?.text==='renderMfB05Today')today=node;
+  ts.forEachChild(node,walk);
+ }
+ walk(ast);
+ assert(today,'renderMfB05Today must exist');
+ assert.equal(today.parameters.length,2);
+ assert(today.parameters[1].questionToken,
+  'Second verified fixture input must be optional for production app-only callers');
+ assert.match(source,/mfB05ScenarioInput\(app,explicitVerifiedInput\)/);
+ assert.match(source,/mfB05Unavailable\('O contrato IC-READ atual/);
+});
