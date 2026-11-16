@@ -49,8 +49,8 @@ function renderQA84OverviewCategories(host:any,categories:QA84ExpenseCategory[],
      'aria-label':row.name+' · '+row.percent.toFixed(1)+'% · '+fmt(row.total),
      'aria-pressed':selected===row.name,title:row.name+' · '+row.percent.toFixed(1)+'%',
      onClick:()=>pick(row)},
-     h('span',{className:'qa84-sr-only'},row.name)));
-  }),
+     h('span',{className:'qa84-sr-only'},row.name));
+  })),
   h('div',{className:'qa84-distribution-list'},
    shown.map(row=>{
     const identity=visual(row),active=selected===row.name;
