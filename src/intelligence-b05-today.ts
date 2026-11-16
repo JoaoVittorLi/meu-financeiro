@@ -92,10 +92,30 @@ function mfB05Timeline(app,projection,selected) {
    h('button',{type:'button',className:'mf-b05-link',id:'mf-b05-events',
     onClick:()=>mfB05OpenDrawer(app,'commitments','mf-b05-events')},'Conferir compromissos')));
 }
-function mfB05ContextDrawer(app,projection,point) {
+function mfB05ScenarioKey(app,input) {
+ return intelligencePremiumSignature(app)+'|'+String(input?.availableBalance?.sourceId||'')+
+  '|'+String(input?.asOf||'')+'|'+String(input?.period?.to||'');
+}
+function mfB05ScenarioInput(app,input) {
+ if(!input)return null;
+ const st=app.state,valid=st.mfB05ScenarioSignature===mfB05ScenarioKey(app,input);
+ if(!valid)return input;
+ const cash=Number.isSafeInteger(st.mfB05ScenarioBalanceCents)&&st.mfB05ScenarioBalanceCents>=0?
+  st.mfB05ScenarioBalanceCents:null;
+ const margin=Number.isSafeInteger(st.mfB05ScenarioBufferCents)&&st.mfB05ScenarioBufferCents>=0?
+  st.mfB05ScenarioBufferCents:null;
+ return {...input,
+  availableBalance:cash===null?input.availableBalance:{...input.availableBalance,value:cash},
+  safetyBufferCents:margin===null?input.safetyBufferCents:margin};
+}
+function mfB05ScenarioSet(app,input,key,cents) {
+ if(!Number.isSafeInteger(cents)||cents<0)return;
+ app.setState({mfB05ScenarioSignature:mfB05ScenarioKey(app,input),[key]:cents});
+}
+function mfB05ContextDrawer(app,projection,point,originalInput) {
  const kind=app.state.mfB05DrawerKind;
  if(!kind||!projection.available||!point)return null;
- const titles={commitments:'Compromissos considerados',margin:'Margem de segurança',free:'Folga financeira'};
+ const titles={commitments:'Compromissos considerados',margin:'Margem de segurança',free:'Folga financeira',scenario:'Ajustar cenário'};
  const values={commitments:point.consideredCents,margin:point.protectedCents,free:point.freeCents};
  const close=()=>mfB05CloseDrawer(app);
  const items=projection.commitments.filter(c=>c.due<=point.date);
@@ -105,10 +125,25 @@ function mfB05ContextDrawer(app,projection,point) {
    h('header',{},h('span',{},'EVIDÊNCIAS · '+mfB05DateLabel(point.date)),
     h('button',{id:'mf-b05-drawer-close',type:'button',className:'ghost-button',onClick:close},'Fechar')),
    h('h2',{},titles[kind]||'Cenário'),
-   h('strong',{className:'mf-b05-drawer-total'},mfB05Money(values[kind])),
-   h('p',{},kind==='commitments'?'Compromissos futuros únicos com vencimento até o marco selecionado. Ainda não são pagamentos realizados.':
+   kind!=='scenario'?h('strong',{className:'mf-b05-drawer-total'},mfB05Money(values[kind])):null,
+   kind==='scenario'&&originalInput?h('div',{className:'mf-b05-scenario'},
+    h('p',{},'Cenário hipotético da projeção verificada. Nenhum ajuste modifica conta, margem cadastrada ou SQLite.'),
+    ...[{key:'mfB05ScenarioBalanceCents',label:'Saldo disponível hipotético',
+         value:projection.availableBalanceCents,original:originalInput.availableBalance?.value},
+        {key:'mfB05ScenarioBufferCents',label:'Margem protegida hipotética',
+         value:projection.bufferCents===null?0:projection.bufferCents,
+         original:originalInput.safetyBufferCents}].map(item=>h('div',{key:item.key,className:'mf-b05-scenario-field'},
+     h('label',{htmlFor:'mf-b05-slider-'+item.key},item.label+' · '+mfB05Money(item.value)),
+     h('input',{id:'mf-b05-slider-'+item.key,type:'range',min:0,
+      max:Math.min(100000,Math.max(100,Math.ceil((Math.max(0,item.original||0)+100000)/100)*2)),
+      value:Math.round(item.value/100),step:1,
+      onChange:(e)=>mfB05ScenarioSet(app,originalInput,item.key,Number(e.target.value)*100)}))),
+    h('button',{type:'button',className:'ghost-button',
+     onClick:()=>app.setState({mfB05ScenarioSignature:null,mfB05ScenarioBalanceCents:null,mfB05ScenarioBufferCents:null})},
+     'Restaurar premissas verificadas')):null,
+   kind!=='scenario'?h('p',{},kind==='commitments'?'Compromissos futuros únicos com vencimento até o marco selecionado. Ainda não são pagamentos realizados.':
     kind==='margin'?'Valor protegido no cenário verificado; não representa dinheiro transferido.':
-    'Valor disponível acima da margem no cenário. Não é uma economia já realizada.'),
+    'Valor disponível acima da margem no cenário. Não é uma economia já realizada.'):null,
    kind==='commitments'?h('ul',{className:'mf-b05-evidence-list'},
     ...items.map(c=>h('li',{key:c.id},h('span',{},c.description+' · '+mfB05DateLabel(c.due)),
       h('strong',{},mfB05Money(c.amountCents))))):null,
@@ -120,7 +155,8 @@ function renderMfB05Today(app,explicitVerifiedInput) {
   report=s.intelligencePremiumSignature===signature?s.intelligencePremiumReport:null,
   live=mfD03EligibleReport(report,app),
   signals=live?mfD03Signals(report,app):[],
-  projection=explicitVerifiedInput?mfB05Project(explicitVerifiedInput):
+  simulatedInput=mfB05ScenarioInput(app,explicitVerifiedInput),
+  projection=simulatedInput?mfB05Project(simulatedInput):
    mfB05Unavailable('O contrato IC-READ atual não entrega saldo disponível e agenda reconciliada.');
  const selected=mfB05TodaySelected(app,projection);
  return h('section',{className:'mf-b05-today',role:'region','aria-label':'Pulso Financeiro'},
@@ -140,6 +176,8 @@ function renderMfB05Today(app,explicitVerifiedInput) {
       h('strong',{},mfB05Money(projection.reserveSuggestionCents)),h('small',{},'Simulação · nada foi transferido')):null,
     h('div',{className:'mf-b05-hero-actions'},
      h('button',{type:'button',className:'primary-button',onClick:()=>mfB05ChangeMode(app,'chat')},'Conversar sobre meu cenário'),
+     projection.available?h('button',{id:'mf-b05-adjust',type:'button',className:'ghost-button',
+      onClick:()=>mfB05OpenDrawer(app,'scenario','mf-b05-adjust')},'Ajustar cenário'):null,
      h('button',{type:'button',className:'ghost-button',onClick:()=>void intelligencePremiumLoad(app),
       disabled:!!s.intelligencePremiumLoading},s.intelligencePremiumLoading?'Atualizando…':'Atualizar sinais'))),
    mfB05Ring(app,projection,selected)),
@@ -157,5 +195,5 @@ function renderMfB05Today(app,explicitVerifiedInput) {
   h('footer',{className:'mf-b05-footer'},
    h('span',{},'Da informação à decisão — sempre sob seu controle.'),
    h('button',{type:'button',className:'mf-b05-link',onClick:()=>mfB05ChangeMode(app,'actions')},'Explorar Plano de Ação')),
-  mfB05ContextDrawer(app,projection,selected),mfD03ContextDrawer(app));
+  mfB05ContextDrawer(app,projection,selected,explicitVerifiedInput),mfD03ContextDrawer(app));
 }
