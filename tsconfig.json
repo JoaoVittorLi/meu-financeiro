@@ -13,6 +13,7 @@
   },
   "files": [
     "src/d05-visual-assets.ts",
+    "src/qa84-b03-b04-bridge.ts",
     "src/qa84-overview.ts",
     "src/qa84-budgets.ts",
     "src/app.ts",
