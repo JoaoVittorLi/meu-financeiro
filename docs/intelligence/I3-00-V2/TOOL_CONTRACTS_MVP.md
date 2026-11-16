@@ -3491,6 +3491,568 @@ As dez ferramentas abaixo são **contratos propostos**, não endpoints existente
 }
 ```
 
+
+## 10. compare_spending_breakdown — comparação agregada por período e taxonomia D05
+
+**Estado:** PROPOSED_FOR_M1_S1; M1 implementará o adaptador determinístico. **Reuso:** FinanceDB, financial-intelligence.cjs, shared/finance-period-ledger.mjs e electron/d05-taxonomy.json. **Escopo:** somente leitura da fonte permitida; owner/token validados por MAIN, não pelo planner. **Limites:** dois intervalos autorizados, 14 pais e até 100 grupos; a consulta não executa SQL do modelo. **Erros:** denied/stale/no_data/unsupported/error sem campos monetários. **Testes:** F1, T-007/012/013/026/030 e M1-S1. **Aceite:** a soma de deltaCents por contribuição deve igualar currentCents - previousCents. Agrupar Seguros sob cat:contas/sub:contas/seguros. Percentual null quando previousCents=0. Períodos incompletos ficam marcados e nunca se comparam como equivalentes sem ressalva.
+
+**InputSchema (JSON Schema 2020-12)**
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "scopeRef": {
+      "type": "string",
+      "pattern": "^scope-[a-z0-9-]+$",
+      "maxLength": 96
+    },
+    "periodA": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "start": {
+          "type": "string",
+          "format": "date"
+        },
+        "end": {
+          "type": "string",
+          "format": "date"
+        }
+      },
+      "required": [
+        "start",
+        "end"
+      ]
+    },
+    "periodB": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "start": {
+          "type": "string",
+          "format": "date"
+        },
+        "end": {
+          "type": "string",
+          "format": "date"
+        }
+      },
+      "required": [
+        "start",
+        "end"
+      ]
+    },
+    "groupBy": {
+      "enum": [
+        "category",
+        "subcategory"
+      ]
+    },
+    "includeCategoryIds": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^cat:"
+      },
+      "uniqueItems": true,
+      "maxItems": 14
+    },
+    "excludeCategoryIds": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^cat:"
+      },
+      "uniqueItems": true,
+      "maxItems": 14
+    }
+  },
+  "required": [
+    "scopeRef",
+    "periodA",
+    "periodB",
+    "groupBy"
+  ]
+}
+```
+
+**OutputSchema (JSON Schema 2020-12)**
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "const": "ready"
+        },
+        "dataVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "asOf": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "coverage": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "state": {
+              "enum": [
+                "complete",
+                "partial",
+                "unknown"
+              ]
+            },
+            "readRows": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "hasMore": {
+              "type": "boolean"
+            },
+            "missingPeriods": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "state",
+            "readRows",
+            "hasMore"
+          ]
+        },
+        "source": {
+          "enum": [
+            "bank",
+            "manual"
+          ]
+        },
+        "sourceIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "method": {
+          "type": "string"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "previousCents": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "currentCents": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "deltaCents": {
+              "type": "integer"
+            },
+            "percentChange": {
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "periodAPartial": {
+              "type": "boolean"
+            },
+            "periodBPartial": {
+              "type": "boolean"
+            },
+            "contributions": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "categoryId": {
+                    "type": "string",
+                    "pattern": "^cat:"
+                  },
+                  "subcategoryId": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "pattern": "^sub:"
+                  },
+                  "label": {
+                    "type": "string"
+                  },
+                  "previousCents": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "currentCents": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "deltaCents": {
+                    "type": "integer"
+                  },
+                  "evidenceIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "uniqueItems": true
+                  }
+                },
+                "required": [
+                  "categoryId",
+                  "subcategoryId",
+                  "label",
+                  "previousCents",
+                  "currentCents",
+                  "deltaCents",
+                  "evidenceIds"
+                ]
+              },
+              "maxItems": 100
+            }
+          },
+          "required": [
+            "previousCents",
+            "currentCents",
+            "deltaCents",
+            "percentChange",
+            "periodAPartial",
+            "periodBPartial",
+            "contributions"
+          ]
+        }
+      },
+      "required": [
+        "status",
+        "dataVersion",
+        "asOf",
+        "coverage",
+        "source",
+        "sourceIds",
+        "method",
+        "data"
+      ]
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "const": "partial"
+        },
+        "dataVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "asOf": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "coverage": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "state": {
+              "enum": [
+                "complete",
+                "partial",
+                "unknown"
+              ]
+            },
+            "readRows": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "hasMore": {
+              "type": "boolean"
+            },
+            "missingPeriods": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "state",
+            "readRows",
+            "hasMore"
+          ]
+        },
+        "source": {
+          "enum": [
+            "bank",
+            "manual"
+          ]
+        },
+        "sourceIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "method": {
+          "type": "string"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "previousCents": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "currentCents": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "deltaCents": {
+              "type": "integer"
+            },
+            "percentChange": {
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "periodAPartial": {
+              "type": "boolean"
+            },
+            "periodBPartial": {
+              "type": "boolean"
+            },
+            "contributions": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "categoryId": {
+                    "type": "string",
+                    "pattern": "^cat:"
+                  },
+                  "subcategoryId": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "pattern": "^sub:"
+                  },
+                  "label": {
+                    "type": "string"
+                  },
+                  "previousCents": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "currentCents": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "deltaCents": {
+                    "type": "integer"
+                  },
+                  "evidenceIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "uniqueItems": true
+                  }
+                },
+                "required": [
+                  "categoryId",
+                  "subcategoryId",
+                  "label",
+                  "previousCents",
+                  "currentCents",
+                  "deltaCents",
+                  "evidenceIds"
+                ]
+              },
+              "maxItems": 100
+            }
+          },
+          "required": [
+            "previousCents",
+            "currentCents",
+            "deltaCents",
+            "percentChange",
+            "periodAPartial",
+            "periodBPartial",
+            "contributions"
+          ]
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1
+        }
+      },
+      "required": [
+        "status",
+        "dataVersion",
+        "asOf",
+        "coverage",
+        "source",
+        "sourceIds",
+        "method",
+        "data",
+        "warnings"
+      ]
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "enum": [
+            "denied",
+            "stale",
+            "no_data",
+            "unsupported",
+            "error"
+          ]
+        },
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "status",
+        "code",
+        "message"
+      ]
+    }
+  ]
+}
+```
+
+**Entrada sintética válida**
+
+```json
+{
+  "scopeRef": "scope-f1-bank",
+  "periodA": {
+    "start": "2026-10-01",
+    "end": "2026-10-31"
+  },
+  "periodB": {
+    "start": "2026-11-01",
+    "end": "2026-11-30"
+  },
+  "groupBy": "subcategory"
+}
+```
+
+**Saída sintética esperada**
+
+```json
+{
+  "status": "ready",
+  "dataVersion": "fixture-f1",
+  "asOf": "2026-11-30T23:59:00Z",
+  "source": "bank",
+  "coverage": {
+    "state": "complete",
+    "readRows": 14,
+    "hasMore": false,
+    "missingPeriods": []
+  },
+  "sourceIds": [
+    "p01",
+    "p02",
+    "p03",
+    "p04",
+    "n01",
+    "n02",
+    "n03",
+    "n04"
+  ],
+  "method": "canonical_ledger_period_delta",
+  "data": {
+    "previousCents": 37000,
+    "currentCents": 42000,
+    "deltaCents": 5000,
+    "percentChange": 14,
+    "periodAPartial": false,
+    "periodBPartial": false,
+    "contributions": [
+      {
+        "categoryId": "cat:alimentacao",
+        "subcategoryId": null,
+        "label": "Alimentação",
+        "previousCents": 20000,
+        "currentCents": 15000,
+        "deltaCents": -5000,
+        "evidenceIds": [
+          "p01",
+          "p02",
+          "n01"
+        ]
+      },
+      {
+        "categoryId": "cat:transporte",
+        "subcategoryId": null,
+        "label": "Transporte",
+        "previousCents": 5000,
+        "currentCents": 9000,
+        "deltaCents": 4000,
+        "evidenceIds": [
+          "p03",
+          "n03"
+        ]
+      },
+      {
+        "categoryId": "cat:contas",
+        "subcategoryId": "sub:contas/seguros",
+        "label": "Seguros",
+        "previousCents": 0,
+        "currentCents": 6000,
+        "deltaCents": 6000,
+        "evidenceIds": [
+          "n04"
+        ]
+      },
+      {
+        "categoryId": "cat:assinaturas",
+        "subcategoryId": null,
+        "label": "Assinaturas",
+        "previousCents": 12000,
+        "currentCents": 12000,
+        "deltaCents": 0,
+        "evidenceIds": [
+          "p04",
+          "n02"
+        ]
+      }
+    ]
+  }
+}
+```
+
 ## Regras comuns de implementação
 - Engine de tempo: dataVersion + asOf + coverage sempre presentes; pageCursor vinculado ao escopo e versão, nunca passado sem validação.
 - Status != ready não pode ser tratado como total consolidado; partial requer ressalva e, para metas, intervalo de confiança explícito.
