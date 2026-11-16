@@ -139,3 +139,13 @@ Direção **proposta, não aprovada**: revisão via ponto azul no nome do comerc
 - **Contrato visual global D05** aprovado como requisito: um descriptor por ID (ícone, cor/hue, rótulo, emoji legado se necessário), consistente entre todas as áreas. [Contrato](handoffs/GLOBAL_CATEGORY_VISUAL_IDENTITY_CONTRACT.md).
 - **B05 Hierarquia da Inteligência — NOT_STARTED nesta rodada**; design futuro ainda sujeito a revisão. #84 permanece aberta enquanto implementação e QA Electron não forem comprovados.
 - **Separação de status:** aprovações acima são de **design**, não de commits, CI, Windows build ou homologação. O integrador acompanha PR #76; revalidar HEAD e ownership antes de qualquer edição.
+
+
+### QA primeiro EXE — B05 Inteligência V6 APROVADA (16/11/2026)
+
+- **Aprovação explícita do proprietário:** “Melhorou bastante, vou aprovar. lembre de deixar bem documentado as alterações e os caminhos para o integrador/executor nao gerar erros quando for implementar o design”.
+- **Versões finais:** **HOJE V6 (Pulso Financeiro)** + **CONVERSAR V5 (Intelligence Alive)** + **PLANO DE AÇÃO V5 (Intelligence Alive)**; motion e sistema visual compartilhados V5. A B05 V6 apresentada na conversa simplificou chat/plano para demonstrar Hoje e **NÃO revoga** as telas V5.
+- **Handoff final:** [QA B05 aprovado](handoffs/QA_EXE_B05_INTELLIGENCE_APPROVED_V6_20261116.md) · [Mapa real de código/ownership](handoffs/B05_INTELLIGENCE_IMPLEMENTATION_MAP_V6.md) · [Motion](handoffs/B05_INTELLIGENCE_MOTION_SPEC_V6.md) · [Fixture centavos](handoffs/B05_INTELLIGENCE_FIXTURES_V6.json) · [40 casos de QA](handoffs/B05_INTELLIGENCE_ACCEPTANCE_V6.md).
+- **Regra de precedência:** a B05 V6 altera a **composição externa** da D03 Hoje V2 somente na superfície Inteligência, preservando seu motor de dados, priorização e segurança; D04 V1.1, D01/D02 e catálogo D05 seguem válidos. Navegação Hoje/Conversar/Plano agora é superior, não escondida em “Mais ferramentas”.
+- **Status:** B01 V3, B02 V7, B03 V2, B04 V2, **B05 V6/V5 todos DESIGN_APPROVED** no QA issue #84. **Nenhuma dessas aprovações, isoladamente, prova código integrado, screenshots reais ou Windows EXE homologado.**
+- **Entrega seguinte:** Executor B05 implementa em branch de código, Integrador PR #76 acompanha HEAD/conflitos e QA Electron. D06–D12 permanecem roadmap de tela completa independente das correções B01–B05.
