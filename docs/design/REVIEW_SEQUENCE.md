@@ -128,3 +128,14 @@ Direção **proposta, não aprovada**: revisão via ponto azul no nome do comerc
 **Pacote final publicado no PR Draft #57:** [Índice canônico](screens/d05-movimentacoes/D05_FINAL_DELIVERY_INDEX.md) · [Protótipo final](screens/d05-movimentacoes/prototype.html) · [Spec aprovada](screens/d05-movimentacoes/DESIGN_SPEC_APPROVED.md) · [Comportamento](screens/d05-movimentacoes/BEHAVIOR_SPEC.md) · [Handoff](screens/d05-movimentacoes/HANDOFF.md) · [QA/aceite](screens/d05-movimentacoes/ACCEPTANCE.md).
 
 **Primeiro EXE obrigatório:** novo Executor D05 implementa E1 SQLite/migração/backup, E2 IPC/regras/IA/autorização, E3 renderer+QA na RC #76 coordenada por #49. A issue **#74 segue aberta e bloqueante**. Não afirmar código implementado, QA Electron PASS, release/exe concluído ou executar CI/build pago sem autorização do proprietário.
+
+
+### QA do primeiro EXE — Rodadas A/B (16/11/2026)
+
+- **B01 Visão Geral V3 — DESIGN_APPROVED**, independente de D06 (revisão global da tela). Handoff [B01/B02](handoffs/QA_EXE_B01_B02_APPROVED_20261116.md).
+- **B02 Orçamentos V7 — DESIGN_APPROVED**, independente de D07 (revisão global da tela). Budget Orbit principal e detalhes pai→filho. Handoff [B01/B02](handoffs/QA_EXE_B01_B02_APPROVED_20261116.md).
+- **B03 Movimentações V2 — DESIGN_APPROVED**: D05 real com ícone clicável para classificação e detalhes em drawer lateral direita. Handoff [B03/B04](handoffs/QA_EXE_B03_B04_APPROVED_20261116.md).
+- **B04 Seletor D05 V2 — DESIGN_APPROVED**: atalho pelo ícone, catálogo 14 pais/61 filhos, prévia antes/depois, confirmação e retorno de identidade. Handoff [B03/B04](handoffs/QA_EXE_B03_B04_APPROVED_20261116.md).
+- **Contrato visual global D05** aprovado como requisito: um descriptor por ID (ícone, cor/hue, rótulo, emoji legado se necessário), consistente entre todas as áreas. [Contrato](handoffs/GLOBAL_CATEGORY_VISUAL_IDENTITY_CONTRACT.md).
+- **B05 Hierarquia da Inteligência — NOT_STARTED nesta rodada**; design futuro ainda sujeito a revisão. #84 permanece aberta enquanto implementação e QA Electron não forem comprovados.
+- **Separação de status:** aprovações acima são de **design**, não de commits, CI, Windows build ou homologação. O integrador acompanha PR #76; revalidar HEAD e ownership antes de qualquer edição.
