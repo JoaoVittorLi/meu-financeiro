@@ -557,6 +557,9 @@ class PeriodPicker extends React.Component<any,any>{
 class App extends React.Component<any,State>{
  private fileInput:any; private csvInput:any; private timeout:any; private writeInProgress=false; private autoSyncTimer:any=null; private unsubscribePersonalCloud:(()=>void)|null=null; private unsubscribeAI:(()=>void)|null=null; private lastSyncAttempt=0; private focusReturn:any=null; private focusCategoryOnDetailOpen=false; private quickCategoryAnchor:HTMLElement|null=null; private quickCategorySearchInput:HTMLElement|null=null; private quickCategoryWrite=false; private reviewSavingKeys=new Set<string>(); private categorySavingKeys=new Set<string>(); private categorySaveQueue:Promise<any>=Promise.resolve();
  private simRequest=0;
+ // B03 only: snapshot identity for the currently open D05 drawer. B01 owns
+ // the global descriptor resolver; no category catalog is created here.
+ private qa84D05DrawerIds:any=null;
  constructor(props:any){super(props);const mode:'real'|'demo'='real';this.state={mode,data:desktop?starter():load(mode),page:'overview',month:nowYM,showEntry:false,entry:{date:iso(new Date()),description:'',kind:'expense',category:'Outros',value:''},sim:{value:'',installments:'6',interest:'0'},outcome:null,simCalculatedInput:null,simResultStale:false,simError:'',query:'',toast:'',budgetEdit:'',busy:!!desktop,booting:!!desktop,editModal:null,bank:EMPTY_BANK,bankForm:{clientId:'',clientSecret:'',itemIds:''},bankBusy:false,bankMessage:'',bankFilter:'',txSource:'all',txReviewOnly:false,txOrganize:false,txAdvancedOpen:false,txCategoryFilter:'',txKindFilter:'all',txReviewFilter:'all',txSort:'date_desc',quickCategory:null,quickCategoryQuery:'',quickCategoryIndex:0,quickCategoryBusy:false,quickCategoryError:'',categoryMoreEmojis:false,quickAddOpen:false,dashboardSource:'bank',sourceDetailsOpen:false,budgetTab:'expense',showAllBudgetCategories:false,categories:DEFAULT_CATEGORY_INFOS,rules:[],categoryEditor:{previousName:'',name:'',color:'#3e9a85',emoji:'✨',kind:'expense'},ruleEditor:emptyRule(),ruleTest:'IFOOD',categoryMessage:'',entryCategoryTouched:false,bankConfigOpen:false,overviewPeriod:'month',customStart:iso(new Date()),customEnd:iso(new Date()),backupInfo:{copies:0,last:null},detail:null,detailDraft:{merchant:'',note:'',nature:'auto',reviewed:false,aliasPattern:'',splitParts:[]},manualDraft:null,detailBusy:false,categorySaving:[],txSelected:[],txBatchCategory:'Alimentação',planning:EMPTY_PLANNING,planMonth:nowYM,planDay:iso(new Date()),planSelected:null,planOpen:false,planForm:freshPlanForm(),planBusy:false,planView:'all',planTerm:'',planIncludeEstimated:false,planBankTitle:'',planMatchQuery:'',planHistory:[],cloudStage:'not_started',cloudBusy:false,cloudMessage:'',cloudIdentityConnected:false,cloudQuarantineVerified:false,cloudPersonalTransferred:false,cloudParityBusy:false,cloudParityMessage:'',cloudE1Report:null,intelligenceTab:'today',intelligenceDraft:'',intelligencePreparedQuestion:'',intelligencePanelOpen:false,intelligenceContext:'overview',intelligenceExpandedAction:null,aiStatus:{connected:false,secure:false},aiBusy:false,aiError:'',aiDemoCase:'budget',aiEffort:'auto',aiCreditsConfirmed:false,aiResult:null,aiStreaming:'',aiCapabilities:null,aiMemories:[],aiMemoryDraft:'',aiMemoryKind:'preference',aiMemoryBusy:false,aiMemoryError:'',aiUseMemories:false,aiPreview:null,aiUsageStats:null,aiFinancialDemoSource:'bank',aiFinancialDemo:null,aiFinancialDemoBusy:false,aiFinancialDemoError:''};}
  async componentDidMount(){
    window.addEventListener('keydown',this.onGlobalKeydown);
@@ -733,10 +736,14 @@ class App extends React.Component<any,State>{
  }
  bankTxSelected(tx:BankTx){return this.state.txSelected.includes(tx.accountId+'|'+tx.id);}
  toggleSelected(tx:BankTx){const key=tx.accountId+'|'+tx.id;this.setState({txSelected:this.bankTxSelected(tx)?this.state.txSelected.filter(x=>x!==key):this.state.txSelected.length>=100?this.state.txSelected:[...this.state.txSelected,key]});}
- openBankDetail(tx:BankTx){
+ openBankDetail(tx:BankTx,visual?:any){
+   this.qa84D05DrawerIds={origin:'bank',id:tx.id,accountId:tx.accountId,
+    categoryId:visual?.categoryId||null,subcategoryId:visual?.subcategoryId??null};
    this.setState({detail:{origin:'bank',id:tx.id,accountId:tx.accountId},detailDraft:{merchant:tx.merchant||'',note:tx.note||'',nature:tx.nature||'auto',reviewed:!!tx.reviewed,aliasPattern:tx.description.slice(0,60),splitParts:(tx.splits?.length?tx.splits:[{category:tx.category,amount:Math.floor(Math.abs(tx.amount)/2)},{category:tx.category,amount:Math.abs(tx.amount)-Math.floor(Math.abs(tx.amount)/2)}]).map(p=>({category:p.category,value:moneyString(p.amount)}))}});
  }
- openManualDetail(tx:Tx){
+ openManualDetail(tx:Tx,visual?:any){
+  this.qa84D05DrawerIds={origin:'manual',id:tx.id,categoryId:visual?.categoryId||null,
+   subcategoryId:visual?.subcategoryId??null};
   this.setState({detail:{origin:'manual',id:tx.id},
    manualDraft:{description:tx.description,date:tx.date,value:moneyString(tx.amount),category:tx.category}});
  }
@@ -757,13 +764,18 @@ class App extends React.Component<any,State>{
   if(!Number.isSafeInteger(amount)||amount<=0){this.flash('Valor inválido. Use reais e no máximo duas casas decimais (ex.: 1.234,56).');return false;}
   const allowed=this.getCategories().some(c=>c.name===draft.category&&
    (original.kind==='income'?c.kind!=='expense':c.kind!=='income'));
+  // Drawer edits may change metadata, NEVER bypass D05 supervised category
+  // confirmation. The prior draft is not a write authorization.
+  if(draft.category!==original.category){
+   this.flash('Classificação exige a prévia supervisionada D05.');return false;
+  }
   if(!allowed&&draft.category!==original.category){this.flash('Selecione uma categoria compatível.');return false;}
   if(this.isManualLinked(id)&&(draft.date!==original.date||amount!==original.amount)){
    this.flash('Desvincule este lançamento da movimentação bancária antes de mudar data ou valor.');
    return false;
   }
   const result=await this.updateData({...this.state.data,transactions:this.state.data.transactions.map(t=>
-   t.id===id?{...t,description,date:draft.date,amount,category:draft.category}:t)},
+   t.id===id?{...t,description,date:draft.date,amount,category:original.category}:t)},
    'Lançamento atualizado.');
   if(result)this.setState({detail:null,manualDraft:null});
   return result;
@@ -2052,6 +2064,23 @@ class App extends React.Component<any,State>{
    const amount=tx?tx.amount:manual?(manual.kind==='income'?manual.amount:-manual.amount):0;
    const category=tx?.category||manual?.category||'Outros';
    const cats=this.getCategories();const cat=cats.find(c=>c.name===category);
+   const sourceId=bank?'bank':'manual';
+   const context=this.qa84D05DrawerIds;
+   const matching=context?.origin===sourceId&&context.id===selected.id&&
+    (!bank||context.accountId===selected.accountId)?context:null;
+   const identity=qa84B03Visual({
+    categoryId:(manual as any)?.categoryId||(tx as any)?.categoryId||matching?.categoryId||null,
+    subcategoryId:(manual as any)?.subcategoryId??(tx as any)?.subcategoryId??matching?.subcategoryId??null,
+    categoryName:category
+   },(this.state as any).qa84VisualCatalog||D05_APPROVED_PARENTS);
+   const categoryAction=(label:string)=>h('button',{type:'button',
+    className:'mf-drawer-d05-category',title:'Abrir classificação D05',
+    'aria-label':label,onClick:(event:any)=>
+      qa84B03RequestDrawerPicker(event,sourceId as 'bank'|'manual',
+       selected.id,bank?selected.accountId:undefined)},
+    h(D05VectorIcon,{iconKey:identity.iconKey,hue:identity.hue,size:24}),
+    h('span',{},identity.source==='sub'?identity.parentLabel+' › '+identity.label:
+      identity.source==='fallback'?category:identity.label));
    const f=this.state.detailDraft;
    const matchSuggestions=tx&&tx.status==='POSTED'?this.state.data.transactions.filter(m=>m.kind===(tx.amount>=0?'income':'expense')&&m.amount===Math.abs(tx.amount)&&Math.abs((Date.parse(m.date+'T00:00:00Z')-Date.parse(tx.date+'T00:00:00Z'))/86400000)<=3&&!this.state.bank.data.transactions.some(other=>other.linkedManualId===m.id&&(other.id!==tx.id||other.accountId!==tx.accountId))).slice(0,6):[];
    const opposite=tx?this.state.bank.data.transactions.filter(other=>other.accountId!==tx.accountId&&other.amount===-tx.amount&&Math.abs((Date.parse(other.date+'T00:00:00Z')-Date.parse(tx.date+'T00:00:00Z'))/86400000)<=2&&other.status==='POSTED').slice(0,3):[];
@@ -2060,11 +2089,11 @@ class App extends React.Component<any,State>{
      h('aside',{className:'mf-detail-drawer',role:'dialog','aria-modal':'true','aria-label':'Detalhes da movimentação'},
        h('div',{className:'mf-drawer-head'},h('div',{},h('small',{className:'micro-label'},'DETALHES'),h('h2',{},'Movimentação')),h('button',{className:'close-button',type:'button','aria-label':'Fechar painel',title:'Fechar',onClick:()=>this.setState({detail:null})},h(Icon,{name:'close',size:18}))),
        h('div',{className:'mf-detail-scroll'},
-         h('div',{className:'mf-detail-hero'},h('span',{className:'mf-hero-emoji'},cat?.emoji||'✨'),h('h3',{},name),h('strong',{className:amount>=0?'good-text':'bad-text'},(amount>=0?'+':'−')+fmt(Math.abs(amount))),h('span',{},(tx?.date||manual?.date||'').split('-').reverse().join('/')+' · '+(tx?.accountName||'Adicionado por você'))),
+         h('div',{className:'mf-detail-hero'},categoryAction('Alterar categoria de '+name),h('h3',{},name),h('strong',{className:amount>=0?'good-text':'bad-text'},(amount>=0?'+':'−')+fmt(Math.abs(amount))),h('span',{},(tx?.date||manual?.date||'').split('-').reverse().join('/')+' · '+(tx?.accountName||'Adicionado por você'))),
          h('button',{type:'button',className:'mf-ai-detail-trigger',onClick:()=>this.openIntelligenceContext('transactions')},h(Icon,{name:'spark',size:17}),'Analisar com Inteligência',h('span',{},'Prévia')),
          tx?h('div',{className:'mf-detail-section'},h('div',{className:'mf-detail-section-title'},h('b',{},'Organização'),h('span',{className:tx.reviewed?'mf-reviewed':'mf-to-review'},tx.reviewed?'✓ Revisada':'A conferir')),
            h('div',{className:'mf-detail-grid'},
-             this.field('Categoria principal',h(StyledSelect,{className:'mf-transaction-category-select',value:tx.category,disabled:this.state.categorySaving.includes(tx.accountId+'|'+tx.id),options:cats.map(c=>({value:c.name,label:c.emoji+' '+c.name})),onChange:(v:string)=>this.setBankCategory(tx,v)})),
+             this.field('Categoria principal',categoryAction('Alterar classificação bancária de '+name)),
              this.field('Tipo de movimentação',h(StyledSelect,{value:f.nature,options:[{value:'auto',label:'Padrão'},{value:'income',label:'Receita'},{value:'expense',label:'Despesa'},{value:'transfer',label:'Transferência própria'},{value:'ignore',label:'Não contar nas análises'}],onChange:(nature:any)=>this.setState({detailDraft:{...f,nature}})}))),
            this.field('Nome do estabelecimento',h('input',{className:'form-control',value:f.merchant,maxLength:100,placeholder:'Ex.: iFood, Mercado, Academia',onChange:(e:any)=>this.setState({detailDraft:{...f,merchant:e.target.value}})})),
            this.field('Anotações pessoais',h('textarea',{className:'form-control mf-note-input',rows:3,value:f.note,maxLength:600,placeholder:'Opcional: detalhes para lembrar desta compra',onChange:(e:any)=>this.setState({detailDraft:{...f,note:e.target.value}})})),
@@ -2094,11 +2123,7 @@ class App extends React.Component<any,State>{
              this.field('Data',h(SingleDatePicker,{value:this.state.manualDraft.date,
                disabled:this.isManualLinked(manual.id),
                onChange:(value:string)=>this.setState({manualDraft:{...this.state.manualDraft!,date:value}})}))),
-           this.field('Categoria do lançamento',h(StyledSelect,{
-             className:'mf-transaction-category-select',value:this.state.manualDraft.category,
-             options:cats.filter(c=>manual.kind==='income'?c.kind!=='expense':c.kind!=='income')
-               .map(c=>({value:c.name,label:c.emoji+' '+c.name})),
-             onChange:(v:string)=>this.setState({manualDraft:{...this.state.manualDraft!,category:v}})})),
+           this.field('Categoria do lançamento',categoryAction('Alterar categoria manual de '+name)),
            this.isManualLinked(manual.id)?h('p',{className:'mf-manual-warning'},
              'Lançamento vinculado a uma movimentação bancária: desvincule antes de alterar data, valor ou excluir.'):null,
            h('div',{className:'mf-manual-actions'},
