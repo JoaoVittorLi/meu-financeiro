@@ -147,6 +147,79 @@ test('B04 V2: read-only real manual selection never mutates personal SQLite just
  assert.equal(f.render().filter(n=>n.props.className==='d05-confirm').length,0);
  assert.equal(f.calls.filter(c=>c.action==='save').length,0);
 });
+test('B04 V2: a demo-only manual change needs two separate confirmations and readback',async()=>{
+ let f;
+ const bridge={
+  d05SessionAuthorize:async()=>({profile:'demo'}),
+  d05Catalog:async()=>({parents:[]}),
+  d05ManualList:async()=>({items:[]}),
+  save:async()=>({ok:true}),
+  load:async()=>f.host.state.data
+ };
+ f=fixture('demo',bridge);
+ const icons=f.render().filter(n=>String(n.props.className||'').includes('d05-row-icon'));
+ assert.equal(icons.length,1);
+ f.click(icons[0]);
+ const parent=f.render().find(n=>n.props.className?.includes('d05-catalog-choice')&&textOf(n).includes('Assinaturas'));
+ f.click(parent);
+ const child=f.render().find(n=>n.props.className==='d05-child'&&textOf(n).includes('Streaming'));
+ f.click(child);
+ assert.equal(f.calls.filter(x=>x.action==='save').length,0);
+ const previewButton=f.render().find(n=>n.props.className==='d05-confirm');
+ assert.match(textOf(previewButton),/Conferir prévia/);
+ f.click(previewButton);
+ await new Promise(resolve=>setImmediate(resolve));
+ assert.equal(f.calls.filter(x=>x.action==='save').length,0,'Selecting is not saving');
+ const applyButton=f.render().find(n=>n.props.className==='d05-confirm');
+ assert.match(textOf(applyButton),/Reconfirmar e salvar demonstração/);
+ assert.equal(applyButton.props.disabled,false);
+ f.click(applyButton);
+ await new Promise(resolve=>setImmediate(resolve));
+ assert.equal(f.calls.filter(x=>x.action==='save').length,1);
+ assert.equal(f.host.state.data.transactions[0].amount,6000);
+ assert.equal(f.host.state.data.transactions[0].subcategoryId,'sub:assinaturas/streaming');
+ assert.equal(f.calls.some(x=>x.action==='drawer'),false);
+});
+test('B04 V2: Escape cancels only picker and restores its origin trigger',()=>{
+ const f=fixture('real');
+ f.click(f.find('d05-row-icon'));
+ f.instance.render();f.instance.componentDidUpdate();
+ let cancelled=0,stopped=0;
+ f.win.dispatchEvent({type:'keydown',key:'Escape',
+  preventDefault(){cancelled++;},stopPropagation(){stopped++;}});
+ assert.equal(cancelled,1);assert.equal(stopped,1);
+ assert.equal(f.find('d05-picker'),undefined);
+ assert(f.calls.some(x=>x.action==='focus'));
+});
+test('B04 V2: bank batch shows verified counts and never enables personal commit',async()=>{
+ let applied=0;
+ const bridge={
+  d05SessionAuthorize:async()=>({profile:'real'}),
+  d05Catalog:async()=>({parents:[]}),
+  d05BankList:async()=>({items:[]}),
+  d05ManualList:async()=>({items:[]}),
+  d05BankBatchPreview:async()=>({contract:'D05/BANK-BATCH-PREVIEW-V1',
+   previewVersion:'a'.repeat(64),count:1,posted:1,pending:0,changesApplied:false}),
+  d05BankBatchApply:async()=>{applied++;throw Error('Real personal write disabled');}
+ };
+ const f=fixture('real',bridge);
+ const selected=f.find('d05-select');f.click(selected);
+ const bulk=f.render().find(n=>n.type==='button'&&textOf(n).includes('Categorizar seleção'));
+ f.click(bulk);
+ const parent=f.render().find(n=>n.props.className?.includes('d05-catalog-choice')&&textOf(n).includes('Assinaturas'));
+ f.click(parent);
+ const child=f.render().find(n=>n.props.className==='d05-child'&&textOf(n).includes('Streaming'));
+ f.click(child);
+ const prepare=f.render().find(n=>n.props.className==='d05-confirm');
+ f.click(prepare);
+ await new Promise(resolve=>setImmediate(resolve));
+ const tree=f.render();
+ assert.match(textOf(tree),/POSTED: 1/);
+ assert.match(textOf(tree),/Classificação em lote pessoal ainda não homologada/);
+ const button=tree.find(n=>n.props.className==='d05-confirm');
+ assert.equal(button.props.disabled,true);
+ assert.equal(applied,0);
+});
 test('B04 V2: official B01/B02 global identity takes precedence without second palette',()=>{
  const f=fixture();
  const original=f.ctx.identity({categoryId:'cat:assinaturas',subcategoryId:'sub:assinaturas/streaming'});
