@@ -12,8 +12,10 @@
     "skipLibCheck": true
   },
   "files": [
-    "src/app.ts",
     "src/d05-visual-assets.ts",
+    "src/qa84-overview.ts",
+    "src/qa84-budgets.ts",
+    "src/app.ts",
     "src/d05-csv.ts",
     "src/d05-movements.ts",
     "src/plan-view.ts",
