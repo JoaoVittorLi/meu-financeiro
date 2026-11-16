@@ -622,6 +622,7 @@ class App extends React.Component<any,State>{
  onGlobalKeydown=(event:KeyboardEvent)=>{
     if(event.key==='Escape'&&this.state.contextCategory){event.preventDefault();this.closeContextCategory();return;}
     if(event.key==='Escape'&&this.state.quickCategory){event.preventDefault();this.closeQuickCategory();return;}
+    if(document.querySelector('.d05-overlay'))return; // Top overlay owns Tab/Escape.
     const dialog=document.querySelector('.modal-backdrop [role="dialog"],.mf-detail-drawer,.mf-ai-drawer');
    if(event.key==='Tab'&&dialog&&!document.querySelector('[role="listbox"],.mf-period-popover,.mf-single-calendar')){
      const controls=Array.from(dialog.querySelectorAll('button:not([disabled]),input:not([disabled]),textarea:not([disabled]),[tabindex="0"]')) as HTMLElement[];
@@ -733,6 +734,14 @@ class App extends React.Component<any,State>{
  }
  bankTxSelected(tx:BankTx){return this.state.txSelected.includes(tx.accountId+'|'+tx.id);}
  toggleSelected(tx:BankTx){const key=tx.accountId+'|'+tx.id;this.setState({txSelected:this.bankTxSelected(tx)?this.state.txSelected.filter(x=>x!==key):this.state.txSelected.length>=100?this.state.txSelected:[...this.state.txSelected,key]});}
+ // The existing drawer delegates to the SAME D05 picker instance.
+ openDetailD05Picker(event:any,origin:'bank'|'manual',tx:BankTx|Tx){
+  event?.stopPropagation?.();
+  const picker=(this as any).d05Movements;
+  if(this.state.page!=='transactions'||!picker?.openFromDetail||
+     !picker.openFromDetail(origin,tx,event.currentTarget))
+   this.flash('Classificação D05 indisponível. Nenhum dado foi alterado.');
+ }
  openBankDetail(tx:BankTx){
    this.setState({detail:{origin:'bank',id:tx.id,accountId:tx.accountId},detailDraft:{merchant:tx.merchant||'',note:tx.note||'',nature:tx.nature||'auto',reviewed:!!tx.reviewed,aliasPattern:tx.description.slice(0,60),splitParts:(tx.splits?.length?tx.splits:[{category:tx.category,amount:Math.floor(Math.abs(tx.amount)/2)},{category:tx.category,amount:Math.abs(tx.amount)-Math.floor(Math.abs(tx.amount)/2)}]).map(p=>({category:p.category,value:moneyString(p.amount)}))}});
  }
@@ -763,7 +772,7 @@ class App extends React.Component<any,State>{
    return false;
   }
   const result=await this.updateData({...this.state.data,transactions:this.state.data.transactions.map(t=>
-   t.id===id?{...t,description,date:draft.date,amount,category:draft.category}:t)},
+   t.id===id?{...t,description,date:draft.date,amount}:t)},
    'Lançamento atualizado.');
   if(result)this.setState({detail:null,manualDraft:null});
   return result;
@@ -1205,7 +1214,8 @@ class App extends React.Component<any,State>{
    if(this.state.txOrganize)return h('div',{className:'movement-shell'},
      h('button',{type:'button',className:'d05-back',onClick:()=>this.setState({txOrganize:false})},'← Voltar ao histórico'),
      this.renderCategories());
-   return h(D05Movements,{host:this,key:this.state.txReviewOnly?'review':'history'});
+   return h(D05Movements,{host:this,key:this.state.txReviewOnly?'review':'history',
+    ref:(instance:any)=>{(this as any).d05Movements=instance;}});
  }
 
  monthData(){return snapshot(this.state.data,this.state.month);}
@@ -2051,7 +2061,18 @@ class App extends React.Component<any,State>{
    const name=tx?.merchant||tx?.description||manual?.description||'';
    const amount=tx?tx.amount:manual?(manual.kind==='income'?manual.amount:-manual.amount):0;
    const category=tx?.category||manual?.category||'Outros';
-   const cats=this.getCategories();const cat=cats.find(c=>c.name===category);
+   const cats=this.getCategories();
+   const current=(tx||manual) as any;
+   const identityInput={categoryId:current?.categoryId||null,
+    subcategoryId:current?.subcategoryId||null,categoryName:category};
+   // B01/B02's shared resolver wins after integration; current approved
+   // taxonomy is only the local compatibility fallback, not another catalog.
+   const shared=(window as any).resolveCategoryVisualIdentity;
+   const p=D05_APPROVED_PARENTS.find((x:any)=>x.id===identityInput.categoryId)||
+    (!identityInput.categoryId?D05_APPROVED_PARENTS.find((x:any)=>x.name===category):null);
+   const child=p?.subcategories?.find((x:any)=>x.id===identityInput.subcategoryId);
+   const identity=typeof shared==='function'?shared(identityInput):
+    (child||p||{iconKey:'shapes',hue:215,name:category});
    const f=this.state.detailDraft;
    const matchSuggestions=tx&&tx.status==='POSTED'?this.state.data.transactions.filter(m=>m.kind===(tx.amount>=0?'income':'expense')&&m.amount===Math.abs(tx.amount)&&Math.abs((Date.parse(m.date+'T00:00:00Z')-Date.parse(tx.date+'T00:00:00Z'))/86400000)<=3&&!this.state.bank.data.transactions.some(other=>other.linkedManualId===m.id&&(other.id!==tx.id||other.accountId!==tx.accountId))).slice(0,6):[];
    const opposite=tx?this.state.bank.data.transactions.filter(other=>other.accountId!==tx.accountId&&other.amount===-tx.amount&&Math.abs((Date.parse(other.date+'T00:00:00Z')-Date.parse(tx.date+'T00:00:00Z'))/86400000)<=2&&other.status==='POSTED').slice(0,3):[];
@@ -2060,11 +2081,20 @@ class App extends React.Component<any,State>{
      h('aside',{className:'mf-detail-drawer',role:'dialog','aria-modal':'true','aria-label':'Detalhes da movimentação'},
        h('div',{className:'mf-drawer-head'},h('div',{},h('small',{className:'micro-label'},'DETALHES'),h('h2',{},'Movimentação')),h('button',{className:'close-button',type:'button','aria-label':'Fechar painel',title:'Fechar',onClick:()=>this.setState({detail:null})},h(Icon,{name:'close',size:18}))),
        h('div',{className:'mf-detail-scroll'},
-         h('div',{className:'mf-detail-hero'},h('span',{className:'mf-hero-emoji'},cat?.emoji||'✨'),h('h3',{},name),h('strong',{className:amount>=0?'good-text':'bad-text'},(amount>=0?'+':'−')+fmt(Math.abs(amount))),h('span',{},(tx?.date||manual?.date||'').split('-').reverse().join('/')+' · '+(tx?.accountName||'Adicionado por você'))),
+         h('div',{className:'mf-detail-hero'},
+          h('button',{type:'button',className:'mf-hero-emoji mf-d05-drawer-icon',
+           'aria-label':'Alterar categoria de '+name,
+           onClick:(e:any)=>this.openDetailD05Picker(e,bank?'bank':'manual',(tx||manual)!)},
+           h(D05VectorIcon,{iconKey:identity.iconKey,hue:identity.hue,size:30})),
+          h('h3',{},name),h('strong',{className:amount>=0?'good-text':'bad-text'},(amount>=0?'+':'−')+fmt(Math.abs(amount))),h('span',{},(tx?.date||manual?.date||'').split('-').reverse().join('/')+' · '+(tx?.accountName||'Adicionado por você'))),
          h('button',{type:'button',className:'mf-ai-detail-trigger',onClick:()=>this.openIntelligenceContext('transactions')},h(Icon,{name:'spark',size:17}),'Analisar com Inteligência',h('span',{},'Prévia')),
          tx?h('div',{className:'mf-detail-section'},h('div',{className:'mf-detail-section-title'},h('b',{},'Organização'),h('span',{className:tx.reviewed?'mf-reviewed':'mf-to-review'},tx.reviewed?'✓ Revisada':'A conferir')),
            h('div',{className:'mf-detail-grid'},
-             this.field('Categoria principal',h(StyledSelect,{className:'mf-transaction-category-select',value:tx.category,disabled:this.state.categorySaving.includes(tx.accountId+'|'+tx.id),options:cats.map(c=>({value:c.name,label:c.emoji+' '+c.name})),onChange:(v:string)=>this.setBankCategory(tx,v)})),
+             this.field('Categoria principal',h('button',{type:'button',
+              className:'mf-d05-drawer-change',
+              onClick:(e:any)=>this.openDetailD05Picker(e,'bank',tx)},
+              h(D05VectorIcon,{iconKey:identity.iconKey,hue:identity.hue,size:19}),
+              'Alterar categoria com prévia D05')),
              this.field('Tipo de movimentação',h(StyledSelect,{value:f.nature,options:[{value:'auto',label:'Padrão'},{value:'income',label:'Receita'},{value:'expense',label:'Despesa'},{value:'transfer',label:'Transferência própria'},{value:'ignore',label:'Não contar nas análises'}],onChange:(nature:any)=>this.setState({detailDraft:{...f,nature}})}))),
            this.field('Nome do estabelecimento',h('input',{className:'form-control',value:f.merchant,maxLength:100,placeholder:'Ex.: iFood, Mercado, Academia',onChange:(e:any)=>this.setState({detailDraft:{...f,merchant:e.target.value}})})),
            this.field('Anotações pessoais',h('textarea',{className:'form-control mf-note-input',rows:3,value:f.note,maxLength:600,placeholder:'Opcional: detalhes para lembrar desta compra',onChange:(e:any)=>this.setState({detailDraft:{...f,note:e.target.value}})})),
@@ -2094,11 +2124,11 @@ class App extends React.Component<any,State>{
              this.field('Data',h(SingleDatePicker,{value:this.state.manualDraft.date,
                disabled:this.isManualLinked(manual.id),
                onChange:(value:string)=>this.setState({manualDraft:{...this.state.manualDraft!,date:value}})}))),
-           this.field('Categoria do lançamento',h(StyledSelect,{
-             className:'mf-transaction-category-select',value:this.state.manualDraft.category,
-             options:cats.filter(c=>manual.kind==='income'?c.kind!=='expense':c.kind!=='income')
-               .map(c=>({value:c.name,label:c.emoji+' '+c.name})),
-             onChange:(v:string)=>this.setState({manualDraft:{...this.state.manualDraft!,category:v}})})),
+           this.field('Categoria do lançamento',h('button',{type:'button',
+             className:'mf-d05-drawer-change',
+             onClick:(e:any)=>this.openDetailD05Picker(e,'manual',manual)},
+             h(D05VectorIcon,{iconKey:identity.iconKey,hue:identity.hue,size:19}),
+             'Alterar categoria com prévia D05')),
            this.isManualLinked(manual.id)?h('p',{className:'mf-manual-warning'},
              'Lançamento vinculado a uma movimentação bancária: desvincule antes de alterar data, valor ou excluir.'):null,
            h('div',{className:'mf-manual-actions'},
