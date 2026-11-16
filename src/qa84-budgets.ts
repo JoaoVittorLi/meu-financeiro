@@ -194,17 +194,19 @@ function renderQA84BudgetDetail(host:any,context:any){
   host.setState({qa84BudgetDrill:{...drill,subcategoryId:id,showChild:true},qa84BudgetPage:0});
   document.scrollingElement?.scrollTo({top:0,left:0,behavior:'instant' as ScrollBehavior});
  };
+ const pastSpending=Array.from({length:3},(_,i)=>{
+  const priorMonth=shiftMonth(drill.month,-i-1);
+  const prior=drill.bank?bankSnapshot(host.state.bank,priorMonth):snapshot(host.state.data,priorMonth);
+  return prior.categories.find((c:any)=>c.name===parent)?.total||0;
+ });
+ const suggestedLimit=pastSpending.filter(v=>v>0).length>=2?
+  Math.max(2000,Math.ceil(pastSpending.reduce((a,b)=>a+b,0)/3*1.1/1000)*1000):null;
  const openEdit=(suggested=false)=>{
-  const values=Array.from({length:3},(_,i)=>{
-   const priorMonth=shiftMonth(drill.month,-i-1),s=drill.bank?bankSnapshot(host.state.bank,priorMonth):snapshot(host.state.data,priorMonth);
-   return s.categories.find((c:any)=>c.name===parent)?.total||0;
-  });
-  const proposal=values.filter(v=>v>0).length>=2?
-    Math.max(2000,Math.ceil(values.reduce((a,b)=>a+b,0)/3*1.1/1000)*1000):null;
-  if(suggested&&proposal===null)return;
+  if(suggested&&suggestedLimit===null)return;
   host.setState({editModal:{type:'budget',key:parent,title:suggested?'Limite sugerido · '+parent:hasLimit?'Editar limite · '+parent:'Definir limite · '+parent,
-   value:suggested?moneyString(proposal as number):hasLimit?moneyString(limit):''}});
+   value:suggested?moneyString(suggestedLimit as number):hasLimit?moneyString(limit):''}});
  };
+
  const partial=host.state.qa84BudgetLoading||host.state.qa84BudgetReadError||!details.complete;
  return h('div',{className:'qa84-budget-detail section'},
   h('nav',{className:'qa84-crumbs','aria-label':'Caminho de orçamento'},
@@ -233,7 +235,9 @@ function renderQA84BudgetDetail(host:any,context:any){
         h('b',{},model.remaining===null?'—':fmt(Math.abs(model.remaining))))):null,
      !hasChild?h('div',{className:'qa84-budget-edit-actions'},
       h('button',{type:'button',onClick:()=>openEdit(false)},hasLimit?'Editar limite':'Definir limite'),
-      h('button',{type:'button',onClick:()=>openEdit(true)},'Sugerir limite')):null))),
+      h('button',{type:'button',disabled:suggestedLimit===null,
+       title:suggestedLimit===null?'Sugestão exige gastos em pelo menos dois dos três meses anteriores':'Sugestão não é aplicada sem sua confirmação',
+       onClick:()=>openEdit(true)},'Sugerir limite')):null))),
   host.state.qa84BudgetLoading?h('div',{className:'qa84-budget-loading',role:'status'},
    'Carregando detalhamento autorizado…',h('div',{className:'qa84-skeleton','aria-hidden':'true'},
     h('i',{}),h('i',{}),h('i',{}))):null,
