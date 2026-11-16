@@ -258,17 +258,20 @@ test('RC2.1/B05-24: cached local reply binds to exact grant and cannot revive on
    target:ts.ScriptTarget.ES2019,module:ts.ModuleKind.None
  }}).outputText;
  const sandbox={h,Date,Intl,Math,Number,JSON,Array,Set,Map,WeakMap,console,
-  intelligencePremiumSignature:()=> 'sig',
   aiMarkdownNodes:(content)=>[content]};
  vm.createContext(sandbox);vm.runInContext(compiled,sandbox,{timeout:1500});
  const msg={id:'local-a-old',role:'assistant',text:'Dado financeiro sensível de sessão',
   status:'done',scopeLabel:'Inteligência',periodLabel:'2026-11',createdAt:'18:00'};
  const grant={token:'old',source:'manual',profile:'real',
   expiresAt:Date.now()+60000,planning:false,backup:null};
- sandbox.mfLocalBindMessage(msg,grant,'sig','2026-11');
- const render=(active,month='2026-11',m=msg)=>JSON.stringify(sandbox.renderIntelligenceMessageItem(
-  app({mode:'real',localFinancialMonth:month,localFinancialAccess:active}),m));
+ const original=app({mode:'real',localFinancialMonth:'2026-11',localFinancialAccess:grant});
+ const originalSignature=sandbox.intelligencePremiumSignature(original);
+ sandbox.mfLocalBindMessage(msg,grant,originalSignature,'2026-11');
+ const render=(active,month='2026-11',m=msg,extra={})=>JSON.stringify(sandbox.renderIntelligenceMessageItem(
+  app({mode:'real',localFinancialMonth:month,localFinancialAccess:active,...extra}),m));
  assert(render(grant).includes('Dado financeiro sensível'), 'original live grant');
+ assert(!render(grant,'2026-11',msg,{bankFilter:'different-source-scope'}).includes('Dado financeiro sensível'),
+  'changed context signature must invalidate financial answer');
  const expired={...grant,expiresAt:Date.now()-1000};
  assert(!render(expired).includes('Dado financeiro sensível'), 'new expired object');
  assert(!render(null).includes('Dado financeiro sensível'), 'revoked grant');
