@@ -40,3 +40,41 @@ function mfB05ReducedMotion() {
  return typeof window!=='undefined'&&typeof window.matchMedia==='function'&&
   window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
+
+/* Mount the approved B05 without touching app.ts, D01/D02 engine or IC IPC. */
+function renderMfB05Main(app) {
+ if(app.state.workIntelligenceDemo?.enabled&&typeof renderWorkIntelligenceDemo==='function')
+  return renderWorkIntelligenceDemo(app);
+ if(typeof intelligenceEnsureHydrated==='function')intelligenceEnsureHydrated(app);
+ const s=app.state,tab=['today','chat','actions'].includes(s.intelligenceMainMode)?
+  s.intelligenceMainMode:'chat';
+ if(s.categoryReviewOpen)return h('section',{className:'section mf-intelligence-page'},
+  renderCategoryReview(app));
+ const messages=intelligenceHistoryList(app);
+ const proposals=typeof intelligenceAllProposals==='function'?intelligenceAllProposals(app):
+  messages.map(m=>m.proposal).filter(Boolean);
+ const convState=typeof intelligenceConversationState==='function'?intelligenceConversationState(app):
+  {kind:'oauth_disconnected',pill:'Conta desconectada · modo local',css:'is-offline'};
+ const scope=s.intelligenceDraftScope||intelligencePageScope(app,s.intelligenceContext||s.page);
+ const active=s.localFinancialAccess?.token&&s.localFinancialAccess?.expiresAt>Date.now();
+ const section=tab==='today'?renderMfB05Today(app):
+  tab==='chat'?renderMfB05Chat(app,messages,convState,scope):
+  renderMfB05Actions(app,proposals);
+ return h('section',{className:'section mf-intelligence-page mf-b05-page',
+  'aria-label':'Inteligência Financeira'},
+  h('div',{className:'mf-b05-top'},
+   h('strong',{className:'mf-b05-brand'},'Inteligência'),
+   h('span',{className:'mf-b05-status'},
+    h('i',{className:'mf-b05-status-dot','aria-hidden':'true'}),
+    s.mode==='demo'?'Ambiente de demonstração':active?'Leitura local autorizada':'Sem leitura pessoal autorizada')),
+  mfB05Tabs(app,tab),
+  h('details',{className:'mf-b05-permissions'},
+   h('summary',{},active?'Gerenciar permissão de consulta':'Autorizar consulta financeira'),
+   renderIntelligenceAccess(app)),
+  s.categoryReviewPreview?h('div',{className:'mf-b05-review-pending',role:'status'},
+   h('span',{},'Existe uma prévia supervisionada aguardando revisão. '),
+   h('button',{type:'button',className:'mf-b05-link',onClick:()=>void categoryReviewOpen(app)},
+    'Abrir Central de Revisão')):null,
+  h('div',{id:'mf-b05-panel',className:'mf-b05-content',role:'tabpanel',
+   'aria-labelledby':'mf-b05-tab-'+tab},section));
+}
