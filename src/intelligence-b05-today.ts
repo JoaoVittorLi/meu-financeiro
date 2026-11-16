@@ -171,7 +171,7 @@ function mfB05BudgetDiagnostic(app,categoryId,categoryName,spent,limit,source) {
     style:{'--mf-b05-mini-progress':Math.min(100,b.usagePercent||0)+'%'}},
     h('strong',{},b.usagePercent===null?'—':Math.round(b.usagePercent)+'%')),
    h('div',{},h('strong',{},mfB05Money(spent)),
-    h('p',{},'de '+mfB05Money(limit)+(b.limitCents===0?' · sem limite configurado':'')),
+    h('p',{},'de '+mfB05Money(limit)+(b.limitCents===0?' · limite explicitamente zero':'')),
     b.excessCents>0?h('p',{className:'mf-b05-negative'},'Acima do limite: '+mfB05Money(b.excessCents)):null)),
   h('small',{},'Fonte: '+String(source||'consulta autorizada')),
   h('button',{type:'button',className:'mf-b05-link',onClick:()=>app.navigate('budgets')},
@@ -188,8 +188,8 @@ function mfB05DeliveryEvidence(input) {
  if(days1<0||days1!==days2)return null;
  const found=Array.isArray(input.currentExpenses.value)&&input.currentExpenses.value.some(
   x=>x.categoryId==='sub:alimentacao/delivery'&&
-   x.postedCents===c.deliveryCurrentCents);
- if(!found)return null;
+   x.postedCents===c.deliveryCurrentCents&&x.periodStart===q.from&&x.periodEnd===q.to);
+ if(!found)return null; // Equal comparison windows alone do not prove matching expense coverage.
  return mfB05Comparison(c.deliveryPreviousCents,c.deliveryCurrentCents,true);
 }
 function mfB05DeliveryDiagnostic(app,comparison) {
