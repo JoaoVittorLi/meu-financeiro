@@ -252,24 +252,31 @@ test('RC2/B05-36: twenty milestone selections preserve only last state',()=>{
  }
  assert.equal(a.state.mfB05SelectedDate,dates[19%dates.length]);
 });
-test('RC2/B05-24: expired local read grants hide prior financial chat answers',()=>{
- const source=read('src/intelligence-view.ts');
+test('RC2.1/B05-24: cached local reply binds to exact grant and cannot revive on renewal',()=>{
+ const source=read('src/intelligence-view.ts')+'\n'+read('src/intelligence-local.ts');
  const compiled=ts.transpileModule(source,{compilerOptions:{
    target:ts.ScriptTarget.ES2019,module:ts.ModuleKind.None
  }}).outputText;
- const sandbox={h,Date,Intl,Math,Number,JSON,Array,Set,Map,console};
+ const sandbox={h,Date,Intl,Math,Number,JSON,Array,Set,Map,WeakMap,console,
+  intelligencePremiumSignature:()=> 'sig',
+  aiMarkdownNodes:(content)=>[content]};
  vm.createContext(sandbox);vm.runInContext(compiled,sandbox,{timeout:1500});
  const msg={id:'local-a-old',role:'assistant',text:'Dado financeiro sensível de sessão',
   status:'done',scopeLabel:'Inteligência',periodLabel:'2026-11',createdAt:'18:00'};
- const render=grant=>JSON.stringify(sandbox.renderIntelligenceMessageItem(
-  app({mode:'real',localFinancialMonth:'2026-11',localFinancialAccess:grant}),msg));
- const expired=render({token:'old',profile:'real',expiresAt:Date.now()-1000});
- assert(expired.includes('Resposta anterior indisponível'));
- assert(!expired.includes('Dado financeiro sensível'));
- const changed=JSON.stringify(sandbox.renderIntelligenceMessageItem(
-  app({mode:'real',localFinancialMonth:'2026-12',localFinancialAccess:
-    {token:'valid',profile:'real',expiresAt:Date.now()+60000}}),msg));
- assert(!changed.includes('Dado financeiro sensível'));
+ const grant={token:'old',source:'manual',profile:'real',
+  expiresAt:Date.now()+60000,planning:false,backup:null};
+ sandbox.mfLocalBindMessage(msg,grant,'sig','2026-11');
+ const render=(active,month='2026-11',m=msg)=>JSON.stringify(sandbox.renderIntelligenceMessageItem(
+  app({mode:'real',localFinancialMonth:month,localFinancialAccess:active}),m));
+ assert(render(grant).includes('Dado financeiro sensível'), 'original live grant');
+ const expired={...grant,expiresAt:Date.now()-1000};
+ assert(!render(expired).includes('Dado financeiro sensível'), 'new expired object');
+ assert(!render(null).includes('Dado financeiro sensível'), 'revoked grant');
+ const renewed={...grant,token:'new'};
+ assert(!render(renewed).includes('Dado financeiro sensível'), 'new token same period');
+ assert(!render({...grant}).includes('Dado financeiro sensível'), 'new grant object same token');
+ assert(!render(grant,'2026-12').includes('Dado financeiro sensível'), 'period changed');
+ assert(!render(grant,'2026-11',JSON.parse(JSON.stringify(msg))).includes('Dado financeiro sensível'), 'restored message has no grant binding');
 });
 
 test('RC2/B05 dates: rejects impossible due dates, permits valid leap day',()=>{
