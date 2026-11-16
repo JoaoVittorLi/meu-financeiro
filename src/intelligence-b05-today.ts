@@ -150,6 +150,68 @@ function mfB05ContextDrawer(app,projection,point,originalInput) {
    h('small',{},'Fonte: '+projection.sourceId+' · cenário em '+projection.asOf),
    h('button',{type:'button',className:'primary-button',onClick:()=>{close();app.navigate('planning');}},'Abrir Planejamento')));
 }
+
+/* Lower diagnostics are never synthesized from unverified amounts.
+ * Icon/hue always use the canonical D05 resolver when loaded. */
+function mfB05CategoryBadge(categoryId,subcategoryId,categoryName) {
+ if(typeof resolveCategoryVisualIdentity!=='function'||typeof CategoryVisualGlyph!=='function')
+  return h(Icon,{name:'pie',size:18});
+ const identity=resolveCategoryVisualIdentity({categoryId,subcategoryId,categoryName,
+  aggregate:!subcategoryId});
+ return h(CategoryVisualGlyph,{identity,size:22});
+}
+function mfB05BudgetDiagnostic(app,categoryId,categoryName,spent,limit,source) {
+ const b=mfB05Budget(spent,limit);
+ if(!b)return null;
+ return h('article',{className:'mf-b05-diagnostic',role:'group','aria-label':'Orçamento de '+categoryName},
+  h('header',{},mfB05CategoryBadge(categoryId,null,categoryName),
+   h('div',{},h('small',{},'ORÇAMENTO'),h('h3',{},categoryName))),
+  h('div',{className:'mf-b05-diagnostic-body'},
+   h('div',{className:'mf-b05-mini-orbit',
+    style:{'--mf-b05-mini-progress':Math.min(100,b.usagePercent||0)+'%'}},
+    h('strong',{},b.usagePercent===null?'—':Math.round(b.usagePercent)+'%')),
+   h('div',{},h('strong',{},mfB05Money(spent)),
+    h('p',{},'de '+mfB05Money(limit)+(b.limitCents===0?' · sem limite configurado':'')),
+    b.excessCents>0?h('p',{className:'mf-b05-negative'},'Acima do limite: '+mfB05Money(b.excessCents)):null)),
+  h('small',{},'Fonte: '+String(source||'consulta autorizada')),
+  h('button',{type:'button',className:'mf-b05-link',onClick:()=>app.navigate('budgets')},
+   'Ver orçamento completo'));
+}
+function mfB05DeliveryEvidence(input) {
+ if(!input||input.coverage!=='verified'||input.comparisons?.equalDays!==true||
+   input.currentExpenses?.coverage!=='verified')return null;
+ const c=input.comparisons,p=c.periodA,q=c.periodB;
+ if(!p||!q||!mfB05IsoDate(p.from)||!mfB05IsoDate(p.to)||
+   !mfB05IsoDate(q.from)||!mfB05IsoDate(q.to))return null;
+ const days1=(Date.parse(p.to+'T12:00:00Z')-Date.parse(p.from+'T12:00:00Z'))/86400000,
+  days2=(Date.parse(q.to+'T12:00:00Z')-Date.parse(q.from+'T12:00:00Z'))/86400000;
+ if(days1<0||days1!==days2)return null;
+ const found=Array.isArray(input.currentExpenses.value)&&input.currentExpenses.value.some(
+  x=>x.categoryId==='sub:alimentacao/delivery'&&
+   x.postedCents===c.deliveryCurrentCents);
+ if(!found)return null;
+ return mfB05Comparison(c.deliveryPreviousCents,c.deliveryCurrentCents,true);
+}
+function mfB05DeliveryDiagnostic(app,comparison) {
+ if(!comparison)return null;
+ const max=Math.max(1,comparison.previousCents,comparison.currentCents);
+ return h('article',{className:'mf-b05-diagnostic',role:'group','aria-label':'Delivery — comparação equivalente'},
+  h('header',{},mfB05CategoryBadge('cat:alimentacao','sub:alimentacao/delivery','Delivery'),
+   h('div',{},h('small',{},'PERÍODOS EQUIVALENTES'),h('h3',{},'Delivery'))),
+  h('div',{className:'mf-b05-delivery-bars'},
+   ...[{label:'Anterior',cents:comparison.previousCents},
+       {label:'Atual',cents:comparison.currentCents}].map(x=>
+    h('div',{key:x.label,className:'mf-b05-delivery-row'},
+     h('span',{},x.label),
+     h('div',{className:'mf-b05-delivery-track'},
+      h('i',{style:{width:(x.cents/max*100)+'%'}})),
+     h('strong',{},mfB05Money(x.cents))))),
+  h('p',{className:comparison.deltaCents>0?'mf-b05-amber':''},
+   (comparison.deltaCents>0?'Aumento: ':'Variação: ')+mfB05Money(comparison.deltaCents)+
+    (comparison.percent===null?'':' · '+comparison.percent.toFixed(1).replace('.',',')+'%')),
+  h('button',{type:'button',className:'mf-b05-link',onClick:()=>mfB05ChangeMode(app,'actions')},
+   'Examinar Plano de Ação'));
+}
 function renderMfB05Today(app,explicitVerifiedInput) {
  const s=app.state,signature=intelligencePremiumSignature(app),
   report=s.intelligencePremiumSignature===signature?s.intelligencePremiumReport:null,
@@ -186,8 +248,26 @@ function renderMfB05Today(app,explicitVerifiedInput) {
   h('div',{className:'mf-b05-signals-head'},h('h3',{},'Sinais que merecem atenção'),
    h('small',{},live?'Somente fatos da fonte autorizada':'Aguardando consulta e autorização')),
   h('div',{className:'mf-b05-signals'},
-   ...signals.slice(0,2).map(signal=>mfD03SignalCard(app,signal)),
-   !signals.length?h('div',{className:'mf-b05-empty'},
+   ...(function(){
+    const shown=[];
+    if(explicitVerifiedInput?.coverage==='verified'&&
+       explicitVerifiedInput.currentExpenses?.coverage==='verified'&&
+       explicitVerifiedInput.budgets?.coverage==='verified'){
+      const food=explicitVerifiedInput.currentExpenses.value?.find(
+       x=>x.categoryId==='cat:alimentacao');
+      const limit=explicitVerifiedInput.budgets.value?.find(
+       x=>x.categoryId==='cat:alimentacao');
+      if(food&&limit)shown.push(mfB05BudgetDiagnostic(app,'cat:alimentacao','Alimentação',
+       food.postedCents,limit.limitCents,explicitVerifiedInput.budgets.sourceId));
+    }
+    const delivery=mfB05DeliveryEvidence(explicitVerifiedInput);
+    if(delivery)shown.push(mfB05DeliveryDiagnostic(app,delivery));
+    if(!shown.length)return signals.slice(0,2).map(signal=>mfD03SignalCard(app,signal));
+    return shown;
+   })(),
+   !signals.length&&!mfB05DeliveryEvidence(explicitVerifiedInput)&&
+    !(explicitVerifiedInput?.currentExpenses?.coverage==='verified'&&
+      explicitVerifiedInput?.budgets?.coverage==='verified')?h('div',{className:'mf-b05-empty'},
     h('strong',{},live?'Nenhum alerta confirmado neste recorte.':'Ainda não há sinais disponíveis.'),
     h('p',{},live?'Ausência de alerta não garante ausência de despesas futuras.':
      'Use Permissões de consulta acima e atualize os dados para começar.'),
