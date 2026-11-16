@@ -13,11 +13,12 @@ class D05Movements extends React.Component<any,any> {
  // A ref-based, instance-local command keeps the drawer in place without an
  // event bus, duplicate catalog or a second legacy category writer.
  openFromDetail:((origin:'bank'|'manual',raw:any,trigger:HTMLElement)=>boolean)|null=null;
+ identityForDetail:((origin:'bank'|'manual',raw:any)=>{categoryId:string;subcategoryId:string|null}|null)|null=null;
  constructor(props:any){super(props);this.state={renderVersion:0};}
  componentDidMount(){this.alive=true;this.flushEffects();}
  componentDidUpdate(){this.flushEffects();}
  componentWillUnmount(){
-  this.alive=false;this.openFromDetail=null;
+  this.alive=false;this.openFromDetail=null;this.identityForDetail=null;
   for(const item of this.registered)if(typeof item?.cleanup==='function')item.cleanup();
  }
  private flushEffects(){
@@ -108,6 +109,12 @@ class D05Movements extends React.Component<any,any> {
    account:'Adicionado por você',accountId:'',status:'MANUAL',reviewed:false};
  });
  const rows=realBank.concat(realManual);
+ this.identityForDetail=(origin,raw)=>{
+  if(!raw)return null;
+  const row=rows.find((r:any)=>r.source===origin&&r.id===raw.id&&
+   (origin!=='bank'||r.accountId===raw.accountId));
+  return row?{categoryId:row.categoryId,subcategoryId:row.subcategoryId}:null;
+ };
  const refreshHierarchy=async()=>{
   if(!bridge?.d05Catalog){setLoadState('unavailable');setAccessMessage('A hierarquia D05 ainda não está conectada pelo processo principal. Consultas legadas disponíveis; classificação bancária por subcategoria bloqueada.');return;}
   const req=++refreshId.current;
