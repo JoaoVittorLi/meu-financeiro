@@ -1,5 +1,5 @@
-# Meu Financeiro 2.0 — Rodada B03/B04 · Design em revisão
-**Estado:** DESIGN_IN_REVIEW / NOT_APPROVED / CODE_NOT_STARTED · 16/11/2026
+# Meu Financeiro 2.0 — Rodada B03/B04 · Histórico da revisão até aprovação
+**Estado atual:** DESIGN_APPROVED (B03 V2 + B04 V2) / CODE_NOT_STARTED · aprovação explícita do proprietário em 16/11/2026. **Handoff canônico:** [QA_EXE_B03_B04_APPROVED_20261116.md](./QA_EXE_B03_B04_APPROVED_20261116.md). Esta página mantém o histórico das propostas e das rejeições anteriores.
 **Dependências:** [Handoff B01/B02 aprovado](./QA_EXE_B01_B02_APPROVED_20261116.md), [identidade visual global D05](./GLOBAL_CATEGORY_VISUAL_IDENTITY_CONTRACT.md), issue #84, D05 V1.3 #70/PR #57, integrador PR #76.
 
 ## B03 — Identidade única ao navegar entre movimentações
@@ -19,9 +19,9 @@
 ## Registro de feedback corretivo 16/11/2026
 - Protótipo B03/B04 anterior foi rejeitado: colocou detalhes em coluna fixa/abaixo, divergindo do drawer lateral real, e omitiu a edição pelo próprio ícone.
 - A solução visual deve reproduzir os caminhos existentes: **ícone = classificar**, **linha/estabelecimento = detalhes na direita**, **drawer = leitura/revisão com mesmo ícone**.
-- O protótipo corrigido continua `DESIGN_IN_REVIEW`, sem execução no Electron.
+- O protótipo corrigido **B03/B04 V2 foi aprovado explicitamente** pelo proprietário depois de validar a navegação e a edição pelo ícone. Código Electron ainda não implementado nesta missão.
 
 ## Aprovação e QA
-- Protótipos B03/B04 demonstrativos aguardam feedback do proprietário; B01 V3/B02 V7 permanecem congeladas.
+- **B03 V2 + B04 V2 aprovadas pelo proprietário**; B01 V3/B02 V7 permanecem congeladas. Consulte o handoff canônico para critérios definitivos.
 - QA futuro obrigatório: Electron 1366x768 e 1920x1080 dark/light, 390px mobile futuro, nomes longos, valores grandes, missing IDs, stale preview, POSTED/PENDING, keyboard, reduced-motion.
 - Nenhuma alteração em produção, CircleCI, build Windows, merge ou escrita pessoal autorizada por esta proposta.
