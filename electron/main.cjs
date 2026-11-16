@@ -147,7 +147,7 @@ function createWindow(){
    icon:path.join(__dirname,'../app/icon.png'),
    autoHideMenuBar:true,
    webPreferences:{
-     preload:path.join(__dirname,'preload.cjs'),
+     preload:path.join(__dirname,'preload-bundled.cjs'),
      contextIsolation:true,nodeIntegration:false,sandbox:true,
      webSecurity:true,devTools:!app.isPackaged
    }
@@ -156,10 +156,11 @@ function createWindow(){
   mainWindow.show();
   if(q1NativeBounds)console.log('[Q1_WINDOW] '+JSON.stringify({bounds:mainWindow.getBounds(),contentBounds:mainWindow.getContentBounds()}));
  });
- if(q1NativeBounds){
+ if(q1NativeBounds||smokeProfileActive){
   mainWindow.webContents.on('console-message',details=>{if(['warning','error'].includes(details.level))console.error('[Q1_RENDERER] '+JSON.stringify({level:details.level,message:details.message}));});
   mainWindow.webContents.on('render-process-gone',(_event,details)=>console.error('[Q1_RENDERER_GONE] '+JSON.stringify(details)));
   mainWindow.webContents.on('preload-error',(_event,_file,error)=>console.error('[Q1_PRELOAD] '+String(error.message)));
+  mainWindow.webContents.on('did-fail-load',(_event,code,description,url)=>console.error('[Q1_LOAD_FAILED] '+JSON.stringify({code,description,url})));
  }
  mainWindow.webContents.setWindowOpenHandler(()=>({action:'deny'}));
  mainWindow.webContents.on('will-navigate',(event)=>event.preventDefault());
