@@ -277,7 +277,8 @@ function renderQA84BudgetDetail(host:any,context:any){
        h(CategoryVisualGlyph,{identity:visual,size:20}),
        h('div',{className:'qa84-subcategory-card-copy'},
         h('strong',{},name),h('small',{},g.count+' movimentação(ões)'),h('b',{},fmt(g.total))),
-       qa84Ring(percent,'participation',percent.toLocaleString('pt-BR',{maximumFractionDigits:1})+'%','dos gastos','mini'));
+       details.complete?qa84Ring(percent,'participation',percent.toLocaleString('pt-BR',{maximumFractionDigits:1})+'%','dos gastos','mini'):
+        qa84Ring(0,'neutral','—','dados parciais','mini'));
      });
     })()
    ),
