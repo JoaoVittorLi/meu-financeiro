@@ -185,6 +185,17 @@ function renderIntelligenceActionProposalCard(app:any,proposal:IntelligenceActio
     proposal.resultMessage?h('p',{className:'mf-ai-proposal-result',role:'status'},proposal.resultMessage):null);
 }
 function renderIntelligenceMessageItem(app:any,msg:IntelligenceChatMessage){
+  // Local replies are personal-session facts, not permanent chat history.
+  // Never show a cached amount once access expires, period/profile changes,
+  // or the read grant is absent. IC2/V3 have their own additional gates.
+  if(msg.id.startsWith('local-a-')){
+    const access:LocalFinancialAccess=app.state.localFinancialAccess;
+    const live=!!access?.token&&Number.isFinite(access.expiresAt)&&
+      access.expiresAt>Date.now()&&access.profile===(app.state.mode==='demo'?'demo':'real')&&
+      msg.periodLabel===(app.state.localFinancialMonth||app.state.month);
+    if(!live)return h('article',{className:'mf-ai-msg is-assistant is-unavailable'},
+      h('p',{role:'status'},'Resposta anterior indisponível: a autorização ou o período mudou. Faça uma nova consulta.'));
+  }
   // All IC2 facts are session-owned and vanish after grant/period changes.
   if(msg.id.startsWith('ic2-a-')&&!mfIC2MessageLive(app,msg))
     return h('article',{className:'mf-ai-msg is-assistant is-unavailable'},
