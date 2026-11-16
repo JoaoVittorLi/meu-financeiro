@@ -1543,7 +1543,7 @@ class App extends React.Component<any,State>{
      limits.length?h('div',{className:'u1-budget-meter '+(spentLimited>totalLimit?'is-over':''),role:'img','aria-label':hidden?'Valores ocultos':used+'% dos limites utilizados'},h('i',{style:{width:hidden?'0%':Math.min(100,used)+'%'}})):null,
      h('p',{className:'u1-budget-caption'},!limits.length?'Você ainda não definiu limites.':hidden?'Valores ocultos':(spentLimited>totalLimit?money(spentLimited-totalLimit)+' acima dos limites':money(totalLimit-spentLimited)+' de margem nos limites')),
      h('div',{className:'u1-coverage'},h('span',{},'Cobertura dos gastos'),h('b',{},hidden?'••••':budgetCoverage===null?'Sem gastos':budgetCoverage+'%')),h('p',{className:'u1-microcopy'},'Considera apenas categorias com limite. Margem não é saldo disponível.'),
-     h('button',{type:'button',className:'u1-subtle-link',onClick:openBudget},'Gerenciar orçamento',h(Icon,{name:'arrow',size:14}))))),
+     h('button',{type:'button',className:'u1-subtle-link',onClick:openBudget},'Gerenciar orçamento',h(Icon,{name:'arrow',size:14})))))),
   h('div',{className:'u1-detail-grid'},
    
    h('section',{className:'u1-panel u1-recent'},h('div',{className:'u1-panel-head'},h('div',{},h('h2',{},'Últimas movimentações'),h('p',{},'Confirmadas no período')),h('button',{type:'button',className:'u1-subtle-link',onClick:()=>{this.setState({query:'',bankFilter:'',txSource:useBank?'bank':'manual',txReviewOnly:false,txOrganize:false});this.navigate('transactions');}},'Ver tudo',h(Icon,{name:'arrow',size:14}))),
