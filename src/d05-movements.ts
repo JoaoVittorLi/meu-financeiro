@@ -484,26 +484,28 @@ class D05Movements extends React.Component<any,any> {
     h('button',{type:'button',onClick:()=>setSelected(new Set())},'Limpar seleção')):null,
    filtered.length?h('div',{className:'d05-list'},onScreen.map((r:any,i:number)=>{
     const p=byId(r.categoryId)||byName(r.category),child=p?.subcategories?.find((c:any)=>c.id===r.subcategoryId);
-    const icon=child||p||{iconKey:'circle-dot',hue:155};
+    const icon=qa84B03Visual({categoryId:r.categoryId||null,
+     subcategoryId:r.subcategoryId||null,categoryName:r.category},parents);
     const isReview=r.source==='bank'&&r.status==='POSTED'&&!r.reviewed;
     const signed=r.kind==='transfer'||r.kind==='ignore'?'neutral':r.amount>=0?'positive':'negative';
     const isSelected=selected.has(r.key);
     const selectAllowed=r.source==='bank';
     return h('div',{className:'d05-list-item',key:r.key},
      group&&(i===0||onScreen[i-1].date!==r.date)?h('div',{className:'d05-day'},pDate(r.date)):null,
-     h('article',{className:'d05-row '+(isSelected?'is-selected':'')},
+     h('article',{className:'d05-row '+(isSelected?'is-selected':''),
+      onClick:()=>openDetail(r)},
       h('button',{type:'button',className:'d05-select '+(isSelected?'selected':''),
        'aria-label':'Selecionar '+r.merchant,'aria-pressed':isSelected,disabled:!selectAllowed,
-       onClick:()=>{const next=new Set(selected);if(next.has(r.key))next.delete(r.key);else next.add(r.key);setSelected(next);setPicker(null);setPreview(null);}},
+       onClick:(e:any)=>{e.stopPropagation();const next=new Set(selected);if(next.has(r.key))next.delete(r.key);else next.add(r.key);setSelected(next);setPicker(null);setPreview(null);}},
        h('span',{'aria-hidden':'true'},isSelected?'✓':'')),
       h('button',{type:'button',className:'d05-row-icon','aria-label':'Alterar categoria de '+r.merchant,
        onClick:(e:any)=>openPicker(e,r)},
        h(D05VectorIcon,{iconKey:icon.iconKey,hue:icon.hue,size:23})),
       h('div',{className:'d05-row-info'},
        h('div',{className:'d05-merchant-line'},
-        h('button',{type:'button',className:'d05-merchant',onClick:()=>r.source==='bank'?host.openBankDetail(r.raw):host.openManualDetail(r.raw)},r.merchant),
+        h('button',{type:'button',className:'d05-merchant',onClick:(e:any)=>{e.stopPropagation();openDetail(r);}},r.merchant),
         isReview?h('button',{type:'button',className:'d05-review-dot','aria-label':'Conferir movimentação '+r.merchant,
-         title:'A conferir',onClick:(e:any)=>{activeTrigger.current=e.currentTarget;setError('');setReview(r);}},h('span',{'aria-hidden':'true'})):null,
+         title:'A conferir',onClick:(e:any)=>{e.stopPropagation();activeTrigger.current=e.currentTarget;setError('');setReview(r);}},h('span',{'aria-hidden':'true'})):null,
         r.source==='bank'&&r.status==='PENDING'?h('span',{className:'d05-pending',title:'Em processamento','aria-label':'Em processamento'},h(D05VectorIcon,{iconKey:'clock-3',hue:37,size:16})):null),
        h('small',{},r.account+' · '+(p?.name||r.category)+(child?' › '+child.name:''),
         r.source==='manual'?' · Manual':''),
