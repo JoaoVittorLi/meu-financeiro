@@ -2,9 +2,13 @@
 
 ## Modelo de execução
 
-As nove ferramentas abaixo são **contratos propostos**, não endpoints existentes. Os exemplos são fixtures **inteiramente sintéticas**. scopeRef é um identificador opaco criado e validado em MAIN; o modelo não recebe token, owner ou SQL. Campos extras são rejeitados (additionalProperties=false). Erros de segurança nunca são transformados em sucesso silencioso. O esquema JSON 2020-12 é normativo, incluindo validação de format date/date-time e semântica adicional start≤end. Revalidar grant e dataVersion antes e depois de cada chamada.
+As dez ferramentas abaixo são **contratos propostos**, não endpoints existentes. Os exemplos são fixtures **inteiramente sintéticas**. scopeRef é um identificador opaco criado e validado em MAIN; o modelo não recebe token, owner ou SQL. Campos extras são rejeitados (additionalProperties=false). Erros de segurança nunca são transformados em sucesso silencioso. O esquema JSON 2020-12 é normativo, incluindo validação de format date/date-time e semântica adicional start≤end. Revalidar grant e dataVersion antes e depois de cada chamada.
 
 **Importante:** a fixture de banco usa rótulo lógico isolado de teste; não há conta real, nem profile demo com bank (combinação negada pelo código atual). source/owner/profile são resolvidos no MAIN por scopeRef, não recebidos do modelo.
+
+**Contrato por status:** os `OutputSchema` usam `oneOf`. `ready`/`partial` exigem dataVersion, asOf, coverage, source e data; `partial` exige warnings. Respostas `denied`, `stale`, `no_data`, `unsupported` e `error` contêm apenas status, code e message: nenhuma autorização negada é representada por valores financeiros fictícios.
+
+**Taxonomia D05:** somente IDs confirmados em `electron/d05-taxonomy.json`, incluindo `cat:alimentacao`, `cat:transporte`, `cat:assinaturas`, `cat:contas` e `sub:contas/seguros`. Categoria de texto legado exige resolução explícita e tratamento de ambiguidade; não inferir ID silenciosamente.
 
 ### Registro tipado (JSON válido)
 
@@ -62,138 +66,334 @@ As nove ferramentas abaixo são **contratos propostos**, não endpoints existent
 ```json
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "type": "object",
-  "additionalProperties": false,
-  "required": [
-    "status",
-    "dataVersion",
-    "asOf",
-    "coverage",
-    "rows",
-    "nextCursor",
-    "expensesCents"
-  ],
-  "properties": {
-    "status": {
-      "type": "string",
-      "enum": [
-        "ready",
-        "partial",
-        "no_data",
-        "denied",
-        "stale",
-        "unsupported",
-        "error"
-      ]
-    },
-    "dataVersion": {
-      "type": "string",
-      "minLength": 1
-    },
-    "asOf": {
-      "type": "string",
-      "format": "date-time"
-    },
-    "coverage": {
+  "oneOf": [
+    {
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "state",
-        "readRows",
-        "hasMore"
+        "status",
+        "dataVersion",
+        "asOf",
+        "coverage",
+        "source",
+        "sourceIds",
+        "method",
+        "data"
       ],
       "properties": {
-        "state": {
+        "status": {
+          "const": "ready"
+        },
+        "dataVersion": {
           "type": "string",
+          "minLength": 1
+        },
+        "asOf": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "coverage": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state",
+            "readRows",
+            "hasMore"
+          ],
+          "properties": {
+            "state": {
+              "type": "string",
+              "enum": [
+                "complete",
+                "partial",
+                "unknown"
+              ]
+            },
+            "readRows": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "hasMore": {
+              "type": "boolean"
+            },
+            "missingPeriods": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "source": {
           "enum": [
-            "complete",
-            "partial",
-            "unknown"
-          ]
+            "bank",
+            "manual"
+          ],
+          "type": "string"
         },
-        "readRows": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "hasMore": {
-          "type": "boolean"
-        },
-        "missingPeriods": {
+        "sourceIds": {
           "type": "array",
           "items": {
             "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "method": {
+          "type": "string",
+          "minLength": 1
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "rows",
+            "nextCursor",
+            "expensesCents"
+          ],
+          "properties": {
+            "rows": {
+              "type": "array",
+              "maxItems": 100,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "date",
+                  "amountCents",
+                  "categoryId",
+                  "subcategoryId"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "date": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "amountCents": {
+                    "type": "integer"
+                  },
+                  "categoryId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  },
+                  "subcategoryId": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 80
+                  },
+                  "merchant": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                }
+              }
+            },
+            "nextCursor": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 256
+            },
+            "expensesCents": {
+              "type": "integer",
+              "minimum": 0
+            }
           }
         }
       }
     },
-    "sourceIds": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "uniqueItems": true
-    },
-    "method": {
-      "type": "string",
-      "minLength": 1
-    },
-    "rows": {
-      "type": "array",
-      "maxItems": 100,
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "id",
-          "date",
-          "amountCents",
-          "categoryId",
-          "subcategoryId"
-        ],
-        "properties": {
-          "id": {
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "dataVersion",
+        "asOf",
+        "coverage",
+        "source",
+        "sourceIds",
+        "method",
+        "data",
+        "warnings"
+      ],
+      "properties": {
+        "status": {
+          "const": "partial"
+        },
+        "dataVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "asOf": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "coverage": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state",
+            "readRows",
+            "hasMore"
+          ],
+          "properties": {
+            "state": {
+              "type": "string",
+              "enum": [
+                "complete",
+                "partial",
+                "unknown"
+              ]
+            },
+            "readRows": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "hasMore": {
+              "type": "boolean"
+            },
+            "missingPeriods": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "source": {
+          "enum": [
+            "bank",
+            "manual"
+          ],
+          "type": "string"
+        },
+        "sourceIds": {
+          "type": "array",
+          "items": {
             "type": "string"
           },
-          "date": {
-            "type": "string",
-            "format": "date"
-          },
-          "amountCents": {
-            "type": "integer"
-          },
-          "categoryId": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 80
-          },
-          "subcategoryId": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "maxLength": 80
-          },
-          "merchant": {
-            "type": [
-              "string",
-              "null"
-            ]
+          "uniqueItems": true
+        },
+        "method": {
+          "type": "string",
+          "minLength": 1
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "rows",
+            "nextCursor",
+            "expensesCents"
+          ],
+          "properties": {
+            "rows": {
+              "type": "array",
+              "maxItems": 100,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "date",
+                  "amountCents",
+                  "categoryId",
+                  "subcategoryId"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "date": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "amountCents": {
+                    "type": "integer"
+                  },
+                  "categoryId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  },
+                  "subcategoryId": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 80
+                  },
+                  "merchant": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                }
+              }
+            },
+            "nextCursor": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 256
+            },
+            "expensesCents": {
+              "type": "integer",
+              "minimum": 0
+            }
           }
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1
         }
       }
     },
-    "nextCursor": {
-      "type": [
-        "string",
-        "null"
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "code",
+        "message"
       ],
-      "maxLength": 256
-    },
-    "expensesCents": {
-      "type": "integer",
-      "minimum": 0
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "denied",
+            "stale",
+            "no_data",
+            "unsupported",
+            "error"
+          ]
+        },
+        "code": {
+          "type": "string",
+          "minLength": 1
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
     }
-  }
+  ]
 }
 ```
 
@@ -221,49 +421,52 @@ As nove ferramentas abaixo são **contratos propostos**, não endpoints existent
     "hasMore": false,
     "missingPeriods": []
   },
-  "rows": [
-    {
-      "id": "n01",
-      "date": "2026-11-03",
-      "amountCents": -15000,
-      "categoryId": "food",
-      "subcategoryId": null,
-      "merchant": "Mercado Exemplo"
-    },
-    {
-      "id": "n02",
-      "date": "2026-11-05",
-      "amountCents": -12000,
-      "categoryId": "subscriptions",
-      "subcategoryId": null,
-      "merchant": "StreamCo"
-    },
-    {
-      "id": "n03",
-      "date": "2026-11-11",
-      "amountCents": -9000,
-      "categoryId": "transport",
-      "subcategoryId": null,
-      "merchant": "App Transporte"
-    },
-    {
-      "id": "n04",
-      "date": "2026-11-15",
-      "amountCents": -6000,
-      "categoryId": "insurance",
-      "subcategoryId": null,
-      "merchant": "Seguro Exemplo"
-    }
-  ],
-  "nextCursor": null,
-  "expensesCents": 42000,
+  "source": "bank",
   "sourceIds": [
     "n01",
     "n02",
     "n03",
     "n04"
   ],
-  "method": "canonical_ledger"
+  "method": "canonical_ledger",
+  "data": {
+    "rows": [
+      {
+        "id": "n01",
+        "date": "2026-11-03",
+        "amountCents": -15000,
+        "categoryId": "cat:alimentacao",
+        "subcategoryId": null,
+        "merchant": "Mercado Exemplo"
+      },
+      {
+        "id": "n02",
+        "date": "2026-11-05",
+        "amountCents": -12000,
+        "categoryId": "cat:assinaturas",
+        "subcategoryId": null,
+        "merchant": "StreamCo"
+      },
+      {
+        "id": "n03",
+        "date": "2026-11-11",
+        "amountCents": -9000,
+        "categoryId": "cat:transporte",
+        "subcategoryId": null,
+        "merchant": "App Transporte"
+      },
+      {
+        "id": "n04",
+        "date": "2026-11-15",
+        "amountCents": -6000,
+        "categoryId": "cat:contas",
+        "subcategoryId": "sub:contas/seguros",
+        "merchant": "Seguro Exemplo"
+      }
+    ],
+    "nextCursor": null,
+    "expensesCents": 42000
+  }
 }
 ```
 
@@ -322,103 +525,264 @@ As nove ferramentas abaixo são **contratos propostos**, não endpoints existent
 ```json
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "type": "object",
-  "additionalProperties": false,
-  "required": [
-    "status",
-    "dataVersion",
-    "asOf",
-    "coverage",
-    "categoryId",
-    "subcategoryId",
-    "spentCents",
-    "count"
-  ],
-  "properties": {
-    "status": {
-      "type": "string",
-      "enum": [
-        "ready",
-        "partial",
-        "no_data",
-        "denied",
-        "stale",
-        "unsupported",
-        "error"
-      ]
-    },
-    "dataVersion": {
-      "type": "string",
-      "minLength": 1
-    },
-    "asOf": {
-      "type": "string",
-      "format": "date-time"
-    },
-    "coverage": {
+  "oneOf": [
+    {
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "state",
-        "readRows",
-        "hasMore"
+        "status",
+        "dataVersion",
+        "asOf",
+        "coverage",
+        "source",
+        "sourceIds",
+        "method",
+        "data"
       ],
       "properties": {
-        "state": {
+        "status": {
+          "const": "ready"
+        },
+        "dataVersion": {
           "type": "string",
+          "minLength": 1
+        },
+        "asOf": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "coverage": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state",
+            "readRows",
+            "hasMore"
+          ],
+          "properties": {
+            "state": {
+              "type": "string",
+              "enum": [
+                "complete",
+                "partial",
+                "unknown"
+              ]
+            },
+            "readRows": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "hasMore": {
+              "type": "boolean"
+            },
+            "missingPeriods": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "source": {
           "enum": [
-            "complete",
-            "partial",
-            "unknown"
-          ]
+            "bank",
+            "manual"
+          ],
+          "type": "string"
         },
-        "readRows": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "hasMore": {
-          "type": "boolean"
-        },
-        "missingPeriods": {
+        "sourceIds": {
           "type": "array",
           "items": {
             "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "method": {
+          "type": "string",
+          "minLength": 1
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "categoryId",
+            "subcategoryId",
+            "spentCents",
+            "count"
+          ],
+          "properties": {
+            "categoryId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 80
+            },
+            "subcategoryId": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 80
+            },
+            "spentCents": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "count": {
+              "type": "integer",
+              "minimum": 0
+            }
           }
         }
       }
     },
-    "sourceIds": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "uniqueItems": true
-    },
-    "method": {
-      "type": "string",
-      "minLength": 1
-    },
-    "categoryId": {
-      "type": "string",
-      "minLength": 1,
-      "maxLength": 80
-    },
-    "subcategoryId": {
-      "type": [
-        "string",
-        "null"
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "dataVersion",
+        "asOf",
+        "coverage",
+        "source",
+        "sourceIds",
+        "method",
+        "data",
+        "warnings"
       ],
-      "maxLength": 80
+      "properties": {
+        "status": {
+          "const": "partial"
+        },
+        "dataVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "asOf": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "coverage": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state",
+            "readRows",
+            "hasMore"
+          ],
+          "properties": {
+            "state": {
+              "type": "string",
+              "enum": [
+                "complete",
+                "partial",
+                "unknown"
+              ]
+            },
+            "readRows": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "hasMore": {
+              "type": "boolean"
+            },
+            "missingPeriods": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "source": {
+          "enum": [
+            "bank",
+            "manual"
+          ],
+          "type": "string"
+        },
+        "sourceIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "method": {
+          "type": "string",
+          "minLength": 1
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "categoryId",
+            "subcategoryId",
+            "spentCents",
+            "count"
+          ],
+          "properties": {
+            "categoryId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 80
+            },
+            "subcategoryId": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 80
+            },
+            "spentCents": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "count": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1
+        }
+      }
     },
-    "spentCents": {
-      "type": "integer",
-      "minimum": 0
-    },
-    "count": {
-      "type": "integer",
-      "minimum": 0
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "code",
+        "message"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "denied",
+            "stale",
+            "no_data",
+            "unsupported",
+            "error"
+          ]
+        },
+        "code": {
+          "type": "string",
+          "minLength": 1
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
     }
-  }
+  ]
 }
 ```
 
@@ -429,7 +793,7 @@ As nove ferramentas abaixo são **contratos propostos**, não endpoints existent
   "scopeRef": "scope-f1-bank",
   "start": "2026-11-01",
   "end": "2026-11-30",
-  "categoryId": "food",
+  "categoryId": "cat:alimentacao",
   "subcategoryId": null
 }
 ```
@@ -447,14 +811,17 @@ As nove ferramentas abaixo são **contratos propostos**, não endpoints existent
     "hasMore": false,
     "missingPeriods": []
   },
-  "categoryId": "food",
-  "subcategoryId": null,
-  "spentCents": 15000,
-  "count": 1,
+  "source": "bank",
   "sourceIds": [
     "n01"
   ],
-  "method": "ledger_d05"
+  "method": "ledger_d05",
+  "data": {
+    "categoryId": "cat:alimentacao",
+    "subcategoryId": null,
+    "spentCents": 15000,
+    "count": 1
+  }
 }
 ```
 
@@ -505,105 +872,268 @@ As nove ferramentas abaixo são **contratos propostos**, não endpoints existent
 ```json
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "type": "object",
-  "additionalProperties": false,
-  "required": [
-    "status",
-    "dataVersion",
-    "asOf",
-    "coverage",
-    "merchantId",
-    "amountACents",
-    "amountBCents",
-    "deltaCents",
-    "countA",
-    "countB"
-  ],
-  "properties": {
-    "status": {
-      "type": "string",
-      "enum": [
-        "ready",
-        "partial",
-        "no_data",
-        "denied",
-        "stale",
-        "unsupported",
-        "error"
-      ]
-    },
-    "dataVersion": {
-      "type": "string",
-      "minLength": 1
-    },
-    "asOf": {
-      "type": "string",
-      "format": "date-time"
-    },
-    "coverage": {
+  "oneOf": [
+    {
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "state",
-        "readRows",
-        "hasMore"
+        "status",
+        "dataVersion",
+        "asOf",
+        "coverage",
+        "source",
+        "sourceIds",
+        "method",
+        "data"
       ],
       "properties": {
-        "state": {
+        "status": {
+          "const": "ready"
+        },
+        "dataVersion": {
           "type": "string",
+          "minLength": 1
+        },
+        "asOf": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "coverage": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state",
+            "readRows",
+            "hasMore"
+          ],
+          "properties": {
+            "state": {
+              "type": "string",
+              "enum": [
+                "complete",
+                "partial",
+                "unknown"
+              ]
+            },
+            "readRows": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "hasMore": {
+              "type": "boolean"
+            },
+            "missingPeriods": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "source": {
           "enum": [
-            "complete",
-            "partial",
-            "unknown"
-          ]
+            "bank",
+            "manual"
+          ],
+          "type": "string"
         },
-        "readRows": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "hasMore": {
-          "type": "boolean"
-        },
-        "missingPeriods": {
+        "sourceIds": {
           "type": "array",
           "items": {
             "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "method": {
+          "type": "string",
+          "minLength": 1
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "merchantId",
+            "amountACents",
+            "amountBCents",
+            "deltaCents",
+            "countA",
+            "countB"
+          ],
+          "properties": {
+            "merchantId": {
+              "type": "string"
+            },
+            "amountACents": {
+              "type": "integer"
+            },
+            "amountBCents": {
+              "type": "integer"
+            },
+            "deltaCents": {
+              "type": "integer"
+            },
+            "countA": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "countB": {
+              "type": "integer",
+              "minimum": 0
+            }
           }
         }
       }
     },
-    "sourceIds": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "uniqueItems": true
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "dataVersion",
+        "asOf",
+        "coverage",
+        "source",
+        "sourceIds",
+        "method",
+        "data",
+        "warnings"
+      ],
+      "properties": {
+        "status": {
+          "const": "partial"
+        },
+        "dataVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "asOf": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "coverage": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state",
+            "readRows",
+            "hasMore"
+          ],
+          "properties": {
+            "state": {
+              "type": "string",
+              "enum": [
+                "complete",
+                "partial",
+                "unknown"
+              ]
+            },
+            "readRows": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "hasMore": {
+              "type": "boolean"
+            },
+            "missingPeriods": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "source": {
+          "enum": [
+            "bank",
+            "manual"
+          ],
+          "type": "string"
+        },
+        "sourceIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "method": {
+          "type": "string",
+          "minLength": 1
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "merchantId",
+            "amountACents",
+            "amountBCents",
+            "deltaCents",
+            "countA",
+            "countB"
+          ],
+          "properties": {
+            "merchantId": {
+              "type": "string"
+            },
+            "amountACents": {
+              "type": "integer"
+            },
+            "amountBCents": {
+              "type": "integer"
+            },
+            "deltaCents": {
+              "type": "integer"
+            },
+            "countA": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "countB": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1
+        }
+      }
     },
-    "method": {
-      "type": "string",
-      "minLength": 1
-    },
-    "merchantId": {
-      "type": "string"
-    },
-    "amountACents": {
-      "type": "integer"
-    },
-    "amountBCents": {
-      "type": "integer"
-    },
-    "deltaCents": {
-      "type": "integer"
-    },
-    "countA": {
-      "type": "integer",
-      "minimum": 0
-    },
-    "countB": {
-      "type": "integer",
-      "minimum": 0
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "code",
+        "message"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "denied",
+            "stale",
+            "no_data",
+            "unsupported",
+            "error"
+          ]
+        },
+        "code": {
+          "type": "string",
+          "minLength": 1
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
     }
-  }
+  ]
 }
 ```
 
@@ -631,17 +1161,20 @@ As nove ferramentas abaixo são **contratos propostos**, não endpoints existent
     "hasMore": false,
     "missingPeriods": []
   },
-  "merchantId": "merchant-mercado-exemplo",
-  "amountACents": 12000,
-  "amountBCents": 15000,
-  "deltaCents": 3000,
-  "countA": 1,
-  "countB": 1,
+  "source": "bank",
   "sourceIds": [
     "p01",
     "n01"
   ],
-  "method": "merchant_normalize_group"
+  "method": "merchant_normalize_group",
+  "data": {
+    "merchantId": "merchant-mercado-exemplo",
+    "amountACents": 12000,
+    "amountBCents": 15000,
+    "deltaCents": 3000,
+    "countA": 1,
+    "countB": 1
+  }
 }
 ```
 
@@ -692,123 +1225,304 @@ As nove ferramentas abaixo são **contratos propostos**, não endpoints existent
 ```json
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "type": "object",
-  "additionalProperties": false,
-  "required": [
-    "status",
-    "dataVersion",
-    "asOf",
-    "coverage",
-    "candidates"
-  ],
-  "properties": {
-    "status": {
-      "type": "string",
-      "enum": [
-        "ready",
-        "partial",
-        "no_data",
-        "denied",
-        "stale",
-        "unsupported",
-        "error"
-      ]
-    },
-    "dataVersion": {
-      "type": "string",
-      "minLength": 1
-    },
-    "asOf": {
-      "type": "string",
-      "format": "date-time"
-    },
-    "coverage": {
+  "oneOf": [
+    {
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "state",
-        "readRows",
-        "hasMore"
+        "status",
+        "dataVersion",
+        "asOf",
+        "coverage",
+        "source",
+        "sourceIds",
+        "method",
+        "data"
       ],
       "properties": {
-        "state": {
+        "status": {
+          "const": "ready"
+        },
+        "dataVersion": {
           "type": "string",
-          "enum": [
-            "complete",
-            "partial",
-            "unknown"
-          ]
+          "minLength": 1
         },
-        "readRows": {
-          "type": "integer",
-          "minimum": 0
+        "asOf": {
+          "type": "string",
+          "format": "date-time"
         },
-        "hasMore": {
-          "type": "boolean"
-        },
-        "missingPeriods": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        }
-      }
-    },
-    "sourceIds": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "uniqueItems": true
-    },
-    "method": {
-      "type": "string",
-      "minLength": 1
-    },
-    "candidates": {
-      "type": "array",
-      "maxItems": 25,
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "merchantId",
-          "observedMonths",
-          "amountRangeCents",
-          "certainty"
-        ],
-        "properties": {
-          "merchantId": {
-            "type": "string"
-          },
-          "observedMonths": {
-            "type": "array",
-            "items": {
+        "coverage": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state",
+            "readRows",
+            "hasMore"
+          ],
+          "properties": {
+            "state": {
               "type": "string",
-              "pattern": "^\\d{4}-\\d{2}$"
+              "enum": [
+                "complete",
+                "partial",
+                "unknown"
+              ]
             },
-            "minItems": 2
-          },
-          "amountRangeCents": {
-            "type": "array",
-            "items": {
+            "readRows": {
               "type": "integer",
               "minimum": 0
             },
-            "minItems": 2,
-            "maxItems": 2
+            "hasMore": {
+              "type": "boolean"
+            },
+            "missingPeriods": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "source": {
+          "enum": [
+            "bank",
+            "manual"
+          ],
+          "type": "string"
+        },
+        "sourceIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
           },
-          "certainty": {
-            "type": "string",
-            "enum": [
-              "candidate",
-              "strong_candidate"
-            ]
+          "uniqueItems": true
+        },
+        "method": {
+          "type": "string",
+          "minLength": 1
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "candidates"
+          ],
+          "properties": {
+            "candidates": {
+              "type": "array",
+              "maxItems": 25,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "merchantId",
+                  "observedMonths",
+                  "amountRangeCents",
+                  "certainty"
+                ],
+                "properties": {
+                  "merchantId": {
+                    "type": "string"
+                  },
+                  "observedMonths": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "pattern": "^\\d{4}-\\d{2}$"
+                    },
+                    "minItems": 2
+                  },
+                  "amountRangeCents": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "minItems": 2,
+                    "maxItems": 2
+                  },
+                  "certainty": {
+                    "type": "string",
+                    "enum": [
+                      "candidate",
+                      "strong_candidate"
+                    ]
+                  }
+                }
+              }
+            }
           }
         }
       }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "dataVersion",
+        "asOf",
+        "coverage",
+        "source",
+        "sourceIds",
+        "method",
+        "data",
+        "warnings"
+      ],
+      "properties": {
+        "status": {
+          "const": "partial"
+        },
+        "dataVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "asOf": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "coverage": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state",
+            "readRows",
+            "hasMore"
+          ],
+          "properties": {
+            "state": {
+              "type": "string",
+              "enum": [
+                "complete",
+                "partial",
+                "unknown"
+              ]
+            },
+            "readRows": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "hasMore": {
+              "type": "boolean"
+            },
+            "missingPeriods": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "source": {
+          "enum": [
+            "bank",
+            "manual"
+          ],
+          "type": "string"
+        },
+        "sourceIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "method": {
+          "type": "string",
+          "minLength": 1
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "candidates"
+          ],
+          "properties": {
+            "candidates": {
+              "type": "array",
+              "maxItems": 25,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "merchantId",
+                  "observedMonths",
+                  "amountRangeCents",
+                  "certainty"
+                ],
+                "properties": {
+                  "merchantId": {
+                    "type": "string"
+                  },
+                  "observedMonths": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "pattern": "^\\d{4}-\\d{2}$"
+                    },
+                    "minItems": 2
+                  },
+                  "amountRangeCents": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "minItems": 2,
+                    "maxItems": 2
+                  },
+                  "certainty": {
+                    "type": "string",
+                    "enum": [
+                      "candidate",
+                      "strong_candidate"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "code",
+        "message"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "denied",
+            "stale",
+            "no_data",
+            "unsupported",
+            "error"
+          ]
+        },
+        "code": {
+          "type": "string",
+          "minLength": 1
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
     }
-  }
+  ]
 }
 ```
 
@@ -836,25 +1550,28 @@ As nove ferramentas abaixo são **contratos propostos**, não endpoints existent
     "hasMore": false,
     "missingPeriods": []
   },
-  "candidates": [
-    {
-      "merchantId": "streamco",
-      "observedMonths": [
-        "2026-10",
-        "2026-11"
-      ],
-      "amountRangeCents": [
-        12000,
-        12000
-      ],
-      "certainty": "candidate"
-    }
-  ],
+  "source": "bank",
   "sourceIds": [
     "p04",
     "n02"
   ],
-  "method": "periodic_observations"
+  "method": "periodic_observations",
+  "data": {
+    "candidates": [
+      {
+        "merchantId": "streamco",
+        "observedMonths": [
+          "2026-10",
+          "2026-11"
+        ],
+        "amountRangeCents": [
+          12000,
+          12000
+        ],
+        "certainty": "candidate"
+      }
+    ]
+  }
 }
 ```
 
@@ -905,115 +1622,288 @@ As nove ferramentas abaixo são **contratos propostos**, não endpoints existent
 ```json
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "type": "object",
-  "additionalProperties": false,
-  "required": [
-    "status",
-    "dataVersion",
-    "asOf",
-    "coverage",
-    "items"
-  ],
-  "properties": {
-    "status": {
-      "type": "string",
-      "enum": [
-        "ready",
-        "partial",
-        "no_data",
-        "denied",
-        "stale",
-        "unsupported",
-        "error"
-      ]
-    },
-    "dataVersion": {
-      "type": "string",
-      "minLength": 1
-    },
-    "asOf": {
-      "type": "string",
-      "format": "date-time"
-    },
-    "coverage": {
+  "oneOf": [
+    {
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "state",
-        "readRows",
-        "hasMore"
+        "status",
+        "dataVersion",
+        "asOf",
+        "coverage",
+        "source",
+        "sourceIds",
+        "method",
+        "data"
       ],
       "properties": {
-        "state": {
+        "status": {
+          "const": "ready"
+        },
+        "dataVersion": {
           "type": "string",
+          "minLength": 1
+        },
+        "asOf": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "coverage": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state",
+            "readRows",
+            "hasMore"
+          ],
+          "properties": {
+            "state": {
+              "type": "string",
+              "enum": [
+                "complete",
+                "partial",
+                "unknown"
+              ]
+            },
+            "readRows": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "hasMore": {
+              "type": "boolean"
+            },
+            "missingPeriods": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "source": {
           "enum": [
-            "complete",
-            "partial",
-            "unknown"
-          ]
+            "bank",
+            "manual"
+          ],
+          "type": "string"
         },
-        "readRows": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "hasMore": {
-          "type": "boolean"
-        },
-        "missingPeriods": {
+        "sourceIds": {
           "type": "array",
           "items": {
             "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "method": {
+          "type": "string",
+          "minLength": 1
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "items"
+          ],
+          "properties": {
+            "items": {
+              "type": "array",
+              "maxItems": 20,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "categoryId",
+                  "limitCents",
+                  "spentCents",
+                  "exceeded"
+                ],
+                "properties": {
+                  "categoryId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  },
+                  "limitCents": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "minimum": 0
+                  },
+                  "spentCents": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "exceeded": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
           }
         }
       }
     },
-    "sourceIds": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "uniqueItems": true
-    },
-    "method": {
-      "type": "string",
-      "minLength": 1
-    },
-    "items": {
-      "type": "array",
-      "maxItems": 20,
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "categoryId",
-          "limitCents",
-          "spentCents",
-          "exceeded"
-        ],
-        "properties": {
-          "categoryId": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 80
-          },
-          "limitCents": {
-            "type": [
-              "integer",
-              "null"
-            ],
-            "minimum": 0
-          },
-          "spentCents": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "exceeded": {
-            "type": "boolean"
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "dataVersion",
+        "asOf",
+        "coverage",
+        "source",
+        "sourceIds",
+        "method",
+        "data",
+        "warnings"
+      ],
+      "properties": {
+        "status": {
+          "const": "partial"
+        },
+        "dataVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "asOf": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "coverage": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state",
+            "readRows",
+            "hasMore"
+          ],
+          "properties": {
+            "state": {
+              "type": "string",
+              "enum": [
+                "complete",
+                "partial",
+                "unknown"
+              ]
+            },
+            "readRows": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "hasMore": {
+              "type": "boolean"
+            },
+            "missingPeriods": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
           }
+        },
+        "source": {
+          "enum": [
+            "bank",
+            "manual"
+          ],
+          "type": "string"
+        },
+        "sourceIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "method": {
+          "type": "string",
+          "minLength": 1
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "items"
+          ],
+          "properties": {
+            "items": {
+              "type": "array",
+              "maxItems": 20,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "categoryId",
+                  "limitCents",
+                  "spentCents",
+                  "exceeded"
+                ],
+                "properties": {
+                  "categoryId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  },
+                  "limitCents": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "minimum": 0
+                  },
+                  "spentCents": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "exceeded": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "code",
+        "message"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "denied",
+            "stale",
+            "no_data",
+            "unsupported",
+            "error"
+          ]
+        },
+        "code": {
+          "type": "string",
+          "minLength": 1
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1
         }
       }
     }
-  }
+  ]
 }
 ```
 
@@ -1024,7 +1914,7 @@ As nove ferramentas abaixo são **contratos propostos**, não endpoints existent
   "scopeRef": "scope-f1-bank",
   "month": "2026-11",
   "categoryIds": [
-    "subscriptions"
+    "cat:assinaturas"
   ]
 }
 ```
@@ -1042,18 +1932,21 @@ As nove ferramentas abaixo são **contratos propostos**, não endpoints existent
     "hasMore": false,
     "missingPeriods": []
   },
-  "items": [
-    {
-      "categoryId": "subscriptions",
-      "limitCents": 0,
-      "spentCents": 12000,
-      "exceeded": true
-    }
-  ],
+  "source": "bank",
   "sourceIds": [
     "n02"
   ],
-  "method": "budgetProgress_d05"
+  "method": "budgetProgress_d05",
+  "data": {
+    "items": [
+      {
+        "categoryId": "cat:assinaturas",
+        "limitCents": 0,
+        "spentCents": 12000,
+        "exceeded": true
+      }
+    ]
+  }
 }
 ```
 
@@ -1098,111 +1991,280 @@ As nove ferramentas abaixo são **contratos propostos**, não endpoints existent
 ```json
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "type": "object",
-  "additionalProperties": false,
-  "required": [
-    "status",
-    "dataVersion",
-    "asOf",
-    "coverage",
-    "items",
-    "totalRemainingCents"
-  ],
-  "properties": {
-    "status": {
-      "type": "string",
-      "enum": [
-        "ready",
-        "partial",
-        "no_data",
-        "denied",
-        "stale",
-        "unsupported",
-        "error"
-      ]
-    },
-    "dataVersion": {
-      "type": "string",
-      "minLength": 1
-    },
-    "asOf": {
-      "type": "string",
-      "format": "date-time"
-    },
-    "coverage": {
+  "oneOf": [
+    {
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "state",
-        "readRows",
-        "hasMore"
+        "status",
+        "dataVersion",
+        "asOf",
+        "coverage",
+        "source",
+        "sourceIds",
+        "method",
+        "data"
       ],
       "properties": {
-        "state": {
+        "status": {
+          "const": "ready"
+        },
+        "dataVersion": {
           "type": "string",
+          "minLength": 1
+        },
+        "asOf": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "coverage": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state",
+            "readRows",
+            "hasMore"
+          ],
+          "properties": {
+            "state": {
+              "type": "string",
+              "enum": [
+                "complete",
+                "partial",
+                "unknown"
+              ]
+            },
+            "readRows": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "hasMore": {
+              "type": "boolean"
+            },
+            "missingPeriods": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "source": {
           "enum": [
-            "complete",
-            "partial",
-            "unknown"
-          ]
+            "bank",
+            "manual"
+          ],
+          "type": "string"
         },
-        "readRows": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "hasMore": {
-          "type": "boolean"
-        },
-        "missingPeriods": {
+        "sourceIds": {
           "type": "array",
           "items": {
             "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "method": {
+          "type": "string",
+          "minLength": 1
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "items",
+            "totalRemainingCents"
+          ],
+          "properties": {
+            "items": {
+              "type": "array",
+              "maxItems": 100,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "dueDate",
+                  "remainingCents"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "dueDate": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "remainingCents": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                }
+              }
+            },
+            "totalRemainingCents": {
+              "type": "integer",
+              "minimum": 0
+            }
           }
         }
       }
     },
-    "sourceIds": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "uniqueItems": true
-    },
-    "method": {
-      "type": "string",
-      "minLength": 1
-    },
-    "items": {
-      "type": "array",
-      "maxItems": 100,
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "id",
-          "dueDate",
-          "remainingCents"
-        ],
-        "properties": {
-          "id": {
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "dataVersion",
+        "asOf",
+        "coverage",
+        "source",
+        "sourceIds",
+        "method",
+        "data",
+        "warnings"
+      ],
+      "properties": {
+        "status": {
+          "const": "partial"
+        },
+        "dataVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "asOf": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "coverage": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state",
+            "readRows",
+            "hasMore"
+          ],
+          "properties": {
+            "state": {
+              "type": "string",
+              "enum": [
+                "complete",
+                "partial",
+                "unknown"
+              ]
+            },
+            "readRows": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "hasMore": {
+              "type": "boolean"
+            },
+            "missingPeriods": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "source": {
+          "enum": [
+            "bank",
+            "manual"
+          ],
+          "type": "string"
+        },
+        "sourceIds": {
+          "type": "array",
+          "items": {
             "type": "string"
           },
-          "dueDate": {
-            "type": "string",
-            "format": "date"
-          },
-          "remainingCents": {
-            "type": "integer",
-            "minimum": 0
+          "uniqueItems": true
+        },
+        "method": {
+          "type": "string",
+          "minLength": 1
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "items",
+            "totalRemainingCents"
+          ],
+          "properties": {
+            "items": {
+              "type": "array",
+              "maxItems": 100,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "dueDate",
+                  "remainingCents"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "dueDate": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "remainingCents": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                }
+              }
+            },
+            "totalRemainingCents": {
+              "type": "integer",
+              "minimum": 0
+            }
           }
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1
         }
       }
     },
-    "totalRemainingCents": {
-      "type": "integer",
-      "minimum": 0
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "code",
+        "message"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "denied",
+            "stale",
+            "no_data",
+            "unsupported",
+            "error"
+          ]
+        },
+        "code": {
+          "type": "string",
+          "minLength": 1
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
     }
-  }
+  ]
 }
 ```
 
@@ -1229,24 +2291,27 @@ As nove ferramentas abaixo são **contratos propostos**, não endpoints existent
     "hasMore": false,
     "missingPeriods": []
   },
-  "items": [
-    {
-      "id": "rent-dec",
-      "dueDate": "2026-12-05",
-      "remainingCents": 95000
-    },
-    {
-      "id": "internet-dec",
-      "dueDate": "2026-12-15",
-      "remainingCents": 20000
-    }
-  ],
-  "totalRemainingCents": 115000,
+  "source": "manual",
   "sourceIds": [
     "rent-dec",
     "internet-dec"
   ],
-  "method": "planning_confirmed_remaining"
+  "method": "planning_confirmed_remaining",
+  "data": {
+    "items": [
+      {
+        "id": "rent-dec",
+        "dueDate": "2026-12-05",
+        "remainingCents": 95000
+      },
+      {
+        "id": "internet-dec",
+        "dueDate": "2026-12-15",
+        "remainingCents": 20000
+      }
+    ],
+    "totalRemainingCents": 115000
+  }
 }
 ```
 
@@ -1298,128 +2363,314 @@ As nove ferramentas abaixo são **contratos propostos**, não endpoints existent
 ```json
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "type": "object",
-  "additionalProperties": false,
-  "required": [
-    "status",
-    "dataVersion",
-    "asOf",
-    "coverage",
-    "opportunities",
-    "maxIndependentSavingsCents",
-    "targetVerified"
-  ],
-  "properties": {
-    "status": {
-      "type": "string",
-      "enum": [
-        "ready",
-        "partial",
-        "no_data",
-        "denied",
-        "stale",
-        "unsupported",
-        "error"
-      ]
-    },
-    "dataVersion": {
-      "type": "string",
-      "minLength": 1
-    },
-    "asOf": {
-      "type": "string",
-      "format": "date-time"
-    },
-    "coverage": {
+  "oneOf": [
+    {
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "state",
-        "readRows",
-        "hasMore"
+        "status",
+        "dataVersion",
+        "asOf",
+        "coverage",
+        "source",
+        "sourceIds",
+        "method",
+        "data"
       ],
       "properties": {
-        "state": {
+        "status": {
+          "const": "ready"
+        },
+        "dataVersion": {
           "type": "string",
+          "minLength": 1
+        },
+        "asOf": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "coverage": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state",
+            "readRows",
+            "hasMore"
+          ],
+          "properties": {
+            "state": {
+              "type": "string",
+              "enum": [
+                "complete",
+                "partial",
+                "unknown"
+              ]
+            },
+            "readRows": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "hasMore": {
+              "type": "boolean"
+            },
+            "missingPeriods": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "source": {
           "enum": [
-            "complete",
-            "partial",
-            "unknown"
-          ]
+            "bank",
+            "manual"
+          ],
+          "type": "string"
         },
-        "readRows": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "hasMore": {
-          "type": "boolean"
-        },
-        "missingPeriods": {
+        "sourceIds": {
           "type": "array",
           "items": {
             "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "method": {
+          "type": "string",
+          "minLength": 1
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "opportunities",
+            "maxIndependentSavingsCents",
+            "targetVerified"
+          ],
+          "properties": {
+            "opportunities": {
+              "type": "array",
+              "maxItems": 10,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "insightId",
+                  "minSaveCents",
+                  "maxSaveCents",
+                  "overlapGroup",
+                  "confidence"
+                ],
+                "properties": {
+                  "insightId": {
+                    "type": "string"
+                  },
+                  "minSaveCents": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "maxSaveCents": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "overlapGroup": {
+                    "type": "string"
+                  },
+                  "confidence": {
+                    "type": "string",
+                    "enum": [
+                      "low",
+                      "medium",
+                      "high"
+                    ]
+                  }
+                }
+              }
+            },
+            "maxIndependentSavingsCents": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "targetVerified": {
+              "type": "boolean"
+            }
           }
         }
       }
     },
-    "sourceIds": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "uniqueItems": true
-    },
-    "method": {
-      "type": "string",
-      "minLength": 1
-    },
-    "opportunities": {
-      "type": "array",
-      "maxItems": 10,
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "insightId",
-          "minSaveCents",
-          "maxSaveCents",
-          "overlapGroup",
-          "confidence"
-        ],
-        "properties": {
-          "insightId": {
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "dataVersion",
+        "asOf",
+        "coverage",
+        "source",
+        "sourceIds",
+        "method",
+        "data",
+        "warnings"
+      ],
+      "properties": {
+        "status": {
+          "const": "partial"
+        },
+        "dataVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "asOf": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "coverage": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state",
+            "readRows",
+            "hasMore"
+          ],
+          "properties": {
+            "state": {
+              "type": "string",
+              "enum": [
+                "complete",
+                "partial",
+                "unknown"
+              ]
+            },
+            "readRows": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "hasMore": {
+              "type": "boolean"
+            },
+            "missingPeriods": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "source": {
+          "enum": [
+            "bank",
+            "manual"
+          ],
+          "type": "string"
+        },
+        "sourceIds": {
+          "type": "array",
+          "items": {
             "type": "string"
           },
-          "minSaveCents": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "maxSaveCents": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "overlapGroup": {
-            "type": "string"
-          },
-          "confidence": {
+          "uniqueItems": true
+        },
+        "method": {
+          "type": "string",
+          "minLength": 1
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "opportunities",
+            "maxIndependentSavingsCents",
+            "targetVerified"
+          ],
+          "properties": {
+            "opportunities": {
+              "type": "array",
+              "maxItems": 10,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "insightId",
+                  "minSaveCents",
+                  "maxSaveCents",
+                  "overlapGroup",
+                  "confidence"
+                ],
+                "properties": {
+                  "insightId": {
+                    "type": "string"
+                  },
+                  "minSaveCents": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "maxSaveCents": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "overlapGroup": {
+                    "type": "string"
+                  },
+                  "confidence": {
+                    "type": "string",
+                    "enum": [
+                      "low",
+                      "medium",
+                      "high"
+                    ]
+                  }
+                }
+              }
+            },
+            "maxIndependentSavingsCents": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "targetVerified": {
+              "type": "boolean"
+            }
+          }
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
             "type": "string",
-            "enum": [
-              "low",
-              "medium",
-              "high"
-            ]
-          }
+            "minLength": 1
+          },
+          "minItems": 1
         }
       }
     },
-    "maxIndependentSavingsCents": {
-      "type": "integer",
-      "minimum": 0
-    },
-    "targetVerified": {
-      "type": "boolean"
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "code",
+        "message"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "denied",
+            "stale",
+            "no_data",
+            "unsupported",
+            "error"
+          ]
+        },
+        "code": {
+          "type": "string",
+          "minLength": 1
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
     }
-  }
+  ]
 }
 ```
 
@@ -1450,37 +2701,40 @@ As nove ferramentas abaixo são **contratos propostos**, não endpoints existent
     "hasMore": false,
     "missingPeriods": []
   },
-  "opportunities": [
-    {
-      "insightId": "cut-delivery",
-      "minSaveCents": 12000,
-      "maxSaveCents": 15000,
-      "overlapGroup": "delivery",
-      "confidence": "medium"
-    },
-    {
-      "insightId": "cut-other",
-      "minSaveCents": 0,
-      "maxSaveCents": 3000,
-      "overlapGroup": "other",
-      "confidence": "low"
-    },
-    {
-      "insightId": "review-streamco",
-      "minSaveCents": 0,
-      "maxSaveCents": 5000,
-      "overlapGroup": "subscription",
-      "confidence": "low"
-    }
-  ],
-  "maxIndependentSavingsCents": 23000,
-  "targetVerified": false,
+  "source": "bank",
   "sourceIds": [
     "ev-delivery",
     "ev-other",
     "ev-streamco"
   ],
-  "method": "rank_non_overlapping_candidates"
+  "method": "rank_non_overlapping_candidates",
+  "data": {
+    "opportunities": [
+      {
+        "insightId": "cut-delivery",
+        "minSaveCents": 12000,
+        "maxSaveCents": 15000,
+        "overlapGroup": "delivery",
+        "confidence": "medium"
+      },
+      {
+        "insightId": "cut-other",
+        "minSaveCents": 0,
+        "maxSaveCents": 3000,
+        "overlapGroup": "other",
+        "confidence": "low"
+      },
+      {
+        "insightId": "review-streamco",
+        "minSaveCents": 0,
+        "maxSaveCents": 5000,
+        "overlapGroup": "subscription",
+        "confidence": "low"
+      }
+    ],
+    "maxIndependentSavingsCents": 23000,
+    "targetVerified": false
+  }
 }
 ```
 
@@ -1532,111 +2786,280 @@ As nove ferramentas abaixo são **contratos propostos**, não endpoints existent
 ```json
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "type": "object",
-  "additionalProperties": false,
-  "required": [
-    "status",
-    "dataVersion",
-    "asOf",
-    "coverage",
-    "scenarios"
-  ],
-  "properties": {
-    "status": {
-      "type": "string",
-      "enum": [
-        "ready",
-        "partial",
-        "no_data",
-        "denied",
-        "stale",
-        "unsupported",
-        "error"
-      ]
-    },
-    "dataVersion": {
-      "type": "string",
-      "minLength": 1
-    },
-    "asOf": {
-      "type": "string",
-      "format": "date-time"
-    },
-    "coverage": {
+  "oneOf": [
+    {
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "state",
-        "readRows",
-        "hasMore"
+        "status",
+        "dataVersion",
+        "asOf",
+        "coverage",
+        "source",
+        "sourceIds",
+        "method",
+        "data"
       ],
       "properties": {
-        "state": {
+        "status": {
+          "const": "ready"
+        },
+        "dataVersion": {
           "type": "string",
+          "minLength": 1
+        },
+        "asOf": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "coverage": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state",
+            "readRows",
+            "hasMore"
+          ],
+          "properties": {
+            "state": {
+              "type": "string",
+              "enum": [
+                "complete",
+                "partial",
+                "unknown"
+              ]
+            },
+            "readRows": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "hasMore": {
+              "type": "boolean"
+            },
+            "missingPeriods": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "source": {
           "enum": [
-            "complete",
-            "partial",
-            "unknown"
-          ]
+            "bank",
+            "manual"
+          ],
+          "type": "string"
         },
-        "readRows": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "hasMore": {
-          "type": "boolean"
-        },
-        "missingPeriods": {
+        "sourceIds": {
           "type": "array",
           "items": {
             "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "method": {
+          "type": "string",
+          "minLength": 1
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "scenarios"
+          ],
+          "properties": {
+            "scenarios": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 3,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "name",
+                  "saveCents",
+                  "goalReached"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "enum": [
+                      "conservative",
+                      "base",
+                      "optimistic"
+                    ]
+                  },
+                  "saveCents": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "goalReached": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
           }
         }
       }
     },
-    "sourceIds": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "uniqueItems": true
-    },
-    "method": {
-      "type": "string",
-      "minLength": 1
-    },
-    "scenarios": {
-      "type": "array",
-      "minItems": 1,
-      "maxItems": 3,
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "name",
-          "saveCents",
-          "goalReached"
-        ],
-        "properties": {
-          "name": {
-            "type": "string",
-            "enum": [
-              "conservative",
-              "base",
-              "optimistic"
-            ]
-          },
-          "saveCents": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "goalReached": {
-            "type": "boolean"
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "dataVersion",
+        "asOf",
+        "coverage",
+        "source",
+        "sourceIds",
+        "method",
+        "data",
+        "warnings"
+      ],
+      "properties": {
+        "status": {
+          "const": "partial"
+        },
+        "dataVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "asOf": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "coverage": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state",
+            "readRows",
+            "hasMore"
+          ],
+          "properties": {
+            "state": {
+              "type": "string",
+              "enum": [
+                "complete",
+                "partial",
+                "unknown"
+              ]
+            },
+            "readRows": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "hasMore": {
+              "type": "boolean"
+            },
+            "missingPeriods": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
           }
+        },
+        "source": {
+          "enum": [
+            "bank",
+            "manual"
+          ],
+          "type": "string"
+        },
+        "sourceIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "method": {
+          "type": "string",
+          "minLength": 1
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "scenarios"
+          ],
+          "properties": {
+            "scenarios": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 3,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "name",
+                  "saveCents",
+                  "goalReached"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "enum": [
+                      "conservative",
+                      "base",
+                      "optimistic"
+                    ]
+                  },
+                  "saveCents": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "goalReached": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "code",
+        "message"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "denied",
+            "stale",
+            "no_data",
+            "unsupported",
+            "error"
+          ]
+        },
+        "code": {
+          "type": "string",
+          "minLength": 1
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1
         }
       }
     }
-  }
+  ]
 }
 ```
 
@@ -1667,29 +3090,32 @@ As nove ferramentas abaixo são **contratos propostos**, não endpoints existent
     "hasMore": false,
     "missingPeriods": []
   },
-  "scenarios": [
-    {
-      "name": "conservative",
-      "saveCents": 12000,
-      "goalReached": false
-    },
-    {
-      "name": "base",
-      "saveCents": 15000,
-      "goalReached": false
-    },
-    {
-      "name": "optimistic",
-      "saveCents": 23000,
-      "goalReached": false
-    }
-  ],
+  "source": "bank",
   "sourceIds": [
     "cut-delivery",
     "cut-other",
     "review-streamco"
   ],
-  "method": "simulate_intervals_non_overlap"
+  "method": "simulate_intervals_non_overlap",
+  "data": {
+    "scenarios": [
+      {
+        "name": "conservative",
+        "saveCents": 12000,
+        "goalReached": false
+      },
+      {
+        "name": "base",
+        "saveCents": 15000,
+        "goalReached": false
+      },
+      {
+        "name": "optimistic",
+        "saveCents": 23000,
+        "goalReached": false
+      }
+    ]
+  }
 }
 ```
 
@@ -1741,108 +3167,274 @@ As nove ferramentas abaixo são **contratos propostos**, não endpoints existent
 ```json
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "type": "object",
-  "additionalProperties": false,
-  "required": [
-    "status",
-    "dataVersion",
-    "asOf",
-    "coverage",
-    "headline",
-    "factRefs",
-    "warning",
-    "nextActions"
-  ],
-  "properties": {
-    "status": {
-      "type": "string",
-      "enum": [
-        "ready",
-        "partial",
-        "no_data",
-        "denied",
-        "stale",
-        "unsupported",
-        "error"
-      ]
-    },
-    "dataVersion": {
-      "type": "string",
-      "minLength": 1
-    },
-    "asOf": {
-      "type": "string",
-      "format": "date-time"
-    },
-    "coverage": {
+  "oneOf": [
+    {
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "state",
-        "readRows",
-        "hasMore"
+        "status",
+        "dataVersion",
+        "asOf",
+        "coverage",
+        "source",
+        "sourceIds",
+        "method",
+        "data"
       ],
       "properties": {
-        "state": {
+        "status": {
+          "const": "ready"
+        },
+        "dataVersion": {
           "type": "string",
+          "minLength": 1
+        },
+        "asOf": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "coverage": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state",
+            "readRows",
+            "hasMore"
+          ],
+          "properties": {
+            "state": {
+              "type": "string",
+              "enum": [
+                "complete",
+                "partial",
+                "unknown"
+              ]
+            },
+            "readRows": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "hasMore": {
+              "type": "boolean"
+            },
+            "missingPeriods": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "source": {
           "enum": [
-            "complete",
-            "partial",
-            "unknown"
-          ]
+            "bank",
+            "manual"
+          ],
+          "type": "string"
         },
-        "readRows": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "hasMore": {
-          "type": "boolean"
-        },
-        "missingPeriods": {
+        "sourceIds": {
           "type": "array",
           "items": {
             "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "method": {
+          "type": "string",
+          "minLength": 1
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "headline",
+            "factRefs",
+            "warning",
+            "nextActions"
+          ],
+          "properties": {
+            "headline": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 160
+            },
+            "factRefs": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "uniqueItems": true
+            },
+            "warning": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "nextActions": {
+              "type": "array",
+              "maxItems": 3,
+              "items": {
+                "type": "string"
+              }
+            }
           }
         }
       }
     },
-    "sourceIds": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "uniqueItems": true
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "dataVersion",
+        "asOf",
+        "coverage",
+        "source",
+        "sourceIds",
+        "method",
+        "data",
+        "warnings"
+      ],
+      "properties": {
+        "status": {
+          "const": "partial"
+        },
+        "dataVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "asOf": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "coverage": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state",
+            "readRows",
+            "hasMore"
+          ],
+          "properties": {
+            "state": {
+              "type": "string",
+              "enum": [
+                "complete",
+                "partial",
+                "unknown"
+              ]
+            },
+            "readRows": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "hasMore": {
+              "type": "boolean"
+            },
+            "missingPeriods": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "source": {
+          "enum": [
+            "bank",
+            "manual"
+          ],
+          "type": "string"
+        },
+        "sourceIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "method": {
+          "type": "string",
+          "minLength": 1
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "headline",
+            "factRefs",
+            "warning",
+            "nextActions"
+          ],
+          "properties": {
+            "headline": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 160
+            },
+            "factRefs": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "uniqueItems": true
+            },
+            "warning": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "nextActions": {
+              "type": "array",
+              "maxItems": 3,
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1
+        }
+      }
     },
-    "method": {
-      "type": "string",
-      "minLength": 1
-    },
-    "headline": {
-      "type": "string",
-      "minLength": 1,
-      "maxLength": 160
-    },
-    "factRefs": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "uniqueItems": true
-    },
-    "warning": {
-      "type": [
-        "string",
-        "null"
-      ]
-    },
-    "nextActions": {
-      "type": "array",
-      "maxItems": 3,
-      "items": {
-        "type": "string"
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "code",
+        "message"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "denied",
+            "stale",
+            "no_data",
+            "unsupported",
+            "error"
+          ]
+        },
+        "code": {
+          "type": "string",
+          "minLength": 1
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1
+        }
       }
     }
-  }
+  ]
 }
 ```
 
@@ -1874,25 +3466,28 @@ As nove ferramentas abaixo são **contratos propostos**, não endpoints existent
     "hasMore": false,
     "missingPeriods": []
   },
-  "headline": "Despesas aumentaram R$ 50 em novembro; as maiores contribuições foram transporte e seguro.",
-  "factRefs": [
-    "fact-month-delta",
-    "fact-food-delta",
-    "fact-transport-delta",
-    "fact-insurance-delta"
-  ],
-  "warning": "Contribuição aritmética não prova causa pessoal.",
-  "nextActions": [
-    "Ver gastos por estabelecimento",
-    "Simular cortes"
-  ],
+  "source": "bank",
   "sourceIds": [
     "fact-month-delta",
     "fact-food-delta",
     "fact-transport-delta",
     "fact-insurance-delta"
   ],
-  "method": "evidence_only_render"
+  "method": "evidence_only_render",
+  "data": {
+    "headline": "Despesas aumentaram R$ 50 em novembro; as maiores contribuições foram transporte e seguro.",
+    "factRefs": [
+      "fact-month-delta",
+      "fact-food-delta",
+      "fact-transport-delta",
+      "fact-insurance-delta"
+    ],
+    "warning": "Contribuição aritmética não prova causa pessoal.",
+    "nextActions": [
+      "Ver gastos por estabelecimento",
+      "Simular cortes"
+    ]
+  }
 }
 ```
 
