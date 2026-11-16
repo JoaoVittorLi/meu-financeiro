@@ -58,6 +58,7 @@ async function localFinancialEnable(app:any){
 }
 function localFinancialDisable(app:any){
  app.__ic2Conversation=null;
+ app.__localRadarRequest=(app.__localRadarRequest||0)+1;
  const access:LocalFinancialAccess=app.state.localFinancialAccess;app.__localReadGeneration=(app.__localReadGeneration||0)+1;
  app.setState({...access?.backup,localFinancialAccess:null,localFinancialRadar:null,localFinancialBusy:false,localFinancialError:'',intelligenceDraft:''},()=>{if(typeof intelligencePremiumLoad==='function')void intelligencePremiumLoad(app);});
  if(access?.token)void localFinancialAPI()?.localFinancialRevoke?.(access.token).catch(()=>app.setState({localFinancialError:'A interface encerrou a leitura. A autorização do processo expira em até 15 minutos.'}));
@@ -73,8 +74,16 @@ async function localFinancialQuery(app:any,intent:{intent:LocalFinancialIntent;c
  return response;
 }
 async function localFinancialRadar(app:any){
- try{const result=await localFinancialQuery(app,{intent:'radar'});app.setState({localFinancialRadar:result,localFinancialError:''});}
- catch(e:any){app.setState({localFinancialError:String(e.message||'Consulta indisponível.').slice(0,180)});}
+ // Last request wins, even if an older promise resolves after a later refresh.
+ const request=(app.__localRadarRequest||0)+1;app.__localRadarRequest=request;
+ try{
+  const result=await localFinancialQuery(app,{intent:'radar'});
+  if(app.__localRadarRequest!==request)return;
+  app.setState({localFinancialRadar:result,localFinancialError:''});
+ }catch(e:any){
+  if(app.__localRadarRequest!==request)return;
+  app.setState({localFinancialError:String(e.message||'Consulta indisponível.').slice(0,180)});
+ }
 }
 async function localFinancialSubmit(app:any,question:string){
  if(app.state.localFinancialBusy||!String(question||'').trim())return;
