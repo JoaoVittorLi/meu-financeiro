@@ -111,7 +111,7 @@ async function qa84BudgetRefresh(host:any){
   if(JSON.stringify([host.state.qa84BudgetDrill?.categoryName,host.state.qa84BudgetDrill?.month,
    host.state.qa84BudgetDrill?.bank,host.state.mode])!==currentKey)return;
   const legs=qa84BudgetLegs(result.items,source,firstOfMonth(drill.month),endOfMonth(drill.month));
-  host.setState({qa84BudgetRows:legs,qa84BudgetPartial:!!result.truncated,
+  host.setState({qa84BudgetRows:legs,qa84BudgetPartial:!!result.truncated||result.status==='partial',
    qa84BudgetReadError:'',qa84BudgetLoading:false});
  }catch(e:any){
   if(JSON.stringify([host.state.qa84BudgetDrill?.categoryName,host.state.qa84BudgetDrill?.month,
@@ -128,7 +128,7 @@ function qa84BudgetReturn(host:any,toCategory:boolean){
  else{
   host.setState({qa84BudgetDrill:null,qa84BudgetRows:[],qa84BudgetPage:0},()=>{
    document.scrollingElement?.scrollTo({top:drill.returnScroll||0,left:0,behavior:'instant' as ScrollBehavior});
-   const button=document.getElementById('qa84-card-'+drill.categoryName);
+   const button=document.getElementById('qa84-card-'+encodeURIComponent(drill.categoryName));
    button?.focus({preventScroll:true});
   });
  }
@@ -147,7 +147,7 @@ function renderQA84BudgetCards(host:any,visible:any[],mode:string,total:number,b
     model.status==='unlimited'?'Não definido':model.status==='zero'?'Definido':'Restante';
    const pctLabel=model.usedPercent===null?model.status==='zero'?'Limite R$ 0':model.status==='unlimited'?'Sem limite':
     'Sem orçamento':model.usedPercent.toLocaleString('pt-BR',{maximumFractionDigits:1})+'% utilizado';
-   return h('button',{type:'button',role:'listitem',key:info.name,id:'qa84-card-'+info.name,
+   return h('button',{type:'button',role:'listitem',key:info.name,id:'qa84-card-'+encodeURIComponent(info.name),
     className:'qa84-budget-card tone-'+tone,'aria-label':info.name+' · '+pctLabel+
       ' · gasto '+fmt(spent)+(hasLimit?' · limite '+fmt(limit):' · sem limite'),
     onClick:()=>mode==='income'?(host.setState({txSource:bank?'bank':'manual',txKindFilter:'income',txCategoryFilter:info.name}),host.navigate('transactions')):
@@ -234,7 +234,9 @@ function renderQA84BudgetDetail(host:any,context:any){
      !hasChild?h('div',{className:'qa84-budget-edit-actions'},
       h('button',{type:'button',onClick:()=>openEdit(false)},hasLimit?'Editar limite':'Definir limite'),
       h('button',{type:'button',onClick:()=>openEdit(true)},'Sugerir limite')):null))),
-  host.state.qa84BudgetLoading?h('div',{className:'qa84-budget-loading',role:'status'},'Carregando detalhamento autorizado…'):null,
+  host.state.qa84BudgetLoading?h('div',{className:'qa84-budget-loading',role:'status'},
+   'Carregando detalhamento autorizado…',h('div',{className:'qa84-skeleton','aria-hidden':'true'},
+    h('i',{}),h('i',{}),h('i',{}))):null,
   host.state.qa84BudgetReadError?h('div',{className:'qa84-budget-error',role:'alert'},
    h('p',{},host.state.qa84BudgetReadError),
    h('button',{type:'button',onClick:()=>void qa84BudgetRefresh(host)},'Tentar novamente')):null,
@@ -298,6 +300,9 @@ function renderQA84BudgetDetail(host:any,context:any){
      h('button',{type:'button',disabled:(page+1)*25>=selected.rows.length,
        onClick:()=>host.setState({qa84BudgetPage:page+1})},'Próxima')):null
   ),
+  drill.bank&&(!host.state.bank.data.last?.completedAt||Date.now()-Date.parse(host.state.bank.data.last.completedAt)>48*3600000)?
+   h('p',{className:'qa84-budget-partial',role:'status'},'A última atualização bancária pode estar desatualizada. Data informada: '+
+    (host.state.bank.data.last?.completedAt?new Date(host.state.bank.data.last.completedAt).toLocaleString('pt-BR'):'não disponível')):null,
   host.state.qa84BudgetPartial?h('p',{className:'qa84-budget-partial'},
    'Alguns registros bancários antigos podem não constar da janela carregada.'):null);
 }
