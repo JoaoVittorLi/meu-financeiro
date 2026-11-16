@@ -271,3 +271,20 @@ test('RC2/B05-24: expired local read grants hide prior financial chat answers',(
     {token:'valid',profile:'real',expiresAt:Date.now()+60000}}),msg));
  assert(!changed.includes('Dado financeiro sensível'));
 });
+
+test('RC2/B05 dates: rejects impossible due dates, permits valid leap day',()=>{
+ const {ctx}=runtime();
+ assert.equal(ctx.mfB05IsoDate('2026-02-30'),null);
+ assert.equal(ctx.mfB05IsoDate('2028-02-29'),'2028-02-29');
+ const invalid={...verified,unpaidFutureCommitments:{...verified.unpaidFutureCommitments,
+  value:[{...verified.unpaidFutureCommitments.value[0],due:'2026-02-30'}]}};
+ assert.equal(ctx.mfB05Project(invalid).available,false);
+});
+test('RC2/B05 statuses: unknown bill statuses and missing period origin block projection',()=>{
+ const {ctx}=runtime();
+ assert.equal(ctx.mfB05Project({...verified,period:{to:verified.period.to}}).available,false);
+ const invalid={...verified,unpaidFutureCommitments:{...verified.unpaidFutureCommitments,
+  value:[{...verified.unpaidFutureCommitments.value[0],status:'unknown'}]}};
+ assert.equal(ctx.mfB05Project(invalid).available,false);
+ assert.equal(ctx.mfB05Project(verified).ending.projectedCents,125700);
+});
