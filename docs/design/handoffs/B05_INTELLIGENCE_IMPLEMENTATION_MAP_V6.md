@@ -93,7 +93,7 @@ A equipe pode criar nomes diferentes desde que preserve estes contratos:
 ## 5. Padrão de qualidade de código
 
 - CSS `.mf-b05-*` ou outro namespace isolado com tokens herdados. NUNCA aplicar `.card`, `.button`, `.drawer` genéricos a todas as telas do MF2.
-- Não inserir ``React Router`, módulos ESM ou bibliotecas de animação` sem conferir bundler atual; `src/intelligence-view.ts` declara que roda em `TypeScript module:none` no bundle de `src/app.ts`.
+- Não inserir React Router, módulos ESM ou bibliotecas de animação sem conferir bundler atual; `src/intelligence-view.ts` declara que roda em `TypeScript module:none` no bundle de `src/app.ts`.
 - Animação na UI somente de apresentação; cancelamento em unmount/troca de thread/conta. Não deixar promises pendentes escreverem uma UI de outro grant.
 - Números no estado financeiro em `integer cents`, valores de slider também; só `Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'})` no display.
 - Não depender de rede ou baixar SVG externo em runtime; não expor tokens ou metadados de IA no DOM/console.
