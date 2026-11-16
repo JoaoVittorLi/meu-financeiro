@@ -70,3 +70,47 @@ test('RC2/no-write: B05 UI never calls personal IPC mutation methods directly',(
   assert(!/\b(bankCategorize|bankBatch|bankSplit|planCreate|planEdit|categoryReviewConfirm|db\.save)\s*\(/.test(source),name);
  }
 });
+
+test('RC2.1/TS syntax: Overview and D05 source parse with zero compiler syntax diagnostics',()=>{
+ for(const file of ['src/app.ts','src/d05-movements.ts']){
+  const ast=ts.createSourceFile(file,read(file),ts.ScriptTarget.ES2019,true,ts.ScriptKind.TS);
+  const errors=ast.parseDiagnostics.map(d=>
+   ts.flattenDiagnosticMessageText(d.messageText,'\\n')+' @ '+d.start);
+  assert.deepEqual(errors,[],file);
+ }
+});
+test('RC2.1/UI structure: Overview detail grid is sibling, D05 empty search belongs inside grid',()=>{
+ const app=ts.createSourceFile('src/app.ts',read('src/app.ts'),ts.ScriptTarget.ES2019,true);
+ let overview=null;
+ function walk(node){
+  if(ts.isMethodDeclaration(node)&&node.name.getText(app)==='renderOverview')overview=node;
+  ts.forEachChild(node,walk);
+ }
+ walk(app);
+ assert(overview,'renderOverview() must exist');
+ const returned=overview.body.statements.find(s=>ts.isReturnStatement(s));
+ assert(returned&&ts.isCallExpression(returned.expression),'Overview must render an h() root');
+ const mainClass=(call,label)=>{
+  if(!ts.isCallExpression(call)||!ts.isIdentifier(call.expression)||call.expression.text!=='h')return false;
+  const attrs=call.arguments[1];
+  return ts.isObjectLiteralExpression(attrs)&&attrs.properties.some(p=>
+   ts.isPropertyAssignment(p)&&p.name.getText(app)==='className'&&
+   p.initializer.getText(app)==="'"+label+"'");
+ };
+ const children=Array.from(returned.expression.arguments).slice(2);
+ const indexMain=children.findIndex(node=>mainClass(node,'u1-main-grid'));
+ const indexDetail=children.findIndex(node=>mainClass(node,'u1-detail-grid'));
+ assert(indexMain>=0&&indexDetail>indexMain,'Main and detail grids must be separate root-level siblings');
+ const d05=ts.createSourceFile('src/d05-movements.ts',read('src/d05-movements.ts'),
+  ts.ScriptTarget.ES2019,true,ts.ScriptKind.TS);
+ let resultGrid=null;
+ function locate(node){
+  if(ts.isVariableDeclaration(node)&&node.name.getText(d05)==='resultGrid')resultGrid=node.initializer;
+  ts.forEachChild(node,locate);
+ }
+ locate(d05);
+ assert(resultGrid&&ts.isCallExpression(resultGrid),'D05 resultGrid h() exists');
+ assert.equal(resultGrid.arguments.length,4,'Result grid must contain category results and empty-state');
+ assert(ts.isConditionalExpression(resultGrid.arguments[3]),
+  'D05 empty-state must be rendered within the result grid');
+});
