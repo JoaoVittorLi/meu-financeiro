@@ -374,7 +374,7 @@ function intelligencePremiumBudgetChart(c:any){
      h('span',{className:b.percentage>=100?'is-over':'',style:{width:Math.min(100,Math.max(0,b.percentage))+'%'}})):null)));
 }
 function renderIntelligencePremiumToday(app:any){
- return renderMfD03Today(app);
+ return typeof renderMfB05Today==='function'?renderMfB05Today(app):renderMfD03Today(app);
 }
 
 function renderIntelligenceAccess(app:any){
@@ -418,6 +418,13 @@ function renderIntelligenceFollowups(app:any){
     onClick:()=>intelligenceSubmitQuestion(app,q)},q,h(Icon,{name:'arrow',size:13}))));
 }
 function renderIntelligenceView(app:any){
+ if(typeof renderMfB05Main==='function'&&typeof renderMfB05Today==='function'&&
+    typeof renderMfB05Chat==='function'&&typeof renderMfB05Actions==='function')
+  return renderMfB05Main(app);
+ return renderIntelligenceViewLegacy(app);
+}
+/* Legacy renderer retained only for prior QA harnesses / compatibility. */
+function renderIntelligenceViewLegacy(app:any){
   if(app.state.workIntelligenceDemo?.enabled&&typeof renderWorkIntelligenceDemo==='function')return renderWorkIntelligenceDemo(app);
   if(typeof intelligenceEnsureHydrated==='function')intelligenceEnsureHydrated(app);
   const s=app.state,tab=['chat','today','actions'].includes(s.intelligenceMainMode)?s.intelligenceMainMode:'chat';
@@ -564,5 +571,10 @@ function renderIntelligenceSettings(app:any){
     h('div',{className:'mf-ai-setting-line'},h('span',{},'Raciocínio'),h('strong',{},'Low / Medium automático')),
     h('div',{className:'mf-ai-setting-line'},h('span',{},'Economia de tokens'),h('strong',{},'Contexto mínimo + aprovação por teste')),
     h('p',{className:'muted-desc'},'OAuth e memórias aprovadas são protegidos localmente no Windows. Nenhuma memória é enviada sem consentimento por teste. Dados bancários e sincronização de memórias no PWA continuam indisponíveis para a IA.'),
-    h('button',{type:'button',className:'outlined-action full',onClick:()=>app.navigate('intelligence')},h(Icon,{name:'spark',size:17}),'Abrir prévia da Inteligência'));
+    h('details',{className:'mf-ai-advanced-settings'},
+     h('summary',{},'Inteligência · configurações avançadas'),
+     renderIntelligenceConnection(app),renderIntelligencePrivacy(app),
+     renderIntelligenceFinancialContext(app)),
+    h('button',{type:'button',className:'outlined-action full',onClick:()=>app.navigate('intelligence')},
+     h(Icon,{name:'spark',size:17}),'Abrir Inteligência'));
 }
