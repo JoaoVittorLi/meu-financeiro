@@ -4,6 +4,7 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
+const os=require('node:os');
 const vm=require('node:vm');
 const {generate,OUTPUT}=require('../scripts/build-preload.cjs');
 const root=path.resolve(__dirname,'..');
@@ -45,6 +46,22 @@ test('sandboxed preload exposes named financeDesktop IPC methods without local r
   }
  },{filename:'electron/preload-bundled.cjs',timeout:2000});
  assert(exposed&&Object.isFrozen(exposed));
+ // Check complete API equivalence, so no D01–D05/I2 method vanishes
+ // from the sandbox bundle despite compiling successfully.
+ let original=null;
+ const raw=fs.readFileSync(path.join(root,'electron/preload.cjs'),'utf8');
+ vm.runInNewContext(raw,{require:name=>{
+  if(name==='electron')return {
+   contextBridge:{exposeInMainWorld:(label,api)=>{assert.equal(label,'financeDesktop');original=api;}},
+   ipcRenderer:electron.ipcRenderer
+  };
+  if(name==='./d05-preload-bridge.cjs')
+   return require('../electron/d05-preload-bridge.cjs');
+  throw Error('Unexpected preload dependency: '+name);
+ }},{filename:'electron/preload.cjs',timeout:2000});
+ assert(original&&Object.isFrozen(original));
+ assert.deepEqual(Object.keys(exposed),Object.keys(original));
+ assert.equal(Object.keys(exposed).filter(key=>key.startsWith('d05')).length,26);
  assert.equal(typeof exposed.info,'function');
  assert.equal(typeof exposed.d05Catalog,'function');
  assert.equal(typeof exposed.d05PersonalWriteConfirm,'function');
@@ -57,4 +74,30 @@ test('sandboxed preload exposes named financeDesktop IPC methods without local r
  assert.equal(calls.at(-1).input.sessionToken,'SYNTHETIC_TEST_GRANT');
  await exposed.info();
  assert.equal(calls.at(-1).channel,'finance:info');
+});
+
+test('generated sandbox preload and 67 D05 glyphs survive real ASAR packaging byte-for-byte',async()=>{
+ const {createPackage,extractFile}=await import('@electron/asar');
+ const packageConfig=require('../package.json');
+ const files=packageConfig.build?.files||[];
+ assert(files.includes('electron/**/*'),'Windows package must include generated preload');
+ assert(files.includes('shared/**/*'),'Windows package must include local SVG registry');
+ assert.equal(packageConfig.build.asar,true);
+ const temp=fs.mkdtempSync(path.join(os.tmpdir(),'mf-q1-preload-asar-'));
+ const stage=path.join(temp,'staging'),archive=path.join(temp,'app.asar');
+ try{
+  for(const directory of ['electron','shared'])
+   fs.mkdirSync(path.join(stage,directory),{recursive:true});
+  const expected=generate(root);
+  const disk=fs.readFileSync(path.join(root,OUTPUT),'utf8');
+  assert.equal(disk,expected,'Compile must generate the Windows preload');
+  fs.writeFileSync(path.join(stage,OUTPUT),disk);
+  fs.copyFileSync(path.join(root,'shared/d05-svg-registry.json'),
+   path.join(stage,'shared/d05-svg-registry.json'));
+  fs.writeFileSync(path.join(stage,'package.json'),JSON.stringify({main:'electron/main.cjs'}));
+  await createPackage(stage,archive);
+  assert.equal(extractFile(archive,OUTPUT).toString('utf8'),expected);
+  const registry=JSON.parse(extractFile(archive,'shared/d05-svg-registry.json').toString('utf8'));
+  assert.equal(Object.keys(registry.glyphs).length,67);
+ }finally{fs.rmSync(temp,{recursive:true,force:true});}
 });
