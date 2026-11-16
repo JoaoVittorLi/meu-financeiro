@@ -9,11 +9,16 @@ class D05Movements extends React.Component<any,any> {
  private stateCursor=0;
  private refCursor=0;
  private alive=false;
+ // App owns the existing detail drawer; this component owns the ONLY D05 picker.
+ // A ref-based, instance-local command keeps the drawer in place without an
+ // event bus, duplicate catalog or a second legacy category writer.
+ openFromDetail:((origin:'bank'|'manual',raw:any,trigger:HTMLElement)=>boolean)|null=null;
+ identityForDetail:((origin:'bank'|'manual',raw:any)=>{categoryId:string;subcategoryId:string|null}|null)|null=null;
  constructor(props:any){super(props);this.state={renderVersion:0};}
  componentDidMount(){this.alive=true;this.flushEffects();}
  componentDidUpdate(){this.flushEffects();}
  componentWillUnmount(){
-  this.alive=false;
+  this.alive=false;this.openFromDetail=null;this.identityForDetail=null;
   for(const item of this.registered)if(typeof item?.cleanup==='function')item.cleanup();
  }
  private flushEffects(){
@@ -104,6 +109,12 @@ class D05Movements extends React.Component<any,any> {
    account:'Adicionado por você',accountId:'',status:'MANUAL',reviewed:false};
  });
  const rows=realBank.concat(realManual);
+ this.identityForDetail=(origin,raw)=>{
+  if(!raw)return null;
+  const row=rows.find((r:any)=>r.source===origin&&r.id===raw.id&&
+   (origin!=='bank'||r.accountId===raw.accountId));
+  return row?{categoryId:row.categoryId,subcategoryId:row.subcategoryId}:null;
+ };
  const refreshHierarchy=async()=>{
   if(!bridge?.d05Catalog){setLoadState('unavailable');setAccessMessage('A hierarquia D05 ainda não está conectada pelo processo principal. Consultas legadas disponíveis; classificação bancária por subcategoria bloqueada.');return;}
   const req=++refreshId.current;
@@ -151,12 +162,8 @@ class D05Movements extends React.Component<any,any> {
    event.preventDefault();event.stopPropagation();setPicker(null);setReview(null);setManual(null);setPreview(null);
    (activeTrigger.current as any)?.focus?.();
   }};
-  const onScroll=(event:any)=>{if(picker&&event.target!==modalRef.current&&!modalRef.current?.contains(event.target)&&!busy){
-    setPicker(null);setPreview(null);(activeTrigger.current as any)?.focus?.();
-  }};
   window.addEventListener('keydown',onKey,true);
-  window.addEventListener('scroll',onScroll,true);
-  return ()=>{window.removeEventListener('keydown',onKey,true);window.removeEventListener('scroll',onScroll,true);};
+  return ()=>{window.removeEventListener('keydown',onKey,true);};
  },[picker,review,manual,busy]);
  useEffect(()=>{if((picker||review||manual)&&modalRef.current)modalRef.current.querySelector('input,button')?.focus();},[picker?.phase,review?.id,manual!==null]);
  useEffect(()=>{if(!picker&&!review&&!manual)activeTrigger.current?.focus?.();},
@@ -200,15 +207,31 @@ class D05Movements extends React.Component<any,any> {
  }
  const partial=state.mode==='real'&&!!state.bank.data.truncated;
  const openPicker=(event:any,row:any=null,kindName:string='row')=>{
-  activeTrigger.current=event.currentTarget;
-  const rect=event.currentTarget.getBoundingClientRect();
+  const trigger=event?.currentTarget;
+  if(!trigger?.getBoundingClientRect||busy)return;
+  activeTrigger.current=trigger;
+  const rect=trigger.getBoundingClientRect();
   const old=row?byId(row.categoryId):null;
-  const popupWidth=Math.min(355,window.innerWidth-24);
+  const popupWidth=Math.min(window.innerWidth-24,
+   window.innerWidth>=1250?730:window.innerWidth>=800?620:460);
   const left=Math.max(12,Math.min(rect.left,window.innerWidth-popupWidth-12));
-  const top=Math.max(12,Math.min(rect.bottom+7,window.innerHeight-465));
+  const estimatedHeight=Math.min(610,window.innerHeight-24);
+  const top=Math.max(12,Math.min(
+    rect.bottom+estimatedHeight+7<=window.innerHeight?rect.bottom+7:
+    Math.max(12,rect.top-estimatedHeight-7),window.innerHeight-estimatedHeight-12));
   setError('');setPreview(null);
   setPicker({kind:kindName,row,phase:'parent',query:'',categoryId:old?.id||null,
    subcategoryId:row?.subcategoryId||null,left,top,width:popupWidth});
+ };
+ // App calls the same picker instance for the row and the drawer. Identity
+ // uses the original source + account + id, never merchant description alone.
+ this.openFromDetail=(origin,raw,trigger)=>{
+  if(!trigger||!raw||!this.alive)return false;
+  const row=rows.find((r:any)=>r.source===origin&&r.id===raw.id&&
+   (origin!=='bank'||r.accountId===raw.accountId));
+  if(!row)return false;
+  openPicker({currentTarget:trigger},row,'drawer');
+  return true;
  };
  const setParent=(p:any)=>{
   setPreview(null);setError('');
@@ -239,7 +262,12 @@ class D05Movements extends React.Component<any,any> {
     setPicker((old:any)=>({...old,phase:'batch-verify'}));
    }else if(picker.row?.source==='manual'){
     const tx=picker.row,existing=state.data.transactions.find((t:any)=>t.id===tx.id);
-    if(!existing)throw Error('Lançamento desatualizado: atualize o histórico');
+    if(!existing||existing.amount!==Math.abs(tx.amount)||
+       existing.kind!==tx.kind||existing.date!==tx.date||
+       existing.category!==tx.category||
+       (existing.categoryId||'')!==(tx.raw.categoryId||'')||
+       (existing.subcategoryId||null)!==(tx.raw.subcategoryId||null))
+      throw Error('Lançamento alterado: feche a prévia e confira a classificação antes de salvar');
     const parent=byId(destination.categoryId);
     if(!parent)throw Error('Categoria não encontrada');
     if(!bridge?.save)throw Error('Persistência manual indisponível neste ambiente');
@@ -266,7 +294,9 @@ class D05Movements extends React.Component<any,any> {
        proposed?.after?.subcategoryId!==destination.subcategoryId)
      throw Error('Prévia supervisionada inválida; nenhuma alteração foi feita');
     setPreview(proposed);
-    setPicker(null);
+    // Keep the disabled personal preview visible even when opened from
+    // the drawer. No Main confirmation is attempted for real bank writes.
+    setPicker((old:any)=>({...old,phase:'personal-preview'}));
     setNotice('Prévia conferida: '+String(proposed.before?.[0]?.row?.category||tx.category)+
      ' → '+labelTarget(destination.categoryId,destination.subcategoryId)+
      '. A gravação pessoal será liberada somente após homologação e aprovação.');
@@ -334,18 +364,31 @@ class D05Movements extends React.Component<any,any> {
     style:{left:Math.max(12,Math.min(left,window.innerWidth-width-12)),top:Math.max(12,Math.min(top,window.innerHeight-130)),width:Math.min(width,window.innerWidth-24)}},
     body)),document.body);
  };
- const categoryGrid=(selectedId:string,onSelect:(p:any)=>void,searchText:string)=>h('div',{className:'d05-catalog-grid',role:'group','aria-label':'Categorias principais'},
-  parents.filter((p:any)=>folded(p.name).includes(folded(searchText))).map((p:any)=>h('button',{key:p.id,type:'button',
-   className:'d05-catalog-choice '+(p.id===selectedId?'is-current':''),
-   'aria-pressed':p.id===selectedId,onClick:()=>onSelect(p)},
-   h(D05VectorIcon,{iconKey:p.iconKey,hue:p.hue,size:20}),h('span',{},p.name))));
+ const categoryGrid=(selectedId:string,onSelect:(p:any)=>void,searchText:string)=>h('div',{className:'d05-catalog-grid',role:'group','aria-label':'Categorias principais e subcategorias encontradas'},
+  parents.flatMap((p:any)=>{
+   const q=folded(searchText.trim());
+   const showParent=!q||folded(p.name).includes(q);
+   const children=q?(p.subcategories||[]).filter((child:any)=>folded(child.name).includes(q)):[];
+   const items:any[]=[];
+   if(showParent)items.push(h('button',{key:p.id,type:'button',
+    className:'d05-catalog-choice '+(p.id===selectedId?'is-current':''),
+    'aria-pressed':p.id===selectedId,onClick:()=>onSelect(p)},
+    h(D05VectorIcon,{iconKey:p.iconKey,hue:p.hue,size:20}),h('span',{},p.name)));
+   if(picker&&children.length)for(const child of children)items.push(
+    h('button',{type:'button',key:child.id,className:'d05-catalog-choice d05-found-child',
+      onClick:()=>{setPreview(null);setError('');setPicker((old:any)=>({...old,
+       categoryId:p.id,subcategoryId:child.id,phase:'confirm'}));}},
+     h(D05VectorIcon,{iconKey:child.iconKey,hue:child.hue,size:20}),
+     h('span',{},h('small',{},p.name+' ›'),child.name)));
+   return items;
+  }));
  const chooser=picker?(()=>{
   const parent=byId(picker.categoryId),children=parent?.subcategories||[];
   return portal(h('div',{className:'d05-picker'},
    h('header',{className:'d05-floating-head'},h('div',{},h('small',{},'CLASSIFICAÇÃO'),h('h3',{},picker.kind==='batch'?'Classificar seleção':'Categoria da movimentação')),
     h('button',{type:'button','aria-label':'Cancelar classificação',onClick:()=>{setPicker(null);setPreview(null);}},'×')),
    picker.phase==='parent'?h('div',{},
-    h('input',{className:'d05-search',autoFocus:true,value:picker.query,placeholder:'Buscar categoria',onChange:(e:any)=>setPicker({...picker,query:e.target.value})}),
+    h('input',{className:'d05-search',autoFocus:true,value:picker.query,placeholder:'Buscar categoria ou subcategoria',onChange:(e:any)=>setPicker({...picker,query:e.target.value})}),
     categoryGrid(picker.categoryId,setParent,picker.query)):
    picker.phase==='child'?h('div',{},
     h('button',{className:'d05-back',onClick:()=>setPicker({...picker,phase:'parent'})},'← Categorias'),
@@ -355,6 +398,11 @@ class D05Movements extends React.Component<any,any> {
        h(D05VectorIcon,{iconKey:parent?.iconKey,hue:parent?.hue}), 'Somente '+parent?.name),
       children.map((child:any)=>h('button',{type:'button',className:'d05-child',key:child.id,onClick:()=>setDestination(child)},
        h(D05VectorIcon,{iconKey:child.iconKey,hue:child.hue}),child.name)))):
+   picker.phase==='personal-preview'?h('div',{className:'d05-confirm-step',role:'status'},
+    h('p',{},'Antes: ',h('strong',{},String(preview?.before?.[0]?.row?.category||picker.row?.category||'Categoria atual'))),
+    h('p',{},'Depois: ',h('strong',{},labelTarget(picker.categoryId,picker.subcategoryId))),
+    h('p',{className:'d05-message'},'A classificação bancária pessoal ainda não está homologada. Nenhum dado foi alterado.'),
+    h('button',{type:'button',className:'d05-back',onClick:()=>{setPicker(null);setPreview(null);}},'Fechar sem alterar')) :
    picker.phase==='batch-verify'?h('div',{},
     h('p',{},'Confirme novamente as ',h('strong',{},preview?.count||0),' movimentações afetadas.'),
     h('p',{className:'d05-picker-caption'},'Destino: '+labelTarget(picker.categoryId,picker.subcategoryId)),
@@ -477,17 +525,21 @@ class D05Movements extends React.Component<any,any> {
        onClick:()=>{const next=new Set(selected);if(next.has(r.key))next.delete(r.key);else next.add(r.key);setSelected(next);setPicker(null);setPreview(null);}},
        h('span',{'aria-hidden':'true'},isSelected?'✓':'')),
       h('button',{type:'button',className:'d05-row-icon','aria-label':'Alterar categoria de '+r.merchant,
-       onClick:(e:any)=>openPicker(e,r)},
+       onClick:(e:any)=>{e.stopPropagation();openPicker(e,r);}},
        h(D05VectorIcon,{iconKey:icon.iconKey,hue:icon.hue,size:23})),
       h('div',{className:'d05-row-info'},
        h('div',{className:'d05-merchant-line'},
-        h('button',{type:'button',className:'d05-merchant',onClick:()=>r.source==='bank'?host.openBankDetail(r.raw):host.openManualDetail(r.raw)},r.merchant),
+        h('button',{type:'button',className:'d05-merchant',onClick:(e:any)=>{e.stopPropagation();
+         r.source==='bank'?host.openBankDetail(r.raw):host.openManualDetail(r.raw);}},r.merchant),
         isReview?h('button',{type:'button',className:'d05-review-dot','aria-label':'Conferir movimentação '+r.merchant,
-         title:'A conferir',onClick:(e:any)=>{activeTrigger.current=e.currentTarget;setError('');setReview(r);}},h('span',{'aria-hidden':'true'})):null,
+         title:'A conferir',onClick:(e:any)=>{e.stopPropagation();activeTrigger.current=e.currentTarget;setError('');setReview(r);}},h('span',{'aria-hidden':'true'})):null,
         r.source==='bank'&&r.status==='PENDING'?h('span',{className:'d05-pending',title:'Em processamento','aria-label':'Em processamento'},h(D05VectorIcon,{iconKey:'clock-3',hue:37,size:16})):null),
-       h('small',{},r.account+' · '+(p?.name||r.category)+(child?' › '+child.name:''),
+       h('button',{type:'button',className:'d05-row-body','aria-label':'Abrir detalhes de '+r.merchant,
+        onClick:()=>r.source==='bank'?host.openBankDetail(r.raw):host.openManualDetail(r.raw)},
+        r.account+' · '+(p?.name||r.category)+(child?' › '+child.name:''),
         r.source==='manual'?' · Manual':''),
-       r.merchant!==r.description?h('small',{className:'d05-desc'},r.description):null),
+       r.merchant!==r.description?h('button',{type:'button',className:'d05-row-body d05-desc',
+       onClick:()=>r.source==='bank'?host.openBankDetail(r.raw):host.openManualDetail(r.raw)},r.description):null),
       h('div',{className:'d05-row-end'},
        h('strong',{className:'d05-amount '+signed},(r.amount>=0?'+':'−')+format(Math.abs(r.amount))),
        r.kind==='transfer'||r.kind==='ignore'?h('small',{},r.kind==='transfer'?'Transferência':'Desconsiderada'):null)
