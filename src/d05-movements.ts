@@ -74,6 +74,7 @@ class D05Movements extends React.Component<any,any> {
  const [busy,setBusy]=useState(false);
  const [error,setError]=useState('');
  const [notice,setNotice]=useState('');
+ const [confirmedIdentity,setConfirmedIdentity]=useState(null as any);
  const activeTrigger=useRef(null as any);
  const modalRef=useRef(null as any);
  const refreshId=useRef(0);
@@ -207,7 +208,7 @@ class D05Movements extends React.Component<any,any> {
   const geometry=qa84B04Geometry(trigger.getBoundingClientRect(),
    {width:window.innerWidth,height:window.innerHeight});
   const old=row?byId(row.categoryId):null;
-  setError('');setNotice('');setPreview(null);
+  setError('');setNotice('');setConfirmedIdentity(null);setPreview(null);
   setPicker({kind:kindName,row,phase:'parent',query:'',categoryId:old?.id||null,
    subcategoryId:row?.subcategoryId||null,...geometry,
    originalFingerprint:qa84B04Fingerprint(row),
@@ -345,6 +346,10 @@ class D05Movements extends React.Component<any,any> {
    const item=verified?.transactions?.find((t:any)=>t.id===preview.id);
    if(item?.categoryId!==preview.after.categoryId||item?.subcategoryId!==preview.after.subcategoryId)
     throw Error('Recibo não confirmado: releia os dados antes de prosseguir');
+   // Render a receipt with the SAME approved ID-based SVG/hue as list and drawer,
+   // and only after the canonical SQLite readback confirms persistence.
+   setConfirmedIdentity(qa84B03Visual({categoryId:item.categoryId,
+    subcategoryId:item.subcategoryId,categoryName:item.category},parents));
    setNotice('Classificação de demonstração confirmada no SQLite.');
    setPreview(null);setPicker(null);await refreshHierarchy();
   }catch(e:any){setError('Gravação não confirmada: '+String(e?.message||e));}
@@ -532,7 +537,10 @@ class D05Movements extends React.Component<any,any> {
   state.booting?h('p',{className:'d05-notice',role:'status'},'Carregando dados financeiros…'):null,
   loadState==='loading'&&bridge?.d05Catalog?h('p',{className:'d05-notice',role:'status'},'Conferindo hierarquia D05…'):null,
   loadState!=='ready'&&loadState!=='loading'?h('p',{className:'d05-notice',role:'status'},accessMessage):null,
-  notice?h('p',{className:'d05-notice',role:'status'},notice):null,
+  notice?h('p',{className:'d05-notice',role:'status'},
+   confirmedIdentity?h(D05VectorIcon,{iconKey:confirmedIdentity.iconKey,
+    hue:confirmedIdentity.hue,size:17}):null,
+   confirmedIdentity?confirmedIdentity.label+' · ':null,notice):null,
   h('div',{className:'d05-metrics'},
    [{name:'Entradas confirmadas',value:format(income),tone:'positive',note:'No escopo selecionado'},
     {name:'Saídas confirmadas',value:format(expense),tone:'negative',note:'Sem pendentes'},
