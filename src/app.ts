@@ -643,6 +643,7 @@ class App extends React.Component<any,State>{
    if(this.state.detail){this.setState({detail:null});return;}
    if(this.state.planOpen){this.setState({planOpen:false});return;}
    if(this.state.editModal){this.setState({editModal:null});return;}
+   if(this.state.page==='budgets'&&this.state.qa84BudgetDrill){event.preventDefault();qa84BudgetReturn(this,!!this.state.qa84BudgetDrill.showChild);return;}
    if(this.state.showEntry)this.setState({showEntry:false});
  };
  maybeAutoSync(bank:BankState=this.state.bank){
