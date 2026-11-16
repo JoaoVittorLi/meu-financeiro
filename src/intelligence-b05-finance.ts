@@ -5,8 +5,10 @@ function mfB05Money(cents) {
  return Number.isSafeInteger(cents)?new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(cents/100):'—';
 }
 function mfB05IsoDate(value) {
- return typeof value==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(value)&&
-  !Number.isNaN(Date.parse(value+'T12:00:00Z'))?value:null;
+ if(typeof value!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(value))return null;
+ const date=new Date(value+'T12:00:00Z');
+ // Date.parse normalizes impossible days (e.g. Feb 30) rather than rejecting.
+ return Number.isFinite(date.getTime())&&date.toISOString().slice(0,10)===value?value:null;
 }
 function mfB05SafeCents(value) {
  return Number.isSafeInteger(value)&&value>=0?value:null;
@@ -36,7 +38,8 @@ function mfB05Events(value,asOf,end,label) {
 }
 function mfB05Project(input) {
  if(!input||input.coverage!=='verified'||!mfB05IsoDate(input.asOf)||
-   !mfB05IsoDate(input.period?.to)||input.period.to<input.asOf)
+   !mfB05IsoDate(input.period?.from)||!mfB05IsoDate(input.period?.to)||
+   input.period.from>input.asOf||input.period.to<input.asOf)
   return mfB05Unavailable('Fonte, período ou cobertura da projeção não verificados.');
  const baseline=mfB05VerifiedNumber(input.availableBalance);
  if(baseline===null)return mfB05Unavailable('Saldo disponível verificado não fornecido pelo serviço atual.');
@@ -48,6 +51,8 @@ function mfB05Project(input) {
   if(!c||typeof c.id!=='string'||!c.id||!mfB05IsoDate(c.due)||
     mfB05SafeCents(c.amountCents)===null)
    return mfB05Unavailable('Compromisso futuro inválido ou sem identificador.');
+  if(!['scheduled_unpaid','posted','paid','cancelled'].includes(c.status))
+   return mfB05Unavailable('Status de compromisso não verificável para projeção.');
   const signature=c.due+'|'+c.amountCents+'|'+c.status;
   if(seen.has(c.id)){if(seen.get(c.id)!==signature)return mfB05Unavailable('Compromissos com IDs conflitantes.');continue;}
   seen.set(c.id,signature);
