@@ -10,6 +10,7 @@ const visual=read('src/d05-visual-assets.ts'),adapter=read('src/qa84-b03-b04-bri
 const renderer=read('src/d05-movements.ts');
 const compiled=transpile(visual,'d05-visual-assets.ts')+'\n'+transpile(adapter,'qa84-b03-b04-bridge.ts')+
  '\n'+transpile(renderer,'d05-movements.ts')+'\nthis.Component=D05Movements;'+
+ 'this.D05_APPROVED_PARENTS=D05_APPROVED_PARENTS;'+
  'this.search=qa84B04Search;this.geometry=qa84B04Geometry;this.identity=qa84B03Visual;';
 function flat(node,out=[]){
  if(node==null||node===false)return out;
