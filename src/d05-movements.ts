@@ -275,11 +275,25 @@ class D05Movements extends React.Component<any,any> {
     const current=rows.find((r:any)=>r.key===tx.key);
     if(!current||qa84B04Fingerprint(current)!==picker.originalFingerprint)
      throw Error('Movimentação alterada; nova prévia necessária');
-    setPreview({type:'manual',profile:state.mode,id:tx.id,source:tx.source,
+    if(state.mode==='real'){
+     if(!bridge?.d05PersonalWritePreview)
+      throw Error('Gateway de prévia supervisionada indisponível');
+     const proposed=await bridge.d05PersonalWritePreview({action:'manual.categorize',
+      profile:'real',id:tx.id,target:destination});
+     if(proposed?.contract!=='D05/PERSONAL-SUPERVISED-PREVIEW-V1'||
+        proposed?.changesApplied!==false||proposed?.after?.categoryId!==destination.categoryId||
+        proposed?.after?.subcategoryId!==destination.subcategoryId)
+      throw Error('Prévia supervisionada não validada');
+     setPreview(proposed);
+     setPicker((old:any)=>({...old,phase:'personal-locked'}));
+     setNotice('Prévia financeira validada; confirmação pessoal ainda indisponível.');
+    }else{
+     setPreview({type:'manual',profile:state.mode,id:tx.id,source:tx.source,
       before:{categoryId:tx.categoryId,subcategoryId:tx.subcategoryId,category:tx.category},
       after:destination,parentName:parent.name,fingerprint:picker.originalFingerprint,
       amount:tx.amount,date:tx.date,changesApplied:false});
-    setPicker((old:any)=>({...old,phase:'manual-verify'}));
+     setPicker((old:any)=>({...old,phase:'manual-verify'}));
+    }
    }else if(picker.row?.source==='bank'){
     if(!bridge?.d05AssignBank)throw Error('Classificação bancária D05 indisponível: autorização MAIN/preload pendente');
     const tx=picker.row,current=state.bank.data.transactions.find((t:any)=>t.id===tx.id&&t.accountId===tx.accountId);
