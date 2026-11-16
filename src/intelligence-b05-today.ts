@@ -219,7 +219,7 @@ function mfB05DeliveryDiagnostic(app,comparison) {
   h('button',{type:'button',className:'mf-b05-link',onClick:()=>mfB05ChangeMode(app,'actions')},
    'Examinar Plano de Ação'));
 }
-function renderMfB05Today(app,explicitVerifiedInput) {
+function renderMfB05Today(app,explicitVerifiedInput?:any) {
  const s=app.state,signature=intelligencePremiumSignature(app),
   report=s.intelligencePremiumSignature===signature?s.intelligencePremiumReport:null,
   live=mfD03EligibleReport(report,app),
