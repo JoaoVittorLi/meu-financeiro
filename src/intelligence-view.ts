@@ -399,23 +399,38 @@ function renderIntelligenceComposer(app:any,drawer=false){
    h('button',{type:'submit',className:'primary-button',disabled:!draft.trim()||session.busy||session.expired},session.busy?'Consultando…':'Enviar',h(Icon,{name:'arrow',size:16}))));
 }
 function renderIntelligenceFollowups(app:any){
- const session=intelligenceChatSession(app);
- const scope=intelligenceContextFor(app.state.intelligenceContext||app.state.page);
- const answered=new Set(intelligenceHistoryList(app).filter(m=>m.role==='user')
+ const session=intelligenceChatSession(app),state=app.state,history=intelligenceHistoryList(app);
+ const answered=new Set(history.filter(m=>m.role==='user')
   .map(m=>String(m.text||'').trim().toLocaleLowerCase('pt-BR')));
- const candidates=app.state.categoryReviewGrant?
-  ['Quais regras são recomendadas?','Que movimentações preciso revisar?']:
-  (app.state.localFinancialAccess?.token?[
-    'Quais foram minhas maiores despesas?',
-    'Quais despesas aumentaram?',
-    'Que movimentações preciso revisar?']:(scope.questions||[]));
- const available=candidates.filter(q=>!answered.has(q.toLocaleLowerCase('pt-BR')))
-   .filter(q=>app.state.categoryReviewGrant||app.state.localFinancialAccess?.token||
-     (!/minhas|meus|foram|minha renda/i.test(q))).slice(0,2);
+ const grant=state.localFinancialAccess;
+ const live=!!grant?.token&&grant.expiresAt>Date.now()&&grant.profile===state.mode;
+ const review=!!state.categoryReviewGrant?.token&&state.categoryReviewGrant.expiresAt>Date.now();
+ const report=state.intelligencePremiumSignature===intelligencePremiumSignature(app)?
+  state.intelligencePremiumReport:null;
+ const signals=typeof mfD03EligibleReport==='function'&&
+  mfD03EligibleReport(report,app)?mfD03Signals(report,app):[];
+ const sourceQuestions=[];
+ if(live){
+  for(const signal of signals){
+   if(signal.kind==='budget')sourceQuestions.push('Quais categorias ultrapassaram o orçamento?');
+   if(signal.kind==='commitment')sourceQuestions.push('Quanto tenho comprometido para o próximo mês?');
+   if(signal.kind==='review')sourceQuestions.push('Que movimentações preciso revisar?');
+  }
+  const latest=history.filter(m=>m.role==='assistant'&&m.status==='done').slice(-1)[0];
+  if(latest&&/alimentação|alimentacao/i.test(latest.text))
+   sourceQuestions.push('Quanto gastei com alimentação neste mês?');
+ }
+ if(review)sourceQuestions.push('Que movimentações preciso revisar?');
+ const scope=intelligenceContextFor(state.intelligenceContext||state.page);
+ const fallbacks=live?['Quais foram minhas maiores despesas?','Quais despesas aumentaram?',
+  'Que movimentações preciso revisar?']:scope.questions||[];
+ const candidates=[...new Set([...sourceQuestions,...fallbacks])];
+ const available=candidates.filter(q=>!answered.has(q.trim().toLocaleLowerCase('pt-BR')))
+  .filter(q=>live||review||!/minhas|meus|foram|minha renda|comprometido/i.test(q)).slice(0,3);
  if(!available.length)return null;
  return h('div',{className:'mf-chat-followups','aria-label':'Continuar a análise'},
   ...available.map(q=>h('button',{type:'button',key:q,disabled:session.busy||session.expired,
-    onClick:()=>intelligenceSubmitQuestion(app,q)},q,h(Icon,{name:'arrow',size:13}))));
+   onClick:()=>void intelligenceSubmitQuestion(app,q)},q,h(Icon,{name:'arrow',size:13}))));
 }
 function renderIntelligenceView(app:any){
  if(typeof renderMfB05Main==='function'&&typeof renderMfB05Today==='function'&&
