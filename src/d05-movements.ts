@@ -251,23 +251,35 @@ class D05Movements extends React.Component<any,any> {
     if(!bridge?.d05BankBatchPreview||!bridge?.d05BankBatchApply)
      throw Error('Classificação em lote D05 indisponível: integração segura MAIN/preload pendente');
     const ids=Array.from(selected).map((key:string)=>rows.find((r:any)=>r.key===key)).filter((r:any)=>r?.source==='bank');
-    if(ids.length!==selected.size||!ids.length)throw Error('Seleção incompatível ou vazia');
+    if(ids.length!==selected.size||!ids.length||JSON.stringify(Array.from(selected).sort())!==picker.selectionSignature)
+     throw Error('Seleção alterada; inicie outra prévia');
     const items=ids.map((r:any)=>({accountId:r.accountId,externalId:r.id}));
     const data=await bridge.d05BankBatchPreview({items,target:destination});
-    if(!data?.previewVersion||data.count!==items.length)throw Error('Prévia de lote inválida');
-    setPreview({...data,items,rows:ids,destination});
+    if(data?.contract!=='D05/BANK-BATCH-PREVIEW-V1'||!data?.previewVersion||
+       data.count!==items.length)throw Error('Prévia de lote inválida');
+    if(picker.selectionSignature!==JSON.stringify(Array.from(selected).sort()))
+     throw Error('A seleção mudou durante a prévia');
+    setPreview({...data,items,rows:ids,destination,
+     fingerprints:ids.map((r:any)=>qa84B04Fingerprint(r)),
+     selectionSignature:picker.selectionSignature,
+     totalCents:ids.reduce((sum:number,r:any)=>sum+Math.abs(r.amount),0)});
     setPicker((old:any)=>({...old,phase:'batch-verify'}));
    }else if(picker.row?.source==='manual'){
     const tx=picker.row,existing=state.data.transactions.find((t:any)=>t.id===tx.id);
-    if(!existing)throw Error('Lançamento desatualizado: atualize o histórico');
+    if(!existing||state.mode!==host.state.mode)
+     throw Error('Lançamento desatualizado: atualize o histórico');
     const parent=byId(destination.categoryId);
-    if(!parent)throw Error('Categoria não encontrada');
-    if(!bridge?.save)throw Error('Persistência manual indisponível neste ambiente');
-    const data={...state.data,transactions:state.data.transactions.map((t:any)=>t.id===tx.id?{
-      ...t,category:parent.name,categoryId:destination.categoryId,subcategoryId:destination.subcategoryId}:t)};
-    const saved=await host.updateData(data,'Classificação manual salva.');
-    if(!saved)throw Error('Não foi possível persistir a classificação manual');
-    setPicker(null);await refreshHierarchy();
+    if(!parent||destination.subcategoryId&&
+      !parent.subcategories?.some((s:any)=>s.id===destination.subcategoryId))
+     throw Error('Categoria/subcategoria incompatível');
+    const current=rows.find((r:any)=>r.key===tx.key);
+    if(!current||qa84B04Fingerprint(current)!==picker.originalFingerprint)
+     throw Error('Movimentação alterada; nova prévia necessária');
+    setPreview({type:'manual',profile:state.mode,id:tx.id,source:tx.source,
+      before:{categoryId:tx.categoryId,subcategoryId:tx.subcategoryId,category:tx.category},
+      after:destination,parentName:parent.name,fingerprint:picker.originalFingerprint,
+      amount:tx.amount,date:tx.date,changesApplied:false});
+    setPicker((old:any)=>({...old,phase:'manual-verify'}));
    }else if(picker.row?.source==='bank'){
     if(!bridge?.d05AssignBank)throw Error('Classificação bancária D05 indisponível: autorização MAIN/preload pendente');
     const tx=picker.row,current=state.bank.data.transactions.find((t:any)=>t.id===tx.id&&t.accountId===tx.accountId);
@@ -286,22 +298,57 @@ class D05Movements extends React.Component<any,any> {
        proposed?.after?.subcategoryId!==destination.subcategoryId)
      throw Error('Prévia supervisionada inválida; nenhuma alteração foi feita');
     setPreview(proposed);
-    setPicker(null);
-    setNotice('Prévia conferida: '+String(proposed.before?.[0]?.row?.category||tx.category)+
-     ' → '+labelTarget(destination.categoryId,destination.subcategoryId)+
-     '. A gravação pessoal será liberada somente após homologação e aprovação.');
+    setPicker((old:any)=>({...old,phase:'personal-locked'}));
+    setNotice('Prévia supervisionada conferida. A gravação pessoal permanece bloqueada até homologação.');
 
    }
   }catch(e:any){setError(String(e?.message||e));}
   finally{setBusy(false);}
  };
+ const commitManual=async()=>{
+  if(!picker||picker.phase!=='manual-verify'||preview?.type!=='manual'||busy)return;
+  if(state.mode!=='demo'||preview.profile!=='demo'){
+   setError('Gravação pessoal ainda não homologada. Prévia somente para consulta.');return;
+  }
+  const tx=state.data.transactions.find((t:any)=>t.id===preview.id);
+  const current=rows.find((r:any)=>r.source==='manual'&&r.id===preview.id);
+  if(!tx||!current||qa84B04Fingerprint(current)!==preview.fingerprint||
+     preview.id!==picker.row?.id||picker.originalFingerprint!==preview.fingerprint){
+   setError('Movimentação modificada; prepare outra prévia.');return;
+  }
+  const parent=byId(preview.after.categoryId);
+  if(!parent||preview.after.subcategoryId&&!parent.subcategories?.some((s:any)=>s.id===preview.after.subcategoryId)){
+   setError('Categoria/subcategoria não existe mais.');return;
+  }
+  setBusy(true);setError('');
+  try{
+   if(!bridge?.save||!bridge?.load)throw Error('SQLite de demonstração indisponível');
+   const next={...state.data,transactions:state.data.transactions.map((t:any)=>t.id===preview.id?{
+    ...t,category:parent.name,categoryId:preview.after.categoryId,subcategoryId:preview.after.subcategoryId}:t)};
+   const saved=await host.updateData(next,'Classificação de demonstração salva.');
+   if(!saved)throw Error('Persistência não confirmada');
+   const verified=await bridge.load('demo');
+   const item=verified?.transactions?.find((t:any)=>t.id===preview.id);
+   if(item?.categoryId!==preview.after.categoryId||item?.subcategoryId!==preview.after.subcategoryId)
+    throw Error('Recibo não confirmado: releia os dados antes de prosseguir');
+   setNotice('Classificação de demonstração confirmada no SQLite.');
+   setPreview(null);setPicker(null);await refreshHierarchy();
+  }catch(e:any){setError('Gravação não confirmada: '+String(e?.message||e));}
+  finally{setBusy(false);}
+ };
  const commitBatch=async()=>{
   if(!picker||!preview?.previewVersion||!bridge?.d05BankBatchApply)return;
+  // The personal batch writer is intentionally NOT authorized in this RC.
+  if(state.mode!=='demo'){setError('Lote pessoal somente em prévia até homologação.');return;}
   setBusy(true);setError('');
   try{
    const ids=Array.from(selected).sort();
    const expected=preview.rows.map((r:any)=>r.key).sort();
-   if(JSON.stringify(ids)!==JSON.stringify(expected))throw Error('Seleção alterada; nova prévia necessária');
+   const fresh=preview.rows.map((r:any)=>rows.find((now:any)=>now.key===r.key));
+   if(JSON.stringify(ids)!==JSON.stringify(expected)||
+      preview.selectionSignature!==JSON.stringify(ids)||
+      fresh.some((r:any,i:number)=>!r||qa84B04Fingerprint(r)!==preview.fingerprints[i]))
+     throw Error('Seleção ou movimentação alterada; nova prévia necessária');
    const result=await bridge.d05BankBatchApply({items:preview.items,target:preview.destination,previewVersion:preview.previewVersion});
    if(result?.changed!==preview.items.length)throw Error('Recibo incompleto: verifique o histórico');
    await host.refreshBank();await refreshHierarchy();
