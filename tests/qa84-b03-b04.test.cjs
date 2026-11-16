@@ -178,6 +178,7 @@ test('B04 V2: a demo-only manual change needs two separate confirmations and rea
  assert.equal(f.calls.filter(x=>x.action==='save').length,1);
  assert.equal(f.host.state.data.transactions[0].amount,6000);
  assert.equal(f.host.state.data.transactions[0].subcategoryId,'sub:assinaturas/streaming');
+ assert.match(textOf(f.render()),/Streaming de vídeo.*Classificação de demonstração confirmada/);
  assert.equal(f.calls.some(x=>x.action==='drawer'),false);
 });
 test('B04 V2: Escape cancels only picker and restores its origin trigger',()=>{
