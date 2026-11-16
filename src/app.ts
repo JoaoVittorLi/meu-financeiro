@@ -1176,7 +1176,7 @@ class App extends React.Component<any,State>{
    const span=dateSpan(this.state.overviewPeriod,this.state.customStart,this.state.customEnd);
    const newMonth=span.end.slice(0,7),useMonth=newMonth>=nowYM&&newMonth<=shiftMonth(nowYM,12);
    const enteringPlan=target==='planning'&&this.state.page!=='planning'&&useMonth;
-   this.setState({page:target,txReviewOnly:page==='review',txOrganize:page==='categories',quickAddOpen:false,quickCategory:null,
+   this.setState({page:target,...(target==='budgets'&&pageChanged?{qa84BudgetDrill:null}:{}),txReviewOnly:page==='review',txOrganize:page==='categories',quickAddOpen:false,quickCategory:null,
       month:newMonth, ...(enteringPlan?{planMonth:newMonth,planDay:newMonth===nowYM?iso(new Date()):newMonth+'-01'}:{}),
       showEntry:false,outcome:null,simBusy:false},()=>{
        if(pageChanged)document.scrollingElement?.scrollTo({top:0,left:0,behavior:'instant' as ScrollBehavior});
