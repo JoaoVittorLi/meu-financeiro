@@ -1,13 +1,13 @@
 # Meu Financeiro 2.0 — estado atual (fonte de referência)
 
-> **Atualizado em 14/11/2026 após o Gate 1 de integração.** Este é o painel documental do PR #82 (Draft), **sem merge na main**. Antes de iniciar testes, confira o HEAD vivo do [PR #76](https://github.com/JoaoVittorLi/meu-financeiro/pull/76).  
+> **Atualizado em 16/11/2026 após P0.6 Electron 45.** Este é o painel documental do PR #82 (Draft), **sem merge na main**. Antes de iniciar testes, confira o HEAD vivo do [PR #76](https://github.com/JoaoVittorLi/meu-financeiro/pull/76).  
 > **Decisão do proprietário:** somente um EXE experimental completo, após D01–D05, I2-A/B/C/D/E, testes oficiais e autorização explícita. **CircleCI, QA Windows e build somente pelo proprietário**.
 
 ## Candidata de código integrada
 
 **PR único:** [#76 — RC-ALL-FULL](https://github.com/JoaoVittorLi/meu-financeiro/pull/76), branch `integration/mf2-rc-all-01-i2a-20261113`.
 
-**HEAD de integração publicado:** `d12a14a35910e4edf089fe6e2d3ea59f3301d177`. É um SHA fixo: revalidar antes do preflight.
+**HEAD de integração publicado:** `1bc1b89bf5bdefc0196b0851e690a99f825ca85a`. É um SHA fixo: revalidar antes do preflight.
 
 **Estado comprovado:** `D01-D05+I2-A/B/C/D/E CODE_INTEGRATED` / `UI_PARTIALLY_FUNCTIONAL` / `LINUX_NOT_RUN` / `PERSONAL_AI_WRITES_DISABLED` / `WINDOWS_NOT_RUN` / `NO_GO_EXE`.
 
@@ -55,7 +55,7 @@ O SHA 10baa5272a8bb452dc379106d143e5eae8f1b7e8 também corrige comparações V3 
 
 ## P0.5 — Colunas de transferência pessoal v6 × banco D05 v7 (11 FAIL)
 
-**HEAD para novo preflight Linux:** `d12a14a35910e4edf089fe6e2d3ea59f3301d177`, PR #76 Draft. SHA anterior com falhas reportadas: `5e244d381ccaad408cb1daf6afa42d9889b7ee08`.
+**SHA anterior P0.5, substituído pelo P0.6:** `d12a14a35910e4edf089fe6e2d3ea59f3301d177`, PR #76 Draft. SHA anterior com falhas reportadas: `5e244d381ccaad408cb1daf6afa42d9889b7ee08`.
 
 **Causa-raiz:** snapshot Electron inclui colunas físicas D05 v7, porém o validador e a transferência pessoal Cloudflare exigiam v6. A diferença começava nas 10 colunas reais de `transactions` (em vez das oito antigas), e mais cinco tabelas tinham novos IDs e campos. Erro precoce de colunas mascarava falhas específicas de hash, contagem, duplicação e tipo.
 
@@ -66,6 +66,20 @@ O SHA 10baa5272a8bb452dc379106d143e5eae8f1b7e8 também corrige comparações V3 
 **Evidências:** **17/17 layouts MATCH em conferência estática de DDL e ordem**, V8 sintático PASS em 11 arquivos, validador isolado aceitou fixture fake e negou v6/colunas incompletas/`clientSecret` (SHA **simulado nesse ensaio**, não prova hash real). Regressões adicionadas em cinco suítes reais. **Node22.23.4, `npm ci`, `test:types`, `test:db`, `compile`, proveniência/F08, ASAR, `mobile-push npm test` e novo CircleCI NOT_RUN**. **NO-GO EXE**.
 
 [Relatório P0.5 completo](https://github.com/JoaoVittorLi/meu-financeiro/blob/integration/mf2-rc-all-01-i2a-20261113/docs/ai-context/RC_ALL_FULL_PERSONAL_TRANSFER_SCHEMA_V7_HOTFIX_20261115.md) · [Issue #71](https://github.com/JoaoVittorLi/meu-financeiro/issues/71#issuecomment-6888555179).
+
+## P0.6 — Electron 45 sandbox preload e preparação para QA Windows
+
+**HEAD congelado do PR #76:** `1bc1b89bf5bdefc0196b0851e690a99f825ca85a`. Foi incorporado por fast-forward protegido o PR #83 (`aa06a24042a52eef2a5ec13ba023949391eaa2ad`), 6 arquivos, sem divergência, preservando D01–D05/I2-A/B/C/D/E. Novo teste adicional confirma equivalência de API original vs bundle e integridade byte a byte de preload/ícones no ASAR de teste.
+
+**Correção da inicialização:** `npm run compile` constrói `electron/preload-bundled.cjs` determinístico e `BrowserWindow` carrega esse arquivo com `sandbox:true`, `contextIsolation:true` e `nodeIntegration:false`; nenhum `require` local. Verificados 103 métodos públicos, dos quais 26 D05; catálogos 14×61, 67 glyphs sem referências faltantes; `build.files` inclui `electron/**/*` e `shared/**/*`.
+
+**Gates:** 806/806, F08, ASAR e preload reportados pelo proprietário para PR #83 **em Node24.22.2**, não certificam o novo HEAD no Node22.23.4. Na integração foram executadas somente inspeção GitHub, validação estática e teste isolado do preload em V8 com IPC simulado. **Node22.23.4/npm10.9.9, `npm ci`, `test:types`, `test:db`, `compile`, F08, ASAR de suíte e Windows QA NOT_RUN no SHA P0.6**. A ausência de check não é PASS. Nenhum EXE.
+
+**QA Windows aguardando autorização/proprietário:** iniciar CircleCI na branch `integration/mf2-rc-all-01-i2a-20261113`, `CIRCLE_SHA1=1bc1b89bf5bdefc0196b0851e690a99f825ca85a`, `run_preflight=false`, `run_windows_qa=true`, `run_windows_build=false`. A workflow executa `preflight_linux` obrigatoriamente antes de `qa_windows`; realiza 8 áreas × 4 presets = 32 PNG, backups/SQLite isolados e relatório visual. Artefatos em `circleci-qa-artifacts`. QA SUCCESS exige revisão visual humana antes de autorização separada de EXE.
+
+**Segurança:** RC empacotado tem `appId`/userData próprio (`MeuFinanceiro-RC-ALL-01-Experimental`), dados reais Windows/Cloud/Pluggy preservados e IA pessoal sem permissão de escrita; #74 OPEN. **READY FOR OWNER AUTHORIZED WINDOWS QA / NO-GO EXE**.
+
+[Issue #71 — P0.6](https://github.com/JoaoVittorLi/meu-financeiro/issues/71#issuecomment-6916773677) · [Issue #65 — QA](https://github.com/JoaoVittorLi/meu-financeiro/issues/65#issuecomment-6916775913)
 
 ## Matriz de frentes e evidências
 
@@ -98,7 +112,7 @@ O SHA 10baa5272a8bb452dc379106d143e5eae8f1b7e8 também corrige comparações V3 
 
 | PR | SHA |
 |---|---|
-| [#76 integração final](https://github.com/JoaoVittorLi/meu-financeiro/pull/76) | `d12a14a35910e4edf089fe6e2d3ea59f3301d177` |
+| [#76 integração final](https://github.com/JoaoVittorLi/meu-financeiro/pull/76) | `1bc1b89bf5bdefc0196b0851e690a99f825ca85a` |
 | [#81 D05](https://github.com/JoaoVittorLi/meu-financeiro/pull/81) | `316a818fcdd6a6227e3d00352de0822d1c3d5017` |
 | [#79 I2-D](https://github.com/JoaoVittorLi/meu-financeiro/pull/79) | `fd5aca036ae96ca3aef99be752a2bfdeb9750688` |
 | [#80 I2-E](https://github.com/JoaoVittorLi/meu-financeiro/pull/80) | `c56675d02f6d1b5ac9074fb9039aad3d74ff81e1` |
