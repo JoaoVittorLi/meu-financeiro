@@ -70,7 +70,7 @@ function resolveCategoryVisualIdentity(input:CategoryIdentityInput={}):CategoryV
  const label=String(visual.name||p.name||rawLabel||'Categoria');
  const kind=['income','expense','both'].includes(String(p.kind))?p.kind:'unknown';
  return Object.freeze({categoryId:String(p.id),subcategoryId:selectedChild?String(selectedChild.id):null,
-  source:custom?'custom':selectedChild?'sub':resolvedByLegacy?'legacy':'parent',
+  source:selectedChild?'sub':custom?'custom':resolvedByLegacy?'legacy':'parent',
   label,parentLabel:String(p.name||label),
   iconKey:qa84SafeIcon(visual.iconKey),hue:qa84SafeHue(visual.hue),
   kind:kind as CategoryVisualIdentity['kind']});
