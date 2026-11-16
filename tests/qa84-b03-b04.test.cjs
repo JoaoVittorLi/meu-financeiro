@@ -296,6 +296,7 @@ test('B03 V2: drawer is an overlay, bank legacy category write is absent and ord
  assert.doesNotMatch(app.slice(app.indexOf('renderDetailDrawer(){'),app.indexOf('renderEditModal(){')),
   /onChange:\(v:string\)=>this\.setBankCategory\(tx,v\)/);
  assert.match(d05,/window\.addEventListener\('keydown',onKey,true\)/);
+ assert.match(d05,/modalRef\.current\.querySelector\('\.d05-picker-search input'\)/);
  assert.match(d05,/event\.stopPropagation\(\);setPicker\(null\)/);
  assert.match(read('app/style.css'),/\.mf-drawer-backdrop\{position:fixed/);
 });
