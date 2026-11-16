@@ -295,3 +295,28 @@ test('RC2/B05 statuses: unknown bill statuses and missing period origin block pr
  assert.equal(ctx.mfB05Project(invalid).available,false);
  assert.equal(ctx.mfB05Project(verified).ending.projectedCents,125700);
 });
+
+test('RC2.1/B05-36: concurrent radar refresh keeps latest result and discards revoked replies',async()=>{
+ const compiled=ts.transpileModule(read('src/intelligence-local.ts'),{
+  compilerOptions:{target:ts.ScriptTarget.ES2019,module:ts.ModuleKind.None}
+ }).outputText;
+ const sandbox={h,Date,Intl,Math,Number,JSON,Array,Set,Map,WeakMap,console};
+ vm.createContext(sandbox);vm.runInContext(compiled,sandbox,{timeout:1500});
+ const pending=[];
+ sandbox.localFinancialQuery=()=>new Promise((resolve,reject)=>pending.push({resolve,reject}));
+ const a=app({localFinancialRadar:null,localFinancialError:''});
+ const first=sandbox.localFinancialRadar(a),second=sandbox.localFinancialRadar(a);
+ assert.equal(pending.length,2);
+ pending[1].resolve({valueCents:222});await second;
+ pending[0].resolve({valueCents:111});await first;
+ assert.equal(a.state.localFinancialRadar.valueCents,222);
+ const stale=sandbox.localFinancialRadar(a),latest=sandbox.localFinancialRadar(a);
+ pending[3].resolve({valueCents:333});await latest;
+ pending[2].reject(Error('falha anterior'));await stale;
+ assert.equal(a.state.localFinancialRadar.valueCents,333);
+ assert.equal(a.state.localFinancialError,'');
+ const revoked=sandbox.localFinancialRadar(a);
+ a.__localRadarRequest++;
+ pending[4].resolve({valueCents:444});await revoked;
+ assert.equal(a.state.localFinancialRadar.valueCents,333);
+});
