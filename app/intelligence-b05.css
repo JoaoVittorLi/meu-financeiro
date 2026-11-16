@@ -198,3 +198,31 @@
  .mf-b05-page .mf-b05-ring-segment,.mf-b05-page .mf-b05-route-chart *,
  .mf-b05-page .mf-b05-alternative,.mf-b05-page .mf-b05-tab{transition:none!important}
 }
+
+/* B05 verified, evidence-backed lower diagnostics */
+.mf-b05-diagnostic{border:1px solid var(--mf-b05-border);background:var(--mf-b05-surface);border-radius:17px;padding:17px;min-width:0}
+.mf-b05-diagnostic>header{display:flex;align-items:center;gap:12px}
+.mf-b05-diagnostic>header small{font-size:10px;letter-spacing:.08em;color:var(--mf-b05-muted)}
+.mf-b05-diagnostic h3{font-size:17px;margin:3px 0 0;letter-spacing:-.02em}
+.mf-b05-diagnostic-body{display:flex;align-items:center;gap:17px;margin:14px 0}
+.mf-b05-diagnostic-body>div:last-child strong{font-size:22px;letter-spacing:-.025em}
+.mf-b05-diagnostic-body p{font-size:12px;color:var(--mf-b05-muted);margin:4px 0}
+.mf-b05-diagnostic>small{font-size:11px;color:var(--mf-b05-muted)}
+.mf-b05-mini-orbit{border-radius:50%;width:104px;height:104px;flex:0 0 104px;
+ display:flex;align-items:center;justify-content:center;
+ background:radial-gradient(closest-side,var(--mf-b05-surface) 76%,transparent 79% 100%),
+ conic-gradient(var(--mf-b05-green) var(--mf-b05-mini-progress),var(--mf-b05-border) 0)}
+.mf-b05-mini-orbit strong{font-size:18px}
+.mf-b05-delivery-bars{display:grid;gap:12px;margin:18px 0 9px}
+.mf-b05-delivery-row{display:grid;grid-template-columns:55px minmax(0,1fr) auto;gap:8px;align-items:center;font-size:11px}
+.mf-b05-delivery-row>span{color:var(--mf-b05-muted)}
+.mf-b05-delivery-row strong{font-size:12px}
+.mf-b05-delivery-track{height:8px;border-radius:9px;overflow:hidden;background:var(--mf-b05-raised)}
+.mf-b05-delivery-track i{display:block;height:100%;background:var(--mf-b05-commit);border-radius:9px;transition:width 700ms cubic-bezier(.22,1,.36,1)}
+.mf-b05-delivery-row:nth-child(2) .mf-b05-delivery-track i{background:var(--mf-b05-amber)}
+.mf-b05-amber{color:var(--mf-b05-amber);font-size:12px}
+.mf-b05-scenario{display:grid;gap:15px;margin-bottom:15px}
+.mf-b05-scenario-field{display:grid;gap:7px}
+.mf-b05-scenario-field label{font-size:12px;font-weight:700}
+.mf-b05-scenario-field input[type=range]{width:100%;accent-color:var(--mf-b05-green)}
+@media(prefers-reduced-motion:reduce){.mf-b05-delivery-track i{transition:none!important}}
