@@ -6,7 +6,7 @@ declare const ReactDOM: any;
 const h: any = React.createElement;
 
 type Kind = 'income' | 'expense';
-type Tx = { id:string; date:string; description:string; kind:Kind; amount:number; category:string; origin?:string };
+type Tx = { id:string; date:string; description:string; kind:Kind; amount:number; category:string; origin?:string; categoryId?:string|null; subcategoryId?:string|null };
 type Settings = { opening:number; income:number; fixed:number; existing:number; reserve:number };
 type Data = { version:number; transactions:Tx[]; budgets:{[category:string]:number}; settings:Settings };
 type Sim = { value:string; installments:string; interest:string; firstDueDate?:string };
@@ -274,7 +274,14 @@ function safeData(v:any):Data {
  const d=starter();
  d.transactions=v.transactions.slice(0,30000).map((r:any)=>{
   const amount=Number(r.amount); if(!/^\d{4}-\d{2}-\d{2}$/.test(r.date)||!['income','expense'].includes(r.kind)||!Number.isSafeInteger(amount)||amount<=0||amount>100000000000||typeof r.description!=='string') throw new Error('Transação inválida.');
-  return {id:String(r.id||Math.random()),date:r.date,kind:r.kind,description:r.description.slice(0,180),amount,category:String(r.category||'Outros').slice(0,70),origin:'restored'};
+  const categoryId=typeof r.categoryId==='string'&&r.categoryId.length<=128?r.categoryId:null;
+  const subcategoryId=categoryId&&typeof r.subcategoryId==='string'&&r.subcategoryId.length<=128?
+   r.subcategoryId:null;
+  // Preserve user-approved D05 IDs after restore. Never infer child from
+  // merchant/description or silently classify an older, unlinked record.
+  return {id:String(r.id||Math.random()),date:r.date,kind:r.kind,
+   description:r.description.slice(0,180),amount,category:String(r.category||'Outros').slice(0,70),
+   categoryId,subcategoryId,origin:'restored'};
  });
  for(const [c,raw] of Object.entries(v.budgets||{})){const b=Number(raw);if(c.length<=50&&Number.isSafeInteger(b)&&b>=0&&(b>0||Number(v.version)>=5))d.budgets[c]=b;}
  for(const key of ['opening','income','fixed','existing','reserve'] as (keyof Settings)[]){const n=Number(v.settings?.[key]||0); (d.settings as any)[key]=(Number.isSafeInteger(n)&&Math.abs(n)<100000000000)?n:0;}
