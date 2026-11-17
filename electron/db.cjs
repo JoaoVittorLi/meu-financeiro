@@ -5,6 +5,7 @@ const { DatabaseSync, backup } = require('node:sqlite');
 const fs = require('node:fs');
 const path = require('node:path');
 const { migrateHierarchy } = require('./d05-hierarchy.cjs');
+const {migrateCat01,persistEvidenceBatch}=require('./cat01-evidence-store.cjs');
 const DEFAULT_CATEGORIES = [
   ['Moradia','#3e9a85'],['Alimentação','#d6934b'],['Transporte','#4489ba'],
   ['Saúde','#cb6d76'],['Lazer','#2aa898'],['Educação','#4c7fb2'],
@@ -338,6 +339,8 @@ class FinanceDB {
      }
    }
    migrateHierarchy(this.db);
+   // Additive CAT-01 metadata sidecar. Bank source rows stay unchanged.
+   migrateCat01(this.db);
  }
  load(profile){
    checkProfile(profile);
@@ -800,7 +803,7 @@ class FinanceDB {
        seenTransactions.add(t.id);
        const amount=Math.round(Number(t.amount)*100);
        if(!Number.isSafeInteger(amount))throw new Error('Valor bancário inválido.');
-       return {id:t.id,date:t.date.slice(0,10),description:t.description.slice(0,180),amount,status:String(t.status||'UNKNOWN').slice(0,30),category:String(t.category||'Outros').slice(0,70)};
+       return {id:t.id,date:t.date.slice(0,10),description:t.description.slice(0,180),amount,status:String(t.status||'UNKNOWN').slice(0,30),category:String(t.category||'Outros').slice(0,70),source:t};
      });
      return {account,balance,transactions:clean};
    });
@@ -819,6 +822,10 @@ class FinanceDB {
          else if(previous.status!==t.status||previous.amount_cents!==t.amount||previous.description!==t.description)unreview.run(e.account.id,t.id);
          addTx.run(e.account.id,t.id,t.date,t.description,t.amount,t.status,t.category,now);totalCount++;
        }
+       // Capture optional provider evidence atomically with the successful sync.
+       // No Premium field is required, and no original bank field is overwritten.
+       persistEvidenceBatch(this.db,e.transactions.map(t=>({accountId:e.account.id,accountType:'BANK',transaction:t.source})),
+        {withinTransaction:true,observedAt:now});
      }
      this.pruneInvalidManualLinks();
      this.db.prepare('INSERT INTO bank_sync_history(item_id,completed_at,new_count,total_count) VALUES(?,?,?,?)').run(itemId,now,newCount,totalCount);
