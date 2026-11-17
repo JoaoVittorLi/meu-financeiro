@@ -350,6 +350,9 @@ class D05CategoryService{
   const ruleRows=this.db.prepare(`SELECT id,pattern,match_mode AS matchMode,category AS category,
     scope,priority,enabled,category_id AS categoryId,subcategory_id AS subcategoryId FROM category_rules
     ORDER BY priority,id`).all();
+  const autoIds=this.db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='mf_auto_labels'").get()?
+   new Map(this.db.prepare('SELECT account_id,external_id,category_id,subcategory_id FROM mf_auto_labels').all()
+   .map(r=>[JSON.stringify([r.account_id,r.external_id]),r])):new Map();
   const catalog=new Map(this.listCatalog({includeInactive:true}).parents.map(x=>[x.name,x.id]));
   const splitRows=this.db.prepare(`SELECT account_id,external_id,position,category_id,subcategory_id
    FROM bank_transaction_splits ORDER BY account_id,external_id,position`).all();
@@ -368,6 +371,9 @@ class D05CategoryService{
     const winning=ruleRows.find(rule=>matchRule(x.description,'bank',[rule],{accountId:x.accountId,rowid:x.rowid,status:x.status,
       nature:x.nature&&x.nature!=='auto'?x.nature:x.amount<0?'expense':'income',hasSplits:x.splits.length>0})===x.category);
     if(winning){categoryKey=winning.categoryId;childId=winning.subcategoryId;}
+   } else if(x.categorySource==='automatic'){
+    const accepted=autoIds.get(JSON.stringify([x.accountId,x.id]));
+    if(accepted){categoryKey=accepted.category_id;childId=accepted.subcategory_id;}
    }
    const id=categoryKey||catalog.get(x.category)||null;
    const valid=id?this.resolve({categoryId:id,subcategoryId:childId},{allowInactive:true}):null;
