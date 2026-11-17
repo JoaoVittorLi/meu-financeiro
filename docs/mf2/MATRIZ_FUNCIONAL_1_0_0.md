@@ -1,6 +1,6 @@
 # Matriz funcional — escopo verificado da candidata 1.0.0
 
-> **DECISÃO P0/OPÇÃO A (17/11/2026):** o proprietário tornou a **categorização automática pessoal por conta** obrigatória para v1.0.0. Código em [PR #100](https://github.com/JoaoVittorLi/meu-financeiro/pull/100) **Draft sobre #96**; consentimento persistente e revogável, D05 14×61, I2-E, backups, recibos e reversão. **Não homologada:** 18 regressões sintéticas versionadas, Node oficial/SQLite integral/TypeScript/Electron Windows/QA visual **NOT_RUN**; v1.0.0 NO-GO. A escrita pessoal da IA para outras ações permanece desativada.
+> **DECISÃO P0/OPÇÃO A (17/11/2026):** o proprietário tornou a **categorização automática pessoal por conta** obrigatória para v1.0.0. Código em [PR #100](https://github.com/JoaoVittorLi/meu-financeiro/pull/100) **Draft sobre #96**; consentimento persistente e revogável, D05 14×61, I2-E, backups, recibos e reversão. **Não homologada:** 19 regressões sintéticas versionadas, Node oficial/SQLite integral/TypeScript/Electron Windows/QA visual **NOT_RUN**; v1.0.0 NO-GO. A escrita pessoal da IA para outras ações permanece desativada.
 
 **Fotografia:** 17/11/2026, árvore funcional PR #96 `2ce62fe4fde7e60df327be3bfa03f47dcc7fbfff` baseada em PR #94 `674108e...`. Esta matriz é **inventário do código**, não certificação de versão lançada. `main` não recebeu a candidata.
 
@@ -46,7 +46,7 @@
 |---|---|---|---|---|---|
 | Categorização automática bancária pessoal (por conta) | YES **PR #100** | YES **PR #100** | ISOLATED_V8_PASS; NODE_SQLITE_NOT_RUN | **BLOCKED** | Opt-in no MAIN e SQLite, 90 dias, 5 correções coerentes em 3 datas, I2-E; calibração/segurança/Windows obrigatórias antes de uso real |
 | 14×61 D05 automático, precedência manual/regra | YES **PR #100** | YES **PR #100** | OFFICIAL_NOT_RUN | **BLOCKED** | Overlay separado; POSTED, sincronização completa, sem split/transfer/ignore; correção protegida e recibo |
-| Recibos, backup, reversão e sugestões de regras aprováveis | YES **PR #100** | YES **PR #100** | 18 TESTS_VERSIONED; NOT_RUN | **BLOCKED** | Sugestões são somente prévia, regras novas exigem aprovação distinta; restaurar e inspecionar no Windows |
+| Recibos, backup, reversão e sugestões de regras aprováveis | YES **PR #100** | YES **PR #100** | 19 TESTS_VERSIONED; NOT_RUN | **BLOCKED** | Sugestões são somente prévia, regras novas exigem aprovação distinta; restaurar e inspecionar no Windows |
 | Outras escritas pessoais da IA | PARTIAL | PARTIAL | NOT_RUN | **BLOCKED** | `approvedForPersonal:()=>false` permanece. Não ampliar o grant de categorização automaticamente |
 
 **Atenção:** nesta tabela, `YES PR #100` significa código existente **em branch concorrente ainda não integrado ao HEAD #96**; **AVAILABLE=BLOCKED** até CI/QA Windows e integração. A decisão Opção A de liberar exclusivamente categorização automática para a 1.0 é obrigatória; outras escritas não entram no escopo P0.

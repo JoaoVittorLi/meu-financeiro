@@ -1,6 +1,6 @@
 # Meu Financeiro — preparação do lançamento 1.0.0
 
-> **DECISÃO P0/OPÇÃO A (17/11/2026):** o proprietário tornou a **categorização automática pessoal por conta** obrigatória para v1.0.0. Código em [PR #100](https://github.com/JoaoVittorLi/meu-financeiro/pull/100) **Draft sobre #96**; consentimento persistente e revogável, D05 14×61, I2-E, backups, recibos e reversão. **Não homologada:** 18 regressões sintéticas versionadas, Node oficial/SQLite integral/TypeScript/Electron Windows/QA visual **NOT_RUN**; v1.0.0 NO-GO. A escrita pessoal da IA para outras ações permanece desativada.
+> **DECISÃO P0/OPÇÃO A (17/11/2026):** o proprietário tornou a **categorização automática pessoal por conta** obrigatória para v1.0.0. Código em [PR #100](https://github.com/JoaoVittorLi/meu-financeiro/pull/100) **Draft sobre #96**; consentimento persistente e revogável, D05 14×61, I2-E, backups, recibos e reversão. **Não homologada:** 19 regressões sintéticas versionadas, Node oficial/SQLite integral/TypeScript/Electron Windows/QA visual **NOT_RUN**; v1.0.0 NO-GO. A escrita pessoal da IA para outras ações permanece desativada.
 
 **Nova frente bloqueante:** [PR #100](https://github.com/JoaoVittorLi/meu-financeiro/pull/100) desenvolve categorização automática D05/I2-E com opt-in por conta, permanência/revogação e correção humana, **ainda não integrada nem homologada**. A versão 1.0.0 só será lançada com essa capacidade realmente aprovada no Electron Windows. Não confundir com outras escritas pessoais pela IA, que continuam desligadas.
 

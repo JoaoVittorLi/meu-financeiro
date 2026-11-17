@@ -1,6 +1,6 @@
 # Meu Financeiro 1.0.0 — RELEASE NOTES (RASCUNHO / NÃO PUBLICADO)
 
-> **DECISÃO P0/OPÇÃO A (17/11/2026):** o proprietário tornou a **categorização automática pessoal por conta** obrigatória para v1.0.0. Código em [PR #100](https://github.com/JoaoVittorLi/meu-financeiro/pull/100) **Draft sobre #96**; consentimento persistente e revogável, D05 14×61, I2-E, backups, recibos e reversão. **Não homologada:** 18 regressões sintéticas versionadas, Node oficial/SQLite integral/TypeScript/Electron Windows/QA visual **NOT_RUN**; v1.0.0 NO-GO. A escrita pessoal da IA para outras ações permanece desativada.
+> **DECISÃO P0/OPÇÃO A (17/11/2026):** o proprietário tornou a **categorização automática pessoal por conta** obrigatória para v1.0.0. Código em [PR #100](https://github.com/JoaoVittorLi/meu-financeiro/pull/100) **Draft sobre #96**; consentimento persistente e revogável, D05 14×61, I2-E, backups, recibos e reversão. **Não homologada:** 19 regressões sintéticas versionadas, Node oficial/SQLite integral/TypeScript/Electron Windows/QA visual **NOT_RUN**; v1.0.0 NO-GO. A escrita pessoal da IA para outras ações permanece desativada.
 
 > **NÃO É UMA VERSÃO DISPONÍVEL.** Preparação de escopo e comunicação. O código da candidata segue em `0.9.5-beta.8`; PR #96 Draft, HEAD `2ce62fe4fde7e60df327be3bfa03f47dcc7fbfff`. Não há tag `v1.0.0`, instalador stable homologado, data ou GitHub Release aprovado.
 
