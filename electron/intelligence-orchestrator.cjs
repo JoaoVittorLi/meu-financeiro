@@ -126,6 +126,12 @@ class IntelligenceOrchestrator{
       lastInvestigation:{previous:investigationIntent.previous,
        current:investigationIntent.current,dataVersion:info.dataVersion,
        focusCategoryId:focus.category?.categoryId||null},
+      // I2-A compatibility: "Agora desconsidere Transporte" still runs the
+      // canonical comparison tool scoped to this grant and current month.
+      // Keep only the plan and category names, NEVER cached financial amounts.
+      lastPlan:validatePlan({steps:[{tool:'compare',params:{}}]}),
+      exclusions:[],
+      categoryNames:info.contributions.map(c=>c.label).filter(n=>typeof n==='string'),
       lastQuestion:question,lastFactRefs:[id]
     }))return result('stale','O contexto mudou durante a consulta.');
     const fact={id,kind:'rank',tool:'compare_spending_breakdown',value:info,
