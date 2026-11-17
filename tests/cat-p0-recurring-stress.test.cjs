@@ -175,3 +175,24 @@ test('A01 no-progress guard never marks empty COMMIT loop completed',()=>harness
  assert.equal(scheduler.status().jobs[0].state,'failed');
  assert.equal(db.db.prepare("SELECT COUNT(*) AS n FROM mf_auto_receipts WHERE action='apply'").get().n,0);
 }));
+
+test('A01 legacy completed jobs without a batch receipt cannot hide candidates above the old cap',()=>harness(async({
+ db,engine,ingest
+})=>{
+ ingest(0,7,'legacy-pending');
+ db.db.prepare(`INSERT INTO mf_auto_jobs(job_key,trigger,state,attempts,started_at,
+  finished_at,applied,review_count,error_code)
+  VALUES ('daily:2026-11-17','daily','completed',1,?, ?,20000,0,NULL)`)
+  .run('2026-11-17T16:00:00.000Z','2026-11-17T16:00:01.000Z');
+ const upgraded=new D05AutoLocalScheduler({finance:()=>db,engine:()=>engine,
+  clock:()=>new Date('2026-11-17T16:00:00.000Z')});
+ assert.equal(upgraded.status().paused,true);
+ assert.equal(upgraded.status().jobs[0].state,'failed');
+ assert.equal(upgraded.status().jobs[0].errorCode,'LEGACY_COMPLETION_UNVERIFIED');
+ upgraded.resume();
+ const result=await upgraded.run('daily');
+ assert.equal(result.state,'completed');
+ assert.equal(result.applied,7,'Never inherit fictitious applied=20000 from legacy state');
+ assert.equal(count(db,"SELECT COUNT(*) AS n FROM mf_auto_receipts WHERE action='apply'"),7);
+ assert.equal(engine.plan({futureOnly:true,limit:1}).candidateCount,0);
+}));
