@@ -170,6 +170,8 @@ class D05Movements extends React.Component<any,any> {
     setAutoPreview(result?.preview||null);
    }else if(action==='revoke'){
     result=await bridge.bankAutoRevoke(accountId);setAutoPreview(null);
+   }else if(action==='pause')result=await bridge.bankAutoPause();
+   else if(action==='resume')result=await bridge.bankAutoResume();
    }else if(action==='preview'){
     result=await bridge.bankAutoReview({limit:100});
     setAutoPreview(result);
@@ -183,12 +185,14 @@ class D05Movements extends React.Component<any,any> {
    else if(action==='suggest')result=await bridge.bankAutoRuleSuggestions({limit:5});
    if(action==='suggest'){setAutoRules(result?.rules||[]);setAutoMessage('Sugestões somente para prévia; nenhuma regra foi criada.');return;}
    if(result?.cancelled){setAutoMessage('Operação cancelada; nenhuma classificação aplicada.');return;}
-   if(['failed','busy','awaiting_explicit_consent_or_first_confirmation'].includes(result?.state))
+   if(['failed','busy','paused','awaiting_explicit_consent_or_first_confirmation'].includes(result?.state))
     throw Error('A aplicação NÃO foi concluída: '+String(result.state)+'. Confira os backups e o estado dos jobs antes de tentar novamente.');
    await host.refreshBank();await refreshHierarchy();await refreshAuto();
    setAutoMessage(action==='enable'?'Contas autorizadas, mas nenhuma classificação aplicada. Confira a prévia inicial.':
     action==='revoke'?'Permissão revogada; recibos e rótulos anteriores preservados.':
-    'Aplicação confirmada. Movimentos incertos permanecem para revisão.');
+    action==='pause'?'Próximas verificações automáticas pausadas. Uma aplicação já em curso não é cancelada.':
+    action==='resume'?'Verificações locais reativadas, limitadas às contas já autorizadas.':
+    'Verificação concluída. Movimentos incertos permanecem para revisão.');
   }catch(e:any){setAutoMessage(String(e?.message||e));}
   finally{setAutoBusy(false);}
  };
@@ -622,7 +626,7 @@ class D05Movements extends React.Component<any,any> {
     h('button',{type:'button',className:'d05-ghost','aria-expanded':autoPanel,
      onClick:()=>setAutoPanel(!autoPanel)},autoPanel?'Fechar':'Gerenciar')),
    h('div',{className:'d05-auto-stats',role:'status'},
-    h('span',{},autoInfo?.enabled?'Ativada em '+String((autoInfo.permissions||[]).filter((p:any)=>p.enabled).length)+' conta(s)':'Desativada'),
+    h('span',{},autoInfo?.jobs?.paused?'Pausada':autoInfo?.enabled?'Ativada em '+String((autoInfo.permissions||[]).filter((p:any)=>p.enabled).length)+' conta(s)':'Desativada'),
     h('span',{},String(autoInfo?.counts?.classified||0)+' categorizada(s) automaticamente'),
     h('span',{},String(autoInfo?.counts?.awaitingReview||0)+' aguardando revisão'),
     h('button',{type:'button',onClick:()=>{setTab('pending');setSource('bank');}},'Abrir A conferir')),
@@ -648,8 +652,12 @@ class D05Movements extends React.Component<any,any> {
      !autoInfo?.initialConfirmed?h('button',{type:'button',className:'d05-confirm',
       disabled:autoBusy||!autoInfo?.available||!autoInfo?.enabled||!autoPreview?.previewVersion,
       onClick:()=>void runAutoAction('confirm')},'Conferir e confirmar lote seguro'):
-     h('button',{type:'button',disabled:autoBusy||!autoInfo?.available||!autoInfo?.enabled,
+     h('button',{type:'button',disabled:autoBusy||!autoInfo?.available||!autoInfo?.enabled||autoInfo?.jobs?.paused,
       onClick:()=>void runAutoAction('run')},'Verificar novas movimentações'),
+     autoInfo?.initialConfirmed&&autoInfo?.enabled?
+      h('button',{type:'button',disabled:autoBusy||!autoInfo?.available,
+       onClick:()=>void runAutoAction(autoInfo?.jobs?.paused?'resume':'pause')},
+       autoInfo?.jobs?.paused?'Reativar automação':'Pausar automação'):null,
      h('button',{type:'button',disabled:autoBusy||!autoInfo?.available||!autoInfo?.enabled,
       onClick:()=>void runAutoAction('suggest')},'Sugerir regras para semelhantes'),
      ...(autoInfo?.permissions||[]).filter((perm:any)=>perm.enabled).map((perm:any)=>
