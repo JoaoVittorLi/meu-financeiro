@@ -85,6 +85,7 @@ class D05Movements extends React.Component<any,any> {
  const [autoPanel,setAutoPanel]=useState(false);
  const [autoBusy,setAutoBusy]=useState(false);
  const [autoMessage,setAutoMessage]=useState('');
+ const [autoRules,setAutoRules]=useState([] as any[]);
  const activeTrigger=useRef(null as any);
  const modalRef=useRef(null as any);
  const refreshId=useRef(0);
@@ -166,6 +167,8 @@ class D05Movements extends React.Component<any,any> {
    if(action==='enable')result=await bridge.bankAutoConfigure({accountIds:Array.from(autoSelected),startDate:autoStart,endDate:autoEnd});
    else if(action==='revoke')result=await bridge.bankAutoRevoke(accountId);
    else if(action==='run')result=await bridge.bankAutoApply({limit:20000});
+   else if(action==='suggest')result=await bridge.bankAutoRuleSuggestions({limit:5});
+   if(action==='suggest'){setAutoRules(result?.rules||[]);setAutoMessage('Sugestões somente para prévia; nenhuma regra foi criada.');return;}
    if(result?.cancelled){setAutoMessage('Autorização cancelada.');return;}
    await host.refreshBank();await refreshHierarchy();await refreshAuto();
    setAutoMessage(action==='enable'?'Contas autorizadas no MAIN; classificação concluída conforme evidências.':
@@ -627,9 +630,19 @@ class D05Movements extends React.Component<any,any> {
       onClick:()=>void runAutoAction('enable')},'Autorizar contas selecionadas'),
      h('button',{type:'button',disabled:autoBusy||!autoInfo?.available||!autoInfo?.enabled,
       onClick:()=>void runAutoAction('run')},'Analisar novamente'),
+     h('button',{type:'button',disabled:autoBusy||!autoInfo?.available||!autoInfo?.enabled,
+      onClick:()=>void runAutoAction('suggest')},'Sugerir regras para semelhantes'),
      ...(autoInfo?.permissions||[]).filter((perm:any)=>perm.enabled).map((perm:any)=>
       h('button',{type:'button',key:perm.accountId,disabled:autoBusy||!autoInfo?.available,
        onClick:()=>void runAutoAction('revoke',perm.accountId)},'Revogar '+perm.name))),
+    autoRules.length?h('div',{className:'d05-auto-rule-suggestions'},
+     h('strong',{},'Sugestões não aplicadas — revisão humana obrigatória'),
+     autoRules.map((rule:any)=>h('p',{key:rule.accountId+'|'+rule.pattern},
+      'Conta: '+String((state.bank.data.accounts||[]).find((a:any)=>a.id===rule.accountId)?.name||'Conta autorizada')+
+      ' · '+rule.pattern+' · '+rule.suggestedFor+' ocorrências identificadas · até '+
+      rule.possibleMatches+' possíveis correspondências. Conflitos de precedência: '+rule.possiblePrecedenceConflicts+'.')),
+     h('button',{type:'button',onClick:()=>host.setState({txOrganize:true})},
+      'Abrir Categorias e regras para revisar a criação')):null,
     h('p',{},'Regras amplas e reclassificações em massa exigem aprovação separada. Sem modelo externo nem porcentagens inventadas.')
    ):null,
    autoMessage?h('p',{className:'d05-notice',role:'status'},autoMessage):null
