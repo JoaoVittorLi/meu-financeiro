@@ -59,3 +59,12 @@ Decisão: NO-GO / READY_FOR_NEXT_GATE / GO (apenas proprietário)
 ```
 
 Registro canônico de gate na [issue #65](https://github.com/JoaoVittorLi/meu-financeiro/issues/65) e GO/NO-GO em [#71](https://github.com/JoaoVittorLi/meu-financeiro/issues/71).
+
+## Gate adicional — CAT P0 duplicidade em evidência de treinamento (#104)
+
+| Teste | Evidência presente | Situação |
+|---|---|---|
+| `tests/d05-auto-categorization.test.cjs`: 20º cenário, cinco overrides humanos, mas dois são registros potencialmente duplicados (mesma conta, estabelecimento, data e centavos com IDs diferentes) | Teste sintético Node/SQLite versionado no [PR #104](https://github.com/JoaoVittorLi/meu-financeiro/pull/104) | **NOT_RUN no Node 22.23.4** |
+| Motor de classificação revalidado no COMMIT: âncoras deduplicadas, I2-E `suspiciousDuplicates`, hash com centavos e nenhuma autoaplicação em caso ambíguo | Código em PR #104, não incorporado em #96 | **NOT_RUN no SHA final** |
+
+O valor **5 correções/3 datas é um requisito de evidência conservador provisório**, não precisão calibrada de um classificador. O GO exige ensaios sintéticos negativos/positivos, análise de falsos positivos e aceitação explícita dos critérios. O Integrador deve congelar um **único writer de auto-categorização** ao conciliar PRs #99/#101/#102 com #100/#104.
