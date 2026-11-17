@@ -107,9 +107,13 @@ test('A01 backup failure after first 250 COMMITs: journal resume + exact receipt
  db,engine,scheduler,ingest
 })=>{
  ingest(0,551,'backup-resume');
- const orig=db.backupTo.bind(db);
- let backups=0;
- db.backupTo=async path=>{backups++;if(backups===2)throw Error('SYNTHETIC_DISK_FULL');return orig(path);};
+ const originalVerify=engine.verifyBatchBackup.bind(engine);
+ let verifies=0;
+ engine.verifyBatchBackup=file=>{
+  verifies++;
+  if(verifies===2)throw Error('SYNTHETIC_BACKUP_UNAVAILABLE_BETWEEN_PAGES');
+  return originalVerify(file);
+ };
  const failure=await scheduler.run('daily');
  assert.equal(failure.state,'failed');assert.equal(failure.applied,250);
  assert.equal(scheduler.status().paused,true);
