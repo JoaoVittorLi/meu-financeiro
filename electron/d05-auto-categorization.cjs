@@ -28,7 +28,7 @@ function merchantKey(row,aliases){
  return 'exact:'+raw;
 }
 function eligible(row){
- return row.status==='POSTED'&&Number.isSafeInteger(row.amountCents)&&row.amountCents!==0&&
+ return row.status==='POSTED'&&row.syncStatus==='UPDATED'&&Number.isSafeInteger(row.amountCents)&&row.amountCents!==0&&
   validDate(row.date)&&!row.hasSplits&&!row.linkedManualId&&
   (row.nature===null||row.nature===''||row.nature==='auto')&&!row.reviewedAt;
 }
@@ -149,7 +149,7 @@ class D05AutoCategorization{
  }
  allRows(){
   return this.sql.prepare(`SELECT b.rowid,b.account_id AS accountId,b.external_id AS externalId,
-   b.date,b.description,b.amount_cents AS amountCents,b.status,
+   b.date,b.description,b.amount_cents AS amountCents,b.status,bi.status AS syncStatus,
    o.category_id AS manualCategoryId,o.subcategory_id AS manualSubcategoryId,
    n.nature,n.reviewed_at AS reviewedAt,
    l.manual_id AS linkedManualId,
@@ -157,6 +157,8 @@ class D05AutoCategorization{
    EXISTS(SELECT 1 FROM mf_auto_feedback f WHERE f.account_id=b.account_id AND f.external_id=b.external_id) AS blockedByFeedback,
    EXISTS(SELECT 1 FROM mf_auto_labels a WHERE a.account_id=b.account_id AND a.external_id=b.external_id) AS hasAuto
    FROM bank_transactions b
+   JOIN bank_accounts account ON account.account_id=b.account_id
+   JOIN bank_items bi ON bi.item_id=account.item_id
    LEFT JOIN bank_category_overrides o USING(account_id,external_id)
    LEFT JOIN bank_transaction_notes n USING(account_id,external_id)
    LEFT JOIN bank_manual_links l USING(account_id,external_id)
@@ -179,6 +181,11 @@ class D05AutoCategorization{
    // Only explicit D05 manual overrides serve as anchor evidence, never auto labels.
    try{
     const target=service.resolve({categoryId:row.manualCategoryId,subcategoryId:row.manualSubcategoryId??null});
+    // Only the owner-approved built-in 14x61 taxonomy can be inferred automatically.
+    const builtin=sql.prepare('SELECT built_in FROM categories WHERE id=?').get(target.categoryId);
+    const builtinChild=target.subcategoryId?
+     sql.prepare('SELECT built_in,active FROM subcategories WHERE id=?').get(target.subcategoryId):null;
+    if(builtin?.built_in!==1||(target.subcategoryId&&(!builtinChild||builtinChild.built_in!==1||builtinChild.active!==1)))continue;
     if(!['both',kind(row)].includes(target.parent.kind)||
       (target.child&&!['both',kind(row)].includes(target.child.kind)))continue;
     const groupKey=row.accountId+'|'+kind(row)+'|'+merchant;
@@ -203,6 +210,11 @@ class D05AutoCategorization{
     if(existing?.source_fingerprint!==fingerprint(row)){
      reviewCount++;if(review.length<limit)review.push({accountId:row.accountId,externalId:row.externalId,reason:'Movimentação alterada após categorização; revisar rótulo antigo'});
     }
+    continue;
+   }
+   if(row.status==='POSTED'&&row.syncStatus!=='UPDATED'&&!row.manualCategoryId){
+    reviewCount++;if(review.length<limit)review.push({accountId:row.accountId,externalId:row.externalId,
+     reason:'Histórico de sincronização parcial ou sem confirmação UPDATED'});
     continue;
    }
    if(!eligible(row)||row.manualCategoryId||row.blockedByFeedback)continue;
