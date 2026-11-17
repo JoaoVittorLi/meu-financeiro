@@ -31,7 +31,10 @@ function classifyCategory(name){
 function parseIntent(question,context={},selectedMonth=''){
  const q=fold(question);
  const mentions=months.map((name,i)=>q.match(new RegExp('(?:^|[^a-z])'+name+'(?:$|[^a-z])'))?i+1:0).filter(Boolean);
- const userWants=/por que|porque|investig|analis|aument|variac|compar|cresc|contribu|mudou|subi|caiu|diferenca|recorrent|isolado|pontual|gastando|gastei|mostre|mostrar|liste|exiba/.test(q);
+ // Generic amount/summary questions belong to existing IC2; do not turn
+ // "Quanto gastei?" into a two-period investigation with fabricated coverage.
+ const userWants=/por que|porque|investig|analis|aument|variac|compar|cresc|contribu|mudou|subi|caiu|diferenca|recorrent|isolado|pontual|gastando mais|onde .*gastando|estabelec|comerciante/.test(q)||
+  (mentions.length>=2&&/mostre|mostrar|liste|exiba|gastei/.test(q));
  const financial=/despes|gast|categoria|estabelec|comerciante|supermercad|mercado|alimentac|transporte|seguro|assinatur|cobranca|mes/.test(q)||mentions.length>=2;
  const followup=!!context?.lastInvestigation&&(/^(e |esse |essa |na |no |e quanto |quanto |me mostre|mostre |onde )/.test(q)||/recorrente|isolado|pontual/.test(q));
  if(!((userWants&&financial)||followup))return null;
