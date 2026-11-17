@@ -21,9 +21,19 @@ test('U3 budget signals distinguish zero limits, no limits and no spending witho
 test('U3 budget attention filters and limit actions only change presentation until saving',()=>{
  const {app}=runtime();app.state.data={...app.state.data,budgets:{Alimentação:0,Moradia:10000},transactions:[{id:'a',date:'2026-11-09',description:'Food',category:'Alimentação',kind:'expense',amount:1000},{id:'b',date:'2026-11-09',description:'Rent',category:'Moradia',kind:'expense',amount:9500},{id:'c',date:'2026-11-09',description:'Other',category:'Outros',kind:'expense',amount:5000}]};
  const before=JSON.stringify(app.state.data);let view=app.renderBudgets();const focus=walk(view,n=>n.props?.className==='u3-insight-action')[0];focus.props.onClick();assert.equal(app.state.budgetFocus,'attention');
- view=app.renderBudgets();let cards=walk(view,n=>String(n.props?.className||'').split(' ').includes('mf-budget-card'));assert.equal(cards.length,2);
- const edit=walk(cards[0],n=>n.tag==='button'&&n.children.includes('Editar limite'))[0];edit.props.onClick();assert.equal(app.state.editModal.type,'budget');assert.equal(app.state.editModal.value,'0,00');assert.equal(JSON.stringify(app.state.data),before);
- app.state.budgetFocus='unlimited';cards=walk(app.renderBudgets(),n=>String(n.props?.className||'').split(' ').includes('mf-budget-card'));assert.equal(cards.length,1);assert.match(JSON.stringify(cards[0]),/Outros/);
+ view=app.renderBudgets();let cards=walk(view,n=>String(n.props?.className||'').split(' ').includes('qa84-budget-card'));assert.equal(cards.length,2);
+ const zero=cards.find(n=>String(n.props?.['aria-label']||'').includes('Alimentação'));
+ assert(zero,'Explicit zero budget must remain an inspectable B02 category card');
+ assert.equal(app.state.editModal,null);
+ zero.props.onClick(); // B02 opens detail first; it must not write a limit.
+ assert.equal(app.state.qa84BudgetDrill.categoryName,'Alimentação');
+ assert.equal(JSON.stringify(app.state.data),before);
+ const detail=app.renderBudgets(),edit=walk(detail,n=>n.tag==='button'&&n.children.includes('Editar limite'))[0];
+ assert(edit,'The existing budget editor must remain accessible from B02 detail');
+ edit.props.onClick();assert.equal(app.state.editModal.type,'budget');
+ assert.equal(app.state.editModal.value,'0,00');assert.equal(JSON.stringify(app.state.data),before);
+ app.state.qa84BudgetDrill=null;
+ app.state.budgetFocus='unlimited';cards=walk(app.renderBudgets(),n=>String(n.props?.className||'').split(' ').includes('qa84-budget-card'));assert.equal(cards.length,1);assert.match(JSON.stringify(cards[0]),/Outros/);
  app.state.budgetSearch='inexistente';assert.match(JSON.stringify(app.renderBudgets()),/Nenhuma categoria para estes filtros/);
  app.state.budgetTab='income';assert.doesNotMatch(JSON.stringify(app.renderBudgets()),/Gastos com um limite definido/);
 });
