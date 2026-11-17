@@ -51,6 +51,7 @@ contextBridge.exposeInMainWorld('financeDesktop', Object.freeze({
   bankAutoReview: input => ipcRenderer.invoke('bank:auto-review',input),
   bankAutoReceipt: id => ipcRenderer.invoke('bank:auto-receipt',id),
   bankAutoUndo: input => ipcRenderer.invoke('bank:auto-undo',input),
+  bankAutoCorrect: input => ipcRenderer.invoke('bank:auto-correct',input),
   bankStatus: () => ipcRenderer.invoke('bank:status'),
   bankConfigure: (config) => ipcRenderer.invoke('bank:configure',config),
   bankSync: () => ipcRenderer.invoke('bank:sync'),
