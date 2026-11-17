@@ -114,7 +114,7 @@
 .mf-b05-evidence-list li{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;font-size:12px}
 .mf-b05-negative{color:var(--mf-b05-negative)!important}
 .mf-b05-warning{color:var(--mf-b05-amber);font-size:12px}
-.mf-b05-chat{display:flex;flex-direction:column;min-height:clamp(470px,calc(100vh - 230px),940px)}
+.mf-b05-chat{display:flex;flex-direction:column;min-width:0;min-height:clamp(360px,calc(100dvh - 250px),940px)}
 .mf-b05-chat-head{display:flex;justify-content:space-between;align-items:start;gap:16px;padding:9px 0 17px}
 .mf-b05-chat-head h2{font-size:clamp(22px,2.2vw,30px)}
 .mf-b05-chat-controls{display:flex;gap:8px;flex-wrap:wrap}
@@ -131,8 +131,38 @@
 .mf-b05-starters{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:16px}
 .mf-b05-starters button{border:1px solid var(--mf-b05-border);background:var(--mf-b05-surface);color:var(--mf-b05-text);
  border-radius:10px;padding:9px 12px;display:flex;align-items:center;gap:6px;font-size:12px}
-.mf-b05-chat-composer{margin:auto auto 0;width:min(900px,100%);position:sticky;bottom:0;background:var(--mf-b05-canvas);
- padding-top:10px;z-index:1}
+.mf-b05-chat-composer{margin:0 auto;width:min(900px,100%);position:relative;bottom:auto;
+ background:transparent;padding:0;z-index:1;min-width:0}
+/* RC-ALL-02.2: B05 owns ONLY the layout wrapper. The shared form owns the
+   single border and focus ring; never apply these rules to the D01 drawer. */
+.mf-b05-chat-composer>.mf-chat-composer.mf-ai-composer{border:1px solid var(--mf-b05-border);
+ background:var(--mf-b05-surface);border-radius:16px;margin:0;padding:10px 14px 11px;
+ box-shadow:0 4px 18px rgba(0,0,0,.055);gap:7px;min-width:0}
+.mf-b05-chat-composer>.mf-chat-composer.mf-ai-composer:focus-within{
+ border-color:var(--mf-b05-green);box-shadow:0 0 0 3px color-mix(in srgb,var(--mf-b05-green) 13%,transparent)}
+.mf-b05-chat-composer>.mf-chat-composer textarea{min-height:44px;max-height:120px;
+ padding:5px 0;line-height:1.45;resize:vertical}
+.mf-b05-chat-composer>.mf-chat-composer .mf-chat-compose-footer{border-top:0;
+ padding-top:7px;gap:8px;align-items:center}
+.mf-b05-chat-composer>.mf-chat-composer .mf-chat-compose-footer button{
+ flex-shrink:0;min-height:36px}
+.mf-b05-chat>.mf-chat-followups{width:min(900px,100%);margin:0 auto 10px;
+ padding:0;position:relative;z-index:2}
+@media(max-height:680px){
+ .mf-b05-chat{min-height:0}
+ .mf-b05-chat-thread{min-height:135px;max-height:42dvh;padding-top:6px;padding-bottom:8px}
+ .mf-b05-chat-welcome{margin:14px auto}
+ .mf-b05-chat-head{padding-bottom:8px}
+ .mf-b05-chat-composer>.mf-chat-composer textarea{min-height:38px;max-height:82px}
+}
+@media(max-width:680px){
+ .mf-b05-chat-composer>.mf-chat-composer.mf-ai-composer{padding:9px 11px}
+ .mf-b05-chat-composer>.mf-chat-composer .mf-chat-compose-footer{flex-wrap:wrap}
+}
+@media(prefers-reduced-motion:reduce){
+ .mf-b05-chat-composer>.mf-chat-composer.mf-ai-composer,
+ .mf-b05-chat-composer>.mf-chat-composer.mf-ai-composer:focus-within{transition:none}
+}
 .mf-b05-history-drawer{padding:16px}
 .mf-b05-history-drawer .mf-ai-history-sidebar{width:100%;max-width:100%;border:0;box-shadow:none}
 .mf-b05-plan-head{padding:7px 0 19px}
