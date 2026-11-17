@@ -20,15 +20,35 @@ class D05AutoLocalScheduler{
    started_at TEXT NOT NULL,finished_at TEXT,
    applied INTEGER,review_count INTEGER,error_code TEXT
   )`);
+  this.sql.exec(`CREATE TABLE IF NOT EXISTS mf_auto_controls(
+   id INTEGER PRIMARY KEY CHECK(id=1),paused INTEGER NOT NULL CHECK(paused IN(0,1)),
+   changed_at TEXT NOT NULL
+  )`);
+  this.sql.prepare('INSERT OR IGNORE INTO mf_auto_controls(id,paused,changed_at) VALUES(1,0,?)')
+   .run(this.clock().toISOString());
+ }
+ isPaused(){return this.sql.prepare('SELECT paused FROM mf_auto_controls WHERE id=1').get()?.paused===1;}
+ pause(){
+  this.sql.prepare('UPDATE mf_auto_controls SET paused=1,changed_at=? WHERE id=1')
+   .run(this.clock().toISOString());
+  return this.status();
+ }
+ resume(){
+  if(!this.engine().status().enabled||!this.engine().initialReady())
+   throw Error('CAT scheduler: reativação exige consentimento válido e lote inicial aprovado');
+  this.sql.prepare('UPDATE mf_auto_controls SET paused=0,changed_at=? WHERE id=1')
+   .run(this.clock().toISOString());
+  return this.status();
  }
  status({limit=20}={}){
   if(!Number.isInteger(limit)||limit<1||limit>100)throw Error('CAT scheduler: limite inválido');
-  return {contract:'D05/AUTO-JOBS-V1',running:this.running,
+  return {contract:'D05/AUTO-JOBS-V1',running:this.running,paused:this.isPaused(),
    jobs:this.sql.prepare('SELECT job_key AS jobKey,trigger,state,attempts,started_at AS startedAt,finished_at AS finishedAt,applied,review_count AS reviewCount,error_code AS errorCode FROM mf_auto_jobs ORDER BY started_at DESC LIMIT ?').all(limit)};
  }
  async run(trigger,{syncId=null}={}){
   if(!['daily','sync','manual'].includes(trigger))throw Error('CAT scheduler: origem inválida');
   if(this.running)return {state:'busy',applied:0};
+  if(this.isPaused())return {state:'paused',applied:0};
   const engine=this.engine();
   // Never activate an unconfirmed first batch, or re-enable a revoked grant.
   if(!engine.status().enabled||!engine.initialReady())
