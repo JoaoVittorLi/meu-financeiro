@@ -339,9 +339,13 @@ class D05AutoCategorization{
       splitCount:row.hasSplits?1:0,linkedManualId:row.linkedManualId},
      evidence
     }):null;
-    if(external?.status==='apply'&&external.reason==='MULTI_SIGNAL_RECONCILED'&&
-       external.evidenceTypes.includes('merchant_mcc')&&
-       external.evidenceTypes.includes('provider_category')&&
+    const corroborated=external?.reason==='MULTI_SIGNAL_RECONCILED'&&
+     external.evidenceTypes.includes('merchant_mcc')&&
+     external.evidenceTypes.includes('provider_category');
+    const directParent=external?.reason==='VERIFIED_DIRECT_MERCHANT_MCC_PARENT'&&
+     external.target?.subcategoryId===null&&
+     external.evidenceTypes.includes('verified_commercial_cnpj');
+    if(external?.status==='apply'&&(corroborated||directParent)&&
        (!verified.length||sameTarget(verified[0],external.target))){
      try{
       const resolved=service.resolve(external.target);
@@ -353,7 +357,9 @@ class D05AutoCategorization{
          (!resolved.child||['both',kind(row)].includes(resolved.child.kind))){
        target={categoryId:resolved.categoryId,subcategoryId:resolved.subcategoryId};
        evidenceHash=hash(['cat02-external-v1',evidence.fingerprint,merchant,target]);
-       explanation='MCC e categoria do provedor Pluggy concordantes; destino D05 oficial verificado. Sem correções humanas exigidas.';
+       explanation=directParent?
+        'MCC comercial restrito com identidade direta e CNPJ verificados; somente categoria-pai D05, sem subcategoria inferida.':
+        'MCC e categoria do provedor Pluggy concordantes; destino D05 oficial verificado. Sem correções humanas exigidas.';
       }
      }catch(_){/* External evidence not resolvable against the local D05 catalog. */}
     }
