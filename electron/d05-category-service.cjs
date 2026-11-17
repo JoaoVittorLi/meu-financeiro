@@ -113,7 +113,7 @@ class D05CategoryService{
  usage(subcategoryId){
   ensureId(subcategoryId,'subcategoryId');
   const items={};
-  for(const table of ['transactions','bank_category_overrides','bank_transaction_splits','category_rules','planned_items']){
+  for(const table of ['transactions','bank_category_overrides','bank_transaction_splits','category_rules','planned_items','mf_auto_labels']){
    const exists=this.db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?").get(table);
    items[table]=exists?this.db.prepare(`SELECT COUNT(*) AS n FROM ${table} WHERE subcategory_id=?`).get(subcategoryId).n:0;
   }
