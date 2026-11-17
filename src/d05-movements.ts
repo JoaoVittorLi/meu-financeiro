@@ -352,7 +352,7 @@ class D05Movements extends React.Component<any,any> {
     await runWritePages(result.batch.jobId);
     return;
    }
-   if(['failed','busy','paused','awaiting_explicit_consent_or_first_confirmation'].includes(result?.state))
+   if(['failed','busy','paused','awaiting_explicit_consent_or_first_confirmation','initial_batch_requires_resolution'].includes(result?.state))
     throw Error('A aplicação NÃO foi concluída: '+String(result.state)+'. Confira os backups e o estado dos jobs antes de tentar novamente.');
    await host.refreshBank();await refreshHierarchy();await refreshAuto();
    setAutoMessage(action==='enable'?'Contas autorizadas, mas nenhuma classificação aplicada. Confira a prévia inicial.':
