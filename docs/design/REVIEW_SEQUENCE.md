@@ -8,7 +8,7 @@ Data: 2026-11-13 · Índice: #55 · Coordenação: #49 · Baseline PR #54 / 55de
 | D03 | Inteligência Hoje | **IMPLEMENTATION_READY** (DESIGN_APPROVED) | #61 | **V2 FINAL** · cartões premium uniformes + prioridades dinâmicas · HTML/spec/QA/handoff publicados; Electron pendente |
 | D04 | Central de Revisão | **IMPLEMENTATION_READY** (DESIGN_APPROVED) | #67 | **V1.1 FINAL** · fila premium, edição persistente, escopos separados, reconfirmação; Executor #69, QA Electron pendente |
 | D05 | Movimentações | **DESIGN_APPROVED / IMPLEMENTATION_READY (V1.3 FINAL)** · #74 E1/E2/E3 bloqueante | #70 | Tela completa, ícones 14×61/67 SVGs e interações premium aprovados; app/SQLite/QA ainda pendentes |
-| D06 | Visão Geral | NOT_STARTED | — | — |
+| D06 | Visão Geral | **DESIGN_APPROVED / HANDOFF_DOCUMENTED** (código pendente; standalone ainda não exportado) | #90 | **V3 Panorama Vivo · Motion Edition**, aprovado 17/11/2026 |
 | D07 | Orçamentos | NOT_STARTED | — | — |
 | D08 | Planejamento | NOT_STARTED | — | — |
 | D09 | Simulador | NOT_STARTED | — | — |
@@ -149,3 +149,15 @@ Direção **proposta, não aprovada**: revisão via ponto azul no nome do comerc
 - **Regra de precedência:** a B05 V6 altera a **composição externa** da D03 Hoje V2 somente na superfície Inteligência, preservando seu motor de dados, priorização e segurança; D04 V1.1, D01/D02 e catálogo D05 seguem válidos. Navegação Hoje/Conversar/Plano agora é superior, não escondida em “Mais ferramentas”.
 - **Status:** B01 V3, B02 V7, B03 V2, B04 V2, **B05 V6/V5 todos DESIGN_APPROVED** no QA issue #84. **Nenhuma dessas aprovações, isoladamente, prova código integrado, screenshots reais ou Windows EXE homologado.**
 - **Entrega seguinte:** Executor B05 implementa em branch de código, Integrador PR #76 acompanha HEAD/conflitos e QA Electron. D06–D12 permanecem roadmap de tela completa independente das correções B01–B05.
+
+
+### D06 — Visão Geral · Panorama Vivo Motion Edition V3 APROVADA (17/11/2026)
+
+**Decisão do proprietário:** autorizada/aprovada a V3 na conversa após melhorias de motion sobre o Panorama Vivo V2; V1 foi considerada básica, V2 direção aceita, V3 fixa a composição definitiva e a linguagem de movimento. [Issue D06 #90](https://github.com/JoaoVittorLi/meu-financeiro/issues/90).
+
+- **Protótipo de origem:** componente interativo em conversa `AppBlock id="mf-d06-motion-v3"`, raiz `#d06motion` (não existe HTML exportado standalone no GitHub).
+- **Fonte canônica de design:** [handoff final](handoffs/D06_PANORAMA_VIVO_APPROVED_V3_20261117.md) · [mapa real de código](handoffs/D06_PANORAMA_VIVO_IMPLEMENTATION_MAP_V3.md) · [contrato de motion](handoffs/D06_PANORAMA_VIVO_MOTION_SPEC_V3.md) · [fixtures centavos](handoffs/D06_PANORAMA_VIVO_FIXTURES_V3.json) · [42 gates de aceite](handoffs/D06_PANORAMA_VIVO_ACCEPTANCE_V3.md).
+- **V3 aprovado:** header e quatro KPIs separados; palco Fluxo/Ritmo; trajetos proporcionais e pulsos SVG **sob demanda**; seleção sincronizada com lente/categorias B01; slider temporal com valores conciliados; drawers/contexto; agenda, orçamento, contas e últimos registros; dark/light, privacy e reduced-motion.
+- **Regra de precedência:** B01 V3 exige **faixa segmentada + lista** com categoria D05 (a faixa não aparece no inline simplificado), B02 V7 exige anel 360° correto; D05 único descriptor de cor/ícone prevalece sobre SVG/hue do mock. Protótipo usa “Serviços diversos” ilustrativo, mas D05 real é `cat:outros` para fallback; nunca criar ID inexistente.
+- **STATUS REAL:** `DESIGN_APPROVED / HANDOFF_DOCUMENTED / STANDALONE_PROTOTYPE_NOT_EXPORTED / CODE_NOT_STARTED / ELECTRON_QA_NOT_RUN`. Critério existente de `IMPLEMENTATION_READY` exige protótipo reproduzível + specs e **ainda não está integralmente atendido**; exportação/fidelidade é item aberto para executor/design. Não foi executado CI/build, merge, QA Windows ou EXE.
+- **Próximo item da revisão de tela principal:** D07 — Orçamentos. Preservar B02 V7 aprovada ao revisar tela D07 por inteiro.
