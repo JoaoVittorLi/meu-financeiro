@@ -51,13 +51,14 @@ async function localFinancialEnable(app:any){
  try{
   const grant=await api.localFinancialAuthorize(scope);
   if(app.__localReadGeneration!==generation||app.state.mode!==s.mode){void api.localFinancialRevoke?.(grant.token);return;}
-  app.__ic2Conversation=null; // Invalidate I2-A conversation when renewing read grant.
+  app.__ic2Conversation=null;app.__ic2InvestigationActive=false; // Invalidate I2-A when renewing read grant.
   const backup=s.localFinancialAccess?.backup||{intelligenceThreads:s.intelligenceThreads,intelligenceMessages:s.intelligenceMessages,intelligenceActiveThreadId:s.intelligenceActiveThreadId,intelligenceHydratedMode:s.intelligenceHydratedMode};
   app.setState({localFinancialAccess:{...grant,backup},localFinancialBusy:false,localFinancialRadar:null,intelligenceThreads:[],intelligenceMessages:[],intelligenceActiveThreadId:null,intelligenceDraft:'',intelligencePreparedQuestion:'',workIntelligenceDemo:s.workIntelligenceDemo?{...s.workIntelligenceDemo,enabled:false}:undefined},()=>{void localFinancialRadar(app);if(typeof intelligencePremiumLoad==='function')void intelligencePremiumLoad(app);});
  }catch{app.setState({localFinancialBusy:false,localFinancialError:'Não foi possível autorizar a leitura local. Nenhum dado foi consultado por esta solicitação.'});}
 }
 function localFinancialDisable(app:any){
  app.__ic2Conversation=null;
+ app.__ic2InvestigationActive=false;
  app.__localRadarRequest=(app.__localRadarRequest||0)+1;
  const access:LocalFinancialAccess=app.state.localFinancialAccess;app.__localReadGeneration=(app.__localReadGeneration||0)+1;
  app.setState({...access?.backup,localFinancialAccess:null,localFinancialRadar:null,localFinancialBusy:false,localFinancialError:'',intelligenceDraft:''},()=>{if(typeof intelligencePremiumLoad==='function')void intelligencePremiumLoad(app);});
@@ -89,16 +90,25 @@ async function localFinancialSubmit(app:any,question:string){
  if(app.state.localFinancialBusy||!String(question||'').trim())return;
  const access:LocalFinancialAccess=app.state.localFinancialAccess;
  const q=String(question).trim().slice(0,700),scope=intelligencePageScope(app),messages=[...intelligenceHistoryList(app)];
+ const threadAtStart=app.state.intelligenceActiveThreadId||null;
  const api=localFinancialAPI() as any;
+ const month=app.state.localFinancialMonth||app.state.month,signature=intelligencePremiumSignature(app);
+ // I3-01 investigations use the already-authorized IC2 read pipeline, not a
+ // V3 decorative card. Follow-ups retain IC2 context without copying money.
+ const foldedQuestion=intelligenceFoldText(q);
+ const financialInvestigation=/por que.*(despes|gast)|investig|categorias?.*contribu|estabelec.*(cresc|aument)|mostre.*estabelec|despes.*(aument|subi)|gast.*(aument|mais)|onde.*gastando|o que aumentou|compar.*(janeiro|fevereiro|marco|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro|mes)/.test(foldedQuestion);
+ const sameThread=!!app.__ic2Conversation?.answerId&&messages.some((m:any)=>m.id===app.__ic2Conversation.answerId);
+ const i3Followup=sameThread&&!!app.__ic2InvestigationActive&&
+    /^(e |esse |essa |no |na |quanto |me mostre|mostre |onde )|recorrente|isolado|pontual/.test(foldedQuestion);
+ const i3Requested=financialInvestigation||i3Followup;
  const v3Requested=mfV3Requested(q);
  // A V3 visual requires the operational data endpoint. In the legacy local
  // SQLite adapter without that endpoint, do NOT replace a valid R$42,15
  // response with a misleading "no evidence" visual failure.
  // D01 supervised proposals and synthetic receipts cannot be hijacked.
- const v3Kind=typeof api?.intelligenceOperationalAsk==='function'&&
+ const v3Kind=!i3Requested&&typeof api?.intelligenceOperationalAsk==='function'&&
   v3Requested&&v3Requested!=='proposal'&&v3Requested!=='approval'?v3Requested:null;
  let previousOperational:any=null;
- const month=app.state.localFinancialMonth||app.state.month,signature=intelligencePremiumSignature(app);
  const request=(app.__localChatRequest||0)+1;app.__localChatRequest=request;
  const user:IntelligenceChatMessage={id:'local-u-'+Date.now(),role:'user',text:q,status:'sent',
   createdAt:intelligenceNowTime(),scopeLabel:scope.label,periodLabel:month};
@@ -108,7 +118,8 @@ async function localFinancialSubmit(app:any,question:string){
   if(!v3Kind&&typeof api?.intelligenceIC2ReadQuery==='function'){
    // The conversational read path is isolated from explicit V3 visual requests.
    const previous=app.__ic2Conversation;
-   const conversationId=previous?.access===access&&previous?.signature===signature?previous.id:null;
+   const conversationId=previous?.access===access&&previous?.signature===signature&&
+     previous?.answerId&&messages.some((m:any)=>m.id===previous.answerId)?previous.id:null;
    ic2=await api.intelligenceIC2ReadQuery({token:access.token,
       source:access.source,profile:access.profile,month,question:q,density:'standard',
       ...(conversationId?{conversationId}:{})});
@@ -133,12 +144,15 @@ async function localFinancialSubmit(app:any,question:string){
    else error='Consulta ainda não reconhecida. Comandos de escrita não são executados por esta consulta local.';
   }
  }catch(e:any){error=String(e?.message||'Consulta local indisponível.').slice(0,220);}
- if(request!==app.__localChatRequest||app.state.localFinancialAccess!==access||
+ if(request!==app.__localChatRequest||(app.state.intelligenceActiveThreadId||null)!==threadAtStart||
+    app.state.localFinancialAccess!==access||
     app.state.localFinancialAccess?.token!==access?.token||
     signature!==intelligencePremiumSignature(app)){
   if(request===app.__localChatRequest)app.setState({localFinancialBusy:false});
   return;
  }
+ app.__ic2InvestigationActive=!!(ic2&&['ready','partial'].includes(ic2.status)&&
+  ic2.facts?.some((fact:any)=>fact.tool==='compare_spending_breakdown'));
  if(ic2&&['ready','partial','needs_clarification','unsupported'].includes(ic2.status))
    app.__ic2Conversation={access,signature,id:ic2.conversationId};
  const state=operational?.uiState;
@@ -176,8 +190,10 @@ async function localFinancialSubmit(app:any,question:string){
     factsValid?'Consulta local determinística, sem IA externa. Não foi executada qualquer alteração.':
     reply?JSON.stringify(reply.references):'Nenhuma alteração financeira nem envio externo.'
  };
- if(ic2)mfIC2BindMessage(answer,access,signature,month);
- else mfLocalBindMessage(answer,access,signature,month);
+ if(ic2){
+  mfIC2BindMessage(answer,access,signature,month);
+  if(app.__ic2Conversation?.id===ic2.conversationId)app.__ic2Conversation.answerId=answer.id;
+ }else mfLocalBindMessage(answer,access,signature,month);
  intelligenceSyncThreadMessages(app,[...messages,user,answer],scope);
  app.setState({localFinancialBusy:false});
 }
