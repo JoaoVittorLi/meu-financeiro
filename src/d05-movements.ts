@@ -168,7 +168,14 @@ class D05Movements extends React.Component<any,any> {
   autoScanRef.current.jobId=jobId;
   autoScanRef.current.stop=false;
   while(!autoScanRef.current.stop){
-   const next=await bridge.bankAutoPreviewNext(jobId);
+   let next:any;
+   try{next=await bridge.bankAutoPreviewNext(jobId);}
+   catch(e:any){
+    // A pause/cancel can race with an in-flight page IPC. The owner action
+    // wins; do not display a false integrity error after intentional stop.
+    if(autoScanRef.current.stop)break;
+    throw e;
+   }
    if(autoScanRef.current.stop)break;
    setAutoProgress(next);
    if(next.state==='ready'){
