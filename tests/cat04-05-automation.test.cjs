@@ -276,3 +276,22 @@ test('CAT05 T20 — grant and revocation create immutable local consent events',
   assert.equal(f.db.prepare("SELECT COUNT(*) AS n FROM cat05_consents WHERE revoked_at IS NOT NULL").get().n,1);
  }finally{f.close();}
 });
+
+test('CAT05 T21 — reauthorizing an account invalidates the previous job grant generation',async()=>{
+ const f=setup({accounts:1,perAccount:3});try{
+  const q=await authorizeAndQueue(f);
+  await f.writer.authorize({scope:f.scope,accountIds:f.ids,
+   settings:{history:true,autoNew:true,uncertainToReview:true}});
+  assert.throws(()=>f.writer.runBatch({jobId:q.jobId,scope:f.scope}),/concessão alterada/);
+  assert.equal(f.db.prepare('SELECT COUNT(*) AS n FROM cat05_assignments').get().n,0);
+ }finally{f.close();}
+});
+test('CAT05 T22 — consent journal records multiple generations without overwriting history',async()=>{
+ const f=setup({accounts:1,perAccount:1});try{
+  const settings={history:true,autoNew:true,uncertainToReview:true};
+  await f.writer.authorize({scope:f.scope,accountIds:f.ids,settings});
+  await f.writer.authorize({scope:f.scope,accountIds:f.ids,settings});
+  assert.equal(f.db.prepare("SELECT COUNT(*) AS n FROM cat05_consent_events WHERE action='grant'").get().n,2);
+  assert.equal(f.db.prepare('SELECT COUNT(DISTINCT grant_id) AS n FROM cat05_consent_events').get().n,2);
+ }finally{f.close();}
+});
