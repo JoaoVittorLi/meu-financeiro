@@ -77,3 +77,14 @@ O SHA #94 `674108e...` tem status `preflight_linux=success` e `build_windows=err
 **D-2 objetivo cloud:** sem autorizar migração/cutover pessoal na 1.0 enquanto paridade e permissão não forem validadas.
 
 **D-3 GO:** somente após G0–G7 e logs Windows classificados, aprovar commit de versão, build e tag em momentos distintos. Sem aprovação registrada, **NO-GO**.
+
+
+## G-P0-CAT — Requisito bloqueante da 1.0.0 (aprovado em 17/11/2026)
+
+Não iniciar `1.0.0-rc.1` nem GO da #71 até integrar e homologar CAT-01 a CAT-05 no **mesmo SHA final** da candidata. O objetivo é que o Meu Financeiro categoriza automaticamente movimentações bancárias autorizadas com segurança, após primeira prévia/aprovação nativa e com rotina local posterior.
+
+**Gates adicionais obrigatórios:** (1) metadados Pluggy sem Premium, não fabricação de MCC/CNPJ e diagnóstico de cobertura; (2) migração SQLite de metadata, consents, jobs, assignments e receipts, backup completo/WAL/restore; (3) classificador D05 com regra aprovada, evidência corroborada, prioridade manual/splits, transferências/ignore/PENDING/estorno, pais/filhos 14×61; (4) primeira análise integral paginada sem limite visual de 2.500, prévia, confirmação nativa, progresso, pausa/cancelamento/reinício; (5) automação pós-sync e diária **somente enquanto aberto**, revogação por conta, idempotência e recibos/undo; (6) UI real Movimentações/Inteligência/Central de Revisão, light/dark, acessibilidade; (7) dados sintéticos 3 contas/600+, falhas/recovery; (8) Node 22.23.4/npm 10.9.9, SQLite, TS, ASAR, provenance e Electron Windows comprovados por logs.
+
+**Sequência de código isolado:** PR #99 CAT-01/02, #101 CAT-03, #102 CAT-04/05, todos dependentes da #96; o Integrador da #49 retém MAIN/preload/migração/IPC/renderer e deve incorporar após revisão. O `approvedForPersonal:()=>false` geral permanece; concessão específica para CAT-05 deve usar gate distinto, consentimento nativo e backup, sem ativação automática por configurações padrão. Sem QA oficial, os três PRs são DRAFT/NOT_HOMOLOGATED.
+
+**Proibido até nova autorização:** CircleCI pago, EXE, Cloudflare, tagging, merge main, dados pessoais e GitHub Release. Estes documentos apenas mudam o critério de aceite, não habilitam a automação.
