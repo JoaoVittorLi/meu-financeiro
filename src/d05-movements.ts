@@ -914,6 +914,8 @@ class D05Movements extends React.Component<any,any> {
          h('span',{},String(autoProgress.processed||0)+' / '+String(autoProgress.total||0))),
        h('progress',{value:autoProgress.processed||0,max:Math.max(1,autoProgress.total||0),
         'aria-label':'Movimentações efetivamente lidas'})):null,
+      autoInfo?.applyJob?.state==='stale'?h('p',{className:'d05-notice',role:'alert'},
+       'O lote anterior ficou desatualizado. Uma nova leitura e confirmação são obrigatórias; os recibos já gravados serão preservados.'):null,
       autoPreview?h('div',{},
        h('div',{className:'mf-cat-metric-grid'},
         [{title:'Aplicáveis',value:autoPreview.candidateCount||0},
@@ -942,7 +944,7 @@ class D05Movements extends React.Component<any,any> {
          h('p',{},'A confirmação nativa revalidará o manifesto e criará backups e recibos antes de gravar.')),
         h('button',{type:'button',className:'d05-confirm',
          disabled:autoBusy||!autoInfo?.available||autoProgress?.state!=='ready'||
-          !autoPreview.previewVersion||autoInfo?.initialConfirmed,
+          !autoPreview.previewVersion||(autoInfo?.initialConfirmed&&autoInfo?.applyJob?.state!=='stale'),
          onClick:()=>void runAutoAction('confirm')},'Conferi; aplicar propostas elegíveis')),
        autoPreview.candidateCount>20000?h('p',{className:'mf-cat-caption'},
         'Volume elevado: o motor fará commits atômicos de até 250 propostas, com progresso e recuperação persistentes.'):null
