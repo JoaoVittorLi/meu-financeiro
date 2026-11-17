@@ -633,11 +633,17 @@ app.whenReady().then(async()=>{
   }
   autoBackupBusy=true;
   try{
-   if(initial)await autoCategory.confirmInitialPreview(input.previewVersion);
-   const current=autoCategory.plan({limit:100});
-   const batch=autoCategory.startBatch({previewVersion:current.previewVersion});
-   return {batch,status:autoCategory.status(),changesApplied:false};
-
+   // First activation and stale recovery require the separate native preview.
+   // Later manual checks belong to the SAME recurring scheduler and must
+   // process only post-authorization movements via its persistent journal.
+   if(initial||staleBatch){
+    if(initial)await autoCategory.confirmInitialPreview(input.previewVersion);
+    const current=autoCategory.plan({limit:100});
+    const batch=autoCategory.startBatch({previewVersion:current.previewVersion});
+    return {batch,status:autoCategory.status(),changesApplied:false};
+   }
+   return {...await autoScheduler.run('manual'),status:autoCategory.status(),
+    data:titledBankData()};
   }finally{autoBackupBusy=false;}
  });
  // Canonical D05 batch journal; status/progress reflect COMMITTED receipts only.
