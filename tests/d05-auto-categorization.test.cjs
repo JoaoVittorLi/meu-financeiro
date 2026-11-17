@@ -15,7 +15,7 @@ const targetAlt={categoryId:'cat:transporte',subcategoryId:'sub:transporte/combu
 const span={startDate:'2026-01-01',endDate:'2099-12-31'};
 const gen=(id,desc,i,status='POSTED')=>({
  id,date:'2026-10-'+String((i%27)+1).padStart(2,'0'),description:desc,
- amount:-21.5-(i%11),status,category:'Groceries'
+ amount:-21.5-i/100,status,category:'Groceries'
 });
 function boot(){
  const root=fs.mkdtempSync(path.join(os.tmpdir(),'mf-auto-p0-synthetic-'));
@@ -92,14 +92,14 @@ test('P0 pending, transfer, ignore, split and duplicate identity cannot auto-lab
  e.db.editBankTransaction({accountId:ACCOUNT_A,externalId:'a-30',nature:'transfer'});
  e.db.editBankTransaction({accountId:ACCOUNT_A,externalId:'a-31',nature:'ignore'});
  e.db.setBankSplits({accountId:ACCOUNT_A,externalId:'a-32',parts:[
-  {category:'Alimentação',amount:1000},{category:'Transporte',amount:1450}
+  {category:'Alimentação',amount:1000},{category:'Transporte',amount:1182}
  ]});
  const p=e.auto.plan({limit:20000});
  for(const id of ['a-pending','a-30','a-31','a-32'])
   assert.equal(p.candidates.some(x=>x.externalId===id),false);
 }));
 test('P0 manual override and approved rule are strictly above automatic suggestions',()=>sandbox(async e=>{
- e.db.upsertRule({pattern:'MERCADO BOA PRACA FINAL 39',matchMode:'exact',scope:'bank',
+ e.db.upsertRule({pattern:'FINAL 39',matchMode:'contains',scope:'bank',
   category:'Compras',priority:1});
  e.d05.assignBank({accountId:ACCOUNT_A,externalId:'a-40',target:targetAlt});
  e.auto.configure({accountIds:[ACCOUNT_A],...span},true);
@@ -117,12 +117,12 @@ test('P0 conflicting human corrections force review instead of guessing',()=>san
  assert(plan.review.some(x=>x.reason==='Correções anteriores contraditórias'));
 }));
 test('P0 different bank accounts and dates cannot borrow consent or human evidence',()=>sandbox(async e=>{
- e.auto.configure({accountIds:[ACCOUNT_A],startDate:'2026-10-14',endDate:'2026-10-27'},true);
+ e.auto.configure({accountIds:[ACCOUNT_A],startDate:'2026-10-01',endDate:'2026-10-15'},true);
  const rows=e.auto.plan({limit:20000}).candidates;
  assert(rows.length>0);assert(rows.every(r=>r.accountId===ACCOUNT_A));
  for(const p of rows){
   const day=e.db.db.prepare('SELECT date FROM bank_transactions WHERE account_id=? AND external_id=?').get(p.accountId,p.externalId).date;
-  assert(day>='2026-10-14'&&day<='2026-10-27');
+  assert(day>='2026-10-01'&&day<='2026-10-15');
  }
  assert.equal(rows.some(r=>r.accountId===ACCOUNT_B),false);
 }));
@@ -179,6 +179,6 @@ test('P0 permanent consent, labels and receipts survive FinanceDB restart',()=>s
  }finally{
   // The outer sandbox cleanup closes the original FinanceDB again; avoid
   // double-close by replacing the instance with this re-opened handle.
-  e.db=reopened;
+  reopened.close();
  }
 }));
