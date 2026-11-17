@@ -9,7 +9,7 @@ const sha=o=>createHash('sha256').update(JSON.stringify(o)).digest('hex');
 const compound=(a,b)=>JSON.stringify([a,b]);
 function init(sql){
  sql.exec([
- 'CREATE TABLE IF NOT EXISTS mf_auto_consent (account_id TEXT PRIMARY KEY REFERENCES bank_accounts(account_id),profile TEXT NOT NULL CHECK(profile="real"),enabled INTEGER NOT NULL CHECK(enabled IN (0,1)),contract TEXT NOT NULL,changed_at TEXT NOT NULL)',
+ "CREATE TABLE IF NOT EXISTS mf_auto_consent (account_id TEXT PRIMARY KEY REFERENCES bank_accounts(account_id),profile TEXT NOT NULL CHECK(profile='real'),enabled INTEGER NOT NULL CHECK(enabled IN (0,1)),contract TEXT NOT NULL,changed_at TEXT NOT NULL)",
  'CREATE TABLE IF NOT EXISTS mf_auto_labels (account_id TEXT NOT NULL,external_id TEXT NOT NULL,category_id TEXT NOT NULL,subcategory_id TEXT,category TEXT NOT NULL,evidence_hash TEXT NOT NULL,source_fingerprint TEXT NOT NULL,receipt_id TEXT NOT NULL,assigned_at TEXT NOT NULL,PRIMARY KEY(account_id,external_id),FOREIGN KEY(account_id,external_id) REFERENCES bank_transactions(account_id,external_id) ON DELETE CASCADE)',
  'CREATE TABLE IF NOT EXISTS mf_auto_receipts (id TEXT PRIMARY KEY,kind TEXT NOT NULL,reference_id TEXT,created_at TEXT NOT NULL,count INTEGER NOT NULL,content_hash TEXT NOT NULL)',
  'CREATE INDEX IF NOT EXISTS mf_auto_receipt_lookup ON mf_auto_labels(receipt_id)',
@@ -77,7 +77,7 @@ class PersonalAutoCategorizer{
   const sql=this.database().db,known=new Set(sql.prepare('SELECT account_id FROM bank_accounts').all().map(r=>r.account_id));
   if(accountIds.some(x=>!known.has(x)))throw Error('Auto: invalid account');
   sql.exec('BEGIN IMMEDIATE');
-  try{const stmt=sql.prepare('INSERT INTO mf_auto_consent(account_id,profile,enabled,contract,changed_at) VALUES (?,"real",?,?,?) ON CONFLICT(account_id) DO UPDATE SET enabled=excluded.enabled,contract=excluded.contract,changed_at=excluded.changed_at');
+  try{const stmt=sql.prepare('INSERT INTO mf_auto_consent(account_id,profile,enabled,contract,changed_at) VALUES (?,\'real\',?,?,?) ON CONFLICT(account_id) DO UPDATE SET enabled=excluded.enabled,contract=excluded.contract,changed_at=excluded.changed_at');
    for(const id of accountIds)stmt.run(id,enabled?1:0,CONTRACT,this.clock().toISOString());
    sql.exec('COMMIT');}catch(e){sql.exec('ROLLBACK');throw e}
   return this.status();
@@ -94,7 +94,7 @@ class PersonalAutoCategorizer{
    sql.exec('BEGIN IMMEDIATE');
    try{const actualConsent=this.allowedAccounts(sql),after=snapshot(sql,actualConsent);
     if(actualConsent.size!==consent.size||[...consent].some(x=>!actualConsent.has(x))||after.partial||sha(before.candidates)!==sha(after.candidates))throw Error('Auto: stale authorization or financial facts');
-    sql.prepare('INSERT INTO mf_auto_receipts(id,kind,reference_id,created_at,count,content_hash) VALUES (?,"apply",NULL,?,?,?)').run(receiptId,now,after.candidates.length,sha(after.candidates));
+    sql.prepare('INSERT INTO mf_auto_receipts(id,kind,reference_id,created_at,count,content_hash) VALUES (?,\'apply\',NULL,?,?,?)').run(receiptId,now,after.candidates.length,sha(after.candidates));
     const stmt=sql.prepare('INSERT INTO mf_auto_labels(account_id,external_id,category_id,subcategory_id,category,evidence_hash,source_fingerprint,receipt_id,assigned_at) VALUES (?,?,?,?,?,?,?,?,?)');
     const details=sql.prepare('INSERT INTO mf_auto_receipt_items(receipt_id,account_id,external_id,before_category_id,before_subcategory_id,after_category_id,after_subcategory_id,source_fingerprint,evidence_hash) VALUES (?,?,?,?,?,?,?,?,?)');
     for(const c of after.candidates){
@@ -110,7 +110,7 @@ class PersonalAutoCategorizer{
  async undo(receiptId){
   if(!this.allowed()||typeof receiptId!=='string'||receiptId.length>180)throw Error('Auto: denied');
   const sql=this.database().db;
-  if(!sql.prepare('SELECT 1 FROM mf_auto_receipts WHERE id=? AND kind="apply"').get(receiptId))throw Error('Auto: invalid receipt');
+  if(!sql.prepare('SELECT 1 FROM mf_auto_receipts WHERE id=? AND kind=\'apply\'').get(receiptId))throw Error('Auto: invalid receipt');
   // An undo is a financial classification write: verify a recoverable snapshot first.
   fs.mkdirSync(this.backupDirectory(),{recursive:true,mode:0o700});
   await this.finance().backupTo(path.join(this.backupDirectory(),'before-auto-undo-'+this.clock().toISOString().replace(/[:.]/g,'-')+'-'+randomUUID()+'.sqlite'));
@@ -119,7 +119,7 @@ class PersonalAutoCategorizer{
    const stmt=sql.prepare('DELETE FROM mf_auto_labels WHERE receipt_id=? AND account_id=? AND external_id=? AND category_id=? AND subcategory_id IS ?');
    let count=0;for(const r of rows)count+=stmt.run(receiptId,r.account_id,r.external_id,r.category_id,r.subcategory_id).changes;
    const id=randomUUID();
-   sql.prepare('INSERT INTO mf_auto_receipts(id,kind,reference_id,created_at,count,content_hash) VALUES (?,"undo",?,?,?,?)').run(id,receiptId,this.clock().toISOString(),count,sha(rows));
+   sql.prepare('INSERT INTO mf_auto_receipts(id,kind,reference_id,created_at,count,content_hash) VALUES (?,\'undo\',?,?,?,?)').run(id,receiptId,this.clock().toISOString(),count,sha(rows));
    sql.exec('COMMIT');return {status:'undone',removed:count,receiptId:id};
   }catch(e){sql.exec('ROLLBACK');throw e}
  }
