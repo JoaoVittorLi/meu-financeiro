@@ -552,21 +552,40 @@ app.whenReady().then(async()=>{
     'Sem LLM externo, sem modificar valores, status ou saldo; revogável nas Movimentações.'});
   requireAppSender(event);autoIdle();
   if(answer.response!==1||!mainWindow||mainWindow.isDestroyed())return {cancelled:true};
+  // Native approval grants only the scoped category capability. It NEVER
+  // silently applies the first batch; the owner must inspect its preview.
   const authorization=autoCategory.configure({accountIds:ids,startDate:from,endDate:to},true);
-  autoBackupBusy=true;
-  try{
-   const outcome=await autoCategory.apply();
-   return {authorization,outcome,data:titledBankData()};
-  }finally{autoBackupBusy=false;}
+  const preview=autoCategory.plan({limit:100});
+  return {authorization,preview,changesApplied:false};
  });
  ipcMain.handle('bank:auto-revoke',(event,accountId)=>{
   requireAppSender(event);autoAllowed();autoIdle();return autoCategory.revoke(accountId);
  });
  ipcMain.handle('bank:auto-apply',async(event,input)=>{
   requireAppSender(event);autoAllowed();autoIdle();
+  const initial=!autoCategory.initialReady();
+  if(initial){
+   const preview=autoCategory.plan({limit:20000});
+   if(!input?.previewVersion||input.previewVersion!==preview.previewVersion||
+      preview.candidateCount>preview.candidates.length)
+    throw Error('Prévia inicial ausente, alterada ou muito grande. Refaça a análise antes de confirmar.');
+   if(!mainWindow||mainWindow.isDestroyed()||!mainWindow.isFocused())
+    throw Error('Confirmação inicial exige janela em primeiro plano.');
+   const answer=await dialog.showMessageBox(mainWindow,{type:'warning',
+    buttons:['Cancelar','Aplicar lote seguro'],defaultId:0,cancelId:0,noLink:true,
+    title:'Confirmar primeira categorização automática',
+    message:'Aplicar '+preview.candidateCount+' classificações verificadas?',
+    detail:'Analisadas todas as movimentações do período autorizado. '+
+     preview.reviewCount+' exigem revisão; nenhuma movimentação original será sobrescrita. '+
+     'Backup obrigatório, revalidação do manifesto e recibos SQLite antes de confirmar.'});
+   requireAppSender(event);autoIdle();
+   if(answer.response!==1)return {cancelled:true,changesApplied:false};
+  }
   autoBackupBusy=true;
-  try{return {...await autoCategory.apply(input||{}),data:titledBankData(),status:autoCategory.status()};}
-  finally{autoBackupBusy=false;}
+  try{
+   if(initial)await autoCategory.confirmInitialPreview(input.previewVersion);
+   return {...await autoCategory.apply({limit:20000}),data:titledBankData(),status:autoCategory.status()};
+  }finally{autoBackupBusy=false;}
  });
  ipcMain.handle('bank:auto-correct',async(event,input)=>{
   requireAppSender(event);autoAllowed();autoIdle();
@@ -649,7 +668,7 @@ app.whenReady().then(async()=>{
        newCount+=added.newCount;totalCount+=added.totalCount;
      }
      let autoResult={state:'disabled_or_no_evidence',applied:0};
-     if(stablePackaged&&autoCategory.status().enabled){
+     if(stablePackaged&&autoCategory.status().enabled&&autoCategory.initialReady()){
       autoBackupBusy=true;
       try{autoResult=await autoCategory.apply();}
       catch(_){autoResult={state:'failed_safely',error:'Sincronização salva; a automação não foi aplicada. Confira os backups e tente novamente.'};}
