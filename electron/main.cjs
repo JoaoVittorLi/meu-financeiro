@@ -22,6 +22,7 @@ const {RCCategoryGateway}=require('./intelligence-category-rc.cjs');
 const {installD05Ipc}=require('./d05-ipc-adapter.cjs');
 const {D05RCSecureGate}=require('./d05-rc-gate.cjs');
 const {D05PersonalWriteGateway}=require('./d05-personal-gate.cjs');
+const {PersonalAutoCategorizer}=require('./personal-auto-categorizer.cjs');
 const {CategoryReviewService}=require('./category-review.cjs');
 const {CategoryReviewBackupGate}=require('./category-review-backup.cjs');
 const {automaticBackup,restoreBackup,listAutoBackups,validateBackupFile}=require('./recovery.cjs');
@@ -32,7 +33,7 @@ const {AIPersonalStore}=require('./ai-personal.cjs');
 const {ChatGPTSignIn}=require('./ai-auth.cjs');
 const {ChatGPTDemoClient}=require('./ai-client.cjs');
 const {buildSyntheticFinancialContext}=require('../shared/ai-financial-context.mjs');
-let planner=null, db=null, mainWindow=null, vault=null, categoryRC=null, d05Gate=null, d05PersonalGate=null, syncing=false, restoring=false, autoBackupBusy=false, cloudPreparationBusy=false, backupTimer=null, cloudPersonalTimer=null, cloudPersonalBusy=false, cloudAuthPromise=null,cloudAccessAssertion=null;
+let planner=null, db=null, mainWindow=null, vault=null, categoryRC=null, d05Gate=null, d05PersonalGate=null, autoCategorizer=null, autoCategorizeTimer=null, syncing=false, restoring=false, autoBackupBusy=false, cloudPreparationBusy=false, backupTimer=null, cloudPersonalTimer=null, cloudPersonalBusy=false, cloudAuthPromise=null,cloudAccessAssertion=null;
 function backupsDirectory(){return path.join(app.getPath('userData'),'copias-de-seguranca');}
 async function ensureAutomaticBackup(){
   if(!db||restoring||syncing||autoBackupBusy)return;
@@ -221,6 +222,7 @@ app.whenReady().then(async()=>{
   ic2ReadQuery=new IC2ReadQueryGateway(localFinancial);
   // Personal category work is preview-only; synthetic sandbox remains separate.
   if(d05PersonalGate)d05PersonalGate.stopAll();
+  autoCategorizer=new PersonalAutoCategorizer({finance:()=>db,backupDirectory:()=>path.join(app.getPath('userData'),'copias-de-seguranca','auto-categorization'),allowed:()=>stablePackaged&&!smokeProfileActive&&!experimentalPackaged});
   if(d05Gate)d05Gate.stopAll();
   if(categoryRC){categoryRC.stopAll();categoryRC.bindPersonal(db,localFinancial);}
   else categoryRC=new RCCategoryGateway({db,localFinancial});
@@ -268,6 +270,46 @@ app.whenReady().then(async()=>{
    });
    return result.response===1&&!mainWindow.isDestroyed();
   }
+ });
+
+ // Personal auto-categorization is independent of IC-READ and general AI writes.
+ ipcMain.handle('auto-category:status',event=>{requireAppSender(event);return autoCategorizer.status();});
+ ipcMain.handle('auto-category:consent',async(event,input)=>{
+  requireAppSender(event);
+  if(!stablePackaged||syncing||restoring||autoBackupBusy)throw Error('Auto: canal ou operação indisponível');
+  if(!input||!Array.isArray(input.accountIds)||typeof input.enabled!=='boolean')throw Error('Auto: seleção inválida');
+  if(input.enabled){
+   const accounts=autoCategorizer.status().accounts;
+   if(input.accountIds.length<1||new Set(input.accountIds).size!==input.accountIds.length||
+      input.accountIds.some(id=>!accounts.some(a=>a.accountId===id)))throw Error('Auto: contas não autorizadas');
+   if(!mainWindow||mainWindow.isDestroyed()||!mainWindow.isFocused())throw Error('Auto: janela inativa');
+   const names=accounts.filter(a=>input.accountIds.includes(a.accountId)).map(a=>a.name);
+   const chosen=await dialog.showMessageBox(mainWindow,{type:'question',
+    buttons:['Cancelar','Autorizar estas contas'],defaultId:0,cancelId:0,noLink:true,
+    title:'Ativar categorização automática',
+    message:'Autorizar categorias verificadas em '+names.length+' conta(s)?',
+    detail:names.join(', ').slice(0,450)+'\nApenas movimentações POSTED com histórico confiável; sem IA externa e sem alterar lançamentos originais.'});
+   if(chosen.response!==1)return {cancelled:true};
+  }
+  if(syncing||restoring||autoBackupBusy)throw Error('Auto: operação concorrente');
+  return autoCategorizer.consent(input);
+ });
+ ipcMain.handle('auto-category:run',async event=>{
+  requireAppSender(event);
+  if(!stablePackaged||syncing||restoring||autoBackupBusy)throw Error('Auto: operação concorrente');
+  return autoCategorizer.run();
+ });
+ ipcMain.handle('auto-category:review',event=>{requireAppSender(event);return autoCategorizer.review();});
+ ipcMain.handle('auto-category:undo',async(event,receiptId)=>{
+  requireAppSender(event);
+  if(!stablePackaged||syncing||restoring||autoBackupBusy||!mainWindow?.isFocused())throw Error('Auto: reversão indisponível');
+  const chosen=await dialog.showMessageBox(mainWindow,{type:'warning',
+   buttons:['Cancelar','Desfazer classificações automáticas'],defaultId:0,cancelId:0,noLink:true,
+   title:'Desfazer lote automático',message:'Desfazer apenas categorias automáticas deste recibo?',
+   detail:'Correções manuais e registros originais serão preservados.'});
+  if(chosen.response!==1)return {cancelled:true};
+  if(syncing||restoring||autoBackupBusy)throw Error('Auto: contexto alterado');
+  return autoCategorizer.undo(receiptId);
  });
  ipcMain.handle('d05:personal-write-preview',(event,input)=>{
   requireAppSender(event);if(restoring||syncing)throw Error('D05: operação concorrente');
@@ -554,6 +596,8 @@ app.whenReady().then(async()=>{
        const added=db.ingestBank(id,payload);
        newCount+=added.newCount;totalCount+=added.totalCount;
      }
+     if(stablePackaged)try{await autoCategorizer.run();}
+     catch(_){console.warn('Classificação automática adiada; dados bancários preservados.');}
      return {...await bankStatusSafe(),newCount,totalCount};
    }finally{syncing=false;}
  });
@@ -664,6 +708,13 @@ app.whenReady().then(async()=>{
  });
  createWindow();
  void ensureAutomaticBackup();
+ if(stablePackaged){
+  void autoCategorizer.run().catch(()=>console.warn('Classificação automática adiada no início.'));
+  autoCategorizeTimer=setInterval(()=>{
+   if(!restoring&&!syncing&&!autoBackupBusy)
+    void autoCategorizer.run().catch(()=>console.warn('Classificação automática adiada.'));
+  },24*60*60*1000);
+ }
  backupTimer=setInterval(()=>void ensureAutomaticBackup(),60*60*1000);
  if(!experimentalPackaged&&!smokeProfileActive){
   cloudPersonalTimer=setInterval(()=>void tickCloudPersonal(),60*1000);
@@ -672,4 +723,4 @@ app.whenReady().then(async()=>{
  app.on('activate',()=>{if(BrowserWindow.getAllWindows().length===0)createWindow();});
 }).catch(error=>{dialog.showErrorBox('Erro ao iniciar Meu Financeiro','Não foi possível abrir o banco de dados: '+error.message);app.quit();});
 app.on('window-all-closed',()=>{if(process.platform!=='darwin')app.quit();});
-app.on('before-quit',()=>{if(d05PersonalGate)d05PersonalGate.stopAll();if(d05Gate)d05Gate.stopAll();if(categoryRC)categoryRC.stopAll();if(backupTimer)clearInterval(backupTimer);if(cloudPersonalTimer)clearInterval(cloudPersonalTimer);cancelBrowserPairing();if(db){db.close();db=null;}});
+app.on('before-quit',()=>{if(d05PersonalGate)d05PersonalGate.stopAll();if(d05Gate)d05Gate.stopAll();if(categoryRC)categoryRC.stopAll();if(backupTimer)clearInterval(backupTimer);if(autoCategorizeTimer)clearInterval(autoCategorizeTimer);if(cloudPersonalTimer)clearInterval(cloudPersonalTimer);cancelBrowserPairing();if(db){db.close();db=null;}});
