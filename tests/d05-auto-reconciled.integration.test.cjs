@@ -86,3 +86,23 @@ test('versioned manifest is invalidated when source or optional evidence changes
  await assert.rejects(auto.confirmInitialPreview(first.previewVersion),/prévia/);
  assert.equal(db.db.prepare('SELECT COUNT(*) AS n FROM mf_auto_labels').get().n,0);
 }));
+
+test('failed backup pauses automatic jobs durably; native resume can recover safely',()=>sandbox(async({db,auto})=>{
+ auto.configure(scope,true);
+ await auto.confirmInitialPreview(auto.plan({limit:100}).previewVersion);
+ const scheduler=new D05AutoLocalScheduler({finance:()=>db,engine:()=>auto});
+ const backup=db.backupTo;
+ db.backupTo=async()=>{throw Error('SYNTHETIC_DISK_FULL');};
+ try{
+  const failed=await scheduler.run('daily');
+  assert.equal(failed.state,'failed');
+  assert.equal(scheduler.status().paused,true);
+  assert.equal(db.db.prepare('SELECT COUNT(*) AS n FROM mf_auto_labels').get().n,0);
+  assert.equal((await scheduler.run('daily')).state,'paused');
+ }finally{db.backupTo=backup;}
+ scheduler.resume();
+ const recovered=await scheduler.run('daily');
+ assert.equal(recovered.state,'completed');
+ assert.equal(recovered.applied,1);
+ assert.equal(scheduler.status().paused,false);
+}));
