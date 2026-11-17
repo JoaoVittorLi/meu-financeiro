@@ -153,9 +153,9 @@ for(const percent of [0,10,25,50,70,90,99,100,106,150]){
 test('B3→B02 V7 — exact cents remain visible and over-limit amount is not rounded away',()=>{
  const {tree}=makeApp(10601,10000);
  const body=textContent(lookup(tree,'qa84-budget-card')[0]);
- assert.match(body,/106,01/); // integer cents, not rounded to whole BRL
- assert.match(body,/100,00/);
- assert.match(body,/6,01/);
+ assert.match(body,/R\$ 106\.01/); // integer cents, not rounded to whole BRL
+ assert.match(body,/R\$ 100\.00/);
+ assert.match(body,/R\$ 6\.01/);
  assert.equal(lookup(tree,'qa84-orbit-fill')[0].props.strokeDasharray,'100 100');
 });
 test('B3→B02 V7 — explicit zero limit never divides by zero or invents 100% use',()=>{
