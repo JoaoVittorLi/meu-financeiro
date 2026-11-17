@@ -202,6 +202,14 @@ test('T24 — oito variações naturais reconhecidas pelo mesmo parser',()=>{
  for(const prompt of cases)
   assert(parseIntent(prompt,{},'2026-11'),'Não reconheceu: '+prompt);
 });
+test('T41 — totais simples continuam no IC2 canônico, sem desvio para comparação parcial',()=>{
+ for(const prompt of ['Quanto gastei?','Quanto gastei com alimentação?','Mostre meus gastos'])
+  assert.equal(parseIntent(prompt,{},'2026-11'),null,'Resumo interceptado: '+prompt);
+ assert(parseIntent('Mostre os estabelecimentos.',{},'2026-11'),
+  'Investigação explícita por estabelecimento deve continuar disponível');
+ assert(parseIntent('Compare outubro e novembro.',{},'2026-11'),
+  'Comparação entre dois meses deve continuar disponível');
+});
 test('T25 — sequência de contexto mantém períodos, categorias e recorrência',async()=>{
  const e=setup();let r=await e.gateway.ask(request('Por que meus gastos aumentaram?'),OWNER);
  assert.equal(r.status,'ready');
