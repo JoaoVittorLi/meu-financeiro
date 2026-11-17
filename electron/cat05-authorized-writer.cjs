@@ -21,7 +21,7 @@ function migrateCat05(db){
     'review_uncertain INTEGER NOT NULL,first_run_completed INTEGER NOT NULL DEFAULT 0,',
     'granted_at TEXT NOT NULL,revoked_at TEXT,last_run_at TEXT);',
    'CREATE TABLE IF NOT EXISTS cat05_consent_events(',
-    'event_id TEXT PRIMARY KEY,account_id TEXT NOT NULL REFERENCES bank_accounts(account_id),',
+    'event_id TEXT PRIMARY KEY,account_id TEXT NOT NULL REFERENCES bank_accounts(account_id) ON DELETE CASCADE,'
     "action TEXT NOT NULL CHECK(action IN ('grant','revoke')),",
     'grant_id TEXT NOT NULL,created_at TEXT NOT NULL);',
    'CREATE TABLE IF NOT EXISTS cat05_assignments(',
