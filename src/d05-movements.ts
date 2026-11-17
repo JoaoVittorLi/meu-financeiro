@@ -1019,6 +1019,18 @@ class D05Movements extends React.Component<any,any> {
          'Revisar conflitos antes de considerar qualquer regra.':'Nenhuma regra foi criada. Confira o alcance no editor D05.'),
         h('button',{type:'button',onClick:()=>host.setState({txOrganize:true})},'Revisar no D05')))):
        h('p',{className:'mf-cat-empty'},'Nenhuma sugestão consultada ou com evidência suficiente. Isso não significa que uma regra foi aprovada.'),
+      h('h4',{},'Regras já ativas no D05'),
+      (state.rules||[]).filter((r:any)=>r.enabled&&(r.scope==='bank'||r.scope==='both')).length?
+       h('div',{className:'mf-cat-rule-grid'},
+        (state.rules||[]).filter((r:any)=>r.enabled&&(r.scope==='bank'||r.scope==='both'))
+        .slice(0,8).map((r:any)=>h('article',{key:r.id,className:'mf-cat-rule'},
+         h('span',{className:'mf-cat-step'},'REGRA ATIVA DO D05'),
+         h('h4',{},r.pattern),
+         h('p',{},'Destino: '+r.category+' · Correspondência: '+r.matchMode+
+          ' · Prioridade: '+r.priority),
+         h('button',{type:'button',onClick:()=>host.setState({txOrganize:true})},
+          'Gerenciar no catálogo')))):
+       h('p',{className:'mf-cat-empty'},'Nenhuma regra bancária ativa disponível no catálogo D05.'),
       h('p',{className:'mf-cat-footnote'},'Âncoras humanas duplicadas e classificação probabilística não calibrada não autorizam regras.'))
       :null,
      autoView==='receipts'?h('section',{className:'mf-cat-surface'},
