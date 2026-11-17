@@ -32,12 +32,17 @@ class D05AutoLocalScheduler{
   }
   this.sql.prepare('INSERT OR IGNORE INTO mf_auto_controls(id,paused,changed_at) VALUES(1,0,?)')
    .run(this.clock().toISOString());
+  // Legacy jobs might have been marked completed after the old 20,000 cap.
+  // They carry no durable batch ID or proof of exhaustion and MUST NOT be
+  // treated as idempotent completed runs after upgrading this candidate.
+  const legacy=this.sql.prepare("SELECT COUNT(*) AS n FROM mf_auto_jobs WHERE state='completed' AND batch_id IS NULL").get().n;
+  if(legacy>0)this.sql.prepare(
+   "UPDATE mf_auto_jobs SET state='failed',error_code='LEGACY_COMPLETION_UNVERIFIED' WHERE state='completed' AND batch_id IS NULL").run();
   const interrupted=this.sql.prepare("SELECT COUNT(*) AS n FROM mf_auto_jobs WHERE state='running'").get().n;
-  if(interrupted>0){
-   this.sql.prepare("UPDATE mf_auto_jobs SET state='failed',error_code='INTERRUPTED_ON_RESTART',finished_at=? WHERE state='running'")
-    .run(this.clock().toISOString());
-   this.pause();
-  }
+  if(interrupted>0)this.sql.prepare(
+   "UPDATE mf_auto_jobs SET state='failed',error_code='INTERRUPTED_ON_RESTART',finished_at=? WHERE state='running'")
+   .run(this.clock().toISOString());
+  if(legacy>0||interrupted>0)this.pause();
  }
  isPaused(){return this.sql.prepare('SELECT paused FROM mf_auto_controls WHERE id=1').get()?.paused===1;}
  pause(){
