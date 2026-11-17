@@ -720,6 +720,20 @@ class D05Movements extends React.Component<any,any> {
      ...(autoInfo?.permissions||[]).filter((perm:any)=>perm.enabled).map((perm:any)=>
       h('button',{type:'button',key:perm.accountId,disabled:autoBusy||!autoInfo?.available,
        onClick:()=>void runAutoAction('revoke',perm.accountId)},'Revogar '+perm.name))),
+    autoProgress?h('div',{className:'d05-auto-rule-suggestions',role:'status','aria-label':'Progresso real da análise'},
+     h('strong',{},'Análise bancária · '+String(autoProgress.state==='ready'?'Concluída':
+      autoProgress.state==='paused'?'Pausada':'Em andamento')),
+     h('p',{},'Movimentações lidas: '+String(autoProgress.processed||0)+' de '+String(autoProgress.total||0)+
+      '. Não houve escrita de categorias nesta etapa.'),
+     h('progress',{max:Math.max(1,autoProgress.total||0),value:autoProgress.processed||0,
+      'aria-label':'Progresso da leitura bancária'}),
+     autoProgress.state==='scanning'?h('div',{className:'d05-auto-buttons'},
+      h('button',{type:'button',onClick:()=>void pauseAutoScan()},'Pausar leitura'),
+      h('button',{type:'button',onClick:()=>void cancelAutoScan()},'Cancelar análise')):null,
+     autoProgress.state==='paused'?h('div',{className:'d05-auto-buttons'},
+      h('button',{type:'button',onClick:()=>void resumeAutoScan()},'Retomar leitura'),
+      h('button',{type:'button',onClick:()=>void cancelAutoScan()},'Cancelar análise')):null
+    ):null,
     autoPreview?h('div',{className:'d05-auto-rule-suggestions',role:'region','aria-label':'Prévia inicial somente leitura'},
      h('strong',{},'Prévia verificada — nada aplicado'),
      h('p',{},String(autoPreview.candidateCount||0)+' classificações elegíveis · '+
