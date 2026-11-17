@@ -54,14 +54,17 @@ class D05Movements extends React.Component<any,any> {
  const [decor,setDecor]=useState({bank:{},manual:{}} as any);
  const [loadState,setLoadState]=useState('loading');
  const [accessMessage,setAccessMessage]=useState('');
- const [search,setSearch]=useState('');
- const [source,setSource]=useState('all');
+ const incomingCategory=state.qa84TransactionsCategory||state.txCategoryFilter||'';
+  const incomingIdentity=incomingCategory?resolveCategoryVisualIdentity({categoryName:incomingCategory,
+   catalog:state.qa84VisualCatalog||[],aggregate:true}):null;
+  const [search,setSearch]=useState(incomingIdentity?.source==='fallback'?incomingCategory:'');
+ const [source,setSource]=useState(state.txSource||'all');
  const [metricSource,setMetricSource]=useState('bank');
  const [tab,setTab]=useState(state.txReviewOnly?'pending':'all');
- const [period,setPeriod]=useState(state.month||iso(new Date()).slice(0,7));
+ const [period,setPeriod]=useState(state.qa84TransactionsSpan?'':state.month||iso(new Date()).slice(0,7));
  const [account,setAccount]=useState('');
  const [kind,setKind]=useState('all');
- const [categoryId,setCategoryId]=useState('');
+ const [categoryId,setCategoryId]=useState(incomingIdentity&&incomingIdentity.source!=='fallback'?incomingIdentity.categoryId:'');
  const [subcategoryId,setSubcategoryId]=useState('');
  const [sort,setSort]=useState('newest');
  const [group,setGroup]=useState(true);
@@ -74,6 +77,7 @@ class D05Movements extends React.Component<any,any> {
  const [busy,setBusy]=useState(false);
  const [error,setError]=useState('');
  const [notice,setNotice]=useState('');
+ const [confirmedIdentity,setConfirmedIdentity]=useState(null as any);
  const activeTrigger=useRef(null as any);
  const modalRef=useRef(null as any);
  const refreshId=useRef(0);
@@ -82,7 +86,8 @@ class D05Movements extends React.Component<any,any> {
  const byName=(name:string)=>parents.find((p:any)=>p.name===name)||D05ApprovedParent(name);
  const byId=(id:string)=>parents.find((p:any)=>p.id===id)||approved.find((p:any)=>p.id===id);
  const format=(cents:number)=>fmt(cents);
- const inRange=(date:string)=>!period||date.slice(0,7)===period;
+ const inRange=(date:string)=>period?date.slice(0,7)===period:state.qa84TransactionsSpan?
+  date>=state.qa84TransactionsSpan.start&&date<=state.qa84TransactionsSpan.end:true;
  const bankData=state.mode==='demo'?[]:state.bank.data.transactions||[];
  const realBank=bankData.map((tx:any)=>{
   const key=JSON.stringify([tx.accountId,tx.id]),data=decor.bank[key]||{};
@@ -151,14 +156,16 @@ class D05Movements extends React.Component<any,any> {
    event.preventDefault();event.stopPropagation();setPicker(null);setReview(null);setManual(null);setPreview(null);
    (activeTrigger.current as any)?.focus?.();
   }};
-  const onScroll=(event:any)=>{if(picker&&event.target!==modalRef.current&&!modalRef.current?.contains(event.target)&&!busy){
-    setPicker(null);setPreview(null);(activeTrigger.current as any)?.focus?.();
-  }};
+  // Allow background scroll without silently cancelling this preview.
   window.addEventListener('keydown',onKey,true);
-  window.addEventListener('scroll',onScroll,true);
-  return ()=>{window.removeEventListener('keydown',onKey,true);window.removeEventListener('scroll',onScroll,true);};
+  return ()=>window.removeEventListener('keydown',onKey,true);
  },[picker,review,manual,busy]);
- useEffect(()=>{if((picker||review||manual)&&modalRef.current)modalRef.current.querySelector('input,button')?.focus();},[picker?.phase,review?.id,manual!==null]);
+ useEffect(()=>{
+  if(!(picker||review||manual)||!modalRef.current)return;
+  const searchField=picker&&['parent','child'].includes(picker.phase)?
+   modalRef.current.querySelector('.d05-picker-search input'):null;
+  (searchField||modalRef.current.querySelector('input,button'))?.focus();
+ },[picker?.phase,review?.id,manual!==null]);
  useEffect(()=>{if(!picker&&!review&&!manual)activeTrigger.current?.focus?.();},
   [!!picker,!!review,!!manual]);
  const resetSelected=()=>{setSelected(new Set());setPicker(null);setPreview(null);setError('');};
@@ -200,16 +207,36 @@ class D05Movements extends React.Component<any,any> {
  }
  const partial=state.mode==='real'&&!!state.bank.data.truncated;
  const openPicker=(event:any,row:any=null,kindName:string='row')=>{
-  activeTrigger.current=event.currentTarget;
-  const rect=event.currentTarget.getBoundingClientRect();
+  event?.stopPropagation?.();
+  const trigger=event?.currentTarget;
+  if(!trigger?.getBoundingClientRect)return;
+  activeTrigger.current=trigger;
+  const geometry=qa84B04Geometry(trigger.getBoundingClientRect(),
+   {width:window.innerWidth,height:window.innerHeight});
   const old=row?byId(row.categoryId):null;
-  const popupWidth=Math.min(355,window.innerWidth-24);
-  const left=Math.max(12,Math.min(rect.left,window.innerWidth-popupWidth-12));
-  const top=Math.max(12,Math.min(rect.bottom+7,window.innerHeight-465));
-  setError('');setPreview(null);
+  setError('');setNotice('');setConfirmedIdentity(null);setPreview(null);
   setPicker({kind:kindName,row,phase:'parent',query:'',categoryId:old?.id||null,
-   subcategoryId:row?.subcategoryId||null,left,top,width:popupWidth});
+   subcategoryId:row?.subcategoryId||null,...geometry,
+   originalFingerprint:qa84B04Fingerprint(row),
+   selectionSignature:kindName==='batch'?JSON.stringify(Array.from(selected).sort()):null});
  };
+ // A single selector belongs to D05; the App-owned drawer requests it through
+ // a scoped UI event instead of mounting a second classifier or authorizer.
+ useEffect(()=>{
+  const fromDrawer=(event:any)=>{
+   const request=event?.detail;
+   if(!request||!['bank','manual'].includes(request.source)||!request.id)return;
+   const row=rows.find((r:any)=>r.source===request.source&&r.id===request.id&&
+    (r.source==='manual'||r.accountId===request.accountId));
+   if(!row){setError('Movimentação não encontrada; atualize o histórico.');return;}
+   openPicker({currentTarget:request.trigger,stopPropagation:()=>{}},row,'drawer');
+  };
+  window.addEventListener('mf2:d05:open-picker',fromDrawer);
+  return ()=>window.removeEventListener('mf2:d05:open-picker',fromDrawer);
+ },[state.mode,state.data.transactions,state.bank.data.transactions,catalog,decor,selected]);
+ const openDetail=(r:any)=>r.source==='bank'?
+  host.openBankDetail(r.raw,{categoryId:r.categoryId,subcategoryId:r.subcategoryId}):
+  host.openManualDetail(r.raw,{categoryId:r.categoryId,subcategoryId:r.subcategoryId});
  const setParent=(p:any)=>{
   setPreview(null);setError('');
   setPicker((old:any)=>({...old,categoryId:p.id,subcategoryId:null,phase:'child',query:''}));
@@ -231,23 +258,49 @@ class D05Movements extends React.Component<any,any> {
     if(!bridge?.d05BankBatchPreview||!bridge?.d05BankBatchApply)
      throw Error('Classificação em lote D05 indisponível: integração segura MAIN/preload pendente');
     const ids=Array.from(selected).map((key:string)=>rows.find((r:any)=>r.key===key)).filter((r:any)=>r?.source==='bank');
-    if(ids.length!==selected.size||!ids.length)throw Error('Seleção incompatível ou vazia');
+    if(ids.length!==selected.size||!ids.length||JSON.stringify(Array.from(selected).sort())!==picker.selectionSignature)
+     throw Error('Seleção alterada; inicie outra prévia');
     const items=ids.map((r:any)=>({accountId:r.accountId,externalId:r.id}));
     const data=await bridge.d05BankBatchPreview({items,target:destination});
-    if(!data?.previewVersion||data.count!==items.length)throw Error('Prévia de lote inválida');
-    setPreview({...data,items,rows:ids,destination});
+    if(data?.contract!=='D05/BANK-BATCH-PREVIEW-V1'||!data?.previewVersion||
+       data.count!==items.length)throw Error('Prévia de lote inválida');
+    if(picker.selectionSignature!==JSON.stringify(Array.from(selected).sort()))
+     throw Error('A seleção mudou durante a prévia');
+    setPreview({...data,items,rows:ids,destination,
+     fingerprints:ids.map((r:any)=>qa84B04Fingerprint(r)),
+     selectionSignature:picker.selectionSignature,
+     totalCents:ids.reduce((sum:number,r:any)=>sum+Math.abs(r.amount),0)});
     setPicker((old:any)=>({...old,phase:'batch-verify'}));
    }else if(picker.row?.source==='manual'){
     const tx=picker.row,existing=state.data.transactions.find((t:any)=>t.id===tx.id);
-    if(!existing)throw Error('Lançamento desatualizado: atualize o histórico');
+    if(!existing||state.mode!==host.state.mode)
+     throw Error('Lançamento desatualizado: atualize o histórico');
     const parent=byId(destination.categoryId);
-    if(!parent)throw Error('Categoria não encontrada');
-    if(!bridge?.save)throw Error('Persistência manual indisponível neste ambiente');
-    const data={...state.data,transactions:state.data.transactions.map((t:any)=>t.id===tx.id?{
-      ...t,category:parent.name,categoryId:destination.categoryId,subcategoryId:destination.subcategoryId}:t)};
-    const saved=await host.updateData(data,'Classificação manual salva.');
-    if(!saved)throw Error('Não foi possível persistir a classificação manual');
-    setPicker(null);await refreshHierarchy();
+    if(!parent||destination.subcategoryId&&
+      !parent.subcategories?.some((s:any)=>s.id===destination.subcategoryId))
+     throw Error('Categoria/subcategoria incompatível');
+    const current=rows.find((r:any)=>r.key===tx.key);
+    if(!current||qa84B04Fingerprint(current)!==picker.originalFingerprint)
+     throw Error('Movimentação alterada; nova prévia necessária');
+    if(state.mode==='real'){
+     if(!bridge?.d05PersonalWritePreview)
+      throw Error('Gateway de prévia supervisionada indisponível');
+     const proposed=await bridge.d05PersonalWritePreview({action:'manual.categorize',
+      profile:'real',id:tx.id,target:destination});
+     if(proposed?.contract!=='D05/PERSONAL-SUPERVISED-PREVIEW-V1'||
+        proposed?.changesApplied!==false||proposed?.after?.categoryId!==destination.categoryId||
+        proposed?.after?.subcategoryId!==destination.subcategoryId)
+      throw Error('Prévia supervisionada não validada');
+     setPreview(proposed);
+     setPicker((old:any)=>({...old,phase:'personal-locked'}));
+     setNotice('Prévia financeira validada; confirmação pessoal ainda indisponível.');
+    }else{
+     setPreview({type:'manual',profile:state.mode,id:tx.id,source:tx.source,
+      before:{categoryId:tx.categoryId,subcategoryId:tx.subcategoryId,category:tx.category},
+      after:destination,parentName:parent.name,fingerprint:picker.originalFingerprint,
+      amount:tx.amount,date:tx.date,changesApplied:false});
+     setPicker((old:any)=>({...old,phase:'manual-verify'}));
+    }
    }else if(picker.row?.source==='bank'){
     if(!bridge?.d05AssignBank)throw Error('Classificação bancária D05 indisponível: autorização MAIN/preload pendente');
     const tx=picker.row,current=state.bank.data.transactions.find((t:any)=>t.id===tx.id&&t.accountId===tx.accountId);
@@ -266,22 +319,61 @@ class D05Movements extends React.Component<any,any> {
        proposed?.after?.subcategoryId!==destination.subcategoryId)
      throw Error('Prévia supervisionada inválida; nenhuma alteração foi feita');
     setPreview(proposed);
-    setPicker(null);
-    setNotice('Prévia conferida: '+String(proposed.before?.[0]?.row?.category||tx.category)+
-     ' → '+labelTarget(destination.categoryId,destination.subcategoryId)+
-     '. A gravação pessoal será liberada somente após homologação e aprovação.');
+    setPicker((old:any)=>({...old,phase:'personal-locked'}));
+    setNotice('Prévia supervisionada conferida. A gravação pessoal permanece bloqueada até homologação.');
 
    }
   }catch(e:any){setError(String(e?.message||e));}
   finally{setBusy(false);}
  };
+ const commitManual=async()=>{
+  if(!picker||picker.phase!=='manual-verify'||preview?.type!=='manual'||busy)return;
+  if(state.mode!=='demo'||preview.profile!=='demo'){
+   setError('Gravação pessoal ainda não homologada. Prévia somente para consulta.');return;
+  }
+  const tx=state.data.transactions.find((t:any)=>t.id===preview.id);
+  const current=rows.find((r:any)=>r.source==='manual'&&r.id===preview.id);
+  if(!tx||!current||qa84B04Fingerprint(current)!==preview.fingerprint||
+     preview.id!==picker.row?.id||picker.originalFingerprint!==preview.fingerprint){
+   setError('Movimentação modificada; prepare outra prévia.');return;
+  }
+  const parent=byId(preview.after.categoryId);
+  if(!parent||preview.after.subcategoryId&&!parent.subcategories?.some((s:any)=>s.id===preview.after.subcategoryId)){
+   setError('Categoria/subcategoria não existe mais.');return;
+  }
+  setBusy(true);setError('');
+  try{
+   if(!bridge?.save||!bridge?.load)throw Error('SQLite de demonstração indisponível');
+   const next={...state.data,transactions:state.data.transactions.map((t:any)=>t.id===preview.id?{
+    ...t,category:parent.name,categoryId:preview.after.categoryId,subcategoryId:preview.after.subcategoryId}:t)};
+   const saved=await host.updateData(next,'Classificação de demonstração salva.');
+   if(!saved)throw Error('Persistência não confirmada');
+   const verified=await bridge.load('demo');
+   const item=verified?.transactions?.find((t:any)=>t.id===preview.id);
+   if(item?.categoryId!==preview.after.categoryId||item?.subcategoryId!==preview.after.subcategoryId)
+    throw Error('Recibo não confirmado: releia os dados antes de prosseguir');
+   // Render a receipt with the SAME approved ID-based SVG/hue as list and drawer,
+   // and only after the canonical SQLite readback confirms persistence.
+   setConfirmedIdentity(qa84B03Visual({categoryId:item.categoryId,
+    subcategoryId:item.subcategoryId,categoryName:item.category},parents));
+   setNotice('Classificação de demonstração confirmada no SQLite.');
+   setPreview(null);setPicker(null);await refreshHierarchy();
+  }catch(e:any){setError('Gravação não confirmada: '+String(e?.message||e));}
+  finally{setBusy(false);}
+ };
  const commitBatch=async()=>{
   if(!picker||!preview?.previewVersion||!bridge?.d05BankBatchApply)return;
+  // The personal batch writer is intentionally NOT authorized in this RC.
+  if(state.mode!=='demo'){setError('Lote pessoal somente em prévia até homologação.');return;}
   setBusy(true);setError('');
   try{
    const ids=Array.from(selected).sort();
    const expected=preview.rows.map((r:any)=>r.key).sort();
-   if(JSON.stringify(ids)!==JSON.stringify(expected))throw Error('Seleção alterada; nova prévia necessária');
+   const fresh=preview.rows.map((r:any)=>rows.find((now:any)=>now.key===r.key));
+   if(JSON.stringify(ids)!==JSON.stringify(expected)||
+      preview.selectionSignature!==JSON.stringify(ids)||
+      fresh.some((r:any,i:number)=>!r||qa84B04Fingerprint(r)!==preview.fingerprints[i]))
+     throw Error('Seleção ou movimentação alterada; nova prévia necessária');
    const result=await bridge.d05BankBatchApply({items:preview.items,target:preview.destination,previewVersion:preview.previewVersion});
    if(result?.changed!==preview.items.length)throw Error('Recibo incompleto: verifique o histórico');
    await host.refreshBank();await refreshHierarchy();
@@ -327,11 +419,14 @@ class D05Movements extends React.Component<any,any> {
   finally{setBusy(false);}
  };
  const portal=(body:any,left:number=20,top:number=60,width:number=355)=>{
+  const safeTop=Math.max(12,Math.min(top,Math.max(12,window.innerHeight-130)));
+  const safeWidth=Math.max(0,Math.min(width,window.innerWidth-24));
   return ReactDOM.createPortal(h('div',{className:'d05-overlay',onMouseDown:(e:any)=>{
     if(e.target===e.currentTarget&&!busy){setPicker(null);setReview(null);setManual(null);setPreview(null);activeTrigger.current?.focus?.();}
    }},
    h('section',{ref:modalRef,className:'d05-floating',role:'dialog','aria-modal':'true',
-    style:{left:Math.max(12,Math.min(left,window.innerWidth-width-12)),top:Math.max(12,Math.min(top,window.innerHeight-130)),width:Math.min(width,window.innerWidth-24)}},
+    style:{left:Math.max(12,Math.min(left,window.innerWidth-safeWidth-12)),top:safeTop,
+     width:safeWidth,maxHeight:Math.max(80,window.innerHeight-safeTop-12)}},
     body)),document.body);
  };
  const categoryGrid=(selectedId:string,onSelect:(p:any)=>void,searchText:string)=>h('div',{className:'d05-catalog-grid',role:'group','aria-label':'Categorias principais'},
@@ -341,31 +436,70 @@ class D05Movements extends React.Component<any,any> {
    h(D05VectorIcon,{iconKey:p.iconKey,hue:p.hue,size:20}),h('span',{},p.name))));
  const chooser=picker?(()=>{
   const parent=byId(picker.categoryId),children=parent?.subcategories||[];
+  const matches=qa84B04Search(parents,picker.query||'');
+  const searchable=h('label',{className:'d05-picker-search'},h('span',{},'Buscar categoria ou subcategoria'),
+   h('input',{className:'d05-search',type:'search',autoFocus:true,value:picker.query,
+    placeholder:'Ex.: Streaming, alimentação, transporte',
+    onChange:(e:any)=>setPicker({...picker,query:e.target.value})}));
+  const resultGrid=h('div',{className:'d05-catalog-grid',role:'group','aria-label':'Categorias principais'},
+   matches.map((entry:any)=>h('div',{className:'d05-catalog-result',key:entry.parent.id},
+    h('button',{type:'button',className:'d05-catalog-choice '+(entry.parent.id===picker.categoryId?'is-current':''),
+     'aria-pressed':entry.parent.id===picker.categoryId,
+     onClick:()=>setParent(entry.parent)},
+     h(D05VectorIcon,{iconKey:entry.parent.iconKey,hue:entry.parent.hue,size:21}),
+     h('span',{},entry.parent.name)),
+    entry.children.length?h('div',{className:'d05-catalog-match'},
+     entry.children.map((child:any)=>h('button',{type:'button',key:child.id,
+       onClick:()=>{setPreview(null);setError('');
+        setPicker((prior:any)=>({...prior,categoryId:entry.parent.id,
+         subcategoryId:child.id,phase:'confirm',query:''}));}},
+       h(D05VectorIcon,{iconKey:child.iconKey,hue:child.hue,size:17}),
+       entry.parent.name+' › '+child.name))):null)),
+    !matches.length?h('p',{className:'d05-message',role:'status'},'Nenhuma categoria encontrada.'):null);
   return portal(h('div',{className:'d05-picker'},
    h('header',{className:'d05-floating-head'},h('div',{},h('small',{},'CLASSIFICAÇÃO'),h('h3',{},picker.kind==='batch'?'Classificar seleção':'Categoria da movimentação')),
     h('button',{type:'button','aria-label':'Cancelar classificação',onClick:()=>{setPicker(null);setPreview(null);}},'×')),
-   picker.phase==='parent'?h('div',{},
-    h('input',{className:'d05-search',autoFocus:true,value:picker.query,placeholder:'Buscar categoria',onChange:(e:any)=>setPicker({...picker,query:e.target.value})}),
-    categoryGrid(picker.categoryId,setParent,picker.query)):
+   ['parent','child'].includes(picker.phase)?searchable:null,
+   picker.phase==='parent'?resultGrid:
    picker.phase==='child'?h('div',{},
-    h('button',{className:'d05-back',onClick:()=>setPicker({...picker,phase:'parent'})},'← Categorias'),
-    h('p',{className:'d05-picker-caption'},'Escolha uma subcategoria, se desejar'),
+    h('button',{type:'button',className:'d05-back',onClick:()=>setPicker({...picker,phase:'parent',query:''})},'← Todas as categorias'),
+    h('p',{className:'d05-picker-caption'},'Escolha uma subcategoria ou mantenha apenas '+parent?.name),
     h('div',{className:'d05-child-list'},
       h('button',{type:'button',className:'d05-child',onClick:()=>setDestination(null)},
        h(D05VectorIcon,{iconKey:parent?.iconKey,hue:parent?.hue}), 'Somente '+parent?.name),
-      children.map((child:any)=>h('button',{type:'button',className:'d05-child',key:child.id,onClick:()=>setDestination(child)},
+      children.filter((child:any)=>qa84B04Fold(child.name).includes(qa84B04Fold(picker.query||'')))
+       .map((child:any)=>h('button',{type:'button',className:'d05-child',key:child.id,onClick:()=>setDestination(child)},
        h(D05VectorIcon,{iconKey:child.iconKey,hue:child.hue}),child.name)))):
    picker.phase==='batch-verify'?h('div',{},
-    h('p',{},'Confirme novamente as ',h('strong',{},preview?.count||0),' movimentações afetadas.'),
+    h('p',{},'Prévia: ',h('strong',{},preview?.count||0),' movimentações na seleção.'),
+    h('p',{className:'d05-picker-caption'},'POSTED: '+String(preview?.posted||0)+
+      ' · PENDING: '+String(preview?.pending||0)+' · Valor total: '+format(preview?.totalCents||0)),
     h('p',{className:'d05-picker-caption'},'Destino: '+labelTarget(picker.categoryId,picker.subcategoryId)),
     h('ul',{className:'d05-preview-items'},(preview?.rows||[]).slice(0,20).map((r:any)=>
      h('li',{key:r.key},r.merchant,' · ',format(Math.abs(r.amount))))) ,
     (preview?.rows?.length||0)>20?h('small',{},'Demais itens incluídos na prévia validada.'):null,
-    h('button',{type:'button',className:'d05-confirm',disabled:busy,onClick:()=>void commitBatch()},busy?'Gravando…':'Reconfirmar e aplicar lote')):
-   h('div',{className:'d05-confirm-step'},
-    h('p',{},'Antes: ',h('b',{},picker.row?.category||'Várias categorias')),
+    state.mode!=='demo'?h('p',{className:'d05-message',role:'status'},
+     'Classificação em lote pessoal ainda não homologada. Prévia somente para consulta.'):null,
+    h('button',{type:'button',className:'d05-confirm',disabled:busy||state.mode!=='demo',
+     onClick:()=>void commitBatch()},busy?'Gravando…':'Reconfirmar e aplicar lote')):
+   picker.phase==='manual-verify'?h('div',{className:'d05-confirm-step'},
+    h('p',{},'Antes: ',h('b',{},preview?.before?.category||'Categoria anterior')),
+    h('p',{},'Depois: ',h('b',{},labelTarget(preview?.after?.categoryId,preview?.after?.subcategoryId))),
+    h('p',{className:'d05-picker-caption'},picker.row?.date+' · '+format(Math.abs(preview?.amount||0))),
+    state.mode!=='demo'?h('p',{className:'d05-message',role:'status'},
+     'Classificação pessoal indisponível até homologação; nenhuma alteração será gravada.'):null,
+    h('button',{type:'button',className:'d05-confirm',disabled:busy||state.mode!=='demo',
+     onClick:()=>void commitManual()},busy?'Gravando…':'Reconfirmar e salvar demonstração')):
+   picker.phase==='personal-locked'?h('div',{className:'d05-confirm-step'},
+    h('p',{},'Antes: ',h('b',{},picker.row?.category||'Categoria atual')),
     h('p',{},'Depois: ',h('b',{},labelTarget(picker.categoryId,picker.subcategoryId))),
-    h('button',{type:'button',className:'d05-confirm',disabled:busy,onClick:()=>void handleClassify()},busy?'Validando…':picker.kind==='batch'?'Ver prévia do lote':'Confirmar classificação')),
+    h('p',{className:'d05-message',role:'status'},
+     'Prévia supervisionada concluída. Gravação pessoal ainda não autorizada; nenhum dado foi alterado.')):
+   h('div',{className:'d05-confirm-step'},
+    h('p',{},'Antes: ',h('b',{},picker.row?.category||'Seleção atual')),
+    h('p',{},'Depois: ',h('b',{},labelTarget(picker.categoryId,picker.subcategoryId))),
+    h('button',{type:'button',className:'d05-confirm',disabled:busy,onClick:()=>void handleClassify()},
+     busy?'Conferindo…':'Conferir prévia antes de salvar')),
    error?h('p',{className:'d05-message is-error',role:'alert'},error):null,
    !bridge?.d05AssignBank&&picker.row?.source==='bank'?h('p',{className:'d05-message',role:'status'},'Salvar no banco indisponível até a conexão segura do processo principal.'):null
   ),picker.left,picker.top,picker.width);
@@ -409,7 +543,10 @@ class D05Movements extends React.Component<any,any> {
   state.booting?h('p',{className:'d05-notice',role:'status'},'Carregando dados financeiros…'):null,
   loadState==='loading'&&bridge?.d05Catalog?h('p',{className:'d05-notice',role:'status'},'Conferindo hierarquia D05…'):null,
   loadState!=='ready'&&loadState!=='loading'?h('p',{className:'d05-notice',role:'status'},accessMessage):null,
-  notice?h('p',{className:'d05-notice',role:'status'},notice):null,
+  notice?h('p',{className:'d05-notice',role:'status'},
+   confirmedIdentity?h(D05VectorIcon,{iconKey:confirmedIdentity.iconKey,
+    hue:confirmedIdentity.hue,size:17}):null,
+   confirmedIdentity?confirmedIdentity.label+' · ':null,notice):null,
   h('div',{className:'d05-metrics'},
    [{name:'Entradas confirmadas',value:format(income),tone:'positive',note:'No escopo selecionado'},
     {name:'Saídas confirmadas',value:format(expense),tone:'negative',note:'Sem pendentes'},
@@ -464,26 +601,28 @@ class D05Movements extends React.Component<any,any> {
     h('button',{type:'button',onClick:()=>setSelected(new Set())},'Limpar seleção')):null,
    filtered.length?h('div',{className:'d05-list'},onScreen.map((r:any,i:number)=>{
     const p=byId(r.categoryId)||byName(r.category),child=p?.subcategories?.find((c:any)=>c.id===r.subcategoryId);
-    const icon=child||p||{iconKey:'circle-dot',hue:155};
+    const icon=resolveCategoryVisualIdentity({categoryId:r.categoryId||null,
+     subcategoryId:r.subcategoryId||null,categoryName:r.category,catalog:parents});
     const isReview=r.source==='bank'&&r.status==='POSTED'&&!r.reviewed;
     const signed=r.kind==='transfer'||r.kind==='ignore'?'neutral':r.amount>=0?'positive':'negative';
     const isSelected=selected.has(r.key);
     const selectAllowed=r.source==='bank';
     return h('div',{className:'d05-list-item',key:r.key},
      group&&(i===0||onScreen[i-1].date!==r.date)?h('div',{className:'d05-day'},pDate(r.date)):null,
-     h('article',{className:'d05-row '+(isSelected?'is-selected':'')},
+     h('article',{className:'d05-row '+(isSelected?'is-selected':''),
+      onClick:()=>openDetail(r)},
       h('button',{type:'button',className:'d05-select '+(isSelected?'selected':''),
        'aria-label':'Selecionar '+r.merchant,'aria-pressed':isSelected,disabled:!selectAllowed,
-       onClick:()=>{const next=new Set(selected);if(next.has(r.key))next.delete(r.key);else next.add(r.key);setSelected(next);setPicker(null);setPreview(null);}},
+       onClick:(e:any)=>{e.stopPropagation();const next=new Set(selected);if(next.has(r.key))next.delete(r.key);else next.add(r.key);setSelected(next);setPicker(null);setPreview(null);}},
        h('span',{'aria-hidden':'true'},isSelected?'✓':'')),
       h('button',{type:'button',className:'d05-row-icon','aria-label':'Alterar categoria de '+r.merchant,
        onClick:(e:any)=>openPicker(e,r)},
-       h(D05VectorIcon,{iconKey:icon.iconKey,hue:icon.hue,size:23})),
+       h(CategoryVisualGlyph,{identity:icon,size:23})),
       h('div',{className:'d05-row-info'},
        h('div',{className:'d05-merchant-line'},
-        h('button',{type:'button',className:'d05-merchant',onClick:()=>r.source==='bank'?host.openBankDetail(r.raw):host.openManualDetail(r.raw)},r.merchant),
+        h('button',{type:'button',className:'d05-merchant',onClick:(e:any)=>{e.stopPropagation();openDetail(r);}},r.merchant),
         isReview?h('button',{type:'button',className:'d05-review-dot','aria-label':'Conferir movimentação '+r.merchant,
-         title:'A conferir',onClick:(e:any)=>{activeTrigger.current=e.currentTarget;setError('');setReview(r);}},h('span',{'aria-hidden':'true'})):null,
+         title:'A conferir',onClick:(e:any)=>{e.stopPropagation();activeTrigger.current=e.currentTarget;setError('');setReview(r);}},h('span',{'aria-hidden':'true'})):null,
         r.source==='bank'&&r.status==='PENDING'?h('span',{className:'d05-pending',title:'Em processamento','aria-label':'Em processamento'},h(D05VectorIcon,{iconKey:'clock-3',hue:37,size:16})):null),
        h('small',{},r.account+' · '+(p?.name||r.category)+(child?' › '+child.name:''),
         r.source==='manual'?' · Manual':''),

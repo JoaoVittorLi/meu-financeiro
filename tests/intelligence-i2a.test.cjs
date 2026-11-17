@@ -91,12 +91,18 @@ test('I2-A/simulation: integer hypothetical savings, budget zero',()=>{
 test('I2-A/followup: excludes a prior category and re-executes canonical engine',async()=>{
  const f=fixture();try{
   const first=await f.orchestrator.ask({...f.input,question:'Por que meus gastos aumentaram?'},71);
-  assert.equal(first.status,'ready');
-  assert.equal(first.facts[0].value.deltaExpenseCents,11000);
-  const second=await f.orchestrator.ask({...f.input,question:'Agora desconsidere Transporte'},71);
+  // Honest partial coverage: a live month or unverified D05 identity is not ready.
+  assert.equal(first.status,'partial');
+  assert.equal(first.facts[0].tool,'compare_spending_breakdown');
+  assert.equal(first.facts[0].value.deltaCents,11000);
+  assert.equal(first.facts[0].coverage,'partial');
+  // Preserve a real canonical follow-up, not a cached narrative subtraction.
+  const second=await f.orchestrator.ask({...f.input,conversationId:first.conversationId,
+   question:'Agora desconsidere Transporte'},71);
+  assert.equal(second.facts[0].tool,'compare');
   assert.equal(second.facts[0].value.deltaExpenseCents,9000);
   assert.deepEqual(second.facts[0].excludedCategories,['transporte']);
-  assert.equal(first.facts[0].value.deltaExpenseCents,11000);
+  assert.equal(first.facts[0].value.deltaCents,11000);
  }finally{f.db.close();}
 });
 test('I2-A/scope: month, grant, profile and owner cannot reuse stale facts',async()=>{

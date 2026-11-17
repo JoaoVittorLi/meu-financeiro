@@ -4,6 +4,9 @@
 const {FinancialReadTools,TOOL_NAMES}=require('./intelligence-tools.cjs');
 const {ConversationContextStore}=require('./intelligence-context.cjs');
 const {validatePlan}=require('./intelligence-provider.cjs');
+const {createHash}=require('node:crypto');
+const {period}=require('./financial-intelligence.cjs');
+const {parseIntent,compareSpendingBreakdown,focusResult,describeInvestigation}=require('./intelligence-investigation.cjs');
 const fold=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
 const money=n=>new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(n/100);
 const DENSITIES=['compact','standard','analysis','mobile'];
@@ -99,6 +102,62 @@ class IntelligenceOrchestrator{
   const db=this.tools.local?.db;
   const categories=typeof db?.listCategories==='function'?
    (db.listCategories()?.categories||[]).map(c=>c.name).filter(n=>typeof n==='string'):[];
+  // I3-01 vertical investigation. Reuses the existing IC2 MAIN/preload grant and
+  // B05 Conversar; no new IPC, personal write, model call or copied financial DB.
+  const investigationIntent=parseIntent(question,ctx,scope.month);
+  if(investigationIntent){
+   try{
+    const info=compareSpendingBreakdown({local:this.tools.local,scope,
+     intention:investigationIntent,clock:this.clock});
+    if(info.status==='stale')return result('stale',info.message);
+    if(info.status==='no_data')return result('unavailable',info.message);
+    if(investigationIntent.followup&&ctx.lastInvestigation?.dataVersion&&
+       ctx.lastInvestigation.dataVersion!==info.dataVersion)
+     return result('stale','Os dados mudaram desde a pergunta anterior. Refaça a investigação.');
+    const focus=focusResult(info,investigationIntent,ctx.lastInvestigation);
+    if(focus.ambiguous)return result('needs_clarification',
+     'Existem múltiplos estabelecimentos com nomes semelhantes. Informe o nome exato.');
+    const text=describeInvestigation(info,investigationIntent,focus);
+    const id='i2a:'+createHash('sha256').update([
+     scope.owner,scope.source,scope.profile,scope.month,info.dataVersion,
+     info.previousPeriod.start,info.currentPeriod.start,question
+    ].join('|')).digest('hex').slice(0,20);
+    if(!this.contexts.update(opened.id,owner,ctx,{
+      lastInvestigation:{previous:investigationIntent.previous,
+       current:investigationIntent.current,dataVersion:info.dataVersion,
+       focusCategoryId:focus.category?.categoryId||null},
+      // I2-A compatibility: "Agora desconsidere Transporte" still runs the
+      // canonical comparison tool scoped to this grant and current month.
+      // Keep only the plan and category names, NEVER cached financial amounts.
+      lastPlan:validatePlan({steps:[{tool:'compare',params:{}}]}),
+      exclusions:[],
+      categoryNames:info.contributions.map(c=>c.label).filter(n=>typeof n==='string'),
+      lastQuestion:question,lastFactRefs:[id]
+    }))return result('stale','O contexto mudou durante a consulta.');
+    const fact={id,kind:'rank',tool:'compare_spending_breakdown',value:info,
+      source:scope.source,profile:scope.profile,period:period(scope.month),
+      asOf:info.asOf,coverage:info.coverage.state,version:2};
+    return result(info.status,text,{
+      facts:[fact],
+      blocks:[{id:id+':0',kind:'rank',factRef:id,density:replyBase.density}],
+      alerts:info.warnings,
+      followUps:[{intent:'investigate_merchants',label:'Investigar estabelecimentos'},
+       {intent:'investigate_categories',label:'Detalhar outra categoria'}],
+      evidence:[{queryId:id,sourceIds:info.contributions.flatMap(c=>c.evidenceIds||[]),
+       period:{start:info.previousPeriod.start,end:info.currentPeriod.end,
+        timezone:'America/Sao_Paulo'},asOf:info.asOf,quality:info.status,
+       dataVersion:info.dataVersion,method:info.method}]
+    });
+   }catch(e){
+    const msg=String(e?.message||'');
+    if(/autoriza|denied|expirad|perfil|escopo/i.test(msg))
+     return result('denied','Permissão inválida ou expirada. Autorize novamente para investigar.');
+    if(/stale|alterad|reconcilia/i.test(msg))
+     return result('stale','Os dados não foram reconciliados ou mudaram. Refaça a consulta.');
+    return result('unavailable','Não foi possível concluir a investigação com dados verificáveis.',
+     {alerts:['Nenhum cálculo foi substituído por estimativa ou texto gerado.']});
+   }
+  }
   let decided=localPlan(question,ctx,categories),plannerWarning=null;
   if(scope.profile==='demo'&&scope.source==='manual'&&this.planner&&typeof this.planner.propose==='function'){
    try{

@@ -185,6 +185,12 @@ function renderIntelligenceActionProposalCard(app:any,proposal:IntelligenceActio
     proposal.resultMessage?h('p',{className:'mf-ai-proposal-result',role:'status'},proposal.resultMessage):null);
 }
 function renderIntelligenceMessageItem(app:any,msg:IntelligenceChatMessage){
+  // Local replies are personal-session facts, not permanent chat history.
+  // Never show a cached amount once access expires, period/profile changes,
+  // or the read grant is absent. IC2/V3 have their own additional gates.
+  if(msg.id.startsWith('local-a-')&&!mfLocalMessageLive(app,msg))
+    return h('article',{className:'mf-ai-msg is-assistant is-unavailable'},
+      h('p',{role:'status'},'Resposta anterior indisponível: a autorização ou o período mudou. Faça uma nova consulta.'));
   // All IC2 facts are session-owned and vanish after grant/period changes.
   if(msg.id.startsWith('ic2-a-')&&!mfIC2MessageLive(app,msg))
     return h('article',{className:'mf-ai-msg is-assistant is-unavailable'},
@@ -374,7 +380,7 @@ function intelligencePremiumBudgetChart(c:any){
      h('span',{className:b.percentage>=100?'is-over':'',style:{width:Math.min(100,Math.max(0,b.percentage))+'%'}})):null)));
 }
 function renderIntelligencePremiumToday(app:any){
- return renderMfD03Today(app);
+ return typeof renderMfB05Today==='function'?renderMfB05Today(app):renderMfD03Today(app);
 }
 
 function renderIntelligenceAccess(app:any){
@@ -399,25 +405,47 @@ function renderIntelligenceComposer(app:any,drawer=false){
    h('button',{type:'submit',className:'primary-button',disabled:!draft.trim()||session.busy||session.expired},session.busy?'Consultando…':'Enviar',h(Icon,{name:'arrow',size:16}))));
 }
 function renderIntelligenceFollowups(app:any){
- const session=intelligenceChatSession(app);
- const scope=intelligenceContextFor(app.state.intelligenceContext||app.state.page);
- const answered=new Set(intelligenceHistoryList(app).filter(m=>m.role==='user')
+ const session=intelligenceChatSession(app),state=app.state,history=intelligenceHistoryList(app);
+ const answered=new Set(history.filter(m=>m.role==='user')
   .map(m=>String(m.text||'').trim().toLocaleLowerCase('pt-BR')));
- const candidates=app.state.categoryReviewGrant?
-  ['Quais regras são recomendadas?','Que movimentações preciso revisar?']:
-  (app.state.localFinancialAccess?.token?[
-    'Quais foram minhas maiores despesas?',
-    'Quais despesas aumentaram?',
-    'Que movimentações preciso revisar?']:(scope.questions||[]));
- const available=candidates.filter(q=>!answered.has(q.toLocaleLowerCase('pt-BR')))
-   .filter(q=>app.state.categoryReviewGrant||app.state.localFinancialAccess?.token||
-     (!/minhas|meus|foram|minha renda/i.test(q))).slice(0,2);
+ const grant=state.localFinancialAccess;
+ const live=!!grant?.token&&grant.expiresAt>Date.now()&&grant.profile===state.mode;
+ const review=!!state.categoryReviewGrant?.token&&state.categoryReviewGrant.expiresAt>Date.now();
+ const report=state.intelligencePremiumSignature===intelligencePremiumSignature(app)?
+  state.intelligencePremiumReport:null;
+ const signals=typeof mfD03EligibleReport==='function'&&
+  mfD03EligibleReport(report,app)?mfD03Signals(report,app):[];
+ const sourceQuestions=[];
+ if(live){
+  for(const signal of signals){
+   if(signal.kind==='budget')sourceQuestions.push('Quais categorias ultrapassaram o orçamento?');
+   if(signal.kind==='commitment')sourceQuestions.push('Quanto tenho comprometido para o próximo mês?');
+   if(signal.kind==='review')sourceQuestions.push('Que movimentações preciso revisar?');
+  }
+  const latest=history.filter(m=>m.role==='assistant'&&m.status==='done').slice(-1)[0];
+  if(latest&&/alimentação|alimentacao/i.test(latest.text))
+   sourceQuestions.push('Quanto gastei com alimentação neste mês?');
+ }
+ if(review)sourceQuestions.push('Que movimentações preciso revisar?');
+ const scope=intelligenceContextFor(state.intelligenceContext||state.page);
+ const fallbacks=live?['Quais foram minhas maiores despesas?','Quais despesas aumentaram?',
+  'Que movimentações preciso revisar?']:scope.questions||[];
+ const candidates=[...new Set([...sourceQuestions,...fallbacks])];
+ const available=candidates.filter(q=>!answered.has(q.trim().toLocaleLowerCase('pt-BR')))
+  .filter(q=>live||review||!/minhas|meus|foram|minha renda|comprometido/i.test(q)).slice(0,3);
  if(!available.length)return null;
  return h('div',{className:'mf-chat-followups','aria-label':'Continuar a análise'},
   ...available.map(q=>h('button',{type:'button',key:q,disabled:session.busy||session.expired,
-    onClick:()=>intelligenceSubmitQuestion(app,q)},q,h(Icon,{name:'arrow',size:13}))));
+   onClick:()=>void intelligenceSubmitQuestion(app,q)},q,h(Icon,{name:'arrow',size:13}))));
 }
 function renderIntelligenceView(app:any){
+ if(typeof renderMfB05Main==='function'&&typeof renderMfB05Today==='function'&&
+    typeof renderMfB05Chat==='function'&&typeof renderMfB05Actions==='function')
+  return renderMfB05Main(app);
+ return renderIntelligenceViewLegacy(app);
+}
+/* Legacy renderer retained only for prior QA harnesses / compatibility. */
+function renderIntelligenceViewLegacy(app:any){
   if(app.state.workIntelligenceDemo?.enabled&&typeof renderWorkIntelligenceDemo==='function')return renderWorkIntelligenceDemo(app);
   if(typeof intelligenceEnsureHydrated==='function')intelligenceEnsureHydrated(app);
   const s=app.state,tab=['chat','today','actions'].includes(s.intelligenceMainMode)?s.intelligenceMainMode:'chat';
@@ -564,5 +592,10 @@ function renderIntelligenceSettings(app:any){
     h('div',{className:'mf-ai-setting-line'},h('span',{},'Raciocínio'),h('strong',{},'Low / Medium automático')),
     h('div',{className:'mf-ai-setting-line'},h('span',{},'Economia de tokens'),h('strong',{},'Contexto mínimo + aprovação por teste')),
     h('p',{className:'muted-desc'},'OAuth e memórias aprovadas são protegidos localmente no Windows. Nenhuma memória é enviada sem consentimento por teste. Dados bancários e sincronização de memórias no PWA continuam indisponíveis para a IA.'),
-    h('button',{type:'button',className:'outlined-action full',onClick:()=>app.navigate('intelligence')},h(Icon,{name:'spark',size:17}),'Abrir prévia da Inteligência'));
+    h('details',{className:'mf-ai-advanced-settings'},
+     h('summary',{},'Inteligência · configurações avançadas'),
+     renderIntelligenceConnection(app),renderIntelligencePrivacy(app),
+     renderIntelligenceFinancialContext(app)),
+    h('button',{type:'button',className:'outlined-action full',onClick:()=>app.navigate('intelligence')},
+     h(Icon,{name:'spark',size:17}),'Abrir Inteligência'));
 }

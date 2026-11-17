@@ -195,7 +195,8 @@ test('C2 — queue filters and history are wired to buttons',()=>{
 test('C2 — source integration preserved legacy review APIs without implementing IPC',()=>{
  assert.match(legacy,/function renderCategoryReviewLegacy\(app:any\)/);
  assert.match(legacy,/return mfD04Render\(app\)/);
- assert.match(view,/return renderMfD03Today\(app\)/);
+ assert.match(view,/typeof renderMfB05Today==='function'\?renderMfB05Today\(app\):renderMfD03Today\(app\)/);
+ assert.match(view,/function renderIntelligencePremiumToday\(app:any\)/);
  assert.match(legacy,/categoryReviewConfirm\(\{token:g.token,id:p.id,digest:p.digest/);
 });
 

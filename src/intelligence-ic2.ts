@@ -46,6 +46,17 @@ function mfIC2Card(r:MfIC2Reply):IntelligenceStructuredCard|null{
    for(const c of (Array.isArray(f.categories)?f.categories:[]).slice(0,12))
     if(typeof c.name==='string'&&Number.isSafeInteger(c.amountCents))
      rows.push({col1:c.name.slice(0,100),col2:money(c.amountCents)});
+  }else if(fact.tool==='compare_spending_breakdown'){
+   title='Investigação das despesas';
+   if(Number.isSafeInteger(f.previousCents))metrics.push({label:'Anterior',value:money(f.previousCents)});
+   if(Number.isSafeInteger(f.currentCents))metrics.push({label:'Atual',value:money(f.currentCents)});
+   if(Number.isSafeInteger(f.deltaCents))metrics.push({label:'Variação',value:money(f.deltaCents),
+     tone:f.deltaCents>0?'warning':'neutral'});
+   headers=['Categoria','Anterior / atual','Variação'];
+   for(const x of (Array.isArray(f.contributions)?f.contributions:[]).slice(0,12))
+    if(typeof x.label==='string'&&Number.isSafeInteger(x.deltaCents))
+     rows.push({col1:x.label.slice(0,100),
+       col2:money(x.previousCents)+' / '+money(x.currentCents),col3:money(x.deltaCents)});
   }else if(fact.tool==='compare'){
    title='Comparação com o mês anterior';
    if(Number.isSafeInteger(f.deltaExpenseCents))

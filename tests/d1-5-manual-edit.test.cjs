@@ -36,12 +36,12 @@ function subject({linked=false,fail=false,approved=true}={}){
  s.updateData=async d=>{writes.push(d);if(fail)return false;s.state.data=d;return true};
  return {s,original,other,writes,messages,approve};
 }
-test('D1.5 — editar descrição, data, valor em centavos e categoria preserva ID e outros registros',async()=>{
+test('D1.5 — editar descrição, data e valor preserva categoria, ID e outros registros',async()=>{
  const {s,original,other,writes}=subject();
- s.state.manualDraft={description:'  Mercado Central  ',date:'2026-11-11',value:'230,75',category:'Transporte'};
+ s.state.manualDraft={description:'  Mercado Central  ',date:'2026-11-11',value:'230,75',category:original.category};
  assert.equal(await s.saveManualDetail(original.id),true);
  assert.equal(writes.length,1);
- assert.deepEqual(writes[0].transactions,[{...original,description:'Mercado Central',date:'2026-11-11',amount:23075,category:'Transporte'},other]);
+ assert.deepEqual(writes[0].transactions,[{...original,description:'Mercado Central',date:'2026-11-11',amount:23075,category:original.category},other]);
  assert.equal(s.state.detail,null);
 });
 test('D1.5 — rejeita data impossível com calendário real e não grava',async()=>{
@@ -69,13 +69,26 @@ test('D1.5 — lançamento vinculado não pode alterar valor ou data',async()=>{
   assert.equal(writes.length,0);assert.match(messages[0],/Desvincule/);
  }
 });
-test('D1.5 — vinculado permite mudar descrição/categoria sem tocar extrato',async()=>{
+test('D1.5 — vinculado permite mudar descrição sem tocar classificação nem extrato',async()=>{
  const {s,original,writes}=subject({linked:true});
  const bankBefore=JSON.stringify(s.state.bank.data.transactions);
- s.state.manualDraft.description='Novo nome';s.state.manualDraft.category='Transporte';
+ s.state.manualDraft.description='Novo nome';
  assert.equal(await s.saveManualDetail(original.id),true);
  assert.equal(writes[0].transactions[0].amount,original.amount);
+ assert.equal(writes[0].transactions[0].category,original.category);
  assert.equal(JSON.stringify(s.state.bank.data.transactions),bankBefore);
+});
+test('D1.5 — mudar categoria pelo draft nunca autoriza escrita sem prévia D05, inclusive vinculados',async()=>{
+ for(const linked of [false,true]){
+  const {s,original,writes,messages}=subject({linked});
+  const before=JSON.stringify(s.state.data);
+  s.state.manualDraft.category='Transporte';
+  s.state.manualDraft.description='Alteração não autorizada';
+  assert.equal(await s.saveManualDetail(original.id),false);
+  assert.equal(writes.length,0);
+  assert.equal(JSON.stringify(s.state.data),before);
+  assert.match(messages.at(-1),/prévia supervisionada D05/);
+ }
 });
 test('D1.5 — não grava com seletor de banco, ID trocado ou estado ocupado',async()=>{
  const {s,writes}=subject();
@@ -118,7 +131,7 @@ test('D1.5 — drawer visível oferece edição completa, cancelamento e exclus�
   assert(src.includes(label),'Missing manual detail field: '+label);
  assert.match(src,/onClick:\(\)=>this\.saveManualDetail\(manual\.id\)/);
  assert.match(src,/onClick:\(\)=>this\.removeEntry\(manual\.id\)/);
- assert.match(src,/className:'mf-transaction-category-select',value:this\.state\.manualDraft\.category/);
+ assert.match(src,/this\.field\('Categoria do lançamento',categoryAction\('Alterar categoria manual de '\+name\)\)/);
+ assert.match(src,/this\.field\('Categoria principal',categoryAction\('Alterar classificação bancária de '\+name\)\)/);
  assert.match(src,/this\.isManualLinked\(manual\.id\)/);
- assert.match(src,/this\.field\('Categoria principal',h\(StyledSelect,\{className:'mf-transaction-category-select',value:tx\.category/);
 });

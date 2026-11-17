@@ -6,7 +6,7 @@ declare const ReactDOM: any;
 const h: any = React.createElement;
 
 type Kind = 'income' | 'expense';
-type Tx = { id:string; date:string; description:string; kind:Kind; amount:number; category:string; origin?:string };
+type Tx = { id:string; date:string; description:string; kind:Kind; amount:number; category:string; origin?:string; categoryId?:string|null; subcategoryId?:string|null };
 type Settings = { opening:number; income:number; fixed:number; existing:number; reserve:number };
 type Data = { version:number; transactions:Tx[]; budgets:{[category:string]:number}; settings:Settings };
 type Sim = { value:string; installments:string; interest:string; firstDueDate?:string };
@@ -36,7 +36,7 @@ type BankState = {config:BankConfig;data:{accounts:BankAccount[];transactions:Ba
 const EMPTY_BANK:BankState={config:{configured:false,clientId:'',itemIds:[],secure:false},data:{accounts:[],transactions:[],items:[],last:null}};
 type E1Report = {ok:boolean;reason?:string;stage?:string;verifiedCount?:number;pendingCount?:number;mismatchCount?:number;checks?:Record<string,{status:'verified'|'mismatch'|'pending';reason:string}>;counts?:{bankWindows:number;bankCloud:number;accountsWindows:number;accountsCloud:number;personalOriginalRows:number;overlayEditsCloud:number;missingBankRefsCloud:number;missingPlanningAccountsCloud:number};e1Completed?:boolean;cloudCutoverAllowed?:boolean;monthDeltas?:{ok:boolean;stage:string;totalDifferenceMonths?:number;limitedResults:boolean;items:{month:string;windowsCount:number;cloudCount:number;difference:number;status:string}[]}};
 type QuickCategoryTarget = {origin:'bank'|'manual';id:string;accountId?:string;left:number;top:number;width:number};
-type State = {csvPreview?:any;contextCategory?:{target:'entry'|'quick'|'batch';editor:CategoryEditor;mode:string;account:string;query:string};categoryContextBusy?:boolean;txGroupByDate?:boolean; txAdvancedOpen?:boolean;txCategoryFilter?:string;txKindFilter?:'all'|'income'|'expense';txReviewFilter?:'all'|'pending'|'reviewed';txSort?:'date_desc'|'date_asc'|'amount_desc'|'amount_asc';quickCategory:QuickCategoryTarget|null;quickCategoryQuery:string;quickCategoryIndex:number;quickCategoryBusy:boolean;quickCategoryError:string; budgetFocus?:'all'|'attention'|'unlimited';budgetSearch?:string;accountFocus?:'all'|'attention';bankIntegrationsOpen?:boolean;simSaved?:{result:any;input:Sim};simBusy?:boolean;simCalculatedInput?:Sim|null;simResultStale?:boolean;simError?:string; txSummarySource?:'bank'|'manual';planPresentation?:'agenda'|'calendar'|'projection'; overviewHideValues?:boolean;overviewChart?:string; intelligenceContextSnapshot?:any;intelligenceDraftScope?:any;settingsSection?:string; fatal?:string; booting?:boolean; mode:'real'|'demo'; data:Data; page:string; month:string; showEntry:boolean; entry:{date:string;description:string;kind:Kind;category:string;value:string}; sim:Sim; outcome:any; query:string; toast:string; budgetEdit:string; busy:boolean; editModal:null|{type:'budget'|'setting';key:string;title:string;value:string};bank:BankState;bankForm:{clientId:string;clientSecret:string;itemIds:string};bankBusy:boolean;bankMessage:string;bankFilter:string;txSource:'all'|'bank'|'manual';txReviewOnly:boolean;txOrganize:boolean;categoryMoreEmojis:boolean;quickAddOpen:boolean;dashboardSource:'bank'|'manual';sourceDetailsOpen:boolean;budgetTab:'expense'|'income';showAllBudgetCategories:boolean;
+type State = {csvPreview?:any;contextCategory?:{target:'entry'|'quick'|'batch';editor:CategoryEditor;mode:string;account:string;query:string};categoryContextBusy?:boolean;txGroupByDate?:boolean; txAdvancedOpen?:boolean;txCategoryFilter?:string;txKindFilter?:'all'|'income'|'expense';txReviewFilter?:'all'|'pending'|'reviewed';txSort?:'date_desc'|'date_asc'|'amount_desc'|'amount_asc';quickCategory:QuickCategoryTarget|null;quickCategoryQuery:string;quickCategoryIndex:number;quickCategoryBusy:boolean;quickCategoryError:string; budgetFocus?:'all'|'attention'|'unlimited';budgetSearch?:string;qa84VisualCatalog?:any[];qa84OverviewExpanded?:boolean;qa84OverviewSelected?:string|null;qa84TransactionsSpan?:DateSpan;qa84TransactionsCategory?:string;qa84BudgetDrill?:{categoryName:string;month:string;mode:string;bank:boolean;subcategoryId:string|null;showChild:boolean;returnScroll:number}|null;qa84BudgetRows?:QA84BudgetPart[];qa84BudgetLoading?:boolean;qa84BudgetPartial?:boolean;qa84BudgetReadError?:string;qa84BudgetShowAll?:boolean;qa84BudgetPage?:number;accountFocus?:'all'|'attention';bankIntegrationsOpen?:boolean;simSaved?:{result:any;input:Sim};simBusy?:boolean;simCalculatedInput?:Sim|null;simResultStale?:boolean;simError?:string; txSummarySource?:'bank'|'manual';planPresentation?:'agenda'|'calendar'|'projection'; overviewHideValues?:boolean;overviewChart?:string; intelligenceContextSnapshot?:any;intelligenceDraftScope?:any;settingsSection?:string; fatal?:string; booting?:boolean; mode:'real'|'demo'; data:Data; page:string; month:string; showEntry:boolean; entry:{date:string;description:string;kind:Kind;category:string;value:string}; sim:Sim; outcome:any; query:string; toast:string; budgetEdit:string; busy:boolean; editModal:null|{type:'budget'|'setting';key:string;title:string;value:string};bank:BankState;bankForm:{clientId:string;clientSecret:string;itemIds:string};bankBusy:boolean;bankMessage:string;bankFilter:string;txSource:'all'|'bank'|'manual';txReviewOnly:boolean;txOrganize:boolean;categoryMoreEmojis:boolean;quickAddOpen:boolean;dashboardSource:'bank'|'manual';sourceDetailsOpen:boolean;budgetTab:'expense'|'income';showAllBudgetCategories:boolean;
  categories:CategoryInfo[];rules:RuleInfo[];categoryEditor:CategoryEditor;ruleEditor:RuleEditor;ruleTest:string;categoryMessage:string;entryCategoryTouched:boolean;bankConfigOpen:boolean;overviewPeriod:PeriodMode;customStart:string;customEnd:string;backupInfo:{copies:number;last:string|null};detail:DetailSelection;detailDraft:DetailDraft;manualDraft:null|{description:string;date:string;value:string;category:string};detailBusy:boolean;categorySaving:string[];txSelected:string[];txBatchCategory:string; planning:PlanOverview;planMonth:string;planDay:string;planSelected:string|null;planOpen:boolean;planForm:PlanForm;planBusy:boolean;planView:string;planTerm:string;planIncludeEstimated:boolean;planBankTitle:string;planMatchQuery:string;planHistory:{action:string;details:string;at:string}[];cloudStage:string;cloudBusy:boolean;cloudMessage:string;cloudIdentityConnected:boolean;cloudQuarantineVerified:boolean;cloudPersonalTransferred:boolean;cloudParityBusy:boolean;cloudParityMessage:string;cloudE1Report:E1Report|null; intelligenceTab:'today'|'chat'|'actions';intelligenceDraft:string;intelligencePreparedQuestion:string;intelligencePanelOpen:boolean;intelligenceContext:string;intelligenceExpandedAction:string|null; aiStatus:{connected:boolean;secure:boolean;email?:string|null;scopeGranted?:boolean};aiBusy:boolean;aiError:string;aiDemoCase:string;aiEffort:'auto'|'low'|'medium';aiCreditsConfirmed:boolean;aiResult:any;aiStreaming:string;aiCapabilities:any;aiMemories:any[];aiMemoryDraft:string;aiMemoryKind:string;aiMemoryBusy:boolean;aiMemoryError:string;aiUseMemories:boolean;aiPreview:any;aiUsageStats:any;aiFinancialDemoSource:'bank'|'manual';aiFinancialDemo:any;aiFinancialDemoBusy:boolean;aiFinancialDemoError:string };
 // Bridge com o processo principal Electron. No preview web, mantém o armazenamento legado.
 interface DesktopBridge {load:(mode:'real'|'demo')=>Promise<Data|null>;save:(mode:'real'|'demo',data:Data)=>Promise<any>;info:()=>Promise<any>;backupSQLite:()=>Promise<{cancelled?:boolean;ok?:boolean}>;cloudMigrationStatus:()=>Promise<{stage:string;cloudConnected:boolean;financialSyncEnabled:boolean;backupPresent:boolean;latestBackupAt:string|null}>;prepareCloudMigration:()=>Promise<{stage:string;checkedTables:number;checkedRecords:number;recordsSent:number;backupVerified:boolean;personalTablesReady:number;personalRecordsReady:number}>;cloudAccessStatus:()=>Promise<{connected:boolean;stage?:string;reason?:string;financialSyncEnabled:boolean;recordsTransferred:number}>;connectCloudAccess:()=>Promise<{connected:boolean;stage?:string;reason?:string;financialSyncEnabled:boolean;recordsTransferred:number}>;previewQuarantineDemo:()=>Promise<{ok:boolean;stage?:string;reason?:string;personalTables?:number;fictionalRecords?:number;realRecordsSent:number;financialSyncEnabled:boolean}>;transferPersonalCloud:()=>Promise<{cancelled?:boolean;stage?:string;recordsSent?:number;personalTablesReady?:number;personalRecordsReady?:number;backupVerified?:boolean;financialSyncEnabled:boolean}>;cloudPersonalSyncStatus?:()=>Promise<{cursor:number;conflicts:number;financialSyncEnabled:boolean}>;cloudBankParity?:()=>Promise<{ok:boolean;reason?:string;localCount?:number;cloudCount?:number;exactIdentities?:boolean;exactDatesAndCents?:boolean;exactDescriptionsAndStatuses?:boolean;matched?:boolean;financialSyncEnabled:boolean}>;cloudE1Audit?:()=>Promise<E1Report>;onCloudPersonalUpdated?:(callback:(data:{inbound:number;conflicts:number})=>void)=>(()=>void);restoreSQLite:()=>Promise<{cancelled?:boolean;ok?:boolean}>;backupStatus:()=>Promise<{copies:number;last:string|null}>;openBackupsFolder:()=>Promise<string>;openDataFolder:()=>Promise<string>;bankStatus:()=>Promise<BankState>;bankConfigure:(c:any)=>Promise<BankState>;bankSync:()=>Promise<BankState & {newCount:number;totalCount:number}>;bankForget:()=>Promise<BankState>;importCategoryPack?:()=>Promise<any>;categoriesStatus:()=>Promise<{categories:CategoryInfo[];rules:RuleInfo[]}>;
@@ -274,7 +274,14 @@ function safeData(v:any):Data {
  const d=starter();
  d.transactions=v.transactions.slice(0,30000).map((r:any)=>{
   const amount=Number(r.amount); if(!/^\d{4}-\d{2}-\d{2}$/.test(r.date)||!['income','expense'].includes(r.kind)||!Number.isSafeInteger(amount)||amount<=0||amount>100000000000||typeof r.description!=='string') throw new Error('Transação inválida.');
-  return {id:String(r.id||Math.random()),date:r.date,kind:r.kind,description:r.description.slice(0,180),amount,category:String(r.category||'Outros').slice(0,70),origin:'restored'};
+  const categoryId=typeof r.categoryId==='string'&&r.categoryId.length<=128?r.categoryId:null;
+  const subcategoryId=categoryId&&typeof r.subcategoryId==='string'&&r.subcategoryId.length<=128?
+   r.subcategoryId:null;
+  // Preserve user-approved D05 IDs after restore. Never infer child from
+  // merchant/description or silently classify an older, unlinked record.
+  return {id:String(r.id||Math.random()),date:r.date,kind:r.kind,
+   description:r.description.slice(0,180),amount,category:String(r.category||'Outros').slice(0,70),
+   categoryId,subcategoryId,origin:'restored'};
  });
  for(const [c,raw] of Object.entries(v.budgets||{})){const b=Number(raw);if(c.length<=50&&Number.isSafeInteger(b)&&b>=0&&(b>0||Number(v.version)>=5))d.budgets[c]=b;}
  for(const key of ['opening','income','fixed','existing','reserve'] as (keyof Settings)[]){const n=Number(v.settings?.[key]||0); (d.settings as any)[key]=(Number.isSafeInteger(n)&&Math.abs(n)<100000000000)?n:0;}
@@ -557,6 +564,12 @@ class PeriodPicker extends React.Component<any,any>{
 class App extends React.Component<any,State>{
  private fileInput:any; private csvInput:any; private timeout:any; private writeInProgress=false; private autoSyncTimer:any=null; private unsubscribePersonalCloud:(()=>void)|null=null; private unsubscribeAI:(()=>void)|null=null; private lastSyncAttempt=0; private focusReturn:any=null; private focusCategoryOnDetailOpen=false; private quickCategoryAnchor:HTMLElement|null=null; private quickCategorySearchInput:HTMLElement|null=null; private quickCategoryWrite=false; private reviewSavingKeys=new Set<string>(); private categorySavingKeys=new Set<string>(); private categorySaveQueue:Promise<any>=Promise.resolve();
  private simRequest=0;
+ // B03 only: snapshot identity for the currently open D05 drawer. B01 owns
+ // the global descriptor resolver; no category catalog is created here.
+ private qa84D05DrawerIds:any=null;
+ // Must remain false until the owner separately approves and integrates a
+ // MAIN-verified D05 bank rule/split write gate.
+ private qa84BankCategoryGateAuthorized=false;
  constructor(props:any){super(props);const mode:'real'|'demo'='real';this.state={mode,data:desktop?starter():load(mode),page:'overview',month:nowYM,showEntry:false,entry:{date:iso(new Date()),description:'',kind:'expense',category:'Outros',value:''},sim:{value:'',installments:'6',interest:'0'},outcome:null,simCalculatedInput:null,simResultStale:false,simError:'',query:'',toast:'',budgetEdit:'',busy:!!desktop,booting:!!desktop,editModal:null,bank:EMPTY_BANK,bankForm:{clientId:'',clientSecret:'',itemIds:''},bankBusy:false,bankMessage:'',bankFilter:'',txSource:'all',txReviewOnly:false,txOrganize:false,txAdvancedOpen:false,txCategoryFilter:'',txKindFilter:'all',txReviewFilter:'all',txSort:'date_desc',quickCategory:null,quickCategoryQuery:'',quickCategoryIndex:0,quickCategoryBusy:false,quickCategoryError:'',categoryMoreEmojis:false,quickAddOpen:false,dashboardSource:'bank',sourceDetailsOpen:false,budgetTab:'expense',showAllBudgetCategories:false,categories:DEFAULT_CATEGORY_INFOS,rules:[],categoryEditor:{previousName:'',name:'',color:'#3e9a85',emoji:'✨',kind:'expense'},ruleEditor:emptyRule(),ruleTest:'IFOOD',categoryMessage:'',entryCategoryTouched:false,bankConfigOpen:false,overviewPeriod:'month',customStart:iso(new Date()),customEnd:iso(new Date()),backupInfo:{copies:0,last:null},detail:null,detailDraft:{merchant:'',note:'',nature:'auto',reviewed:false,aliasPattern:'',splitParts:[]},manualDraft:null,detailBusy:false,categorySaving:[],txSelected:[],txBatchCategory:'Alimentação',planning:EMPTY_PLANNING,planMonth:nowYM,planDay:iso(new Date()),planSelected:null,planOpen:false,planForm:freshPlanForm(),planBusy:false,planView:'all',planTerm:'',planIncludeEstimated:false,planBankTitle:'',planMatchQuery:'',planHistory:[],cloudStage:'not_started',cloudBusy:false,cloudMessage:'',cloudIdentityConnected:false,cloudQuarantineVerified:false,cloudPersonalTransferred:false,cloudParityBusy:false,cloudParityMessage:'',cloudE1Report:null,intelligenceTab:'today',intelligenceDraft:'',intelligencePreparedQuestion:'',intelligencePanelOpen:false,intelligenceContext:'overview',intelligenceExpandedAction:null,aiStatus:{connected:false,secure:false},aiBusy:false,aiError:'',aiDemoCase:'budget',aiEffort:'auto',aiCreditsConfirmed:false,aiResult:null,aiStreaming:'',aiCapabilities:null,aiMemories:[],aiMemoryDraft:'',aiMemoryKind:'preference',aiMemoryBusy:false,aiMemoryError:'',aiUseMemories:false,aiPreview:null,aiUsageStats:null,aiFinancialDemoSource:'bank',aiFinancialDemo:null,aiFinancialDemoBusy:false,aiFinancialDemoError:''};}
  async componentDidMount(){
    window.addEventListener('keydown',this.onGlobalKeydown);
@@ -570,6 +583,7 @@ class App extends React.Component<any,State>{
      const persisted=await desktop.load('real');
      this.setState({data:persisted?safeData(persisted):starter(),busy:false,booting:false});
      await this.refreshCategories();
+     void this.loadQA84VisualCatalog();
      const currentBank=await this.refreshBank();
      await this.refreshPlanning();
      this.unsubscribePersonalCloud=desktop.onCloudPersonalUpdated?.((event)=>{
@@ -620,6 +634,8 @@ class App extends React.Component<any,State>{
  }
  componentWillUnmount(){window.removeEventListener('keydown',this.onGlobalKeydown);window.removeEventListener('resize',this.onQuickCategoryViewportChange);window.removeEventListener('scroll',this.onQuickCategoryViewportChange,true);document.removeEventListener('pointerdown',this.onQuickCategoryOutside,true);this.unsubscribePersonalCloud?.();this.unsubscribeAI?.();if(this.autoSyncTimer)clearInterval(this.autoSyncTimer);if(this.timeout)clearTimeout(this.timeout);}
  onGlobalKeydown=(event:KeyboardEvent)=>{
+    // QA84: B04 popup owns keyboard above the D05 detail drawer.
+    if(document.querySelector('.d05-overlay'))return;
     if(event.key==='Escape'&&this.state.contextCategory){event.preventDefault();this.closeContextCategory();return;}
     if(event.key==='Escape'&&this.state.quickCategory){event.preventDefault();this.closeQuickCategory();return;}
     const dialog=document.querySelector('.modal-backdrop [role="dialog"],.mf-detail-drawer,.mf-ai-drawer');
@@ -642,6 +658,7 @@ class App extends React.Component<any,State>{
    if(this.state.detail){this.setState({detail:null});return;}
    if(this.state.planOpen){this.setState({planOpen:false});return;}
    if(this.state.editModal){this.setState({editModal:null});return;}
+   if(this.state.page==='budgets'&&this.state.qa84BudgetDrill){event.preventDefault();qa84BudgetReturn(this,!!this.state.qa84BudgetDrill.showChild);return;}
    if(this.state.showEntry)this.setState({showEntry:false});
  };
  maybeAutoSync(bank:BankState=this.state.bank){
@@ -659,8 +676,15 @@ class App extends React.Component<any,State>{
      if(result?.cancelled)return;
      this.setState({categories:result.categories.categories,rules:result.categories.rules,bank:{...this.state.bank,data:result.data},
        categoryMessage:`Sugestões aplicadas: ${result.rulesAdded} regras, ${result.overridesAdded} classificações. Outras movimentações continuam disponíveis para revisão.`});
+     void this.loadQA84VisualCatalog();
      await this.refreshPlanning();
    }catch(e:any){this.setState({categoryMessage:'Não foi possível importar as sugestões: '+String(e?.message||e)});}
+ }
+ async loadQA84VisualCatalog(){
+  const api=desktop as any;
+  if(!api?.d05Catalog)return;
+  try{const result=await api.d05Catalog();if(result&&Array.isArray(result.parents))this.setState({qa84VisualCatalog:result.parents});}
+  catch(_){/* Deterministic visual fallback; no fabricated permission. */}
  }
  async refreshCategories(){
    if(!desktop?.categoriesStatus)return;
@@ -677,6 +701,7 @@ class App extends React.Component<any,State>{
      const persisted=await desktop.load(this.state.mode);
      this.setState({categories:state.categories,rules:state.rules,categoryEditor:{previousName:'',name:'',color:'#3e9a85',emoji:'✨',kind:'expense'},categoryMessage:'Categoria salva.',data:persisted?safeData(persisted):this.state.data});
      await this.refreshBank();
+     void this.loadQA84VisualCatalog();
      if(context&&this.state.contextCategory===context){
       const same=this.state.mode===context.mode&&this.state.bankFilter===context.account&&this.state.query===context.query;
       this.setState({contextCategory:undefined,categoryEditor:context.editor,...(same?(context.target==='entry'?{entry:{...this.state.entry,category:value.name.trim()},entryCategoryTouched:true}:context.target==='quick'?{quickCategoryQuery:value.name.trim(),quickCategoryIndex:0}:{txBatchCategory:value.name.trim()}):{} )});
@@ -687,7 +712,7 @@ class App extends React.Component<any,State>{
  }
  async deleteCategory(name:string){
    if(!desktop||this.state.mode==='demo'||!confirm('Excluir a categoria '+name+'? A exclusão será impedida se ela estiver em uso.'))return;
-   try{const state=await desktop.categoryDelete(name);const persisted=await desktop.load(this.state.mode);this.setState({categories:state.categories,rules:state.rules,data:persisted?safeData(persisted):this.state.data,categoryMessage:'Categoria excluída.'});}
+   try{const state=await desktop.categoryDelete(name);const persisted=await desktop.load(this.state.mode);this.setState({categories:state.categories,rules:state.rules,data:persisted?safeData(persisted):this.state.data,categoryMessage:'Categoria excluída.'});void this.loadQA84VisualCatalog();}
    catch(e:any){this.setState({categoryMessage:String(e?.message||e)});}
  }
  async saveRule(){
@@ -733,10 +758,14 @@ class App extends React.Component<any,State>{
  }
  bankTxSelected(tx:BankTx){return this.state.txSelected.includes(tx.accountId+'|'+tx.id);}
  toggleSelected(tx:BankTx){const key=tx.accountId+'|'+tx.id;this.setState({txSelected:this.bankTxSelected(tx)?this.state.txSelected.filter(x=>x!==key):this.state.txSelected.length>=100?this.state.txSelected:[...this.state.txSelected,key]});}
- openBankDetail(tx:BankTx){
+ openBankDetail(tx:BankTx,visual?:any){
+   this.qa84D05DrawerIds={origin:'bank',id:tx.id,accountId:tx.accountId,
+    categoryId:visual?.categoryId||null,subcategoryId:visual?.subcategoryId??null};
    this.setState({detail:{origin:'bank',id:tx.id,accountId:tx.accountId},detailDraft:{merchant:tx.merchant||'',note:tx.note||'',nature:tx.nature||'auto',reviewed:!!tx.reviewed,aliasPattern:tx.description.slice(0,60),splitParts:(tx.splits?.length?tx.splits:[{category:tx.category,amount:Math.floor(Math.abs(tx.amount)/2)},{category:tx.category,amount:Math.abs(tx.amount)-Math.floor(Math.abs(tx.amount)/2)}]).map(p=>({category:p.category,value:moneyString(p.amount)}))}});
  }
- openManualDetail(tx:Tx){
+ openManualDetail(tx:Tx,visual?:any){
+  this.qa84D05DrawerIds={origin:'manual',id:tx.id,categoryId:visual?.categoryId||null,
+   subcategoryId:visual?.subcategoryId??null};
   this.setState({detail:{origin:'manual',id:tx.id},
    manualDraft:{description:tx.description,date:tx.date,value:moneyString(tx.amount),category:tx.category}});
  }
@@ -757,13 +786,18 @@ class App extends React.Component<any,State>{
   if(!Number.isSafeInteger(amount)||amount<=0){this.flash('Valor inválido. Use reais e no máximo duas casas decimais (ex.: 1.234,56).');return false;}
   const allowed=this.getCategories().some(c=>c.name===draft.category&&
    (original.kind==='income'?c.kind!=='expense':c.kind!=='income'));
+  // Drawer edits may change metadata, NEVER bypass D05 supervised category
+  // confirmation. The prior draft is not a write authorization.
+  if(draft.category!==original.category){
+   this.flash('Classificação exige a prévia supervisionada D05.');return false;
+  }
   if(!allowed&&draft.category!==original.category){this.flash('Selecione uma categoria compatível.');return false;}
   if(this.isManualLinked(id)&&(draft.date!==original.date||amount!==original.amount)){
    this.flash('Desvincule este lançamento da movimentação bancária antes de mudar data ou valor.');
    return false;
   }
   const result=await this.updateData({...this.state.data,transactions:this.state.data.transactions.map(t=>
-   t.id===id?{...t,description,date:draft.date,amount,category:draft.category}:t)},
+   t.id===id?{...t,description,date:draft.date,amount,category:original.category}:t)},
    'Lançamento atualizado.');
   if(result)this.setState({detail:null,manualDraft:null});
   return result;
@@ -931,12 +965,18 @@ class App extends React.Component<any,State>{
   await this.runBankOperation('bankBatch',{items,...changes},'Alterações aplicadas a '+items.length+' movimentações.');
  }
  async saveSplit(){
+  if(!this.qa84BankCategoryGateAuthorized){
+   this.flash('Divisão por categoria requer prévia D05 homologada; nenhuma alteração efetuada.');return;
+  }
   const sel=this.state.detail;if(!sel||sel.origin!=='bank')return;
   const parts=this.state.detailDraft.splitParts.map(x=>({category:x.category,amount:parseMoney(x.value)}));
   if(parts.some(x=>!Number.isSafeInteger(x.amount)||x.amount<=0))return this.flash('Confira os valores da divisão.');
   await this.runBankOperation('bankSplit',{accountId:sel.accountId,externalId:sel.id,parts},parts.length?'Divisão salva.':'Divisão removida.');
  }
  async createCategoryRuleFromDetail(){
+  if(!this.qa84BankCategoryGateAuthorized){
+   this.flash('Regra de categoria requer prévia D05 homologada; nenhuma alteração efetuada.');return;
+  }
   const sel=this.state.detail,tx=this.state.bank.data.transactions.find(x=>x.accountId===sel?.accountId&&x.id===sel?.id);
   if(!desktop||!tx||!sel||sel.origin!=='bank'||this.state.detailBusy)return;
   const pattern=this.state.detailDraft.aliasPattern.trim();
@@ -1167,7 +1207,7 @@ class App extends React.Component<any,State>{
    const span=dateSpan(this.state.overviewPeriod,this.state.customStart,this.state.customEnd);
    const newMonth=span.end.slice(0,7),useMonth=newMonth>=nowYM&&newMonth<=shiftMonth(nowYM,12);
    const enteringPlan=target==='planning'&&this.state.page!=='planning'&&useMonth;
-   this.setState({page:target,txReviewOnly:page==='review',txOrganize:page==='categories',quickAddOpen:false,quickCategory:null,
+   this.setState({page:target,...(target==='budgets'&&pageChanged?{qa84BudgetDrill:null}:{}),txReviewOnly:page==='review',txOrganize:page==='categories',quickAddOpen:false,quickCategory:null,
       month:newMonth, ...(enteringPlan?{planMonth:newMonth,planDay:newMonth===nowYM?iso(new Date()):newMonth+'-01'}:{}),
       showEntry:false,outcome:null,simBusy:false},()=>{
        if(pageChanged)document.scrollingElement?.scrollTo({top:0,left:0,behavior:'instant' as ScrollBehavior});
@@ -1471,8 +1511,6 @@ class App extends React.Component<any,State>{
  const totalLimit=limits.reduce((n,c)=>n+c.limit,0),spentLimited=limits.reduce((n,c)=>n+c.total,0),budgetCoverage=overviewCoverage(budget.expense,spentLimited),used=totalLimit>0?Math.round(spentLimited/totalLimit*100):spentLimited>0?100:0;
  const recent=useBank?bank.data.transactions.filter(x=>x.date>=start&&x.date<=end&&x.status==='POSTED'&&['income','expense'].includes(effectiveNature(x))).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5).map(x=>({key:x.accountId+'|'+x.id,title:x.customTitle||x.merchant||x.description,original:x.description,date:x.date,category:x.category,amount:Math.abs(x.amount),kind:effectiveNature(x),raw:x})):d.transactions.filter(x=>x.date>=start&&x.date<=end).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5).map(x=>({key:x.id,title:x.description,original:'',date:x.date,category:x.category,amount:x.amount,kind:x.kind,raw:x}));
  const openBudget=()=>{this.setState({month});this.navigate('budgets');};
- const palette=['#8066d5','#329b89','#d29844','#5a8fc9','#c7759c'];
- const categoryColor=(name:string,index:number)=>{const info=this.getCategories().find(c=>c.name===name);return info&&(!info.builtIn||info.color.toLowerCase()!=='#3e9a85')?info.color:palette[index];};
  const metric=(label:string,value:number,icon:string,hint:string,tone:string)=>h('button',{type:'button',className:'u1-metric mf-border-reveal mf-tone-'+(tone==='net'?'net':tone)+' '+tone+' mf-overview-metric'+(tone==='net'?(value>0?' is-positive':value<0?' is-negative':' is-neutral'):''),'aria-label':label+' · '+money(value)+' · ver movimentações',onClick:()=>this.openOverviewTransactions(tone==='income'?'income':tone==='expense'?'expense':'all')},h('div',{className:'u1-metric-label'},h(Icon,{name:icon,size:16}),label,h(Icon,{name:'arrow',size:13})),h('strong',{},money(value)),h('small',{},hint));
  const reviewCount=useBank?bank.data.transactions.filter(t=>!t.reviewed).length:null;
  return h('div',{className:'overview-content u1-overview mf-premium-overview '+(hidden?'u1-values-hidden':'')},
@@ -1494,8 +1532,7 @@ class App extends React.Component<any,State>{
     h('div',{className:'u1-rhythm-summary'},h('div',{},h('strong',{},money(s.expense)),h('span',{},'gastos no período')),h('div',{className:'u1-comparison '+(comparison.percent!==null&&comparison.percent<=0?'is-lower':'')},hidden?'Valores ocultos':comparison.label,h('small',{},compareAvailable?date(previous.start)+' a '+date(previous.end)+' · mesma fonte':'Comparação exige histórico disponível nos dois intervalos'))),
     hidden?h('div',{className:'u1-chart-hidden'},h(Icon,{name:'eye-off',size:26}),h('p',{},'Mostre os valores para visualizar o gráfico.')):(state.overviewChart||'spending')==='flow'?h(Chart,{data:flowSegments(start,end,range)}):h(OverviewSpendingChart,{rows:points,compare:compareAvailable}),
     h('div',{className:'u1-chart-footer'},h('span',{},h('i',{className:'u1-current-dot'}),'Período selecionado'),compareAvailable?h('span',{},h('i',{className:'u1-previous-dot'}),'Intervalo anterior'):null,h('span',{className:'u1-daily-average'},'Média diária ',h('b',{},money(Math.round(s.expense/daysInSpan(start,end))))))),h('section',{className:'u1-panel u1-categories'},h('div',{className:'u1-panel-head'},h('div',{},h('h2',{},'Para onde foi seu dinheiro'),h('p',{},'Categorias do período selecionado')),h('span',{className:'u1-count'},s.categories.length+' categorias')),
-    s.categories.length?h('div',{className:'u1-category-list'},s.categories.slice(0,5).map((cat,i)=>h('button',{type:'button',className:'u1-category-row',key:cat.name,onClick:()=>{this.setState({query:cat.name,txSource:useBank?'bank':'manual',txReviewOnly:false,txOrganize:false,bankFilter:''});this.navigate('transactions');}},h('span',{className:'u1-category-dot',style:{background:categoryColor(cat.name,i)}}),h('span',{className:'u1-category-name'},cat.name),h('span',{className:'u1-category-bar'},h('i',{style:{width:hidden?'0%':Math.round(cat.total/Math.max(1,s.expense)*100)+'%',background:categoryColor(cat.name,i)}})),h('strong',{},money(cat.total)),h('small',{},hidden?'••••':Math.round(cat.total/Math.max(1,s.expense)*100)+'%')))):h('p',{className:'u1-empty'},'Nenhuma despesa nesta fonte e período.'),
-    s.categories.length>5?h('p',{className:'u1-microcopy'},'Mostrando as 5 maiores categorias. Consulte todas em Movimentações.'):null)),
+    renderQA84OverviewCategories(this,s.categories,s.expense,useBank,hidden)),
    h('aside',{className:'u1-side-stack'},
     h('section',{className:'mf-plan-shortcut'},h('div',{className:'u1-panel-head'},h('div',{},h('h2',{},'Na sua agenda'),h('p',{},'Hoje e próximos 7 dias · compromissos cadastrados')),h('button',{type:'button',className:'u1-icon-button','aria-label':'Abrir Planejamento',onClick:()=>this.navigate('planning')},h(Icon,{name:'arrow',size:17}))),
      generated?h('div',{className:'u1-agenda-stats'},h('div',{},h('strong',{},overdue.length),h('span',{},'vencidos')),h('div',{},h('strong',{},money(upcoming.reduce((n,x)=>n+x.remaining,0))),h('span',{},'a pagar · inclui vencidos'))):null,
@@ -1506,7 +1543,7 @@ class App extends React.Component<any,State>{
      limits.length?h('div',{className:'u1-budget-meter '+(spentLimited>totalLimit?'is-over':''),role:'img','aria-label':hidden?'Valores ocultos':used+'% dos limites utilizados'},h('i',{style:{width:hidden?'0%':Math.min(100,used)+'%'}})):null,
      h('p',{className:'u1-budget-caption'},!limits.length?'Você ainda não definiu limites.':hidden?'Valores ocultos':(spentLimited>totalLimit?money(spentLimited-totalLimit)+' acima dos limites':money(totalLimit-spentLimited)+' de margem nos limites')),
      h('div',{className:'u1-coverage'},h('span',{},'Cobertura dos gastos'),h('b',{},hidden?'••••':budgetCoverage===null?'Sem gastos':budgetCoverage+'%')),h('p',{className:'u1-microcopy'},'Considera apenas categorias com limite. Margem não é saldo disponível.'),
-     h('button',{type:'button',className:'u1-subtle-link',onClick:openBudget},'Gerenciar orçamento',h(Icon,{name:'arrow',size:14}))))),
+     h('button',{type:'button',className:'u1-subtle-link',onClick:openBudget},'Gerenciar orçamento',h(Icon,{name:'arrow',size:14})))))),
   h('div',{className:'u1-detail-grid'},
    
    h('section',{className:'u1-panel u1-recent'},h('div',{className:'u1-panel-head'},h('div',{},h('h2',{},'Últimas movimentações'),h('p',{},'Confirmadas no período')),h('button',{type:'button',className:'u1-subtle-link',onClick:()=>{this.setState({query:'',bankFilter:'',txSource:useBank?'bank':'manual',txReviewOnly:false,txOrganize:false});this.navigate('transactions');}},'Ver tudo',h(Icon,{name:'arrow',size:14}))),
@@ -1753,6 +1790,7 @@ class App extends React.Component<any,State>{
      // +10% de folga, arredondado para R$ 10. Não cria orçamento sem confirmação.
      return Math.max(2000,Math.ceil(average*1.1/1000)*1000);
    };
+   if(this.state.qa84BudgetDrill)return renderQA84BudgetDetail(this,{});
    return h('div',{className:'section mf-budget-section u3-budgets'},
      h('div',{className:'mf-budget-heading'},
        h('div',{},h('p',{},mode==='expense'?'Acompanhe seus limites por categoria.':'Veja a composição das receitas recebidas.')),
@@ -1784,44 +1822,7 @@ class App extends React.Component<any,State>{
        'Há '+fmt(unclassified)+' em '+(mode==='expense'?'despesas':'receitas')+' com categorias incompatíveis ou ainda não identificadas. Confira em Movimentações.'):null,
      h('div',{className:'u3-budget-toolbar'},h('div',{className:'u2-view-tabs','aria-label':'Filtro de categorias'},(mode==='income'?[{value:'all',label:'Recebimentos'}]:[{value:'all',label:'Todas'},{value:'attention',label:'Atenção'},{value:'unlimited',label:'Sem limite'}]).map(x=>h('button',{type:'button','aria-pressed':focus===x.value,onClick:()=>this.setState({budgetFocus:x.value})},x.label))),h('div',{className:'search-box'},h(Icon,{name:'search',size:16}),h('input',{'aria-label':'Buscar categoria no orçamento',placeholder:'Buscar categoria',value:search,onChange:(e:any)=>this.setState({budgetSearch:e.target.value})}))),
      h('div',{className:'u3-budget-list-heading'},h('h2',{},mode==='expense'?'Limites por categoria':'Origens da sua renda'),h('span',{role:'status'},visible.length+' categoria(s)')),
-     visible.length?h('div',{className:'budget-grid'},
-       visible.map(({info,total:spent,hasLimit,limit},index)=>{
-         const pct=hasLimit&&limit>0?Math.round(spent/limit*100):hasLimit?(spent>0?100:0):0;
-         const share=total>0?Math.round(spent/total*100):0;
-         const status=!hasLimit?'unlimited':spent>limit?'exceeded':limit>0&&spent/limit>=.9?'near':'within';
-         const gauge=mode==='expense'&&hasLimit&&limit>0?budgetB3Visual(spent,limit):null;
-         const remaining=limit-spent;
-         const row=h(Card,{className:'budget-item mf-budget-card mf-budget-'+status+(gauge?' mf-budget-card-b3':''),key:info.name},
-           h('div',{className:'budget-item-top'},h('span',{className:'cat-symbol',style:{background:info.color+'28',color:info.color}},info.emoji||'✨'),
-             h('div',{},h('h3',{},info.name),h('small',{className:'u3-budget-state'},mode==='income'?'Recebimentos do mês':status==='exceeded'?'Acima do limite':status==='near'?'Próximo do limite':status==='unlimited'?'Sem limite':'Dentro do limite'))),
-           gauge?h('div',{className:'mf-budget-b3',role:'group','aria-label':'Orçamento de '+info.name+': '+gauge.percent+'% utilizado; gasto '+fmt(spent)+' de '+fmt(limit)+(remaining<0?'; excedido em '+fmt(-remaining):'; restante '+fmt(remaining))},
-             h('div',{className:'mf-budget-b3-dial',style:{'--mf-budget-b3-color':gauge.color}},
-               h('svg',{className:'mf-budget-b3-svg',viewBox:'0 0 200 110','aria-hidden':true,focusable:'false'},
-                 h('path',{className:'mf-budget-b3-track',d:'M 14 96 A 86 86 0 0 1 186 96',pathLength:100}),
-                 gauge.fill>0?h('path',{className:'mf-budget-b3-fill',d:'M 14 96 A 86 86 0 0 1 186 96',pathLength:100,strokeDasharray:gauge.fill+' 100'}):null),
-               h('strong',{className:'mf-budget-b3-percent'},gauge.percent+'%'),
-               h('span',{className:'mf-budget-b3-caption'},'do limite utilizado')),
-             h('div',{className:'mf-budget-b3-values'},
-               h('div',{},h('small',{},'Gasto atual'),h('strong',{},fmt(spent))),
-               h('div',{},h('small',{},'Limite configurado'),h('strong',{},fmt(limit)))),
-             h('p',{className:'mf-budget-b3-remaining'+(remaining<0?' is-exceeded':'')},remaining<0?'Limite ultrapassado · excesso de '+fmt(-remaining):'Restam '+fmt(remaining))):
-           h('div',{className:'mf-budget-money'},h('strong',{},fmt(spent)),
-             h('span',{},mode==='expense'?'gasto até agora':'recebido no período')),
-           mode==='income'?h('div',{className:'mf-income-share'},
-             h('div',{className:'progress-track'},h('div',{className:'progress-bar',style:{background:info.color,width:(spent>0?Math.max(2,Math.min(share,100)):0)+'%'}})),
-             h('small',{},share===0&&spent>0?'Menos de 1% das receitas':share+'% das receitas')):
-           gauge?null:hasLimit?h('div',{className:'mf-budget-limit'},
-             h('div',{className:'mf-budget-limit-head'},
-               h('span',{},'Limite '+fmt(limit)),h('strong',{className:spent>limit?'bad-text':''},limit===0?(spent>0?'Acima do limite':'Limite zero definido'):pct+'% utilizado')),
-             limit>0?h('div',{className:'progress-track'},h('div',{className:'progress-bar',style:{width:Math.min(pct,100)+'%'}})):null,
-             h('small',{},spent>limit?'Ultrapassou em '+fmt(spent-limit):status==='near'?'Próximo do limite · restam '+fmt(limit-spent):limit===0?'Limite zero definido':'Restam '+fmt(limit-spent))):
-           h('div',{className:'mf-no-budget'},h('span',{},'Sem limite definido'),
-             h('div',{className:'mf-budget-limit-actions'},suggestLimit(info.name)?h('button',{type:'button',className:'small-link',title:'Sugestão: média dos últimos três meses com 10% de margem, arredondada para R$ 10. Você confirma antes de salvar.',onClick:()=>this.setState({editModal:{type:'budget',key:info.name,title:'Limite sugerido · '+info.name,value:moneyString(suggestLimit(info.name)!)}})},'Sugerir '+fmt(suggestLimit(info.name)!)):null,
-             h('button',{type:'button',className:'small-link',onClick:()=>this.setState({editModal:{type:'budget',key:info.name,title:'Definir limite · '+info.name,value:''}})},'Definir limite'))),
-           mode==='expense'&&hasLimit?h('div',{className:'budget-item-bottom'},h('button',{className:'small-link',onClick:()=>this.setState({editModal:{type:'budget',key:info.name,title:'Editar limite · '+info.name,value:moneyString(limit)}})},'Editar limite')):null);
-         const group=mode==='expense'&&(index===0||hasLimit!==visible[index-1].hasLimit);
-         return group?[h('h3',{className:'mf-budget-group-title',key:'group-'+info.name},hasLimit?'Categorias com limite':'Gastos sem limite'),row]:row;
-       })):h(Card,{className:'mf-budget-empty'},
+     visible.length?renderQA84BudgetCards(this,visible,mode,total,useBank,suggestLimit):h(Card,{className:'mf-budget-empty'},
          h('h3',{},entries.length?'Nenhuma categoria para estes filtros':mode==='income'?'Nenhuma receita neste período':'Nenhum gasto neste período'),
          h('p',{},entries.length?'Altere o filtro ou a busca para ver outras categorias.':mode==='income'?'As receitas aparecerão aqui depois de serem registradas ou sincronizadas.':'Suas despesas aparecerão aqui quando houver movimentações.')),
      quiet.length?h('div',{className:'mf-budget-quiet'},
@@ -1829,7 +1830,7 @@ class App extends React.Component<any,State>{
          onClick:()=>this.setState({showAllBudgetCategories:!this.state.showAllBudgetCategories})},
          this.state.showAllBudgetCategories?'Ocultar outras categorias':'Ver outras categorias ('+quiet.length+')',h(Icon,{name:this.state.showAllBudgetCategories?'chevron-up':'chevron-down',size:16})),
        this.state.showAllBudgetCategories?h('div',{className:'mf-budget-quiet-grid'},quiet.map(c=>h('div',{className:'mf-budget-quiet-row',key:c.name},
-          h('span',{},c.emoji||'✨','  ',c.name),mode==='expense'?h('button',{className:'small-link',onClick:()=>this.setState({editModal:{type:'budget',key:c.name,title:'Definir limite · '+c.name,value:''}})},'Definir limite'):h('span',{className:'muted'},'Sem receitas neste mês')))):null):null,
+          h('span',{className:'qa84-category-combo'},h(CategoryVisualGlyph,{identity:resolveCategoryVisualIdentity({categoryName:c.name,catalog:this.state.qa84VisualCatalog||[],aggregate:true}),size:17}),c.name),mode==='expense'?h('button',{className:'small-link',onClick:()=>this.setState({editModal:{type:'budget',key:c.name,title:'Definir limite · '+c.name,value:''}})},'Definir limite'):h('span',{className:'muted'},'Sem receitas neste mês')))):null):null,
      h('p',{className:'mf-budget-disclaimer'},'Pix para terceiros continuam como entradas ou saídas até que sejam identificados como transferências próprias. Reembolsos sem vínculo são mostrados como entradas, não abatimentos automáticos de gastos.'));
  }
 
@@ -2052,6 +2053,23 @@ class App extends React.Component<any,State>{
    const amount=tx?tx.amount:manual?(manual.kind==='income'?manual.amount:-manual.amount):0;
    const category=tx?.category||manual?.category||'Outros';
    const cats=this.getCategories();const cat=cats.find(c=>c.name===category);
+   const sourceId=bank?'bank':'manual';
+   const context=this.qa84D05DrawerIds;
+   const matching=context?.origin===sourceId&&context.id===selected.id&&
+    (!bank||context.accountId===selected.accountId)?context:null;
+   const identity=qa84B03Visual({
+    categoryId:(manual as any)?.categoryId||(tx as any)?.categoryId||matching?.categoryId||null,
+    subcategoryId:(manual as any)?.subcategoryId??(tx as any)?.subcategoryId??matching?.subcategoryId??null,
+    categoryName:category
+   },(this.state as any).qa84VisualCatalog||D05_APPROVED_PARENTS);
+   const categoryAction=(label:string)=>h('button',{type:'button',
+    className:'mf-drawer-d05-category',title:'Abrir classificação D05',
+    'aria-label':label,onClick:(event:any)=>
+      qa84B03RequestDrawerPicker(event,sourceId as 'bank'|'manual',
+       selected.id,bank?selected.accountId:undefined)},
+    h(D05VectorIcon,{iconKey:identity.iconKey,hue:identity.hue,size:24}),
+    h('span',{},identity.source==='sub'?identity.parentLabel+' › '+identity.label:
+      identity.source==='fallback'?category:identity.label));
    const f=this.state.detailDraft;
    const matchSuggestions=tx&&tx.status==='POSTED'?this.state.data.transactions.filter(m=>m.kind===(tx.amount>=0?'income':'expense')&&m.amount===Math.abs(tx.amount)&&Math.abs((Date.parse(m.date+'T00:00:00Z')-Date.parse(tx.date+'T00:00:00Z'))/86400000)<=3&&!this.state.bank.data.transactions.some(other=>other.linkedManualId===m.id&&(other.id!==tx.id||other.accountId!==tx.accountId))).slice(0,6):[];
    const opposite=tx?this.state.bank.data.transactions.filter(other=>other.accountId!==tx.accountId&&other.amount===-tx.amount&&Math.abs((Date.parse(other.date+'T00:00:00Z')-Date.parse(tx.date+'T00:00:00Z'))/86400000)<=2&&other.status==='POSTED').slice(0,3):[];
@@ -2060,24 +2078,25 @@ class App extends React.Component<any,State>{
      h('aside',{className:'mf-detail-drawer',role:'dialog','aria-modal':'true','aria-label':'Detalhes da movimentação'},
        h('div',{className:'mf-drawer-head'},h('div',{},h('small',{className:'micro-label'},'DETALHES'),h('h2',{},'Movimentação')),h('button',{className:'close-button',type:'button','aria-label':'Fechar painel',title:'Fechar',onClick:()=>this.setState({detail:null})},h(Icon,{name:'close',size:18}))),
        h('div',{className:'mf-detail-scroll'},
-         h('div',{className:'mf-detail-hero'},h('span',{className:'mf-hero-emoji'},cat?.emoji||'✨'),h('h3',{},name),h('strong',{className:amount>=0?'good-text':'bad-text'},(amount>=0?'+':'−')+fmt(Math.abs(amount))),h('span',{},(tx?.date||manual?.date||'').split('-').reverse().join('/')+' · '+(tx?.accountName||'Adicionado por você'))),
+         h('div',{className:'mf-detail-hero'},categoryAction('Alterar categoria de '+name),h('h3',{},name),h('strong',{className:amount>=0?'good-text':'bad-text'},(amount>=0?'+':'−')+fmt(Math.abs(amount))),h('span',{},(tx?.date||manual?.date||'').split('-').reverse().join('/')+' · '+(tx?.accountName||'Adicionado por você'))),
          h('button',{type:'button',className:'mf-ai-detail-trigger',onClick:()=>this.openIntelligenceContext('transactions')},h(Icon,{name:'spark',size:17}),'Analisar com Inteligência',h('span',{},'Prévia')),
          tx?h('div',{className:'mf-detail-section'},h('div',{className:'mf-detail-section-title'},h('b',{},'Organização'),h('span',{className:tx.reviewed?'mf-reviewed':'mf-to-review'},tx.reviewed?'✓ Revisada':'A conferir')),
            h('div',{className:'mf-detail-grid'},
-             this.field('Categoria principal',h(StyledSelect,{className:'mf-transaction-category-select',value:tx.category,disabled:this.state.categorySaving.includes(tx.accountId+'|'+tx.id),options:cats.map(c=>({value:c.name,label:c.emoji+' '+c.name})),onChange:(v:string)=>this.setBankCategory(tx,v)})),
+             this.field('Categoria principal',categoryAction('Alterar classificação bancária de '+name)),
              this.field('Tipo de movimentação',h(StyledSelect,{value:f.nature,options:[{value:'auto',label:'Padrão'},{value:'income',label:'Receita'},{value:'expense',label:'Despesa'},{value:'transfer',label:'Transferência própria'},{value:'ignore',label:'Não contar nas análises'}],onChange:(nature:any)=>this.setState({detailDraft:{...f,nature}})}))),
            this.field('Nome do estabelecimento',h('input',{className:'form-control',value:f.merchant,maxLength:100,placeholder:'Ex.: iFood, Mercado, Academia',onChange:(e:any)=>this.setState({detailDraft:{...f,merchant:e.target.value}})})),
            this.field('Anotações pessoais',h('textarea',{className:'form-control mf-note-input',rows:3,value:f.note,maxLength:600,placeholder:'Opcional: detalhes para lembrar desta compra',onChange:(e:any)=>this.setState({detailDraft:{...f,note:e.target.value}})})),
            h('label',{className:'mf-review-checkbox'},h('input',{type:'checkbox',checked:f.reviewed,onChange:(e:any)=>this.setState({detailDraft:{...f,reviewed:e.target.checked}})}),'Conferi esta movimentação'),
            h('button',{className:'primary-button mf-full-action',disabled:this.state.detailBusy,onClick:()=>this.updateBankInfo()},'Salvar detalhes')):null,
          tx?h('div',{className:'mf-detail-section'},h('b',{},'Reconhecer estabelecimento'),h('p',{className:'muted-desc'},'Aplique o nome escolhido às próximas movimentações com o mesmo trecho de descrição.'),this.field('Trecho que identifica esse estabelecimento',h('input',{className:'form-control',value:f.aliasPattern,maxLength:120,onChange:(e:any)=>this.setState({detailDraft:{...f,aliasPattern:e.target.value}})})),h('button',{className:'outlined-action full',disabled:this.state.detailBusy,onClick:()=>this.createMerchantAlias()},'Usar este nome nas movimentações semelhantes'),
-           h('button',{className:'ghost-button',disabled:this.state.detailBusy,onClick:()=>this.createCategoryRuleFromDetail()},'Usar categoria nas movimentações semelhantes'),
+           h('button',{className:'ghost-button',disabled:!this.qa84BankCategoryGateAuthorized||this.state.detailBusy,
+             title:'Regra bancária exige prévia supervisionada D05',onClick:()=>this.createCategoryRuleFromDetail()},'Usar categoria nas movimentações semelhantes'),
            (this.state.bank.data.aliases||[]).filter(a=>fold(tx.description).includes(fold(a.pattern))).map(a=>h('div',{className:'mf-suggestion',key:a.id},h('small',{},'Regra: '+a.pattern+' → '+a.displayName),h('button',{className:'mf-small-link',disabled:this.state.detailBusy,onClick:async()=>{if(!confirm('Remover esta regra de nome?'))return;try{const data=await desktop!.bankDeleteAlias(a.id);this.setState({bank:{...this.state.bank,data}});this.flash('Regra removida.');}catch(e:any){this.flash('Não foi possível remover: '+String(e?.message||e));}}},'Excluir')))):null,
          tx&&tx.amount<0?h('div',{className:'mf-detail-section'},h('b',{},'Dividir compra'),h('p',{className:'muted-desc'},'Distribua o valor entre categorias sem alterar o total da compra original.'),
            tx.splitOutdated?h('p',{className:'mf-inline-warning'},'O banco atualizou o valor desta compra. Revise a divisão antes de aplicá-la novamente.'):null,
            f.splitParts.map((part,i)=>h('div',{className:'mf-split-row',key:i},h(StyledSelect,{value:part.category,options:cats.map(c=>({value:c.name,label:c.emoji+' '+c.name})),onChange:(category:string)=>this.setState({detailDraft:{...f,splitParts:f.splitParts.map((v,j)=>i===j?{...v,category}:v)}})}),h('input',{className:'form-control',value:part.value,inputMode:'decimal',placeholder:'0,00',onChange:(e:any)=>this.setState({detailDraft:{...f,splitParts:f.splitParts.map((v,j)=>i===j?{...v,value:e.target.value}:v)}})}),h('button',{className:'mf-small-link',title:'Remover parte',disabled:f.splitParts.length<=2,onClick:()=>this.setState({detailDraft:{...f,splitParts:f.splitParts.filter((_,j)=>j!==i)}})},h(Icon,{name:'close',size:18})))),
            h('div',{className:'mf-detail-split-footer'},h('button',{className:'mf-small-link',disabled:f.splitParts.length>=20,onClick:()=>this.setState({detailDraft:{...f,splitParts:[...f.splitParts,{category:category,value:'0,00'}]}})},'+ Adicionar parte'),h('strong',{className:splitTotal===Math.abs(tx.amount)?'good-text':'bad-text'},fmt(Number.isFinite(splitTotal)?splitTotal:0)+' / '+fmt(Math.abs(tx.amount)))),
-           h('div',{className:'mf-action-row'},h('button',{className:'primary-button',disabled:this.state.detailBusy||splitTotal!==Math.abs(tx.amount)||f.splitParts.some(p=>parseMoney(p.value)<=0),onClick:()=>this.saveSplit()},'Salvar divisão'),h('button',{className:'ghost-button',disabled:this.state.detailBusy||!tx.splits?.length,onClick:()=>this.runBankOperation('bankSplit',{accountId:tx.accountId,externalId:tx.id,parts:[]},'Divisão removida.')},'Remover divisão'))):null,
+           h('div',{className:'mf-action-row'},h('button',{className:'primary-button',disabled:!this.qa84BankCategoryGateAuthorized||this.state.detailBusy||splitTotal!==Math.abs(tx.amount)||f.splitParts.some(p=>parseMoney(p.value)<=0),title:'Divisão bancária exige prévia D05',onClick:()=>this.saveSplit()},'Salvar divisão'),h('button',{className:'ghost-button',disabled:!this.qa84BankCategoryGateAuthorized||this.state.detailBusy||!tx.splits?.length,title:'Divisão bancária exige prévia D05',onClick:()=>this.runBankOperation('bankSplit',{accountId:tx.accountId,externalId:tx.id,parts:[]},'Divisão removida.')},'Remover divisão'))):null,
          tx?h('div',{className:'mf-detail-section'},h('b',{},'Conferir com um lançamento seu'),
            tx.linkedManualId?h('div',{className:'mf-suggestion'},h('span',{},'✓ Vinculado a um lançamento que você adicionou'),h('button',{className:'mf-small-link',disabled:this.state.detailBusy,onClick:()=>this.setManualLink(null)},'Desvincular')):
            matchSuggestions.length?matchSuggestions.map(m=>h('div',{className:'mf-suggestion',key:m.id},h('div',{},h('b',{},m.description),h('small',{},m.date.split('-').reverse().join('/')+' · '+fmt(m.amount))),h('button',{className:'ghost-button',disabled:this.state.detailBusy,onClick:()=>this.setManualLink(m.id)},'Vincular'))):h('p',{className:'muted-desc'},'Nenhum lançamento manual com mesmo valor, tipo e data próxima.')):null,
@@ -2094,11 +2113,7 @@ class App extends React.Component<any,State>{
              this.field('Data',h(SingleDatePicker,{value:this.state.manualDraft.date,
                disabled:this.isManualLinked(manual.id),
                onChange:(value:string)=>this.setState({manualDraft:{...this.state.manualDraft!,date:value}})}))),
-           this.field('Categoria do lançamento',h(StyledSelect,{
-             className:'mf-transaction-category-select',value:this.state.manualDraft.category,
-             options:cats.filter(c=>manual.kind==='income'?c.kind!=='expense':c.kind!=='income')
-               .map(c=>({value:c.name,label:c.emoji+' '+c.name})),
-             onChange:(v:string)=>this.setState({manualDraft:{...this.state.manualDraft!,category:v}})})),
+           this.field('Categoria do lançamento',categoryAction('Alterar categoria manual de '+name)),
            this.isManualLinked(manual.id)?h('p',{className:'mf-manual-warning'},
              'Lançamento vinculado a uma movimentação bancária: desvincule antes de alterar data, valor ou excluir.'):null,
            h('div',{className:'mf-manual-actions'},
