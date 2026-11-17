@@ -182,3 +182,61 @@ test('P0 permanent consent, labels and receipts survive FinanceDB restart',()=>s
   reopened.close();
  }
 }));
+
+test('P0 manual D05 and legacy corrections trump auto labels permanently via SQLite trigger',()=>sandbox(async e=>{
+ e.auto.configure({accountIds:[ACCOUNT_A],...span},true);
+ await e.auto.apply();
+ e.d05.assignBank({accountId:ACCOUNT_A,externalId:'a-22',target:targetAlt});
+ assert.equal(e.db.bankOverview().transactions.find(x=>x.id==='a-22').categorySource,'manual');
+ assert.equal(e.db.db.prepare('SELECT 1 FROM mf_auto_labels WHERE account_id=? AND external_id=?').get(ACCOUNT_A,'a-22'),undefined);
+ assert(e.db.db.prepare('SELECT 1 FROM mf_auto_feedback WHERE account_id=? AND external_id=?').get(ACCOUNT_A,'a-22'));
+ e.db.overrideBankCategory({accountId:ACCOUNT_A,externalId:'a-23',category:'Transporte'});
+ assert.equal(e.db.bankOverview().transactions.find(x=>x.id==='a-23').categorySource,'manual');
+ e.db.overrideBankCategory({accountId:ACCOUNT_A,externalId:'a-23',category:null});
+ assert.equal((await e.auto.apply()).applied,0,'Feedback blocks unwanted reapplication after manual delete');
+}));
+test('P0 permission expiration 90 days later blocks all new classifications without deleting receipts',()=>sandbox(async e=>{
+ e.auto.configure({accountIds:[ACCOUNT_A],...span},true);
+ const old=e.auto.status();assert.equal(old.enabled,true);
+ const later=new D05AutoCategorization({finance:()=>e.db,
+  backupDirectory:()=>path.join(e.root,'backups'),clock:()=>new Date('2028-01-01T00:00:00Z')});
+ assert.equal(later.status().enabled,false);
+ assert.equal(later.plan({limit:20000}).candidateCount,0);
+ assert.equal((await later.apply()).applied,0);
+}));
+test('P0 changed source data suppresses stale overlay and moves it to review without re-applying',()=>sandbox(async e=>{
+ e.auto.configure({accountIds:[ACCOUNT_A],...span},true);await e.auto.apply();
+ const old=e.db.db.prepare('SELECT COUNT(*) AS n FROM mf_auto_receipts').get().n;
+ e.db.ingestBank(ITEM_A,{item:{status:'UPDATED'},data:[{account:{
+  id:ACCOUNT_A,name:'CONTA FICTÍCIA A',type:'CHECKING'},transactions:[
+   gen('a-25','MERCADO BOA PRACA NOVO EXTRATO',25)
+  ]}]});
+ const x=e.db.bankOverview().transactions.find(x=>x.accountId===ACCOUNT_A&&x.id==='a-25');
+ assert.notEqual(x.categorySource,'automatic','Source fingerprint changed');
+ const review=e.auto.plan({limit:20000});
+ assert(review.review.some(r=>r.externalId==='a-25'&&/alterada/.test(r.reason)));
+ assert.equal((await e.auto.apply()).applied,0);
+ assert.equal(e.db.db.prepare('SELECT COUNT(*) AS n FROM mf_auto_receipts').get().n,old);
+}));
+test('P0 suspected duplicate identity cannot receive automatic classification',()=>sandbox(async e=>{
+ e.auto.configure({accountIds:[ACCOUNT_A],...span},true);
+ const original=e.db.db.prepare('SELECT date,description,amount_cents AS cents FROM bank_transactions WHERE account_id=? AND external_id=?').get(ACCOUNT_A,'a-25');
+ e.db.ingestBank(ITEM_A,{item:{status:'UPDATED'},data:[{account:{
+  id:ACCOUNT_A,name:'CONTA FICTÍCIA A',type:'CHECKING'},transactions:[{
+   id:'duplicate-25',date:original.date,description:'MERCADO BOA PRACA REPETIDO',
+   amount:original.cents/100,status:'PENDING',category:'Groceries'
+  }]}]});
+ const plan=e.auto.plan({limit:20000});
+ assert(!plan.candidates.some(x=>x.externalId==='a-25'));
+ assert(plan.review.some(x=>x.externalId==='a-25'&&/duplicada/.test(x.reason)));
+}));
+test('P0 backup failure blocks all write paths; no financial rows or receipts mutate',()=>sandbox(async e=>{
+ e.auto.configure({accountIds:[ACCOUNT_A],...span},true);
+ const original=e.db.backupTo;
+ e.db.backupTo=async()=>{throw Error('SYNTHETIC_DISK_FULL');};
+ try{
+  await assert.rejects(e.auto.apply(),/proteção de backup falhou/);
+  assert.equal(e.db.db.prepare('SELECT COUNT(*) AS n FROM mf_auto_labels').get().n,0);
+  assert.equal(e.db.db.prepare('SELECT COUNT(*) AS n FROM mf_auto_receipts').get().n,0);
+ }finally{e.db.backupTo=original;}
+}));
