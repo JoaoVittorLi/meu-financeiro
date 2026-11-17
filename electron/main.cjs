@@ -608,7 +608,10 @@ app.whenReady().then(async()=>{
  ipcMain.handle('bank:auto-apply',async(event,input)=>{
   requireAppSender(event);autoAllowed();autoIdle();
   const initial=!autoCategory.initialReady();
-  if(initial){
+  const staleBatch=autoCategory.batchStatus()?.state==='stale';
+  // An interrupted stale manifest is never silently renewed by a manual
+  // action; it requires a completely fresh scan and another native decision.
+  if(initial||staleBatch){
    autoPreviewService.assertReady(input?.previewVersion);
    const preview=autoCategory.plan({limit:20000});
    if(!input?.previewVersion||input.previewVersion!==preview.previewVersion)
