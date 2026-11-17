@@ -53,7 +53,7 @@ class D05AutoCategorization{
     start_date TEXT NOT NULL,end_date TEXT NOT NULL,
     enabled INTEGER NOT NULL CHECK(enabled IN(0,1)),
     revision INTEGER NOT NULL DEFAULT 1,
-    consented_at TEXT NOT NULL,revoked_at TEXT
+    consented_at TEXT NOT NULL,expires_at TEXT NOT NULL,revoked_at TEXT
    );
    CREATE TABLE IF NOT EXISTS mf_auto_labels(
     account_id TEXT NOT NULL,external_id TEXT NOT NULL,
@@ -101,7 +101,7 @@ class D05AutoCategorization{
  }
  permissions(){
   return this.sql.prepare(`SELECT a.account_id AS accountId,b.name,a.enabled,a.start_date AS startDate,
-    a.end_date AS endDate,a.revision,a.consented_at AS consentedAt,a.revoked_at AS revokedAt
+    a.end_date AS endDate,a.revision,a.consented_at AS consentedAt,a.expires_at AS expiresAt,a.revoked_at AS revokedAt
     FROM mf_auto_permissions a JOIN bank_accounts b ON b.account_id=a.account_id ORDER BY b.name`).all();
  }
  status(){
@@ -110,7 +110,7 @@ class D05AutoCategorization{
    (SELECT COUNT(*) FROM mf_auto_receipts WHERE action='apply') AS appliedEver,
    (SELECT COUNT(*) FROM mf_auto_receipts WHERE action='undo') AS reverted`).get();
   const permissions=this.permissions();
-  const enabledAccounts=permissions.filter(p=>p.enabled===1).map(p=>p.accountId);
+  const enabledAccounts=permissions.filter(p=>p.enabled===1&&p.expiresAt>this.clock().toISOString()).map(p=>p.accountId);
   const pending=enabledAccounts.length?this.plan({limit:100}).reviewCount:0;
   return {contract:'D05/AUTO-CATEGORY-V1',engine:'historical-corrections-and-rules',
    modelInference:false,enabled:enabledAccounts.length>0,permissions,counts:{...counts,awaitingReview:pending},
@@ -125,17 +125,17 @@ class D05AutoCategorization{
   const sql=this.sql,existing=this.permissions().map(x=>x.accountId);
   const select=sql.prepare('SELECT 1 FROM bank_accounts WHERE account_id=?');
   for(const id of ids)if(!select.get(id))throw Error('Auto D05: conta ausente');
-  const at=this.clock().toISOString();
+  const instant=this.clock(),at=instant.toISOString(),expiresAt=new Date(instant.getTime()+90*86400000).toISOString();
   sql.exec('BEGIN IMMEDIATE');
   try{
    for(const id of existing)if(!ids.includes(id))sql.prepare(
     "UPDATE mf_auto_permissions SET enabled=0,revision=revision+1,revoked_at=? WHERE account_id=?").run(at,id);
    for(const id of ids)sql.prepare(`INSERT INTO mf_auto_permissions
-    (account_id,profile,start_date,end_date,enabled,consented_at,revoked_at)
-    VALUES (?,'real',?,?,1,?,NULL) ON CONFLICT(account_id) DO UPDATE SET
+    (account_id,profile,start_date,end_date,enabled,consented_at,expires_at,revoked_at)
+    VALUES (?,'real',?,?,1,?,?,NULL) ON CONFLICT(account_id) DO UPDATE SET
     start_date=excluded.start_date,end_date=excluded.end_date,enabled=1,
-    revision=mf_auto_permissions.revision+1,consented_at=excluded.consented_at,revoked_at=NULL`)
-    .run(id,startDate,endDate,at);
+    revision=mf_auto_permissions.revision+1,consented_at=excluded.consented_at,expires_at=excluded.expires_at,revoked_at=NULL`)
+    .run(id,startDate,endDate,at,expiresAt);
    sql.exec('COMMIT');
   }catch(e){sql.exec('ROLLBACK');throw e;}
   return this.status();
@@ -165,7 +165,7 @@ class D05AutoCategorization{
  plan({limit=100,accountId=null}={}){
   if(!Number.isInteger(limit)||limit<1||limit>20000)throw Error('Auto D05: limite inválido');
   if(accountId!==null)requireString(accountId,'conta');
-  const permissions=this.permissions().filter(p=>p.enabled===1&&(!accountId||p.accountId===accountId));
+  const permissions=this.permissions().filter(p=>p.enabled===1&&p.expiresAt>this.clock().toISOString()&&(!accountId||p.accountId===accountId));
   const sql=this.sql,rules=this.finance().listCategories().rules.filter(r=>r.enabled);
   const aliases=sql.prepare('SELECT pattern,display_name AS displayName FROM merchant_aliases').all();
   const rows=this.allRows(),groups=new Map(),byId=new Map(),duplicates=new Map();
@@ -271,8 +271,8 @@ class D05AutoCategorization{
        proposal.sourceFingerprint+'|'+proposal.evidenceHash+'|'+proposal.consentRevision)continue;
      const row=sql.prepare('SELECT account_id AS accountId,external_id AS externalId,date,description,amount_cents AS amountCents,status FROM bank_transactions WHERE account_id=? AND external_id=?').get(proposal.accountId,proposal.externalId);
      if(!row||fingerprint(row)!==proposal.sourceFingerprint)continue;
-     const perm=sql.prepare('SELECT enabled,revision FROM mf_auto_permissions WHERE account_id=?').get(proposal.accountId);
-     if(!perm||perm.enabled!==1||perm.revision!==proposal.consentRevision)continue;
+     const perm=sql.prepare('SELECT enabled,revision,expires_at AS expiresAt FROM mf_auto_permissions WHERE account_id=?').get(proposal.accountId);
+     if(!perm||perm.enabled!==1||perm.expiresAt<=this.clock().toISOString()||perm.revision!==proposal.consentRevision)continue;
      if(sql.prepare('SELECT 1 FROM bank_category_overrides WHERE account_id=? AND external_id=?').get(proposal.accountId,proposal.externalId))continue;
      if(sql.prepare('SELECT 1 FROM mf_auto_feedback WHERE account_id=? AND external_id=?').get(proposal.accountId,proposal.externalId))continue;
      if(sql.prepare('SELECT 1 FROM mf_auto_labels WHERE account_id=? AND external_id=?').get(proposal.accountId,proposal.externalId))continue;
@@ -334,7 +334,7 @@ class D05AutoCategorization{
   if(!bank||bank.status!=='POSTED'||(initial&&fingerprint(bank)!==initial.source_fingerprint))
    throw Error('Auto D05: movimento bancário mudou; reavalie antes de corrigir');
   const permission=sql.prepare('SELECT * FROM mf_auto_permissions WHERE account_id=?').get(accountId);
-  if(!initial&&(!permission||permission.enabled!==1||bank.date<permission.start_date||bank.date>permission.end_date))
+  if(!initial&&(!permission||permission.enabled!==1||permission.expires_at<=this.clock().toISOString()||bank.date<permission.start_date||bank.date>permission.end_date))
    throw Error('Auto D05: correção de pendência fora do consentimento por conta/período');
   await this.backupVerified('correct');
   const at=this.clock().toISOString(),batch=randomUUID(),id=randomUUID();
@@ -346,7 +346,7 @@ class D05AutoCategorization{
       (initial?(!current||current.source_fingerprint!==initial.source_fingerprint):!!current))
     throw Error('Auto D05: classificação desatualizada; não modificar');
    const latestPermission=sql.prepare('SELECT * FROM mf_auto_permissions WHERE account_id=?').get(accountId);
-   if(!initial&&(!latestPermission||latestPermission.enabled!==1||
+   if(!initial&&(!latestPermission||latestPermission.enabled!==1||latestPermission.expires_at<=this.clock().toISOString()||
       latestPermission.revision!==permission.revision||latest.date<latestPermission.start_date||
       latest.date>latestPermission.end_date))
     throw Error('Auto D05: consentimento revogado durante correção');
