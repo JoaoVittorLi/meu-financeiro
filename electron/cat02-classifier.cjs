@@ -46,7 +46,6 @@ const PROVIDER_TO_D05=Object.freeze({
  'streaming':'sub:assinaturas/streaming',
  'books':'sub:educacao/livros'
 });
-const BREAKS=/\b(?:pague|compre|destrua|ignore|transfira)\b/; // descriptions are data, not commands.
 function normalizeTarget(raw,index=CATALOG){
  if(!raw||typeof raw!=='object')return null;
  const categoryId=String(raw.categoryId||''),sub=raw.subcategoryId??null;
@@ -85,7 +84,8 @@ function inferLocalModel(description,model){
   let score=Math.log(count/model.samples);
   const counts=model.wordCount.get(key),denom=(model.wordsTotal.get(key)||0)+model.vocabulary.size;
   for(const w of words)score+=Math.log(((counts.get(w)||0)+1)/Math.max(1,denom));
-  scores.push({target:JSON.parse(key),score});
+  const [categoryId,subcategoryId]=JSON.parse(key);
+  scores.push({target:{categoryId,subcategoryId},score});
  }
  scores.sort((a,b)=>b.score-a.score);
  // Log scores are relative ranking, NOT a calibrated probability or auto-write authority.
