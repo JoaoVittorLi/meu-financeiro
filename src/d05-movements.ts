@@ -182,7 +182,9 @@ class D05Movements extends React.Component<any,any> {
    }else if(action==='run')result=await bridge.bankAutoApply({limit:20000});
    else if(action==='suggest')result=await bridge.bankAutoRuleSuggestions({limit:5});
    if(action==='suggest'){setAutoRules(result?.rules||[]);setAutoMessage('Sugestões somente para prévia; nenhuma regra foi criada.');return;}
-   if(result?.cancelled){setAutoMessage('Autorização cancelada.');return;}
+   if(result?.cancelled){setAutoMessage('Operação cancelada; nenhuma classificação aplicada.');return;}
+   if(['failed','busy','awaiting_explicit_consent_or_first_confirmation'].includes(result?.state))
+    throw Error('A aplicação NÃO foi concluída: '+String(result.state)+'. Confira os backups e o estado dos jobs antes de tentar novamente.');
    await host.refreshBank();await refreshHierarchy();await refreshAuto();
    setAutoMessage(action==='enable'?'Contas autorizadas, mas nenhuma classificação aplicada. Confira a prévia inicial.':
     action==='revoke'?'Permissão revogada; recibos e rótulos anteriores preservados.':
