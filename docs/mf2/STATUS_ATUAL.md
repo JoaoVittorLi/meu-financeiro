@@ -58,7 +58,7 @@ Detalhamento linha a linha: [MATRIZ_FUNCIONAL_1_0_0.md](MATRIZ_FUNCIONAL_1_0_0.m
 
 **Novo bloqueador formal:** o proprietário tornou a categorização automática bancária com consentimento um requisito necessário para a versão **1.0.0**. Não é uma entrega opcional pós-release.
 
-PRs de implementação **isolada**: [#99](https://github.com/JoaoVittorLi/meu-financeiro/pull/99) (evidências Pluggy e motor D05; 19/19 de lógica V8 PASS, SQLite NOT_RUN), [#101](https://github.com/JoaoVittorLi/meu-financeiro/pull/101) (prévia de histórico completo; Node SQLite NOT_RUN), [#102](https://github.com/JoaoVittorLi/meu-financeiro/pull/102) (consentimento, automação local, recibos e undo; 6/6 checks isolados V8 PASS, Node SQLite NOT_RUN).
+PRs de implementação **isolada**: [#99](https://github.com/JoaoVittorLi/meu-financeiro/pull/99) (evidências Pluggy e motor D05; 19/19 de lógica V8 PASS, SQLite NOT_RUN), [#101](https://github.com/JoaoVittorLi/meu-financeiro/pull/101) (prévia de histórico completo; Node SQLite NOT_RUN), [#102](https://github.com/JoaoVittorLi/meu-financeiro/pull/102) (consentimento, automação local, recibos e undo; 8/8 checks isolados V8 PASS, Node SQLite NOT_RUN).
 
 Esses PRs ainda **não conectam a automação ao Electron real**: MAIN/preload/renderer/migração são trabalho de integração da #49. Valores iniciais de checkbox não equivalem a consentimento; `approvedForCategorization` está falso por padrão. `approvedForPersonal:()=>false` deve permanecer para outras escritas IA.
 
