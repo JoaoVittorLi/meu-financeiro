@@ -104,6 +104,15 @@ class D05AutoPreview{
     finalPlan?.previewVersion??null,j.job_id);
   return this.status(id);
  }
+ assertReady(version){
+  if(typeof version!=='string'||!/^[a-f0-9]{64}$/.test(version))
+   throw Error('CAT preview: versão inicial obrigatória');
+  const j=this.sql.prepare("SELECT job_id AS jobId FROM mf_auto_preview_jobs WHERE state='ready' AND preview_version=? ORDER BY started_at DESC LIMIT 1").get(version);
+  if(!j)throw Error('CAT preview: análise paginada não concluída');
+  const status=this.status(j.jobId);
+  if(status.preview?.previewVersion!==version)throw Error('CAT preview: manifesto divergente');
+  return status.preview;
+ }
  pause(id){
   const j=this.get(id);
   if(j.state!=='scanning')throw Error('CAT preview: somente leitura ativa pode pausar');
