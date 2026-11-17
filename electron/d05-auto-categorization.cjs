@@ -237,11 +237,12 @@ class D05AutoCategorization{
    if(!duplicates.has(duplicateKey))duplicates.set(duplicateKey,[]);
    duplicates.get(duplicateKey).push(row.externalId);
   }
-  const candidates=[],review=[],perAccount={};let reviewCount=0;
+  const candidates=[],review=[],perAccount={};let reviewCount=0,scopedCount=0;
   for(const row of rows){
    const permission=active.get(row.accountId);
    if(!permission||row.date<permission.startDate||row.date>permission.endDate||
      (accountId&&row.accountId!==accountId))continue;
+   scopedCount++;
    if(row.hasAuto){
     const existing=this.sql.prepare('SELECT source_fingerprint FROM mf_auto_labels WHERE account_id=? AND external_id=?').get(row.accountId,row.externalId);
     if(existing?.source_fingerprint!==fingerprint(row)){
@@ -340,6 +341,10 @@ class D05AutoCategorization{
    metadata,aliases,rules,candidates.map(p=>[p.accountId,p.externalId,p.target,p.evidenceHash]),reviewCount]);
   return {candidates:candidates.slice(0,limit),candidateCount:candidates.length,
    review:review.slice(0,limit),reviewCount,perAccount,previewVersion,
+   // Full-source partition for CAT-UX-02. Applied overlays/manual decisions
+   // are protected, and each scoped banking row is counted exactly once.
+   analyzedCount:scopedCount,protectedCount:Math.max(0,scopedCount-candidates.length-reviewCount),
+   unavailableCount:0,
    contract:'D05/AUTO-CATEGORY-PLAN-V1',changesApplied:false};
  }
  suggestRules({accountId=null,limit=5}={}){
@@ -435,6 +440,46 @@ class D05AutoCategorization{
  receipt(id){
   requireString(id,'recibo');
   return this.sql.prepare('SELECT * FROM mf_auto_receipts WHERE id=?').get(id)||null;
+ }
+ listReceipts({accountId=null,action='all',cursor=null,limit=25}={}){
+  if(accountId!==null)requireString(accountId,'conta');
+  if(!['all','apply','correct','undo'].includes(action))throw Error('Auto D05: filtro de recibo inválido');
+  if(!Number.isInteger(limit)||limit<1||limit>100)throw Error('Auto D05: limite de recibos inválido');
+  let position=null;
+  if(cursor!==null){
+   if(typeof cursor!=='string'||cursor.length>350)throw Error('Auto D05: cursor inválido');
+   try{position=JSON.parse(cursor);}catch(_){throw Error('Auto D05: cursor inválido');}
+   if(!position||typeof position.at!=='string'||typeof position.id!=='string'||
+      !/^\\d{4}-\\d{2}-\\d{2}T/.test(position.at)||!/^[a-f0-9-]{36}$/i.test(position.id))
+    throw Error('Auto D05: cursor inválido');
+  }
+  const filters=' WHERE (? IS NULL OR r.account_id=?) AND (?=\'all\' OR r.action=?)';
+  const args=[accountId,accountId,action,action];
+  const total=this.sql.prepare('SELECT COUNT(*) AS n FROM mf_auto_receipts r'+filters).get(...args).n;
+  const rows=this.sql.prepare(`SELECT r.id AS receiptId,r.batch_id AS batchId,
+   r.action,r.account_id AS accountId,r.external_id AS externalId,
+   r.before_category_id AS beforeCategoryId,r.before_subcategory_id AS beforeSubcategoryId,
+   r.after_category_id AS afterCategoryId,r.after_subcategory_id AS afterSubcategoryId,
+   r.source_fingerprint AS sourceFingerprint,r.evidence_hash AS evidenceHash,
+   r.consent_revision AS consentRevision,r.at,
+   a.name AS accountName,b.description AS description,
+   l.explanation AS explanation,
+   EXISTS(SELECT 1 FROM mf_auto_receipts u WHERE u.account_id=r.account_id
+     AND u.external_id=r.external_id AND u.action='undo' AND u.at>=r.at) AS reversed
+   FROM mf_auto_receipts r
+   LEFT JOIN bank_accounts a ON a.account_id=r.account_id
+   LEFT JOIN bank_transactions b ON b.account_id=r.account_id AND b.external_id=r.external_id
+   LEFT JOIN mf_auto_labels l ON l.receipt_id=r.id
+   ${filters}
+   AND (? IS NULL OR r.at<? OR (r.at=? AND r.id<?))
+   ORDER BY r.at DESC,r.id DESC LIMIT ?`).all(...args,position?.at??null,
+    position?.at??null,position?.at??null,position?.id??null,limit+1);
+  const page=rows.slice(0,limit).map(x=>({...x,reversed:x.reversed===1,committed:true}));
+  const last=page.at(-1);
+  return {contract:'D05/AUTO-RECEIPTS-V1',items:page,total,
+   hasMore:rows.length>limit,
+   nextCursor:rows.length>limit&&last?JSON.stringify({at:last.at,id:last.receiptId}):null,
+   readOnly:true,changesApplied:false};
  }
  async undo({accountId,externalId}){
   requireString(accountId,'conta');requireString(externalId,'movimentação');
