@@ -26,6 +26,12 @@ class D05AutoLocalScheduler{
   )`);
   this.sql.prepare('INSERT OR IGNORE INTO mf_auto_controls(id,paused,changed_at) VALUES(1,0,?)')
    .run(this.clock().toISOString());
+  const interrupted=this.sql.prepare("SELECT COUNT(*) AS n FROM mf_auto_jobs WHERE state='running'").get().n;
+  if(interrupted>0){
+   this.sql.prepare("UPDATE mf_auto_jobs SET state='failed',error_code='INTERRUPTED_ON_RESTART',finished_at=? WHERE state='running'")
+    .run(this.clock().toISOString());
+   this.pause();
+  }
  }
  isPaused(){return this.sql.prepare('SELECT paused FROM mf_auto_controls WHERE id=1').get()?.paused===1;}
  pause(){
