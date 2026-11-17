@@ -277,6 +277,25 @@ function mfD04Render(app:any):any{
      onClick:()=>app.setState({categoryReviewOpen:false,intelligenceMainMode:'chat'})},'Voltar à conversa'),
     grant?h('button',{type:'button',className:'ghost-button',
      onClick:()=>void categoryReviewRun(app,()=>categoryReviewRefresh(app))},'Atualizar fila'):null)),
+  s.autoCategory?.available&&s.autoCategoryReview?.total?h('section',{className:'mf-d04-auto-pending','aria-label':'Categorização automática a revisar'},
+   h('h3',{},'Categorização automática · '+s.autoCategoryReview.total+' pendência(s)'),
+   h('p',{},'Estas transações não atingiram o critério de evidência. Nenhuma categoria foi aplicada automaticamente.'),
+   ...s.autoCategoryReview.items.slice(0,10).map((r:any)=>{
+    const tx=(s.bank?.data?.transactions||[]).find((x:any)=>x.accountId===r.accountId&&x.id===r.externalId);
+    const reason=({
+     conflicting_evidence:'Correções anteriores conflitantes',
+     insufficient_evidence:'Histórico corrigido insuficiente',
+     stale_auto_label:'Transação alterada após a decisão',
+     nature_conflict:'Natureza financeira incompatível',
+     unapproved_taxonomy_target:'Destino D05 não homologado'
+    } as Record<string,string>)[r.reason]||'Revisão necessária';
+    return h('button',{type:'button',key:JSON.stringify([r.accountId,r.externalId]),
+     className:'mf-d04-auto-item',
+     onClick:()=>{app.setState({categoryReviewOpen:false,bankFilter:r.accountId,txSource:'bank',txReviewOnly:true});app.navigate('transactions');}},
+      h('strong',{},String(tx?.description||'Movimentação bancária').slice(0,90)),
+      h('span',{},reason),h(Icon,{name:'arrow',size:14}));
+   }),
+   s.autoCategoryReview.total>10?h('p',{},'Demais pendências disponíveis em Movimentações.'):null):null,
   empty,body,mfI2CategoryPanel(app),
   s.mfD04Error?h('p',{className:'mf-ai-error',role:'status'},s.mfD04Error):null,
   s.categoryReviewError?h('p',{className:'mf-ai-error',role:'alert'},s.categoryReviewError):null,
