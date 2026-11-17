@@ -1,6 +1,7 @@
 
 'use strict';
 const fs=require('node:fs'),path=require('node:path');
+const {DatabaseSync}=require('node:sqlite');
 const {randomUUID,createHash}=require('node:crypto');
 const {normalizeLabel,matchRule}=require('./db.cjs');
 const {D05CategoryService}=require('./d05-category-service.cjs');
@@ -13,7 +14,7 @@ function init(sql){
  'CREATE TABLE IF NOT EXISTS mf_auto_labels (account_id TEXT NOT NULL,external_id TEXT NOT NULL,category_id TEXT NOT NULL REFERENCES categories(id),subcategory_id TEXT NOT NULL REFERENCES subcategories(id),category TEXT NOT NULL,evidence_hash TEXT NOT NULL,source_fingerprint TEXT NOT NULL,receipt_id TEXT NOT NULL REFERENCES mf_auto_receipts(id),assigned_at TEXT NOT NULL,PRIMARY KEY(account_id,external_id),FOREIGN KEY(account_id,external_id) REFERENCES bank_transactions(account_id,external_id) ON DELETE CASCADE)',
  'CREATE TABLE IF NOT EXISTS mf_auto_receipts (id TEXT PRIMARY KEY,kind TEXT NOT NULL,reference_id TEXT,created_at TEXT NOT NULL,count INTEGER NOT NULL,content_hash TEXT NOT NULL)',
  'CREATE INDEX IF NOT EXISTS mf_auto_receipt_lookup ON mf_auto_labels(receipt_id)',
- 'CREATE TABLE IF NOT EXISTS mf_auto_receipt_items (receipt_id TEXT NOT NULL REFERENCES mf_auto_receipts(id),account_id TEXT NOT NULL,external_id TEXT NOT NULL,before_category_id TEXT,before_subcategory_id TEXT,after_category_id TEXT,after_subcategory_id TEXT,source_fingerprint TEXT NOT NULL,evidence_hash TEXT NOT NULL,PRIMARY KEY(receipt_id,account_id,external_id))'
+ 'CREATE TABLE IF NOT EXISTS mf_auto_receipt_items (receipt_id TEXT NOT NULL REFERENCES mf_auto_receipts(id),account_id TEXT NOT NULL,external_id TEXT NOT NULL,before_category TEXT,before_category_id TEXT,before_subcategory_id TEXT,after_category_id TEXT,after_subcategory_id TEXT,source_fingerprint TEXT NOT NULL,evidence_hash TEXT NOT NULL,PRIMARY KEY(receipt_id,account_id,external_id))'
  ].join(';')+';');
 }
 function merchant(desc,aliases){
@@ -22,6 +23,19 @@ function merchant(desc,aliases){
  if(match.length){const names=[...new Set(match.map(x=>normalizeLabel(x.display_name||'').trim()))];
   return names.length===1&&names[0]?'alias:'+names[0]:null;}
  return 'exact:'+value;
+}
+async function verifiedBackup(finance,directory,clock,prefix){
+ fs.mkdirSync(directory,{recursive:true,mode:0o700});
+ const destination=path.join(directory,prefix+clock().toISOString().replace(/[:.]/g,'-')+'-'+randomUUID()+'.sqlite');
+ await finance.backupTo(destination);
+ const copy=new DatabaseSync(destination,{readOnly:true});
+ try{
+  const status=copy.prepare('PRAGMA integrity_check').get();
+  if(!status||Object.values(status)[0]!=='ok')throw Error('Auto: backup SQLite inválido; escrita bloqueada');
+  if(!copy.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='profiles'").get())
+   throw Error('Auto: backup sem perfil reconhecido; escrita bloqueada');
+ }finally{copy.close();}
+ return destination;
 }
 function fingerprint(r){return sha([r.account_id,r.external_id,r.date,r.description,r.amount_cents,r.status,r.category,r.nature,r.reviewed_at,r.merchant,r.note,r.linked_manual]);}
 function snapshot(sql,consent){
@@ -60,9 +74,9 @@ function snapshot(sql,consent){
   if(!approved||approved.parentApproved!==1||approved.childApproved!==1){
    review.push({accountId:r.account_id,externalId:r.external_id,reason:'unapproved_taxonomy_target'});continue;
   }
-  candidates.push({accountId:r.account_id,externalId:r.external_id,categoryId:category.categoryId,subcategoryId:category.subcategoryId,category:category.parentName,sourceFingerprint:fingerprint(r),evidenceHash:sha([mk,items,category.categoryId,category.subcategoryId])});
+  candidates.push({accountId:r.account_id,externalId:r.external_id,previousCategory:r.category,categoryId:category.categoryId,subcategoryId:category.subcategoryId,category:category.parentName,sourceFingerprint:fingerprint(r),evidenceHash:sha([mk,items,category.categoryId,category.subcategoryId])});
  }
- return {candidates,review,partial:false};
+ return {candidates:candidates.slice(0,1000),review,partial:false};
 }
 class PersonalAutoCategorizer{
  constructor({finance,backupDirectory,allowed,clock=()=>new Date()}={}){
@@ -95,18 +109,17 @@ class PersonalAutoCategorizer{
   try{const f=this.database(),sql=f.db,consent=this.allowedAccounts(sql);if(!consent.size)return {status:'disabled',applied:0};
    const before=snapshot(sql,consent);if(before.partial)return {status:'review_required',reason:'history_limit',applied:0};
    if(!before.candidates.length)return {status:'completed',applied:0,review:before.review.length};
-   fs.mkdirSync(this.backupDirectory(),{recursive:true,mode:0o700});
-   await f.backupTo(path.join(this.backupDirectory(),'before-auto-'+this.clock().toISOString().replace(/[:.]/g,'-')+'-'+randomUUID()+'.sqlite'));
+   await verifiedBackup(f,this.backupDirectory(),this.clock,'before-auto-');
    const receiptId=randomUUID(),now=this.clock().toISOString();
    sql.exec('BEGIN IMMEDIATE');
    try{const actualConsent=this.allowedAccounts(sql),after=snapshot(sql,actualConsent);
     if(actualConsent.size!==consent.size||[...consent].some(x=>!actualConsent.has(x))||after.partial||sha(before.candidates)!==sha(after.candidates))throw Error('Auto: stale authorization or financial facts');
     sql.prepare('INSERT INTO mf_auto_receipts(id,kind,reference_id,created_at,count,content_hash) VALUES (?,\'apply\',NULL,?,?,?)').run(receiptId,now,after.candidates.length,sha(after.candidates));
     const stmt=sql.prepare('INSERT INTO mf_auto_labels(account_id,external_id,category_id,subcategory_id,category,evidence_hash,source_fingerprint,receipt_id,assigned_at) VALUES (?,?,?,?,?,?,?,?,?)');
-    const details=sql.prepare('INSERT INTO mf_auto_receipt_items(receipt_id,account_id,external_id,before_category_id,before_subcategory_id,after_category_id,after_subcategory_id,source_fingerprint,evidence_hash) VALUES (?,?,?,?,?,?,?,?,?)');
+    const details=sql.prepare('INSERT INTO mf_auto_receipt_items(receipt_id,account_id,external_id,before_category,before_category_id,before_subcategory_id,after_category_id,after_subcategory_id,source_fingerprint,evidence_hash) VALUES (?,?,?,?,?,?,?,?,?,?)');
     for(const c of after.candidates){
      stmt.run(c.accountId,c.externalId,c.categoryId,c.subcategoryId,c.category,c.evidenceHash,c.sourceFingerprint,receiptId,now);
-     details.run(receiptId,c.accountId,c.externalId,null,null,c.categoryId,c.subcategoryId,c.sourceFingerprint,c.evidenceHash);
+     details.run(receiptId,c.accountId,c.externalId,c.previousCategory,null,null,c.categoryId,c.subcategoryId,c.sourceFingerprint,c.evidenceHash);
     }
     if(sql.prepare('PRAGMA foreign_key_check').all().length)throw Error('Auto: FK check');
     sql.exec('COMMIT');
@@ -121,8 +134,7 @@ class PersonalAutoCategorizer{
   const sql=this.database().db;
   if(!sql.prepare('SELECT 1 FROM mf_auto_receipts WHERE id=? AND kind=\'apply\'').get(receiptId))throw Error('Auto: invalid receipt');
   // An undo is a financial classification write: verify a recoverable snapshot first.
-  fs.mkdirSync(this.backupDirectory(),{recursive:true,mode:0o700});
-  await this.finance().backupTo(path.join(this.backupDirectory(),'before-auto-undo-'+this.clock().toISOString().replace(/[:.]/g,'-')+'-'+randomUUID()+'.sqlite'));
+  await verifiedBackup(this.finance(),this.backupDirectory(),this.clock,'before-auto-undo-');
   sql.exec('BEGIN IMMEDIATE');
   try{const rows=sql.prepare('SELECT * FROM mf_auto_labels WHERE receipt_id=?').all(receiptId);
    const stmt=sql.prepare('DELETE FROM mf_auto_labels WHERE receipt_id=? AND account_id=? AND external_id=? AND category_id=? AND subcategory_id IS ?');
