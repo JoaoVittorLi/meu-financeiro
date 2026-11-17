@@ -272,3 +272,40 @@ test('CAT-P0.2 verified-backup failure retains only earlier COMMIT and permits s
  const done=await auto.nextBatch(job.jobId);
  assert.equal(done.state,'completed');assert.equal(done.committed,261);
 }));
+
+test('CAT-P0 no Pluggy Premium: validated direct merchant + narrow MCC yields PARENT ONLY',()=>sandbox(async({db,auto,bank})=>{
+ const names=[
+  {id:'premium-free-strong',desc:'COMPRA MERCEARIA ALFA DE TESTE',name:'MERCEARIA ALFA DE TESTE',
+   cnpj:'12345678000195',type:'DEBIT',operationType:'CARD_PURCHASE',mcc:'5411'},
+  {id:'premium-free-weak',desc:'COMPRA COM NOME INSUFICIENTE',name:'MERCEARIA BETA',
+   cnpj:null,type:'DEBIT',operationType:'CARD_PURCHASE',mcc:'5411'},
+  {id:'premium-free-intermediary',desc:'COMPRA PAGSEGURO',name:'PAGSEGURO',
+   cnpj:'12345678000195',type:'DEBIT',operationType:'CARD_PURCHASE',mcc:'5411'},
+  {id:'premium-free-transfer',desc:'COMPRA MERCEARIA GAMA DE TESTE',name:'MERCEARIA GAMA DE TESTE',
+   cnpj:'12345678000195',type:'DEBIT',operationType:'TRANSFER',mcc:'5411'}
+ ];
+ db.ingestBank(I,{item:bank.item,data:[{account:bank.data[0].account,
+  transactions:names.map((x,i)=>({
+   id:x.id,date:'2026-10-'+String(15+i).padStart(2,'0'),description:x.desc,
+   amount:-19-i,status:'POSTED',category:null,type:x.type,operationType:x.operationType,
+   merchant:{name:x.name,cnpj:x.cnpj},creditCardMetadata:{payeeMCC:x.mcc}
+  }))}]});
+ assert.equal(db.db.prepare('SELECT COUNT(*) AS n FROM bank_category_overrides').get().n,0);
+ auto.configure(scope,true);
+ const plan=auto.plan({limit:100});
+ const target=plan.candidates.find(x=>x.externalId==='premium-free-strong');
+ assert(target);assert.deepEqual(target.target,{categoryId:'cat:alimentacao',subcategoryId:null});
+ assert.match(target.explanation,/somente categoria-pai/);
+ for(const id of ['premium-free-weak','premium-free-intermediary','premium-free-transfer'])
+  assert.equal(plan.candidates.some(x=>x.externalId===id),false,id+' must remain review');
+ assert.equal(db.db.prepare('SELECT category FROM bank_transactions WHERE account_id=? AND external_id=?').get(A,'premium-free-strong').category,'Outros');
+ await auto.confirmInitialPreview(plan.previewVersion);
+ const job=auto.startBatch({previewVersion:plan.previewVersion});
+ const done=await auto.nextBatch(job.jobId);
+ assert.equal(done.state,'completed');
+ const visible=db.bankOverview().transactions.find(x=>x.id==='premium-free-strong');
+ assert.equal(visible.categorySource,'automatic');
+ assert.equal(visible.category,'Alimentação');
+ assert.equal(db.db.prepare('SELECT subcategory_id AS child FROM mf_auto_labels WHERE account_id=? AND external_id=?')
+  .get(A,'premium-free-strong').child,null);
+}));
