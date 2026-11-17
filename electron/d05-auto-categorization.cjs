@@ -119,6 +119,9 @@ class D05AutoCategorization{
       ON CONFLICT(account_id,external_id) DO UPDATE SET reason=excluded.reason,recorded_at=excluded.recorded_at;
    END;
   `);
+  // A previously running batch cannot still be executing after a fresh
+  // FinanceDB/service binding. Preserve committed receipts and require resume.
+  this.sql.prepare("UPDATE mf_auto_apply_jobs SET state='paused',error_code='INTERRUPTED_ON_RESTART' WHERE state='running'").run();
  }
  permissions(){
   return this.sql.prepare(`SELECT a.account_id AS accountId,b.name,a.enabled,a.start_date AS startDate,
