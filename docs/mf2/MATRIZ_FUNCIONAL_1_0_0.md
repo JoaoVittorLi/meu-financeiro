@@ -77,3 +77,22 @@
 `TESTED=HIST94` significa somente que o PR #94 reportou 901/901 testes Node/SQLite e ASAR/TypeScript/F08 PASS em seu SHA; isso **não requalifica #96**. Revisão B01–B05 e D05 pelo proprietário foi **DESIGN_APPROVED**, não Electron Windows aprovado. Features `CONDITIONAL` nunca podem surgir automaticamente por upgrade; exigem seus grants/controle explícito.
 
 O **status final de lançamento é NO-GO**, conforme [STATUS_ATUAL](STATUS_ATUAL.md) e [issue #71](https://github.com/JoaoVittorLi/meu-financeiro/issues/71).
+
+
+## Addendum CAT-01 a CAT-05 — P0 obrigatório 1.0.0 (17/11/2026)
+
+**Decisão do proprietário:** classificação automática bancária com consentimento explícito é requisito **P0 bloqueante da 1.0.0**. As linhas abaixo descrevem PRs de desenvolvimento isolados, **não funcionalidades já integradas ao snapshot #96**.
+
+| Módulo P0 | CODE_PRESENT na branch própria | UI_CONNECTED na candidata #96 | TESTED (no SHA exato) | Estado de release |
+|---|---|---|---|---|
+| CAT-01 — evidências opcionais Pluggy + SQLite | YES, PR #99 | NO | V8 parcial; SQLite NOT_RUN | BLOCKED |
+| CAT-02 — fusão D05/Quality Gate/Naive Bayes local não calibrado | YES, PR #99 | NO | 19 casos de lógica PASS em V8; Node NOT_RUN | BLOCKED |
+| CAT-03 — full-history SQLite com prévia, pausa e manifest | YES, PR #101 | NO | 9 testes SQLite versionados, NOT_RUN | BLOCKED |
+| CAT-04 — eventos locais pós-sync/diário e deduplicação | YES, PR #102 | NO | 6 checks sintéticos V8 em conjunto com CAT-05; Node NOT_RUN | BLOCKED |
+| CAT-05 — consentimento específico D05, recibos atômicos e desfazer | YES, PR #102 | NO | 19 testes SQLite versionados; NOT_RUN | BLOCKED |
+
+**Não existem** APIs de categorização pessoal do CAT-05 habilitadas na candidata; `approvedForPersonal:()=>false` continua obrigatório para os demais fluxos. A bandeira `approvedForCategorization` é específica e **false por padrão**, dependente de integração MAIN, backup e QA. Não chamar protótipos, serviços isolados ou testes V8 de “automação pronta”.
+
+Sem classificação manual prévia ou Pluggy Premium, decisões sem corroborar são encaminhadas para revisão; o Naive Bayes local apenas sugere e não autoriza escrita. A primeira execução exige prévia completa e confirmação nativa única; depois, apenas contas consentidas podem receber categorização local automática. O ledger original nunca recebe regravação por essas ações.
+
+**Dependência de integração:** PRs [#99](https://github.com/JoaoVittorLi/meu-financeiro/pull/99) → [#101](https://github.com/JoaoVittorLi/meu-financeiro/pull/101) → [#102](https://github.com/JoaoVittorLi/meu-financeiro/pull/102), todos Draft e ainda não integrados à #96. Ownership MAIN/preload/SQLite/UI: #49.
