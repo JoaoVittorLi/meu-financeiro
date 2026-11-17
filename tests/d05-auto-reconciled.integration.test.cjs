@@ -271,13 +271,13 @@ test('CAT-P0.2 verified-backup failure retains only earlier COMMIT and permits s
  await auto.confirmInitialPreview(version);
  const job=auto.startBatch({previewVersion:version});
  assert.equal((await auto.nextBatch(job.jobId)).committed,250);
- const backup=db.backupTo;
- db.backupTo=async()=>{throw Error('SYNTHETIC_DISK_FULL');};
+ const verify=auto.verifyBatchBackup.bind(auto);
+ auto.verifyBatchBackup=()=>{throw Error('SYNTHETIC_DISK_FULL');};
  try{
   const fail=await auto.nextBatch(job.jobId);
   assert.equal(fail.state,'failed');assert.equal(fail.committed,250);
   assert.equal(db.db.prepare("SELECT COUNT(*) AS n FROM mf_auto_receipts WHERE batch_id=?").get(job.jobId).n,250);
- }finally{db.backupTo=backup;}
+ }finally{auto.verifyBatchBackup=verify;}
  assert.equal(auto.resumeBatch(job.jobId).state,'running');
  const done=await auto.nextBatch(job.jobId);
  assert.equal(done.state,'completed');assert.equal(done.committed,261);
