@@ -94,7 +94,7 @@ class D05Movements extends React.Component<any,any> {
  const [autoSelected,setAutoSelected]=useState(new Set<string>());
  const [autoStart,setAutoStart]=useState('2000-01-01');
  const [autoEnd,setAutoEnd]=useState('2099-12-31');
- const [autoPanel,setAutoPanel]=useState(false);
+ const [autoPanel,setAutoPanel]=useState(true);
  const [autoBusy,setAutoBusy]=useState(false);
  const [autoMessage,setAutoMessage]=useState('');
  const [autoRules,setAutoRules]=useState([] as any[]);
