@@ -80,6 +80,15 @@ class D05Movements extends React.Component<any,any> {
  const [confirmedIdentity,setConfirmedIdentity]=useState(null as any);
  const [autoInfo,setAutoInfo]=useState(null as any);
  const [autoPreview,setAutoPreview]=useState(null as any);
+ const [autoView,setAutoView]=useState('activation');
+ const [autoHistoryEnabled,setAutoHistoryEnabled]=useState(true);
+ const [autoNewEnabled,setAutoNewEnabled]=useState(true);
+ const [autoReceipts,setAutoReceipts]=useState([] as any[]);
+ const [autoReceiptCursor,setAutoReceiptCursor]=useState(null as string|null);
+ const [autoReceiptTotal,setAutoReceiptTotal]=useState(0);
+ const [autoReceiptFilter,setAutoReceiptFilter]=useState('all');
+ const [autoReceiptBusy,setAutoReceiptBusy]=useState(false);
+ const [autoReceiptDetail,setAutoReceiptDetail]=useState(null as any);
  const [autoProgress,setAutoProgress]=useState(null as any);
  const [autoSelected,setAutoSelected]=useState(new Set<string>());
  const [autoStart,setAutoStart]=useState('2000-01-01');
@@ -152,7 +161,17 @@ class D05Movements extends React.Component<any,any> {
    void bridge.bankAutoStatus().then((status:any)=>{
     if(status?.contract==='D05/AUTO-CATEGORY-V1'){
      setAutoInfo(status);
-     if(autoInfo===null)setAutoSelected(new Set((status.permissions||[]).filter((p:any)=>p.enabled).map((p:any)=>p.accountId)));
+     if(autoInfo===null){
+      const enabled=(status.permissions||[]).filter((p:any)=>p.enabled&&p.expiresAt>new Date().toISOString());
+      setAutoSelected(new Set(enabled.map((p:any)=>p.accountId)));
+      if(enabled.length){
+       setAutoHistoryEnabled(enabled[0].historyEnabled!==0);
+       setAutoNewEnabled(enabled[0].newEnabled!==0);
+       setAutoStart(enabled[0].startDate||'2000-01-01');
+       setAutoEnd(enabled[0].endDate||'2099-12-31');
+       setAutoView('center');
+      }
+     }
     }
    }).catch((e:any)=>setAutoMessage(String(e?.message||e)));
   }
@@ -213,15 +232,44 @@ class D05Movements extends React.Component<any,any> {
    setAutoMessage('Análise cancelada; nenhuma classificação aplicada.');}
   catch(e:any){setAutoMessage(String(e?.message||e));}
  };
+ const loadAutoReceipts=async(filter:string='all',cursor:string|null=null)=>{
+  if(!bridge?.bankAutoReceipts||state.mode!=='real')return;
+  setAutoReceiptBusy(true);
+  try{
+   const page=await bridge.bankAutoReceipts({action:filter,cursor,limit:20});
+   setAutoReceipts((prev:any[])=>cursor?[...prev,...(page.items||[])]:page.items||[]);
+   setAutoReceiptCursor(page.nextCursor||null);
+   setAutoReceiptTotal(page.total||0);
+  }catch(e:any){setAutoMessage('Falha na consulta de recibos: '+String(e?.message||e));}
+  finally{setAutoReceiptBusy(false);}
+ };
+ const openAutoView=(view:string)=>{
+  setAutoView(view);
+  if(view==='receipts')void loadAutoReceipts(autoReceiptFilter);
+ };
+ const undoAutoReceipt=async(item:any)=>{
+  if(!bridge?.bankAutoUndo||autoBusy||!item?.active)return;
+  setAutoBusy(true);setAutoMessage('');
+  try{
+   const result=await bridge.bankAutoUndo({accountId:item.accountId,externalId:item.externalId});
+   if(result?.cancelled){setAutoMessage('Desfazer cancelado; classificação preservada.');return;}
+   if(!result?.undone)throw Error('O recibo não está mais associado a um rótulo ativo.');
+   await host.refreshBank();await refreshAuto();await loadAutoReceipts(autoReceiptFilter);
+   setAutoReceiptDetail(null);
+   setAutoMessage('Classificação revertida e protegida contra reaplicação automática.');
+  }catch(e:any){setAutoMessage('A reversão não foi confirmada: '+String(e?.message||e));}
+  finally{setAutoBusy(false);}
+ };
  const runAutoAction=async(action:string,accountId:string|null=null)=>{
   if(!bridge||autoBusy||state.mode!=='real')return;
   setAutoBusy(true);setAutoMessage('');
   try{
    let result:any;
    if(action==='enable'){
-    result=await bridge.bankAutoConfigure({accountIds:Array.from(autoSelected),startDate:autoStart,endDate:autoEnd});
+    result=await bridge.bankAutoConfigure({accountIds:Array.from(autoSelected),startDate:autoStart,endDate:autoEnd,
+     historyEnabled:autoHistoryEnabled,newEnabled:autoNewEnabled,insufficientAction:'review'});
     autoScanRef.current.stop=true;autoScanRef.current.jobId=null;
-    setAutoProgress(null);setAutoPreview(null);
+    setAutoProgress(null);setAutoPreview(null);setAutoView('preview');
    }else if(action==='revoke'){
     result=await bridge.bankAutoRevoke(accountId);autoScanRef.current.stop=true;
     setAutoProgress(null);setAutoPreview(null);
@@ -244,7 +292,7 @@ class D05Movements extends React.Component<any,any> {
    }else if(action==='confirm'){
     if(!autoPreview?.previewVersion)throw Error('Analise o histórico antes de confirmar.');
     result=await bridge.bankAutoApply({previewVersion:autoPreview.previewVersion,limit:20000});
-    if(!result?.cancelled)setAutoPreview(null);
+    if(!result?.cancelled){setAutoPreview(null);setAutoView('center');}
    }else if(action==='run')result=await bridge.bankAutoApply({limit:20000});
    else if(action==='suggest')result=await bridge.bankAutoRuleSuggestions({limit:5});
    if(action==='suggest'){setAutoRules(result?.rules||[]);setAutoMessage('Sugestões somente para prévia; nenhuma regra foi criada.');return;}
