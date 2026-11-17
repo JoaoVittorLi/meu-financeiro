@@ -270,7 +270,7 @@ class D05AutoCategorization{
    const row=sql.prepare('SELECT * FROM mf_auto_labels WHERE account_id=? AND external_id=?').get(accountId,externalId);
    if(!row){sql.exec('COMMIT');return {undone:false};}
    const id=randomUUID(),perm=sql.prepare('SELECT revision FROM mf_auto_permissions WHERE account_id=?').get(accountId);
-   sql.prepare('DELETE FROM mf_auto_labels WHERE account_id=? AND external_id=?').run(accountId,externalId);
+   if(current)sql.prepare('DELETE FROM mf_auto_labels WHERE account_id=? AND external_id=?').run(accountId,externalId);
    sql.prepare(`INSERT INTO mf_auto_feedback(account_id,external_id,reason,recorded_at)
     VALUES (?,?,?,?) ON CONFLICT(account_id,external_id) DO UPDATE SET reason=excluded.reason,recorded_at=excluded.recorded_at`)
     .run(accountId,externalId,'reversed_by_owner',at);
@@ -288,19 +288,26 @@ class D05AutoCategorization{
   if(!target||typeof target!=='object')throw Error('Auto D05: categoria final inválida');
   const f=this.finance(),resolved=new D05CategoryService(f).resolve(target),sql=this.sql;
   const initial=sql.prepare('SELECT * FROM mf_auto_labels WHERE account_id=? AND external_id=?').get(accountId,externalId);
-  if(!initial)throw Error('Auto D05: classificação automática não encontrada');
   const bank=sql.prepare('SELECT account_id AS accountId,external_id AS externalId,date,description,amount_cents AS amountCents,status FROM bank_transactions WHERE account_id=? AND external_id=?').get(accountId,externalId);
-  if(!bank||bank.status!=='POSTED'||fingerprint(bank)!==initial.source_fingerprint)
+  if(!bank||bank.status!=='POSTED'||(initial&&fingerprint(bank)!==initial.source_fingerprint))
    throw Error('Auto D05: movimento bancário mudou; reavalie antes de corrigir');
+  const permission=sql.prepare('SELECT * FROM mf_auto_permissions WHERE account_id=?').get(accountId);
+  if(!initial&&(!permission||permission.enabled!==1||bank.date<permission.start_date||bank.date>permission.end_date))
+   throw Error('Auto D05: correção de pendência fora do consentimento por conta/período');
   await this.backupVerified('correct');
   const at=this.clock().toISOString(),batch=randomUUID(),id=randomUUID();
   sql.exec('BEGIN IMMEDIATE');
   try{
    const current=sql.prepare('SELECT * FROM mf_auto_labels WHERE account_id=? AND external_id=?').get(accountId,externalId);
    const latest=sql.prepare('SELECT account_id AS accountId,external_id AS externalId,date,description,amount_cents AS amountCents,status FROM bank_transactions WHERE account_id=? AND external_id=?').get(accountId,externalId);
-   if(!current||!latest||fingerprint(latest)!==current.source_fingerprint||
-      current.source_fingerprint!==initial.source_fingerprint)
+   if(!latest||fingerprint(latest)!==fingerprint(bank)||
+      (initial?(!current||current.source_fingerprint!==initial.source_fingerprint):!!current))
     throw Error('Auto D05: classificação desatualizada; não modificar');
+   const latestPermission=sql.prepare('SELECT * FROM mf_auto_permissions WHERE account_id=?').get(accountId);
+   if(!initial&&(!latestPermission||latestPermission.enabled!==1||
+      latestPermission.revision!==permission.revision||latest.date<latestPermission.start_date||
+      latest.date>latestPermission.end_date))
+    throw Error('Auto D05: consentimento revogado durante correção');
    if(sql.prepare('SELECT 1 FROM bank_category_overrides WHERE account_id=? AND external_id=?').get(accountId,externalId))
     throw Error('Auto D05: correção manual prévia protegida');
    new D05CategoryService(f).assignBank({accountId,externalId,target});
@@ -312,8 +319,8 @@ class D05AutoCategorization{
    sql.prepare(`INSERT INTO mf_auto_receipts(id,batch_id,action,account_id,external_id,
     before_category_id,before_subcategory_id,after_category_id,after_subcategory_id,
     source_fingerprint,evidence_hash,consent_revision,at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`)
-    .run(id,batch,'correct',accountId,externalId,current.category_id,current.subcategory_id,
-     resolved.categoryId,resolved.subcategoryId,current.source_fingerprint,current.evidence_hash,revision,at);
+    .run(id,batch,'correct',accountId,externalId,current?.category_id||null,current?.subcategory_id||null,
+     resolved.categoryId,resolved.subcategoryId,fingerprint(latest),current?.evidence_hash||hash(['human-review',accountId,externalId]),revision,at);
    sql.exec('COMMIT');
    return {corrected:true,receiptId:id,target:{categoryId:resolved.categoryId,subcategoryId:resolved.subcategoryId}};
   }catch(e){sql.exec('ROLLBACK');throw e;}
