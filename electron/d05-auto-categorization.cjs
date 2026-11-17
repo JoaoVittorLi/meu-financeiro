@@ -57,6 +57,14 @@ class D05AutoCategorization{
     revision INTEGER NOT NULL DEFAULT 1,
     consented_at TEXT NOT NULL,expires_at TEXT NOT NULL,revoked_at TEXT
    );
+   CREATE TABLE IF NOT EXISTS mf_auto_account_policy(
+    account_id TEXT PRIMARY KEY REFERENCES bank_accounts(account_id) ON DELETE CASCADE,
+    history_enabled INTEGER NOT NULL CHECK(history_enabled IN(0,1)),
+    new_enabled INTEGER NOT NULL CHECK(new_enabled IN(0,1)),
+    insufficient_action TEXT NOT NULL CHECK(insufficient_action='review'),
+    boundary_rowid INTEGER NOT NULL DEFAULT 0,
+    revision INTEGER NOT NULL DEFAULT 1
+   );
    CREATE TABLE IF NOT EXISTS mf_auto_initial_approval(
     account_id TEXT PRIMARY KEY REFERENCES bank_accounts(account_id) ON DELETE CASCADE,
     revision INTEGER NOT NULL,preview_version TEXT NOT NULL,confirmed_at TEXT NOT NULL
@@ -107,8 +115,13 @@ class D05AutoCategorization{
  }
  permissions(){
   return this.sql.prepare(`SELECT a.account_id AS accountId,b.name,a.enabled,a.start_date AS startDate,
-    a.end_date AS endDate,a.revision,a.consented_at AS consentedAt,a.expires_at AS expiresAt,a.revoked_at AS revokedAt
-    FROM mf_auto_permissions a JOIN bank_accounts b ON b.account_id=a.account_id ORDER BY b.name`).all();
+    a.end_date AS endDate,a.revision,a.consented_at AS consentedAt,a.expires_at AS expiresAt,a.revoked_at AS revokedAt,
+    COALESCE(p.history_enabled,1) AS historyEnabled,
+    COALESCE(p.new_enabled,1) AS newEnabled,
+    COALESCE(p.insufficient_action,'review') AS insufficientAction,
+    COALESCE(p.boundary_rowid,0) AS boundaryRowid
+    FROM mf_auto_permissions a JOIN bank_accounts b ON b.account_id=a.account_id
+    LEFT JOIN mf_auto_account_policy p ON p.account_id=a.account_id ORDER BY b.name`).all();
  }
  status(){
   const counts=this.sql.prepare(`SELECT
@@ -123,11 +136,14 @@ class D05AutoCategorization{
    permissions,counts:{...counts,awaitingReview:pending},
    limitation:'Correções humanas coerentes ou MCC + categoria Pluggy concordantes; sinais isolados e modelo local sem calibração nunca autorizam escrita.'};
  }
- configure({accountIds,startDate,endDate},approvedByMain=false){
+ configure({accountIds,startDate,endDate,historyEnabled=true,newEnabled=true,insufficientAction='review'},approvedByMain=false){
   if(approvedByMain!==true)throw Error('Auto D05: consentimento nativo obrigatório');
   if(!Array.isArray(accountIds)||accountIds.length<1||accountIds.length>40||
     new Set(accountIds).size!==accountIds.length||!validDate(startDate)||!validDate(endDate)||startDate>endDate)
    throw Error('Auto D05: contas/período inválidos');
+  if(typeof historyEnabled!=='boolean'||typeof newEnabled!=='boolean'||
+     (!historyEnabled&&!newEnabled)||insufficientAction!=='review')
+   throw Error('Auto D05: política inicial inválida; histórico, novas ou revisão exigidos');
   const ids=accountIds.map(a=>requireString(a,'conta'));
   const sql=this.sql,existing=this.permissions().map(x=>x.accountId);
   const select=sql.prepare('SELECT 1 FROM bank_accounts WHERE account_id=?');
@@ -143,6 +159,14 @@ class D05AutoCategorization{
     start_date=excluded.start_date,end_date=excluded.end_date,enabled=1,
     revision=mf_auto_permissions.revision+1,consented_at=excluded.consented_at,expires_at=excluded.expires_at,revoked_at=NULL`)
     .run(id,startDate,endDate,at,expiresAt);
+   const baseline=sql.prepare('SELECT COALESCE(MAX(rowid),0) AS lastId FROM bank_transactions WHERE account_id=?');
+   for(const id of ids)sql.prepare(`INSERT INTO mf_auto_account_policy
+    (account_id,history_enabled,new_enabled,insufficient_action,boundary_rowid)
+    VALUES (?,?,?,'review',?)
+    ON CONFLICT(account_id) DO UPDATE SET history_enabled=excluded.history_enabled,
+    new_enabled=excluded.new_enabled,insufficient_action=excluded.insufficient_action,
+    boundary_rowid=excluded.boundary_rowid,revision=mf_auto_account_policy.revision+1`)
+    .run(id,Number(historyEnabled),Number(newEnabled),baseline.get(id).lastId);
    sql.exec('COMMIT');
   }catch(e){sql.exec('ROLLBACK');throw e;}
   return this.status();
@@ -201,7 +225,8 @@ class D05AutoCategorization{
    LEFT JOIN bank_manual_links l USING(account_id,external_id)
    ORDER BY b.date,b.account_id,b.external_id`).all().map(r=>({...r,hasSplits:!!r.hasSplits,blockedByFeedback:!!r.blockedByFeedback,hasAuto:!!r.hasAuto}));
  }
- plan({limit=100,accountId=null}={}){
+ plan({limit=100,accountId=null,futureOnly=false}={}){
+  if(typeof futureOnly!=='boolean')throw Error('Auto D05: escopo inválido');
   if(!Number.isInteger(limit)||limit<1||limit>20000)throw Error('Auto D05: limite inválido');
   if(accountId!==null)requireString(accountId,'conta');
   const permissions=this.permissions().filter(p=>p.enabled===1&&p.expiresAt>this.clock().toISOString()&&(!accountId||p.accountId===accountId));
@@ -242,6 +267,9 @@ class D05AutoCategorization{
    const permission=active.get(row.accountId);
    if(!permission||row.date<permission.startDate||row.date>permission.endDate||
      (accountId&&row.accountId!==accountId))continue;
+   if(futureOnly&&(!permission.newEnabled||row.rowid<=permission.boundaryRowid))continue;
+   if(!futureOnly&&((!permission.historyEnabled&&row.rowid<=permission.boundaryRowid)||
+     (!permission.newEnabled&&row.rowid>permission.boundaryRowid)))continue;
    scopedCount++;
    if(row.hasAuto){
     const existing=this.sql.prepare('SELECT source_fingerprint FROM mf_auto_labels WHERE account_id=? AND external_id=?').get(row.accountId,row.externalId);
@@ -334,7 +362,8 @@ class D05AutoCategorization{
   // sample. Metadata, rule, alias, protection and permission revisions are
   // included so a stale preview cannot activate unattended automation.
   const metadata=sql.prepare('SELECT account_id,external_id,fingerprint FROM cat01_metadata ORDER BY account_id,external_id').all();
-  const previewVersion=hash([permissions.map(p=>[p.accountId,p.revision,p.startDate,p.endDate]),
+  const previewVersion=hash([permissions.map(p=>[p.accountId,p.revision,p.startDate,p.endDate,
+    p.historyEnabled,p.newEnabled,p.boundaryRowid]),futureOnly,
    rows.map(r=>[r.accountId,r.externalId,fingerprint(r),r.syncStatus,r.manualCategoryId,
     r.manualSubcategoryId,r.nature,r.reviewedAt,r.linkedManualId,r.hasSplits,
     r.blockedByFeedback,r.hasAuto]),
@@ -392,11 +421,11 @@ class D05AutoCategorization{
    return filename;
   }catch(e){throw Error('Auto D05: proteção de backup falhou; nenhuma alteração aplicada: '+e.message);}
  }
- async apply({accountId=null,limit=20000}={}){
+ async apply({accountId=null,limit=20000,futureOnly=false}={}){
   if(this.busy)throw Error('Auto D05: aplicação concorrente');
   this.busy=true;
   try{
-   const current=this.plan({accountId,limit});
+   const current=this.plan({accountId,limit,futureOnly});
    if(!current.candidates.length)return {applied:0,reviewCount:current.reviewCount,receipts:[],state:'no_eligible_evidence'};
    // A verified, external online SQLite backup MUST succeed before any personal overlay write.
    await this.backupVerified('apply');
@@ -404,7 +433,7 @@ class D05AutoCategorization{
    sql.exec('BEGIN IMMEDIATE');
    try{
     // Recompute from authoritative DB INSIDE transaction. Do not trust renderer's plan.
-    const now=this.plan({accountId,limit});reviewCount=now.reviewCount;
+    const now=this.plan({accountId,limit,futureOnly});reviewCount=now.reviewCount;
     const currentHashes=new Map(current.candidates.map(p=>[key(p),p.sourceFingerprint+'|'+p.evidenceHash+'|'+p.consentRevision]));
     for(const proposal of now.candidates){
      if(currentHashes.get(key(proposal))!==
