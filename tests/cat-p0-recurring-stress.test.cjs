@@ -196,3 +196,33 @@ test('A01 legacy completed jobs without a batch receipt cannot hide candidates a
  assert.equal(count(db,"SELECT COUNT(*) AS n FROM mf_auto_receipts WHERE action='apply'"),7);
  assert.equal(engine.plan({futureOnly:true,limit:1}).candidateCount,0);
 }));
+
+test('A01 recurring crash/reopen preserves checkpoint and resumes the same consent generation',()=>harness(async({
+ dir,db,engine,scheduler,ingest
+})=>{
+ ingest(0,501,'restart');
+ const original=engine.nextBatch.bind(engine);let seen=0;
+ engine.nextBatch=async(...args)=>{
+  const page=await original(...args);
+  if(++seen===1)scheduler.pause();
+  return page;
+ };
+ const interrupted=await scheduler.run('daily');
+ assert.equal(interrupted.state,'failed');
+ assert.equal(interrupted.reason,'PAUSED_BY_OWNER');
+ assert.equal(interrupted.applied,250);
+ const restartedEngine=new D05AutoCategorization({finance:()=>db,
+  backupDirectory:()=>path.join(dir,'backups')});
+ assert.equal(restartedEngine.batchStatus().state,'paused');
+ assert.equal(restartedEngine.batchStatus().committed,250);
+ const restartedScheduler=new D05AutoLocalScheduler({finance:()=>db,
+  engine:()=>restartedEngine,clock:()=>new Date('2026-11-17T16:00:00.000Z')});
+ assert.equal(restartedScheduler.status().paused,true);
+ restartedScheduler.resume();
+ const finished=await restartedScheduler.run('daily');
+ assert.equal(finished.state,'completed');
+ assert.equal(finished.applied,501);
+ assert.equal(finished.proposedTotal,501);
+ assert.equal(count(db,"SELECT COUNT(*) AS n FROM mf_auto_receipts WHERE action='apply'"),501);
+ assert.equal(engine.plan({limit:1,futureOnly:true}).candidateCount,0);
+}));
