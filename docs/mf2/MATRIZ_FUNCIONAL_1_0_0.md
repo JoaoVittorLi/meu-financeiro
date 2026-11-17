@@ -49,7 +49,7 @@
 | I2-E avaliação de evidência/Quality Gate | YES | YES | HIST94 | CONDITIONAL | Rejeitar incongruência, hierarquia D05, stale e baixa cobertura |
 | I3-00 / arquitetura Intelligence 3.0 | PARTIAL | NO | NOT_RUN | PLANNED | Concepção e direcionamento; **não** anunciar como módulo funcional |
 | I3-01 investigação financeira comparativa | YES | YES | HIST94 | CONDITIONAL | Leitura por período, evidências, cobertura parcial, contexto/conta; sem transações arbitrárias |
-| Escrita IA pessoal supervisionada | PARTIAL | BLOCKED | NOT_RUN | BLOCKED | Código de gate/preview, mas `approvedForPersonal:()=>false`; decisão explícita #71 |
+| Escrita IA pessoal supervisionada | PARTIAL | PARTIAL | NOT_RUN | BLOCKED | Código de gate/preview, mas `approvedForPersonal:()=>false`; decisão explícita #71 |
 | IA externa / LLM configurável | YES | PARTIAL | NOT_RUN | CONDITIONAL | OAuth/cofre/autorização; RC/smoke proíbem rede; não garantido offline |
 | Pluggy importação/sincronização | YES | YES | HIST94 | CONDITIONAL | Disabled na RC; stable ainda não aprovado/validação com credenciais reais proibida |
 | Histórico bancário offline se cofre indisponível | YES | YES | SYNTHETIC_ONLY | CONDITIONAL | RC2.2 `bank:status` com fallback, teste Windows pending |
