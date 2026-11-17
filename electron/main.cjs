@@ -568,6 +568,28 @@ app.whenReady().then(async()=>{
   try{return {...await autoCategory.apply(input||{}),data:titledBankData(),status:autoCategory.status()};}
   finally{autoBackupBusy=false;}
  });
+ ipcMain.handle('bank:auto-correct',async(event,input)=>{
+  requireAppSender(event);autoAllowed();autoIdle();
+  if(!mainWindow||mainWindow.isDestroyed()||!mainWindow.isFocused())
+   throw Error('Correção pessoal exige aplicativo em primeiro plano.');
+  const id=input?.accountId,externalId=input?.externalId;
+  const row=db.getBankTransaction({accountId:id,externalId});
+  const target=input?.target;
+  const resolution=new (require('./d05-category-service.cjs').D05CategoryService)(db).resolve(target);
+  if(row.status!=='POSTED')throw Error('Somente POSTED pode ser corrigida nesta rota.');
+  const answer=await dialog.showMessageBox(mainWindow,{type:'question',
+   buttons:['Cancelar','Corrigir esta classificação'],defaultId:0,cancelId:0,noLink:true,
+   title:'Correção humana protegida',
+   message:'Confirmar a correção somente desta movimentação?',
+   detail:'Destino: '+resolution.parentName+(resolution.child?' › '+resolution.child.name:'')+
+    '. A correção humana prevalece sobre a automação. Faz backup e grava recibo; sem alterar valor, data ou extrato.'});
+  requireAppSender(event);autoIdle();
+  if(answer.response!==1)return {cancelled:true};
+  autoBackupBusy=true;
+  try{return {...await autoCategory.correct({accountId:id,externalId,target}),
+   status:autoCategory.status(),data:titledBankData()};}
+  finally{autoBackupBusy=false;}
+ });
  ipcMain.handle('bank:auto-review', (event,input)=>{
   requireAppSender(event);return autoCategory.plan(input||{});
  });
@@ -585,7 +607,9 @@ app.whenReady().then(async()=>{
    detail:'Valores e movimentações originais não serão alterados. A transação será protegida contra nova aplicação automática.'});
   requireAppSender(event);autoIdle();
   if(answer.response!==1)return {cancelled:true};
-  return {...autoCategory.undo(input||{}),status:autoCategory.status(),data:titledBankData()};
+  autoBackupBusy=true;
+  try{return {...await autoCategory.undo(input||{}),status:autoCategory.status(),data:titledBankData()};}
+  finally{autoBackupBusy=false;}
  });
  ipcMain.handle('bank:status',async(event)=>{
   requireAppSender(event);return bankStatusSafe();
