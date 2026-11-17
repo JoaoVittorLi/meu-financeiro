@@ -14,6 +14,9 @@ parameters:
   run_windows_build:
     type: boolean
     default: false
+  run_windows_stable_build:
+    type: boolean
+    default: false
 
 jobs:
   preflight_linux:
@@ -64,6 +67,23 @@ jobs:
           path: circleci-smoke-artifacts
           destination: MeuFinanceiro-Desktop-Smoke
 
+  build_windows_stable:
+    machine:
+      image: "windows-server-2022-gui:current"
+    resource_class: windows.medium
+    steps:
+      - checkout
+      - run:
+          name: "Windows STABLE | QA sintético + binários x64 com identidade de perfil persistente"
+          command: "powershell.exe -NoProfile -ExecutionPolicy Bypass -File .circleci/build-windows.ps1 -Stable"
+          no_output_timeout: 25m
+      - store_artifacts:
+          path: circleci-artifacts
+          destination: MeuFinanceiro-Stable-Windows
+      - store_artifacts:
+          path: circleci-smoke-artifacts
+          destination: MeuFinanceiro-Stable-Smoke
+
   qa_windows:
     machine:
       image: "windows-server-2022-gui:current"
@@ -85,10 +105,14 @@ workflows:
         - << pipeline.parameters.run_preflight >>
         - not: << pipeline.parameters.run_windows_build >>
         - not: << pipeline.parameters.run_windows_qa >>
+        - not: << pipeline.parameters.run_windows_stable_build >>
     jobs:
       - preflight_linux
   windows_on_demand:
-    when: << pipeline.parameters.run_windows_build >>
+    when:
+      and:
+        - << pipeline.parameters.run_windows_build >>
+        - not: << pipeline.parameters.run_windows_stable_build >>
     jobs:
       - preflight_linux
       - build_windows:
@@ -100,8 +124,21 @@ workflows:
       and:
         - << pipeline.parameters.run_windows_qa >>
         - not: << pipeline.parameters.run_windows_build >>
+        - not: << pipeline.parameters.run_windows_stable_build >>
     jobs:
       - preflight_linux
       - qa_windows:
+          requires:
+            - preflight_linux
+
+  windows_stable_on_demand:
+    when:
+      and:
+        - << pipeline.parameters.run_windows_stable_build >>
+        - not: << pipeline.parameters.run_windows_build >>
+        - not: << pipeline.parameters.run_windows_qa >>
+    jobs:
+      - preflight_linux
+      - build_windows_stable:
           requires:
             - preflight_linux
