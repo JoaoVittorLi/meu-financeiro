@@ -57,6 +57,10 @@ class D05AutoCategorization{
     revision INTEGER NOT NULL DEFAULT 1,
     consented_at TEXT NOT NULL,expires_at TEXT NOT NULL,revoked_at TEXT
    );
+   CREATE TABLE IF NOT EXISTS mf_auto_initial_approval(
+    account_id TEXT PRIMARY KEY REFERENCES bank_accounts(account_id) ON DELETE CASCADE,
+    revision INTEGER NOT NULL,preview_version TEXT NOT NULL,confirmed_at TEXT NOT NULL
+   );
    CREATE TABLE IF NOT EXISTS mf_auto_labels(
     account_id TEXT NOT NULL,external_id TEXT NOT NULL,
     category_id TEXT NOT NULL REFERENCES categories(id),
@@ -115,7 +119,8 @@ class D05AutoCategorization{
   const enabledAccounts=permissions.filter(p=>p.enabled===1&&p.expiresAt>this.clock().toISOString()).map(p=>p.accountId);
   const pending=enabledAccounts.length?this.plan({limit:100}).reviewCount:0;
   return {contract:'D05/AUTO-CATEGORY-V1',engine:'human-history-and-reconciled-external-evidence',
-   modelInference:false,enabled:enabledAccounts.length>0,permissions,counts:{...counts,awaitingReview:pending},
+   modelInference:false,enabled:enabledAccounts.length>0,initialConfirmed:this.initialReady(),
+   permissions,counts:{...counts,awaitingReview:pending},
    limitation:'Correções humanas coerentes ou MCC + categoria Pluggy concordantes; sinais isolados e modelo local sem calibração nunca autorizam escrita.'};
  }
  configure({accountIds,startDate,endDate},approvedByMain=false){
@@ -141,6 +146,36 @@ class D05AutoCategorization{
    sql.exec('COMMIT');
   }catch(e){sql.exec('ROLLBACK');throw e;}
   return this.status();
+ }
+ initialReady(){
+  const pending=this.sql.prepare(`SELECT 1 FROM mf_auto_permissions p
+   LEFT JOIN mf_auto_initial_approval a ON a.account_id=p.account_id AND a.revision=p.revision
+   WHERE p.enabled=1 AND p.expires_at>? AND a.account_id IS NULL LIMIT 1`)
+   .get(this.clock().toISOString());
+  return !pending;
+ }
+ async confirmInitialPreview(version){
+  if(typeof version!=='string'||!/^[a-f0-9]{64}$/.test(version))
+   throw Error('Auto D05: versão de prévia obrigatória');
+  const before=this.plan({limit:20000});
+  if(before.previewVersion!==version||before.candidateCount>before.candidates.length)
+   throw Error('Auto D05: prévia alterada ou lote acima do limite; reanalise antes de aprovar');
+  if(this.initialReady())return {alreadyConfirmed:true};
+  await this.backupVerified('initial-confirmation');
+  const sql=this.sql,at=this.clock().toISOString();
+  sql.exec('BEGIN IMMEDIATE');
+  try{
+   const now=this.plan({limit:20000});
+   if(now.previewVersion!==version)throw Error('Auto D05: movimentações/evidências mudaram; refaça a prévia');
+   const enabled=this.permissions().filter(p=>p.enabled===1&&p.expiresAt>at);
+   for(const perm of enabled)sql.prepare(`INSERT INTO mf_auto_initial_approval
+    (account_id,revision,preview_version,confirmed_at) VALUES(?,?,?,?)
+    ON CONFLICT(account_id) DO UPDATE SET revision=excluded.revision,
+    preview_version=excluded.preview_version,confirmed_at=excluded.confirmed_at`)
+    .run(perm.accountId,perm.revision,version,at);
+   sql.exec('COMMIT');
+   return {confirmed:true,accounts:enabled.length,backupVerified:true};
+  }catch(e){sql.exec('ROLLBACK');throw e;}
  }
  revoke(accountId){
   requireString(accountId,'conta');
@@ -294,8 +329,17 @@ class D05AutoCategorization{
    candidates.push(proposal);
    perAccount[row.accountId]=(perAccount[row.accountId]||0)+1;
   }
+  // The preview manifest covers ALL scoped bank rows, not just the visual
+  // sample. Metadata, rule, alias, protection and permission revisions are
+  // included so a stale preview cannot activate unattended automation.
+  const metadata=sql.prepare('SELECT account_id,external_id,fingerprint FROM cat01_metadata ORDER BY account_id,external_id').all();
+  const previewVersion=hash([permissions.map(p=>[p.accountId,p.revision,p.startDate,p.endDate]),
+   rows.map(r=>[r.accountId,r.externalId,fingerprint(r),r.syncStatus,r.manualCategoryId,
+    r.manualSubcategoryId,r.nature,r.reviewedAt,r.linkedManualId,r.hasSplits,
+    r.blockedByFeedback,r.hasAuto]),
+   metadata,aliases,rules,candidates.map(p=>[p.accountId,p.externalId,p.target,p.evidenceHash]),reviewCount]);
   return {candidates:candidates.slice(0,limit),candidateCount:candidates.length,
-   review:review.slice(0,limit),reviewCount,perAccount,
+   review:review.slice(0,limit),reviewCount,perAccount,previewVersion,
    contract:'D05/AUTO-CATEGORY-PLAN-V1',changesApplied:false};
  }
  suggestRules({accountId=null,limit=5}={}){
