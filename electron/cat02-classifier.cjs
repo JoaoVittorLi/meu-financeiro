@@ -167,6 +167,27 @@ function classifyCandidate({transaction,evidence={},history=[],rules=[],catalog=
   return result('apply','MULTI_SIGNAL_RECONCILED',{target,
    evidenceTypes:signals.map(s=>s.type),quality:'verified_evidence',
    modelUsed:false});
+ // Strong-but-conservative route without Pluggy category/Premium: a
+ // narrowly mapped commercial MCC plus direct merchant identity (validated
+ // CNPJ, non-processor name matching the bank description) and card debit.
+ // Do not infer a child category from MCC alone. Receiver/intermediary CNPJ
+ // never counts as merchant identity; Naive Bayes remains review-only.
+ const directName=fold(evidence.merchantName);
+ const desc=fold(transaction.description||'');
+ const processor=/\\b(pagseguro|mercado pago|stone|cielo|paypal|picpay|getnet|rede|sumup|pagar me)\\b/i;
+ const narrowMcc=['5411','5541','5912'].includes(String(evidence.mcc||''));
+ const directCommerce=narrowMcc&&mcc&&!external&&
+  evidence.transactionType==='DEBIT'&&
+  ['CARD_PURCHASE','CARD PAYMENT','CARD_PAYMENT','PURCHASE'].includes(
+   String(evidence.operationType||'').trim().toUpperCase())&&
+  typeof evidence.merchantCnpj==='string'&&/^\\d{14}$/.test(evidence.merchantCnpj)&&
+  directName.length>=8&&!processor.test(directName)&&desc.includes(directName);
+ if(directCommerce){
+  return result('apply','VERIFIED_DIRECT_MERCHANT_MCC_PARENT',{
+   target:{categoryId:mcc.categoryId,subcategoryId:null},
+   evidenceTypes:['merchant_mcc','direct_merchant_identity','verified_commercial_cnpj','card_purchase_type'],
+   quality:'restricted_parent_only',modelUsed:false});
+ }
  const suggestion=model?inferLocalModel(transaction.description||evidence.description,model):null;
  return result('review',target?'SINGLE_UNCORROBORATED_SIGNAL':'INSUFFICIENT_EVIDENCE',{
   ...(target?{suggestedTarget:target}:{}),
