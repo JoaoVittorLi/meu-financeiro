@@ -20,6 +20,10 @@ function migrateCat05(db){
     'grant_id TEXT NOT NULL,enable_history INTEGER NOT NULL,auto_new INTEGER NOT NULL,',
     'review_uncertain INTEGER NOT NULL,first_run_completed INTEGER NOT NULL DEFAULT 0,',
     'granted_at TEXT NOT NULL,revoked_at TEXT,last_run_at TEXT);',
+   'CREATE TABLE IF NOT EXISTS cat05_consent_events(',
+    'event_id TEXT PRIMARY KEY,account_id TEXT NOT NULL REFERENCES bank_accounts(account_id),',
+    "action TEXT NOT NULL CHECK(action IN ('grant','revoke')),",
+    'grant_id TEXT NOT NULL,created_at TEXT NOT NULL);',
    'CREATE TABLE IF NOT EXISTS cat05_assignments(',
     'account_id TEXT NOT NULL,external_id TEXT NOT NULL,category_id TEXT NOT NULL,',
     'subcategory_id TEXT,parent_name TEXT NOT NULL,row_version TEXT NOT NULL,',
@@ -119,8 +123,12 @@ class Cat05AuthorizedWriter{
   this.db.exec('BEGIN IMMEDIATE');
   try{
    const stmt=this.db.prepare('INSERT INTO cat05_consents(account_id,profile,grant_id,enable_history,auto_new,review_uncertain,granted_at,revoked_at,first_run_completed) VALUES(?,?,?,?,?,?,?,NULL,?) ON CONFLICT(account_id) DO UPDATE SET grant_id=excluded.grant_id,enable_history=excluded.enable_history,auto_new=excluded.auto_new,review_uncertain=excluded.review_uncertain,granted_at=excluded.granted_at,revoked_at=NULL,first_run_completed=excluded.first_run_completed');
-   for(const id of accountIds)stmt.run(id,'real',randomUUID(),settings.history?1:0,
-    settings.autoNew?1:0,1,this.clock(),settings.history?0:1);
+   const event=this.db.prepare('INSERT INTO cat05_consent_events(event_id,account_id,action,grant_id,created_at) VALUES(?,?,?,?,?)');
+   for(const id of accountIds){
+    const grantId=randomUUID();stmt.run(id,'real',grantId,settings.history?1:0,
+     settings.autoNew?1:0,1,this.clock(),settings.history?0:1);
+    event.run(randomUUID(),id,'grant',grantId,this.clock());
+   }
    this.db.exec('COMMIT');
   }catch(e){this.db.exec('ROLLBACK');throw e;}
   return {contract:VERSION,authorizedAccounts:accountIds.length,firstRunCompleted:false};
@@ -130,8 +138,11 @@ class Cat05AuthorizedWriter{
   this.gate(scope,accountIds,false);
   this.db.exec('BEGIN IMMEDIATE');
   try{
+   const event=this.db.prepare('INSERT INTO cat05_consent_events(event_id,account_id,action,grant_id,created_at) VALUES(?,?,?,?,?)');
    for(const account of accountIds){
+    const prior=this.db.prepare('SELECT grant_id,revoked_at FROM cat05_consents WHERE account_id=?').get(account);
     this.db.prepare('UPDATE cat05_consents SET revoked_at=? WHERE account_id=?').run(this.clock(),account);
+    if(prior&&!prior.revoked_at)event.run(randomUUID(),account,'revoke',prior.grant_id,this.clock());
     // Cancel or pause unfinished work; never revive it on a daily tick.
     for(const row of this.db.prepare("SELECT job_id,accounts_json FROM cat05_jobs WHERE status IN ('ready','running','paused')").all()){
      if(JSON.parse(row.accounts_json).includes(account))
