@@ -191,7 +191,7 @@ class D05AutoCategorization{
     const groupKey=row.accountId+'|'+kind(row)+'|'+merchant;
     if(!groups.has(groupKey))groups.set(groupKey,[]);
     groups.get(groupKey).push({categoryId:target.categoryId,subcategoryId:target.subcategoryId,
-     date:row.date,externalId:row.externalId});
+     date:row.date,amountCents:row.amountCents,externalId:row.externalId});
    }catch(_){/* Legacy or orphaned manual labels never authorize automation. */}
   }
   for(const row of rows){
@@ -227,20 +227,30 @@ class D05AutoCategorization{
     continue;
    }
    const anchors=groups.get(row.accountId+'|'+kind(row)+'|'+merchant)||[];
+   // Equal date/cents for a merchant may be an imported duplicate under a
+   // different external ID. Exclude ALL ambiguous anchors from training.
+   const occurrence=new Map();
+   for(const anchor of anchors){
+    const identity=JSON.stringify([anchor.date,anchor.amountCents]);
+    occurrence.set(identity,(occurrence.get(identity)||0)+1);
+   }
+   const verified=anchors.filter(a=>
+    occurrence.get(JSON.stringify([a.date,a.amountCents]))===1);
+   // A conflicting manual correction still blocks, even if duplicated.
    const unique=new Set(anchors.map(a=>[a.categoryId,a.subcategoryId].join('|')));
-   const days=new Set(anchors.map(a=>a.date));
-   const quality=evidenceVerdict({anchors:anchors.length,distinctDates:days.size,
-    suspiciousDuplicates:0,ruleCollision:false,partial:false,candidates:1,
+   const days=new Set(verified.map(a=>a.date));
+   const quality=evidenceVerdict({anchors:verified.length,distinctDates:days.size,
+    suspiciousDuplicates:anchors.length-verified.length,ruleCollision:false,partial:false,candidates:1,
     unsupported:false,amountCents:Math.abs(row.amountCents)});
-   const sufficient=anchors.length>=MIN_ANCHORS&&days.size>=MIN_DATES&&unique.size===1&&
+   const sufficient=verified.length>=MIN_ANCHORS&&days.size>=MIN_DATES&&unique.size===1&&
     quality.status==='eligible_for_preview'&&quality.confidence==='high';
    if(!sufficient){
     reviewCount++;if(review.length<limit)review.push({accountId:row.accountId,externalId:row.externalId,
      reason:unique.size>1?'Correções anteriores contraditórias':'Evidência insuficiente'});
     continue;
    }
-   const target={categoryId:anchors[0].categoryId,subcategoryId:anchors[0].subcategoryId};
-   const evidenceHash=hash([merchant,anchors.map(a=>[a.externalId,a.date,a.categoryId,a.subcategoryId]).sort()]);
+   const target={categoryId:verified[0].categoryId,subcategoryId:verified[0].subcategoryId};
+   const evidenceHash=hash([merchant,verified.map(a=>[a.externalId,a.date,a.amountCents,a.categoryId,a.subcategoryId]).sort()]);
    const proposal={accountId:row.accountId,externalId:row.externalId,merchant,target,
      sourceFingerprint:fingerprint(row),evidenceHash,consentRevision:permission.revision,
      explanation:'Correspondência '+(merchant.startsWith('alias:')?'de alias aprovado':'exata')+
