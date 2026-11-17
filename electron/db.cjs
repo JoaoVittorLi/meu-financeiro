@@ -700,10 +700,11 @@ class FinanceDB {
  /** Automatic labels never supersede changed bank facts or split/review decisions. */
  validAutoLabel(auto,row,splitPresent){
   if(!auto||row.status!=='POSTED'||row.reviewedAt||splitPresent||
-     ['transfer','ignore'].includes(row.nature)||!Number.isSafeInteger(row.amount))return null;
+     ['transfer','ignore'].includes(row.nature)||row.merchant||row.note||row.linkedManualId||!Number.isSafeInteger(row.amount))return null;
   const actual=createHash('sha256').update(JSON.stringify([
    row.accountId,row.id,row.date,row.description,row.amount,row.status,
-   row.bankCategory,row.nature??null,row.reviewedAt??null
+   row.bankCategory,row.nature??null,row.reviewedAt??null,
+   row.merchant??null,row.note??null,row.linkedManualId??null
   ])).digest('hex');
   return auto.source_fingerprint===actual?auto:null;
  }
@@ -741,10 +742,11 @@ class FinanceDB {
    });
    // Dashboard aggregates use the ENTIRE local bank history, never only the 2,500 visible rows.
    const ledger=this.db.prepare(`SELECT b.rowid AS rowid,b.account_id AS accountId,b.external_id AS externalId,b.date,b.description,b.status,
-     b.amount_cents AS amount,b.category AS bankCategory,o.category AS overrideCategory,n.nature,n.reviewed_at AS reviewedAt
+     b.amount_cents AS amount,b.category AS bankCategory,o.category AS overrideCategory,n.nature,n.reviewed_at AS reviewedAt,n.merchant,n.note,l.manual_id AS linkedManualId
      FROM bank_transactions b
      LEFT JOIN bank_category_overrides o USING(account_id,external_id)
      LEFT JOIN bank_transaction_notes n USING(account_id,external_id)
+     LEFT JOIN bank_manual_links l USING(account_id,external_id)
      WHERE b.status='POSTED' ORDER BY b.date`).all();
    const dayMap=new Map();
    for(const x of ledger){
