@@ -160,3 +160,115 @@ test('scanned manifest refuses changed metadata and cancellation never authorize
  assert.throws(()=>preview.status(newer.jobId),/expirada/);
  assert.equal(db.db.prepare('SELECT COUNT(*) AS n FROM mf_auto_labels').get().n,0);
 }));
+
+test('CAT-UX-01 persisted scope: opt out of history, future strong evidence still eligible',()=>sandbox(async({db,auto,bank})=>{
+ auto.configure({...scope,historyEnabled:false,newEnabled:true,insufficientAction:'review'},true);
+ assert.equal(auto.plan({limit:100}).candidateCount,0);
+ assert.equal(auto.permissions()[0].historyEnabled,0);
+ db.ingestBank(I,{item:bank.item,data:[{account:bank.data[0].account,transactions:[{
+  id:'future-merchant-01',date:'2026-12-01',description:'MERCEARIA FICTICIA VERIFICADA',
+  amount:-28.30,status:'POSTED',category:'Groceries',
+  creditCardMetadata:{payeeMCC:'5411'}
+ }]}]});
+ assert.equal(auto.plan({limit:100}).candidateCount,1);
+ assert.equal(auto.plan({limit:100,futureOnly:true}).candidateCount,1);
+ assert.equal(auto.plan({limit:100}).candidates[0].externalId,'future-merchant-01');
+ const fresh=new D05AutoCategorization({finance:()=>db,
+  backupDirectory:()=>path.join(path.dirname(db.filename),'backups')});
+ assert.equal(fresh.permissions()[0].historyEnabled,0);
+ assert.equal(fresh.permissions()[0].newEnabled,1);
+}));
+test('CAT-UX-01 historic-only consent forbids unattended future classification',()=>sandbox(async({db,auto,bank})=>{
+ auto.configure({...scope,historyEnabled:true,newEnabled:false},true);
+ assert.equal(auto.plan({limit:100}).candidateCount,1);
+ db.ingestBank(I,{item:bank.item,data:[{account:bank.data[0].account,transactions:[{
+  id:'future-should-not-write',date:'2026-12-01',description:'SUPERMERCADO TESTE FUTURO',
+  amount:-6,status:'POSTED',category:'Groceries',
+  creditCardMetadata:{payeeMCC:'5411'}
+ }]}]});
+ assert.equal(auto.plan({limit:100}).candidateCount,1);
+ assert.equal(auto.plan({limit:100,futureOnly:true}).candidateCount,0);
+}));
+test('CAT-P0.2 650+ fictional candidates commit in 250-item atomic pages with restart recovery',()=>sandbox(async({root,db,auto,bank})=>{
+ const extra=Array.from({length:650},(_,i)=>({
+  id:'page-safe-'+String(i).padStart(4,'0'),date:'2026-10-'+String(i%28+1).padStart(2,'0'),
+  description:'MERCADO INVENTADO TESTE '+i,amount:-10-i/100,
+  status:'POSTED',category:'Groceries',creditCardMetadata:{payeeMCC:'5411'}
+ }));
+ db.ingestBank(I,{item:bank.item,data:[{account:bank.data[0].account,transactions:extra}]});
+ auto.configure(scope,true);
+ const preview=new D05AutoPreview({finance:()=>db,engine:()=>auto});
+ let scanned=preview.start();
+ while(scanned.state==='scanning')scanned=preview.next(scanned.jobId);
+ assert.equal(scanned.processed,653);
+ assert.equal(scanned.preview.candidateCount,651);
+ assert.equal(auto.sql.prepare('SELECT COUNT(*) AS n FROM mf_auto_labels').get().n,0,
+  'Reading and authorizing must not classify');
+ await auto.confirmInitialPreview(scanned.preview.previewVersion);
+ const started=auto.startBatch({previewVersion:scanned.preview.previewVersion});
+ assert.equal(started.committed,0);
+ const first=await auto.nextBatch(started.jobId);
+ assert.equal(first.committed,250);assert.equal(first.state,'running');
+ auto.pauseBatch(started.jobId);
+ const fresh=new D05AutoCategorization({finance:()=>db,backupDirectory:()=>path.join(root,'backups')});
+ assert.equal(fresh.batchStatus(started.jobId).committed,250);
+ assert.equal(fresh.batchStatus(started.jobId).state,'paused');
+ fresh.resumeBatch(started.jobId);
+ const second=await fresh.nextBatch(started.jobId);
+ assert.equal(second.committed,500);
+ const done=await fresh.nextBatch(started.jobId);
+ assert.equal(done.committed,651);assert.equal(done.state,'completed');
+ assert.equal(done.remaining,0);
+ assert.equal(db.db.prepare("SELECT COUNT(*) AS n FROM mf_auto_receipts WHERE batch_id=? AND action='apply'")
+  .get(started.jobId).n,651);
+ assert.equal(db.db.prepare("SELECT category FROM bank_transactions WHERE account_id=? AND external_id=?")
+  .get(A,'page-safe-0001').category,'Groceries');
+ const receipts=fresh.listReceipts({action:'apply',limit:20});
+ assert.equal(receipts.total,651);assert.equal(receipts.items.length,20);
+ assert.equal(receipts.hasMore,true);assert(receipts.nextCursor);
+ assert.equal(fresh.listReceipts({action:'apply',limit:20,cursor:receipts.nextCursor}).items.length,20);
+ await assert.rejects(fresh.nextBatch(started.jobId),/não está ativo/);
+}));
+test('CAT-P0.2 stale source after first committed page is fail-closed, preserving receipts',()=>sandbox(async({db,auto,bank})=>{
+ const extra=Array.from({length:260},(_,i)=>({
+  id:'stale-'+i,date:'2026-10-'+String(i%28+1).padStart(2,'0'),
+  description:'MERCADO FICTICIO STALE '+i,amount:-30-i/100,status:'POSTED',
+  category:'Groceries',creditCardMetadata:{payeeMCC:'5411'}
+ }));
+ db.ingestBank(I,{item:bank.item,data:[{account:bank.data[0].account,transactions:extra}]});
+ auto.configure(scope,true);
+ const p=auto.plan({limit:100});
+ await auto.confirmInitialPreview(p.previewVersion);
+ const job=auto.startBatch({previewVersion:p.previewVersion});
+ assert.equal((await auto.nextBatch(job.jobId)).committed,250);
+ db.ingestBank(I,{item:bank.item,data:[{account:bank.data[0].account,transactions:[{
+  ...extra[259],description:'ALTERACAO FICTICIA DO EXTRATO'
+ }]}]});
+ const stopped=await auto.nextBatch(job.jobId);
+ assert.equal(stopped.state,'stale');assert.equal(stopped.committed,250);
+ assert.equal(db.db.prepare("SELECT COUNT(*) AS n FROM mf_auto_receipts WHERE batch_id=?").get(job.jobId).n,250);
+ assert.throws(()=>auto.resumeBatch(job.jobId),/não disponível/);
+}));
+test('CAT-P0.2 verified-backup failure retains only earlier COMMIT and permits supervised retry',()=>sandbox(async({db,auto,bank})=>{
+ const entries=Array.from({length:260},(_,i)=>({
+  id:'recover-'+i,date:'2026-10-'+String(i%28+1).padStart(2,'0'),
+  description:'MERCEARIA TESTE RECOVERY '+i,amount:-14-i/100,status:'POSTED',
+  category:'Groceries',creditCardMetadata:{payeeMCC:'5411'}
+ }));
+ db.ingestBank(I,{item:bank.item,data:[{account:bank.data[0].account,transactions:entries}]});
+ auto.configure(scope,true);
+ const version=auto.plan({limit:100}).previewVersion;
+ await auto.confirmInitialPreview(version);
+ const job=auto.startBatch({previewVersion:version});
+ assert.equal((await auto.nextBatch(job.jobId)).committed,250);
+ const backup=db.backupTo;
+ db.backupTo=async()=>{throw Error('SYNTHETIC_DISK_FULL');};
+ try{
+  const fail=await auto.nextBatch(job.jobId);
+  assert.equal(fail.state,'failed');assert.equal(fail.committed,250);
+  assert.equal(db.db.prepare("SELECT COUNT(*) AS n FROM mf_auto_receipts WHERE batch_id=?").get(job.jobId).n,250);
+ }finally{db.backupTo=backup;}
+ assert.equal(auto.resumeBatch(job.jobId).state,'running');
+ const done=await auto.nextBatch(job.jobId);
+ assert.equal(done.state,'completed');assert.equal(done.committed,261);
+}));
