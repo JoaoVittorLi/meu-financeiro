@@ -78,6 +78,14 @@ class D05Movements extends React.Component<any,any> {
  const [error,setError]=useState('');
  const [notice,setNotice]=useState('');
  const [confirmedIdentity,setConfirmedIdentity]=useState(null as any);
+ const [autoInfo,setAutoInfo]=useState(null as any);
+ const [autoSelected,setAutoSelected]=useState(new Set<string>());
+ const [autoStart,setAutoStart]=useState('2000-01-01');
+ const [autoEnd,setAutoEnd]=useState('2099-12-31');
+ const [autoPanel,setAutoPanel]=useState(false);
+ const [autoBusy,setAutoBusy]=useState(false);
+ const [autoMessage,setAutoMessage]=useState('');
+ const [autoRules,setAutoRules]=useState([] as any[]);
  const activeTrigger=useRef(null as any);
  const modalRef=useRef(null as any);
  const refreshId=useRef(0);
@@ -137,6 +145,39 @@ class D05Movements extends React.Component<any,any> {
   }
  };
  useEffect(()=>{
+  if(state.mode==='real'&&bridge?.bankAutoStatus){
+   void bridge.bankAutoStatus().then((status:any)=>{
+    if(status?.contract==='D05/AUTO-CATEGORY-V1'){
+     setAutoInfo(status);
+     if(autoInfo===null)setAutoSelected(new Set((status.permissions||[]).filter((p:any)=>p.enabled).map((p:any)=>p.accountId)));
+    }
+   }).catch((e:any)=>setAutoMessage(String(e?.message||e)));
+  }
+ },[state.mode,state.bank.data.accounts,state.bank.data.transactions]);
+ const refreshAuto=async()=>{
+  if(bridge?.bankAutoStatus&&state.mode==='real'){
+   const result=await bridge.bankAutoStatus();setAutoInfo(result);
+  }
+ };
+ const runAutoAction=async(action:string,accountId:string|null=null)=>{
+  if(!bridge||autoBusy||state.mode!=='real')return;
+  setAutoBusy(true);setAutoMessage('');
+  try{
+   let result:any;
+   if(action==='enable')result=await bridge.bankAutoConfigure({accountIds:Array.from(autoSelected),startDate:autoStart,endDate:autoEnd});
+   else if(action==='revoke')result=await bridge.bankAutoRevoke(accountId);
+   else if(action==='run')result=await bridge.bankAutoApply({limit:20000});
+   else if(action==='suggest')result=await bridge.bankAutoRuleSuggestions({limit:5});
+   if(action==='suggest'){setAutoRules(result?.rules||[]);setAutoMessage('Sugestões somente para prévia; nenhuma regra foi criada.');return;}
+   if(result?.cancelled){setAutoMessage('Autorização cancelada.');return;}
+   await host.refreshBank();await refreshHierarchy();await refreshAuto();
+   setAutoMessage(action==='enable'?'Contas autorizadas no MAIN; classificação concluída conforme evidências.':
+    action==='revoke'?'Permissão revogada; recibos e rótulos anteriores preservados.':
+    'Verificação concluída. Movimentos incertos permanecem para revisão.');
+  }catch(e:any){setAutoMessage(String(e?.message||e));}
+  finally{setAutoBusy(false);}
+ };
+ useEffect(()=>{
   let current=true;
   if(current)void refreshHierarchy();
   return ()=>{current=false;refreshId.current++;};
@@ -184,7 +225,7 @@ class D05Movements extends React.Component<any,any> {
   if(categoryId&&row.categoryId!==categoryId)return false;
   if(subcategoryId&&row.subcategoryId!==subcategoryId)return false;
   if(!contains(row,folded(search.trim())))return false;
-  if(tab==='pending')return row.source==='bank'&&row.status==='POSTED'&&!row.reviewed;
+  if(tab==='pending')return row.source==='bank'&&row.status==='POSTED'&&!row.reviewed&&row.raw.categorySource!=='automatic';
   if(tab==='reviewed')return row.source==='bank'&&row.status==='POSTED'&&row.reviewed;
   return true;
  }).sort((a:any,b:any)=>{
@@ -199,7 +240,7 @@ class D05Movements extends React.Component<any,any> {
  const metricsRows=filtered.filter((r:any)=>r.source===totalsSource);
  let income=0,expense=0,needs=0,ignored=0,pending=0;
  for(const r of metricsRows){
-  if(r.source==='bank'&&r.status==='POSTED'&&!r.reviewed)needs++;
+  if(r.source==='bank'&&r.status==='POSTED'&&!r.reviewed&&r.raw.categorySource!=='automatic')needs++;
   if(r.source==='bank'&&r.status!=='POSTED'){pending++;continue;}
   if(r.kind==='ignore'||r.kind==='transfer'){ignored++;continue;}
   if(r.kind==='income')income+=Math.abs(r.amount);
@@ -306,6 +347,18 @@ class D05Movements extends React.Component<any,any> {
     const tx=picker.row,current=state.bank.data.transactions.find((t:any)=>t.id===tx.id&&t.accountId===tx.accountId);
     if(!current||current.amount!==tx.amount||current.status!==tx.status)
      throw Error('Movimentação alterada; atualize antes de classificar');
+    // Only the explicitly authorized per-account automation can accept a
+    // personal human correction here; the general IA writer stays blocked.
+    if(autoInfo?.enabled&&bridge?.bankAutoCorrect&&state.mode==='real'&&
+       (autoInfo.permissions||[]).some((p:any)=>p.accountId===tx.accountId&&p.enabled)){
+     const accepted=await bridge.bankAutoCorrect({accountId:tx.accountId,externalId:tx.id,target:destination});
+     if(accepted?.corrected){
+      await host.refreshBank();await refreshHierarchy();await refreshAuto();
+      setNotice('Correção humana protegida e confirmada por recibo SQLite.');
+      setPicker(null);setPreview(null);return;
+     }
+     if(accepted?.cancelled){setNotice('Correção cancelada no MAIN.');return;}
+    }
     // A personal category assignment must reach the separate supervised
     // preview contract first. In this experimental SHA the MAIN explicitly
     // denies real-bank commits; never fall back to the legacy direct write.
@@ -547,6 +600,53 @@ class D05Movements extends React.Component<any,any> {
    confirmedIdentity?h(D05VectorIcon,{iconKey:confirmedIdentity.iconKey,
     hue:confirmedIdentity.hue,size:17}):null,
    confirmedIdentity?confirmedIdentity.label+' · ':null,notice):null,
+  state.mode==='real'&&bridge?.bankAutoStatus?h('section',{className:'d05-auto-box','aria-label':'Categorização automática'},
+   h('div',{className:'d05-auto-head'},
+    h('div',{},h('strong',{},'Categorização automática'),
+     h('p',{},'Somente evidência verificável; suas correções e regras aprovadas prevalecem.')),
+    h('button',{type:'button',className:'d05-ghost','aria-expanded':autoPanel,
+     onClick:()=>setAutoPanel(!autoPanel)},autoPanel?'Fechar':'Gerenciar')),
+   h('div',{className:'d05-auto-stats',role:'status'},
+    h('span',{},autoInfo?.enabled?'Ativada em '+String((autoInfo.permissions||[]).filter((p:any)=>p.enabled).length)+' conta(s)':'Desativada'),
+    h('span',{},String(autoInfo?.counts?.classified||0)+' categorizada(s) automaticamente'),
+    h('span',{},String(autoInfo?.counts?.awaitingReview||0)+' aguardando revisão'),
+    h('button',{type:'button',onClick:()=>{setTab('pending');setSource('bank');}},'Abrir A conferir')),
+   !autoInfo?.available?h('p',{className:'d05-notice',role:'status'},
+    'Autorização pessoal disponível somente na distribuição estável homologada. A RC experimental não altera categorias bancárias.'):null,
+   autoPanel?h('div',{className:'d05-auto-settings'},
+    h('p',{},'Escolha contas e período. A autorização é persistente, revogável e distinta do token IC-READ.'),
+    h('div',{className:'d05-auto-accounts'},(state.bank.data.accounts||[]).map((bank:any)=>
+     h('button',{type:'button',key:bank.id,'aria-pressed':autoSelected.has(bank.id),
+      className:autoSelected.has(bank.id)?'selected':'',
+      disabled:autoBusy||!autoInfo?.available,onClick:()=>{
+       const next=new Set(autoSelected);if(next.has(bank.id))next.delete(bank.id);else next.add(bank.id);
+       setAutoSelected(next);}},bank.name,
+      (autoInfo?.permissions||[]).some((perm:any)=>perm.accountId===bank.id&&perm.enabled)?' · autorizada':''))),
+    h('div',{className:'d05-auto-period'},
+     h('label',{},'Início',h('input',{type:'date',value:autoStart,onChange:(e:any)=>setAutoStart(e.target.value)})),
+     h('label',{},'Fim',h('input',{type:'date',value:autoEnd,onChange:(e:any)=>setAutoEnd(e.target.value)}))),
+    h('div',{className:'d05-auto-buttons'},
+     h('button',{type:'button',className:'d05-confirm',disabled:autoBusy||!autoInfo?.available||autoSelected.size===0,
+      onClick:()=>void runAutoAction('enable')},'Autorizar contas selecionadas'),
+     h('button',{type:'button',disabled:autoBusy||!autoInfo?.available||!autoInfo?.enabled,
+      onClick:()=>void runAutoAction('run')},'Analisar novamente'),
+     h('button',{type:'button',disabled:autoBusy||!autoInfo?.available||!autoInfo?.enabled,
+      onClick:()=>void runAutoAction('suggest')},'Sugerir regras para semelhantes'),
+     ...(autoInfo?.permissions||[]).filter((perm:any)=>perm.enabled).map((perm:any)=>
+      h('button',{type:'button',key:perm.accountId,disabled:autoBusy||!autoInfo?.available,
+       onClick:()=>void runAutoAction('revoke',perm.accountId)},'Revogar '+perm.name))),
+    autoRules.length?h('div',{className:'d05-auto-rule-suggestions'},
+     h('strong',{},'Sugestões não aplicadas — revisão humana obrigatória'),
+     autoRules.map((rule:any)=>h('p',{key:rule.accountId+'|'+rule.pattern},
+      'Conta: '+String((state.bank.data.accounts||[]).find((a:any)=>a.id===rule.accountId)?.name||'Conta autorizada')+
+      ' · '+rule.pattern+' · '+rule.suggestedFor+' ocorrências identificadas · até '+
+      rule.possibleMatches+' possíveis correspondências. Conflitos de precedência: '+rule.possiblePrecedenceConflicts+'.')),
+     h('button',{type:'button',onClick:()=>host.setState({txOrganize:true})},
+      'Abrir Categorias e regras para revisar a criação')):null,
+    h('p',{},'Regras amplas e reclassificações em massa exigem aprovação separada. Sem modelo externo nem porcentagens inventadas.')
+   ):null,
+   autoMessage?h('p',{className:'d05-notice',role:'status'},autoMessage):null
+  ):null,
   h('div',{className:'d05-metrics'},
    [{name:'Entradas confirmadas',value:format(income),tone:'positive',note:'No escopo selecionado'},
     {name:'Saídas confirmadas',value:format(expense),tone:'negative',note:'Sem pendentes'},
@@ -625,10 +725,25 @@ class D05Movements extends React.Component<any,any> {
          title:'A conferir',onClick:(e:any)=>{e.stopPropagation();activeTrigger.current=e.currentTarget;setError('');setReview(r);}},h('span',{'aria-hidden':'true'})):null,
         r.source==='bank'&&r.status==='PENDING'?h('span',{className:'d05-pending',title:'Em processamento','aria-label':'Em processamento'},h(D05VectorIcon,{iconKey:'clock-3',hue:37,size:16})):null),
        h('small',{},r.account+' · '+(p?.name||r.category)+(child?' › '+child.name:''),
-        r.source==='manual'?' · Manual':''),
+        r.source==='manual'?' · Manual':r.raw.categorySource==='automatic'?' · Automática (evidência verificada)':''),
        r.merchant!==r.description?h('small',{className:'d05-desc'},r.description):null),
       h('div',{className:'d05-row-end'},
        h('strong',{className:'d05-amount '+signed},(r.amount>=0?'+':'−')+format(Math.abs(r.amount))),
+       r.source==='bank'&&r.raw.categorySource==='automatic'?
+        h('small',{title:r.raw.automaticEvidence||'Evidência de histórico local'},'Categorização local verificada'):null,
+       r.source==='bank'&&r.raw.categorySource==='automatic'&&autoInfo?.available&&bridge?.bankAutoUndo?
+        h('button',{type:'button',className:'d05-ghost',disabled:autoBusy,
+         onClick:async(e:any)=>{
+          e.stopPropagation();setAutoBusy(true);setAutoMessage('');
+          try{
+           const outcome=await bridge.bankAutoUndo({accountId:r.accountId,externalId:r.id});
+           if(outcome?.undone){
+            await host.refreshBank();await refreshHierarchy();await refreshAuto();
+            setAutoMessage('Classificação revertida. Movimento protegido contra reaplicação automática.');
+           }
+          }catch(error:any){setAutoMessage(String(error?.message||error));}
+          finally{setAutoBusy(false);}
+         }},'Desfazer'):null,
        r.kind==='transfer'||r.kind==='ignore'?h('small',{},r.kind==='transfer'?'Transferência':'Desconsiderada'):null)
      ));
    })):h('div',{className:'d05-empty'},h('strong',{},'Nenhuma movimentação encontrada'),h('p',{},'Altere a pesquisa ou os filtros para continuar.'),

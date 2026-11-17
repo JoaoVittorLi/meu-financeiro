@@ -59,7 +59,7 @@ function mfB05ActionVisual(app,signal,budget,signature) {
   h(Icon,{name:signal.kind==='commitment'?'calendar':'shield',size:32}),
   Number.isSafeInteger(signal.amountCents)?h('strong',{},mfB05Money(signal.amountCents)):null,
   h('p',{},signal.kind==='commitment'?'Valor comprometido no planejamento; não é o saldo disponível.':
-    'Há registros que merecem revisão. Nenhuma alteração será aplicada automaticamente.'),
+    'Há registros que merecem revisão. Este cenário não executa alterações automáticas.'),
   h('small',{},'Fluxo de caixa futuro exige saldo e agenda reconciliados antes de desenhar suas fatias.'));
 }
 function renderMfB05Actions(app,proposals) {
@@ -76,6 +76,19 @@ function renderMfB05Actions(app,proposals) {
    h('span',{className:'mf-b05-kicker'},'INTELLIGENCE ALIVE · PLANO DE AÇÃO'),
    h('h2',{},'Decisões melhores começam com clareza.'),
    h('p',{},'Entenda o fato, teste possibilidades e revise antes de qualquer decisão.')),
+  s.mode==='real'&&s.autoCategoryStatus?h('section',{className:'mf-b05-plan-proposals',
+   'aria-label':'Automação bancária autorizada'},
+   h('h3',{},'Categorização automática · contas bancárias'),
+   h('p',{},s.autoCategoryStatus.enabled?
+    'Ativa em '+String((s.autoCategoryStatus.permissions||[]).filter((x:any)=>x.enabled).length)+
+    ' conta(s). Rótulos aplicados: '+String(s.autoCategoryStatus.counts?.classified||0)+
+    ' · revisão: '+String(s.autoCategoryStatus.counts?.awaitingReview||0)+'.':
+    'Desativada. Habilite explicitamente as contas no módulo Movimentações quando o canal estável estiver homologado.'),
+   h('p',{},'Motor local de evidências históricas, não inferência de um modelo. Regras e correções humanas prevalecem.'),
+   h('button',{type:'button',className:'ghost-button',onClick:()=>{
+    app.setState({txSource:'bank',txReviewOnly:true});
+    app.navigate('transactions');
+   }},'Abrir Movimentações e A conferir')):null,
   !selected&&!items.length?h('div',{className:'mf-b05-plan-empty',role:'status'},
    h(Icon,{name:'shield',size:28}),
    h('h3',{},'Nenhuma oportunidade verificável disponível.'),

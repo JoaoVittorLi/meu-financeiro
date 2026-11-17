@@ -42,6 +42,14 @@ function categoryDecisionFingerprint(row){
 function effectiveBankOverride(row,label){
  return label&&(!label.category||label.category===row.overrideCategory)&&label.fingerprint!==categoryDecisionFingerprint(row)?null:row.overrideCategory;
 }
+function effectiveAutoCategory(row,auto){
+ if(!auto||row.status!=='POSTED'||row.amount===0||
+    (row.nature&&row.nature!=='auto'))return null;
+ const fp=require('node:crypto').createHash('sha256').update(JSON.stringify([
+  row.accountId,row.externalId||row.id,row.date,row.description,row.amount,row.status
+ ])).digest('hex');
+ return auto.source_fingerprint===fp?auto:null;
+}
 function categoryName(name){
   const value=String(name||'').trim();
   if(!value||value.length>50||/[\x00-\x1f<>]/.test(value))throw new Error('Informe uma categoria de até 50 caracteres.');
@@ -698,6 +706,8 @@ class FinanceDB {
  }
  bankOverview(){
    const reviewLabels=this.db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='category_review_applied_labels'").get()?new Map(this.db.prepare('SELECT * FROM category_review_applied_labels').all().map(r=>[JSON.stringify([r.account_id,r.external_id]),r])):new Map();
+   const autoLabels=this.db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='mf_auto_labels'").get()?
+    new Map(this.db.prepare('SELECT * FROM mf_auto_labels').all().map(r=>[JSON.stringify([r.account_id,r.external_id]),r])):new Map();
    const accounts=this.db.prepare(`SELECT account_id AS id,item_id AS itemId,name,subtype,currency,balance_cents AS balance,updated_at AS updatedAt FROM bank_accounts ORDER BY name`).all().map(x=>({...x}));
    const rules=this.listCategories().rules.filter(x=>x.enabled);
    const categoryInfo=this.listCategories().categories;
@@ -716,13 +726,16 @@ class FinanceDB {
        const originalOverride=x.overrideCategory;
        x.overrideCategory=effectiveBankOverride(x,reviewLabels.get(JSON.stringify([x.accountId,x.id])));
        const fromRule=matchRule(x.description,'bank',rules,{accountId:x.accountId,rowid:x.rowid,status:x.status,nature:x.nature&&x.nature!=='auto'?x.nature:x.amount<0?'expense':'income',hasSplits:splitMap.has(x.accountId+'|'+x.id)});
-       const category=x.overrideCategory||fromRule||providerCategory(x.bankCategory,categories);
-       const categorySource=x.overrideCategory?'manual':fromRule?'rule':'bank';
+       const foundAuto=!splitMap.has(x.accountId+'|'+x.id)&&
+        effectiveAutoCategory(x,autoLabels.get(JSON.stringify([x.accountId,x.id])));
+       const auto=(!x.overrideCategory&&!fromRule)?foundAuto:null;
+       const category=x.overrideCategory||fromRule||auto?.parent_name||providerCategory(x.bankCategory,categories);
+       const categorySource=x.overrideCategory?'manual':fromRule?'rule':auto?'automatic':'bank';
        const {overrideCategory,...safe}=x;
        const merchant=x.merchant||aliases.find(a=>normalizeLabel(x.description).includes(normalizeLabel(a.pattern)))?.displayName||'';
        const savedSplits=splitMap.get(x.accountId+'|'+x.id)||[];
        const splitOutdated=savedSplits.length>0&&savedSplits.reduce((sum,part)=>sum+part.amount,0)!==Math.abs(x.amount);
-       return {...safe,category,categorySource,supervisedOutdated:!!originalOverride&&!x.overrideCategory,merchant,note:x.note||'',nature:x.nature||'auto',reviewed:!!x.reviewedAt,
+       return {...safe,category,categorySource,automaticEvidence:auto?.explanation||null,autoReceiptId:auto?.receipt_id||null,supervisedOutdated:!!originalOverride&&!x.overrideCategory,merchant,note:x.note||'',nature:x.nature||'auto',reviewed:!!x.reviewedAt,
          splits:splitOutdated?[]:savedSplits,splitOutdated};
    });
    // Dashboard aggregates use the ENTIRE local bank history, never only the 2,500 visible rows.
@@ -739,9 +752,12 @@ class FinanceDB {
      if(nature==='transfer'||nature==='ignore')continue;
      if(!dayMap.has(x.date))dayMap.set(x.date,{date:x.date,income:0,expense:0,categories:new Map(),incomeCategories:new Map()});
      const day=dayMap.get(x.date),amount=Math.abs(x.amount);
+     const rule=matchRule(x.description,'bank',rules,{...x,nature,hasSplits:splitMap.has(x.accountId+'|'+x.externalId)});
+     const automatic=(!x.overrideCategory&&!rule&&!splitMap.has(x.accountId+'|'+x.externalId))?
+      effectiveAutoCategory(x,autoLabels.get(JSON.stringify([x.accountId,x.externalId]))):null;
      if(nature==='income'){
        day.income+=amount;
-       const proposed=x.overrideCategory||matchRule(x.description,'bank',rules,{...x,nature,hasSplits:splitMap.has(x.accountId+'|'+x.externalId)})||(normalizeLabel(x.description).includes('PIX DEVOLVIDO')?'Reembolsos':providerCategory(x.bankCategory,categories));
+       const proposed=x.overrideCategory||rule||automatic?.parent_name||(normalizeLabel(x.description).includes('PIX DEVOLVIDO')?'Reembolsos':providerCategory(x.bankCategory,categories));
        const category=kindByCategory.get(proposed)==='expense'?'Outros':proposed;
        day.incomeCategories.set(category,(day.incomeCategories.get(category)||0)+amount);
        continue;
@@ -750,7 +766,7 @@ class FinanceDB {
      day.expense+=amount;
      const parts=splitMap.get(x.accountId+'|'+x.externalId)||[];
      const ok=parts.length&&parts.reduce((sum,part)=>sum+part.amount,0)===amount;
-     const category=x.overrideCategory||matchRule(x.description,'bank',rules,{...x,nature,hasSplits:splitMap.has(x.accountId+'|'+x.externalId)})||providerCategory(x.bankCategory,categories);
+     const category=x.overrideCategory||rule||automatic?.parent_name||providerCategory(x.bankCategory,categories);
      for(const part of ok?parts:[{category,amount}]){
        const bucket=kindByCategory.get(part.category)==='income'?'Outros':part.category;
        day.categories.set(bucket,(day.categories.get(bucket)||0)+part.amount);

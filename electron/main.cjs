@@ -22,6 +22,7 @@ const {RCCategoryGateway}=require('./intelligence-category-rc.cjs');
 const {installD05Ipc}=require('./d05-ipc-adapter.cjs');
 const {D05RCSecureGate}=require('./d05-rc-gate.cjs');
 const {D05PersonalWriteGateway}=require('./d05-personal-gate.cjs');
+const {D05AutoCategorization}=require('./d05-auto-categorization.cjs');
 const {CategoryReviewService}=require('./category-review.cjs');
 const {CategoryReviewBackupGate}=require('./category-review-backup.cjs');
 const {automaticBackup,restoreBackup,listAutoBackups,validateBackupFile}=require('./recovery.cjs');
@@ -32,7 +33,7 @@ const {AIPersonalStore}=require('./ai-personal.cjs');
 const {ChatGPTSignIn}=require('./ai-auth.cjs');
 const {ChatGPTDemoClient}=require('./ai-client.cjs');
 const {buildSyntheticFinancialContext}=require('../shared/ai-financial-context.mjs');
-let planner=null, db=null, mainWindow=null, vault=null, categoryRC=null, d05Gate=null, d05PersonalGate=null, syncing=false, restoring=false, autoBackupBusy=false, cloudPreparationBusy=false, backupTimer=null, cloudPersonalTimer=null, cloudPersonalBusy=false, cloudAuthPromise=null,cloudAccessAssertion=null;
+let planner=null, db=null, mainWindow=null, vault=null, categoryRC=null, d05Gate=null, d05PersonalGate=null, autoCategory=null, syncing=false, restoring=false, autoBackupBusy=false, cloudPreparationBusy=false, backupTimer=null, cloudPersonalTimer=null, cloudPersonalBusy=false, cloudAuthPromise=null,cloudAccessAssertion=null;
 function backupsDirectory(){return path.join(app.getPath('userData'),'copias-de-seguranca');}
 async function ensureAutomaticBackup(){
   if(!db||restoring||syncing||autoBackupBusy)return;
@@ -224,6 +225,9 @@ app.whenReady().then(async()=>{
   if(d05Gate)d05Gate.stopAll();
   if(categoryRC){categoryRC.stopAll();categoryRC.bindPersonal(db,localFinancial);}
   else categoryRC=new RCCategoryGateway({db,localFinancial});
+  // Dedicated per-account opt-in; no elevation of the general AI personal writer.
+  autoCategory=new D05AutoCategorization({finance:()=>db,
+   backupDirectory:()=>path.join(app.getPath('userData'),'d05-auto-classification-backups')});
  }
  bindLocalFinancialServices();
  d05Gate=new D05RCSecureGate({
@@ -522,6 +526,96 @@ app.whenReady().then(async()=>{
   }
   return {config,data:titledBankData(),connection:{...channelStatus(runtimeChannel),profileState,error}};
  }
+ // P0/v1: native MAIN approval, persisted separately from IC-READ and D05 general write.
+ const autoAllowed=()=>{if(!stablePackaged)
+  throw Error('Classificação automática pessoal: disponível apenas na distribuição estável homologada.');};
+ const autoIdle=()=>{if(syncing||restoring||autoBackupBusy||cloudPreparationBusy)
+  throw Error('Classificação automática: aguarde a operação financeira em andamento.');};
+ ipcMain.handle('bank:auto-status',event=>{
+  requireAppSender(event);return {...autoCategory.status(),available:stablePackaged};
+ });
+ ipcMain.handle('bank:auto-configure',async(event,input)=>{
+  requireAppSender(event);autoAllowed();autoIdle();
+  const ids=input?.accountIds,from=input?.startDate,to=input?.endDate;
+  if(!Array.isArray(ids)||ids.length<1||ids.length>40||new Set(ids).size!==ids.length)
+   throw Error('Selecione contas válidas.');
+  const known=new Map(db.bankOverview().accounts.map(a=>[a.id,a.name]));
+  if(ids.some(id=>!known.has(id)))throw Error('Conta bancária desconhecida.');
+  if(!mainWindow||mainWindow.isDestroyed()||!mainWindow.isFocused())
+   throw Error('Autorização pessoal exige janela ativa.');
+  const answer=await dialog.showMessageBox(mainWindow,{type:'warning',
+   buttons:['Cancelar','Autorizar categorização automática'],
+   defaultId:0,cancelId:0,noLink:true,title:'Autorizar automação por conta',
+   message:'Permitir classificação automática somente nas contas selecionadas?',
+   detail:ids.map(id=>'• '+known.get(id)).join('\n')+'\nPeríodo: '+String(from||'')+' a '+String(to||'')+
+    '\nUsa somente correções manuais concordantes e aliases explícitos. Alterações incertas vão para revisão. '+
+    'Sem LLM externo, sem modificar valores, status ou saldo; revogável nas Movimentações.'});
+  requireAppSender(event);autoIdle();
+  if(answer.response!==1||!mainWindow||mainWindow.isDestroyed())return {cancelled:true};
+  const authorization=autoCategory.configure({accountIds:ids,startDate:from,endDate:to},true);
+  autoBackupBusy=true;
+  try{
+   const outcome=await autoCategory.apply();
+   return {authorization,outcome,data:titledBankData()};
+  }finally{autoBackupBusy=false;}
+ });
+ ipcMain.handle('bank:auto-revoke',(event,accountId)=>{
+  requireAppSender(event);autoAllowed();autoIdle();return autoCategory.revoke(accountId);
+ });
+ ipcMain.handle('bank:auto-apply',async(event,input)=>{
+  requireAppSender(event);autoAllowed();autoIdle();
+  autoBackupBusy=true;
+  try{return {...await autoCategory.apply(input||{}),data:titledBankData(),status:autoCategory.status()};}
+  finally{autoBackupBusy=false;}
+ });
+ ipcMain.handle('bank:auto-correct',async(event,input)=>{
+  requireAppSender(event);autoAllowed();autoIdle();
+  if(!mainWindow||mainWindow.isDestroyed()||!mainWindow.isFocused())
+   throw Error('Correção pessoal exige aplicativo em primeiro plano.');
+  const id=input?.accountId,externalId=input?.externalId;
+  const row=db.getBankTransaction({accountId:id,externalId});
+  const target=input?.target;
+  const resolution=new (require('./d05-category-service.cjs').D05CategoryService)(db).resolve(target);
+  if(row.status!=='POSTED')throw Error('Somente POSTED pode ser corrigida nesta rota.');
+  const answer=await dialog.showMessageBox(mainWindow,{type:'question',
+   buttons:['Cancelar','Corrigir esta classificação'],defaultId:0,cancelId:0,noLink:true,
+   title:'Correção humana protegida',
+   message:'Confirmar a correção somente desta movimentação?',
+   detail:'Destino: '+resolution.parentName+(resolution.child?' › '+resolution.child.name:'')+
+    '. A correção humana prevalece sobre a automação. Faz backup e grava recibo; sem alterar valor, data ou extrato.'});
+  requireAppSender(event);autoIdle();
+  if(answer.response!==1)return {cancelled:true};
+  autoBackupBusy=true;
+  try{return {...await autoCategory.correct({accountId:id,externalId,target}),
+   status:autoCategory.status(),data:titledBankData()};}
+  finally{autoBackupBusy=false;}
+ });
+ ipcMain.handle('bank:auto-review', (event,input)=>{
+  requireAppSender(event);return autoCategory.plan(input||{});
+ });
+ ipcMain.handle('bank:auto-rule-suggestions',(event,input)=>{
+  requireAppSender(event);
+  if(!stablePackaged)return {contract:'D05/AUTO-RULE-SUGGESTIONS-V1',rules:[],changesApplied:false};
+  return autoCategory.suggestRules(input||{});
+ });
+ ipcMain.handle('bank:auto-receipt',(event,id)=>{
+  requireAppSender(event);return autoCategory.receipt(id);
+ });
+ ipcMain.handle('bank:auto-undo',async(event,input)=>{
+  requireAppSender(event);autoAllowed();autoIdle();
+  if(!mainWindow||mainWindow.isDestroyed()||!mainWindow.isFocused())
+   throw Error('Reversão exige confirmação no aplicativo ativo.');
+  const answer=await dialog.showMessageBox(mainWindow,{type:'warning',
+   buttons:['Cancelar','Desfazer e proteger da automação'],defaultId:0,cancelId:0,noLink:true,
+   title:'Reverter categorização automática',
+   message:'Desfazer somente a classificação automática selecionada?',
+   detail:'Valores e movimentações originais não serão alterados. A transação será protegida contra nova aplicação automática.'});
+  requireAppSender(event);autoIdle();
+  if(answer.response!==1)return {cancelled:true};
+  autoBackupBusy=true;
+  try{return {...await autoCategory.undo(input||{}),status:autoCategory.status(),data:titledBankData()};}
+  finally{autoBackupBusy=false;}
+ });
  ipcMain.handle('bank:status',async(event)=>{
   requireAppSender(event);return bankStatusSafe();
  });
@@ -554,7 +648,14 @@ app.whenReady().then(async()=>{
        const added=db.ingestBank(id,payload);
        newCount+=added.newCount;totalCount+=added.totalCount;
      }
-     return {...await bankStatusSafe(),newCount,totalCount};
+     let autoResult={state:'disabled_or_no_evidence',applied:0};
+     if(stablePackaged&&autoCategory.status().enabled){
+      autoBackupBusy=true;
+      try{autoResult=await autoCategory.apply();}
+      catch(_){autoResult={state:'failed_safely',error:'Sincronização salva; a automação não foi aplicada. Confira os backups e tente novamente.'};}
+      finally{autoBackupBusy=false;}
+     }
+     return {...await bankStatusSafe(),newCount,totalCount,autoCategorization:autoResult};
    }finally{syncing=false;}
  });
  // Categorização local: operações explícitas, sem expor SQL ao renderer.

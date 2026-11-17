@@ -277,6 +277,15 @@ function mfD04Render(app:any):any{
      onClick:()=>app.setState({categoryReviewOpen:false,intelligenceMainMode:'chat'})},'Voltar à conversa'),
     grant?h('button',{type:'button',className:'ghost-button',
      onClick:()=>void categoryReviewRun(app,()=>categoryReviewRefresh(app))},'Atualizar fila'):null)),
+  s.mode==='real'&&s.autoCategoryStatus?h('section',{className:'mf-d04-auto-summary',
+   role:'region','aria-label':'Categorização automática'},
+   h('strong',{},'Categorização automática do banco · '+(s.autoCategoryStatus.enabled?'Ativada':'Desativada')),
+   h('p',{},String(s.autoCategoryStatus.counts?.classified||0)+' rótulos automáticos registrados · '+
+    String(s.autoCategoryStatus.counts?.awaitingReview||0)+' movimentações requerem conferência.'),
+   h('button',{type:'button',className:'ghost-button',onClick:()=>{
+    app.setState({categoryReviewOpen:false,txSource:'bank',txReviewOnly:true});
+    app.navigate('transactions');
+   }},'Abrir fila bancária no D05')):null,
   empty,body,mfI2CategoryPanel(app),
   s.mfD04Error?h('p',{className:'mf-ai-error',role:'status'},s.mfD04Error):null,
   s.categoryReviewError?h('p',{className:'mf-ai-error',role:'alert'},s.categoryReviewError):null,
