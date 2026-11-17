@@ -1,4 +1,5 @@
 # Meu Financeiro — CircleCI Windows x64.
+param([switch]$Stable)
 # Dependências e runtime instalados apenas na VM; nenhum setup no PC do usuário.
 # Não faz deploy e não toca em dados locais, Cloudflare ou releases do GitHub.
 Set-StrictMode -Version Latest
@@ -30,7 +31,7 @@ Write-Host "Meu Financeiro | Windows x64"
 Write-Host "Branch: $branch"
 Write-Host "Commit: $sha"
 Write-Host "Versão do package.json: $version"
-Write-Host 'Build manual CircleCI, sem deploy e sem GitHub Releases.'
+Write-Host ('Build manual CircleCI: ' + $(if ($Stable) { 'STABLE com perfil preservado' } else { 'RC ISOLADA' }) + '; sem deploy ou GitHub Releases.')
 
 # Instalamos Node 22 diretamente de nodejs.org, conferindo SHA-256 oficial.
 # Isso não depende de Chocolatey, nvm, winget nem de software no PC local.
@@ -104,8 +105,9 @@ Assert-Success 'Matriz Electron de 32 capturas e manifesto JSON'
 Write-Host 'Executando comando oficial: npm run dist:windows...'
 # dist:windows executa compilação TypeScript, testes Node/SQLite e electron-builder NSIS + portable.
 # Nunca bypassar os testes em caso de erro.
-& $npmExecutable run dist:windows
-Assert-Success 'npm run dist:windows'
+$buildScript = if ($Stable) { 'dist:windows:stable' } else { 'dist:windows' }
+& $npmExecutable run $buildScript
+Assert-Success $buildScript
 
 Write-Host 'Verificando que o renderer atual corresponde ao commit e ao manifesto...'
 & $nodeExecutable scripts/renderer-provenance.cjs verify
