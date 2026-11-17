@@ -81,7 +81,8 @@ test('P0 idempotent replay and incremental sync never duplicate labels or receip
  assert.equal(e.db.db.prepare("SELECT COUNT(*) AS n FROM mf_auto_receipts WHERE action='apply'").get().n,625);
  e.db.ingestBank(ITEM_A,{item:{status:'UPDATED'},data:[{account:{
   id:ACCOUNT_A,name:'CONTA FICTÍCIA A',type:'CHECKING',currencyCode:'BRL'},transactions:[
-   gen('a-25','MERCADO BOA PRACA REF 25',25),gen('incremental-1','MERCADO BOA PRACA NOVA COMPRA',13)
+   gen('a-25','MERCADO BOA PRACA REF 25',25),
+   {...gen('incremental-1','MERCADO BOA PRACA NOVA COMPRA',13),amount:-177.77}
   ]}]});
  const next=await e.auto.apply();
  assert.equal(next.applied,1);assert.equal(e.auto.status().counts.classified,626);
