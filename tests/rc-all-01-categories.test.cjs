@@ -157,12 +157,15 @@ test('RC I2-B/C: Electron binds explicit IPC and userData remains isolated',()=>
  const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
  const main=read('electron/main.cjs'),preload=read('electron/preload.cjs'),
   ui=read('src/intelligence-review-v11.ts'),
-  tsconfig=read('tsconfig.json'),gateway=read('electron/intelligence-category-rc.cjs');
+  tsconfig=read('tsconfig.json'),gateway=read('electron/intelligence-category-rc.cjs'),
+  channel=read('electron/release-channel.cjs');
  assert.match(main,/ipcMain\.handle\('intelligence:category-personal'/);
  assert.match(main,/ipcMain\.handle\('intelligence:category-sandbox-command'/);
  assert.match(main,/dialog\.showMessageBox\(mainWindow,/);
  assert.match(main,/requireAppSender\(event\)/);
- assert.match(main,/MeuFinanceiro-RC-ALL-01-Experimental/);
+ assert.match(channel,/const ISOLATED_DIR='MeuFinanceiro-RC-ALL-01-Experimental'/);
+ assert.match(main,/const isolated=experimentalProfileDirectory\(app\);/);
+ assert.match(main,/const stableDirectory=stableProfileDirectory\(app\);/);
  assert.match(main,/app\.setPath\('userData',isolated\)/);
  assert.match(preload,/intelligenceCategoryPersonal:/);
  assert.match(preload,/intelligenceCategorySandboxStart:/);
