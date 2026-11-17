@@ -816,6 +816,26 @@ class D05Movements extends React.Component<any,any> {
        'aria-selected':autoView===v.id,'aria-controls':'mf-cat-panel-'+v.id,
        className:autoView===v.id?'is-current':'',
        onClick:()=>openAutoView(v.id)},h('small',{},v.number),v.name))),
+    autoWriteJob?h('div',{className:'mf-cat-write-state',role:'status','aria-live':'polite'},
+     h('div',{className:'mf-cat-progress-label'},
+      h('strong',{},'Aplicação em lotes · '+(autoWriteJob.state==='completed'?'Concluída':
+       autoWriteJob.state==='running'?'Gravando recibos':autoWriteJob.state==='paused'?'Pausada':
+       autoWriteJob.state==='cancelled'?'Cancelada':autoWriteJob.state==='stale'?'Prévia desatualizada':'Falha protegida')),
+      h('span',{},String(autoWriteJob.committed||0)+' / '+String(autoWriteJob.proposedTotal||0)+' commits')),
+     h('progress',{max:Math.max(1,autoWriteJob.proposedTotal||0),
+      value:Math.min(autoWriteJob.committed||0,Math.max(1,autoWriteJob.proposedTotal||0)),
+      'aria-label':'Classificações efetivamente confirmadas no SQLite'}),
+     h('p',{className:'mf-cat-footnote'},autoWriteJob.state==='completed'?
+      'Todas as propostas válidas foram processadas; confira os recibos.':
+      autoWriteJob.state==='stale'?'Dados ou autorizações mudaram. O lote está bloqueado até nova prévia.':
+      autoWriteJob.state==='failed'?'Erro de backup ou COMMIT. O que já foi confirmado possui recibo; nenhuma conclusão foi declarada.':
+      autoWriteJob.state==='cancelled'?'As classificações confirmadas permanecem. Não foi feito desfazer em massa.':
+      'A contagem só avança depois do COMMIT SQLite.'),
+     ['running','paused','failed'].includes(autoWriteJob.state)?h('div',{className:'mf-cat-toolbar'},
+      autoWriteJob.state==='running'?h('button',{type:'button',onClick:()=>void pauseWrite()},'Pausar aplicação'):
+       h('button',{type:'button',onClick:()=>void resumeWrite()},'Retomar com revalidação'),
+      h('button',{type:'button',onClick:()=>void cancelWrite()},'Cancelar novas aplicações')):null
+    ):null,
     h('div',{id:'mf-cat-panel-'+autoView,role:'tabpanel','aria-labelledby':'mf-cat-tab-'+autoView,
      className:'mf-cat-stage',tabIndex:0},
      autoView==='activation'?h('div',{className:'mf-cat-grid-layout'},
@@ -922,11 +942,10 @@ class D05Movements extends React.Component<any,any> {
          h('p',{},'A confirmação nativa revalidará o manifesto e criará backups e recibos antes de gravar.')),
         h('button',{type:'button',className:'d05-confirm',
          disabled:autoBusy||!autoInfo?.available||autoProgress?.state!=='ready'||
-          !autoPreview.previewVersion||autoPreview.candidateCount>20000||
-          autoInfo?.initialConfirmed,
+          !autoPreview.previewVersion||autoInfo?.initialConfirmed,
          onClick:()=>void runAutoAction('confirm')},'Conferi; aplicar propostas elegíveis')),
-       autoPreview.candidateCount>20000?h('p',{className:'d05-notice',role:'alert'},
-        'Acima do limite atual de 20.000 candidatos. A aplicação permanece bloqueada até a gravação paginada ser homologada.'):null
+       autoPreview.candidateCount>20000?h('p',{className:'mf-cat-caption'},
+        'Volume elevado: o motor fará commits atômicos de até 250 propostas, com progresso e recuperação persistentes.'):null
       ):h('p',{className:'mf-cat-empty'},'Nenhuma prévia confirmável nesta sessão. Autorize suas contas e execute a análise somente leitura.'),
       !autoInfo?.available?h('p',{className:'d05-notice'},'A RC experimental não possui permissão para escrita pessoal.'):null
      ):null,
