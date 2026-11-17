@@ -244,6 +244,8 @@ test('CAT04 T17 — after-sync deduplicates sync ID and does not fetch Pluggy',a
 });
 test('CAT04 T18 — manual correction refreshes learning only, no automatic writes',async()=>{
  const f=setup({accounts:1,perAccount:1});try{
+  await f.writer.authorize({scope:f.scope,accountIds:f.ids,
+   settings:{history:false,autoNew:true,uncertainToReview:true}});
   let refreshed=0;
   const s=new Cat04Scheduler({previewService:f.preview,writer:f.writer,
    scopeProvider:async()=>f.scope,accountProvider:async()=>f.ids,
