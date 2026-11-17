@@ -70,7 +70,8 @@ class D05AutoCategorization{
     state TEXT NOT NULL CHECK(state IN('running','paused','failed','stale','cancelled','completed')),
     proposed_total INTEGER NOT NULL,review_total INTEGER NOT NULL,
     future_only INTEGER NOT NULL DEFAULT 0 CHECK(future_only IN(0,1)),
-    started_at TEXT NOT NULL,finished_at TEXT,error_code TEXT
+    started_at TEXT NOT NULL,finished_at TEXT,error_code TEXT,
+    backup_path TEXT
    );
    CREATE INDEX IF NOT EXISTS mf_auto_apply_jobs_latest ON mf_auto_apply_jobs(started_at DESC);
    CREATE TABLE IF NOT EXISTS mf_auto_initial_approval(
@@ -121,9 +122,11 @@ class D05AutoCategorization{
    END;
   `);
   // Additive migration: existing synthetic/RC SQLite profiles keep prior jobs.
-  if(!this.sql.prepare("PRAGMA table_info(mf_auto_apply_jobs)").all()
-   .some(c=>c.name==='future_only'))
+  const jobColumns=this.sql.prepare("PRAGMA table_info(mf_auto_apply_jobs)").all();
+  if(!jobColumns.some(c=>c.name==='future_only'))
    this.sql.exec("ALTER TABLE mf_auto_apply_jobs ADD COLUMN future_only INTEGER NOT NULL DEFAULT 0 CHECK(future_only IN(0,1))");
+  if(!jobColumns.some(c=>c.name==='backup_path'))
+   this.sql.exec("ALTER TABLE mf_auto_apply_jobs ADD COLUMN backup_path TEXT");
   // A previously running batch cannot still be executing after a fresh
   // FinanceDB/service binding. Preserve committed receipts and require resume.
   this.sql.prepare("UPDATE mf_auto_apply_jobs SET state='paused',error_code='INTERRUPTED_ON_RESTART' WHERE state='running'").run();
@@ -459,6 +462,21 @@ class D05AutoCategorization{
    return filename;
   }catch(e){throw Error('Auto D05: proteção de backup falhou; nenhuma alteração aplicada: '+e.message);}
  }
+ verifyBatchBackup(file){
+  const safeDir=path.resolve(this.backupDirectory()),safeFile=path.resolve(file||'');
+  if(path.dirname(safeFile)!==safeDir||
+     !path.basename(safeFile).startsWith('before-d05-auto-apply-')||
+     !safeFile.endsWith('.sqlite'))
+   throw Error('Auto D05: caminho de backup do lote inválido');
+  const info=fs.statSync(safeFile);
+  if(!info.isFile()||info.size<512)throw Error('Auto D05: backup de lote ausente ou corrompido');
+  const checked=new DatabaseSync(safeFile,{readOnly:true});
+  try{
+   if(checked.prepare('PRAGMA integrity_check').get().integrity_check!=='ok')
+    throw Error('Auto D05: backup de lote inválido');
+  }finally{checked.close();}
+  return true;
+ }
  async apply({accountId=null,limit=20000,futureOnly=false,batchId=null,expectedSourceVersion=null}={}){
   if(batchId!==null&&(!/^[a-f0-9-]{36}$/i.test(batchId)||typeof expectedSourceVersion!=='string'))
    throw Error('Auto D05: lote e manifesto obrigatórios');
@@ -469,8 +487,20 @@ class D05AutoCategorization{
    if(expectedSourceVersion!==null&&current.sourceVersion!==expectedSourceVersion)
     throw Error('Auto D05: MANIFEST_STALE antes do backup');
    if(!current.candidates.length)return {applied:0,reviewCount:current.reviewCount,receipts:[],state:'no_eligible_evidence'};
-   // A verified, external online SQLite backup MUST succeed before any personal overlay write.
-   await this.backupVerified('apply');
+   // All pages share one verified, durable pre-batch SQLite backup, so a
+   // 20k run does not create 80 copies of the same growing database.
+   // Every subsequent COMMIT rechecks that snapshot and its integrity.
+   if(batchId){
+    const job=this.sql.prepare('SELECT backup_path AS backupPath,state FROM mf_auto_apply_jobs WHERE job_id=?').get(batchId);
+    if(!job||job.state!=='running')throw Error('Auto D05: lote revogado ou interrompido');
+    if(job.backupPath)this.verifyBatchBackup(job.backupPath);
+    else{
+     const created=await this.backupVerified('apply');
+     this.sql.prepare("UPDATE mf_auto_apply_jobs SET backup_path=? WHERE job_id=? AND state='running'")
+      .run(created,batchId);
+     this.verifyBatchBackup(created);
+    }
+   }else await this.backupVerified('apply');
    const f=this.finance(),sql=this.sql,at=this.clock().toISOString(),batch=batchId||randomUUID(),receipts=[];let reviewCount=current.reviewCount;
    sql.exec('BEGIN IMMEDIATE');
    try{
@@ -538,7 +568,7 @@ class D05AutoCategorization{
   const receipts=sql.prepare("SELECT COUNT(*) AS n FROM mf_auto_receipts WHERE batch_id=? AND action='apply'").get(row.job_id).n;
   return {contract:'D05/AUTO-APPLY-PAGED-V1',jobId:row.job_id,
    state:row.state,proposedTotal:row.proposed_total,reviewTotal:row.review_total,
-   futureOnly:row.future_only===1,
+   futureOnly:row.future_only===1,backupVerified:!!row.backup_path,
    committed:receipts,remaining:Math.max(0,row.proposed_total-receipts),
    isPartial:receipts<row.proposed_total,startedAt:row.started_at,finishedAt:row.finished_at,
    errorCode:row.error_code,changesApplied:receipts>0};
