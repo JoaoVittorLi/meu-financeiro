@@ -76,6 +76,11 @@ function renderMfB05Actions(app,proposals) {
    h('span',{className:'mf-b05-kicker'},'INTELLIGENCE ALIVE · PLANO DE AÇÃO'),
    h('h2',{},'Decisões melhores começam com clareza.'),
    h('p',{},'Entenda o fato, teste possibilidades e revise antes de qualquer decisão.')),
+  s.autoCategory?.available&&s.autoCategory?.enabled?.length?
+  h('aside',{className:'mf-b05-auto-status',role:'status'},
+   h('strong',{},'Categorização automática local autorizada'),
+   h('p',{},String(s.autoCategory.autoClassified||0)+' decisões registradas · '+String(s.autoCategoryReview?.total??'—')+' pendências de revisão. Sem categorização forçada.'),
+   h('button',{type:'button',className:'ghost-button',onClick:()=>app.navigate('banks')},'Gerenciar contas e autorizações')):null,
   !selected&&!items.length?h('div',{className:'mf-b05-plan-empty',role:'status'},
    h(Icon,{name:'shield',size:28}),
    h('h3',{},'Nenhuma oportunidade verificável disponível.'),
