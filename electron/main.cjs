@@ -24,6 +24,7 @@ const {D05RCSecureGate}=require('./d05-rc-gate.cjs');
 const {D05PersonalWriteGateway}=require('./d05-personal-gate.cjs');
 const {D05AutoCategorization}=require('./d05-auto-categorization.cjs');
 const {D05AutoLocalScheduler}=require('./d05-auto-local-scheduler.cjs');
+const {D05AutoPreview}=require('./d05-auto-preview.cjs');
 const {CategoryReviewService}=require('./category-review.cjs');
 const {CategoryReviewBackupGate}=require('./category-review-backup.cjs');
 const {automaticBackup,restoreBackup,listAutoBackups,validateBackupFile}=require('./recovery.cjs');
@@ -34,7 +35,7 @@ const {AIPersonalStore}=require('./ai-personal.cjs');
 const {ChatGPTSignIn}=require('./ai-auth.cjs');
 const {ChatGPTDemoClient}=require('./ai-client.cjs');
 const {buildSyntheticFinancialContext}=require('../shared/ai-financial-context.mjs');
-let planner=null, db=null, mainWindow=null, vault=null, categoryRC=null, d05Gate=null, d05PersonalGate=null, autoCategory=null, autoScheduler=null, autoDailyTimer=null, syncing=false, restoring=false, autoBackupBusy=false, cloudPreparationBusy=false, backupTimer=null, cloudPersonalTimer=null, cloudPersonalBusy=false, cloudAuthPromise=null,cloudAccessAssertion=null;
+let planner=null, db=null, mainWindow=null, vault=null, categoryRC=null, d05Gate=null, d05PersonalGate=null, autoCategory=null, autoScheduler=null, autoPreviewService=null, autoDailyTimer=null, syncing=false, restoring=false, autoBackupBusy=false, cloudPreparationBusy=false, backupTimer=null, cloudPersonalTimer=null, cloudPersonalBusy=false, cloudAuthPromise=null,cloudAccessAssertion=null;
 function backupsDirectory(){return path.join(app.getPath('userData'),'copias-de-seguranca');}
 async function ensureAutomaticBackup(){
   if(!db||restoring||syncing||autoBackupBusy)return;
@@ -230,6 +231,7 @@ app.whenReady().then(async()=>{
   autoCategory=new D05AutoCategorization({finance:()=>db,
    backupDirectory:()=>path.join(app.getPath('userData'),'d05-auto-classification-backups')});
   autoScheduler=new D05AutoLocalScheduler({finance:()=>db,engine:()=>autoCategory});
+  autoPreviewService=new D05AutoPreview({finance:()=>db,engine:()=>autoCategory});
  }
  bindLocalFinancialServices();
  d05Gate=new D05RCSecureGate({
@@ -557,8 +559,7 @@ app.whenReady().then(async()=>{
   // Native approval grants only the scoped category capability. It NEVER
   // silently applies the first batch; the owner must inspect its preview.
   const authorization=autoCategory.configure({accountIds:ids,startDate:from,endDate:to},true);
-  const preview=autoCategory.plan({limit:100});
-  return {authorization,preview,changesApplied:false};
+  return {authorization,changesApplied:false,previewRequired:true};
  });
  ipcMain.handle('bank:auto-revoke',(event,accountId)=>{
   requireAppSender(event);autoAllowed();autoIdle();return autoCategory.revoke(accountId);
@@ -579,10 +580,28 @@ app.whenReady().then(async()=>{
   if(answer.response!==1)return {cancelled:true};
   return autoScheduler.resume();
  });
+ // Separate read-only, resumable analysis. Every page is produced in MAIN,
+ // never from the renderer's 2,500-row projection.
+ ipcMain.handle('bank:auto-preview-start',event=>{
+  requireAppSender(event);autoAllowed();autoIdle();return autoPreviewService.start();
+ });
+ ipcMain.handle('bank:auto-preview-next',(event,id)=>{
+  requireAppSender(event);autoAllowed();autoIdle();return autoPreviewService.next(id,{limit:250});
+ });
+ ipcMain.handle('bank:auto-preview-pause',(event,id)=>{
+  requireAppSender(event);autoAllowed();return autoPreviewService.pause(id);
+ });
+ ipcMain.handle('bank:auto-preview-resume',(event,id)=>{
+  requireAppSender(event);autoAllowed();autoIdle();return autoPreviewService.resume(id);
+ });
+ ipcMain.handle('bank:auto-preview-cancel',(event,id)=>{
+  requireAppSender(event);autoAllowed();return autoPreviewService.cancel(id);
+ });
  ipcMain.handle('bank:auto-apply',async(event,input)=>{
   requireAppSender(event);autoAllowed();autoIdle();
   const initial=!autoCategory.initialReady();
   if(initial){
+   autoPreviewService.assertReady(input?.previewVersion);
    const preview=autoCategory.plan({limit:20000});
    if(!input?.previewVersion||input.previewVersion!==preview.previewVersion||
       preview.candidateCount>preview.candidates.length)
