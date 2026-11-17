@@ -657,6 +657,9 @@ app.whenReady().then(async()=>{
  ipcMain.handle('bank:auto-receipt',(event,id)=>{
   requireAppSender(event);return autoCategory.receipt(id);
  });
+ ipcMain.handle('bank:auto-receipts',(event,input)=>{
+  requireAppSender(event);return autoCategory.listReceipts(input||{});
+ });
  ipcMain.handle('bank:auto-undo',async(event,input)=>{
   requireAppSender(event);autoAllowed();autoIdle();
   if(!mainWindow||mainWindow.isDestroyed()||!mainWindow.isFocused())
