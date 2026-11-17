@@ -1,0 +1,81 @@
+{
+  "schema": "mf2.d03.v1.fixture",
+  "synthetic": true,
+  "asOfDate": "2026-11-13",
+  "period": {
+    "current": "2026-11-01/2026-11-13",
+    "comparison": "2026-10-01/2026-10-13",
+    "equalDays": true
+  },
+  "cents": {
+    "octExpenses": 210000,
+    "novExpenses": 272700,
+    "change": 62700
+  },
+  "categories": [
+    {
+      "name": "Moradia",
+      "oct": 100000,
+      "nov": 100000
+    },
+    {
+      "name": "Alimentação",
+      "oct": 48000,
+      "nov": 76000,
+      "limitNov": 70000
+    },
+    {
+      "name": "Lazer",
+      "oct": 25000,
+      "nov": 38000
+    },
+    {
+      "name": "Transporte",
+      "oct": 20000,
+      "nov": 24000
+    },
+    {
+      "name": "Saúde",
+      "oct": 11000,
+      "nov": 22800
+    },
+    {
+      "name": "Serviços",
+      "oct": 6000,
+      "nov": 11900
+    }
+  ],
+  "food": {
+    "deliveryOct": 15000,
+    "deliveryNov": 34000,
+    "supermarketNov": 38900,
+    "cafeNov": 3100
+  },
+  "upcoming": [
+    {
+      "id": "energia",
+      "date": "2026-11-16",
+      "name": "Energia",
+      "amount": 22000
+    },
+    {
+      "id": "internet",
+      "date": "2026-11-20",
+      "name": "Internet residencial",
+      "amount": 11900
+    },
+    {
+      "id": "academia",
+      "date": "2026-11-22",
+      "name": "Academia",
+      "amount": 10400
+    }
+  ],
+  "review": {
+    "category": "Streaming",
+    "affectedCount": 5,
+    "affectedCents": 17750,
+    "applied": false,
+    "writeAuthorized": false
+  }
+}

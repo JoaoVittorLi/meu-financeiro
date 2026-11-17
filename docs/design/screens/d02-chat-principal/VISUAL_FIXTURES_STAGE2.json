@@ -1,0 +1,91 @@
+{
+  "schema": "mf2.visual-library.stage2.fixtures.v1",
+  "synthetic": true,
+  "period": {
+    "start": "2026-10-01",
+    "end": "2026-11-30",
+    "timezone": "America/Sao_Paulo"
+  },
+  "currency": "BRL",
+  "months": {
+    "October": {
+      "incomeCents": 300000,
+      "expenseCents": 210000
+    },
+    "November": {
+      "incomeCents": 300000,
+      "expenseCents": 272700
+    }
+  },
+  "categories": [
+    {
+      "id": "home",
+      "label": "Moradia",
+      "October": 100000,
+      "November": 100000
+    },
+    {
+      "id": "food",
+      "label": "Alimentação",
+      "October": 48000,
+      "November": 76000
+    },
+    {
+      "id": "leisure",
+      "label": "Lazer",
+      "October": 25000,
+      "November": 38000
+    },
+    {
+      "id": "transport",
+      "label": "Transporte",
+      "October": 20000,
+      "November": 24000
+    },
+    {
+      "id": "health",
+      "label": "Saúde",
+      "October": 11000,
+      "November": 22800
+    },
+    {
+      "id": "services",
+      "label": "Serviços",
+      "October": 6000,
+      "November": 11900
+    }
+  ],
+  "review": {
+    "requestedCategory": "Streaming",
+    "ruleTerms": [
+      "NETFLIX.COM",
+      "SPOTIFY PREMIUM",
+      "DISNEYPLUS.COM"
+    ],
+    "selectedCount": 5,
+    "totalCents": 17750,
+    "ambiguous": [
+      "Netflix Gift Card"
+    ],
+    "applyAllowed": false
+  },
+  "states": [
+    "loading",
+    "ready",
+    "empty",
+    "partial",
+    "stale",
+    "denied",
+    "offline",
+    "error",
+    "conflict",
+    "expired",
+    "applied",
+    "undoUnavailable"
+  ],
+  "safety": {
+    "allAmountsSynthetic": true,
+    "allUserDataChangesDisabled": true,
+    "usesLiveFinancialData": false
+  }
+}

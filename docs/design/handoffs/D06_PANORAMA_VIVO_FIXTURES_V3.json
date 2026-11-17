@@ -1,0 +1,802 @@
+{
+  "schema": "D06_PANORAMA_VIVO_V3_DESIGN_FIXTURE_NOT_PRODUCTION_API",
+  "version": "3.0",
+  "approvedAt": "2026-11-17",
+  "currency": "BRL",
+  "timeZone": "America/Sao_Paulo",
+  "warning": "SYNTHETIC DESIGN TEST DATA. Not bank balances, not real transactions; never ship to personal profile, never use these daily weights for real months. The inline V3 demo label 'Serviços diversos' is synthetic; the canonical D05 category is cat:outros/shapes/hue215. A visual grouping 'Demais categorias' must have its own non-category key to avoid ID collisions.",
+  "sourceCatalog": "electron/d05-taxonomy.json and shared/d05-svg-registry.json override these examples in production",
+  "categories": [
+    {
+      "id": "cat:moradia",
+      "name": "Moradia",
+      "iconKey": "house",
+      "hue": 264,
+      "limitCents": 120000
+    },
+    {
+      "id": "cat:alimentacao",
+      "name": "Alimentação",
+      "iconKey": "utensils",
+      "hue": 26,
+      "limitCents": 70000
+    },
+    {
+      "id": "cat:lazer",
+      "name": "Lazer",
+      "iconKey": "ticket",
+      "hue": 332,
+      "limitCents": 45000
+    },
+    {
+      "id": "cat:transporte",
+      "name": "Transporte",
+      "iconKey": "car-front",
+      "hue": 205,
+      "limitCents": 32000
+    },
+    {
+      "id": "cat:saude",
+      "name": "Saúde",
+      "iconKey": "heart-pulse",
+      "hue": 166,
+      "limitCents": 30000
+    },
+    {
+      "id": "cat:outros",
+      "name": "Outros",
+      "iconKey": "shapes",
+      "hue": 215,
+      "limitCents": null
+    }
+  ],
+  "periods": {
+    "nov": {
+      "from": "2026-11-01",
+      "to": "2026-11-16",
+      "comparison": "2026-10-01/2026-10-16",
+      "budgetMonth": "2026-11"
+    },
+    "oct": {
+      "from": "2026-10-01",
+      "to": "2026-10-16",
+      "comparison": null,
+      "budgetMonth": "2026-10"
+    },
+    "week": {
+      "from": "2026-11-10",
+      "to": "2026-11-16",
+      "comparison": "2026-11-03/2026-11-09",
+      "budgetMonth": "2026-11"
+    }
+  },
+  "scenarios": {
+    "bank": {
+      "nov": {
+        "coverage": "verified",
+        "source": "bank",
+        "period": "nov",
+        "asOf": "2026-11-16T12:00:00-03:00",
+        "incomeCents": 320000,
+        "categorySpendingCents": [
+          100000,
+          76000,
+          38000,
+          24000,
+          22800,
+          11900
+        ],
+        "bankAccountReferenceCents": 456080,
+        "manualBalanceReferenceCents": null,
+        "spentCents": 272700,
+        "netCents": 47300,
+        "spentWithLimitCents": 260800,
+        "budgetTotalCents": 297000,
+        "budgetRemainingCents": 36200,
+        "dailySpentCents": [
+          8181,
+          10908,
+          13635,
+          10908,
+          92718,
+          13635,
+          10908,
+          10908,
+          10908,
+          13635,
+          13635,
+          13635,
+          10908,
+          16362,
+          13635,
+          8181
+        ],
+        "days": [
+          {
+            "date": "2026-11-01",
+            "spentCents": 8181
+          },
+          {
+            "date": "2026-11-02",
+            "spentCents": 10908
+          },
+          {
+            "date": "2026-11-03",
+            "spentCents": 13635
+          },
+          {
+            "date": "2026-11-04",
+            "spentCents": 10908
+          },
+          {
+            "date": "2026-11-05",
+            "spentCents": 92718
+          },
+          {
+            "date": "2026-11-06",
+            "spentCents": 13635
+          },
+          {
+            "date": "2026-11-07",
+            "spentCents": 10908
+          },
+          {
+            "date": "2026-11-08",
+            "spentCents": 10908
+          },
+          {
+            "date": "2026-11-09",
+            "spentCents": 10908
+          },
+          {
+            "date": "2026-11-10",
+            "spentCents": 13635
+          },
+          {
+            "date": "2026-11-11",
+            "spentCents": 13635
+          },
+          {
+            "date": "2026-11-12",
+            "spentCents": 13635
+          },
+          {
+            "date": "2026-11-13",
+            "spentCents": 10908
+          },
+          {
+            "date": "2026-11-14",
+            "spentCents": 16362
+          },
+          {
+            "date": "2026-11-15",
+            "spentCents": 13635
+          },
+          {
+            "date": "2026-11-16",
+            "spentCents": 8181
+          }
+        ],
+        "comparablePreviousCents": 231000,
+        "comparisonCoverage": "verified",
+        "flowBasis": "income",
+        "positiveResultSegmentCents": 47300,
+        "deficitIndicatorCents": 0
+      },
+      "oct": {
+        "coverage": "verified",
+        "source": "bank",
+        "period": "oct",
+        "asOf": "2026-11-16T12:00:00-03:00",
+        "incomeCents": 296000,
+        "categorySpendingCents": [
+          100000,
+          69000,
+          22000,
+          18000,
+          13400,
+          8600
+        ],
+        "bankAccountReferenceCents": 456080,
+        "manualBalanceReferenceCents": null,
+        "spentCents": 231000,
+        "netCents": 65000,
+        "spentWithLimitCents": 222400,
+        "budgetTotalCents": 297000,
+        "budgetRemainingCents": 74600,
+        "dailySpentCents": [
+          9240,
+          9240,
+          9240,
+          11550,
+          71610,
+          9240,
+          11550,
+          9240,
+          11550,
+          11550,
+          9240,
+          13860,
+          9240,
+          11550,
+          11550,
+          11550
+        ],
+        "days": [
+          {
+            "date": "2026-10-01",
+            "spentCents": 9240
+          },
+          {
+            "date": "2026-10-02",
+            "spentCents": 9240
+          },
+          {
+            "date": "2026-10-03",
+            "spentCents": 9240
+          },
+          {
+            "date": "2026-10-04",
+            "spentCents": 11550
+          },
+          {
+            "date": "2026-10-05",
+            "spentCents": 71610
+          },
+          {
+            "date": "2026-10-06",
+            "spentCents": 9240
+          },
+          {
+            "date": "2026-10-07",
+            "spentCents": 11550
+          },
+          {
+            "date": "2026-10-08",
+            "spentCents": 9240
+          },
+          {
+            "date": "2026-10-09",
+            "spentCents": 11550
+          },
+          {
+            "date": "2026-10-10",
+            "spentCents": 11550
+          },
+          {
+            "date": "2026-10-11",
+            "spentCents": 9240
+          },
+          {
+            "date": "2026-10-12",
+            "spentCents": 13860
+          },
+          {
+            "date": "2026-10-13",
+            "spentCents": 9240
+          },
+          {
+            "date": "2026-10-14",
+            "spentCents": 11550
+          },
+          {
+            "date": "2026-10-15",
+            "spentCents": 11550
+          },
+          {
+            "date": "2026-10-16",
+            "spentCents": 11550
+          }
+        ],
+        "comparablePreviousCents": null,
+        "comparisonCoverage": "insufficient",
+        "flowBasis": "income",
+        "positiveResultSegmentCents": 65000,
+        "deficitIndicatorCents": 0
+      },
+      "week": {
+        "coverage": "verified",
+        "source": "bank",
+        "period": "week",
+        "asOf": "2026-11-16T12:00:00-03:00",
+        "incomeCents": 0,
+        "categorySpendingCents": [
+          0,
+          42000,
+          24000,
+          12000,
+          13000,
+          7000
+        ],
+        "bankAccountReferenceCents": 456080,
+        "manualBalanceReferenceCents": null,
+        "spentCents": 98000,
+        "netCents": -98000,
+        "spentWithLimitCents": 91000,
+        "budgetTotalCents": 297000,
+        "budgetRemainingCents": 206000,
+        "dailySpentCents": [
+          10780,
+          17640,
+          13720,
+          11760,
+          15680,
+          14700,
+          13720
+        ],
+        "days": [
+          {
+            "date": "2026-11-10",
+            "spentCents": 10780
+          },
+          {
+            "date": "2026-11-11",
+            "spentCents": 17640
+          },
+          {
+            "date": "2026-11-12",
+            "spentCents": 13720
+          },
+          {
+            "date": "2026-11-13",
+            "spentCents": 11760
+          },
+          {
+            "date": "2026-11-14",
+            "spentCents": 15680
+          },
+          {
+            "date": "2026-11-15",
+            "spentCents": 14700
+          },
+          {
+            "date": "2026-11-16",
+            "spentCents": 13720
+          }
+        ],
+        "comparablePreviousCents": 86000,
+        "comparisonCoverage": "verified",
+        "flowBasis": "expense",
+        "positiveResultSegmentCents": 0,
+        "deficitIndicatorCents": 98000
+      }
+    },
+    "manual": {
+      "nov": {
+        "coverage": "verified",
+        "source": "manual",
+        "period": "nov",
+        "asOf": "2026-11-16T12:00:00-03:00",
+        "incomeCents": 200000,
+        "categorySpendingCents": [
+          60000,
+          43200,
+          21000,
+          16000,
+          14800,
+          12400
+        ],
+        "bankAccountReferenceCents": null,
+        "manualBalanceReferenceCents": 193850,
+        "spentCents": 167400,
+        "netCents": 32600,
+        "spentWithLimitCents": 155000,
+        "budgetTotalCents": 297000,
+        "budgetRemainingCents": 142000,
+        "dailySpentCents": [
+          8370,
+          6696,
+          11718,
+          5022,
+          38502,
+          10044,
+          6696,
+          10044,
+          11718,
+          10044,
+          6696,
+          8370,
+          8370,
+          8370,
+          10044,
+          6696
+        ],
+        "days": [
+          {
+            "date": "2026-11-01",
+            "spentCents": 8370
+          },
+          {
+            "date": "2026-11-02",
+            "spentCents": 6696
+          },
+          {
+            "date": "2026-11-03",
+            "spentCents": 11718
+          },
+          {
+            "date": "2026-11-04",
+            "spentCents": 5022
+          },
+          {
+            "date": "2026-11-05",
+            "spentCents": 38502
+          },
+          {
+            "date": "2026-11-06",
+            "spentCents": 10044
+          },
+          {
+            "date": "2026-11-07",
+            "spentCents": 6696
+          },
+          {
+            "date": "2026-11-08",
+            "spentCents": 10044
+          },
+          {
+            "date": "2026-11-09",
+            "spentCents": 11718
+          },
+          {
+            "date": "2026-11-10",
+            "spentCents": 10044
+          },
+          {
+            "date": "2026-11-11",
+            "spentCents": 6696
+          },
+          {
+            "date": "2026-11-12",
+            "spentCents": 8370
+          },
+          {
+            "date": "2026-11-13",
+            "spentCents": 8370
+          },
+          {
+            "date": "2026-11-14",
+            "spentCents": 8370
+          },
+          {
+            "date": "2026-11-15",
+            "spentCents": 10044
+          },
+          {
+            "date": "2026-11-16",
+            "spentCents": 6696
+          }
+        ],
+        "comparablePreviousCents": 150000,
+        "comparisonCoverage": "verified",
+        "flowBasis": "income",
+        "positiveResultSegmentCents": 32600,
+        "deficitIndicatorCents": 0
+      },
+      "oct": {
+        "coverage": "verified",
+        "source": "manual",
+        "period": "oct",
+        "asOf": "2026-11-16T12:00:00-03:00",
+        "incomeCents": 190000,
+        "categorySpendingCents": [
+          60000,
+          38000,
+          18000,
+          14000,
+          11000,
+          9000
+        ],
+        "bankAccountReferenceCents": null,
+        "manualBalanceReferenceCents": 193850,
+        "spentCents": 150000,
+        "netCents": 40000,
+        "spentWithLimitCents": 141000,
+        "budgetTotalCents": 297000,
+        "budgetRemainingCents": 156000,
+        "dailySpentCents": [
+          10500,
+          9000,
+          6000,
+          7500,
+          30000,
+          10500,
+          6000,
+          9000,
+          10500,
+          9000,
+          7500,
+          9000,
+          7500,
+          7500,
+          7500,
+          3000
+        ],
+        "days": [
+          {
+            "date": "2026-10-01",
+            "spentCents": 10500
+          },
+          {
+            "date": "2026-10-02",
+            "spentCents": 9000
+          },
+          {
+            "date": "2026-10-03",
+            "spentCents": 6000
+          },
+          {
+            "date": "2026-10-04",
+            "spentCents": 7500
+          },
+          {
+            "date": "2026-10-05",
+            "spentCents": 30000
+          },
+          {
+            "date": "2026-10-06",
+            "spentCents": 10500
+          },
+          {
+            "date": "2026-10-07",
+            "spentCents": 6000
+          },
+          {
+            "date": "2026-10-08",
+            "spentCents": 9000
+          },
+          {
+            "date": "2026-10-09",
+            "spentCents": 10500
+          },
+          {
+            "date": "2026-10-10",
+            "spentCents": 9000
+          },
+          {
+            "date": "2026-10-11",
+            "spentCents": 7500
+          },
+          {
+            "date": "2026-10-12",
+            "spentCents": 9000
+          },
+          {
+            "date": "2026-10-13",
+            "spentCents": 7500
+          },
+          {
+            "date": "2026-10-14",
+            "spentCents": 7500
+          },
+          {
+            "date": "2026-10-15",
+            "spentCents": 7500
+          },
+          {
+            "date": "2026-10-16",
+            "spentCents": 3000
+          }
+        ],
+        "comparablePreviousCents": null,
+        "comparisonCoverage": "insufficient",
+        "flowBasis": "income",
+        "positiveResultSegmentCents": 40000,
+        "deficitIndicatorCents": 0
+      },
+      "week": {
+        "coverage": "verified",
+        "source": "manual",
+        "period": "week",
+        "asOf": "2026-11-16T12:00:00-03:00",
+        "incomeCents": 0,
+        "categorySpendingCents": [
+          0,
+          14000,
+          11000,
+          9000,
+          7000,
+          4000
+        ],
+        "bankAccountReferenceCents": null,
+        "manualBalanceReferenceCents": 193850,
+        "spentCents": 45000,
+        "netCents": -45000,
+        "spentWithLimitCents": 41000,
+        "budgetTotalCents": 297000,
+        "budgetRemainingCents": 256000,
+        "dailySpentCents": [
+          5400,
+          7650,
+          7200,
+          6300,
+          6300,
+          5850,
+          6300
+        ],
+        "days": [
+          {
+            "date": "2026-11-10",
+            "spentCents": 5400
+          },
+          {
+            "date": "2026-11-11",
+            "spentCents": 7650
+          },
+          {
+            "date": "2026-11-12",
+            "spentCents": 7200
+          },
+          {
+            "date": "2026-11-13",
+            "spentCents": 6300
+          },
+          {
+            "date": "2026-11-14",
+            "spentCents": 6300
+          },
+          {
+            "date": "2026-11-15",
+            "spentCents": 5850
+          },
+          {
+            "date": "2026-11-16",
+            "spentCents": 6300
+          }
+        ],
+        "comparablePreviousCents": 41000,
+        "comparisonCoverage": "verified",
+        "flowBasis": "expense",
+        "positiveResultSegmentCents": 0,
+        "deficitIndicatorCents": 45000
+      }
+    }
+  },
+  "expectedExamples": {
+    "bankNovember": {
+      "incomeCents": 320000,
+      "expenseCents": 272700,
+      "netCents": 47300,
+      "positiveFlowSumCents": 320000,
+      "categoryDistributionSumCents": 272700,
+      "foodExcessCents": 6000,
+      "foodPercentRounded": 109,
+      "selectedBudgetSpentCents": 260800,
+      "totalBudgetsCents": 297000,
+      "remainingBudgetCents": 36200
+    },
+    "bankOctober": {
+      "incomeCents": 296000,
+      "expenseCents": 231000,
+      "netCents": 65000,
+      "noComparableHistory": true
+    },
+    "bankWeek": {
+      "incomeCents": 0,
+      "expenseCents": 98000,
+      "netCents": -98000,
+      "flowBasis": "expense",
+      "requiresNegativeResultSeparate": true,
+      "budgetMonth": "2026-11"
+    },
+    "manualNovember": {
+      "incomeCents": 200000,
+      "expenseCents": 167400,
+      "netCents": 32600,
+      "referenceManualBalanceCents": 193850,
+      "notSummedWithBankBalanceCents": 456080
+    },
+    "manualWeek": {
+      "incomeCents": 0,
+      "expenseCents": 45000,
+      "netCents": -45000,
+      "flowBasis": "expense"
+    }
+  },
+  "edgeCases": [
+    {
+      "id": "empty",
+      "coverage": "verified",
+      "incomeCents": 0,
+      "expenseCents": 0,
+      "expected": "no flow paths; no fabricated category; empty state"
+    },
+    {
+      "id": "partial_bank_balance",
+      "coverage": "partial",
+      "accounts": [
+        {
+          "balanceCents": 120000
+        },
+        {
+          "balanceCents": null
+        }
+      ],
+      "expected": "reference balance partial; no comprehensive account total"
+    },
+    {
+      "id": "truncated_bank_history",
+      "coverage": "partial",
+      "expected": "disable comparative historical claims, label incomplete coverage"
+    },
+    {
+      "id": "stale",
+      "coverage": "stale",
+      "expected": "show source timestamp and warning; invalidate live projection"
+    },
+    {
+      "id": "denied",
+      "coverage": "denied",
+      "expected": "no personal data and no financial animations"
+    },
+    {
+      "id": "privacy_masked",
+      "privacy": true,
+      "expected": "no numbers or relative magnitudes exposed in chart, map, labels, drawers or ARIA"
+    },
+    {
+      "id": "income_zero_expenses_positive",
+      "incomeCents": 0,
+      "expenseCents": 98000,
+      "expected": "expense-based category distribution; negative result separate"
+    },
+    {
+      "id": "expense_greater_than_income",
+      "incomeCents": 10000,
+      "expenseCents": 25000,
+      "expected": "do not present entire expense as part of income"
+    },
+    {
+      "id": "budget_limit_zero",
+      "limitCents": 0,
+      "spentCents": 10000,
+      "expected": "do not divide by 0 or show 100% fake"
+    },
+    {
+      "id": "budget_limit_null",
+      "limitCents": null,
+      "spentCents": 10000,
+      "expected": "unconfigured budget; not same as zero"
+    },
+    {
+      "id": "unclassified_spending",
+      "expenseCents": 10000,
+      "categorizedCents": 7000,
+      "unclassifiedCents": 3000,
+      "expected": "unclassified must reconcile in flow/list rather than disappear"
+    },
+    {
+      "id": "all_other_group",
+      "expenseCents": 45000,
+      "categoryGroupsMoreThan5": true,
+      "expected": "Other sum valid; cannot lose any category"
+    },
+    {
+      "id": "transfers_and_ignore",
+      "entries": [
+        {
+          "nature": "transfer",
+          "cents": 5000
+        },
+        {
+          "nature": "ignore",
+          "cents": 2000
+        }
+      ],
+      "expected": "exclude from expense universe per domain contract"
+    },
+    {
+      "id": "pending_bank_transaction",
+      "bankStatus": "PENDING",
+      "expected": "do not count as POSTED income/expense"
+    },
+    {
+      "id": "mid_gesture_period_change",
+      "expected": "cancel outgoing RAF; new snapshot wins; no cross-profile interpolation"
+    },
+    {
+      "id": "reduced_motion",
+      "expected": "information identical and fully keyboard operable without pulses"
+    }
+  ]
+}

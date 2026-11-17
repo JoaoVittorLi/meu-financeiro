@@ -1,0 +1,171 @@
+{
+  "schema": "mf2.d03.approved.v2.1.fixture",
+  "approvedDesignVersion": "D03 V2",
+  "synthetic": true,
+  "asOf": "2026-11-13T19:46:00-03:00",
+  "currency": "BRL",
+  "comparisonWindow": {
+    "currentStart": "2026-11-01",
+    "currentEnd": "2026-11-13",
+    "previousStart": "2026-10-01",
+    "previousEnd": "2026-10-13",
+    "equalDays": true
+  },
+  "balanceAvailableCents": 170000,
+  "incomeExpectedCents": 0,
+  "extraOutflowExpectedCents": 0,
+  "safetyBufferCents": 100000,
+  "coverage": {
+    "balance": "verified",
+    "expenses": "verified",
+    "futureCommitments": "verified",
+    "budgets": "verified",
+    "review": "synthetic"
+  },
+  "commitments": [
+    {
+      "id": "energia",
+      "due": "2026-11-16",
+      "label": "Energia",
+      "amountCents": 22000,
+      "status": "scheduled_unpaid"
+    },
+    {
+      "id": "internet",
+      "due": "2026-11-20",
+      "label": "Internet residencial",
+      "amountCents": 11900,
+      "status": "scheduled_unpaid"
+    },
+    {
+      "id": "academia",
+      "due": "2026-11-22",
+      "label": "Academia",
+      "amountCents": 10400,
+      "status": "scheduled_unpaid"
+    }
+  ],
+  "expenses": [
+    {
+      "id": "moradia",
+      "name": "Moradia",
+      "previousCents": 100000,
+      "currentCents": 100000
+    },
+    {
+      "id": "alimentacao",
+      "name": "Alimentação",
+      "previousCents": 48000,
+      "currentCents": 76000,
+      "budgetCents": 70000
+    },
+    {
+      "id": "lazer",
+      "name": "Lazer",
+      "previousCents": 25000,
+      "currentCents": 38000
+    },
+    {
+      "id": "transporte",
+      "name": "Transporte",
+      "previousCents": 20000,
+      "currentCents": 24000
+    },
+    {
+      "id": "saude",
+      "name": "Saúde",
+      "previousCents": 11000,
+      "currentCents": 22800
+    },
+    {
+      "id": "servicos",
+      "name": "Serviços",
+      "previousCents": 6000,
+      "currentCents": 11900
+    }
+  ],
+  "foodGroups": [
+    {
+      "id": "super",
+      "name": "Supermercados",
+      "currentCents": 38900
+    },
+    {
+      "id": "delivery",
+      "name": "Delivery",
+      "previousCents": 15000,
+      "currentCents": 34000
+    },
+    {
+      "id": "cafe",
+      "name": "Cafeteria",
+      "currentCents": 3100
+    }
+  ],
+  "review": {
+    "ruleName": "Streaming",
+    "affected": [
+      {
+        "id": "n",
+        "name": "Netflix",
+        "cents": 4490
+      },
+      {
+        "id": "s",
+        "name": "Spotify Premium",
+        "cents": 2190
+      },
+      {
+        "id": "d",
+        "name": "Disney+",
+        "cents": 4390
+      },
+      {
+        "id": "a",
+        "name": "Assinatura A",
+        "cents": 3340
+      },
+      {
+        "id": "b",
+        "name": "Assinatura B",
+        "cents": 3340
+      }
+    ],
+    "applyAllowed": false
+  },
+  "scenarios": [
+    {
+      "id": "headroom",
+      "balanceCents": 170000,
+      "projectedCents": 125700,
+      "marginCents": 25700,
+      "reserveSuggestionCents": 12850,
+      "signal": "save"
+    },
+    {
+      "id": "tight",
+      "balanceCents": 115000,
+      "projectedCents": 70700,
+      "belowBufferCents": 29300,
+      "signal": "tight"
+    },
+    {
+      "id": "deficit",
+      "balanceCents": 35000,
+      "projectedCents": -9300,
+      "signal": "deficit"
+    },
+    {
+      "id": "near",
+      "balanceCents": 145000,
+      "projectedCents": 100700,
+      "marginCents": 700,
+      "signal": "steady"
+    },
+    {
+      "id": "unknown",
+      "balanceCents": null,
+      "signal": "unknown"
+    }
+  ]
+}

@@ -1,0 +1,220 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="background:#101112;margin:0;padding:12px">
+<div id="mfvr0911" data-theme="dark" data-view="principal">
+<style>
+#mfvr0911{--bg:#141414;--surface:#1a1a1a;--s2:#202328;--s3:#2b2d32;--line:#303034;--fg:#fafafa;--muted:#b1b1ba;--red:#ff7a88;--green:#53d896;--redbg:#382328;--greenbg:#173329;--shadow:#0003;--track:#35363b;font:12px/1.6 "Segoe UI Variable","Segoe UI",system-ui,sans-serif;color:var(--fg)}
+#mfvr0911[data-theme="light"]{--bg:#f4f4f6;--surface:#fff;--s2:#f4f4f5;--s3:#ebebed;--line:#e5e5e8;--fg:#171717;--muted:#64646e;--red:#c92a3c;--green:#087e49;--redbg:#fcebef;--greenbg:#e8f8ef;--shadow:#0001;--track:#e4e5e8}
+#mfvr0911 *,#mfvr0911 *:before,#mfvr0911 *:after{box-sizing:border-box}
+#mfvr0911 button{font:inherit;color:var(--fg);cursor:pointer}#mfvr0911 [hidden]{display:none!important}
+#mfvr0911 button:focus-visible,#mfvr0911 summary:focus-visible{outline:2px solid var(--green);outline-offset:2px}
+#mfvr0911 .frame{border-radius:16px;border:1px solid var(--line);background:var(--bg);overflow:hidden}
+#mfvr0911 .previewbar{padding:12px 14px;display:flex;gap:9px;justify-content:space-between;align-items:center;flex-wrap:wrap;border-bottom:1px solid var(--line)}
+#mfvr0911 .seg{display:inline-flex;gap:3px;align-items:center;padding:3px;border-radius:10px;border:1px solid var(--line);background:var(--s2)}
+#mfvr0911 .seg button{font-size:11px;color:var(--muted);padding:8px 11px;border:0;border-radius:7px;background:transparent;font-weight:650}
+#mfvr0911 .seg button[aria-pressed="true"]{color:var(--fg);background:var(--s3);box-shadow:0 1px 3px var(--shadow)}
+#mfvr0911 .ghost{background:transparent;border:1px solid var(--line);padding:8px 11px;font-size:11px;border-radius:9px;color:var(--fg)}
+#mfvr0911 .ghost:hover,#mfvr0911 .seg button:hover{background:var(--s3);color:var(--fg)}
+#mfvr0911 .stage{padding:23px 15px 27px}
+#mfvr0911 .canvas{max-width:800px;margin:auto;transition:max-width .22s}
+#mfvr0911[data-view="analise"] .canvas{max-width:1130px}
+#mfvr0911[data-view="lateral"] .canvas{max-width:470px}
+#mfvr0911[data-view="mobile"] .canvas{max-width:370px}
+#mfvr0911 .user{max-width:86%;width:fit-content;margin:0 0 19px auto;padding:11px 14px;border-radius:15px 15px 5px 15px;background:var(--s3);color:var(--fg);font-size:12px}
+#mfvr0911 .speaker{display:flex;gap:9px;align-items:center;color:var(--muted);font-size:11px;margin:0 0 10px}
+#mfvr0911 .speaker i{font-style:normal;display:grid;place-items:center;width:25px;height:25px;border-radius:8px;background:var(--greenbg);color:var(--green);font-size:16px}
+#mfvr0911 .lead{font-size:12px;color:var(--fg);line-height:1.76;margin:0 0 19px}
+#mfvr0911 strong,#mfvr0911 b{font-weight:730}
+#mfvr0911 .card{border:1px solid var(--line);border-radius:18px;padding:20px;background:var(--surface);box-shadow:0 5px 22px var(--shadow)}
+#mfvr0911 .header{display:flex;align-items:start;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:18px}
+#mfvr0911 .eyebrow{color:var(--muted);font-size:10px;font-weight:770;letter-spacing:1px;text-transform:uppercase}
+#mfvr0911 .header h3{font-size:19px;letter-spacing:-.5px;line-height:1.3;color:var(--fg);margin:5px 0 4px}
+#mfvr0911 .sub{font-size:10px;color:var(--muted)}
+#mfvr0911 .hero{background:linear-gradient(115deg,var(--redbg),var(--s2));border:1px solid var(--line);padding:17px;border-radius:15px;margin-bottom:15px}
+#mfvr0911 .hero-main{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:5px}
+#mfvr0911 .big{font-size:clamp(28px,3.5vw,36px);font-weight:800;letter-spacing:-1.1px;line-height:1.2;color:var(--red);font-variant-numeric:tabular-nums}
+#mfvr0911 .change-pill{background:var(--redbg);border:1px solid color-mix(in srgb,var(--red) 22%,var(--line));color:var(--red);font-size:11px;font-weight:760;border-radius:20px;padding:6px 10px}
+#mfvr0911 .hero-base{display:flex;flex-wrap:wrap;gap:8px 19px;margin-top:14px;color:var(--muted);font-size:10px}
+#mfvr0911 .hero-base b{color:var(--fg);font-variant-numeric:tabular-nums}
+#mfvr0911 .stack-title{display:flex;justify-content:space-between;gap:10px;margin:17px 0 8px;font-size:10px;color:var(--muted)}
+#mfvr0911 .stack-title b{color:var(--fg)}
+#mfvr0911 .stack{display:flex;width:100%;height:11px;border-radius:15px;overflow:hidden;background:var(--track)}
+#mfvr0911 .stack button{height:100%;border:0;border-right:1px solid var(--surface);border-radius:0;padding:0;min-width:0;transition:opacity .16s,filter .16s}
+#mfvr0911 .stack button:hover,#mfvr0911 .stack button[aria-pressed="true"]{filter:brightness(1.3)}
+#mfvr0911 .stack-note{color:var(--muted);font-size:10px;margin-top:6px}
+#mfvr0911 .insight{margin:13px 0 20px;display:flex;gap:9px;align-items:flex-start;color:var(--muted);font-size:11px}
+#mfvr0911 .insight .star{color:var(--green);font-size:16px;line-height:1.2}
+#mfvr0911 .insight b{color:var(--fg)}
+#mfvr0911 .sectionhead{display:flex;gap:10px;justify-content:space-between;align-items:baseline;flex-wrap:wrap;margin:21px 0 12px}
+#mfvr0911 .sectionhead strong{font-size:12px;color:var(--fg)}
+#mfvr0911 .sectionhead small{color:var(--muted);font-size:10px}
+#mfvr0911 .rankcontrols{display:flex;gap:9px;justify-content:space-between;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+#mfvr0911 .filters{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:12px}
+#mfvr0911 .filters button{padding:6px 10px;border-radius:30px;border:1px solid transparent;background:transparent;color:var(--muted);font-size:10px}
+#mfvr0911 .filters button:hover{background:var(--s2);color:var(--fg)}
+#mfvr0911 .filters button[aria-pressed="true"]{background:var(--s2);border-color:var(--line);color:var(--fg);font-weight:730}
+#mfvr0911 .rank-and-details{display:grid;grid-template-columns:minmax(0,1fr);gap:15px}
+#mfvr0911[data-view="analise"] .rank-and-details{grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr)}
+#mfvr0911 .ranking{display:grid;gap:5px;align-content:start;min-width:0}
+#mfvr0911 .rank{display:grid;grid-template-columns:25px minmax(0,1fr) 105px;gap:10px;text-align:left;width:100%;border:1px solid transparent;border-radius:12px;padding:10px 11px;align-items:center;background:transparent;color:var(--fg);transition:background .15s,transform .15s,border-color .15s}
+#mfvr0911 .rank:hover{background:var(--s2);transform:translateX(2px)}
+#mfvr0911 .rank[aria-pressed="true"]{background:var(--s2);border-color:var(--line)}
+#mfvr0911 .rank-index{font-size:10px;font-weight:700;color:var(--muted);align-self:start;margin-top:2px}
+#mfvr0911 .rank-body{min-width:0}
+#mfvr0911 .rank-head{display:flex;justify-content:space-between;gap:6px;margin-bottom:7px;align-items:baseline}
+#mfvr0911 .rank-name{font-size:11.5px;font-weight:730;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#mfvr0911 .rank-head small{font-size:9px;color:var(--muted);white-space:nowrap}
+#mfvr0911 .bar{display:block;height:7px;border-radius:10px;background:var(--track);overflow:hidden}
+#mfvr0911 .bar i{display:block;height:100%;border-radius:9px;background:var(--accent);transition:width .22s}
+#mfvr0911 .rank-end{text-align:right;min-width:0;font-variant-numeric:tabular-nums}
+#mfvr0911 .rank-end strong{font-size:12.5px;display:block;white-space:nowrap;color:var(--red)}
+#mfvr0911 .rank-end strong.stable{color:var(--muted)}
+#mfvr0911 .rank-end strong.favorable{color:var(--green)}
+#mfvr0911 .rank-end small{display:block;font-size:9px;color:var(--muted);margin-top:3px}
+#mfvr0911 .detail{border-top:1px solid var(--line);padding-top:17px;margin-top:17px;color:var(--fg);animation:vr0911fade .2s}
+#mfvr0911[data-view="analise"] .detail{border:1px solid var(--line);border-radius:14px;background:var(--s2);margin:0;padding:16px;align-self:start}
+#mfvr0911 .detailtop{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+#mfvr0911 .detail-title{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:770;color:var(--fg)}
+#mfvr0911 .dot{display:inline-block;width:9px;height:9px;background:var(--accent);border-radius:3px;flex-shrink:0}
+#mfvr0911 .detail-amount{font-size:21px;color:var(--red);letter-spacing:-.6px;font-weight:770;font-variant-numeric:tabular-nums;white-space:nowrap}
+#mfvr0911 .detail-amount.neutral{color:var(--muted)}
+#mfvr0911 .detail-amount.favorable{color:var(--green)}
+#mfvr0911 .chips{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0 13px}
+#mfvr0911 .chip{padding:5px 9px;color:var(--muted);border:1px solid var(--line);background:var(--s2);font-size:10px;border-radius:25px}
+#mfvr0911 .chip.negative{color:var(--red);background:var(--redbg)}
+#mfvr0911 .compare{border:1px solid var(--line);background:var(--s2);border-radius:13px;padding:13px}
+#mfvr0911[data-view="analise"] .compare{background:var(--surface)}
+#mfvr0911 .compare-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+#mfvr0911 .compare-grid>div:not(:first-child){border-left:1px solid var(--line);padding-left:9px}
+#mfvr0911 .compare-grid small{display:block;color:var(--muted);font-size:10px}
+#mfvr0911 .compare-grid strong{display:block;color:var(--fg);font-size:clamp(12px,2vw,18px);font-variant-numeric:tabular-nums;letter-spacing:-.5px;white-space:nowrap;margin-top:5px}
+#mfvr0911 .compare-grid strong.red{color:var(--red)}
+#mfvr0911 .compare-grid strong.green{color:var(--green)}
+#mfvr0911 .explain{font-size:11px;color:var(--muted);margin:13px 0;line-height:1.7}
+#mfvr0911 .actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+#mfvr0911 .btn{padding:9px 12px;min-height:36px;font-size:11px;font-weight:700;background:var(--s2);border:1px solid var(--line);border-radius:10px;color:var(--fg)}
+#mfvr0911 .btn:hover{background:var(--s3)}
+#mfvr0911 .btn.primary{background:var(--green);border-color:var(--green);color:#11271c}
+#mfvr0911 .btn.link{background:transparent;border-color:transparent;color:var(--fg)}
+#mfvr0911 .tx{margin-top:13px;background:var(--s2);border:1px solid var(--line);border-radius:12px;padding:12px}
+#mfvr0911 .tx-head{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+#mfvr0911 .tx-head strong{color:var(--fg);font-size:11px}
+#mfvr0911 .monthbuttons{display:flex;gap:3px}
+#mfvr0911 .monthbuttons button{font-size:10px;padding:6px 9px;background:transparent;border:1px solid transparent;border-radius:8px;color:var(--muted)}
+#mfvr0911 .monthbuttons button[aria-pressed="true"]{background:var(--s3);color:var(--fg);border-color:var(--line)}
+#mfvr0911 .txrow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);font-size:11px;color:var(--fg)}
+#mfvr0911 .txrow:last-child{border-bottom:0}
+#mfvr0911 .txrow small{display:block;font-size:9px;color:var(--muted);margin-top:3px}
+#mfvr0911 .txrow strong{font-variant-numeric:tabular-nums;white-space:nowrap}
+#mfvr0911 .empty{padding:25px 14px;text-align:center;border:1px dashed var(--line);border-radius:13px;background:var(--s2);color:var(--fg)}
+#mfvr0911 .empty strong{font-size:13px;color:var(--fg)}#mfvr0911 .empty p{font-size:11px;color:var(--muted);margin:9px auto 13px;max-width:350px}
+#mfvr0911 .source{margin-top:20px;padding-top:13px;border-top:1px solid var(--line);font-size:10px;color:var(--muted)}
+#mfvr0911 .source summary{cursor:pointer;font-weight:600;color:var(--muted)}
+#mfvr0911 .source p{font-size:10px;line-height:1.7}
+#mfvr0911 .feedback{display:flex;align-items:center;gap:7px;font-size:10px;color:var(--muted);margin:11px 0 0}
+#mfvr0911 .feedback strong{color:var(--fg)}
+#mfvr0911[data-view="lateral"] .card,#mfvr0911[data-view="mobile"] .card{padding:13px}
+#mfvr0911[data-view="lateral"] .rank,#mfvr0911[data-view="mobile"] .rank{grid-template-columns:18px minmax(0,1fr) 82px;gap:6px;padding:9px 7px}
+#mfvr0911[data-view="lateral"] .rank-head small,#mfvr0911[data-view="mobile"] .rank-head small{display:none}
+#mfvr0911[data-view="lateral"] .rank-end strong,#mfvr0911[data-view="mobile"] .rank-end strong{font-size:11px}
+#mfvr0911[data-view="lateral"] .stack-title,#mfvr0911[data-view="lateral"] .stack,#mfvr0911[data-view="lateral"] .stack-note,#mfvr0911[data-view="mobile"] .stack-title,#mfvr0911[data-view="mobile"] .stack,#mfvr0911[data-view="mobile"] .stack-note{display:none}
+#mfvr0911[data-view="mobile"] .stage{padding:14px 7px}
+#mfvr0911[data-view="mobile"] .hero{padding:12px}
+#mfvr0911[data-view="mobile"] .hero .big{font-size:27px}
+#mfvr0911[data-view="mobile"] .compare-grid{gap:4px}
+#mfvr0911[data-view="mobile"] .compare-grid>div:not(:first-child){padding-left:6px}
+#mfvr0911[data-view="mobile"] .compare-grid strong{font-size:11px}
+@media(max-width:620px){#mfvr0911 .stage{padding:13px 7px}#mfvr0911 .card{padding:12px}#mfvr0911 .hero{padding:12px}#mfvr0911 .big{font-size:27px}#mfvr0911 .rank-and-details{grid-template-columns:1fr!important}#mfvr0911 .rank{grid-template-columns:18px minmax(0,1fr) 82px;gap:5px;padding:9px 6px}#mfvr0911 .rank-head small{display:none}#mfvr0911 .rank-end strong{font-size:11px}#mfvr0911 .compare-grid{gap:4px}#mfvr0911 .compare-grid>div:not(:first-child){padding-left:6px}#mfvr0911 .compare-grid strong{font-size:11px}#mfvr0911 .seg button{padding:7px 8px;font-size:10px}#mfvr0911 .previewbar{padding:10px 8px}#mfvr0911 .header h3{font-size:17px}#mfvr0911 .rankcontrols .seg{width:100%}#mfvr0911 .rankcontrols .seg button{flex:1}}
+@keyframes vr0911fade{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){#mfvr0911 *,#mfvr0911 *:before,#mfvr0911 *:after{animation:none!important;transition:none!important;transform:none!important}}
+</style>
+<div class="frame">
+ <div class="previewbar">
+  <div class="seg" aria-label="Formato da visualização">
+   <button type="button" data-view="principal" aria-pressed="true">Principal</button><button type="button" data-view="analise" aria-pressed="false">Análise</button><button type="button" data-view="lateral" aria-pressed="false">Lateral</button><button type="button" data-view="mobile" aria-pressed="false">Mobile</button>
+  </div>
+  <button type="button" class="ghost" id="vr0911-theme">◐ Tema claro</button>
+ </div>
+ <div class="stage"><div class="canvas">
+  <div class="user">Quais gastos mais contribuíram para o aumento das minhas despesas?</div>
+  <div class="speaker"><i>✦</i> Assistente Financeiro</div>
+  <p class="lead">Suas despesas cresceram <strong>R$ 627,00</strong> em novembro. <strong>Alimentação</strong> teve o maior impacto em reais, enquanto <strong>Saúde</strong> apresentou o maior crescimento percentual.</p>
+  <article class="card">
+   <div class="header"><div><div class="eyebrow">Análise comparativa</div><h3>O que mudou nos seus gastos</h3><div class="sub">Outubro → novembro de 2026</div></div><div class="sub" style="margin-top:10px">6 categorias · dados consolidados</div></div>
+   <section class="hero" aria-label="Resumo do aumento"><div class="eyebrow">Aumento total das despesas</div><div class="hero-main"><strong class="big">+ R$ 627,00</strong><span class="change-pill">↑ 29,9%</span></div><div class="hero-base"><span>Outubro <b>R$ 2.100,00</b></span><span>Novembro <b>R$ 2.727,00</b></span></div><div class="stack-title"><b>Contribuição para o aumento</b><span>Selecione uma categoria</span></div><div id="vr0911-stack" class="stack"></div><div class="stack-note">As faixas representam os R$ 627,00 adicionais, não o total das despesas.</div></section>
+   <div class="insight"><span class="star">✦</span><span><b>Alimentação e Lazer</b> juntas acrescentaram R$ 410,00, ou 65,4% do aumento. O ranking abaixo mostra exatamente quanto mudou em cada categoria.</span></div>
+   <div class="sectionhead"><strong>Ranking de categorias</strong><small id="vr0911-orderdesc">Ordenado pelo impacto em reais</small></div>
+   <div class="rankcontrols"><div class="seg" aria-label="Critério de ordenação"><button type="button" data-metric="impact" aria-pressed="true">Impacto em R$</button><button type="button" data-metric="relative" aria-pressed="false">Crescimento em %</button></div></div>
+   <div class="filters" aria-label="Filtrar variações"><button type="button" data-filter="all" aria-pressed="true">Todas</button><button type="button" data-filter="increase" aria-pressed="false">Aumentos</button><button type="button" data-filter="decrease" aria-pressed="false">Reduções</button><button type="button" data-filter="stable" aria-pressed="false">Sem mudança</button></div>
+   <div class="rank-and-details"><div class="ranking" id="vr0911-list"></div><div class="detail" id="vr0911-detail" aria-live="polite"></div></div>
+   <details class="source"><summary>Como essa comparação é calculada</summary><p>O impacto compara os valores em reais. O crescimento percentual usa o valor da própria categoria em outubro como referência. A contribuição ao aumento é calculada sobre a diferença total de R$ 627,00. Isso identifica onde os gastos mudaram, não o motivo de cada compra. Números fictícios usados apenas nesta revisão visual.</p></details>
+  </article>
+ </div></div>
+</div>
+</div>
+<script>
+(function(){
+ const root=document.getElementById('mfvr0911');if(!root||root.dataset.init)return;root.dataset.init='yes';
+ const $=q=>root.querySelector(q);
+ const money=n=>new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(n);
+ const pct=n=>new Intl.NumberFormat('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1}).format(n)+'%';
+ const colors={food:'#e7a094',leisure:'#b8a0dc',health:'#dbaf76',services:'#79b1b5',transport:'#9baec8',home:'#a7aab1'};
+ const entries=[
+ {id:'food',name:'Alimentação',oct:480,nov:760,transactions:{oct:[['Supermercado',300],['Delivery',150],['Cafeteria',30]],nov:[['Supermercado',389],['Delivery',340],['Cafeteria',31]]}},
+ {id:'leisure',name:'Lazer',oct:250,nov:380,transactions:{oct:[['Cinema e passeios',100],['Atividades de lazer',100],['Assinaturas',50]],nov:[['Cinema e passeios',145],['Atividades de lazer',130],['Assinaturas',105]]}},
+ {id:'health',name:'Saúde',oct:110,nov:228,transactions:{oct:[['Farmácia',60],['Academia',50]],nov:[['Farmácia',124],['Academia',104]]}},
+ {id:'services',name:'Serviços',oct:60,nov:119,transactions:{oct:[['Internet residencial',60]],nov:[['Internet residencial',119]]}},
+ {id:'transport',name:'Transporte',oct:200,nov:240,transactions:{oct:[['Abastecimento',140],['Corridas',60]],nov:[['Abastecimento',180],['Corridas',60]]}},
+ {id:'home',name:'Moradia',oct:1000,nov:1000,transactions:{oct:[['Aluguel',1000]],nov:[['Aluguel',1000]]}}
+ ];
+ const st={view:'principal',theme:'dark',metric:'impact',filter:'all',selected:'food',txVisible:false,txMonth:'nov',showAllCompact:false};
+ const diff=c=>c.nov-c.oct,rate=c=>c.oct===0?null:diff(c)/c.oct*100;
+ const totalPrevious=entries.reduce((s,x)=>s+x.oct,0),totalCurrent=entries.reduce((s,x)=>s+x.nov,0),totalDelta=totalCurrent-totalPrevious;
+ const selected=()=>entries.find(c=>c.id===st.selected)||entries[0];
+ function visible(){return entries.filter(c=>st.filter==='all'||(st.filter==='increase'&&diff(c)>0)||(st.filter==='decrease'&&diff(c)<0)||(st.filter==='stable'&&diff(c)===0)).sort((a,b)=>{
+  const v=c=>st.metric==='impact'?Math.abs(diff(c)):Math.abs(rate(c)||0);
+  return v(b)-v(a)||a.name.localeCompare(b.name,'pt-BR');
+ });}
+ function bar(){const list=entries.filter(x=>diff(x)>0).sort((a,b)=>diff(b)-diff(a));$('#vr0911-stack').innerHTML=list.map(x=>`<button type="button" data-category="${x.id}" aria-label="${x.name}: ${money(diff(x))}, ${pct(diff(x)/totalDelta*100)} do aumento" aria-pressed="${st.selected===x.id}" style="width:${diff(x)/totalDelta*100}%;background:${colors[x.id]};opacity:${st.selected===x.id?'1':'.78'}" title="${x.name} · ${money(diff(x))}"></button>`).join('')}
+ function row(x,i,max){const dv=diff(x),v=st.metric==='impact'?Math.abs(dv):Math.abs(rate(x)||0),width=max>0?(v/max*100):0;
+  const primary=st.metric==='impact'?(dv>0?'+ ':'')+money(dv):rate(x)==null?'Indisponível':(rate(x)>0?'+ ':'')+pct(rate(x));
+  const secondary=st.metric==='impact'?(dv===0?'Sem variação':pct(dv/totalDelta*100)+' do aumento'):(dv>0?'+ ':'')+money(dv);
+  return `<button type="button" data-category="${x.id}" aria-pressed="${st.selected===x.id}" class="rank" style="--accent:${colors[x.id]}"><span class="rank-index">${String(i+1).padStart(2,'0')}</span><span class="rank-body"><span class="rank-head"><strong class="rank-name">${x.name}</strong><small>${pct(dv/totalDelta*100)} da variação</small></span><span class="bar"><i style="width:${width}%"></i></span></span><span class="rank-end"><strong class="${dv===0?'stable':dv<0?'favorable':''}">${primary}</strong><small>${secondary}</small></span></button>`}
+ function list(){const all=visible();let show=all;
+  if(st.view==='lateral'&&!st.showAllCompact)show=all.slice(0,3);
+  if(!all.some(x=>x.id===st.selected)&&all.length){st.selected=all[0].id;st.txVisible=false}
+  if(!all.length){$('#vr0911-list').innerHTML=`<div class="empty"><strong>${st.filter==='decrease'?'Nenhuma redução neste período':'Nenhuma categoria encontrada'}</strong><p>${st.filter==='decrease'?'Todas as categorias mantiveram ou aumentaram seus valores. Você pode voltar a visualizar os aumentos ou todas as categorias.':'Este filtro não encontrou resultados para os dados disponíveis.'}</p><button class="btn" type="button" data-filter="all">Mostrar todas</button></div>`;$('#vr0911-detail').hidden=true;return}
+  $('#vr0911-detail').hidden=false;
+  const max=Math.max(1,...all.map(c=>st.metric==='impact'?Math.abs(diff(c)):Math.abs(rate(c)||0)));
+  $('#vr0911-list').innerHTML=show.map((c,i)=>row(c,i,max)).join('')+(show.length<all.length?`<button type="button" class="btn" data-action="showall">Mostrar as ${all.length} categorias ↓</button>`:'');
+ }
+ function details(){const el=$('#vr0911-detail');if(el.hidden)return;const c=selected(),d=diff(c),r=rate(c);
+  const msg=d===0?`Os gastos de ${c.name} ficaram iguais nos dois períodos.`:st.metric==='relative'&&r>100?`${c.name} teve crescimento percentual alto porque começou com uma base menor em outubro. O impacto absoluto foi de ${money(d)}.`:`${c.name} acrescentou ${money(d)} ao total, equivalente a ${pct(d/totalDelta*100)} da variação entre os meses. Isso não identifica, sozinho, por que cada compra foi realizada.`;
+  el.innerHTML=`<div class="detailtop"><div class="detail-title"><i class="dot" style="--accent:${colors[c.id]}"></i>${c.name}</div><strong class="detail-amount ${d===0?'neutral':d<0?'favorable':''}">${d>0?'+ ':''}${money(d)}</strong></div>
+ <div class="chips"><span class="chip">${pct(d/totalDelta*100)} da variação total</span><span class="chip ${d>0?'negative':''}">${r===null?'Sem base percentual':(r>0?'+ ':'')+pct(r)} vs. outubro</span></div>
+ <div class="compare"><div class="compare-grid"><div><small>Outubro</small><strong>${money(c.oct)}</strong></div><div><small>Novembro</small><strong>${money(c.nov)}</strong></div><div><small>Diferença</small><strong class="${d>0?'red':d<0?'green':''}" style="${d>0?'color:var(--red)':d<0?'color:var(--green)':''}">${d>0?'+ ':''}${money(d)}</strong></div></div></div>
+ <p class="explain">${msg}</p>
+ <div class="actions"><button type="button" class="btn primary" data-action="transactions">${st.txVisible?'Ocultar movimentações ↑':'Ver movimentações ↓'}</button><button type="button" class="btn link" data-action="switchmetric">${st.metric==='impact'?'Ver crescimento em % ↗':'Ver impacto em R$ ↗'}</button></div>
+ ${st.txVisible?transactions(c):''}`;
+ }
+ function transactions(c){const tx=c.transactions[st.txMonth],sum=tx.reduce((s,r)=>s+r[1],0);
+ return `<div class="tx"><div class="tx-head"><strong>Movimentações · ${c.name}</strong><div class="monthbuttons"><button type="button" data-month="oct" aria-pressed="${st.txMonth==='oct'}">Outubro</button><button type="button" data-month="nov" aria-pressed="${st.txMonth==='nov'}">Novembro</button></div></div>${tx.map(t=>`<div class="txrow"><span>${t[0]}<small>${st.txMonth==='oct'?'Outubro':'Novembro'} de 2026</small></span><strong>− ${money(t[1])}</strong></div>`).join('')}<div class="txrow"><strong>Total conferido</strong><strong>${money(sum)}</strong></div></div>`}
+ function render(){root.dataset.theme=st.theme;root.dataset.view=st.view;
+  $('#vr0911-theme').textContent=st.theme==='dark'?'◐ Tema claro':'◐ Tema escuro';
+  root.querySelectorAll('[data-view]').forEach(x=>{if(x.tagName==='BUTTON')x.setAttribute('aria-pressed',String(x.dataset.view===st.view))});
+  root.querySelectorAll('[data-metric]').forEach(x=>x.setAttribute('aria-pressed',String(x.dataset.metric===st.metric)));
+  root.querySelectorAll('[data-filter]').forEach(x=>x.setAttribute('aria-pressed',String(x.dataset.filter===st.filter)));
+  $('#vr0911-orderdesc').textContent=st.metric==='impact'?'Ordenado pelo impacto em reais':'Ordenado pelo crescimento percentual';
+  list();bar();details();
+ }
+ root.addEventListener('click',e=>{
+  const view=e.target.closest('button[data-view]');if(view){st.view=view.dataset.view;st.showAllCompact=false;render();return}
+  const metric=e.target.closest('button[data-metric]');if(metric){st.metric=metric.dataset.metric;st.showAllCompact=false;render();return}
+  const filter=e.target.closest('button[data-filter]');if(filter){st.filter=filter.dataset.filter;st.showAllCompact=false;st.txVisible=false;render();return}
+  const category=e.target.closest('button[data-category]');if(category){st.selected=category.dataset.category;st.txVisible=false;render();return}
+  const month=e.target.closest('button[data-month]');if(month){st.txMonth=month.dataset.month;details();return}
+  const action=e.target.closest('button[data-action]');if(action){const a=action.dataset.action;if(a==='transactions'){st.txVisible=!st.txVisible;details()}else if(a==='switchmetric'){st.metric=st.metric==='impact'?'relative':'impact';render()}else if(a==='showall'){st.showAllCompact=true;render()}return}
+ });
+ $('#vr0911-theme').addEventListener('click',()=>{st.theme=st.theme==='dark'?'light':'dark';render()});
+ render();
+})();
+</script>
+</body></html>

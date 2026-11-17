@@ -1,0 +1,142 @@
+{
+  "version": "D02-VISUAL-LIBRARY-V3",
+  "status": "DESIGN_SPECIFIED_FROM_APPROVED_REFERENCES",
+  "sources": [
+    "D01-V4.5",
+    "VR-07-V2",
+    "VR-08-V1",
+    "VR-09-V1.1",
+    "VR-10-V2-conversation"
+  ],
+  "dark": {
+    "bg": "#141414",
+    "surface": "#1a1a1a",
+    "surface2": "#202328",
+    "surface3": "#2b2d32",
+    "border": "#303034",
+    "text": "#fafafa",
+    "muted": "#b1b1ba",
+    "positive": "#53d896",
+    "negative": "#ff7a88",
+    "warning": "#f5bc63",
+    "positiveBg": "#173329"
+  },
+  "light": {
+    "bg": "#f4f4f6",
+    "surface": "#ffffff",
+    "surface2": "#f4f4f5",
+    "surface3": "#ebebed",
+    "border": "#e5e5e8",
+    "text": "#171717",
+    "muted": "#64646e",
+    "positive": "#087e49",
+    "negative": "#c92a3c",
+    "warning": "#975b00",
+    "positiveBg": "#e8f8ef"
+  },
+  "heatScale": {
+    "use": "ordered magnitude of increase in spending only; not universal status indicator",
+    "dark": {
+      "steps": [
+        "#ff516a",
+        "#ff7470",
+        "#fa935d",
+        "#f4b350",
+        "#f4d363"
+      ],
+      "text": [
+        "#ff7d8c",
+        "#ff9992",
+        "#ffad7b",
+        "#ffcc7b",
+        "#ffe18a"
+      ],
+      "neutral": "#b1b1ba"
+    },
+    "light": {
+      "steps": [
+        "#ff516a",
+        "#ff7470",
+        "#fa935d",
+        "#f4b350",
+        "#f4d363"
+      ],
+      "text": [
+        "#b62c41",
+        "#b43c35",
+        "#9e4a1d",
+        "#805500",
+        "#776000"
+      ],
+      "neutral": "#64646e"
+    },
+    "assignment": "rank positive category deltas DESC; map rank 0..4 to palette steps 0..4; rank>=5 use step 4; delta<=0 neutral (or green for confirmed reduction with separate semantics); never imply absolute causal attribution"
+  },
+  "density": {
+    "compact": {
+      "targetWidthPx": 520,
+      "visibleVisuals": 1,
+      "detail": "kpi summary + CTA to full analysis"
+    },
+    "standard": {
+      "targetWidthPx": 840,
+      "visibleVisuals": 3,
+      "detail": "1 primary + at most 2 secondary"
+    },
+    "analysis": {
+      "targetWidthPct": 55,
+      "detail": "on-demand drilldowns, filters, evidence"
+    },
+    "mobile": {
+      "minWidthPx": 320,
+      "maxWidthPx": 420,
+      "minTouchHeightPx": 44,
+      "detail": "stack cards and lists; full screen sensitive dialogs"
+    }
+  },
+  "geometry": {
+    "radiiPx": {
+      "card": 16,
+      "internal": 11,
+      "button": 10,
+      "modal": 20
+    },
+    "spacingPx": [
+      4,
+      8,
+      12,
+      16,
+      24,
+      32
+    ],
+    "heatTrackHeightPx": 6,
+    "heatTrackRadiusPx": 10,
+    "bodyMinFontPx": 12,
+    "controlTouchMinFontPx": 11
+  },
+  "motion": {
+    "hoverMs": 150,
+    "entryMs": 200,
+    "panelMs": 240,
+    "barResizeMs": 220,
+    "chartDrawMaxMs": 320,
+    "noFakeProgress": true,
+    "reducedMotion": true,
+    "approvedOnlyAfterVerification": true
+  },
+  "accessibility": {
+    "textContrast": "WCAG AA 4.5:1",
+    "essentialIconContrast": "WCAG AA 3:1",
+    "keyboard": true,
+    "visibleFocus": true,
+    "chartTableFallback": true,
+    "notOnlyColor": true
+  },
+  "financial": {
+    "monetaryMinorUnits": true,
+    "neverHallucinateFacts": true,
+    "sourceAttribution": true,
+    "safeReadOnlyDefault": true,
+    "writeRequiresPreviewRevalidationExplicitConsent": true
+  }
+}

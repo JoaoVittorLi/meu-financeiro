@@ -1,0 +1,94 @@
+{
+  "schema": "mf2.design.d04.v1.1",
+  "designStatus": "APPROVED_DIRECTION_POLISHED",
+  "synthetic": true,
+  "personalWriteAllowed": false,
+  "asOf": "2026-11-13",
+  "currency": "BRL",
+  "proposals": [
+    {
+      "id": "streaming",
+      "kind": "category_rule",
+      "status": "pending",
+      "source": "Inteligência",
+      "currentCategory": "Outros",
+      "proposedCategory": "Streaming",
+      "color": "#53d896",
+      "matchTerms": [
+        "Netflix",
+        "Spotify",
+        "Disney",
+        "Streaming"
+      ],
+      "pastScope": true,
+      "futureScope": true,
+      "revision": 1,
+      "previewVersion": "synthetic-streaming-v1",
+      "coverage": "synthetic_complete",
+      "candidates": [
+        {
+          "id": "netflix",
+          "name": "Netflix",
+          "date": "2026-11-04",
+          "amountCents": 4490
+        },
+        {
+          "id": "spotify",
+          "name": "Spotify Premium",
+          "date": "2026-11-06",
+          "amountCents": 2190
+        },
+        {
+          "id": "disney",
+          "name": "Disney+",
+          "date": "2026-11-08",
+          "amountCents": 4390
+        },
+        {
+          "id": "stream-a",
+          "name": "Streaming A",
+          "date": "2026-11-10",
+          "amountCents": 3340
+        },
+        {
+          "id": "stream-b",
+          "name": "Streaming B",
+          "date": "2026-11-12",
+          "amountCents": 3340
+        }
+      ]
+    },
+    {
+      "id": "market",
+      "kind": "category_change",
+      "status": "pending",
+      "source": "Movimentações",
+      "currentCategory": "Outros",
+      "proposedCategory": "Alimentação",
+      "revision": 1,
+      "previewVersion": "synthetic-market-v1",
+      "coverage": "synthetic_complete",
+      "candidates": [
+        {
+          "id": "market-one",
+          "name": "Mercado Central",
+          "date": "2026-11-11",
+          "amountCents": 38900
+        }
+      ]
+    },
+    {
+      "id": "budget",
+      "kind": "budget_change",
+      "status": "pending",
+      "source": "Inteligência Hoje",
+      "currentLimitCents": 70000,
+      "proposedLimitCents": 80000,
+      "spentCents": 76000,
+      "revision": 1,
+      "previewVersion": "synthetic-budget-v1",
+      "coverage": "synthetic_complete",
+      "candidates": []
+    }
+  ]
+}
