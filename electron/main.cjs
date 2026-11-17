@@ -174,7 +174,8 @@ const runtimeChannel=smokeProfileActive?'smoke':releaseChannel(app);
 const experimentalPackaged=runtimeChannel==='experimental';
 const stablePackaged=runtimeChannel==='stable';
 function forbidExperimentalNetwork(){
- if(experimentalPackaged)throw Error('RC experimental offline: conexão bancária, nuvem e IA externa estão desativadas.');
+ if(experimentalPackaged||smokeProfileActive)
+  throw Error('RC/smoke isolado: conexão bancária, nuvem e IA externa estão desativadas.');
 }
 if(experimentalPackaged){
  const isolated=experimentalProfileDirectory(app);
