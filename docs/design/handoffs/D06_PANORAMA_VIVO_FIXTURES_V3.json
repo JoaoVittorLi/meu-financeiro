@@ -4,7 +4,7 @@
   "approvedAt": "2026-11-17",
   "currency": "BRL",
   "timeZone": "America/Sao_Paulo",
-  "warning": "SYNTHETIC DESIGN TEST DATA. Not bank balances, not real transactions; never ship to personal profile, never use these daily weights for real months.",
+  "warning": "SYNTHETIC DESIGN TEST DATA. Not bank balances, not real transactions; never ship to personal profile, never use these daily weights for real months. The inline V3 demo label 'Serviços diversos' is synthetic; the canonical D05 category is cat:outros/shapes/hue215. A visual grouping 'Demais categorias' must have its own non-category key to avoid ID collisions.",
   "sourceCatalog": "electron/d05-taxonomy.json and shared/d05-svg-registry.json override these examples in production",
   "categories": [
     {
@@ -43,10 +43,10 @@
       "limitCents": 30000
     },
     {
-      "id": "cat:servicos-diversos",
-      "name": "Serviços diversos",
-      "iconKey": "package",
-      "hue": 226,
+      "id": "cat:outros",
+      "name": "Outros",
+      "iconKey": "shapes",
+      "hue": 215,
       "limitCents": null
     }
   ],
