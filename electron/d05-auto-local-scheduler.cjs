@@ -50,6 +50,11 @@ class D05AutoLocalScheduler{
   if(this.running)return {state:'busy',applied:0};
   if(this.isPaused())return {state:'paused',applied:0};
   const engine=this.engine();
+  // Never let unattended work overtake an approved but unfinished initial page
+  // job, or a stale/failed manifest requiring explicit owner resolution.
+  const pendingBatch=engine.batchStatus();
+  if(pendingBatch&&['running','paused','failed','stale'].includes(pendingBatch.state))
+   return {state:'initial_batch_requires_resolution',applied:0,jobId:pendingBatch.jobId};
   // Never activate an unconfirmed first batch, or re-enable a revoked grant.
   if(!engine.status().enabled||!engine.initialReady())
    return {state:'awaiting_explicit_consent_or_first_confirmation',applied:0};
