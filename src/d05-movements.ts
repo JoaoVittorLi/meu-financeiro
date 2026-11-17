@@ -80,6 +80,7 @@ class D05Movements extends React.Component<any,any> {
  const [confirmedIdentity,setConfirmedIdentity]=useState(null as any);
  const [autoInfo,setAutoInfo]=useState(null as any);
  const [autoPreview,setAutoPreview]=useState(null as any);
+ const [autoProgress,setAutoProgress]=useState(null as any);
  const [autoSelected,setAutoSelected]=useState(new Set<string>());
  const [autoStart,setAutoStart]=useState('2000-01-01');
  const [autoEnd,setAutoEnd]=useState('2099-12-31');
@@ -87,6 +88,7 @@ class D05Movements extends React.Component<any,any> {
  const [autoBusy,setAutoBusy]=useState(false);
  const [autoMessage,setAutoMessage]=useState('');
  const [autoRules,setAutoRules]=useState([] as any[]);
+ const autoScanRef=useRef({jobId:null as string|null,stop:false});
  const activeTrigger=useRef(null as any);
  const modalRef=useRef(null as any);
  const refreshId=useRef(0);
@@ -160,6 +162,50 @@ class D05Movements extends React.Component<any,any> {
    const result=await bridge.bankAutoStatus();setAutoInfo(result);
   }
  };
+ // The renderer never receives the whole history: each MAIN call advances
+ // at most 250 real SQLite rows, and progress survives process restarts.
+ const scanAutoPages=async(jobId:string)=>{
+  autoScanRef.current.jobId=jobId;
+  autoScanRef.current.stop=false;
+  while(!autoScanRef.current.stop){
+   const next=await bridge.bankAutoPreviewNext(jobId);
+   if(autoScanRef.current.stop)break;
+   setAutoProgress(next);
+   if(next.state==='ready'){
+    setAutoPreview(next.preview);
+    setAutoMessage('Análise de todo o histórico concluída sem categorizar. Revise a prévia antes de confirmar.');
+    break;
+   }
+   if(next.state!=='scanning')break;
+   // Yield so the UI can display progress and accept pause/cancel interactions.
+   await new Promise<void>(resolve=>setTimeout(resolve,0));
+  }
+ };
+ const pauseAutoScan=async()=>{
+  const id=autoScanRef.current.jobId;
+  if(!id||!bridge?.bankAutoPreviewPause)return;
+  autoScanRef.current.stop=true;
+  try{setAutoProgress(await bridge.bankAutoPreviewPause(id));
+   setAutoMessage('Análise pausada; nenhuma categoria foi aplicada.');}
+  catch(e:any){setAutoMessage(String(e?.message||e));}
+ };
+ const resumeAutoScan=async()=>{
+  const id=autoScanRef.current.jobId;
+  if(!id||!bridge?.bankAutoPreviewResume)return;
+  setAutoBusy(true);setAutoMessage('');
+  try{setAutoProgress(await bridge.bankAutoPreviewResume(id));await scanAutoPages(id);}
+  catch(e:any){setAutoMessage(String(e?.message||e));}
+  finally{setAutoBusy(false);}
+ };
+ const cancelAutoScan=async()=>{
+  const id=autoScanRef.current.jobId;
+  if(!id||!bridge?.bankAutoPreviewCancel)return;
+  autoScanRef.current.stop=true;
+  try{await bridge.bankAutoPreviewCancel(id);autoScanRef.current.jobId=null;
+   setAutoProgress(null);setAutoPreview(null);
+   setAutoMessage('Análise cancelada; nenhuma classificação aplicada.');}
+  catch(e:any){setAutoMessage(String(e?.message||e));}
+ };
  const runAutoAction=async(action:string,accountId:string|null=null)=>{
   if(!bridge||autoBusy||state.mode!=='real')return;
   setAutoBusy(true);setAutoMessage('');
@@ -167,15 +213,26 @@ class D05Movements extends React.Component<any,any> {
    let result:any;
    if(action==='enable'){
     result=await bridge.bankAutoConfigure({accountIds:Array.from(autoSelected),startDate:autoStart,endDate:autoEnd});
-    setAutoPreview(result?.preview||null);
+    autoScanRef.current.stop=true;autoScanRef.current.jobId=null;
+    setAutoProgress(null);setAutoPreview(null);
    }else if(action==='revoke'){
-    result=await bridge.bankAutoRevoke(accountId);setAutoPreview(null);
+    result=await bridge.bankAutoRevoke(accountId);autoScanRef.current.stop=true;
+    setAutoProgress(null);setAutoPreview(null);
    }else if(action==='pause')result=await bridge.bankAutoPause();
    else if(action==='resume')result=await bridge.bankAutoResume();
    else if(action==='preview'){
-    result=await bridge.bankAutoReview({limit:100});
-    setAutoPreview(result);
-    setAutoMessage('Prévia somente leitura concluída. Confira os exemplos e as contagens antes de aplicar.');
+    if(!bridge.bankAutoPreviewStart||!bridge.bankAutoPreviewNext)
+     throw Error('Serviço de prévia paginada indisponível no preload.');
+    const started=await bridge.bankAutoPreviewStart();
+    autoScanRef.current.jobId=started.jobId;
+    setAutoProgress(started);
+    setAutoPreview(null);
+    if(started.state==='ready'){
+     setAutoPreview(started.preview);
+     setAutoMessage('Análise anterior concluída e revalidada; nenhuma categoria aplicada.');
+    }else if(started.state==='paused'){
+     setAutoMessage('Análise anterior pausada. Use Retomar.');
+    }else await scanAutoPages(started.jobId);
     return;
    }else if(action==='confirm'){
     if(!autoPreview?.previewVersion)throw Error('Analise o histórico antes de confirmar.');
