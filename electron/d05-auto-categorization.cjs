@@ -66,7 +66,7 @@ class D05AutoCategorization{
     FOREIGN KEY(account_id,external_id) REFERENCES bank_transactions(account_id,external_id) ON DELETE CASCADE
    );
    CREATE TABLE IF NOT EXISTS mf_auto_receipts(
-    id TEXT PRIMARY KEY,batch_id TEXT NOT NULL,action TEXT NOT NULL CHECK(action IN('apply','undo')),
+    id TEXT PRIMARY KEY,batch_id TEXT NOT NULL,action TEXT NOT NULL CHECK(action IN('apply','undo','correct')),
     account_id TEXT NOT NULL,external_id TEXT NOT NULL,
     before_category_id TEXT, before_subcategory_id TEXT,
     after_category_id TEXT,after_subcategory_id TEXT,
@@ -144,7 +144,7 @@ class D05AutoCategorization{
    ORDER BY b.date,b.account_id,b.external_id`).all().map(r=>({...r,hasSplits:!!r.hasSplits,blockedByFeedback:!!r.blockedByFeedback,hasAuto:!!r.hasAuto}));
  }
  plan({limit=100,accountId=null}={}){
-  if(!Number.isInteger(limit)||limit<1||limit>1000)throw Error('Auto D05: limite inválido');
+  if(!Number.isInteger(limit)||limit<1||limit>20000)throw Error('Auto D05: limite inválido');
   if(accountId!==null)requireString(accountId,'conta');
   const permissions=this.permissions().filter(p=>p.enabled===1&&(!accountId||p.accountId===accountId));
   const sql=this.sql,rules=this.finance().listCategories().rules.filter(r=>r.enabled);
@@ -198,23 +198,27 @@ class D05AutoCategorization{
    review:review.slice(0,limit),reviewCount,perAccount,
    contract:'D05/AUTO-CATEGORY-PLAN-V1',changesApplied:false};
  }
- async apply({accountId=null,limit=100}={}){
+ async backupVerified(operation){
+  const dir=this.backupDirectory();fs.mkdirSync(dir,{recursive:true,mode:0o700});
+  const filename=path.join(dir,'before-d05-auto-'+operation+'-'+randomUUID()+'.sqlite');
+  try{
+   await this.finance().backupTo(filename);
+   const verified=new DatabaseSync(filename,{readOnly:true});
+   try{if(verified.prepare('PRAGMA integrity_check').get().integrity_check!=='ok')
+    throw Error('Auto D05: backup inválido');}
+   finally{verified.close();}
+   return filename;
+  }catch(e){throw Error('Auto D05: proteção de backup falhou; nenhuma alteração aplicada: '+e.message);}
+ }
+ async apply({accountId=null,limit=20000}={}){
   if(this.busy)throw Error('Auto D05: aplicação concorrente');
   this.busy=true;
   try{
    const current=this.plan({accountId,limit});
    if(!current.candidates.length)return {applied:0,reviewCount:current.reviewCount,receipts:[],state:'no_eligible_evidence'};
    // A verified, external online SQLite backup MUST succeed before any personal overlay write.
-   const f=this.finance(),dir=this.backupDirectory();
-   fs.mkdirSync(dir,{recursive:true,mode:0o700});
-   const backupFile=path.join(dir,'before-d05-auto-'+randomUUID()+'.sqlite');
-   try{
-    await f.backupTo(backupFile);
-    const probe=new DatabaseSync(backupFile,{readOnly:true});
-    try{if(probe.prepare('PRAGMA integrity_check').get().integrity_check!=='ok')throw Error('Auto D05: backup inválido');}
-    finally{probe.close();}
-   }catch(e){throw Error('Auto D05: falha do backup. Nenhuma classificação aplicada: '+e.message);}
-   const sql=this.sql,at=this.clock().toISOString(),batch=randomUUID(),receipts=[];let reviewCount=current.reviewCount;
+   await this.backupVerified('apply');
+   const f=this.finance(),sql=this.sql,at=this.clock().toISOString(),batch=randomUUID(),receipts=[];let reviewCount=current.reviewCount;
    sql.exec('BEGIN IMMEDIATE');
    try{
     // Recompute from authoritative DB INSIDE transaction. Do not trust renderer's plan.
@@ -255,9 +259,12 @@ class D05AutoCategorization{
   requireString(id,'recibo');
   return this.sql.prepare('SELECT * FROM mf_auto_receipts WHERE id=?').get(id)||null;
  }
- undo({accountId,externalId}){
+ async undo({accountId,externalId}){
   requireString(accountId,'conta');requireString(externalId,'movimentação');
-  const sql=this.sql,at=this.clock().toISOString(),batch=randomUUID();
+  const sql=this.sql,existing=sql.prepare('SELECT 1 FROM mf_auto_labels WHERE account_id=? AND external_id=?').get(accountId,externalId);
+  if(!existing)return {undone:false};
+  await this.backupVerified('undo');
+  const at=this.clock().toISOString(),batch=randomUUID();
   sql.exec('BEGIN IMMEDIATE');
   try{
    const row=sql.prepare('SELECT * FROM mf_auto_labels WHERE account_id=? AND external_id=?').get(accountId,externalId);
@@ -274,6 +281,41 @@ class D05AutoCategorization{
      null,null,row.source_fingerprint,row.evidence_hash,perm?.revision||0,at);
    sql.exec('COMMIT');
    return {undone:true,receiptId:id,needsReview:true};
+  }catch(e){sql.exec('ROLLBACK');throw e;}
+ }
+ async correct({accountId,externalId,target}){
+  requireString(accountId,'conta');requireString(externalId,'movimentação');
+  if(!target||typeof target!=='object')throw Error('Auto D05: categoria final inválida');
+  const f=this.finance(),resolved=new D05CategoryService(f).resolve(target),sql=this.sql;
+  const initial=sql.prepare('SELECT * FROM mf_auto_labels WHERE account_id=? AND external_id=?').get(accountId,externalId);
+  if(!initial)throw Error('Auto D05: classificação automática não encontrada');
+  const bank=sql.prepare('SELECT account_id AS accountId,external_id AS externalId,date,description,amount_cents AS amountCents,status FROM bank_transactions WHERE account_id=? AND external_id=?').get(accountId,externalId);
+  if(!bank||bank.status!=='POSTED'||fingerprint(bank)!==initial.source_fingerprint)
+   throw Error('Auto D05: movimento bancário mudou; reavalie antes de corrigir');
+  await this.backupVerified('correct');
+  const at=this.clock().toISOString(),batch=randomUUID(),id=randomUUID();
+  sql.exec('BEGIN IMMEDIATE');
+  try{
+   const current=sql.prepare('SELECT * FROM mf_auto_labels WHERE account_id=? AND external_id=?').get(accountId,externalId);
+   const latest=sql.prepare('SELECT account_id AS accountId,external_id AS externalId,date,description,amount_cents AS amountCents,status FROM bank_transactions WHERE account_id=? AND external_id=?').get(accountId,externalId);
+   if(!current||!latest||fingerprint(latest)!==current.source_fingerprint||
+      current.source_fingerprint!==initial.source_fingerprint)
+    throw Error('Auto D05: classificação desatualizada; não modificar');
+   if(sql.prepare('SELECT 1 FROM bank_category_overrides WHERE account_id=? AND external_id=?').get(accountId,externalId))
+    throw Error('Auto D05: correção manual prévia protegida');
+   new D05CategoryService(f).assignBank({accountId,externalId,target});
+   sql.prepare('DELETE FROM mf_auto_labels WHERE account_id=? AND external_id=?').run(accountId,externalId);
+   sql.prepare(`INSERT INTO mf_auto_feedback(account_id,external_id,reason,recorded_at)
+    VALUES (?,?,?,?) ON CONFLICT(account_id,external_id) DO UPDATE SET reason=excluded.reason,recorded_at=excluded.recorded_at`)
+    .run(accountId,externalId,'explicit_manual_correction',at);
+   const revision=sql.prepare('SELECT revision FROM mf_auto_permissions WHERE account_id=?').get(accountId)?.revision||0;
+   sql.prepare(`INSERT INTO mf_auto_receipts(id,batch_id,action,account_id,external_id,
+    before_category_id,before_subcategory_id,after_category_id,after_subcategory_id,
+    source_fingerprint,evidence_hash,consent_revision,at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`)
+    .run(id,batch,'correct',accountId,externalId,current.category_id,current.subcategory_id,
+     resolved.categoryId,resolved.subcategoryId,current.source_fingerprint,current.evidence_hash,revision,at);
+   sql.exec('COMMIT');
+   return {corrected:true,receiptId:id,target:{categoryId:resolved.categoryId,subcategoryId:resolved.subcategoryId}};
   }catch(e){sql.exec('ROLLBACK');throw e;}
  }
 }
