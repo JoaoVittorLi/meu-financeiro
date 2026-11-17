@@ -3,6 +3,7 @@
 // variable can grant a packaged RC access to the stable financial profile.
 const fs=require('node:fs'),path=require('node:path');
 const {DatabaseSync,backup}=require('node:sqlite');
+const crypto=require('node:crypto');
 const EXPERIMENTAL_NAME='Meu Financeiro RC Experimental';
 const STABLE_NAME='Meu Financeiro';
 const EXPERIMENTAL_ID='app.local.meufinanceiro.rcall01';
@@ -59,8 +60,15 @@ function verifySQLiteFile(file){
   if(!hasProfiles)throw Error('Banco existente sem estrutura financeira reconhecida; migração bloqueada.');
  }finally{db.close();}
 }
-// A verified online SQLite backup captures WAL as well. Never copy the vault:
-// Windows safeStorage must read the original encrypted file in the same profile.
+// Capture the *current* verified SQLite state, including uncheckpointed WAL, before
+// each stable startup/migration. A backup from the same app version can be stale.
+// Keep historical snapshots immutable; only reuse one if the online snapshot's
+// SHA-256 is identical. The Pluggy safeStorage vault remains in its original path.
+async function sqliteSha256(file){
+ const hash=crypto.createHash('sha256');
+ for await(const chunk of fs.createReadStream(file))hash.update(chunk);
+ return hash.digest('hex');
+}
 async function stablePreMigrationBackup(root,version){
  const file=assertSafeProfilePath(root);
  if(!fs.existsSync(file))return {existing:false,backup:null};
@@ -70,25 +78,45 @@ async function stablePreMigrationBackup(root,version){
  assertSafeProfilePath(directory);
  if(fs.existsSync(directory)&&fs.lstatSync(directory).isSymbolicLink())
   throw Error('Pasta de backup inválida; instalação anterior preservada.');
- const destination=path.join(directory,'pre-upgrade-'+label+'.sqlite');
- if(fs.existsSync(destination)){
-  if(fs.lstatSync(destination).isSymbolicLink())throw Error('Backup de atualização inválido.');
-  verifySQLiteFile(destination);
-  return {existing:true,backup:destination};
- }
  fs.mkdirSync(directory,{recursive:true,mode:0o700});
- const temporary=destination+'.partial';
- if(fs.existsSync(temporary))throw Error('Backup parcial anterior requer conferência. Nenhuma migração executada.');
+ const stem='pre-upgrade-'+label;
+ const primary=path.join(directory,stem+'.sqlite');
+ const temporary=primary+'.partial';
+ // Previous interrupted backup is evidence of an incomplete migration attempt.
+ // Do not delete or bypass it silently.
+ if(fs.existsSync(temporary))
+  throw Error('Backup parcial anterior requer conferência. Nenhuma migração executada.');
+ const uuidSuffix=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\.sqlite$/i;
+ const snapshots=fs.readdirSync(directory).filter(name=>
+  name===stem+'.sqlite'||
+  (name.startsWith(stem+'-')&&uuidSuffix.test(name.slice(stem.length+1))));
  const source=new DatabaseSync(file,{readOnly:true});
  try{
   await backup(source,temporary);
   verifySQLiteFile(temporary);
+  const currentHash=await sqliteSha256(temporary);
+  for(const name of snapshots){
+   const candidate=path.join(directory,name);
+   const stat=fs.lstatSync(candidate);
+   if(stat.isSymbolicLink()||!stat.isFile())
+    throw Error('Backup existente inválido; instalação anterior preservada.');
+   verifySQLiteFile(candidate);
+   if(await sqliteSha256(candidate)===currentHash){
+    fs.rmSync(temporary,{force:true});
+    return {existing:true,backup:candidate};
+   }
+  }
+  // Never overwrite a valid older snapshot, even if both runs share a version.
+  const destination=snapshots.length?
+   path.join(directory,stem+'-'+crypto.randomUUID()+'.sqlite'):primary;
+  if(fs.existsSync(destination))
+   throw Error('Colisão de nome no backup. Nenhuma migração executada.');
   fs.renameSync(temporary,destination);
+  return {existing:true,backup:destination};
  }catch(error){
   try{fs.rmSync(temporary,{force:true});}catch(_){}
   throw error;
  }finally{source.close();}
- return {existing:true,backup:destination};
 }
 function channelStatus(channel){
  return {channel,isolated:channel!=='stable'&&channel!=='development',
