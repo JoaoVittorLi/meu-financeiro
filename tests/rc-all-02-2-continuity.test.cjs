@@ -198,6 +198,8 @@ test('RC2.2 app code guards channel before single-instance lock and protects his
  assert.match(source,/catch\(_\)\{ \/\/ Vault error must not hide\/erase historical bank rows/);
  assert.match(source,/approvedForPersonal:\(\)=>false/);
  assert.match(source,/if\(smokeProfileActive\|\|experimentalPackaged\)/);
+ assert.match(source,/if\(experimentalPackaged\|\|smokeProfileActive\)/);
+ assert.match(source,/profileState=stablePackaged\?/);
 });
 test('RC2.2 stable build metadata is explicit and ordinary RC build remains experimental',()=>{
  const pkg=require('../package.json');
