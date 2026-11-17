@@ -240,3 +240,14 @@ test('P0 backup failure blocks all write paths; no financial rows or receipts mu
   assert.equal(e.db.db.prepare('SELECT COUNT(*) AS n FROM mf_auto_receipts').get().n,0);
  }finally{e.db.backupTo=original;}
 }));
+test('P0 suggested rules are read-only, disclose affected scope, and require separate D05 owner approval',()=>sandbox(async e=>{
+ e.auto.configure({accountIds:[ACCOUNT_A],...span},true);
+ const before=e.db.db.prepare('SELECT COUNT(*) AS n FROM category_rules').get().n;
+ const advice=e.auto.suggestRules({accountId:ACCOUNT_A,limit:3});
+ assert.equal(advice.contract,'D05/AUTO-RULE-SUGGESTIONS-V1');
+ assert(advice.rules.length>=1);
+ assert(advice.rules.every(r=>r.changesApplied===false&&r.status==='requires_explicit_owner_approval'));
+ assert(advice.rules.every(r=>r.target.categoryId===target.categoryId&&r.target.subcategoryId===target.subcategoryId));
+ assert(advice.rules.every(r=>r.possibleMatches>=r.suggestedFor));
+ assert.equal(e.db.db.prepare('SELECT COUNT(*) AS n FROM category_rules').get().n,before);
+}));
