@@ -536,7 +536,8 @@ app.whenReady().then(async()=>{
  const autoIdle=()=>{if(syncing||restoring||autoBackupBusy||cloudPreparationBusy)
   throw Error('Classificação automática: aguarde a operação financeira em andamento.');};
  ipcMain.handle('bank:auto-status',event=>{
-  requireAppSender(event);return {...autoCategory.status(),available:stablePackaged,jobs:autoScheduler.status({limit:10})};
+  requireAppSender(event);return {...autoCategory.status(),available:stablePackaged,
+   jobs:autoScheduler.status({limit:10}),applyJob:autoCategory.batchStatus()};
  });
  ipcMain.handle('bank:auto-configure',async(event,input)=>{
   requireAppSender(event);autoAllowed();autoIdle();
@@ -610,8 +611,7 @@ app.whenReady().then(async()=>{
   if(initial){
    autoPreviewService.assertReady(input?.previewVersion);
    const preview=autoCategory.plan({limit:20000});
-   if(!input?.previewVersion||input.previewVersion!==preview.previewVersion||
-      preview.candidateCount>preview.candidates.length)
+   if(!input?.previewVersion||input.previewVersion!==preview.previewVersion)
     throw Error('Prévia inicial ausente, alterada ou muito grande. Refaça a análise antes de confirmar.');
    if(!mainWindow||mainWindow.isDestroyed()||!mainWindow.isFocused())
     throw Error('Confirmação inicial exige janela em primeiro plano.');
@@ -628,8 +628,30 @@ app.whenReady().then(async()=>{
   autoBackupBusy=true;
   try{
    if(initial)await autoCategory.confirmInitialPreview(input.previewVersion);
-   return {...await autoScheduler.run('manual'),data:titledBankData(),status:autoCategory.status()};
+   const current=autoCategory.plan({limit:100});
+   const batch=autoCategory.startBatch({previewVersion:current.previewVersion});
+   return {batch,status:autoCategory.status(),changesApplied:false};
+
   }finally{autoBackupBusy=false;}
+ });
+ // Canonical D05 batch journal; status/progress reflect COMMITTED receipts only.
+ ipcMain.handle('bank:auto-batch-status',(event,id)=>{
+  requireAppSender(event);return autoCategory.batchStatus(id||null);
+ });
+ ipcMain.handle('bank:auto-batch-next',async(event,id)=>{
+  requireAppSender(event);autoAllowed();autoIdle();
+  autoBackupBusy=true;
+  try{return await autoCategory.nextBatch(id,{limit:250});}
+  finally{autoBackupBusy=false;}
+ });
+ ipcMain.handle('bank:auto-batch-pause',(event,id)=>{
+  requireAppSender(event);autoAllowed();return autoCategory.pauseBatch(id);
+ });
+ ipcMain.handle('bank:auto-batch-resume',(event,id)=>{
+  requireAppSender(event);autoAllowed();autoIdle();return autoCategory.resumeBatch(id);
+ });
+ ipcMain.handle('bank:auto-batch-cancel',(event,id)=>{
+  requireAppSender(event);autoAllowed();return autoCategory.cancelBatch(id);
  });
  ipcMain.handle('bank:auto-correct',async(event,input)=>{
   requireAppSender(event);autoAllowed();autoIdle();
