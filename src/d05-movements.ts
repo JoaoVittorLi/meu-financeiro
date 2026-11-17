@@ -172,7 +172,7 @@ class D05Movements extends React.Component<any,any> {
     result=await bridge.bankAutoRevoke(accountId);setAutoPreview(null);
    }else if(action==='pause')result=await bridge.bankAutoPause();
    else if(action==='resume')result=await bridge.bankAutoResume();
-   }else if(action==='preview'){
+   else if(action==='preview'){
     result=await bridge.bankAutoReview({limit:100});
     setAutoPreview(result);
     setAutoMessage('Prévia somente leitura concluída. Confira os exemplos e as contagens antes de aplicar.');
