@@ -78,6 +78,13 @@ class D05Movements extends React.Component<any,any> {
  const [error,setError]=useState('');
  const [notice,setNotice]=useState('');
  const [confirmedIdentity,setConfirmedIdentity]=useState(null as any);
+ const [autoInfo,setAutoInfo]=useState(null as any);
+ const [autoSelected,setAutoSelected]=useState(new Set<string>());
+ const [autoStart,setAutoStart]=useState('2000-01-01');
+ const [autoEnd,setAutoEnd]=useState('2099-12-31');
+ const [autoPanel,setAutoPanel]=useState(false);
+ const [autoBusy,setAutoBusy]=useState(false);
+ const [autoMessage,setAutoMessage]=useState('');
  const activeTrigger=useRef(null as any);
  const modalRef=useRef(null as any);
  const refreshId=useRef(0);
@@ -137,6 +144,37 @@ class D05Movements extends React.Component<any,any> {
   }
  };
  useEffect(()=>{
+  if(state.mode==='real'&&bridge?.bankAutoStatus){
+   void bridge.bankAutoStatus().then((status:any)=>{
+    if(status?.contract==='D05/AUTO-CATEGORY-V1'){
+     setAutoInfo(status);
+     if(autoInfo===null)setAutoSelected(new Set((status.permissions||[]).filter((p:any)=>p.enabled).map((p:any)=>p.accountId)));
+    }
+   }).catch((e:any)=>setAutoMessage(String(e?.message||e)));
+  }
+ },[state.mode,state.bank.data.accounts,state.bank.data.transactions]);
+ const refreshAuto=async()=>{
+  if(bridge?.bankAutoStatus&&state.mode==='real'){
+   const result=await bridge.bankAutoStatus();setAutoInfo(result);
+  }
+ };
+ const runAutoAction=async(action:string,accountId:string|null=null)=>{
+  if(!bridge||autoBusy||state.mode!=='real')return;
+  setAutoBusy(true);setAutoMessage('');
+  try{
+   let result:any;
+   if(action==='enable')result=await bridge.bankAutoConfigure({accountIds:Array.from(autoSelected),startDate:autoStart,endDate:autoEnd});
+   else if(action==='revoke')result=await bridge.bankAutoRevoke(accountId);
+   else if(action==='run')result=await bridge.bankAutoApply({limit:20000});
+   if(result?.cancelled){setAutoMessage('Autorização cancelada.');return;}
+   await host.refreshBank();await refreshHierarchy();await refreshAuto();
+   setAutoMessage(action==='enable'?'Contas autorizadas no MAIN; classificação concluída conforme evidências.':
+    action==='revoke'?'Permissão revogada; recibos e rótulos anteriores preservados.':
+    'Verificação concluída. Movimentos incertos permanecem para revisão.');
+  }catch(e:any){setAutoMessage(String(e?.message||e));}
+  finally{setAutoBusy(false);}
+ };
+ useEffect(()=>{
   let current=true;
   if(current)void refreshHierarchy();
   return ()=>{current=false;refreshId.current++;};
@@ -184,7 +222,7 @@ class D05Movements extends React.Component<any,any> {
   if(categoryId&&row.categoryId!==categoryId)return false;
   if(subcategoryId&&row.subcategoryId!==subcategoryId)return false;
   if(!contains(row,folded(search.trim())))return false;
-  if(tab==='pending')return row.source==='bank'&&row.status==='POSTED'&&!row.reviewed;
+  if(tab==='pending')return row.source==='bank'&&row.status==='POSTED'&&!row.reviewed&&row.raw.categorySource!=='automatic';
   if(tab==='reviewed')return row.source==='bank'&&row.status==='POSTED'&&row.reviewed;
   return true;
  }).sort((a:any,b:any)=>{
@@ -199,7 +237,7 @@ class D05Movements extends React.Component<any,any> {
  const metricsRows=filtered.filter((r:any)=>r.source===totalsSource);
  let income=0,expense=0,needs=0,ignored=0,pending=0;
  for(const r of metricsRows){
-  if(r.source==='bank'&&r.status==='POSTED'&&!r.reviewed)needs++;
+  if(r.source==='bank'&&r.status==='POSTED'&&!r.reviewed&&r.raw.categorySource!=='automatic')needs++;
   if(r.source==='bank'&&r.status!=='POSTED'){pending++;continue;}
   if(r.kind==='ignore'||r.kind==='transfer'){ignored++;continue;}
   if(r.kind==='income')income+=Math.abs(r.amount);
@@ -306,6 +344,18 @@ class D05Movements extends React.Component<any,any> {
     const tx=picker.row,current=state.bank.data.transactions.find((t:any)=>t.id===tx.id&&t.accountId===tx.accountId);
     if(!current||current.amount!==tx.amount||current.status!==tx.status)
      throw Error('Movimentação alterada; atualize antes de classificar');
+    // Only the explicitly authorized per-account automation can accept a
+    // personal human correction here; the general IA writer stays blocked.
+    if(autoInfo?.enabled&&bridge?.bankAutoCorrect&&state.mode==='real'&&
+       (autoInfo.permissions||[]).some((p:any)=>p.accountId===tx.accountId&&p.enabled)){
+     const accepted=await bridge.bankAutoCorrect({accountId:tx.accountId,externalId:tx.id,target:destination});
+     if(accepted?.corrected){
+      await host.refreshBank();await refreshHierarchy();await refreshAuto();
+      setNotice('Correção humana protegida e confirmada por recibo SQLite.');
+      setPicker(null);setPreview(null);return;
+     }
+     if(accepted?.cancelled){setNotice('Correção cancelada no MAIN.');return;}
+    }
     // A personal category assignment must reach the separate supervised
     // preview contract first. In this experimental SHA the MAIN explicitly
     // denies real-bank commits; never fall back to the legacy direct write.
@@ -625,7 +675,7 @@ class D05Movements extends React.Component<any,any> {
          title:'A conferir',onClick:(e:any)=>{e.stopPropagation();activeTrigger.current=e.currentTarget;setError('');setReview(r);}},h('span',{'aria-hidden':'true'})):null,
         r.source==='bank'&&r.status==='PENDING'?h('span',{className:'d05-pending',title:'Em processamento','aria-label':'Em processamento'},h(D05VectorIcon,{iconKey:'clock-3',hue:37,size:16})):null),
        h('small',{},r.account+' · '+(p?.name||r.category)+(child?' › '+child.name:''),
-        r.source==='manual'?' · Manual':''),
+        r.source==='manual'?' · Manual':r.raw.categorySource==='automatic'?' · Automática (evidência verificada)':''),
        r.merchant!==r.description?h('small',{className:'d05-desc'},r.description):null),
       h('div',{className:'d05-row-end'},
        h('strong',{className:'d05-amount '+signed},(r.amount>=0?'+':'−')+format(Math.abs(r.amount))),
