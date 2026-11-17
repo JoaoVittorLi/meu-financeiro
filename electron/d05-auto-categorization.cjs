@@ -252,6 +252,39 @@ class D05AutoCategorization{
    review:review.slice(0,limit),reviewCount,perAccount,
    contract:'D05/AUTO-CATEGORY-PLAN-V1',changesApplied:false};
  }
+ suggestRules({accountId=null,limit=5}={}){
+  if(!Number.isInteger(limit)||limit<1||limit>20)throw Error('Auto D05: limite de sugestões inválido');
+  const proposals=this.plan({accountId,limit:20000}).candidates;
+  const groups=new Map();
+  for(const item of proposals){
+   const grouping=JSON.stringify([item.accountId,item.merchant,item.target]);
+   if(!groups.has(grouping))groups.set(grouping,{...item,matched:0});
+   groups.get(grouping).matched++;
+  }
+  const aliases=this.sql.prepare('SELECT pattern,display_name AS displayName FROM merchant_aliases').all();
+  const service=new D05CategoryService(this.finance()),out=[];
+  for(const entry of [...groups.values()].sort((a,b)=>b.matched-a.matched)){
+   const isAlias=entry.merchant.startsWith('alias:');
+   const matchedAliases=isAlias?aliases.filter(x=>normalizeLabel(x.displayName)===entry.merchant.slice(6)):[];
+   if(isAlias&&matchedAliases.length!==1)continue;
+   const pattern=isAlias?matchedAliases[0].pattern:entry.merchant.slice(6);
+   if(!pattern||pattern.length>120)continue;
+   const matchMode=isAlias?'contains':'exact';
+   // Canonical D05 preview estimates blast radius and rule collisions;
+   // no rule is written by this API, and approval belongs to the owner.
+   try{
+    const preview=service.previewRule({pattern,matchMode,scope:'bank',priority:100,
+     enabled:true,target:entry.target});
+    out.push({accountId:entry.accountId,pattern,matchMode,target:entry.target,
+     suggestedFor:entry.matched,possibleMatches:preview.candidateBankMatches,
+     possiblePrecedenceConflicts:preview.possiblePrecedenceConflicts,
+     previewVersion:preview.previewVersion,status:'requires_explicit_owner_approval',
+     changesApplied:false,explanation:'Regra proposta de evidência local. Pode afetar outros lançamentos; confira a prévia D05 antes de aprovar.'});
+   }catch(_){/* Never create unreviewable suggestions. */}
+   if(out.length>=limit)break;
+  }
+  return {contract:'D05/AUTO-RULE-SUGGESTIONS-V1',rules:out,changesApplied:false};
+ }
  async backupVerified(operation){
   const dir=this.backupDirectory();fs.mkdirSync(dir,{recursive:true,mode:0o700});
   const filename=path.join(dir,'before-d05-auto-'+operation+'-'+randomUUID()+'.sqlite');
