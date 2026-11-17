@@ -33,7 +33,10 @@ class D05AutoPreview{
  countRows(){
   return this.sql.prepare(`SELECT COUNT(*) AS n FROM bank_transactions b
    JOIN mf_auto_permissions p ON p.account_id=b.account_id
-   WHERE p.enabled=1 AND p.expires_at>? AND b.date BETWEEN p.start_date AND p.end_date`)
+   LEFT JOIN mf_auto_account_policy policy ON policy.account_id=p.account_id
+   WHERE p.enabled=1 AND p.expires_at>? AND b.date BETWEEN p.start_date AND p.end_date
+   AND ((COALESCE(policy.history_enabled,1)=1 AND b.rowid<=COALESCE(policy.boundary_rowid,0))
+    OR (COALESCE(policy.new_enabled,1)=1 AND b.rowid>COALESCE(policy.boundary_rowid,0)))`)
    .get(this.clock().toISOString()).n;
  }
  get(id){
@@ -80,7 +83,10 @@ class D05AutoPreview{
    b.date,b.description,b.amount_cents AS amountCents,b.status,b.updated_at AS updatedAt
    FROM bank_transactions b
    JOIN mf_auto_permissions p ON p.account_id=b.account_id
+   LEFT JOIN mf_auto_account_policy policy ON policy.account_id=p.account_id
    WHERE p.enabled=1 AND p.expires_at>? AND b.date BETWEEN p.start_date AND p.end_date
+   AND ((COALESCE(policy.history_enabled,1)=1 AND b.rowid<=COALESCE(policy.boundary_rowid,0))
+    OR (COALESCE(policy.new_enabled,1)=1 AND b.rowid>COALESCE(policy.boundary_rowid,0)))
     AND (? IS NULL OR b.account_id>? OR (b.account_id=? AND b.external_id>?))
    ORDER BY b.account_id,b.external_id LIMIT ?`)
    .all(this.clock().toISOString(),j.cursor_account,j.cursor_account,
