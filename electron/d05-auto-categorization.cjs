@@ -87,8 +87,7 @@ class D05AutoCategorization{
  }
  status(){
   const counts=this.sql.prepare(`SELECT
-   (SELECT COUNT(*) FROM mf_auto_labels l JOIN mf_auto_permissions p USING(account_id)
-    WHERE p.enabled=1) AS classified,
+   (SELECT COUNT(*) FROM mf_auto_labels) AS classified,
    (SELECT COUNT(*) FROM mf_auto_receipts WHERE action='apply') AS appliedEver,
    (SELECT COUNT(*) FROM mf_auto_receipts WHERE action='undo') AS reverted`).get();
   const permissions=this.permissions();
@@ -156,7 +155,7 @@ class D05AutoCategorization{
   for(const row of rows){
    if(!active.has(row.accountId))continue;
    const merchant=merchantKey(row,aliases);byId.set(key(row),merchant);
-   if(!merchant||!eligible(row)||!row.manualCategoryId||!validDate(row.date))continue;
+   if(!merchant||!eligible({...row,reviewedAt:null})||!row.manualCategoryId||!validDate(row.date))continue;
    // Only explicit D05 manual overrides serve as anchor evidence, never auto labels.
    try{
     const target=service.resolve({categoryId:row.manualCategoryId,subcategoryId:row.manualSubcategoryId??null});
@@ -168,7 +167,7 @@ class D05AutoCategorization{
      date:row.date,externalId:row.externalId});
    }catch(_){/* Legacy or orphaned manual labels never authorize automation. */}
   }
-  const candidates=[],review=[],perAccount={};
+  const candidates=[],review=[],perAccount={};let reviewCount=0;
   for(const row of rows){
    const permission=active.get(row.accountId);
    if(!permission||row.date<permission.startDate||row.date>permission.endDate||
@@ -176,13 +175,13 @@ class D05AutoCategorization{
    if(!eligible(row)||row.manualCategoryId||row.blockedByFeedback||row.hasAuto)continue;
    if(restrictRule(row,rules))continue; // Existing approved rules always win.
    const merchant=byId.get(key(row));
-   if(!merchant){if(review.length<limit)review.push({accountId:row.accountId,externalId:row.externalId,reason:'Estabelecimento sem identificação segura'});continue;}
+   if(!merchant){reviewCount++;if(review.length<limit)review.push({accountId:row.accountId,externalId:row.externalId,reason:'Estabelecimento sem identificação segura'});continue;}
    const anchors=groups.get(row.accountId+'|'+kind(row)+'|'+merchant)||[];
    const unique=new Set(anchors.map(a=>[a.categoryId,a.subcategoryId].join('|')));
    const days=new Set(anchors.map(a=>a.date));
    const sufficient=anchors.length>=MIN_ANCHORS&&days.size>=MIN_DATES&&unique.size===1;
    if(!sufficient){
-    if(review.length<limit)review.push({accountId:row.accountId,externalId:row.externalId,
+    reviewCount++;if(review.length<limit)review.push({accountId:row.accountId,externalId:row.externalId,
      reason:unique.size>1?'Correções anteriores contraditórias':'Evidência insuficiente'});
     continue;
    }
@@ -196,7 +195,7 @@ class D05AutoCategorization{
    perAccount[row.accountId]=(perAccount[row.accountId]||0)+1;
   }
   return {candidates:candidates.slice(0,limit),candidateCount:candidates.length,
-   review:review.slice(0,limit),reviewCount:review.length,perAccount,
+   review:review.slice(0,limit),reviewCount,perAccount,
    contract:'D05/AUTO-CATEGORY-PLAN-V1',changesApplied:false};
  }
  async apply({accountId=null,limit=100}={}){
@@ -215,11 +214,11 @@ class D05AutoCategorization{
     try{if(probe.prepare('PRAGMA integrity_check').get().integrity_check!=='ok')throw Error('Auto D05: backup inválido');}
     finally{probe.close();}
    }catch(e){throw Error('Auto D05: falha do backup. Nenhuma classificação aplicada: '+e.message);}
-   const sql=this.sql,at=this.clock().toISOString(),batch=randomUUID(),receipts=[];
+   const sql=this.sql,at=this.clock().toISOString(),batch=randomUUID(),receipts=[];let reviewCount=current.reviewCount;
    sql.exec('BEGIN IMMEDIATE');
    try{
     // Recompute from authoritative DB INSIDE transaction. Do not trust renderer's plan.
-    const now=this.plan({accountId,limit});
+    const now=this.plan({accountId,limit});reviewCount=now.reviewCount;
     const currentHashes=new Map(current.candidates.map(p=>[key(p),p.sourceFingerprint+'|'+p.evidenceHash+'|'+p.consentRevision]));
     for(const proposal of now.candidates){
      if(currentHashes.get(key(proposal))!==
@@ -249,7 +248,7 @@ class D05AutoCategorization{
     }
     sql.exec('COMMIT');
    }catch(e){sql.exec('ROLLBACK');throw e;}
-   return {applied:receipts.length,reviewCount:now.reviewCount,batchId:batch,receipts,backupCreated:true};
+   return {applied:receipts.length,reviewCount,batchId:batch,receipts,backupCreated:true};
   }finally{this.busy=false;}
  }
  receipt(id){
