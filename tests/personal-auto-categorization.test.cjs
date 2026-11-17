@@ -48,6 +48,12 @@ test('MF1 auto: 620 synthetic movements, 3-day manual consensus and D05 parent/c
   assert.equal(labeled.categoryId,target.categoryId);
   assert.equal(labeled.subcategoryId,target.subcategoryId);
   assert.equal(finance.db.prepare('SELECT COUNT(*) AS n FROM mf_auto_receipt_items WHERE receipt_id=?').get(outcome.receiptId).n,outcome.applied);
+  const audit=finance.db.prepare('SELECT before_category,after_category_id,after_subcategory_id FROM mf_auto_receipt_items WHERE receipt_id=? LIMIT 1').get(outcome.receiptId);
+  assert.equal(audit.before_category,'Other','Preserve the prior provider classification');
+  assert.equal(audit.after_category_id,target.categoryId);
+  assert.equal(audit.after_subcategory_id,target.subcategoryId);
+  assert.equal(finance.db.prepare('SELECT status FROM bank_transactions WHERE account_id=? AND external_id=?').get(ACCOUNT,'tx-10').status,'POSTED');
+
   assert.equal(finance.db.prepare('PRAGMA foreign_key_check').all().length,0);
   assert(fs.readdirSync(path.join(dir,'verified-auto-backups')).some(n=>n.endsWith('.sqlite')));
  }finally{finance.close();}
