@@ -51,13 +51,19 @@ test('zero human labels: only concordant MCC + Pluggy category authorizes a cano
   .get(A,'sample-safe').category,'Groceries','Provider original must remain immutable');
  assert.equal((await auto.apply()).applied,0,'No duplicate labels or receipts');
 }));
-test('persistent local daily jobs are idempotent and blocked before native initial confirmation',()=>sandbox(async({db,auto})=>{
+test('persistent local daily jobs are idempotent and blocked before native initial confirmation',()=>sandbox(async({db,auto,bank})=>{
  auto.configure(scope,true);
  const clock=()=>new Date('2026-11-17T15:00:00.000Z');
  const scheduler=new D05AutoLocalScheduler({finance:()=>db,engine:()=>auto,clock});
  assert.equal((await scheduler.run('daily')).state,'awaiting_explicit_consent_or_first_confirmation');
  const preview=auto.plan({limit:100});
  await auto.confirmInitialPreview(preview.previewVersion);
+ // The history was present BEFORE opt-in. Continuous jobs only process
+ // newly observed post-authorization POSTED rows.
+ db.ingestBank(I,{item:{status:'UPDATED'},data:[{account:bank.data[0].account,
+  transactions:[{id:'daily-after-consent',date:'2026-11-17',
+   description:'MERCADO DIARIO TESTE',amount:-21,status:'POSTED',
+   category:'Groceries',creditCardMetadata:{payeeMCC:'5411'}}]}]});
  scheduler.pause();
  assert.equal(scheduler.status().paused,true);
  assert.equal((await scheduler.run('daily')).state,'paused');
@@ -88,9 +94,13 @@ test('versioned manifest is invalidated when source or optional evidence changes
  assert.equal(db.db.prepare('SELECT COUNT(*) AS n FROM mf_auto_labels').get().n,0);
 }));
 
-test('failed backup pauses automatic jobs durably; native resume can recover safely',()=>sandbox(async({db,auto})=>{
+test('failed backup pauses automatic jobs durably; native resume can recover safely',()=>sandbox(async({db,auto,bank})=>{
  auto.configure(scope,true);
  await auto.confirmInitialPreview(auto.plan({limit:100}).previewVersion);
+ db.ingestBank(I,{item:{status:'UPDATED'},data:[{account:bank.data[0].account,
+  transactions:[{id:'backup-after-consent',date:'2026-11-17',
+   description:'MERCADO BACKUP TESTE',amount:-29,status:'POSTED',
+   category:'Groceries',creditCardMetadata:{payeeMCC:'5411'}}]}]});
  const scheduler=new D05AutoLocalScheduler({finance:()=>db,engine:()=>auto});
  const backup=db.backupTo;
  db.backupTo=async()=>{throw Error('SYNTHETIC_DISK_FULL');};
