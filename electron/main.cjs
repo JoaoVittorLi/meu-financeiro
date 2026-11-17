@@ -563,6 +563,22 @@ app.whenReady().then(async()=>{
  ipcMain.handle('bank:auto-revoke',(event,accountId)=>{
   requireAppSender(event);autoAllowed();autoIdle();return autoCategory.revoke(accountId);
  });
+ ipcMain.handle('bank:auto-pause',event=>{
+  requireAppSender(event);autoAllowed();return autoScheduler.pause();
+ });
+ ipcMain.handle('bank:auto-resume',async event=>{
+  requireAppSender(event);autoAllowed();autoIdle();
+  if(!mainWindow||mainWindow.isDestroyed()||!mainWindow.isFocused())
+   throw Error('Reativação exige aplicativo em primeiro plano.');
+  const answer=await dialog.showMessageBox(mainWindow,{type:'question',
+   buttons:['Manter pausado','Reativar verificações locais'],
+   defaultId:0,cancelId:0,noLink:true,title:'Reativar categorização',
+   message:'Retomar as verificações automáticas das contas já autorizadas?',
+   detail:'Não altera o consentimento. Não sincroniza contas ou executa com o aplicativo fechado.'});
+  requireAppSender(event);autoIdle();
+  if(answer.response!==1)return {cancelled:true};
+  return autoScheduler.resume();
+ });
  ipcMain.handle('bank:auto-apply',async(event,input)=>{
   requireAppSender(event);autoAllowed();autoIdle();
   const initial=!autoCategory.initialReady();
