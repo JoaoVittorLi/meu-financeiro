@@ -479,7 +479,7 @@ class D05AutoCategorization{
    if(typeof cursor!=='string'||cursor.length>350)throw Error('Auto D05: cursor inválido');
    try{position=JSON.parse(cursor);}catch(_){throw Error('Auto D05: cursor inválido');}
    if(!position||typeof position.at!=='string'||typeof position.id!=='string'||
-      !/^\\d{4}-\\d{2}-\\d{2}T/.test(position.at)||!/^[a-f0-9-]{36}$/i.test(position.id))
+      !/^\d{4}-\d{2}-\d{2}T/.test(position.at)||!/^[a-f0-9-]{36}$/i.test(position.id))
     throw Error('Auto D05: cursor inválido');
   }
   const filters=' WHERE (? IS NULL OR r.account_id=?) AND (?=\'all\' OR r.action=?)';
