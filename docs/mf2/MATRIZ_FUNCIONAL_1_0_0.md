@@ -96,3 +96,11 @@ O **status final de lançamento é NO-GO**, conforme [STATUS_ATUAL](STATUS_ATUAL
 Sem classificação manual prévia ou Pluggy Premium, decisões sem corroborar são encaminhadas para revisão; o Naive Bayes local apenas sugere e não autoriza escrita. A primeira execução exige prévia completa e confirmação nativa única; depois, apenas contas consentidas podem receber categorização local automática. O ledger original nunca recebe regravação por essas ações.
 
 **Dependência de integração:** PRs [#99](https://github.com/JoaoVittorLi/meu-financeiro/pull/99) → [#101](https://github.com/JoaoVittorLi/meu-financeiro/pull/101) → [#102](https://github.com/JoaoVittorLi/meu-financeiro/pull/102), todos Draft e ainda não integrados à #96. Ownership MAIN/preload/SQLite/UI: #49.
+
+## CAT — segurança de âncoras históricas / PR #104
+
+| Recurso adicional | CODE_PRESENT | UI_CONNECTED | TESTED | AVAILABLE | Limite |
+|---|---|---|---|---|---|
+| Rejeição de evidência humana duplicada por estabelecimento/data/valor | YES, PR #104 | Via motor CAT do PR #100 (sem alteração visual) | TEST_VERSIONED; NODE_NOT_RUN | BLOCKED | Teste sintético novo impede que cinco overrides com apenas três operações independentes gerem uma classificação; ainda requer QA real, calibração e integração na candidata |
+
+O PR #104 é uma revisão **empilhada**, não código no HEAD do PR #96. Não confundir duplicata de extrato com semelhança legítima: o comportamento é conservador e encaminha para revisão.
