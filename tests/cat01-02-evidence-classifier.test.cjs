@@ -137,7 +137,7 @@ test('CAT02 T17 — explicit signed rule respected, but conflicting rules sent f
  const r={approvedByHuman:true,enabled:true,target,matchMode:'exact',pattern:row().description,
   scope:'bank',priority:10};
  const ok=classifyCandidate({transaction:row(),evidence:evidence(),rules:[r]});
- assert.equal(ok.status,'apply');assert.equal(ok.reason,'HUMAN_APPROVED_EXACT_RULE');
+ assert.equal(ok.status,'apply');assert.equal(ok.reason,'HUMAN_APPROVED_RULE');
  const bad=classifyCandidate({transaction:row(),evidence:evidence(),rules:[
   r,{...r,priority:11,target:{categoryId:'cat:transporte',subcategoryId:null}}
  ]});
