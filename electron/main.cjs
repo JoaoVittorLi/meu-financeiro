@@ -593,6 +593,11 @@ app.whenReady().then(async()=>{
  ipcMain.handle('bank:auto-review', (event,input)=>{
   requireAppSender(event);return autoCategory.plan(input||{});
  });
+ ipcMain.handle('bank:auto-rule-suggestions',(event,input)=>{
+  requireAppSender(event);
+  if(!stablePackaged)return {contract:'D05/AUTO-RULE-SUGGESTIONS-V1',rules:[],changesApplied:false};
+  return autoCategory.suggestRules(input||{});
+ });
  ipcMain.handle('bank:auto-receipt',(event,id)=>{
   requireAppSender(event);return autoCategory.receipt(id);
  });
