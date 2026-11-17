@@ -68,7 +68,7 @@ class D05AutoLocalScheduler{
     state='running',attempts=mf_auto_jobs.attempts+1,started_at=excluded.started_at,
     finished_at=NULL,error_code=NULL`).run(jobKey,trigger,start);
    try{
-    const result=await engine.apply({limit:20000});
+    const result=await engine.apply({limit:20000,futureOnly:trigger!=='manual'});
     this.sql.prepare(`UPDATE mf_auto_jobs SET state='completed',finished_at=?,
      applied=?,review_count=?,error_code=NULL WHERE job_key=?`)
      .run(this.clock().toISOString(),result.applied||0,result.reviewCount||0,jobKey);
