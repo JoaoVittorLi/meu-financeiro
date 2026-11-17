@@ -25,7 +25,7 @@ function merchant(desc,aliases){
 }
 function fingerprint(r){return sha([r.account_id,r.external_id,r.date,r.description,r.amount_cents,r.status,r.category,r.nature,r.reviewed_at]);}
 function snapshot(sql,consent){
- const rows=sql.prepare('SELECT b.rowid,b.account_id,b.external_id,b.date,b.description,b.amount_cents,b.status,b.category,n.nature,n.reviewed_at,o.category_id AS manual_id,o.subcategory_id AS manual_child FROM bank_transactions b LEFT JOIN bank_transaction_notes n USING(account_id,external_id) LEFT JOIN bank_category_overrides o USING(account_id,external_id) ORDER BY b.account_id,b.date,b.external_id LIMIT 30001').all();
+ const rows=sql.prepare('SELECT b.rowid,b.account_id,b.external_id,b.date,b.description,b.amount_cents,b.status,b.category,n.nature,n.reviewed_at,n.merchant,n.note,o.category AS manual_category,o.category_id AS manual_id,o.subcategory_id AS manual_child,l.manual_id AS linked_manual FROM bank_transactions b LEFT JOIN bank_transaction_notes n USING(account_id,external_id) LEFT JOIN bank_category_overrides o USING(account_id,external_id) LEFT JOIN bank_manual_links l USING(account_id,external_id) ORDER BY b.account_id,b.date,b.external_id LIMIT 30001').all();
  if(rows.length>30000)return {candidates:[],review:[],partial:true};
  const aliases=sql.prepare('SELECT pattern,display_name FROM merchant_aliases').all();
  const splits=new Set(sql.prepare('SELECT DISTINCT account_id,external_id FROM bank_transaction_splits').all().map(r=>compound(r.account_id,r.external_id)));
@@ -34,7 +34,7 @@ function snapshot(sql,consent){
  const service=new D05CategoryService({db:sql,bankOverview:()=>({})});
  const anchors=new Map();
  for(const r of rows){
-  if(!consent.has(r.account_id)||r.status!=='POSTED'||!r.manual_id||splits.has(compound(r.account_id,r.external_id))||['transfer','ignore'].includes(r.nature))continue;
+  if(!consent.has(r.account_id)||r.status!=='POSTED'||(!r.manual_id&&!r.manual_category)||splits.has(compound(r.account_id,r.external_id))||['transfer','ignore'].includes(r.nature))continue;
   let target;try{target=service.resolve({categoryId:r.manual_id,subcategoryId:r.manual_child||null});}catch{continue}
   const mk=merchant(r.description,aliases);if(!mk)continue;
   const k=compound(r.account_id,mk),found=anchors.get(k)||[];
@@ -43,7 +43,7 @@ function snapshot(sql,consent){
  }
  const candidates=[],review=[];
  for(const r of rows){
-  if(!consent.has(r.account_id)||r.status!=='POSTED'||r.manual_id||r.reviewed_at||!Number.isSafeInteger(r.amount_cents)||!r.amount_cents||splits.has(compound(r.account_id,r.external_id))||already.has(compound(r.account_id,r.external_id))||['transfer','ignore'].includes(r.nature))continue;
+  if(!consent.has(r.account_id)||r.status!=='POSTED'||r.manual_id||r.manual_category||r.reviewed_at||r.linked_manual||r.note||r.merchant||!Number.isSafeInteger(r.amount_cents)||!r.amount_cents||splits.has(compound(r.account_id,r.external_id))||already.has(compound(r.account_id,r.external_id))||['transfer','ignore'].includes(r.nature))continue;
   const nature=r.nature&&r.nature!=='auto'?r.nature:r.amount_cents<0?'expense':'income';
   if(matchRule(r.description,'bank',rules,{accountId:r.account_id,rowid:r.rowid,status:r.status,nature,hasSplits:false}))continue;
   const mk=merchant(r.description,aliases),items=mk?anchors.get(compound(r.account_id,mk))||[]:[];
@@ -107,10 +107,13 @@ class PersonalAutoCategorizer{
    }catch(e){sql.exec('ROLLBACK');throw e}
   }finally{this.busy=false}
  }
- undo(receiptId){
+ async undo(receiptId){
   if(!this.allowed()||typeof receiptId!=='string'||receiptId.length>180)throw Error('Auto: denied');
   const sql=this.database().db;
   if(!sql.prepare('SELECT 1 FROM mf_auto_receipts WHERE id=? AND kind="apply"').get(receiptId))throw Error('Auto: invalid receipt');
+  // An undo is a financial classification write: verify a recoverable snapshot first.
+  fs.mkdirSync(this.backupDirectory(),{recursive:true,mode:0o700});
+  await this.finance().backupTo(path.join(this.backupDirectory(),'before-auto-undo-'+this.clock().toISOString().replace(/[:.]/g,'-')+'-'+randomUUID()+'.sqlite'));
   sql.exec('BEGIN IMMEDIATE');
   try{const rows=sql.prepare('SELECT * FROM mf_auto_labels WHERE receipt_id=?').all(receiptId);
    const stmt=sql.prepare('DELETE FROM mf_auto_labels WHERE receipt_id=? AND account_id=? AND external_id=? AND category_id=? AND subcategory_id IS ?');
