@@ -493,6 +493,7 @@ class D05AutoCategorization{
    r.consent_revision AS consentRevision,r.at,
    a.name AS accountName,b.description AS description,
    l.explanation AS explanation,
+   CASE WHEN l.receipt_id IS NULL THEN 0 ELSE 1 END AS active,
    EXISTS(SELECT 1 FROM mf_auto_receipts u WHERE u.account_id=r.account_id
      AND u.external_id=r.external_id AND u.action='undo' AND u.at>=r.at) AS reversed
    FROM mf_auto_receipts r
@@ -503,7 +504,7 @@ class D05AutoCategorization{
    AND (? IS NULL OR r.at<? OR (r.at=? AND r.id<?))
    ORDER BY r.at DESC,r.id DESC LIMIT ?`).all(...args,position?.at??null,
     position?.at??null,position?.at??null,position?.id??null,limit+1);
-  const page=rows.slice(0,limit).map(x=>({...x,reversed:x.reversed===1,committed:true}));
+  const page=rows.slice(0,limit).map(x=>({...x,reversed:x.reversed===1,active:x.active===1,committed:true}));
   const last=page.at(-1);
   return {contract:'D05/AUTO-RECEIPTS-V1',items:page,total,
    hasMore:rows.length>limit,
