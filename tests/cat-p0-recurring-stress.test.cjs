@@ -115,7 +115,8 @@ test('A01 backup failure after first 250 COMMITs: journal resume + exact receipt
  assert.equal(scheduler.status().paused,true);
  assert.equal(count(db,"SELECT COUNT(*) AS n FROM mf_auto_receipts WHERE action='apply'"),250);
  db.backupTo=orig;
- const reopened=new D05AutoLocalScheduler({finance:()=>db,engine:()=>engine});
+ const reopened=new D05AutoLocalScheduler({finance:()=>db,engine:()=>engine,
+  clock:()=>new Date('2026-11-17T16:00:00.000Z')});
  assert.equal(reopened.status().paused,true);
  reopened.resume();
  const recovered=await reopened.run('daily');
@@ -145,7 +146,12 @@ test('A01 revocation between pages prevents all remaining writes and blocks reau
  const job=scheduler.status().jobs[0];
  assert.equal(job.state,'failed');
  assert.equal(job.applied,250);
- assert.throws(()=>scheduler.resume(),/consentimento|reativação/);
+ // Two other accounts remain authorized, but the old generation cannot
+ // silently continue or start a new writer after partial revocation.
+ scheduler.resume();
+ const retry=await scheduler.run('daily');
+ assert.equal(retry.state,'failed');
+ assert.equal(count(db,"SELECT COUNT(*) AS n FROM mf_auto_receipts WHERE action='apply'"),250);
 }));
 
 test('A01 no-progress guard never marks empty COMMIT loop completed',()=>harness(async({
