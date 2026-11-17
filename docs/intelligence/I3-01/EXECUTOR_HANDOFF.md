@@ -1,6 +1,6 @@
 # MEU FINANCEIRO 2.0 — I3-01 / M1-S1 — Handoff de investigação verificável
 
-Data: 2026-11-16. Base recomposta sobre RC-ALL-02 PR #94 HEAD `1a82a2c16303fcf73bb9241366c25c7bcb4af9d0`. Branch: `feat/mf2-i3-01-verifiable-investigation-20261116`. **PR de código separado; não modifica diretamente #94.**
+Data: 2026-11-16. Base recomposta sobre RC-ALL-02 PR #94 HEAD `3c875fb354156b15cb0e0d6657d86a9f6220651c`. Branch: `feat/mf2-i3-01-verifiable-investigation-20261116`. **PR de código separado; não modifica diretamente #94.**
 
 ## Entrega de código
 | Arquivo | Objetivo |
@@ -9,7 +9,7 @@ Data: 2026-11-16. Base recomposta sobre RC-ALL-02 PR #94 HEAD `1a82a2c16303fcf73
 | `electron/intelligence-orchestrator.cjs` | Nova rota IC2 de investigação, resposta de evidências com um fato tipo `compare_spending_breakdown`, follow-up e estado de erro/stale |
 | `src/intelligence-local.ts` | Envio do Conversar B05 direciona questões de investigação ao IC2 existente, sem desviar para gráfico V3 |
 | `src/intelligence-ic2.ts` | Card estruturado do chat: anterior, atual, delta e principais contribuições |
-| `tests/i3-01-investigation.test.cjs` | 22 testes funcionais e adversariais com fixture F1 sintética, fake owner/grant/DB e ledger real |
+| `tests/i3-01-investigation.test.cjs` | 39 testes funcionais e adversariais com fixture F1 sintética, fake owner/grant/DB e ledger real |
 
 ## Exemplos suportados
 - “Por que minhas despesas aumentaram?”
@@ -37,7 +37,7 @@ Fixture outubro despesas 37000 centavos; novembro 42000; delta 5000.
 | Gate | Resultado | Evidência |
 |---|---|---|
 | Sintaxe módulo principal e orquestrador | PASS em compilação V8 | `new Function` em fonte do GitHub; **não é TypeScript/Node compilado** |
-| Suite I3-01 | **22/22 PASS em harness V8** | Código real dos testes `tests/i3-01-investigation.test.cjs` avaliado com módulos CJS injetados, ledger canônico executado, IPC/orquestrador/fatos em V8; mocks de Node builtin e DB |
+| Suite I3-01 | **39/39 PASS em harness V8** | Código real dos testes `tests/i3-01-investigation.test.cjs` avaliado com módulos CJS injetados, ledger canônico executado, IPC/orquestrador/fatos em V8; mocks de Node builtin e DB |
 | Verificação de F1/D05 | PASS nesse harness | 37000→42000, soma de variação e taxonomia real |
 | Node oficial `npm ci` / `node --test tests/i3-01-investigation.test.cjs` | **NOT_RUN** | Sem checkout completo / módulos nativos na sessão |
 | `test:types`, `test:db`, `test:asar`, `provenance:create/verify` | **NOT_RUN** | Necessária execução no ambiente oficial |
