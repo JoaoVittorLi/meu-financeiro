@@ -9,7 +9,7 @@ function harness(){
  const js=ts.transpileModule('class Subject{'+methods+'}',{compilerOptions:{target:ts.ScriptTarget.ES2020}}).outputText;
  const Subject=new Function('desktop','safeData',js+';return Subject')(api,x=>x);const app=new Subject();
  app.state={mode:'real',bankFilter:'account-A',query:'mercado',txSelected:['account-A|same'],categoryEditor:{name:'Rascunho anterior',previousName:'',color:'#123456',emoji:'✨',kind:'expense'},entry:{description:'Compra fictícia',value:'42,15',date:'2026-11-12',kind:'expense',category:'Outros'},quickCategoryQuery:'',data:db.load('real')};
- app.setState=(p,cb)=>{Object.assign(app.state,p);cb?.()};app.quickCategoryContext=()=>({kind:'expense'});app.refreshBank=async()=>{};app.flash=()=>{};
+ app.setState=(p,cb)=>{Object.assign(app.state,p);cb?.()};app.quickCategoryContext=()=>({kind:'expense'});app.refreshBank=async()=>{};app.loadQA84VisualCatalog=async()=>{};app.flash=()=>{};
  return {db,app,api};
 }
 test('R4 creates a category through the existing SQLite service, retains draft/filters/selection, and resumes entry',async()=>{const f=harness();try{
