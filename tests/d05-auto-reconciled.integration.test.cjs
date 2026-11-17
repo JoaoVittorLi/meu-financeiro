@@ -57,6 +57,13 @@ test('persistent local daily jobs are idempotent and blocked before native initi
  assert.equal((await scheduler.run('daily')).state,'awaiting_explicit_consent_or_first_confirmation');
  const preview=auto.plan({limit:100});
  await auto.confirmInitialPreview(preview.previewVersion);
+ scheduler.pause();
+ assert.equal(scheduler.status().paused,true);
+ assert.equal((await scheduler.run('daily')).state,'paused');
+ const freshPaused=new D05AutoLocalScheduler({finance:()=>db,engine:()=>auto,clock});
+ assert.equal(freshPaused.status().paused,true,'Pause survives scheduler recreation');
+ freshPaused.resume();
+ assert.equal(scheduler.status().paused,false);
  const result=await scheduler.run('daily');
  assert.equal(result.state,'completed');assert.equal(result.applied,1);
  assert.equal((await scheduler.run('daily')).state,'already_completed');
