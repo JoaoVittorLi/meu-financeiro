@@ -90,7 +90,8 @@ test('B02 category entry points use supervised D05 rather than legacy direct sel
  assert.match(src,/onClick:\(\)=>this\.saveManualDetail\(manual\.id\)/);
  assert.match(src,/f\.splitParts\.map\(\(part,i\)=>/);
  assert.match(src,/onChange:\(\)=>this\.toggleSelected\(v\)/);
- const drawer=src.slice(src.indexOf(' renderDetail(){'),src.indexOf(' renderEditModal(){'));
+ const drawer=src.slice(src.indexOf(' renderDetailDrawer(){'),src.indexOf(' renderEditModal(){'));
+ assert(drawer.length>1000,'Real detail drawer must be present');
  assert.doesNotMatch(drawer,/onChange:\(v:string\)=>this\.setBankCategory\(tx,v\)/);
 });
 
