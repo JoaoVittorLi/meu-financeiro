@@ -700,6 +700,8 @@ class FinanceDB {
    const reviewLabels=this.db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='category_review_applied_labels'").get()?new Map(this.db.prepare('SELECT * FROM category_review_applied_labels').all().map(r=>[JSON.stringify([r.account_id,r.external_id]),r])):new Map();
    const accounts=this.db.prepare(`SELECT account_id AS id,item_id AS itemId,name,subtype,currency,balance_cents AS balance,updated_at AS updatedAt FROM bank_accounts ORDER BY name`).all().map(x=>({...x}));
    const rules=this.listCategories().rules.filter(x=>x.enabled);
+   // Personal auto decisions never overwrite bank originals or manual overrides.
+   const automatic=this.db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='mf_auto_labels'").get()?new Map(this.db.prepare('SELECT account_id,external_id,category,category_id,subcategory_id FROM mf_auto_labels').all().map(r=>[JSON.stringify([r.account_id,r.external_id]),r])):new Map();
    const categoryInfo=this.listCategories().categories;
    const categories=new Set(categoryInfo.map(x=>x.name));
    const kindByCategory=new Map(categoryInfo.map(x=>[x.name,x.kind]));
@@ -716,8 +718,9 @@ class FinanceDB {
        const originalOverride=x.overrideCategory;
        x.overrideCategory=effectiveBankOverride(x,reviewLabels.get(JSON.stringify([x.accountId,x.id])));
        const fromRule=matchRule(x.description,'bank',rules,{accountId:x.accountId,rowid:x.rowid,status:x.status,nature:x.nature&&x.nature!=='auto'?x.nature:x.amount<0?'expense':'income',hasSplits:splitMap.has(x.accountId+'|'+x.id)});
-       const category=x.overrideCategory||fromRule||providerCategory(x.bankCategory,categories);
-       const categorySource=x.overrideCategory?'manual':fromRule?'rule':'bank';
+       const verifiedAuto=automatic.get(JSON.stringify([x.accountId,x.id]));
+       const category=x.overrideCategory||fromRule||verifiedAuto?.category||providerCategory(x.bankCategory,categories);
+       const categorySource=x.overrideCategory?'manual':fromRule?'rule':verifiedAuto?'auto':'bank';
        const {overrideCategory,...safe}=x;
        const merchant=x.merchant||aliases.find(a=>normalizeLabel(x.description).includes(normalizeLabel(a.pattern)))?.displayName||'';
        const savedSplits=splitMap.get(x.accountId+'|'+x.id)||[];
@@ -741,7 +744,7 @@ class FinanceDB {
      const day=dayMap.get(x.date),amount=Math.abs(x.amount);
      if(nature==='income'){
        day.income+=amount;
-       const proposed=x.overrideCategory||matchRule(x.description,'bank',rules,{...x,nature,hasSplits:splitMap.has(x.accountId+'|'+x.externalId)})||(normalizeLabel(x.description).includes('PIX DEVOLVIDO')?'Reembolsos':providerCategory(x.bankCategory,categories));
+       const proposed=x.overrideCategory||matchRule(x.description,'bank',rules,{...x,nature,hasSplits:splitMap.has(x.accountId+'|'+x.externalId)})||automatic.get(JSON.stringify([x.accountId,x.externalId]))?.category||(normalizeLabel(x.description).includes('PIX DEVOLVIDO')?'Reembolsos':providerCategory(x.bankCategory,categories));
        const category=kindByCategory.get(proposed)==='expense'?'Outros':proposed;
        day.incomeCategories.set(category,(day.incomeCategories.get(category)||0)+amount);
        continue;
@@ -750,7 +753,7 @@ class FinanceDB {
      day.expense+=amount;
      const parts=splitMap.get(x.accountId+'|'+x.externalId)||[];
      const ok=parts.length&&parts.reduce((sum,part)=>sum+part.amount,0)===amount;
-     const category=x.overrideCategory||matchRule(x.description,'bank',rules,{...x,nature,hasSplits:splitMap.has(x.accountId+'|'+x.externalId)})||providerCategory(x.bankCategory,categories);
+     const category=x.overrideCategory||matchRule(x.description,'bank',rules,{...x,nature,hasSplits:splitMap.has(x.accountId+'|'+x.externalId)})||automatic.get(JSON.stringify([x.accountId,x.externalId]))?.category||providerCategory(x.bankCategory,categories);
      for(const part of ok?parts:[{category,amount}]){
        const bucket=kindByCategory.get(part.category)==='income'?'Outros':part.category;
        day.categories.set(bucket,(day.categories.get(bucket)||0)+part.amount);
