@@ -69,6 +69,7 @@ class D05AutoCategorization{
     job_id TEXT PRIMARY KEY,preview_version TEXT NOT NULL,source_version TEXT NOT NULL,
     state TEXT NOT NULL CHECK(state IN('running','paused','failed','stale','cancelled','completed')),
     proposed_total INTEGER NOT NULL,review_total INTEGER NOT NULL,
+    future_only INTEGER NOT NULL DEFAULT 0 CHECK(future_only IN(0,1)),
     started_at TEXT NOT NULL,finished_at TEXT,error_code TEXT
    );
    CREATE INDEX IF NOT EXISTS mf_auto_apply_jobs_latest ON mf_auto_apply_jobs(started_at DESC);
@@ -119,6 +120,10 @@ class D05AutoCategorization{
       ON CONFLICT(account_id,external_id) DO UPDATE SET reason=excluded.reason,recorded_at=excluded.recorded_at;
    END;
   `);
+  // Additive migration: existing synthetic/RC SQLite profiles keep prior jobs.
+  if(!this.sql.prepare("PRAGMA table_info(mf_auto_apply_jobs)").all()
+   .some(c=>c.name==='future_only'))
+   this.sql.exec("ALTER TABLE mf_auto_apply_jobs ADD COLUMN future_only INTEGER NOT NULL DEFAULT 0 CHECK(future_only IN(0,1))");
   // A previously running batch cannot still be executing after a fresh
   // FinanceDB/service binding. Preserve committed receipts and require resume.
   this.sql.prepare("UPDATE mf_auto_apply_jobs SET state='paused',error_code='INTERRUPTED_ON_RESTART' WHERE state='running'").run();
@@ -499,18 +504,21 @@ class D05AutoCategorization{
    return {applied:receipts.length,reviewCount,batchId:batch,receipts,backupCreated:true};
   }finally{this.busy=false;}
  }
- startBatch({previewVersion}={}){
+ startBatch({previewVersion,futureOnly=false,jobId=null}={}){
+  if(typeof futureOnly!=='boolean'||(jobId!==null&&
+     (typeof jobId!=='string'||!/^[a-f0-9-]{36}$/i.test(jobId))))
+   throw Error('Auto D05: perfil ou identificação de lote inválidos');
   if(!this.initialReady())throw Error('Auto D05: confirmação inicial ainda não persistida');
   if(typeof previewVersion!=='string'||!/^[a-f0-9]{64}$/.test(previewVersion))
    throw Error('Auto D05: manifesto inicial obrigatório');
-  const plan=this.plan({limit:100});
+  const plan=this.plan({limit:100,futureOnly});
   if(plan.previewVersion!==previewVersion)throw Error('Auto D05: MANIFEST_STALE; refaça a prévia');
   const active=this.sql.prepare("SELECT job_id AS id FROM mf_auto_apply_jobs WHERE state IN('running','paused','failed') ORDER BY started_at DESC LIMIT 1").get();
   if(active)throw Error('Auto D05: já existe lote em andamento; retome ou cancele antes de criar outro');
-  const id=randomUUID(),now=this.clock().toISOString();
+  const id=jobId||randomUUID(),now=this.clock().toISOString();
   this.sql.prepare(`INSERT INTO mf_auto_apply_jobs(job_id,preview_version,source_version,state,
-   proposed_total,review_total,started_at) VALUES (?,?,?,'running',?,?,?)`)
-   .run(id,previewVersion,plan.sourceVersion,plan.candidateCount,plan.reviewCount,now);
+   proposed_total,review_total,future_only,started_at) VALUES (?,?,?,'running',?,?,?,?)`)
+   .run(id,previewVersion,plan.sourceVersion,plan.candidateCount,plan.reviewCount,Number(futureOnly),now);
   return this.batchStatus(id);
  }
  batchStatus(id=null){
@@ -522,6 +530,7 @@ class D05AutoCategorization{
   const receipts=sql.prepare("SELECT COUNT(*) AS n FROM mf_auto_receipts WHERE batch_id=? AND action='apply'").get(row.job_id).n;
   return {contract:'D05/AUTO-APPLY-PAGED-V1',jobId:row.job_id,
    state:row.state,proposedTotal:row.proposed_total,reviewTotal:row.review_total,
+   futureOnly:row.future_only===1,
    committed:receipts,remaining:Math.max(0,row.proposed_total-receipts),
    isPartial:receipts<row.proposed_total,startedAt:row.started_at,finishedAt:row.finished_at,
    errorCode:row.error_code,changesApplied:receipts>0};
@@ -547,7 +556,7 @@ class D05AutoCategorization{
   const row=this.sql.prepare('SELECT * FROM mf_auto_apply_jobs WHERE job_id=?').get(id);
   if(!row||!['paused','failed'].includes(row.state))throw Error('Auto D05: retomada não disponível');
   if(!this.initialReady()||!this.status().enabled)throw Error('Auto D05: contas sem autorização válida');
-  if(this.plan({limit:1}).sourceVersion!==row.source_version)
+  if(this.plan({limit:1,futureOnly:row.future_only===1}).sourceVersion!==row.source_version)
    throw Error('Auto D05: MANIFEST_STALE; lote anterior não pode ser retomado');
   this.sql.prepare("UPDATE mf_auto_apply_jobs SET state='running',error_code=NULL WHERE job_id=? AND state IN('paused','failed')").run(id);
   return this.batchStatus(id);
@@ -558,14 +567,15 @@ class D05AutoCategorization{
   const row=this.sql.prepare('SELECT * FROM mf_auto_apply_jobs WHERE job_id=?').get(id);
   if(!row||row.state!=='running')throw Error('Auto D05: lote não está ativo');
   if(!this.initialReady())throw Error('Auto D05: autorização inicial revogada');
-  if(this.plan({limit:1}).sourceVersion!==row.source_version){
+  if(this.plan({limit:1,futureOnly:row.future_only===1}).sourceVersion!==row.source_version){
    this.sql.prepare("UPDATE mf_auto_apply_jobs SET state='stale',error_code='MANIFEST_STALE',finished_at=? WHERE job_id=? AND state='running'")
     .run(this.clock().toISOString(),id);
    return this.batchStatus(id);
   }
   try{
-   await this.apply({limit,expectedSourceVersion:row.source_version,batchId:id});
-   const fresh=this.plan({limit:1});
+   await this.apply({limit,expectedSourceVersion:row.source_version,batchId:id,
+    futureOnly:row.future_only===1});
+   const fresh=this.plan({limit:1,futureOnly:row.future_only===1});
    const nextState=fresh.sourceVersion!==row.source_version?'stale':
     fresh.candidateCount===0?'completed':'running';
    this.sql.prepare(`UPDATE mf_auto_apply_jobs SET state=?,
