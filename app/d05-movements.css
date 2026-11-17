@@ -218,3 +218,22 @@ button.d05-metric:hover{background:var(--d05-hover);border-color:var(--d05-blue)
  .d05-catalog-match button{font-size:10px}}
 @media(prefers-reduced-motion:reduce){.mf-detail-drawer .mf-drawer-d05-category,
  .d05-picker *{animation:none!important;transition:none!important}}
+
+/* RC 1.0 P0 / opt-in classification. Scoped; no changes to approved D05 list/picker. */
+.d05-auto-box{margin:0 0 14px;padding:14px 16px;background:var(--d05-surface);border:1px solid var(--d05-border);border-radius:14px}
+.d05-auto-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.d05-auto-head strong{font-size:14px;color:var(--d05-text)}
+.d05-auto-head p,.d05-auto-settings p{margin:5px 0;color:var(--d05-muted);font-size:11px;line-height:1.55}
+.d05-auto-stats{display:flex;gap:10px 16px;flex-wrap:wrap;margin-top:10px;align-items:center;font-size:11px;color:var(--d05-muted)}
+.d05-auto-stats span:first-child{color:var(--d05-text);font-weight:700}
+.d05-auto-stats button,.d05-auto-accounts button,.d05-auto-buttons button{min-height:38px;padding:7px 12px;border:1px solid var(--d05-border);background:var(--d05-raised);border-radius:10px;font-size:11px;font-weight:650}
+.d05-auto-stats button:hover,.d05-auto-accounts button:hover,.d05-auto-buttons button:hover{background:var(--d05-hover)}
+.d05-auto-settings{margin-top:14px;padding-top:12px;border-top:1px solid var(--d05-border)}
+.d05-auto-accounts,.d05-auto-buttons{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.d05-auto-accounts button.selected{border-color:var(--d05-positive);background:var(--d05-selected);color:var(--d05-text)}
+.d05-auto-period{display:flex;gap:10px;flex-wrap:wrap}
+.d05-auto-period label{color:var(--d05-muted);font-size:11px;display:grid;gap:5px}
+.d05-auto-period input{background:var(--d05-raised);color:var(--d05-text);border:1px solid var(--d05-border);border-radius:9px;min-height:36px;padding:7px}
+.d05-auto-box .d05-notice{margin:9px 0 0}
+@media(max-width:760px){.d05-auto-box{padding:12px}.d05-auto-head{align-items:flex-start}.d05-auto-stats{gap:8px}}
+@media(prefers-reduced-motion:reduce){.d05-auto-box *{transition:none!important}}
