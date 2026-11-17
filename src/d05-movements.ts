@@ -79,6 +79,7 @@ class D05Movements extends React.Component<any,any> {
  const [notice,setNotice]=useState('');
  const [confirmedIdentity,setConfirmedIdentity]=useState(null as any);
  const [autoInfo,setAutoInfo]=useState(null as any);
+ const [autoPreview,setAutoPreview]=useState(null as any);
  const [autoSelected,setAutoSelected]=useState(new Set<string>());
  const [autoStart,setAutoStart]=useState('2000-01-01');
  const [autoEnd,setAutoEnd]=useState('2099-12-31');
@@ -164,16 +165,28 @@ class D05Movements extends React.Component<any,any> {
   setAutoBusy(true);setAutoMessage('');
   try{
    let result:any;
-   if(action==='enable')result=await bridge.bankAutoConfigure({accountIds:Array.from(autoSelected),startDate:autoStart,endDate:autoEnd});
-   else if(action==='revoke')result=await bridge.bankAutoRevoke(accountId);
-   else if(action==='run')result=await bridge.bankAutoApply({limit:20000});
+   if(action==='enable'){
+    result=await bridge.bankAutoConfigure({accountIds:Array.from(autoSelected),startDate:autoStart,endDate:autoEnd});
+    setAutoPreview(result?.preview||null);
+   }else if(action==='revoke'){
+    result=await bridge.bankAutoRevoke(accountId);setAutoPreview(null);
+   }else if(action==='preview'){
+    result=await bridge.bankAutoReview({limit:100});
+    setAutoPreview(result);
+    setAutoMessage('Prévia somente leitura concluída. Confira os exemplos e as contagens antes de aplicar.');
+    return;
+   }else if(action==='confirm'){
+    if(!autoPreview?.previewVersion)throw Error('Analise o histórico antes de confirmar.');
+    result=await bridge.bankAutoApply({previewVersion:autoPreview.previewVersion,limit:20000});
+    if(!result?.cancelled)setAutoPreview(null);
+   }else if(action==='run')result=await bridge.bankAutoApply({limit:20000});
    else if(action==='suggest')result=await bridge.bankAutoRuleSuggestions({limit:5});
    if(action==='suggest'){setAutoRules(result?.rules||[]);setAutoMessage('Sugestões somente para prévia; nenhuma regra foi criada.');return;}
    if(result?.cancelled){setAutoMessage('Autorização cancelada.');return;}
    await host.refreshBank();await refreshHierarchy();await refreshAuto();
-   setAutoMessage(action==='enable'?'Contas autorizadas no MAIN; classificação concluída conforme evidências.':
+   setAutoMessage(action==='enable'?'Contas autorizadas, mas nenhuma classificação aplicada. Confira a prévia inicial.':
     action==='revoke'?'Permissão revogada; recibos e rótulos anteriores preservados.':
-    'Verificação concluída. Movimentos incertos permanecem para revisão.');
+    'Aplicação confirmada. Movimentos incertos permanecem para revisão.');
   }catch(e:any){setAutoMessage(String(e?.message||e));}
   finally{setAutoBusy(false);}
  };
@@ -629,12 +642,31 @@ class D05Movements extends React.Component<any,any> {
      h('button',{type:'button',className:'d05-confirm',disabled:autoBusy||!autoInfo?.available||autoSelected.size===0,
       onClick:()=>void runAutoAction('enable')},'Autorizar contas selecionadas'),
      h('button',{type:'button',disabled:autoBusy||!autoInfo?.available||!autoInfo?.enabled,
-      onClick:()=>void runAutoAction('run')},'Analisar novamente'),
+      onClick:()=>void runAutoAction('preview')},'Analisar histórico (somente leitura)'),
+     !autoInfo?.initialConfirmed?h('button',{type:'button',className:'d05-confirm',
+      disabled:autoBusy||!autoInfo?.available||!autoInfo?.enabled||!autoPreview?.previewVersion,
+      onClick:()=>void runAutoAction('confirm')},'Conferir e confirmar lote seguro'):
+     h('button',{type:'button',disabled:autoBusy||!autoInfo?.available||!autoInfo?.enabled,
+      onClick:()=>void runAutoAction('run')},'Verificar novas movimentações'),
      h('button',{type:'button',disabled:autoBusy||!autoInfo?.available||!autoInfo?.enabled,
       onClick:()=>void runAutoAction('suggest')},'Sugerir regras para semelhantes'),
      ...(autoInfo?.permissions||[]).filter((perm:any)=>perm.enabled).map((perm:any)=>
       h('button',{type:'button',key:perm.accountId,disabled:autoBusy||!autoInfo?.available,
        onClick:()=>void runAutoAction('revoke',perm.accountId)},'Revogar '+perm.name))),
+    autoPreview?h('div',{className:'d05-auto-rule-suggestions',role:'region','aria-label':'Prévia inicial somente leitura'},
+     h('strong',{},'Prévia verificada — nada aplicado'),
+     h('p',{},String(autoPreview.candidateCount||0)+' classificações elegíveis · '+
+      String(autoPreview.reviewCount||0)+' precisam de revisão. Amostras exibidas: '+
+      String((autoPreview.candidates||[]).length)+' de '+String(autoPreview.candidateCount||0)+'.'),
+     (autoPreview.candidates||[]).slice(0,10).map((item:any)=>h('p',{key:item.accountId+'|'+item.externalId},
+      String(item.merchant||'Estabelecimento')+' → '+
+      String(byId(item.target?.categoryId)?.name||item.target?.categoryId||'Categoria')+
+      (item.target?.subcategoryId?' · '+String(
+       (byId(item.target.categoryId)?.subcategories||[]).find((x:any)=>x.id===item.target.subcategoryId)?.name||
+       item.target.subcategoryId):'')+' · '+String(item.explanation||''))),
+     autoPreview.candidateCount>20000?h('p',{className:'d05-notice'},
+      'Lote acima do limite atual de aplicação. A confirmação ficará bloqueada até a paginação de escrita estar concluída.'):null
+    ):null,
     autoRules.length?h('div',{className:'d05-auto-rule-suggestions'},
      h('strong',{},'Sugestões não aplicadas — revisão humana obrigatória'),
      autoRules.map((rule:any)=>h('p',{key:rule.accountId+'|'+rule.pattern},
