@@ -3,6 +3,9 @@ const test=require('node:test'),assert=require('node:assert/strict'),fs=require(
 const {FinanceDB}=require('../electron/db.cjs'),{PlanningStore}=require('../electron/planning.cjs');
 const {LocalFinancialIntelligence}=require('../electron/financial-intelligence.cjs'),{CategoryReviewService}=require('../electron/category-review.cjs'),{CategoryReviewBackupGate}=require('../electron/category-review-backup.cjs');
 const {restoreBackup}=require('../electron/recovery.cjs'),{seedQ1}=require('../scripts/q1-fixture.cjs');
+const {D05AutoCategorization}=require('../electron/d05-auto-categorization.cjs');
+const {D05AutoLocalScheduler}=require('../electron/d05-auto-local-scheduler.cjs');
+const {D05AutoPreview}=require('../electron/d05-auto-preview.cjs');
 for(const synthetic of [false,true])for(const recovered of [false,true])test('restored SQLite rebinds intelligence and invalidates old grants; synthetic='+synthetic+', recovered='+recovered,async()=>{
  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'mf-recovery-service-'));seedQ1(dir);
  const file=path.join(dir,'meu-financeiro.sqlite');let db=new FinanceDB(file);
@@ -20,6 +23,8 @@ for(const synthetic of [false,true])for(const recovered of [false,true])test('re
    IntelligenceOperational:require('../electron/intelligence-operational.cjs').IntelligenceOperational,
    IC2ReadQueryGateway:require('../electron/intelligence-ic2-adapter.cjs').IC2ReadQueryGateway,
    RCCategoryGateway:require('../electron/intelligence-category-rc.cjs').RCCategoryGateway,
+   D05AutoCategorization,D05AutoLocalScheduler,D05AutoPreview,
+   autoCategory:null,autoScheduler:null,autoPreviewService:null,
    d05PersonalGate:null,d05Gate:null,categoryRC:null,
    smokeProfileActive:synthetic,path,app:{getPath:()=>dir}});
   vm.runInContext(source.slice(start,bindEnd+'\n bindLocalFinancialServices();'.length)+
