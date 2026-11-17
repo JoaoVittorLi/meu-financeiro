@@ -43,6 +43,8 @@ interface DesktopBridge {load:(mode:'real'|'demo')=>Promise<Data|null>;save:(mod
  bankAutoConfigure?:(input:any)=>Promise<any>;bankAutoRevoke?:(accountId:string)=>Promise<any>;
  bankAutoPause?:()=>Promise<any>;bankAutoResume?:()=>Promise<any>;
  bankAutoApply?:(input:any)=>Promise<any>;bankAutoReview?:(input:any)=>Promise<any>;bankAutoRuleSuggestions?:(input:any)=>Promise<any>;
+ bankAutoPreviewStart?:()=>Promise<any>;bankAutoPreviewNext?:(id:string)=>Promise<any>;
+ bankAutoPreviewPause?:(id:string)=>Promise<any>;bankAutoPreviewResume?:(id:string)=>Promise<any>;bankAutoPreviewCancel?:(id:string)=>Promise<any>;
  bankAutoUndo?:(input:any)=>Promise<any>;bankAutoCorrect?:(input:any)=>Promise<any>;
  bankAutoReceipt?:(id:string)=>Promise<any>;
  bankStatus:()=>Promise<BankState>;bankConfigure:(c:any)=>Promise<BankState>;bankSync:()=>Promise<BankState & {newCount:number;totalCount:number}>;bankForget:()=>Promise<BankState>;importCategoryPack?:()=>Promise<any>;categoriesStatus:()=>Promise<{categories:CategoryInfo[];rules:RuleInfo[]}>;
