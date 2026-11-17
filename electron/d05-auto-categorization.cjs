@@ -489,6 +489,91 @@ class D05AutoCategorization{
    return {applied:receipts.length,reviewCount,batchId:batch,receipts,backupCreated:true};
   }finally{this.busy=false;}
  }
+ startBatch({previewVersion}={}){
+  if(!this.initialReady())throw Error('Auto D05: confirmação inicial ainda não persistida');
+  if(typeof previewVersion!=='string'||!/^[a-f0-9]{64}$/.test(previewVersion))
+   throw Error('Auto D05: manifesto inicial obrigatório');
+  const plan=this.plan({limit:100});
+  if(plan.previewVersion!==previewVersion)throw Error('Auto D05: MANIFEST_STALE; refaça a prévia');
+  const active=this.sql.prepare("SELECT job_id AS id FROM mf_auto_apply_jobs WHERE state IN('running','paused','failed') ORDER BY started_at DESC LIMIT 1").get();
+  if(active)throw Error('Auto D05: já existe lote em andamento; retome ou cancele antes de criar outro');
+  const id=randomUUID(),now=this.clock().toISOString();
+  this.sql.prepare(`INSERT INTO mf_auto_apply_jobs(job_id,preview_version,source_version,state,
+   proposed_total,review_total,started_at) VALUES (?,?,?,'running',?,?,?)`)
+   .run(id,previewVersion,plan.sourceVersion,plan.candidateCount,plan.reviewCount,now);
+  return this.batchStatus(id);
+ }
+ batchStatus(id=null){
+  if(id!==null)requireString(id,'lote');
+  const sql=this.sql;
+  const row=id?sql.prepare('SELECT * FROM mf_auto_apply_jobs WHERE job_id=?').get(id):
+   sql.prepare('SELECT * FROM mf_auto_apply_jobs ORDER BY started_at DESC LIMIT 1').get();
+  if(!row)return null;
+  const receipts=sql.prepare("SELECT COUNT(*) AS n FROM mf_auto_receipts WHERE batch_id=? AND action='apply'").get(row.job_id).n;
+  return {contract:'D05/AUTO-APPLY-PAGED-V1',jobId:row.job_id,
+   state:row.state,proposedTotal:row.proposed_total,reviewTotal:row.review_total,
+   committed:receipts,remaining:Math.max(0,row.proposed_total-receipts),
+   isPartial:receipts<row.proposed_total,startedAt:row.started_at,finishedAt:row.finished_at,
+   errorCode:row.error_code,changesApplied:receipts>0};
+ }
+ pauseBatch(id){
+  requireString(id,'lote');
+  const row=this.batchStatus(id);
+  if(!row||row.state!=='running')throw Error('Auto D05: lote não está em execução');
+  this.sql.prepare("UPDATE mf_auto_apply_jobs SET state='paused' WHERE job_id=? AND state='running'").run(id);
+  return this.batchStatus(id);
+ }
+ cancelBatch(id){
+  requireString(id,'lote');
+  const row=this.batchStatus(id);
+  if(!row||!['running','paused','failed','stale'].includes(row.state))
+   throw Error('Auto D05: lote não pode ser cancelado');
+  this.sql.prepare("UPDATE mf_auto_apply_jobs SET state='cancelled',finished_at=? WHERE job_id=? AND state NOT IN('cancelled','completed')")
+   .run(this.clock().toISOString(),id);
+  return this.batchStatus(id);
+ }
+ resumeBatch(id){
+  requireString(id,'lote');
+  const row=this.sql.prepare('SELECT * FROM mf_auto_apply_jobs WHERE job_id=?').get(id);
+  if(!row||!['paused','failed'].includes(row.state))throw Error('Auto D05: retomada não disponível');
+  if(!this.initialReady()||!this.status().enabled)throw Error('Auto D05: contas sem autorização válida');
+  if(this.plan({limit:1}).sourceVersion!==row.source_version)
+   throw Error('Auto D05: MANIFEST_STALE; lote anterior não pode ser retomado');
+  this.sql.prepare("UPDATE mf_auto_apply_jobs SET state='running',error_code=NULL WHERE job_id=? AND state IN('paused','failed')").run(id);
+  return this.batchStatus(id);
+ }
+ async nextBatch(id,{limit=250}={}){
+  requireString(id,'lote');
+  if(!Number.isInteger(limit)||limit<1||limit>250)throw Error('Auto D05: lote máximo de 250');
+  const row=this.sql.prepare('SELECT * FROM mf_auto_apply_jobs WHERE job_id=?').get(id);
+  if(!row||row.state!=='running')throw Error('Auto D05: lote não está ativo');
+  if(!this.initialReady())throw Error('Auto D05: autorização inicial revogada');
+  if(this.plan({limit:1}).sourceVersion!==row.source_version){
+   this.sql.prepare("UPDATE mf_auto_apply_jobs SET state='stale',error_code='MANIFEST_STALE',finished_at=? WHERE job_id=? AND state='running'")
+    .run(this.clock().toISOString(),id);
+   return this.batchStatus(id);
+  }
+  try{
+   await this.apply({limit,expectedSourceVersion:row.source_version,batchId:id});
+   const fresh=this.plan({limit:1});
+   const nextState=fresh.sourceVersion!==row.source_version?'stale':
+    fresh.candidateCount===0?'completed':'running';
+   this.sql.prepare(`UPDATE mf_auto_apply_jobs SET state=?,
+    error_code=?,finished_at=? WHERE job_id=? AND state='running'`)
+    .run(nextState,nextState==='stale'?'MANIFEST_STALE':null,
+     nextState==='running'?null:this.clock().toISOString(),id);
+   return this.batchStatus(id);
+  }catch(e){
+   const current=this.batchStatus(id);
+   if(current?.state==='running'){
+    const stale=/MANIFEST_STALE/.test(String(e?.message||''));
+    this.sql.prepare("UPDATE mf_auto_apply_jobs SET state=?,error_code=?,finished_at=? WHERE job_id=? AND state='running'")
+     .run(stale?'stale':'failed',stale?'MANIFEST_STALE':'BACKUP_OR_COMMIT_FAILED',
+      this.clock().toISOString(),id);
+   }
+   return this.batchStatus(id);
+  }
+ }
  receipt(id){
   requireString(id,'recibo');
   return this.sql.prepare('SELECT * FROM mf_auto_receipts WHERE id=?').get(id)||null;
