@@ -114,3 +114,32 @@ Executar regressões IC2, financial-intelligence, QA84 B05 e restore/backups apl
 
 ### Continuidade
 O PR #94 continuou evoluindo depois da primeira base da I3-01. Antes de integrar, comparar o HEAD real do #94 com esta branch e exigir diff exclusivo da I3-01. O Pulso Financeiro V6 composto permanece fora do escopo. Não foram adicionados grants paralelos, IPC, SQL gerado por LLM, chamadas API ou escrita financeira; o bloqueio pessoal do MAIN é preservado.
+
+
+---
+
+## I3-01.2 — Regressões reais identificadas no Codespaces (16/11/2026)
+
+**Evidência do proprietário:** checkout na branch `feat/mf2-i3-01-verifiable-investigation-20261116`, execução oficial Node/SQLite: **900 testes / 892 PASS / 8 FAIL**. Esse resultado é do PR #95, **não** da candidata congelada PR #94. Nenhum resultado de CircleCI/Windows foi fornecido por esse log.
+
+### Diagnóstico sem reduzir a proteção financeira
+
+1. **RC-ALL-01 IC2 (3 FAIL) + P1 IC2 (1 FAIL):** `parseIntent` na I3-01 interceptava `Quanto gastei?`, `Quanto gastei com alimentação?` e outras perguntas de total, devolvendo comparação de dois meses e `partial`, em lugar do resumo mensal IC2 com `expenseCents`. **Produção corrigida:** investigação agora exige uma intenção analítica/comparativa clara; totais simples continuam no motor anterior. Verificação isolada V8: três consultas de resumo não são interceptadas e oito formulações analíticas continuam reconhecidas. Acrescentado teste T41.
+2. **R2 Conversar (3 FAIL):** o VM de `tests/intelligence-premium-ui.test.cjs` transpilava apenas `intelligence-local.ts`, mas `intelligenceFoldText` é definida em `src/intelligence-integration.ts` no `outFile` real. **Harness corrigido** para executar o corpo da função verdadeira, sem criar stub sintético nem alterar as asserções. O erro `resolve is not a function` no terceiro teste era consequência de a chamada falhar antes de iniciar a promise.
+3. **I2-A/followup (1 FAIL):** investigação I3 para `Por que meus gastos aumentaram?` retornou corretamente `partial` com novo fato `compare_spending_breakdown`, mas o teste histórico esperava `ready` e o formato `deltaExpenseCents` antigo. **Regressão preservada:** o orquestrador registra, no escopo do contexto/grant, um `lastPlan` de comparação canônica e nomes das categorias (não grava cifras em cache) para permitir `Agora desconsidere Transporte`. O teste agora exige `partial` na investigação quando a cobertura é limitada, `deltaCents=11000` e um follow-up canônico que recalcula `deltaExpenseCents=9000`, além de verificar a imutabilidade do primeiro resultado. Verificação V8 isolada do roteador de follow-up confirmou `compare` com exclusão `transporte`.
+
+**Arquivos alterados exclusivamente na branch #95:** `electron/intelligence-investigation.cjs`, `electron/intelligence-orchestrator.cjs`, `tests/intelligence-premium-ui.test.cjs`, `tests/intelligence-i2a.test.cjs`, `tests/i3-01-investigation.test.cjs` e este handoff. **Não foi feito merge em #94/main, build Windows nem lançamento EXE.**
+
+**Gates atuais:** patch publicado, parse e follow-up conferidos isoladamente em V8; `node --test`, `npm run test:types`, `npm run test:db`, Electron, F08 e Windows **NOT_RUN no HEAD corrigido**. **NO-GO** até o Codespaces repetir os testes.
+
+```bash
+git switch feat/mf2-i3-01-verifiable-investigation-20261116
+git pull --ff-only
+git rev-parse HEAD
+npm run test:types
+npm run compile
+node --test tests/i3-01-investigation.test.cjs tests/intelligence-i2a.test.cjs tests/intelligence-premium-ui.test.cjs tests/rc-all-01-ic2.test.cjs tests/rc-all-full-build-symbols.test.cjs
+npm run test:db
+```
+
+Se PASS, prosseguir apenas então para preload/ASAR/F08 e integração controlada; **não disparar outro CircleCI Windows** antes do resultado local.
