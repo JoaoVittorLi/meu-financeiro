@@ -22,7 +22,7 @@ function boot(){
  const file=path.join(root,'meu-financeiro.sqlite'),db=new FinanceDB(file);
  const rowsA=Array.from({length:630},(_,i)=>gen('a-'+i,
    i%2?'COMPRA CARTAO MERCADO BOA PRACA FINAL '+i:'MERCADO BOA PRACA REF '+i,i));
- rowsA.push(gen('a-pending','MERCADO BOA PRACA PENDING',12,'PENDING'));
+ rowsA.push({...gen('a-pending','MERCADO BOA PRACA PENDING',12,'PENDING'),amount:-99.99});
  rowsA.push(gen('a-unknown','LOJA DESCONHECIDA',12));
  const rowsB=Array.from({length:8},(_,i)=>gen('b-'+i,'MERCADO BOA PRACA BANCO B '+i,i));
  db.ingestBank(ITEM_A,{item:{status:'UPDATED'},data:[{account:{
@@ -260,13 +260,13 @@ test('P0 PENDING-to-POSTED transition with same account/ID never duplicates bank
  assert.equal(e.db.db.prepare('SELECT 1 FROM mf_auto_labels WHERE account_id=? AND external_id=?').get(ACCOUNT_A,'a-pending'),undefined);
  e.db.ingestBank(ITEM_A,{item:{status:'UPDATED'},data:[{account:{
   id:ACCOUNT_A,name:'CONTA FICTÍCIA A',type:'CHECKING'},transactions:[
-   gen('a-pending','MERCADO BOA PRACA PENDING',12,'POSTED')
+   {...gen('a-pending','MERCADO BOA PRACA PENDING',12,'POSTED'),amount:-99.99}
   ]}]});
  assert.equal(e.db.db.prepare('SELECT COUNT(*) AS n FROM bank_transactions').get().n,before);
  assert.equal(e.db.db.prepare('SELECT status FROM bank_transactions WHERE account_id=? AND external_id=?').get(ACCOUNT_A,'a-pending').status,'POSTED');
  const plan=e.auto.plan({limit:20000});
- assert(!plan.candidates.some(p=>p.externalId==='a-pending'), 'Potential same-day/amount merchant duplicate must be reviewed');
- assert(plan.review.some(p=>p.externalId==='a-pending'&&/duplicad/.test(p.reason)));
- await e.auto.apply();
- assert.equal(e.db.db.prepare("SELECT COUNT(*) AS n FROM mf_auto_receipts WHERE action='apply'").get().n,first.applied);
+ assert(plan.candidates.some(p=>p.externalId==='a-pending'), 'POSTED may now qualify with stable bank identity');
+ assert.equal((await e.auto.apply()).applied,1);
+ assert.equal((await e.auto.apply()).applied,0);
+ assert.equal(e.db.db.prepare("SELECT COUNT(*) AS n FROM mf_auto_receipts WHERE action='apply'").get().n,first.applied+1);
 }));
