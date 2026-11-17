@@ -145,3 +145,36 @@ test('MF1 auto: merchant aliases reconcile description variants only when owner 
  assert.equal(merchant('PAGAMENTO MERCADO VILA 837',[...alias,{pattern:'PAGAMENTO MERCADO',display_name:'OUTRO'}]),null);
  assert.equal(merchant('PIX',[...alias]),null);
 });
+
+test('MF1 auto: PENDING to POSTED reconciliation keeps a single external identity and exactly one auto assignment',()=>sandbox(async dir=>{
+ const {finance,rows}=make(dir);try{
+  const auto=service(finance,dir);auto.consent({accountIds:[ACCOUNT],enabled:true});
+  await auto.run();
+  assert.equal(finance.db.prepare('SELECT COUNT(*) AS n FROM mf_auto_labels WHERE account_id=? AND external_id=?').get(ACCOUNT,'tx-609').n,0);
+  const tx={...rows[609],status:'POSTED'};
+  finance.ingestBank('11111111-1111-4111-8111-111111111111',{item:{status:'UPDATED'},data:[{
+   account:{id:ACCOUNT,name:'CONTA FICTICIA',balance:100,type:'CHECKING'},transactions:[tx]}]});
+  const second=await auto.run();
+  assert.equal(second.applied,1);
+  assert.equal(finance.db.prepare('SELECT COUNT(*) AS n FROM bank_transactions WHERE account_id=? AND external_id=?').get(ACCOUNT,'tx-609').n,1);
+  assert.equal(finance.db.prepare('SELECT COUNT(*) AS n FROM mf_auto_labels WHERE account_id=? AND external_id=?').get(ACCOUNT,'tx-609').n,1);
+  assert.equal((await auto.run()).applied,0);
+ }finally{finance.close();}
+}));
+test('MF1 auto: a legacy manual category without D05 IDs blocks automatic overwrite',()=>sandbox(async dir=>{
+ const {finance}=make(dir);try{
+  finance.db.prepare('INSERT INTO bank_category_overrides(account_id,external_id,category) VALUES (?,?,?)').run(ACCOUNT,'tx-30','Moradia');
+  const auto=service(finance,dir);auto.consent({accountIds:[ACCOUNT],enabled:true});await auto.run();
+  assert.equal(finance.db.prepare('SELECT COUNT(*) AS n FROM mf_auto_labels WHERE account_id=? AND external_id=?').get(ACCOUNT,'tx-30').n,0);
+  assert.equal(finance.db.prepare('SELECT category FROM bank_category_overrides WHERE account_id=? AND external_id=?').get(ACCOUNT,'tx-30').category,'Moradia');
+ }finally{finance.close();}
+}));
+test('MF1 auto: unauthorized runtime cannot even create auto tables on a personal-looking profile',()=>sandbox(async dir=>{
+ const {finance}=make(dir);try{
+  const off=new PersonalAutoCategorizer({finance:()=>finance,backupDirectory:()=>path.join(dir,'backups'),allowed:()=>false});
+  assert.equal(off.status().available,false);
+  assert.throws(()=>off.consent({accountIds:[ACCOUNT],enabled:true}),/permission denied/);
+  await assert.rejects(off.run(),/denied/);
+  assert.equal(finance.db.prepare("SELECT COUNT(*) AS n FROM sqlite_master WHERE name LIKE 'mf_auto_%'").get().n,0);
+ }finally{finance.close();}
+}));
