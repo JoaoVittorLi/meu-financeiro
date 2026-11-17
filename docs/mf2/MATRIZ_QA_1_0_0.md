@@ -1,5 +1,10 @@
 # Matriz QA — gates da candidata 1.0.0
 
+> **DECISÃO P0/OPÇÃO A (17/11/2026):** o proprietário tornou a **categorização automática pessoal por conta** obrigatória para v1.0.0. Código em [PR #100](https://github.com/JoaoVittorLi/meu-financeiro/pull/100) **Draft sobre #96**; consentimento persistente e revogável, D05 14×61, I2-E, backups, recibos e reversão. **Não homologada:** 18 regressões sintéticas versionadas, Node oficial/SQLite integral/TypeScript/Electron Windows/QA visual **NOT_RUN**; v1.0.0 NO-GO. A escrita pessoal da IA para outras ações permanece desativada.
+
+**Atenção:** SHA #96 `2ce62fe...` tem regressões RC2.3, enquanto o código P0 vive em #100, sobre #96. Após integração, **novo SHA** exigirá reexecutar todos os gates pertinentes; não herdar PASS do #94 nem os checks isolados do PR #100.
+
+
 **QA target:** PR #96 HEAD `2ce62fe4fde7e60df327be3bfa03f47dcc7fbfff`; **nenhum gate oficial foi executado neste HEAD nesta missão documental**. Evidência anterior do PR #94 `674108e...` é histórica. [Issue QA #65](https://github.com/JoaoVittorLi/meu-financeiro/issues/65).
 
 | Gate / alvo | Comando ou procedimento | Evidência no SHA #96 | Aceite obrigatório |
@@ -22,6 +27,9 @@
 | Pluggy offline e rollback Windows | Abrir perfil sintético, cofre fictício e SQLite/WAL, simular falha safeStorage, restaurar cópia | NOT_RUN | valores/IDs íntegros, sem segredo exposto ou alteração em perfil real |
 | Worker/PWA | `cd mobile-push && npm ci && npm test && npx --no-install wrangler deploy --dry-run` | NOT_RUN | não publicar produção, dados pessoais fora do ambiente |
 | Build Windows anterior #94 | GitHub status `ci/circleci: build_windows` | **ERROR no SHA #94**, não #96 | Obter log bruto do job; erro de infra/produto classificado |
+| P0 automação #100 (branch separada) | `node --test tests/d05-auto-categorization.test.cjs` e full suite | **18 testes declarados / OFFICIAL_NOT_RUN** | 630+ fictícios, contas separadas, 90 dias, 14×61, I2-E, consentimento, duplicação/repetição, regras, PENDING, splits, erros COMMIT, backup/undo e restauração |
+| P0 autorização e segurança | QA Electron Windows e métodos `bank:auto-*` em ASAR real | NOT_RUN | MAIN nativo per-account, default OFF, RC offline; revogar, reentrar, undo, sem grant geral |
+| P0 calibração/precisão | Matriz sintética de falsos positivos/negativos, conflitos, contas desconhecidas, amostras parciais | NOT_RUN | 5 correções/3 datas é **limiar provisório**, exige aceite proprietário; heurística local ≠ inferência LLM |
 | Publicação/tag | Decisão expressa [#71](https://github.com/JoaoVittorLi/meu-financeiro/issues/71) | NOT_AUTHORIZED | Todos gates aplicáveis + aceite e rollback |
 
 **Nota:** pacote RC normal é offline, enquanto pacote stable tem permissões diferentes; testar ambos com fixture para não confundir falha de integração com restrição deliberada. Nenhum teste de dados pessoais em CI. SHA muda ⇒ invalidar/reexecutar etapas afetadas, atualizar manifesto e não promover PASS herdado.

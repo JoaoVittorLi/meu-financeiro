@@ -1,5 +1,10 @@
 # Guia de navegação — Meu Financeiro / candidata 1.0.0
 
+> **DECISÃO P0/OPÇÃO A (17/11/2026):** o proprietário tornou a **categorização automática pessoal por conta** obrigatória para v1.0.0. Código em [PR #100](https://github.com/JoaoVittorLi/meu-financeiro/pull/100) **Draft sobre #96**; consentimento persistente e revogável, D05 14×61, I2-E, backups, recibos e reversão. **Não homologada:** 18 regressões sintéticas versionadas, Node oficial/SQLite integral/TypeScript/Electron Windows/QA visual **NOT_RUN**; v1.0.0 NO-GO. A escrita pessoal da IA para outras ações permanece desativada.
+
+**Ramo P0 em execução:** [#100](https://github.com/JoaoVittorLi/meu-financeiro/pull/100) (categorização automática, ainda não integrado a #96), [#98](https://github.com/JoaoVittorLi/meu-financeiro/pull/98) (documentação). A decisão Opção A consta na issue #71; QA #65; ownership #49. Nenhuma escrita pessoal geral foi habilitada.
+
+
 > Índice vigente para a árvore de código **PR #96** HEAD `2ce62fe4fde7e60df327be3bfa03f47dcc7fbfff`, em 17/11/2026. A documentação vinda do [PR #82](https://github.com/JoaoVittorLi/meu-financeiro/pull/82) foi revisada e reutilizada aqui; o PR #82 e seus SHAs são **históricos**, não instruções para rodar o release.
 
 ## Onde começar

@@ -1,5 +1,10 @@
 # STATUS ATUAL — Meu Financeiro / preparação 1.0.0
 
+> **DECISÃO P0/OPÇÃO A (17/11/2026):** o proprietário tornou a **categorização automática pessoal por conta** obrigatória para v1.0.0. Código em [PR #100](https://github.com/JoaoVittorLi/meu-financeiro/pull/100) **Draft sobre #96**; consentimento persistente e revogável, D05 14×61, I2-E, backups, recibos e reversão. **Não homologada:** 18 regressões sintéticas versionadas, Node oficial/SQLite integral/TypeScript/Electron Windows/QA visual **NOT_RUN**; v1.0.0 NO-GO. A escrita pessoal da IA para outras ações permanece desativada.
+
+**Cadeia funcional em preparação:** #94 → #96 → [#100](https://github.com/JoaoVittorLi/meu-financeiro/pull/100) (P0 ainda **não integrado ao #96/main**). Documentação #98 descreve três branches e depende do merge controlado do P0. Não contar o código em #100 como QA ou disponibilidade da #96.
+
+
 > **Painel canônico de referência documental**, atualizado em 17/11/2026. A decisão/GO continua exclusivamente na [issue #71](https://github.com/JoaoVittorLi/meu-financeiro/issues/71); coordenação técnica na [#49](https://github.com/JoaoVittorLi/meu-financeiro/issues/49). O PR documental não altera o aplicativo nem o status de testes.
 
 ## Estado verificado
@@ -37,7 +42,7 @@ Detalhamento linha a linha: [MATRIZ_FUNCIONAL_1_0_0.md](MATRIZ_FUNCIONAL_1_0_0.m
 1. **P0 QA oficial no SHA atual**: Node/npm fixados, 17 novas verificações RC2.2/RC2.3 e suíte histórica; investigar qualquer FAIL sem relabel.
 2. **P0 Windows real**: GUI Electron, 32 capturas e B01–B05, segurança IPC/preload, identidade `stable` dentro do ASAR, persistência de SQLite e Pluggy com fixtures exclusivamente sintéticas.
 3. **P0 falha anterior do job Windows**: recuperar log bruto e classificar erro de infraestrutura/produto; enquanto desconhecido, gate não aprovado.
-4. **P0 owner**: decisão sobre escrita pessoal supervisionada. Se exigir para 1.0, release bloqueado até implementação/QA/consentimento; se **adiar explicitamente**, manter flag bloqueada e divulgar limitação.
+4. **P0 OPÇÃO A DECIDIDA:** categorização automática pessoal por conta **obrigatória para a 1.0**. PR #100 implementa caminho dedicado, mas release BLOQUEADO até execução Node/SQLite/Windows no HEAD integrado e calibração/aceite. Outras escritas IA podem continuar OFF.
 5. **P0 publicação**: QA completo e autorização do proprietário para fixação `1.0.0`, `v1.0.0`, GitHub Release, Windows stable/instalador, atualização de perfis reais.
 6. **P1 produto**: concluir aceite D05 e B01–B05 em Electron real. Issues #74/#84 permanecem abertas até provas.
 

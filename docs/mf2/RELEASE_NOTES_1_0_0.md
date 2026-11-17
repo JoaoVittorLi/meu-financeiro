@@ -1,5 +1,7 @@
 # Meu Financeiro 1.0.0 — RELEASE NOTES (RASCUNHO / NÃO PUBLICADO)
 
+> **DECISÃO P0/OPÇÃO A (17/11/2026):** o proprietário tornou a **categorização automática pessoal por conta** obrigatória para v1.0.0. Código em [PR #100](https://github.com/JoaoVittorLi/meu-financeiro/pull/100) **Draft sobre #96**; consentimento persistente e revogável, D05 14×61, I2-E, backups, recibos e reversão. **Não homologada:** 18 regressões sintéticas versionadas, Node oficial/SQLite integral/TypeScript/Electron Windows/QA visual **NOT_RUN**; v1.0.0 NO-GO. A escrita pessoal da IA para outras ações permanece desativada.
+
 > **NÃO É UMA VERSÃO DISPONÍVEL.** Preparação de escopo e comunicação. O código da candidata segue em `0.9.5-beta.8`; PR #96 Draft, HEAD `2ce62fe4fde7e60df327be3bfa03f47dcc7fbfff`. Não há tag `v1.0.0`, instalador stable homologado, data ou GitHub Release aprovado.
 
 ## Escopo previsto a homologar
@@ -15,7 +17,7 @@ Tudo acima descreve **código presente na candidata**; release notes finais só 
 
 ## Limitações divulgadas
 
-- **IA pessoal: sem execução de alterações financeiras.** Há revisão e previews, mas `approvedForPersonal:()=>false`. Uma versão que exija escrita IA para 1.0 depende de decisão explícita do proprietário; não anunciar como implementada.
+- **IA pessoal:** categorização automática de movimentações bancárias autorizadas por conta é **requisito obrigatório da futura 1.0**, com implementação em **PR #100 ainda não homologada**. Outras escritas IA seguem bloqueadas (`approvedForPersonal:()=>false`). Não anunciar como funcionalidade liberada até QA e GO.
 - **Pulso Financeiro:** projeção de caixa real não é fornecida sem saldo disponível e agenda verificados pelo IC-READ. Dados sintéticos ou simples diferença de fluxos não substituem saldo.
 - **Bancos:** Pluggy depende de credenciais/cofre e consentimento no canal permitido; sincronização offline/atraso/cobertura parcial impactam saldos.
 - **RC experimental:** perfil isolado; Pluggy, IA externa e cloud pessoal **desativados**. Não compartilhar arquivos entre RC e stable.

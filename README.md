@@ -1,5 +1,10 @@
 # Meu Financeiro — preparação do lançamento 1.0.0
 
+> **DECISÃO P0/OPÇÃO A (17/11/2026):** o proprietário tornou a **categorização automática pessoal por conta** obrigatória para v1.0.0. Código em [PR #100](https://github.com/JoaoVittorLi/meu-financeiro/pull/100) **Draft sobre #96**; consentimento persistente e revogável, D05 14×61, I2-E, backups, recibos e reversão. **Não homologada:** 18 regressões sintéticas versionadas, Node oficial/SQLite integral/TypeScript/Electron Windows/QA visual **NOT_RUN**; v1.0.0 NO-GO. A escrita pessoal da IA para outras ações permanece desativada.
+
+**Nova frente bloqueante:** [PR #100](https://github.com/JoaoVittorLi/meu-financeiro/pull/100) desenvolve categorização automática D05/I2-E com opt-in por conta, permanência/revogação e correção humana, **ainda não integrada nem homologada**. A versão 1.0.0 só será lançada com essa capacidade realmente aprovada no Electron Windows. Não confundir com outras escritas pessoais pela IA, que continuam desligadas.
+
+
 > **PR de preparação documental; 1.0.0 NÃO LANÇADA.** O código candidato continua em **`0.9.5-beta.8`**. O PR [#96](https://github.com/JoaoVittorLi/meu-financeiro/pull/96), HEAD `2ce62fe4fde7e60df327be3bfa03f47dcc7fbfff`, contém a correção RC-ALL-02.3, mas seus gates oficiais no SHA final ainda estão **NOT_RUN**. Não instale esta candidata sobre seu perfil financeiro pessoal. A decisão de release pertence à [issue #71](https://github.com/JoaoVittorLi/meu-financeiro/issues/71).
 
 Aplicativo de finanças pessoais para **Windows x64**: Electron 45, interface React 16/TypeScript 5.8, persistência local SQLite, lançamento manual e consulta bancária Pluggy quando autorizada e habilitada. O projeto reúne Visão Geral, Movimentações, Orçamentos, Planejamento, Simulações, Contas e uma Central de Inteligência que prioriza **fatos verificáveis e consentimento explícito**. Recursos em uma branch ou em um protótipo **não equivalem a um instalador estável homologado**.

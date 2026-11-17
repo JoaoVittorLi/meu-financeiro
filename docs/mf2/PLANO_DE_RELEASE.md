@@ -1,5 +1,10 @@
 # Plano de release — Meu Financeiro 1.0.0 (NÃO APROVADO)
 
+> **DECISÃO P0/OPÇÃO A (17/11/2026):** o proprietário tornou a **categorização automática pessoal por conta** obrigatória para v1.0.0. Código em [PR #100](https://github.com/JoaoVittorLi/meu-financeiro/pull/100) **Draft sobre #96**; consentimento persistente e revogável, D05 14×61, I2-E, backups, recibos e reversão. **Não homologada:** 18 regressões sintéticas versionadas, Node oficial/SQLite integral/TypeScript/Electron Windows/QA visual **NOT_RUN**; v1.0.0 NO-GO. A escrita pessoal da IA para outras ações permanece desativada.
+
+**Gate novo G2-A (P0):** PR #100 deve passar 18 regressões Node/SQLite e casos 600+, dedup/PENDING/POSTED, regra e correção manual, I2-E, conta+prazo, falha/rollback, recibo persistente, startup/restart; o MAIN só habilita contas com confirmação nativa, fora da RC. QA Windows em perfil **sintético** e prova de modelo/calibração são requisitos de GO; sem isso, nenhuma release.
+
+
 > Reaproveita o plano do [PR #82](https://github.com/JoaoVittorLi/meu-financeiro/pull/82), substituindo a cadeia obsoleta #76-only pela candidata mais recente **#76 → #94 → #96**. Este plano não autoriza pipeline, instalador, migração pessoal, tag ou release. **Issue #71 é o marco equivalente v1.0.0 e decisão canônica de GO/NO-GO.**
 
 ## 1. Ownership, fronteiras e dependências
@@ -31,7 +36,7 @@ Cadeia atual: PR #76 (**integração anterior**) → #94 (**D01–D05/B01–B05 
 | G3 | Artefatos de código | `npm run compile`; preload check; `test:asar`; `provenance:create`/`verify`; hash/manifesto fiéis ao SHA | Executor QA |
 | G4 | Electron real | Boot, 32 capturas, 1366/1920, dark/light, zoom 100/125/150, teclado/Escape/foco/reduced-motion, B01–B05/D05 | QA visual |
 | G5 | Windows identidade | Smoke em máquina/VM descartável: instalador/portable sintéticos **somente após autorização de build**, identidade ASAR, `userData` correto, backup/restore, Pluggy offline; investigar erro anterior Windows | Integrador + Proprietário |
-| G6 | Política IA e cloud | Leitura autorizada, qualidade I2-E, I3-01, Pulse unavailable sem saldo verificado; escrita pessoal OFF ou homologada com decisão explícita #71; sem cutover não aprovado | Proprietário |
+| G6 | Política IA e cloud | Leitura autorizada, qualidade I2-E, I3-01, Pulse unavailable sem saldo verificado; automação bancária pessoal P0 homologada após opt-in por conta; demais escritas IA OFF; sem cutover não aprovado | Proprietário |
 | G7 | Release | Notas/checksums/rollback, aceite do proprietário, SemVer final, tag/release controlados, verificação de fonte e artefatos | Proprietário |
 
 **Comandos no checkout exato** (não os execute em perfis pessoais):
@@ -67,7 +72,7 @@ O SHA #94 `674108e...` tem status `preflight_linux=success` e `build_windows=err
 
 ## 6. Decisões formais em aberto para #71
 
-**D-1 escrita pessoal supervisionada:** opção A — exigir gateway pessoal, recibo idempotente, rollback e QA antes da 1.0 (**bloqueia release**). Opção B — adiar para pós-1.0 mantendo `approvedForPersonal:()=>false` e divulgação explícita (**requer consentimento do proprietário**). **Nenhuma opção é presumida**.
+**D-1 DECIDIDA — OPÇÃO A:** a **categorização automática bancária pessoal** é P0 obrigatório da v1.0.0. Só pode agir nas contas/períodos autorizados pelo proprietário no MAIN, com consentimento SQLite persistente/revogável, evidência I2-E e D05, recibo/backup/reversão; não exige clique por transação quando critérios restritivos forem homologados. Código proposto em **PR #100 Draft** (base #96). **NO-GO até Node/SQLite, segurança e Electron/Windows no SHA integrado, calibração/aceite e autorização de release.** Outras escritas pessoais IA permanecem OFF e podem ir ao roadmap posterior; não liberar `approvedForPersonal` genericamente.
 
 **D-2 objetivo cloud:** sem autorizar migração/cutover pessoal na 1.0 enquanto paridade e permissão não forem validadas.
 

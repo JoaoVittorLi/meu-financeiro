@@ -1,5 +1,12 @@
 # Arquitetura do Meu Financeiro — estado candidato 1.0.0
 
+> **DECISÃO P0/OPÇÃO A (17/11/2026):** o proprietário tornou a **categorização automática pessoal por conta** obrigatória para v1.0.0. Código em [PR #100](https://github.com/JoaoVittorLi/meu-financeiro/pull/100) **Draft sobre #96**; consentimento persistente e revogável, D05 14×61, I2-E, backups, recibos e reversão. **Não homologada:** 18 regressões sintéticas versionadas, Node oficial/SQLite integral/TypeScript/Electron Windows/QA visual **NOT_RUN**; v1.0.0 NO-GO. A escrita pessoal da IA para outras ações permanece desativada.
+
+## P0 auto-categorização pessoal (PR #100, NÃO integrada ao #96)
+
+`electron/d05-auto-categorization.cjs` usa D05CategoryService, I2-E evidenceVerdict e `matchRule` para sugerir/aplicar somente overlay `mf_auto_labels` com pai/filho e fingerprint. Consentimento `mf_auto_permissions` por conta/período/90 dias no MAIN, `mf_auto_receipts` e `mf_auto_feedback` separam decisão automática de correção humana. `electron/main.cjs` registra `bank:auto-*` com consentimento nativo; preload expõe somente métodos nomeados; UI D05 + B05 + D04 usam esses métodos. Precedência: override humano → regra aprovada → overlay automático → categoria da fonte. `bank_transactions` não é alterada. O gerador de sugestão de regra usa prévia D05 e requer aprovação separada; nada é salvo automaticamente. É **motor determinístico local**, não modelo LLM. O comportamento só existe na branch #100; integração, testes oficiais Node/Windows e calibração ainda NOT_RUN.
+
+
 **Base inspecionada:** PR #96 `2ce62fe4fde7e60df327be3bfa03f47dcc7fbfff`; versão do código `0.9.5-beta.8`, **não homologada como 1.0.0**. Fontes primárias: `electron/main.cjs`, `electron/preload.cjs`, `electron/db.cjs`, `electron/release-channel.cjs`, `src/app.ts`, `src/intelligence-*.ts`, `app/index.html`, `mobile-push/`.
 
 ## Camadas e dados

@@ -4,6 +4,11 @@ Formato cronológico com SemVer; `Unreleased` **não** indica versão homologada
 
 ## [Unreleased] — preparação da 1.0.0 (17/11/2026)
 
+> **DECISÃO P0/OPÇÃO A (17/11/2026):** o proprietário tornou a **categorização automática pessoal por conta** obrigatória para v1.0.0. Código em [PR #100](https://github.com/JoaoVittorLi/meu-financeiro/pull/100) **Draft sobre #96**; consentimento persistente e revogável, D05 14×61, I2-E, backups, recibos e reversão. **Não homologada:** 18 regressões sintéticas versionadas, Node oficial/SQLite integral/TypeScript/Electron Windows/QA visual **NOT_RUN**; v1.0.0 NO-GO. A escrita pessoal da IA para outras ações permanece desativada.
+
+- **Opção A do proprietário:** categorização automática de movimentações bancárias por conta torna-se gate P0 do lançamento. Código em [PR #100](https://github.com/JoaoVittorLi/meu-financeiro/pull/100) com consentimento persistente e expirável, 14×61 D05, I2-E e overlays SQLite; 18 testes versionados, **Node oficial e Windows NOT_RUN**. Não inclui autorização para escrita geral de IA.
+
+
 **Estado:** DOCUMENTATION_PREPARATION / CODE_CANDIDATE_0.9.5-beta.8 / QA_NEWEST_SHA_NOT_RUN / **NO RELEASE**.
 
 ### Código presente na candidata empilhada #76 → #94 → #96

@@ -1,5 +1,12 @@
 # Dados, backup, perfis e migração segura — Windows 1.0.0
 
+> **DECISÃO P0/OPÇÃO A (17/11/2026):** o proprietário tornou a **categorização automática pessoal por conta** obrigatória para v1.0.0. Código em [PR #100](https://github.com/JoaoVittorLi/meu-financeiro/pull/100) **Draft sobre #96**; consentimento persistente e revogável, D05 14×61, I2-E, backups, recibos e reversão. **Não homologada:** 18 regressões sintéticas versionadas, Node oficial/SQLite integral/TypeScript/Electron Windows/QA visual **NOT_RUN**; v1.0.0 NO-GO. A escrita pessoal da IA para outras ações permanece desativada.
+
+## Camada P0 auto classificação — proteção adicional (PR #100)
+
+A branch P0 acrescenta tabelas aditivas `mf_auto_permissions`, `mf_auto_labels`, `mf_auto_receipts`, `mf_auto_feedback`, com triggers de precedência humana. Backup online SQLite de origem verificado antes de aplicar, corrigir ou reverter rótulo; cada operação é transacional e preserva o extrato original. Expiração: 90 dias após consentimento nativo no MAIN, específico por conta/período; revogação bloqueia novas operações sem apagar recibos. **Não migrar dados reais nem tratar esse novo esquema como QA aprovado.** Depois de mesclar #100 à candidata e antes de GO, executar testes de schema/backup/rollback/restart/Windows em perfis falsos; nova versão do banco e protocolo de restauração exigem inspeção. Outras ações pessoais da IA continuam bloqueadas.
+
+
 **Estado:** guia preventivo para uma release **não lançada**. Não autoriza migrar dados pessoais, alterar o SQLite ou copiar arquivos criptografados. Código: `electron/release-channel.cjs`, `electron/main.cjs`, `electron/db.cjs`. Handoff: [RC-ALL-02.3](../ai-context/RC_ALL_02_3_BACKUP_GATE_20261117.md).
 
 ## 1. Perfis Windows
