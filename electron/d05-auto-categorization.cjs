@@ -79,6 +79,24 @@ class D05AutoCategorization{
     account_id TEXT NOT NULL,external_id TEXT NOT NULL,reason TEXT NOT NULL,
     recorded_at TEXT NOT NULL,PRIMARY KEY(account_id,external_id)
    );
+   CREATE TRIGGER IF NOT EXISTS mf_auto_manual_insert AFTER INSERT ON bank_category_overrides
+   WHEN EXISTS(SELECT 1 FROM mf_auto_labels
+    WHERE account_id=NEW.account_id AND external_id=NEW.external_id)
+   BEGIN
+    DELETE FROM mf_auto_labels WHERE account_id=NEW.account_id AND external_id=NEW.external_id;
+    INSERT INTO mf_auto_feedback(account_id,external_id,reason,recorded_at)
+      VALUES(NEW.account_id,NEW.external_id,'human_override',CURRENT_TIMESTAMP)
+      ON CONFLICT(account_id,external_id) DO UPDATE SET reason=excluded.reason,recorded_at=excluded.recorded_at;
+   END;
+   CREATE TRIGGER IF NOT EXISTS mf_auto_manual_update AFTER UPDATE ON bank_category_overrides
+   WHEN EXISTS(SELECT 1 FROM mf_auto_labels
+    WHERE account_id=NEW.account_id AND external_id=NEW.external_id)
+   BEGIN
+    DELETE FROM mf_auto_labels WHERE account_id=NEW.account_id AND external_id=NEW.external_id;
+    INSERT INTO mf_auto_feedback(account_id,external_id,reason,recorded_at)
+      VALUES(NEW.account_id,NEW.external_id,'human_override',CURRENT_TIMESTAMP)
+      ON CONFLICT(account_id,external_id) DO UPDATE SET reason=excluded.reason,recorded_at=excluded.recorded_at;
+   END;
   `);
  }
  permissions(){
