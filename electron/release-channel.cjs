@@ -95,12 +95,17 @@ async function stablePreMigrationBackup(root,version){
   await backup(source,temporary);
   verifySQLiteFile(temporary);
   const currentHash=await sqliteSha256(temporary);
+  // Reject any invalid historical backup before deciding an earlier match is reusable.
+  const validated=[];
   for(const name of snapshots){
    const candidate=path.join(directory,name);
    const stat=fs.lstatSync(candidate);
    if(stat.isSymbolicLink()||!stat.isFile())
     throw Error('Backup existente inválido; instalação anterior preservada.');
    verifySQLiteFile(candidate);
+   validated.push(candidate);
+  }
+  for(const candidate of validated){
    if(await sqliteSha256(candidate)===currentHash){
     fs.rmSync(temporary,{force:true});
     return {existing:true,backup:candidate};
