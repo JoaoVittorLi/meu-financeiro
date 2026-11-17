@@ -80,16 +80,18 @@ test('B02 advanced drawer retains focus restoration for keyboard navigation',()=
  assert.deepEqual(focus,['category','row','generic']);
 });
 
-test('B02 category editor is marked for both origins and remains separate from split editing',()=>{
- assert.match(src,/this\.field\('Categoria principal',h\(StyledSelect,\{className:'mf-transaction-category-select',value:tx\.category/);
- assert.match(src,/this\.field\('Categoria do lançamento',h\(StyledSelect,\{/);
- assert.match(src,/className:'mf-transaction-category-select',value:this\.state\.manualDraft\.category/);
- assert.match(src,/onChange:\(v:string\)=>this\.setBankCategory\(tx,v\)/);
- assert.match(src,/onChange:\(v:string\)=>this\.setState\(\{manualDraft:\{\.\.\.this\.state\.manualDraft!,category:v\}\}\)/);
+test('B02 category entry points use supervised D05 rather than legacy direct selectors, separate from split editing',()=>{
+ assert.match(src,/this\.field\('Categoria principal',categoryAction\('Alterar classificação bancária de '\+name\)\)/);
+ assert.match(src,/this\.field\('Categoria do lançamento',categoryAction\('Alterar categoria manual de '\+name\)\)/);
+ assert.match(src,/function TransactionCategoryButton\(/);
+ assert.match(src,/this\.qa84D05DrawerIds=/);
  assert.match(src,/async saveManualDetail\(id:string\)/);
+ assert.match(src,/Classificação exige a prévia supervisionada D05/);
  assert.match(src,/onClick:\(\)=>this\.saveManualDetail\(manual\.id\)/);
  assert.match(src,/f\.splitParts\.map\(\(part,i\)=>/);
  assert.match(src,/onChange:\(\)=>this\.toggleSelected\(v\)/);
+ const drawer=src.slice(src.indexOf(' renderDetail(){'),src.indexOf(' renderEditModal(){'));
+ assert.doesNotMatch(drawer,/onChange:\(v:string\)=>this\.setBankCategory\(tx,v\)/);
 });
 
 test('B02 renderer labels match the current candidate version and exclude prior releases',()=>{
