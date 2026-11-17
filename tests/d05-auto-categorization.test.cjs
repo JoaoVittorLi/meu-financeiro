@@ -35,7 +35,7 @@ function boot(){
  let fault=null;
  const auto=new D05AutoCategorization({finance:()=>db,backupDirectory:()=>path.join(root,'backups'),
   fault:(where,count)=>{if(typeof fault==='function')fault(where,count);}});
- return {root,file,db,auto,rowsA,d05,fail:fn=>fault=fn,close:()=>{db.close();fs.rmSync(root,{recursive:true,force:true});}};
+ return {root,file,db,auto,rowsA,d05,fail:fn=>fault=fn,close:()=>{if(db.db?.isOpen)db.close();fs.rmSync(root,{recursive:true,force:true});}};
 }
 const sandbox=async fn=>{const e=boot();try{return await fn(e);}finally{e.close();}};
 test('P0 consent is off by default and requires MAIN owner approval, scoped account and dates',()=>sandbox(async e=>{
