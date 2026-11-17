@@ -63,3 +63,9 @@ PRs de implementação **isolada**: [#99](https://github.com/JoaoVittorLi/meu-fi
 Esses PRs ainda **não conectam a automação ao Electron real**: MAIN/preload/renderer/migração são trabalho de integração da #49. Valores iniciais de checkbox não equivalem a consentimento; `approvedForCategorization` está falso por padrão. `approvedForPersonal:()=>false` deve permanecer para outras escritas IA.
 
 **Resultado: 1.0.0 NO-GO**, até integrar CAT-01–05 na candidata, demonstrar 600+ transações sintéticas, Node/SQLite, Electron Windows, rollback/backup/restore, proteção manual e UX. Versão/tag/EXE continuam proibidos sem nova aprovação explícita.
+
+## P0 CAT — revisão de segurança das evidências / PR #104 (17/11/2026)
+
+**Nova regressão isolada:** [PR #104](https://github.com/JoaoVittorLi/meu-financeiro/pull/104), Draft **sobre o PR #100**. Ele evita que lançamentos importados com IDs diferentes e mesmo estabelecimento, data e valor sejam contados como cinco correções humanas independentes. A evidência qualitativa I2-E passa a receber a contagem de possíveis duplicatas; transações ambíguas devem ir para revisão, sem gravação automática. Uma regressão sintética adicional foi adicionada: suíte do PR #104 contém **20 testes declarados**, não executados no Node oficial.
+
+**Dependência:** Integrador deve reconciliar **PR #100 + #104** com a cadeia modular #99 → #101 → #102 *seletivamente*, sem dois escritores/consentimentos ativos para a mesma movimentação. O QA final e a avaliação de falso positivo **ainda estão NOT_RUN**; não afirmar calibração do critério 5 correções/3 datas nem GO da 1.0.
