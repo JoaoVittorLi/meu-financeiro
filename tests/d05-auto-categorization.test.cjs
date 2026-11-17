@@ -270,3 +270,26 @@ test('P0 PENDING-to-POSTED transition with same account/ID never duplicates bank
  assert.equal((await e.auto.apply()).applied,0);
  assert.equal(e.db.db.prepare("SELECT COUNT(*) AS n FROM mf_auto_receipts WHERE action='apply'").get().n,first.applied+1);
 }));
+
+test('P0 duplicate manual merchant/date/amount anchors cannot inflate evidence or trigger auto labels',()=>sandbox(async e=>{
+ // Retain only three independent corrections, then import two apparent
+ // duplicates with different external IDs and the same merchant/date/cents.
+ for(const i of [3,4])e.db.db.prepare(
+  'DELETE FROM bank_category_overrides WHERE account_id=? AND external_id=?'
+ ).run(ACCOUNT_A,'a-'+i);
+ const clones=[0,1].map(i=>({...e.rowsA[i],
+  id:'duplicated-anchor-'+i,description:'MERCADO BOA PRACA CLONE '+i}));
+ e.db.ingestBank(ITEM_A,{item:{status:'UPDATED'},data:[{account:{
+  id:ACCOUNT_A,name:'CONTA FICTÍCIA A',type:'CHECKING',currencyCode:'BRL'
+ },transactions:clones}]});
+ for(const cloned of clones)e.d05.assignBank({
+  accountId:ACCOUNT_A,externalId:cloned.id,target
+ });
+ e.auto.configure({accountIds:[ACCOUNT_A],...span},true);
+ const preview=e.auto.plan({limit:20000});
+ assert.equal(preview.candidateCount,0,'Five stored overrides represent only one independent surviving anchor');
+ assert(preview.review.some(x=>x.reason==='Evidência insuficiente'));
+ const applied=await e.auto.apply();
+ assert.equal(applied.applied,0);
+ assert.equal(e.db.db.prepare('SELECT COUNT(*) AS n FROM mf_auto_labels').get().n,0);
+}));
