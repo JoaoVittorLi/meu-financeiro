@@ -541,6 +541,11 @@ app.whenReady().then(async()=>{
  ipcMain.handle('bank:auto-configure',async(event,input)=>{
   requireAppSender(event);autoAllowed();autoIdle();
   const ids=input?.accountIds,from=input?.startDate,to=input?.endDate;
+  const historyEnabled=input?.historyEnabled===undefined?true:input.historyEnabled;
+  const newEnabled=input?.newEnabled===undefined?true:input.newEnabled;
+  if(typeof historyEnabled!=='boolean'||typeof newEnabled!=='boolean'||
+     (!historyEnabled&&!newEnabled)||input?.insufficientAction&&input.insufficientAction!=='review')
+   throw Error('Selecione histórico ou novas movimentações; casos incertos vão para revisão.');
   if(!Array.isArray(ids)||ids.length<1||ids.length>40||new Set(ids).size!==ids.length)
    throw Error('Selecione contas válidas.');
   const known=new Map(db.bankOverview().accounts.map(a=>[a.id,a.name]));
@@ -552,13 +557,15 @@ app.whenReady().then(async()=>{
    defaultId:0,cancelId:0,noLink:true,title:'Autorizar automação por conta',
    message:'Permitir classificação automática somente nas contas selecionadas?',
    detail:ids.map(id=>'• '+known.get(id)).join('\n')+'\nPeríodo: '+String(from||'')+' a '+String(to||'')+
-    '\nUsa somente correções manuais concordantes e aliases explícitos. Alterações incertas vão para revisão. '+
+    '\nHistórico: '+(historyEnabled?'sim':'não')+'; novas movimentações: '+(newEnabled?'sim':'não')+
+    '\nEvidências fortes poderão incluir campos Pluggy independentes; casos incertos vão para revisão. '+
     'Sem LLM externo, sem modificar valores, status ou saldo; revogável nas Movimentações.'});
   requireAppSender(event);autoIdle();
   if(answer.response!==1||!mainWindow||mainWindow.isDestroyed())return {cancelled:true};
   // Native approval grants only the scoped category capability. It NEVER
   // silently applies the first batch; the owner must inspect its preview.
-  const authorization=autoCategory.configure({accountIds:ids,startDate:from,endDate:to},true);
+  const authorization=autoCategory.configure({accountIds:ids,startDate:from,endDate:to,
+   historyEnabled,newEnabled,insufficientAction:'review'},true);
   return {authorization,changesApplied:false,previewRequired:true};
  });
  ipcMain.handle('bank:auto-revoke',(event,accountId)=>{
