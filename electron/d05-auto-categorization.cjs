@@ -65,6 +65,13 @@ class D05AutoCategorization{
     boundary_rowid INTEGER NOT NULL DEFAULT 0,
     revision INTEGER NOT NULL DEFAULT 1
    );
+   CREATE TABLE IF NOT EXISTS mf_auto_apply_jobs(
+    job_id TEXT PRIMARY KEY,preview_version TEXT NOT NULL,source_version TEXT NOT NULL,
+    state TEXT NOT NULL CHECK(state IN('running','paused','failed','stale','cancelled','completed')),
+    proposed_total INTEGER NOT NULL,review_total INTEGER NOT NULL,
+    started_at TEXT NOT NULL,finished_at TEXT,error_code TEXT
+   );
+   CREATE INDEX IF NOT EXISTS mf_auto_apply_jobs_latest ON mf_auto_apply_jobs(started_at DESC);
    CREATE TABLE IF NOT EXISTS mf_auto_initial_approval(
     account_id TEXT PRIMARY KEY REFERENCES bank_accounts(account_id) ON DELETE CASCADE,
     revision INTEGER NOT NULL,preview_version TEXT NOT NULL,confirmed_at TEXT NOT NULL
@@ -182,8 +189,8 @@ class D05AutoCategorization{
   if(typeof version!=='string'||!/^[a-f0-9]{64}$/.test(version))
    throw Error('Auto D05: versão de prévia obrigatória');
   const before=this.plan({limit:20000});
-  if(before.previewVersion!==version||before.candidateCount>before.candidates.length)
-   throw Error('Auto D05: prévia alterada ou lote acima do limite; reanalise antes de aprovar');
+  if(before.previewVersion!==version)
+   throw Error('Auto D05: prévia alterada; reanalise antes de aprovar');
   if(this.initialReady())return {alreadyConfirmed:true};
   await this.backupVerified('initial-confirmation');
   const sql=this.sql,at=this.clock().toISOString();
@@ -362,6 +369,14 @@ class D05AutoCategorization{
   // sample. Metadata, rule, alias, protection and permission revisions are
   // included so a stale preview cannot activate unattended automation.
   const metadata=sql.prepare('SELECT account_id,external_id,fingerprint FROM cat01_metadata ORDER BY account_id,external_id').all();
+  const staticSource=[permissions.map(p=>[p.accountId,p.revision,p.startDate,p.endDate,p.expiresAt,
+    p.historyEnabled,p.newEnabled,p.boundaryRowid]),futureOnly,
+   rows.map(r=>[r.accountId,r.externalId,fingerprint(r),r.syncStatus,r.manualCategoryId,
+    r.manualSubcategoryId,r.nature,r.reviewedAt,r.linkedManualId,r.hasSplits,r.blockedByFeedback]),
+   metadata,aliases,rules];
+  // Source version remains unchanged by OUR OWN auto-label commits.
+  // Manual edits, rules, evidence, sync or consent changes invalidate it.
+  const sourceVersion=hash(staticSource);
   const previewVersion=hash([permissions.map(p=>[p.accountId,p.revision,p.startDate,p.endDate,
     p.historyEnabled,p.newEnabled,p.boundaryRowid]),futureOnly,
    rows.map(r=>[r.accountId,r.externalId,fingerprint(r),r.syncStatus,r.manualCategoryId,
@@ -369,7 +384,7 @@ class D05AutoCategorization{
     r.blockedByFeedback,r.hasAuto]),
    metadata,aliases,rules,candidates.map(p=>[p.accountId,p.externalId,p.target,p.evidenceHash]),reviewCount]);
   return {candidates:candidates.slice(0,limit),candidateCount:candidates.length,
-   review:review.slice(0,limit),reviewCount,perAccount,previewVersion,
+   review:review.slice(0,limit),reviewCount,perAccount,previewVersion,sourceVersion,
    // Full-source partition for CAT-UX-02. Applied overlays/manual decisions
    // are protected, and each scoped banking row is counted exactly once.
    analyzedCount:scopedCount,protectedCount:Math.max(0,scopedCount-candidates.length-reviewCount),
@@ -421,21 +436,29 @@ class D05AutoCategorization{
    return filename;
   }catch(e){throw Error('Auto D05: proteção de backup falhou; nenhuma alteração aplicada: '+e.message);}
  }
- async apply({accountId=null,limit=20000,futureOnly=false}={}){
+ async apply({accountId=null,limit=20000,futureOnly=false,batchId=null,expectedSourceVersion=null}={}){
+  if(batchId!==null&&(!/^[a-f0-9-]{36}$/i.test(batchId)||typeof expectedSourceVersion!=='string'))
+   throw Error('Auto D05: lote e manifesto obrigatórios');
   if(this.busy)throw Error('Auto D05: aplicação concorrente');
   this.busy=true;
   try{
    const current=this.plan({accountId,limit,futureOnly});
+   if(expectedSourceVersion!==null&&current.sourceVersion!==expectedSourceVersion)
+    throw Error('Auto D05: MANIFEST_STALE antes do backup');
    if(!current.candidates.length)return {applied:0,reviewCount:current.reviewCount,receipts:[],state:'no_eligible_evidence'};
    // A verified, external online SQLite backup MUST succeed before any personal overlay write.
    await this.backupVerified('apply');
-   const f=this.finance(),sql=this.sql,at=this.clock().toISOString(),batch=randomUUID(),receipts=[];let reviewCount=current.reviewCount;
+   const f=this.finance(),sql=this.sql,at=this.clock().toISOString(),batch=batchId||randomUUID(),receipts=[];let reviewCount=current.reviewCount;
    sql.exec('BEGIN IMMEDIATE');
    try{
     // Recompute from authoritative DB INSIDE transaction. Do not trust renderer's plan.
     const now=this.plan({accountId,limit,futureOnly});reviewCount=now.reviewCount;
+    if(expectedSourceVersion!==null&&now.sourceVersion!==expectedSourceVersion)
+     throw Error('Auto D05: MANIFEST_STALE durante revalidação');
     const currentHashes=new Map(current.candidates.map(p=>[key(p),p.sourceFingerprint+'|'+p.evidenceHash+'|'+p.consentRevision]));
     for(const proposal of now.candidates){
+     if(batchId&&sql.prepare("SELECT state FROM mf_auto_apply_jobs WHERE job_id=?").get(batchId)?.state!=='running')
+      throw Error('Auto D05: BATCH_STOPPED por pausa, cancelamento ou revogação');
      if(currentHashes.get(key(proposal))!==
        proposal.sourceFingerprint+'|'+proposal.evidenceHash+'|'+proposal.consentRevision)continue;
      const row=sql.prepare('SELECT account_id AS accountId,external_id AS externalId,date,description,amount_cents AS amountCents,status FROM bank_transactions WHERE account_id=? AND external_id=?').get(proposal.accountId,proposal.externalId);
