@@ -97,7 +97,7 @@ class D05Movements extends React.Component<any,any> {
    merchant:tx.customTitle||tx.merchant||tx.description,category:tx.category,
    categoryId:data.categoryId||parent?.id||'',subcategoryId:data.subcategoryId||null,
    amount:tx.amount,kind:nature,account:tx.accountName,accountId:tx.accountId,
-   status:tx.status,reviewed:!!tx.reviewed};
+   status:tx.status,reviewed:!!tx.reviewed,autoCategorized:tx.categorySource==='auto'};
  });
  const realManual=(state.data.transactions||[]).map((tx:any)=>{
   const data=decor.manual[tx.id]||{},parent=byName(tx.category);
@@ -184,7 +184,7 @@ class D05Movements extends React.Component<any,any> {
   if(categoryId&&row.categoryId!==categoryId)return false;
   if(subcategoryId&&row.subcategoryId!==subcategoryId)return false;
   if(!contains(row,folded(search.trim())))return false;
-  if(tab==='pending')return row.source==='bank'&&row.status==='POSTED'&&!row.reviewed;
+  if(tab==='pending')return row.source==='bank'&&row.status==='POSTED'&&!row.reviewed&&!row.autoCategorized;
   if(tab==='reviewed')return row.source==='bank'&&row.status==='POSTED'&&row.reviewed;
   return true;
  }).sort((a:any,b:any)=>{
@@ -199,7 +199,7 @@ class D05Movements extends React.Component<any,any> {
  const metricsRows=filtered.filter((r:any)=>r.source===totalsSource);
  let income=0,expense=0,needs=0,ignored=0,pending=0;
  for(const r of metricsRows){
-  if(r.source==='bank'&&r.status==='POSTED'&&!r.reviewed)needs++;
+  if(r.source==='bank'&&r.status==='POSTED'&&!r.reviewed&&!r.autoCategorized)needs++;
   if(r.source==='bank'&&r.status!=='POSTED'){pending++;continue;}
   if(r.kind==='ignore'||r.kind==='transfer'){ignored++;continue;}
   if(r.kind==='income')income+=Math.abs(r.amount);
@@ -603,7 +603,7 @@ class D05Movements extends React.Component<any,any> {
     const p=byId(r.categoryId)||byName(r.category),child=p?.subcategories?.find((c:any)=>c.id===r.subcategoryId);
     const icon=resolveCategoryVisualIdentity({categoryId:r.categoryId||null,
      subcategoryId:r.subcategoryId||null,categoryName:r.category,catalog:parents});
-    const isReview=r.source==='bank'&&r.status==='POSTED'&&!r.reviewed;
+    const isReview=r.source==='bank'&&r.status==='POSTED'&&!r.reviewed&&!r.autoCategorized;
     const signed=r.kind==='transfer'||r.kind==='ignore'?'neutral':r.amount>=0?'positive':'negative';
     const isSelected=selected.has(r.key);
     const selectAllowed=r.source==='bank';
@@ -625,7 +625,7 @@ class D05Movements extends React.Component<any,any> {
          title:'A conferir',onClick:(e:any)=>{e.stopPropagation();activeTrigger.current=e.currentTarget;setError('');setReview(r);}},h('span',{'aria-hidden':'true'})):null,
         r.source==='bank'&&r.status==='PENDING'?h('span',{className:'d05-pending',title:'Em processamento','aria-label':'Em processamento'},h(D05VectorIcon,{iconKey:'clock-3',hue:37,size:16})):null),
        h('small',{},r.account+' · '+(p?.name||r.category)+(child?' › '+child.name:''),
-        r.source==='manual'?' · Manual':''),
+        r.source==='manual'?' · Manual':r.autoCategorized?' · Automática verificada por histórico':'') ,
        r.merchant!==r.description?h('small',{className:'d05-desc'},r.description):null),
       h('div',{className:'d05-row-end'},
        h('strong',{className:'d05-amount '+signed},(r.amount>=0?'+':'−')+format(Math.abs(r.amount))),
