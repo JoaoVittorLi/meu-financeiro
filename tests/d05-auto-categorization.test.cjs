@@ -251,3 +251,22 @@ test('P0 suggested rules are read-only, disclose affected scope, and require sep
  assert(advice.rules.every(r=>r.possibleMatches>=r.suggestedFor));
  assert.equal(e.db.db.prepare('SELECT COUNT(*) AS n FROM category_rules').get().n,before);
 }));
+test('P0 PENDING-to-POSTED transition with same account/ID never duplicates banking rows or auto receipts',()=>sandbox(async e=>{
+ e.auto.configure({accountIds:[ACCOUNT_A],...span},true);
+ const before=e.db.db.prepare('SELECT COUNT(*) AS n FROM bank_transactions').get().n;
+ const first=await e.auto.apply();
+ const pending=e.db.db.prepare('SELECT status FROM bank_transactions WHERE account_id=? AND external_id=?').get(ACCOUNT_A,'a-pending');
+ assert.equal(pending.status,'PENDING');
+ assert.equal(e.db.db.prepare('SELECT 1 FROM mf_auto_labels WHERE account_id=? AND external_id=?').get(ACCOUNT_A,'a-pending'),undefined);
+ e.db.ingestBank(ITEM_A,{item:{status:'UPDATED'},data:[{account:{
+  id:ACCOUNT_A,name:'CONTA FICTÍCIA A',type:'CHECKING'},transactions:[
+   gen('a-pending','MERCADO BOA PRACA PENDING',12,'POSTED')
+  ]}]});
+ assert.equal(e.db.db.prepare('SELECT COUNT(*) AS n FROM bank_transactions').get().n,before);
+ assert.equal(e.db.db.prepare('SELECT status FROM bank_transactions WHERE account_id=? AND external_id=?').get(ACCOUNT_A,'a-pending').status,'POSTED');
+ const plan=e.auto.plan({limit:20000});
+ assert(!plan.candidates.some(p=>p.externalId==='a-pending'), 'Potential same-day/amount merchant duplicate must be reviewed');
+ assert(plan.review.some(p=>p.externalId==='a-pending'&&/duplicad/.test(p.reason)));
+ await e.auto.apply();
+ assert.equal(e.db.db.prepare("SELECT COUNT(*) AS n FROM mf_auto_receipts WHERE action='apply'").get().n,first.applied);
+}));
