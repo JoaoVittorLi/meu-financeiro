@@ -66,8 +66,11 @@ class Cat04Scheduler{
   return this.runCycle({trigger:'manual'});
  }
  async afterHumanCorrection(){
-  // Rebuild only trusted local learning data; never apply new labels implicitly.
-  await this.learning();
+  // Rebuild only trusted human-approved learning data under a current MAIN grant.
+  const scope=await this.scopeProvider(),accountIds=await this.accounts();
+  this.writer.gate(scope,accountIds,false);
+  this.writer.consents(accountIds,{auto:true});
+  await this.learning({scope,accountIds});
   return {learningRefreshed:true,personalWrites:false};
  }
  async runCycle({trigger}){
