@@ -716,6 +716,21 @@ class D05Movements extends React.Component<any,any> {
        r.merchant!==r.description?h('small',{className:'d05-desc'},r.description):null),
       h('div',{className:'d05-row-end'},
        h('strong',{className:'d05-amount '+signed},(r.amount>=0?'+':'−')+format(Math.abs(r.amount))),
+       r.source==='bank'&&r.raw.categorySource==='automatic'?
+        h('small',{title:r.raw.automaticEvidence||'Evidência de histórico local'},'Categorização local verificada'):null,
+       r.source==='bank'&&r.raw.categorySource==='automatic'&&autoInfo?.available&&bridge?.bankAutoUndo?
+        h('button',{type:'button',className:'d05-ghost',disabled:autoBusy,
+         onClick:async(e:any)=>{
+          e.stopPropagation();setAutoBusy(true);setAutoMessage('');
+          try{
+           const outcome=await bridge.bankAutoUndo({accountId:r.accountId,externalId:r.id});
+           if(outcome?.undone){
+            await host.refreshBank();await refreshHierarchy();await refreshAuto();
+            setAutoMessage('Classificação revertida. Movimento protegido contra reaplicação automática.');
+           }
+          }catch(error:any){setAutoMessage(String(error?.message||error));}
+          finally{setAutoBusy(false);}
+         }},'Desfazer'):null,
        r.kind==='transfer'||r.kind==='ignore'?h('small',{},r.kind==='transfer'?'Transferência':'Desconsiderada'):null)
      ));
    })):h('div',{className:'d05-empty'},h('strong',{},'Nenhuma movimentação encontrada'),h('p',{},'Altere a pesquisa ou os filtros para continuar.'),
