@@ -118,7 +118,7 @@ test('A01 backup failure after first 250 COMMITs: journal resume + exact receipt
  assert.equal(failure.state,'failed');assert.equal(failure.applied,250);
  assert.equal(scheduler.status().paused,true);
  assert.equal(count(db,"SELECT COUNT(*) AS n FROM mf_auto_receipts WHERE action='apply'"),250);
- db.backupTo=orig;
+ engine.verifyBatchBackup=originalVerify;
  const reopened=new D05AutoLocalScheduler({finance:()=>db,engine:()=>engine,
   clock:()=>new Date('2026-11-17T16:00:00.000Z')});
  assert.equal(reopened.status().paused,true);
