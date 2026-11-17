@@ -161,3 +161,11 @@ Direção **proposta, não aprovada**: revisão via ponto azul no nome do comerc
 - **Regra de precedência:** B01 V3 exige **faixa segmentada + lista** com categoria D05 (a faixa não aparece no inline simplificado), B02 V7 exige anel 360° correto; D05 único descriptor de cor/ícone prevalece sobre SVG/hue do mock. Protótipo usa “Serviços diversos” ilustrativo, mas D05 real é `cat:outros` para fallback; nunca criar ID inexistente.
 - **STATUS REAL:** `DESIGN_APPROVED / HANDOFF_DOCUMENTED / STANDALONE_PROTOTYPE_NOT_EXPORTED / CODE_NOT_STARTED / ELECTRON_QA_NOT_RUN`. Critério existente de `IMPLEMENTATION_READY` exige protótipo reproduzível + specs e **ainda não está integralmente atendido**; exportação/fidelidade é item aberto para executor/design. Não foi executado CI/build, merge, QA Windows ou EXE.
 - **Próximo item da revisão de tela principal:** D07 — Orçamentos. Preservar B02 V7 aprovada ao revisar tela D07 por inteiro.
+
+
+### 17/11/2026 — Aprovação D08 + consolidação CAT-UX P0 em lote
+
+- D08 Planejamento **V3 Motion Remaster corrigida DESIGN_APPROVED** pelo proprietário; [issue #97](https://github.com/JoaoVittorLi/meu-financeiro/issues/97). Código Electron e QA **não verificados**. O proprietário antecipou D08 na sequência; a revisão integral D07 pode ocorrer depois, preservando B02 V7.
+- CAT-UX-01 **DESIGN_APPROVED** e CAT-UX-03 **DESIGN_APPROVED** (protótipo corrigido). CAT-UX-02 V1 foi apresentada sem aprovação isolada, e o proprietário decidiu avançar **todas as telas restantes de uma só vez**, sem revisões individuais, priorizando a categorização bancária automática funcional na 1.0.0.
+- Pacote único: [CAT-UX 01–06 — handoff completo](handoffs/CAT_UX_FULL_LAUNCH_HANDOFF_20261117.md) · [Issue de implementação P0 #106](https://github.com/JoaoVittorLi/meu-financeiro/issues/106). Estado `BATCH_UX_SPEC_READY`; QA Electron/Windows, integração real e primeira prévia antes do `apply` são pendentes, não aprovações presumidas.
+- A cadeia de código #94 → #96 → #100 → #104 é a fonte funcional candidata, **não main nem EXE homologado**. CAT-UX não substitui D05/B04/B05 nem permite escrita financeira genérica.
