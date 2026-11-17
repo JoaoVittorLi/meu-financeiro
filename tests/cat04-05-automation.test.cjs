@@ -265,3 +265,14 @@ test('CAT04 T19 — app closed means no daily or post-sync classification',async
   assert.equal(f.db.prepare('SELECT COUNT(*) AS n FROM cat05_jobs').get().n,0);
  }finally{f.close();}
 });
+
+test('CAT05 T20 — grant and revocation create immutable local consent events',async()=>{
+ const f=setup({accounts:2,perAccount:1});try{
+  await f.writer.authorize({scope:f.scope,accountIds:f.ids,
+   settings:{history:true,autoNew:true,uncertainToReview:true}});
+  assert.equal(f.db.prepare("SELECT COUNT(*) AS n FROM cat05_consent_events WHERE action='grant'").get().n,2);
+  f.writer.revoke({scope:f.scope,accountIds:['acc-1']});
+  assert.equal(f.db.prepare("SELECT COUNT(*) AS n FROM cat05_consent_events WHERE action='revoke'").get().n,1);
+  assert.equal(f.db.prepare("SELECT COUNT(*) AS n FROM cat05_consents WHERE revoked_at IS NOT NULL").get().n,1);
+ }finally{f.close();}
+});
