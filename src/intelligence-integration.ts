@@ -262,7 +262,7 @@ function intelligenceConversationState(app:any):{kind:'service_unavailable'|'cha
     }
     return {kind:'oauth_connected_unimplemented',pill:'Conta autenticada · chat aberto na I2-A',badge:'Aguarda I2-A',css:'is-auth-only'};
   }
-  return {kind:'oauth_disconnected',pill:'Conta desconectada · modo local',badge:'Sem OAuth',css:'is-offline'};
+  return {kind:'oauth_disconnected',pill:'IA externa desconectada · leitura local requer autorização',badge:'Sem OAuth',css:'is-offline'};
 }
 function intelligenceReferenceToday(app:any):string|null{
   const custom=app?.state?.today;

@@ -13,6 +13,7 @@
     "test": "npm run test:db",
     "start": "npm run compile && electron .",
     "dist:windows": "npm run test && npm run test:asar && npm run provenance:create && npm run provenance:verify && electron-builder --win portable nsis --x64 --publish never",
+    "dist:windows:stable": "npm run test && npm run test:asar && npm run provenance:create && npm run provenance:verify && node scripts/build-stable-windows.cjs",
     "provenance:create": "node scripts/renderer-provenance.cjs create",
     "provenance:verify": "node scripts/renderer-provenance.cjs verify"
   },
