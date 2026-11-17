@@ -73,6 +73,43 @@ test('RC2.2 stable and experimental distributions cannot be selected by runtime 
  assert.throws(()=>releaseChannel(stable,{mfDistributionChannel:'unknown'}),/inválida/);
  assert.equal(releaseChannel({isPackaged:false},{}),'development');
 });
+test('RC2.2 new stable installation stays distinguishable from an unavailable previous profile',async()=> {
+ const root=fs.mkdtempSync(path.join(os.tmpdir(),'mf-rc-continuity-'));
+ try{
+  const selected=stableProfileDirectory(fakeApp(root));
+  assert.equal(selected,path.join(root,STABLE_NAME));
+  assert.equal(fs.existsSync(selected),false,'Do not manufacture a preexisting history');
+  const state=await stablePreMigrationBackup(selected,'0.9.5-beta.8');
+  assert.deepEqual(state,{existing:false,backup:null});
+  const rc=experimentalProfileDirectory(fakeApp(root,EXPERIMENTAL_NAME));
+  assert.notEqual(rc,selected);
+ }finally{fs.rmSync(root,{recursive:true,force:true});}
+});
+test('RC2.2 unreadable vault does not delete encrypted file or existing offline SQLite',async()=>{
+ const root=fs.mkdtempSync(path.join(os.tmpdir(),'mf-rc-continuity-'));
+ try{
+  const dir=path.join(root,STABLE_NAME);fs.mkdirSync(dir);
+  const file=path.join(dir,'meu-financeiro.sqlite');seed(file);
+  const vault=path.join(dir,'pluggy-credentials.enc');
+  fs.writeFileSync(vault,Buffer.from('not-compatible-vault').toString('base64'));
+  const safeStorage={isAsyncEncryptionAvailable:async()=>false};
+  await assert.rejects(new PluggyVault(dir,safeStorage).status(),/proteção de credenciais/i);
+  const original=fs.readFileSync(vault,'utf8');
+  assert.equal(fs.readFileSync(vault,'utf8'),original);
+  assert.equal(financialRows(file).bankCount,600,'Offline banking must survive bad vault');
+ }finally{fs.rmSync(root,{recursive:true,force:true});}
+});
+test('RC2.2 blocked backup directory prevents startup migration without touching SQLite',async()=>{
+ const root=fs.mkdtempSync(path.join(os.tmpdir(),'mf-rc-continuity-'));
+ try{
+  const dir=path.join(root,STABLE_NAME);fs.mkdirSync(dir);
+  const file=path.join(dir,'meu-financeiro.sqlite');seed(file);
+  const before=financialRows(file);
+  fs.writeFileSync(path.join(dir,'copias-de-seguranca'),'not a directory');
+  await assert.rejects(stablePreMigrationBackup(dir,'0.9.5-beta.8'));
+  assert.deepEqual(financialRows(file),before);
+ }finally{fs.rmSync(root,{recursive:true,force:true});}
+});
 test('RC2.2 detects exact prior stable profile and keeps RC data separated',()=>tmp(root=>{
  const stable=path.join(root,'Meu Financeiro'),legacy=path.join(root,'meu-financeiro-desktop');
  fs.mkdirSync(legacy,{recursive:true});seed(path.join(legacy,'meu-financeiro.sqlite'));
