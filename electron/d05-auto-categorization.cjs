@@ -6,6 +6,7 @@ const fs=require('node:fs'),path=require('node:path');
 const {randomUUID,createHash}=require('node:crypto');
 const {D05CategoryService}=require('./d05-category-service.cjs');
 const {matchRule,normalizeLabel}=require('./db.cjs');
+const {evidenceVerdict}=require('./intelligence-category-quality.cjs');
 const {DatabaseSync}=require('node:sqlite');
 const ISO=/^\d{4}-\d{2}-\d{2}$/;
 const MIN_ANCHORS=5,MIN_DATES=3;
@@ -149,11 +150,12 @@ class D05AutoCategorization{
   const permissions=this.permissions().filter(p=>p.enabled===1&&(!accountId||p.accountId===accountId));
   const sql=this.sql,rules=this.finance().listCategories().rules.filter(r=>r.enabled);
   const aliases=sql.prepare('SELECT pattern,display_name AS displayName FROM merchant_aliases').all();
-  const rows=this.allRows(),groups=new Map(),byId=new Map();
+  const rows=this.allRows(),groups=new Map(),byId=new Map(),duplicates=new Map();
   const active=new Map(permissions.map(p=>[p.accountId,p]));
   const service=new D05CategoryService(this.finance());
   for(const row of rows){
-   if(!active.has(row.accountId))continue;
+   const scope=active.get(row.accountId);
+   if(!scope||row.date<scope.startDate||row.date>scope.endDate)continue;
    const merchant=merchantKey(row,aliases);byId.set(key(row),merchant);
    if(!merchant||!eligible({...row,reviewedAt:null})||!row.manualCategoryId||!validDate(row.date))continue;
    // Only explicit D05 manual overrides serve as anchor evidence, never auto labels.
@@ -167,19 +169,41 @@ class D05AutoCategorization{
      date:row.date,externalId:row.externalId});
    }catch(_){/* Legacy or orphaned manual labels never authorize automation. */}
   }
+  for(const row of rows){
+   const merchant=byId.get(key(row));if(!merchant)continue;
+   const duplicateKey=JSON.stringify([row.accountId,row.date,row.amountCents,merchant]);
+   if(!duplicates.has(duplicateKey))duplicates.set(duplicateKey,[]);
+   duplicates.get(duplicateKey).push(row.externalId);
+  }
   const candidates=[],review=[],perAccount={};let reviewCount=0;
   for(const row of rows){
    const permission=active.get(row.accountId);
    if(!permission||row.date<permission.startDate||row.date>permission.endDate||
      (accountId&&row.accountId!==accountId))continue;
-   if(!eligible(row)||row.manualCategoryId||row.blockedByFeedback||row.hasAuto)continue;
+   if(row.hasAuto){
+    const existing=this.sql.prepare('SELECT source_fingerprint FROM mf_auto_labels WHERE account_id=? AND external_id=?').get(row.accountId,row.externalId);
+    if(existing?.source_fingerprint!==fingerprint(row)){
+     reviewCount++;if(review.length<limit)review.push({accountId:row.accountId,externalId:row.externalId,reason:'Movimentação alterada após categorização; revisar rótulo antigo'});
+    }
+    continue;
+   }
+   if(!eligible(row)||row.manualCategoryId||row.blockedByFeedback)continue;
    if(restrictRule(row,rules))continue; // Existing approved rules always win.
    const merchant=byId.get(key(row));
    if(!merchant){reviewCount++;if(review.length<limit)review.push({accountId:row.accountId,externalId:row.externalId,reason:'Estabelecimento sem identificação segura'});continue;}
+   const duplicateKey=JSON.stringify([row.accountId,row.date,row.amountCents,merchant]);
+   if((duplicates.get(duplicateKey)||[]).length>1){
+    reviewCount++;if(review.length<limit)review.push({accountId:row.accountId,externalId:row.externalId,reason:'Possível transação duplicada ou PENDING/POSTED com IDs diferentes'});
+    continue;
+   }
    const anchors=groups.get(row.accountId+'|'+kind(row)+'|'+merchant)||[];
    const unique=new Set(anchors.map(a=>[a.categoryId,a.subcategoryId].join('|')));
    const days=new Set(anchors.map(a=>a.date));
-   const sufficient=anchors.length>=MIN_ANCHORS&&days.size>=MIN_DATES&&unique.size===1;
+   const quality=evidenceVerdict({anchors:anchors.length,distinctDates:days.size,
+    suspiciousDuplicates:0,ruleCollision:false,partial:false,candidates:1,
+    unsupported:false,amountCents:Math.abs(row.amountCents)});
+   const sufficient=anchors.length>=MIN_ANCHORS&&days.size>=MIN_DATES&&unique.size===1&&
+    quality.status==='eligible_for_preview'&&quality.confidence==='high';
    if(!sufficient){
     reviewCount++;if(review.length<limit)review.push({accountId:row.accountId,externalId:row.externalId,
      reason:unique.size>1?'Correções anteriores contraditórias':'Evidência insuficiente'});
