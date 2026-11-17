@@ -278,7 +278,8 @@ class D05AutoCategorization{
    if(!duplicates.has(duplicateKey))duplicates.set(duplicateKey,[]);
    duplicates.get(duplicateKey).push(row.externalId);
   }
-  const candidates=[],review=[],perAccount={};let reviewCount=0,scopedCount=0;
+  const candidates=[],review=[],perAccount={},candidateDigest=createHash('sha256');
+  let candidateCount=0,reviewCount=0,scopedCount=0;
   for(const row of rows){
    const permission=active.get(row.accountId);
    if(!permission||row.date<permission.startDate||row.date>permission.endDate||
@@ -377,32 +378,39 @@ class D05AutoCategorization{
    const proposal={accountId:row.accountId,externalId:row.externalId,merchant,target,
      sourceFingerprint:fingerprint(row),evidenceHash,consentRevision:permission.revision,
      explanation};
-   candidates.push(proposal);
+   candidateCount++;
+   candidateDigest.update(JSON.stringify([proposal.accountId,proposal.externalId,proposal.target,proposal.evidenceHash])+'\n');
+   if(candidates.length<limit)candidates.push(proposal);
    perAccount[row.accountId]=(perAccount[row.accountId]||0)+1;
   }
   // The preview manifest covers ALL scoped bank rows, not just the visual
   // sample. Metadata, rule, alias, protection and permission revisions are
   // included so a stale preview cannot activate unattended automation.
   const metadata=sql.prepare('SELECT account_id,external_id,fingerprint FROM cat01_metadata ORDER BY account_id,external_id').all();
+  // Source/preview hashes scan at most one SQLite row at a time; do not
+  // materialize a second 20k+ row array just to compute the fingerprint.
+  const sourceRowsHash=createHash('sha256'),previewRowsHash=createHash('sha256');
+  for(const r of rows){
+   const base=[r.accountId,r.externalId,fingerprint(r),r.syncStatus,r.manualCategoryId,
+    r.manualSubcategoryId,r.nature,r.reviewedAt,r.linkedManualId,r.hasSplits,r.blockedByFeedback];
+   sourceRowsHash.update(JSON.stringify(base)+'\n');
+   previewRowsHash.update(JSON.stringify([...base,r.hasAuto])+'\n');
+  }
   const staticSource=[permissions.map(p=>[p.accountId,p.revision,p.startDate,p.endDate,p.expiresAt,
     p.historyEnabled,p.newEnabled,p.boundaryRowid]),futureOnly,
-   rows.map(r=>[r.accountId,r.externalId,fingerprint(r),r.syncStatus,r.manualCategoryId,
-    r.manualSubcategoryId,r.nature,r.reviewedAt,r.linkedManualId,r.hasSplits,r.blockedByFeedback]),
-   metadata,aliases,rules];
+   sourceRowsHash.digest('hex'),metadata,aliases,rules];
   // Source version remains unchanged by OUR OWN auto-label commits.
   // Manual edits, rules, evidence, sync or consent changes invalidate it.
   const sourceVersion=hash(staticSource);
   const previewVersion=hash([permissions.map(p=>[p.accountId,p.revision,p.startDate,p.endDate,
     p.historyEnabled,p.newEnabled,p.boundaryRowid]),futureOnly,
-   rows.map(r=>[r.accountId,r.externalId,fingerprint(r),r.syncStatus,r.manualCategoryId,
-    r.manualSubcategoryId,r.nature,r.reviewedAt,r.linkedManualId,r.hasSplits,
-    r.blockedByFeedback,r.hasAuto]),
-   metadata,aliases,rules,candidates.map(p=>[p.accountId,p.externalId,p.target,p.evidenceHash]),reviewCount]);
-  return {candidates:candidates.slice(0,limit),candidateCount:candidates.length,
+   previewRowsHash.digest('hex'),
+   metadata,aliases,rules,candidateDigest.digest('hex'),reviewCount]);
+  return {candidates,candidateCount,
    review:review.slice(0,limit),reviewCount,perAccount,previewVersion,sourceVersion,
    // Full-source partition for CAT-UX-02. Applied overlays/manual decisions
    // are protected, and each scoped banking row is counted exactly once.
-   analyzedCount:scopedCount,protectedCount:Math.max(0,scopedCount-candidates.length-reviewCount),
+   analyzedCount:scopedCount,protectedCount:Math.max(0,scopedCount-candidateCount-reviewCount),
    unavailableCount:0,
    contract:'D05/AUTO-CATEGORY-PLAN-V1',changesApplied:false};
  }
