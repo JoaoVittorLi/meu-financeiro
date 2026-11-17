@@ -174,13 +174,13 @@ function classifyCandidate({transaction,evidence={},history=[],rules=[],catalog=
  // never counts as merchant identity; Naive Bayes remains review-only.
  const directName=fold(evidence.merchantName);
  const desc=fold(transaction.description||'');
- const processor=/\\b(pagseguro|mercado pago|stone|cielo|paypal|picpay|getnet|rede|sumup|pagar me)\\b/i;
+ const processor=/\b(pagseguro|mercado pago|stone|cielo|paypal|picpay|getnet|rede|sumup|pagar me)\b/i;
  const narrowMcc=['5411','5541','5912'].includes(String(evidence.mcc||''));
  const directCommerce=narrowMcc&&mcc&&!external&&
   evidence.transactionType==='DEBIT'&&
   ['CARD_PURCHASE','CARD PAYMENT','CARD_PAYMENT','PURCHASE'].includes(
    String(evidence.operationType||'').trim().toUpperCase())&&
-  typeof evidence.merchantCnpj==='string'&&/^\\d{14}$/.test(evidence.merchantCnpj)&&
+  typeof evidence.merchantCnpj==='string'&&/^\d{14}$/.test(evidence.merchantCnpj)&&
   directName.length>=8&&!processor.test(directName)&&desc.includes(directName);
  if(directCommerce){
   return result('apply','VERIFIED_DIRECT_MERCHANT_MCC_PARENT',{
