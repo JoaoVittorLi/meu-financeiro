@@ -137,10 +137,11 @@ class D05AutoCategorization{
    (SELECT COUNT(*) FROM mf_auto_receipts WHERE action='undo') AS reverted`).get();
   const permissions=this.permissions();
   const enabledAccounts=permissions.filter(p=>p.enabled===1&&p.expiresAt>this.clock().toISOString()).map(p=>p.accountId);
-  const pending=enabledAccounts.length?this.plan({limit:100}).reviewCount:0;
+  const overview=enabledAccounts.length?this.plan({limit:100}):null;
   return {contract:'D05/AUTO-CATEGORY-V1',engine:'human-history-and-reconciled-external-evidence',
    modelInference:false,enabled:enabledAccounts.length>0,initialConfirmed:this.initialReady(),
-   permissions,counts:{...counts,awaitingReview:pending},
+   permissions,counts:{...counts,awaitingReview:overview?.reviewCount||0,
+    protected:overview?.protectedCount||0,analyzed:overview?.analyzedCount||0},
    limitation:'Correções humanas coerentes ou MCC + categoria Pluggy concordantes; sinais isolados e modelo local sem calibração nunca autorizam escrita.'};
  }
  configure({accountIds,startDate,endDate,historyEnabled=true,newEnabled=true,insufficientAction='review'},approvedByMain=false){
