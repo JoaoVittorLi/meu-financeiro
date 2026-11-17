@@ -607,8 +607,11 @@ app.whenReady().then(async()=>{
  });
  ipcMain.handle('bank:auto-apply',async(event,input)=>{
   requireAppSender(event);autoAllowed();autoIdle();
-  const initial=!autoCategory.initialReady();
-  const staleBatch=autoCategory.batchStatus()?.state==='stale';
+  // Even if the approval receipt survived a crash before startBatch, a
+  // missing batch journal must not permit an unpreviewed first application.
+  const lastBatch=autoCategory.batchStatus();
+  const initial=!autoCategory.initialReady()||!lastBatch;
+  const staleBatch=lastBatch?.state==='stale';
   // An interrupted stale manifest is never silently renewed by a manual
   // action; it requires a completely fresh scan and another native decision.
   if(initial||staleBatch){
