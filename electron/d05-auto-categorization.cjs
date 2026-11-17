@@ -7,6 +7,8 @@ const {randomUUID,createHash}=require('node:crypto');
 const {D05CategoryService}=require('./d05-category-service.cjs');
 const {matchRule,normalizeLabel}=require('./db.cjs');
 const {evidenceVerdict}=require('./intelligence-category-quality.cjs');
+const {evidenceFor}=require('./cat01-evidence-store.cjs');
+const {classifyCandidate}=require('./cat02-classifier.cjs');
 const {DatabaseSync}=require('node:sqlite');
 const ISO=/^\d{4}-\d{2}-\d{2}$/;
 const MIN_ANCHORS=5,MIN_DATES=3;
@@ -112,9 +114,9 @@ class D05AutoCategorization{
   const permissions=this.permissions();
   const enabledAccounts=permissions.filter(p=>p.enabled===1&&p.expiresAt>this.clock().toISOString()).map(p=>p.accountId);
   const pending=enabledAccounts.length?this.plan({limit:100}).reviewCount:0;
-  return {contract:'D05/AUTO-CATEGORY-V1',engine:'historical-corrections-and-rules',
+  return {contract:'D05/AUTO-CATEGORY-V1',engine:'human-history-and-reconciled-external-evidence',
    modelInference:false,enabled:enabledAccounts.length>0,permissions,counts:{...counts,awaitingReview:pending},
-   limitation:'Somente padrões exatos ou aliases aprovados com 5 correções coerentes em 3 datas; sem LLM ou percentual de confiança.'};
+   limitation:'Correções humanas coerentes ou MCC + categoria Pluggy concordantes; sinais isolados e modelo local sem calibração nunca autorizam escrita.'};
  }
  configure({accountIds,startDate,endDate},approvedByMain=false){
   if(approvedByMain!==true)throw Error('Auto D05: consentimento nativo obrigatório');
@@ -244,17 +246,51 @@ class D05AutoCategorization{
     unsupported:false,amountCents:Math.abs(row.amountCents)});
    const sufficient=verified.length>=MIN_ANCHORS&&days.size>=MIN_DATES&&unique.size===1&&
     quality.status==='eligible_for_preview'&&quality.confidence==='high';
-   if(!sufficient){
+   let target=null,evidenceHash=null,explanation='';
+   if(sufficient){
+    target={categoryId:verified[0].categoryId,subcategoryId:verified[0].subcategoryId};
+    evidenceHash=hash([merchant,verified.map(a=>[a.externalId,a.date,a.amountCents,a.categoryId,a.subcategoryId]).sort()]);
+    explanation='Correspondência '+(merchant.startsWith('alias:')?'de alias aprovado':'exata')+
+     ' com '+verified.length+' correções explícitas independentes em '+days.size+' datas.';
+   }else if(unique.size<=1){
+    // CAT-02 is a read-only advisor. Only its strict agreement between MCC
+    // and provider category can authorize the canonical D05 overlay writer.
+    // Human conflicts and all uncalibrated local-model suggestions are excluded.
+    const evidence=evidenceFor(sql,row.accountId,row.externalId);
+    const external=evidence?classifyCandidate({
+     transaction:{accountId:row.accountId,externalId:row.externalId,
+      accountType:evidence.accountType,status:row.status,amountCents:row.amountCents,
+      nature:row.nature,manualOverride:!!row.manualCategoryId,
+      splitCount:row.hasSplits?1:0,linkedManualId:row.linkedManualId},
+     evidence
+    }):null;
+    if(external?.status==='apply'&&external.reason==='MULTI_SIGNAL_RECONCILED'&&
+       external.evidenceTypes.includes('merchant_mcc')&&
+       external.evidenceTypes.includes('provider_category')&&
+       (!verified.length||sameTarget(verified[0],external.target))){
+     try{
+      const resolved=service.resolve(external.target);
+      const builtin=sql.prepare('SELECT built_in FROM categories WHERE id=?').get(resolved.categoryId);
+      const child=resolved.subcategoryId?
+       sql.prepare('SELECT built_in,active FROM subcategories WHERE id=?').get(resolved.subcategoryId):null;
+      if(builtin?.built_in===1&&(!resolved.subcategoryId||(child?.built_in===1&&child.active===1))&&
+         ['both',kind(row)].includes(resolved.parent.kind)&&
+         (!resolved.child||['both',kind(row)].includes(resolved.child.kind))){
+       target={categoryId:resolved.categoryId,subcategoryId:resolved.subcategoryId};
+       evidenceHash=hash(['cat02-external-v1',evidence.fingerprint,merchant,target]);
+       explanation='MCC e categoria do provedor Pluggy concordantes; destino D05 oficial verificado. Sem correções humanas exigidas.';
+      }
+     }catch(_){/* External evidence not resolvable against the local D05 catalog. */}
+    }
+   }
+   if(!target){
     reviewCount++;if(review.length<limit)review.push({accountId:row.accountId,externalId:row.externalId,
-     reason:unique.size>1?'Correções anteriores contraditórias':'Evidência insuficiente'});
+     reason:unique.size>1?'Correções anteriores contraditórias':'Evidência insuficiente ou sinais externos não confirmados'});
     continue;
    }
-   const target={categoryId:verified[0].categoryId,subcategoryId:verified[0].subcategoryId};
-   const evidenceHash=hash([merchant,verified.map(a=>[a.externalId,a.date,a.amountCents,a.categoryId,a.subcategoryId]).sort()]);
    const proposal={accountId:row.accountId,externalId:row.externalId,merchant,target,
      sourceFingerprint:fingerprint(row),evidenceHash,consentRevision:permission.revision,
-     explanation:'Correspondência '+(merchant.startsWith('alias:')?'de alias aprovado':'exata')+
-      ' com '+anchors.length+' correções explícitas coerentes em '+days.size+' datas. Sem modelo externo.'};
+     explanation};
    candidates.push(proposal);
    perAccount[row.accountId]=(perAccount[row.accountId]||0)+1;
   }
