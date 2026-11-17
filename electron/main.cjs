@@ -23,6 +23,7 @@ const {installD05Ipc}=require('./d05-ipc-adapter.cjs');
 const {D05RCSecureGate}=require('./d05-rc-gate.cjs');
 const {D05PersonalWriteGateway}=require('./d05-personal-gate.cjs');
 const {D05AutoCategorization}=require('./d05-auto-categorization.cjs');
+const {D05AutoLocalScheduler}=require('./d05-auto-local-scheduler.cjs');
 const {CategoryReviewService}=require('./category-review.cjs');
 const {CategoryReviewBackupGate}=require('./category-review-backup.cjs');
 const {automaticBackup,restoreBackup,listAutoBackups,validateBackupFile}=require('./recovery.cjs');
@@ -33,7 +34,7 @@ const {AIPersonalStore}=require('./ai-personal.cjs');
 const {ChatGPTSignIn}=require('./ai-auth.cjs');
 const {ChatGPTDemoClient}=require('./ai-client.cjs');
 const {buildSyntheticFinancialContext}=require('../shared/ai-financial-context.mjs');
-let planner=null, db=null, mainWindow=null, vault=null, categoryRC=null, d05Gate=null, d05PersonalGate=null, autoCategory=null, syncing=false, restoring=false, autoBackupBusy=false, cloudPreparationBusy=false, backupTimer=null, cloudPersonalTimer=null, cloudPersonalBusy=false, cloudAuthPromise=null,cloudAccessAssertion=null;
+let planner=null, db=null, mainWindow=null, vault=null, categoryRC=null, d05Gate=null, d05PersonalGate=null, autoCategory=null, autoScheduler=null, autoDailyTimer=null, syncing=false, restoring=false, autoBackupBusy=false, cloudPreparationBusy=false, backupTimer=null, cloudPersonalTimer=null, cloudPersonalBusy=false, cloudAuthPromise=null,cloudAccessAssertion=null;
 function backupsDirectory(){return path.join(app.getPath('userData'),'copias-de-seguranca');}
 async function ensureAutomaticBackup(){
   if(!db||restoring||syncing||autoBackupBusy)return;
@@ -228,6 +229,7 @@ app.whenReady().then(async()=>{
   // Dedicated per-account opt-in; no elevation of the general AI personal writer.
   autoCategory=new D05AutoCategorization({finance:()=>db,
    backupDirectory:()=>path.join(app.getPath('userData'),'d05-auto-classification-backups')});
+  autoScheduler=new D05AutoLocalScheduler({finance:()=>db,engine:()=>autoCategory});
  }
  bindLocalFinancialServices();
  d05Gate=new D05RCSecureGate({
@@ -532,7 +534,7 @@ app.whenReady().then(async()=>{
  const autoIdle=()=>{if(syncing||restoring||autoBackupBusy||cloudPreparationBusy)
   throw Error('Classificação automática: aguarde a operação financeira em andamento.');};
  ipcMain.handle('bank:auto-status',event=>{
-  requireAppSender(event);return {...autoCategory.status(),available:stablePackaged};
+  requireAppSender(event);return {...autoCategory.status(),available:stablePackaged,jobs:autoScheduler.status({limit:10})};
  });
  ipcMain.handle('bank:auto-configure',async(event,input)=>{
   requireAppSender(event);autoAllowed();autoIdle();
@@ -584,7 +586,7 @@ app.whenReady().then(async()=>{
   autoBackupBusy=true;
   try{
    if(initial)await autoCategory.confirmInitialPreview(input.previewVersion);
-   return {...await autoCategory.apply({limit:20000}),data:titledBankData(),status:autoCategory.status()};
+   return {...await autoScheduler.run('manual'),data:titledBankData(),status:autoCategory.status()};
   }finally{autoBackupBusy=false;}
  });
  ipcMain.handle('bank:auto-correct',async(event,input)=>{
@@ -670,7 +672,7 @@ app.whenReady().then(async()=>{
      let autoResult={state:'disabled_or_no_evidence',applied:0};
      if(stablePackaged&&autoCategory.status().enabled&&autoCategory.initialReady()){
       autoBackupBusy=true;
-      try{autoResult=await autoCategory.apply();}
+      try{autoResult=await autoScheduler.run('sync',{syncId:db.db.prepare('SELECT MAX(id) AS id FROM bank_sync_history').get().id});}
       catch(_){autoResult={state:'failed_safely',error:'Sincronização salva; a automação não foi aplicada. Confira os backups e tente novamente.'};}
       finally{autoBackupBusy=false;}
      }
@@ -785,6 +787,17 @@ app.whenReady().then(async()=>{
  createWindow();
  void ensureAutomaticBackup();
  backupTimer=setInterval(()=>void ensureAutomaticBackup(),60*60*1000);
+ // Local-only: first opening of the day and extended sessions while app is open.
+ // Never starts a new Pluggy sync or operates in the isolated/experimental RC.
+ const tickAutoDaily=async()=>{
+  if(!stablePackaged||!autoScheduler||!db||syncing||restoring||autoBackupBusy||cloudPreparationBusy)return;
+  autoBackupBusy=true;
+  try{await autoScheduler.run('daily');}
+  catch(_){console.warn('Verificação diária de categorias indisponível; nenhuma sincronização bancária adicional foi feita.');}
+  finally{autoBackupBusy=false;}
+ };
+ autoDailyTimer=setInterval(()=>void tickAutoDaily(),15*60*1000);
+ void tickAutoDaily();
  if(!experimentalPackaged&&!smokeProfileActive){
   cloudPersonalTimer=setInterval(()=>void tickCloudPersonal(),60*1000);
   void tickCloudPersonal();
@@ -792,4 +805,4 @@ app.whenReady().then(async()=>{
  app.on('activate',()=>{if(BrowserWindow.getAllWindows().length===0)createWindow();});
 }).catch(error=>{dialog.showErrorBox('Erro ao iniciar Meu Financeiro','Não foi possível abrir o banco de dados: '+error.message);app.quit();});
 app.on('window-all-closed',()=>{if(process.platform!=='darwin')app.quit();});
-app.on('before-quit',()=>{if(d05PersonalGate)d05PersonalGate.stopAll();if(d05Gate)d05Gate.stopAll();if(categoryRC)categoryRC.stopAll();if(backupTimer)clearInterval(backupTimer);if(cloudPersonalTimer)clearInterval(cloudPersonalTimer);cancelBrowserPairing();if(db){db.close();db=null;}});
+app.on('before-quit',()=>{if(d05PersonalGate)d05PersonalGate.stopAll();if(d05Gate)d05Gate.stopAll();if(categoryRC)categoryRC.stopAll();if(backupTimer)clearInterval(backupTimer);if(autoDailyTimer)clearInterval(autoDailyTimer);if(cloudPersonalTimer)clearInterval(cloudPersonalTimer);cancelBrowserPairing();if(db){db.close();db=null;}});
