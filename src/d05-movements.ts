@@ -90,6 +90,7 @@ class D05Movements extends React.Component<any,any> {
  const [autoReceiptBusy,setAutoReceiptBusy]=useState(false);
  const [autoReceiptDetail,setAutoReceiptDetail]=useState(null as any);
  const [autoProgress,setAutoProgress]=useState(null as any);
+ const [autoWriteJob,setAutoWriteJob]=useState(null as any);
  const [autoSelected,setAutoSelected]=useState(new Set<string>());
  const [autoStart,setAutoStart]=useState('2000-01-01');
  const [autoEnd,setAutoEnd]=useState('2099-12-31');
@@ -98,6 +99,7 @@ class D05Movements extends React.Component<any,any> {
  const [autoMessage,setAutoMessage]=useState('');
  const [autoRules,setAutoRules]=useState([] as any[]);
  const autoScanRef=useRef({jobId:null as string|null,stop:false});
+ const autoWriteRef=useRef({jobId:null as string|null,stop:false});
  const activeTrigger=useRef(null as any);
  const modalRef=useRef(null as any);
  const refreshId=useRef(0);
@@ -161,6 +163,7 @@ class D05Movements extends React.Component<any,any> {
    void bridge.bankAutoStatus().then((status:any)=>{
     if(status?.contract==='D05/AUTO-CATEGORY-V1'){
      setAutoInfo(status);
+     if(status.applyJob&&autoWriteJob===null)setAutoWriteJob(status.applyJob);
      if(autoInfo===null){
       const enabled=(status.permissions||[]).filter((p:any)=>p.enabled&&p.expiresAt>new Date().toISOString());
       setAutoSelected(new Set(enabled.map((p:any)=>p.accountId)));
@@ -260,6 +263,53 @@ class D05Movements extends React.Component<any,any> {
   }catch(e:any){setAutoMessage('A reversão não foi confirmada: '+String(e?.message||e));}
   finally{setAutoBusy(false);}
  };
+ const runWritePages=async(jobId:string)=>{
+  if(!bridge?.bankAutoBatchNext)throw Error('Aplicação paginada indisponível no preload.');
+  autoWriteRef.current={jobId,stop:false};
+  let last:any=null;
+  while(!autoWriteRef.current.stop){
+   try{last=await bridge.bankAutoBatchNext(jobId);}
+   catch(e:any){if(autoWriteRef.current.stop)break;throw e;}
+   setAutoWriteJob(last);
+   if(last.state!=='running')break;
+   await new Promise<void>(resolve=>setTimeout(resolve,0));
+  }
+  if(last&&!autoWriteRef.current.stop){
+   await host.refreshBank();await refreshAuto();
+   if(last.state==='completed')
+    setAutoMessage('Aplicação concluída: '+String(last.committed)+' classificações com recibo confirmado.');
+   else if(last.state==='stale')
+    setAutoMessage('Prévia desatualizada. '+String(last.committed)+' categorias gravadas permanecem válidas; não houve nova escrita depois da divergência.');
+   else if(last.state==='failed')
+    setAutoMessage('Falha protegida. '+String(last.committed)+' categorias já confirmadas permanecem; lote seguinte bloqueado até revisão.');
+  }
+ };
+ const pauseWrite=async()=>{
+  const id=autoWriteRef.current.jobId||autoWriteJob?.jobId;
+  if(!id||!bridge?.bankAutoBatchPause)return;
+  autoWriteRef.current.stop=true;
+  try{const job=await bridge.bankAutoBatchPause(id);setAutoWriteJob(job);
+   setAutoMessage('Aplicação pausada após '+String(job.committed)+' confirmações. Nenhuma categoria será reprocessada.');}
+  catch(e:any){setAutoMessage(String(e?.message||e));}
+ };
+ const resumeWrite=async()=>{
+  const id=autoWriteJob?.jobId;
+  if(!id||!bridge?.bankAutoBatchResume)return;
+  setAutoBusy(true);setAutoMessage('');
+  try{const job=await bridge.bankAutoBatchResume(id);
+   setAutoWriteJob(job);await runWritePages(id);}
+  catch(e:any){setAutoMessage('Retomada bloqueada: '+String(e?.message||e));}
+  finally{setAutoBusy(false);}
+ };
+ const cancelWrite=async()=>{
+  const id=autoWriteJob?.jobId;
+  if(!id||!bridge?.bankAutoBatchCancel)return;
+  autoWriteRef.current.stop=true;
+  try{const job=await bridge.bankAutoBatchCancel(id);setAutoWriteJob(job);
+   await host.refreshBank();await refreshAuto();
+   setAutoMessage('Lote cancelado. '+String(job.committed)+' classificações confirmadas foram preservadas; nenhuma reversão em massa foi executada.');}
+  catch(e:any){setAutoMessage(String(e?.message||e));}
+ };
  const runAutoAction=async(action:string,accountId:string|null=null)=>{
   if(!bridge||autoBusy||state.mode!=='real')return;
   setAutoBusy(true);setAutoMessage('');
@@ -297,6 +347,11 @@ class D05Movements extends React.Component<any,any> {
    else if(action==='suggest')result=await bridge.bankAutoRuleSuggestions({limit:5});
    if(action==='suggest'){setAutoRules(result?.rules||[]);setAutoMessage('Sugestões somente para prévia; nenhuma regra foi criada.');return;}
    if(result?.cancelled){setAutoMessage('Operação cancelada; nenhuma classificação aplicada.');return;}
+   if(result?.batch){
+    setAutoWriteJob(result.batch);setAutoView('center');
+    await runWritePages(result.batch.jobId);
+    return;
+   }
    if(['failed','busy','paused','awaiting_explicit_consent_or_first_confirmation'].includes(result?.state))
     throw Error('A aplicação NÃO foi concluída: '+String(result.state)+'. Confira os backups e o estado dos jobs antes de tentar novamente.');
    await host.refreshBank();await refreshHierarchy();await refreshAuto();
