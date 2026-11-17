@@ -357,7 +357,7 @@ class D05AutoCategorization{
    const row=sql.prepare('SELECT * FROM mf_auto_labels WHERE account_id=? AND external_id=?').get(accountId,externalId);
    if(!row){sql.exec('COMMIT');return {undone:false};}
    const id=randomUUID(),perm=sql.prepare('SELECT revision FROM mf_auto_permissions WHERE account_id=?').get(accountId);
-   if(current)sql.prepare('DELETE FROM mf_auto_labels WHERE account_id=? AND external_id=?').run(accountId,externalId);
+   sql.prepare('DELETE FROM mf_auto_labels WHERE account_id=? AND external_id=?').run(accountId,externalId);
    sql.prepare(`INSERT INTO mf_auto_feedback(account_id,external_id,reason,recorded_at)
     VALUES (?,?,?,?) ON CONFLICT(account_id,external_id) DO UPDATE SET reason=excluded.reason,recorded_at=excluded.recorded_at`)
     .run(accountId,externalId,'reversed_by_owner',at);
