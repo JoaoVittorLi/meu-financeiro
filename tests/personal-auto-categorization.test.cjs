@@ -69,11 +69,11 @@ test('MF1 auto: opt-in is account scoped and disabled by default',()=>sandbox(as
 test('MF1 auto: PENDING, transfer, ignore, splits, reviewed and linked rows never auto-apply',()=>sandbox(async dir=>{
  const {finance,target}=make(dir);try{
   const sql=finance.db,d05=new D05CategoryService(finance);
-  sql.prepare('INSERT INTO bank_transaction_notes(account_id,external_id,nature) VALUES (?,?,"transfer")').run(ACCOUNT,'tx-610');
-  sql.prepare('INSERT INTO bank_transaction_notes(account_id,external_id,nature) VALUES (?,?,"ignore")').run(ACCOUNT,'tx-611');
+  sql.prepare('INSERT INTO bank_transaction_notes(account_id,external_id,nature) VALUES (?,?,?)').run(ACCOUNT,'tx-610','transfer');
+  sql.prepare('INSERT INTO bank_transaction_notes(account_id,external_id,nature) VALUES (?,?,?)').run(ACCOUNT,'tx-611','ignore');
   sql.prepare('INSERT INTO bank_transaction_splits(account_id,external_id,position,category,amount_cents,category_id,subcategory_id) VALUES (?,?,?,?,?,?,?)').run(ACCOUNT,'tx-612',0,'Alimentação',1501,target.categoryId,target.subcategoryId);
-  sql.prepare('INSERT INTO bank_transaction_notes(account_id,external_id,nature,reviewed_at) VALUES (?,?,"auto",?)').run(ACCOUNT,'tx-613',new Date().toISOString());
-  sql.prepare('INSERT INTO bank_transaction_notes(account_id,external_id,nature,merchant) VALUES (?,?,"auto",?)').run(ACCOUNT,'tx-614','Manual merchant');
+  sql.prepare('INSERT INTO bank_transaction_notes(account_id,external_id,nature,reviewed_at) VALUES (?,?,?,?)').run(ACCOUNT,'tx-613','auto',new Date().toISOString());
+  sql.prepare('INSERT INTO bank_transaction_notes(account_id,external_id,nature,merchant) VALUES (?,?,?,?)').run(ACCOUNT,'tx-614','auto','Manual merchant');
   const auto=service(finance,dir);auto.consent({accountIds:[ACCOUNT],enabled:true});
   await auto.run();
   for(const n of [609,610,611,612,613,614,615]){
@@ -126,7 +126,8 @@ test('MF1 auto: supervised undo removes only auto labels, keeps manual override,
  try{
   const auto=service(finance,dir);auto.consent({accountIds:[ACCOUNT],enabled:true});
   const first=await auto.run();receiptId=first.receiptId;
-  new D05CategoryService(finance).assignBank({accountId:ACCOUNT,externalId:'tx-10',target:new D05CategoryService(finance).resolveLegacy('Alimentação').categoryId?{categoryId:new D05CategoryService(finance).resolveLegacy('Alimentação').categoryId,subcategoryId:null}:null});
+  const parentId=new D05CategoryService(finance).resolveLegacy('Alimentação').categoryId;
+  new D05CategoryService(finance).assignBank({accountId:ACCOUNT,externalId:'tx-10',target:{categoryId:parentId,subcategoryId:null}});
   const result=await auto.undo(receiptId);assert.equal(result.status,'undone');assert(result.removed>500);
   assert.equal(finance.db.prepare('SELECT COUNT(*) AS n FROM mf_auto_labels').get().n,0);
   assert(finance.db.prepare('SELECT 1 FROM bank_category_overrides WHERE account_id=? AND external_id=?').get(ACCOUNT,'tx-10'));
