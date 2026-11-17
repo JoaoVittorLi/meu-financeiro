@@ -17,7 +17,10 @@ function releaseChannel(app,metadata=require('../package.json')){
   throw Error('Identidade de distribuição inválida. Perfil financeiro bloqueado.');
  if(marker==='stable'&&app.getName()!==STABLE_NAME)
   throw Error('Identidade estável incompatível com o pacote. Perfil bloqueado.');
- if(marker==='experimental'&&app.getName()!==EXPERIMENTAL_NAME)
+ // Legacy electron-builder RC packages may expose the npm name rather
+ // than the configured productName. Either identity remains ISOLATED only.
+ if(marker==='experimental'&&
+    app.getName()!==EXPERIMENTAL_NAME&&app.getName()!=='meu-financeiro-desktop')
   throw Error('Identidade experimental incompatível com o pacote. Perfil bloqueado.');
  return marker;
 }
