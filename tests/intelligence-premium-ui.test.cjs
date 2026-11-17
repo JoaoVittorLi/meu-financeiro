@@ -135,7 +135,13 @@ test('R1: source, profile, token and review grant are isolated session signature
 function chatContext(api,options={}){
  const sandbox=context(api);
  const localSource=fs.readFileSync(path.join(__dirname,'../src/intelligence-local.ts'),'utf8');
- const localOutput=ts.transpileModule(localSource,{
+ // Production module:none/outFile defines this function in intelligence-integration.
+ // Run its real source in the isolated VM; do not hide a missing symbol with a stub.
+ const integration=fs.readFileSync(path.join(__dirname,'../src/intelligence-integration.ts'),'utf8');
+ const helperStart=integration.indexOf('function intelligenceFoldText(');
+ const helperEnd=integration.indexOf('\nfunction intelligenceConversationState(',helperStart);
+ assert(helperStart>=0&&helperEnd>helperStart,'Production intelligenceFoldText missing');
+ const localOutput=ts.transpileModule(integration.slice(helperStart,helperEnd)+'\n'+localSource,{
   compilerOptions:{target:ts.ScriptTarget.ES2019,module:ts.ModuleKind.None}
  }).outputText;
  sandbox.intelligenceNowTime=()=>'19:00';
