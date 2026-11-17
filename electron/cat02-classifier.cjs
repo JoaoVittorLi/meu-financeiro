@@ -136,13 +136,15 @@ function classifyCandidate({transaction,evidence={},history=[],rules=[],catalog=
  const approvedRule=(Array.isArray(rules)?rules:[]).filter(x=>x?.approvedByHuman===true&&
   x.enabled===true&&normalizeTarget(x.target,catalog)&&
   (x.scope==='bank'||x.scope==='both')&&
-  x.matchMode==='exact'&&fold(x.pattern)===fold(transaction.description))
+  (x.matchMode==='exact'?fold(x.pattern)===fold(transaction.description):
+   x.matchMode==='starts'?fold(transaction.description).startsWith(fold(x.pattern)):
+   x.matchMode==='contains'&&fold(transaction.description).includes(fold(x.pattern))))
  .sort((a,b)=>(a.priority??100)-(b.priority??100));
  if(approvedRule.length){
   const first=normalizeTarget(approvedRule[0].target,catalog);
   if(approvedRule.some(r=>targetKey(normalizeTarget(r.target,catalog))!==targetKey(first)))
    return result('review','CONFLICTING_APPROVED_RULES');
-  return result('apply','HUMAN_APPROVED_EXACT_RULE',{target:first,evidenceTypes:['approved_rule'],quality:'human_approved'});
+  return result('apply','HUMAN_APPROVED_RULE',{target:first,evidenceTypes:['approved_rule'],quality:'human_approved'});
  }
  const merchant=verifiedMerchantLabel(evidence,history,catalog);
  if(merchant.status==='conflict')return result('review','HUMAN_HISTORY_CONFLICT');
