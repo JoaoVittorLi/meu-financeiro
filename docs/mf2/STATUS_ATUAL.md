@@ -52,3 +52,14 @@ Detalhamento linha a linha: [MATRIZ_FUNCIONAL_1_0_0.md](MATRIZ_FUNCIONAL_1_0_0.m
 - **Design/conformidade:** [#84](https://github.com/JoaoVittorLi/meu-financeiro/issues/84) e [#74](https://github.com/JoaoVittorLi/meu-financeiro/issues/74).
 - **Instruções de execução:** [PLANO_DE_RELEASE](PLANO_DE_RELEASE.md) e [MATRIZ_QA](MATRIZ_QA_1_0_0.md).
 - SHAs são **instantâneos**: conferir HEAD vivo do PR #96 antes de qualquer teste; todo novo commit após o SHA verificado invalida os gates aplicáveis.
+
+
+## CAT-01 a CAT-05 — nova decisão P0 (17/11/2026)
+
+**Novo bloqueador formal:** o proprietário tornou a categorização automática bancária com consentimento um requisito necessário para a versão **1.0.0**. Não é uma entrega opcional pós-release.
+
+PRs de implementação **isolada**: [#99](https://github.com/JoaoVittorLi/meu-financeiro/pull/99) (evidências Pluggy e motor D05; 19/19 de lógica V8 PASS, SQLite NOT_RUN), [#101](https://github.com/JoaoVittorLi/meu-financeiro/pull/101) (prévia de histórico completo; Node SQLite NOT_RUN), [#102](https://github.com/JoaoVittorLi/meu-financeiro/pull/102) (consentimento, automação local, recibos e undo; 6/6 checks isolados V8 PASS, Node SQLite NOT_RUN).
+
+Esses PRs ainda **não conectam a automação ao Electron real**: MAIN/preload/renderer/migração são trabalho de integração da #49. Valores iniciais de checkbox não equivalem a consentimento; `approvedForCategorization` está falso por padrão. `approvedForPersonal:()=>false` deve permanecer para outras escritas IA.
+
+**Resultado: 1.0.0 NO-GO**, até integrar CAT-01–05 na candidata, demonstrar 600+ transações sintéticas, Node/SQLite, Electron Windows, rollback/backup/restore, proteção manual e UX. Versão/tag/EXE continuam proibidos sem nova aprovação explícita.
