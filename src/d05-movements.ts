@@ -957,7 +957,7 @@ class D05Movements extends React.Component<any,any> {
        h('div',{className:'mf-cat-metric-grid'},
         [{title:'Aplicadas atualmente',value:autoInfo?.counts?.classified||0},
          {title:'Encaminhadas à revisão',value:autoInfo?.counts?.awaitingReview||0},
-         {title:'Revertidas',value:autoInfo?.counts?.reverted||0}].map((m:any)=>
+         {title:'Protegidas',value:autoInfo?.counts?.protected||0}].map((m:any)=>
          h('div',{key:m.title,className:'mf-cat-mini-stat'},h('small',{},m.title),h('strong',{},String(m.value))))),
        h('h4',{},'Atividade recente'),
        (autoInfo?.jobs?.jobs||[]).length?
