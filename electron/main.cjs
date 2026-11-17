@@ -201,7 +201,10 @@ app.whenReady().then(async()=>{
  app.setAppUserModelId(experimentalPackaged?EXPERIMENTAL_ID:STABLE_ID);
  const filename=path.join(app.getPath('userData'),'meu-financeiro.sqlite');
  // Snapshot existing SQLite (including WAL) before FinanceDB migrations.
- if(stablePackaged)await stablePreMigrationBackup(app.getPath('userData'),app.getVersion());
+ const stableSnapshot=stablePackaged?
+  await stablePreMigrationBackup(app.getPath('userData'),app.getVersion()):null;
+ const profileState=stablePackaged?(stableSnapshot.existing?'existing':'new'):
+  experimentalPackaged?'isolated':smokeProfileActive?'isolated':'development';
  db=new FinanceDB(filename);
  planner=new PlanningStore(db);
  let localFinancial,categoryReview,reviewBackupGate;
@@ -517,7 +520,7 @@ app.whenReady().then(async()=>{
    config={configured:false,clientId:'',itemIds:[],secure:false};
    error='O cofre protegido não pôde ser aberto. O histórico offline permanece disponível; confira a reconexão.';
   }
-  return {config,data:titledBankData(),connection:{...channelStatus(runtimeChannel),error}};
+  return {config,data:titledBankData(),connection:{...channelStatus(runtimeChannel),profileState,error}};
  }
  ipcMain.handle('bank:status',async(event)=>{
   requireAppSender(event);return bankStatusSafe();
