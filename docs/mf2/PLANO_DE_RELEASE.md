@@ -1,0 +1,74 @@
+# Plano de release — Meu Financeiro 1.0.0 (NÃO APROVADO)
+
+> Reaproveita o plano do [PR #82](https://github.com/JoaoVittorLi/meu-financeiro/pull/82), substituindo a cadeia obsoleta #76-only pela candidata mais recente **#76 → #94 → #96**. Este plano não autoriza pipeline, instalador, migração pessoal, tag ou release. **Issue #71 é o marco equivalente v1.0.0 e decisão canônica de GO/NO-GO.**
+
+## 1. Ownership, fronteiras e dependências
+
+| Responsável | Entrega/controlador | Decisão e limite |
+|---|---|---|
+| **Integrador** | #76 base, #94 B01–B05/I3-01, #96 P0 continuidade | Congelar único HEAD funcional; não duplicar arquivos MAIN/preload nem integrar pela ordem errada |
+| **Executor QA** | #65; suites `tests/*.test.cjs` e F08/ASAR | Reportar SHA/OS/Node/npm/comando/log PASS/FAIL/NOT_RUN; propor patch mínimo ao integrador |
+| **Designer / QA visual** | #57, #74 e #84 | Verificar fidelidade D01–D05 e B01–B05 no Electron, sem redesign não autorizado |
+| **Documentação** | PR de preparação 1.0; histórico #82 | Atualizar este conjunto único; não ajustar o conteúdo de provas anteriores |
+| **Proprietário** | **#71** | Aprovar corte de escopo, escrita pessoal, QA pago, versão 1.0.0, builds, migração e publicação |
+
+Cadeia atual: PR #76 (**integração anterior**) → #94 (**D01–D05/B01–B05 + I3-01**) → #96 (**RC-ALL-02.2/02.3**) → QA do SHA exato → decisão humana #71 → release. PR #82 é **acervo documental anterior**, não código a reintegrar.
+
+## 2. Congelamento e SemVer
+
+- **Atual:** `package.json` e `package-lock.json` declaram `0.9.5-beta.8`; não alterar aqui. `main` não é fonte de release 1.0 no estado atual.
+- **Candidata futura:** após fechar o QA funcional inicial, o proprietário pode autorizar commit **separado e reproduzível** de `1.0.0-rc.1` ou outra etiqueta pré-release. Alinhar **ambos** package e lock, renderer provenance, build e hashes. Uma RC não é versão estável.
+- **Definitiva:** versão `1.0.0`, tag anotada `v1.0.0` e GitHub Release exigem aprovação expressa após QA **na árvore exata**. Alterar versão/metadados/ASAR ou código após homologação exige refazer os gates aplicáveis. Não criar tag agora.
+- **Identidade:** `dist:windows` = `app.local.meufinanceiro.rcall01`, produto `Meu Financeiro RC Experimental`, perfil isolado; `dist:windows:stable` = `app.local.meufinanceiro`, produto `Meu Financeiro`, marker `mfDistributionChannel=stable` — QA deve ler o **pacote gerado**, não confiar só no script. Nunca trocar identidades por variável de runtime.
+
+## 3. Gates de homologação (todos bloqueantes)
+
+| Ordem | Gate | Aceite exigido | Dono |
+|---|---|---|---|
+| G0 | Inventário e SHA | HEAD #96 e dependências congelados, escopo/versionamento/owners fixados, PRs Draft claros | Integrador |
+| G1 | Node/npm | Node 22.23.4 npm 10.9.9; `npm ci --no-audit --no-fund`; `test:types`, `test:db` completos PASS no SHA | Executor QA |
+| G2 | Segurança e dados | SQLite v7, integridade/FK, 600+ sintéticos, backups mesma versão/WAL, Pluggy cofre fictício, grants/nonce/IPC e rollback PASS | Executor QA + Integrador |
+| G3 | Artefatos de código | `npm run compile`; preload check; `test:asar`; `provenance:create`/`verify`; hash/manifesto fiéis ao SHA | Executor QA |
+| G4 | Electron real | Boot, 32 capturas, 1366/1920, dark/light, zoom 100/125/150, teclado/Escape/foco/reduced-motion, B01–B05/D05 | QA visual |
+| G5 | Windows identidade | Smoke em máquina/VM descartável: instalador/portable sintéticos **somente após autorização de build**, identidade ASAR, `userData` correto, backup/restore, Pluggy offline; investigar erro anterior Windows | Integrador + Proprietário |
+| G6 | Política IA e cloud | Leitura autorizada, qualidade I2-E, I3-01, Pulse unavailable sem saldo verificado; escrita pessoal OFF ou homologada com decisão explícita #71; sem cutover não aprovado | Proprietário |
+| G7 | Release | Notas/checksums/rollback, aceite do proprietário, SemVer final, tag/release controlados, verificação de fonte e artefatos | Proprietário |
+
+**Comandos no checkout exato** (não os execute em perfis pessoais):
+
+```bash
+git status --short
+git rev-parse HEAD
+node --version && npm --version
+npm ci --no-audit --no-fund
+node --test tests/rc-all-02-3-backup.test.cjs
+npm run test:types
+npm run test:db
+node scripts/build-preload.cjs check
+npm run test:asar
+npm run provenance:create && npm run provenance:verify
+```
+
+`npm run test:db` inclui `tests/*.test.cjs` (12 casos RC2.2 + 5 RC2.3; novos cenários não equivalem a PASS). Para evidência completíssima, registrar no relatório: `command`, `SHA`, `Node/npm`, `exit code`, `PASS/FAIL/NOT_RUN`, log e artifact hash. `npm run test:electron-smoke` só em GUI/VM isolada; inspeção humana obrigatória.
+
+## 4. CircleCI: **não disparar sem autorização separada**
+
+`.circleci/config.yml` tem `run_preflight`, `run_windows_qa`, `run_windows_build`, `run_windows_stable_build` todos `false` por padrão, Windows QA/build dependem de preflight. Flags de build de RC e stable são mutuamente exclusivas. Ordem após GO parcial do proprietário: Linux → Windows QA sem instalador → autorização **nova** para build stable. Nenhum runner pago está autorizado por este documento.
+
+O SHA #94 `674108e...` tem status `preflight_linux=success` e `build_windows=error`. Recuperar **logs concretos** do erro, etapa, saída e origem antes de retentar; não inferir causa. SHA #96 `2ce62fe4fde7e60df327be3bfa03f47dcc7fbfff`: zero status CI, não compartilhar PASS do #94.
+
+## 5. Migração/rollback e distribuição
+
+- **Antes de teste de upgrade:** VM Windows descartável e dados sintéticos com conta/600 lançamentos/budgets/planejamento + cofre fictício; abrir perfil antigo, gerar WAL, validar backup e perfis stable/RC; inspecionar ASAR e `app.getName()`.
+- **Em eventual migração real:** exige autorização específica do proprietário e backup externo protegido, verificação de integridade, plano de recuperação e janela de execução. Não usar dados pessoais em CI/QA.
+- **Falha de integridade/arquivo `.partial`, duas pastas estáveis, symlink, erro de cofre ou hash:** bloquear update; não mover/copy/importar um perfil RC automaticamente, não renomear SQLite nem credenciais manualmente.
+- **Rollback:** impedir reinício da versão nova, preservar SQLite/WAL/cofre e os snapshots antigos imutáveis; restaurar somente backup **revalidado em cópia descartável**, garantindo compatibilidade de schema e fidelidade dos centavos; reabrir versão anterior no perfil correspondente após decisão controlada.
+- **Pós-release:** regressão rápida de boot/contas, backup manual verificado, atendimento a falhas, hashes e notas; qualquer correção tem novo SHA e testes repetidos.
+
+## 6. Decisões formais em aberto para #71
+
+**D-1 escrita pessoal supervisionada:** opção A — exigir gateway pessoal, recibo idempotente, rollback e QA antes da 1.0 (**bloqueia release**). Opção B — adiar para pós-1.0 mantendo `approvedForPersonal:()=>false` e divulgação explícita (**requer consentimento do proprietário**). **Nenhuma opção é presumida**.
+
+**D-2 objetivo cloud:** sem autorizar migração/cutover pessoal na 1.0 enquanto paridade e permissão não forem validadas.
+
+**D-3 GO:** somente após G0–G7 e logs Windows classificados, aprovar commit de versão, build e tag em momentos distintos. Sem aprovação registrada, **NO-GO**.
