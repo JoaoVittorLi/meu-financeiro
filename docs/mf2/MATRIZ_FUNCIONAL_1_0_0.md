@@ -89,7 +89,7 @@ O **status final de lançamento é NO-GO**, conforme [STATUS_ATUAL](STATUS_ATUAL
 | CAT-02 — fusão D05/Quality Gate/Naive Bayes local não calibrado | YES, PR #99 | NO | 19 casos de lógica PASS em V8; Node NOT_RUN | BLOCKED |
 | CAT-03 — full-history SQLite com prévia, pausa e manifest | YES, PR #101 | NO | 9 testes SQLite versionados, NOT_RUN | BLOCKED |
 | CAT-04 — eventos locais pós-sync/diário e deduplicação | YES, PR #102 | NO | 8 checks sintéticos V8 em conjunto com CAT-05; Node NOT_RUN | BLOCKED |
-| CAT-05 — consentimento específico D05, recibos atômicos e desfazer | YES, PR #102 | NO | 19 testes SQLite versionados; NOT_RUN | BLOCKED |
+| CAT-05 — consentimento específico D05, recibos atômicos e desfazer | YES, PR #102 | NO | 22 testes SQLite versionados; NOT_RUN | BLOCKED |
 
 **Não existem** APIs de categorização pessoal do CAT-05 habilitadas na candidata; `approvedForPersonal:()=>false` continua obrigatório para os demais fluxos. A bandeira `approvedForCategorization` é específica e **false por padrão**, dependente de integração MAIN, backup e QA. Não chamar protótipos, serviços isolados ou testes V8 de “automação pronta”.
 
