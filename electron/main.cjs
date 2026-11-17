@@ -4,6 +4,8 @@ const path=require('node:path');
 const fs=require('node:fs');
 const {FinanceDB}=require('./db.cjs');
 const {isolateSmokeProfile}=require('./smoke-profile.cjs');
+const {releaseChannel,stableProfileDirectory,experimentalProfileDirectory,
+ stablePreMigrationBackup,channelStatus,STABLE_ID,EXPERIMENTAL_ID}=require('./release-channel.cjs');
 const {q1NativeWindow}=require('./q1-native-window.cjs');
 const {prepareCloudMigration,migrationLocalStatus}=require('./cloud-onboarding.cjs');
 const {uploadPersonalQuarantine,CONSENT,loadMarker,markerFile}=require('./cloud-personal-uploader.cjs');
@@ -80,7 +82,7 @@ function secureCloudFetch(ses){
   };
 }
 async function tickCloudPersonal(){
-  if(app.isPackaged===true)return; // Experimental RC forbids Node-side cloud polling.
+  if(experimentalPackaged||smokeProfileActive)return; // RC/smoke never poll personal cloud.
   if(!db||cloudPersonalBusy||syncing||restoring||autoBackupBusy||
      cloudPreparationBusy)return;
   // Never replicate from an unapproved local database: the owner must have
@@ -166,20 +168,21 @@ function createWindow(){
  mainWindow.webContents.on('will-navigate',(event)=>event.preventDefault());
  mainWindow.loadFile(path.resolve(__dirname,'../app/index.html'));
 }
-// The userData path must be isolated BEFORE the single-instance lock and
-// before FinanceDB or vault initialization. Unavailable in packaged builds.
+// Profile selection must precede the single-instance lock, SQLite and vaults.
 const smokeProfileActive=isolateSmokeProfile(app);
-// Release-candidate binaries never use stable userData; no packaged override.
-const experimentalPackaged=app.isPackaged===true;
+const runtimeChannel=smokeProfileActive?'smoke':releaseChannel(app);
+const experimentalPackaged=runtimeChannel==='experimental';
+const stablePackaged=runtimeChannel==='stable';
 function forbidExperimentalNetwork(){
  if(experimentalPackaged)throw Error('RC experimental offline: conexão bancária, nuvem e IA externa estão desativadas.');
 }
 if(experimentalPackaged){
- const isolated=path.join(app.getPath('appData'),'MeuFinanceiro-RC-ALL-01-Experimental');
- if(fs.existsSync(isolated)&&fs.lstatSync(isolated).isSymbolicLink())
-  throw new Error('Diretório experimental não pode ser link simbólico.');
- fs.mkdirSync(isolated,{recursive:true});
+ const isolated=experimentalProfileDirectory(app);
  app.setPath('userData',isolated);
+}else if(stablePackaged){
+ // Continue the previous stable profile IN PLACE; never import RC data.
+ const stableDirectory=stableProfileDirectory(app);
+ app.setPath('userData',stableDirectory);
 }
 const q1NativeBounds=q1NativeWindow(smokeProfileActive);
 // Preview portable and installed version share one local finance database.
@@ -192,10 +195,12 @@ app.on('second-instance',()=>{
     mainWindow.focus();
   }
 });
-app.whenReady().then(()=>{
+app.whenReady().then(async()=>{
  if(!isPrimaryInstance)return;
- app.setAppUserModelId(experimentalPackaged?'app.local.meufinanceiro.rcall01':'app.local.meufinanceiro');
+ app.setAppUserModelId(experimentalPackaged?EXPERIMENTAL_ID:STABLE_ID);
  const filename=path.join(app.getPath('userData'),'meu-financeiro.sqlite');
+ // Snapshot existing SQLite (including WAL) before FinanceDB migrations.
+ if(stablePackaged)await stablePreMigrationBackup(app.getPath('userData'),app.getVersion());
  db=new FinanceDB(filename);
  planner=new PlanningStore(db);
  let localFinancial,categoryReview,reviewBackupGate;
@@ -504,22 +509,30 @@ app.whenReady().then(()=>{
    }finally{restoring=false;}
  });
  function titledBankData(){const data=db.bankOverview();const titles=new Map(planner.bankTitles().map(x=>[x.accountId+'|'+x.externalId,x.title]));return {...data,transactions:data.transactions.map(t=>({...t,customTitle:titles.get(t.accountId+'|'+t.id)||''}))};}
+ async function bankStatusSafe(){
+  let config,error=null;
+  try{config=await vault.status();}
+  catch(_){ // Vault error must not hide/erase historical bank rows.
+   config={configured:false,clientId:'',itemIds:[],secure:false};
+   error='O cofre protegido não pôde ser aberto. O histórico offline permanece disponível; confira a reconexão.';
+  }
+  return {config,data:titledBankData(),connection:{...channelStatus(runtimeChannel),error}};
+ }
  ipcMain.handle('bank:status',async(event)=>{
-   requireAppSender(event);
-   return {config:await vault.status(),data:titledBankData()};
+  requireAppSender(event);return bankStatusSafe();
  });
  ipcMain.handle('bank:configure',async(event,config)=>{
    requireAppSender(event);
    forbidExperimentalNetwork();
    if(syncing)throw new Error('Sincronização em andamento.');
    const saved=await vault.put(config||{});
-   return {config:saved,data:titledBankData()};
+   return {...await bankStatusSafe(),config:saved};
  });
  ipcMain.handle('bank:forget',async(event)=>{
    requireAppSender(event);
    if(syncing)throw new Error('Sincronização em andamento.');
    await vault.clear();
-   return {config:await vault.status(),data:titledBankData()};
+   return bankStatusSafe();
  });
  ipcMain.handle('bank:sync',async(event)=>{
    requireAppSender(event);
@@ -537,7 +550,7 @@ app.whenReady().then(()=>{
        const added=db.ingestBank(id,payload);
        newCount+=added.newCount;totalCount+=added.totalCount;
      }
-     return {newCount,totalCount,config:await vault.status(),data:titledBankData()};
+     return {...await bankStatusSafe(),newCount,totalCount};
    }finally{syncing=false;}
  });
  // Categorização local: operações explícitas, sem expor SQL ao renderer.
@@ -648,7 +661,7 @@ app.whenReady().then(()=>{
  createWindow();
  void ensureAutomaticBackup();
  backupTimer=setInterval(()=>void ensureAutomaticBackup(),60*60*1000);
- if(!experimentalPackaged){
+ if(!experimentalPackaged&&!smokeProfileActive){
   cloudPersonalTimer=setInterval(()=>void tickCloudPersonal(),60*1000);
   void tickCloudPersonal();
  }
