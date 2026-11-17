@@ -56,7 +56,7 @@ class D05AutoLocalScheduler{
  status({limit=20}={}){
   if(!Number.isInteger(limit)||limit<1||limit>100)throw Error('CAT scheduler: limite inválido');
   return {contract:'D05/AUTO-JOBS-V1',running:this.running,paused:this.isPaused(),
-   jobs:this.sql.prepare('SELECT job_key AS jobKey,trigger,state,attempts,started_at AS startedAt,finished_at AS finishedAt,applied,review_count AS reviewCount,error_code AS errorCode,proposed_total AS proposedTotal FROM mf_auto_jobs ORDER BY started_at DESC LIMIT ?').all(limit)};
+   jobs:this.sql.prepare('SELECT job_key AS jobKey,trigger,state,attempts,started_at AS startedAt,finished_at AS finishedAt,applied,review_count AS reviewCount,error_code AS errorCode,proposed_total AS proposedTotal FROM mf_auto_jobs ORDER BY started_at DESC, rowid DESC LIMIT ?').all(limit)};
  }
  // All recurring triggers use the post-authorization boundary. Initial
  // history is written only through the separately confirmed CAT-UX preview.
@@ -73,7 +73,7 @@ class D05AutoLocalScheduler{
   // An interrupted manual run resumes its existing journal rather than
   // generating a fresh id and silently bypassing a failed manifest.
   const manualPending=trigger==='manual'?sql.prepare(
-   "SELECT job_key FROM mf_auto_jobs WHERE trigger='manual' AND state='failed' AND batch_id IS NOT NULL ORDER BY started_at DESC LIMIT 1").get():null;
+   "SELECT job_key FROM mf_auto_jobs WHERE trigger='manual' AND state='failed' AND batch_id IS NOT NULL ORDER BY started_at DESC, rowid DESC LIMIT 1").get():null;
   const jobKey=trigger==='daily'?'daily:'+today:
    trigger==='sync'?'sync:'+syncId:manualPending?.job_key||'manual:'+randomUUID();
   const prior=sql.prepare('SELECT * FROM mf_auto_jobs WHERE job_key=?').get(jobKey);
@@ -88,6 +88,8 @@ class D05AutoLocalScheduler{
    let batch=batchId?engine.batchStatus(batchId):null;
    if(!batch){
     const plan=engine.plan({futureOnly:true,limit:1});
+    if(prior?.source_version&&prior.source_version!==plan.sourceVersion)
+     throw Error('CAT scheduler: MANIFEST_STALE');
     // Journal the stable ID BEFORE starting the canonical writer. A crash
     // between records leaves a recoverable, non-duplicating pending batch.
     sql.prepare(`INSERT INTO mf_auto_jobs
