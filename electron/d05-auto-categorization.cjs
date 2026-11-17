@@ -551,7 +551,7 @@ class D05AutoCategorization{
    throw Error('Auto D05: manifesto inicial obrigatório');
   const plan=this.plan({limit:100,futureOnly});
   if(plan.previewVersion!==previewVersion)throw Error('Auto D05: MANIFEST_STALE; refaça a prévia');
-  const active=this.sql.prepare("SELECT job_id AS id FROM mf_auto_apply_jobs WHERE state IN('running','paused','failed') ORDER BY started_at DESC LIMIT 1").get();
+  const active=this.sql.prepare("SELECT job_id AS id FROM mf_auto_apply_jobs WHERE state IN('running','paused','failed') ORDER BY started_at DESC, rowid DESC LIMIT 1").get();
   if(active)throw Error('Auto D05: já existe lote em andamento; retome ou cancele antes de criar outro');
   const id=jobId||randomUUID(),now=this.clock().toISOString();
   this.sql.prepare(`INSERT INTO mf_auto_apply_jobs(job_id,preview_version,source_version,state,
@@ -563,7 +563,7 @@ class D05AutoCategorization{
   if(id!==null)requireString(id,'lote');
   const sql=this.sql;
   const row=id?sql.prepare('SELECT * FROM mf_auto_apply_jobs WHERE job_id=?').get(id):
-   sql.prepare('SELECT * FROM mf_auto_apply_jobs ORDER BY started_at DESC LIMIT 1').get();
+   sql.prepare('SELECT * FROM mf_auto_apply_jobs ORDER BY started_at DESC, rowid DESC LIMIT 1').get();
   if(!row)return null;
   const receipts=sql.prepare("SELECT COUNT(*) AS n FROM mf_auto_receipts WHERE batch_id=? AND action='apply'").get(row.job_id).n;
   return {contract:'D05/AUTO-APPLY-PAGED-V1',jobId:row.job_id,
