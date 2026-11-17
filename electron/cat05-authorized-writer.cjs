@@ -34,7 +34,7 @@ function migrateCat05(db){
     'job_id TEXT PRIMARY KEY,preview_id TEXT NOT NULL,preview_version TEXT NOT NULL,',
     "trigger TEXT NOT NULL CHECK(trigger IN ('initial','after_sync','daily','manual')),",
     "profile TEXT NOT NULL CHECK(profile='real'),",
-    'accounts_json TEXT NOT NULL,progress INTEGER NOT NULL DEFAULT 0,',
+    'accounts_json TEXT NOT NULL,grants_json TEXT NOT NULL,progress INTEGER NOT NULL DEFAULT 0,',
     "status TEXT NOT NULL CHECK(status IN ('ready','running','paused','cancelled','done','failed')),",
     'created_at TEXT NOT NULL,updated_at TEXT NOT NULL);',
    'CREATE TABLE IF NOT EXISTS cat05_job_items(',
@@ -102,6 +102,13 @@ class Cat05AuthorizedWriter{
   if(scope?.profile!=='real'||!Array.isArray(accounts)||!accounts.length||
     accounts.some(a=>typeof a!=='string'||!a))throw Error('CAT-05: perfil/contas inválidos');
   this.assertMainScope(scope,accounts); // MAIN revalidates owner, chosen accounts and current authorization.
+ }
+ grantRefs(accounts){
+  return accounts.map(accountId=>{
+   const row=this.db.prepare('SELECT grant_id,revoked_at FROM cat05_consents WHERE account_id=?').get(accountId);
+   if(!row||row.revoked_at)throw Error('CAT-05: concessão revogada ou ausente');
+   return [accountId,row.grant_id];
+  });
  }
  consents(accounts,{auto=false}={}){
   for(const accountId of accounts){
@@ -177,8 +184,8 @@ class Cat05AuthorizedWriter{
   const id=randomUUID(),now=this.clock();
   this.db.exec('BEGIN IMMEDIATE');
   try{
-   this.db.prepare('INSERT INTO cat05_jobs(job_id,preview_id,preview_version,trigger,profile,accounts_json,status,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?)')
-    .run(id,previewId,previewVersion,trigger,'real',JSON.stringify(signed.accountIds),'ready',now,now);
+   this.db.prepare('INSERT INTO cat05_jobs(job_id,preview_id,preview_version,trigger,profile,accounts_json,grants_json,status,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?)')
+    .run(id,previewId,previewVersion,trigger,'real',JSON.stringify(signed.accountIds),JSON.stringify(this.grantRefs(signed.accountIds)),'ready',now,now);
    const ins=this.db.prepare('INSERT INTO cat05_job_items(job_id,ordinal,account_id,external_id,category_id,subcategory_id,row_version,evidence_fingerprint) VALUES(?,?,?,?,?,?,?,?)');
    items.forEach((x,i)=>ins.run(id,i,x.accountId,x.externalId,x.target.categoryId,
     x.target.subcategoryId,x.rowVersion,x.evidenceFingerprint));
@@ -192,6 +199,8 @@ class Cat05AuthorizedWriter{
   const accounts=JSON.parse(job.accounts_json);
   this.gate(scope,accounts);
   this.consents(accounts,{auto:job.trigger!=='initial'});
+  if(job.grants_json!==JSON.stringify(this.grantRefs(accounts)))
+   throw Error('CAT-05: concessão alterada desde o aceite inicial');
   return {job,accounts};
  }
  findResumable(scope,accountIds){
@@ -200,7 +209,7 @@ class Cat05AuthorizedWriter{
   const expected=JSON.stringify([...accountIds].sort());
   for(const row of jobs){
    if(JSON.stringify(JSON.parse(row.accounts_json).slice().sort())!==expected)continue;
-   this.consents(accountIds,{auto:row.trigger!=='initial'});
+   this.checkJob(row.job_id,scope);
    return {jobId:row.job_id,trigger:row.trigger,resumed:true};
   }
   return null;
@@ -255,6 +264,8 @@ class Cat05AuthorizedWriter{
    // Recheck release capability and revocation inside the same SQLite transaction.
    this.gate(scope,accounts);
    this.consents(accounts,{auto:job.trigger!=='initial'});
+   if(job.grants_json!==JSON.stringify(this.grantRefs(accounts)))
+    throw Error('CAT-05: concessão alterada durante o lote');
    for(const item of rows){
     const row=currentRow(this.db,item.account_id,item.external_id);
     const metadata=row?evidenceFor(this.db,item.account_id,item.external_id):null;
