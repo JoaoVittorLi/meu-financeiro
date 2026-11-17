@@ -286,7 +286,7 @@ class D05AutoCategorization{
     target={categoryId:verified[0].categoryId,subcategoryId:verified[0].subcategoryId};
     evidenceHash=hash([merchant,verified.map(a=>[a.externalId,a.date,a.amountCents,a.categoryId,a.subcategoryId]).sort()]);
     explanation='Correspondência '+(merchant.startsWith('alias:')?'de alias aprovado':'exata')+
-     ' com '+verified.length+' correções explícitas independentes em '+days.size+' datas.';
+     ' com '+verified.length+' correções explícitas independentes em '+days.size+' datas. Sem modelo externo.';
    }else if(unique.size<=1){
     // CAT-02 is a read-only advisor. Only its strict agreement between MCC
     // and provider category can authorize the canonical D05 overlay writer.
@@ -320,7 +320,7 @@ class D05AutoCategorization{
    }
    if(!target){
     reviewCount++;if(review.length<limit)review.push({accountId:row.accountId,externalId:row.externalId,
-     reason:unique.size>1?'Correções anteriores contraditórias':'Evidência insuficiente ou sinais externos não confirmados'});
+     reason:unique.size>1?'Correções anteriores contraditórias':'Evidência insuficiente'});
     continue;
    }
    const proposal={accountId:row.accountId,externalId:row.externalId,merchant,target,
