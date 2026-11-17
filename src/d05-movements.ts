@@ -944,7 +944,7 @@ class D05Movements extends React.Component<any,any> {
          h('p',{},'A confirmação nativa revalidará o manifesto e criará backups e recibos antes de gravar.')),
         h('button',{type:'button',className:'d05-confirm',
          disabled:autoBusy||!autoInfo?.available||autoProgress?.state!=='ready'||
-          !autoPreview.previewVersion||(autoInfo?.initialConfirmed&&autoInfo?.applyJob?.state!=='stale'),
+          !autoPreview.previewVersion||(autoInfo?.initialConfirmed&&!!autoInfo?.applyJob&&autoInfo?.applyJob?.state!=='stale'),
          onClick:()=>void runAutoAction('confirm')},'Conferi; aplicar propostas elegíveis')),
        autoPreview.candidateCount>20000?h('p',{className:'mf-cat-caption'},
         'Volume elevado: o motor fará commits atômicos de até 250 propostas, com progresso e recuperação persistentes.'):null
