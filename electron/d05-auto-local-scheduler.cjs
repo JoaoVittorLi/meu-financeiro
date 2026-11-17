@@ -78,6 +78,8 @@ class D05AutoLocalScheduler{
     this.sql.prepare(`UPDATE mf_auto_jobs SET state='failed',finished_at=?,
      error_code='BACKUP_OR_INTEGRITY_REQUIRES_REVIEW' WHERE job_key=?`)
      .run(this.clock().toISOString(),jobKey);
+    // Fail closed. No unattended retries until the owner explicitly resumes.
+    this.pause();
     return {state:'failed',jobKey,applied:0,reason:'BACKUP_OR_INTEGRITY_REQUIRES_REVIEW'};
    }
   }finally{this.running=false;}
