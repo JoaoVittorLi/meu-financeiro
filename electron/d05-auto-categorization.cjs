@@ -132,7 +132,7 @@ class D05AutoCategorization{
   this.sql.prepare("UPDATE mf_auto_apply_jobs SET state='paused',error_code='INTERRUPTED_ON_RESTART' WHERE state='running'").run();
  }
  permissions(){
-  return this.sql.prepare(`SELECT a.account_id AS accountId,b.name,a.enabled,a.start_date AS startDate,
+  return this.sql.prepare(`SELECT a.account_id AS accountId,b.name,a.profile,a.enabled,a.start_date AS startDate,
     a.end_date AS endDate,a.revision,a.consented_at AS consentedAt,a.expires_at AS expiresAt,a.revoked_at AS revokedAt,
     COALESCE(p.history_enabled,1) AS historyEnabled,
     COALESCE(p.new_enabled,1) AS newEnabled,
@@ -344,6 +344,7 @@ class D05AutoCategorization{
     const external=evidence?classifyCandidate({
      transaction:{accountId:row.accountId,externalId:row.externalId,
       accountType:evidence.accountType,status:row.status,amountCents:row.amountCents,
+      description:row.description,
       nature:row.nature,manualOverride:!!row.manualCategoryId,
       splitCount:row.hasSplits?1:0,linkedManualId:row.linkedManualId},
      evidence
