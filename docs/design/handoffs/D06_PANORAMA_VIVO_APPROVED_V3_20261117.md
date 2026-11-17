@@ -62,6 +62,8 @@ Ver [motion_spec](./D06_PANORAMA_VIVO_MOTION_SPEC_V3.md) para durações, cancel
 | **Revisão** | Entrar na D04 ou filtro de transações existente; clicar insight **não faz escrita**; aguardar capability/receipt para aplicar qualquer proposta |
 | **Dados parciais** | Cobertura `partial/denied/stale/expired/empty`: não completar visualmente saldos ou fluxos com números fictícios; estado vazio/contextual e acesso ao detalhe ou reconexão |
 
+**Nota de alinhamento D05:** o protótipo V3 usa o rótulo ilustrativo `Serviços diversos` como sexta categoria, mas o catálogo real não possui `cat:servicos-diversos`. No Electron, usar a categoria canônica `cat:outros` (`shapes`, hue 215) para o correspondente, preservando os registros reais; o grupo visual agregado `Demais categorias` precisa de chave de *agrupamento* diferente de `cat:outros`, para evitar conflito de IDs. Todos os exemplos sintéticos devem ser mapeados pelo D05 e não copiados literalmente.
+
 **NUNCA** transportar os valores de demo para o perfil pessoal. Somar e armazenar em **integer cents**. Formatador `pt-BR/BRL` só na camada de apresentação. Visual do total e fatias **deve conciliar**, independentemente de easing/frames intermediários.
 
 ## 4. Conteúdo e tipografia aprovados
