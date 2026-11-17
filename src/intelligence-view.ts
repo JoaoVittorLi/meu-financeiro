@@ -453,7 +453,7 @@ function renderIntelligenceViewLegacy(app:any){
   const tabs=[{id:'today',label:'Hoje'},{id:'chat',label:'Conversar'},{id:'actions',label:'Plano de ação'}];
   const messages=intelligenceHistoryList(app);
   const allProposals=typeof intelligenceAllProposals==='function'?intelligenceAllProposals(app):(messages.map(m=>m.proposal).filter(Boolean) as IntelligenceActionProposal[]);
-  const convState=typeof intelligenceConversationState==='function'?intelligenceConversationState(app):{kind:'oauth_disconnected',pill:'Conta desconectada · modo local',badge:'Conta desconectada',css:'is-offline'};
+  const convState=typeof intelligenceConversationState==='function'?intelligenceConversationState(app):{kind:'oauth_disconnected',pill:'IA externa desconectada · leitura local disponível',badge:'Conta desconectada',css:'is-offline'};
   const activeScope=s.intelligenceDraftScope||intelligencePageScope(app,s.intelligenceContext||s.page);
   let section:any=null;
   if(tab==='today')section=renderIntelligencePremiumToday(app);
@@ -541,7 +541,7 @@ function renderIntelligencePanel(app:any){
   const messages=intelligenceHistoryList(app);
   const threads:IntelligenceThread[]=Array.isArray(app.state.intelligenceThreads)?app.state.intelligenceThreads:[];
   const activeThreadId=app.state.intelligenceActiveThreadId||'';
-  const convState=typeof intelligenceConversationState==='function'?intelligenceConversationState(app):{kind:'oauth_disconnected',pill:'Conta desconectada · modo local',badge:'Conta desconectada',css:'is-offline'};
+  const convState=typeof intelligenceConversationState==='function'?intelligenceConversationState(app):{kind:'oauth_disconnected',pill:'IA externa desconectada · leitura local disponível',badge:'Conta desconectada',css:'is-offline'};
   const busy=Boolean(app.state.aiBusy||app.state.localFinancialBusy||app.state.intelligenceDrawerBusy);
   const draft=String(app.state.intelligenceDraft||'');
   return h('div',{className:'mf-ai-backdrop',role:'presentation',onMouseDown:(e:any)=>{if(e.target===e.currentTarget)app.setState({intelligencePanelOpen:false});}},
