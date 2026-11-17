@@ -5,6 +5,7 @@ const fs=require('node:fs'),os=require('node:os'),path=require('node:path');
 const {FinanceDB}=require('../electron/db.cjs');
 const {D05AutoCategorization}=require('../electron/d05-auto-categorization.cjs');
 const {D05AutoLocalScheduler}=require('../electron/d05-auto-local-scheduler.cjs');
+const {D05AutoPreview}=require('../electron/d05-auto-preview.cjs');
 const A='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const I='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
 async function sandbox(run){
@@ -105,4 +106,57 @@ test('failed backup pauses automatic jobs durably; native resume can recover saf
  assert.equal(recovered.state,'completed');
  assert.equal(recovered.applied,1);
  assert.equal(scheduler.status().paused,false);
+}));
+
+test('full 630+ synthetic history is keyset-scanned in MAIN and resumed after service restart',()=>sandbox(async({db,auto,bank})=>{
+ const many=Array.from({length:635},(_,i)=>({
+  id:'historical-'+String(i).padStart(4,'0'),
+  date:'2026-08-'+String(i%28+1).padStart(2,'0'),
+  description:'COMPRA SINTETICA INDEFINIDA '+i,
+  amount:-1-i/100,status:'POSTED',category:'Uncategorized'
+ }));
+ db.ingestBank(I,{item:bank.item,data:[{account:bank.data[0].account,transactions:many}]});
+ auto.configure(scope,true);
+ const p=new D05AutoPreview({finance:()=>db,engine:()=>auto});
+ const started=p.start();
+ assert.equal(started.total,638);
+ assert.equal(started.processed,0);
+ assert.equal(started.changesApplied,false);
+ const first=p.next(started.jobId,{limit:250});
+ assert.equal(first.processed,250);
+ assert.equal(first.total,638);
+ const paused=p.pause(started.jobId);
+ assert.equal(paused.state,'paused');
+ assert.throws(()=>p.next(started.jobId),/ativas/);
+ // New service instance reads the same SQLite journal without source data loss.
+ const restarted=new D05AutoPreview({finance:()=>db,engine:()=>auto});
+ assert.equal(restarted.status(started.jobId).processed,250);
+ restarted.resume(started.jobId);
+ assert.equal(restarted.next(started.jobId,{limit:250}).processed,500);
+ const finished=restarted.next(started.jobId,{limit:250});
+ assert.equal(finished.state,'ready');
+ assert.equal(finished.processed,638);
+ assert.equal(finished.preview.candidateCount,1);
+ assert.equal(finished.preview.changesApplied,false);
+ assert.deepEqual(restarted.assertReady(finished.preview.previewVersion),finished.preview);
+ assert.equal(db.db.prepare('SELECT COUNT(*) AS n FROM mf_auto_labels').get().n,0);
+ // Re-opening an unchanged preview should not silently rescan or mutate records.
+ assert.equal(new D05AutoPreview({finance:()=>db,engine:()=>auto}).start().state,'ready');
+}));
+test('scanned manifest refuses changed metadata and cancellation never authorizes writes',()=>sandbox(async({db,auto,bank})=>{
+ auto.configure(scope,true);
+ const preview=new D05AutoPreview({finance:()=>db,engine:()=>auto});
+ const a=preview.start();const ready=preview.next(a.jobId);
+ assert.equal(ready.state,'ready');
+ const previous=ready.preview.previewVersion;
+ db.ingestBank(I,{item:bank.item,data:[{account:bank.data[0].account,transactions:[{
+  id:'sample-safe',date:'2026-10-10',description:'MERCADO ESTRELA ALFA',
+  amount:-45.90,status:'POSTED',category:'Groceries',creditCardMetadata:{payeeMCC:'5999'}
+ }]}]});
+ assert.throws(()=>preview.assertReady(previous),/alterado|divergente|expirada|mudou/i);
+ const newer=preview.start();
+ assert.notEqual(newer.jobId,a.jobId);
+ assert.equal(preview.cancel(newer.jobId).changesApplied,false);
+ assert.throws(()=>preview.status(newer.jobId),/expirada/);
+ assert.equal(db.db.prepare('SELECT COUNT(*) AS n FROM mf_auto_labels').get().n,0);
 }));
