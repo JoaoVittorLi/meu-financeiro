@@ -12,7 +12,8 @@ function init(sql){
  'CREATE TABLE IF NOT EXISTS mf_auto_consent (account_id TEXT PRIMARY KEY REFERENCES bank_accounts(account_id),profile TEXT NOT NULL CHECK(profile="real"),enabled INTEGER NOT NULL CHECK(enabled IN (0,1)),contract TEXT NOT NULL,changed_at TEXT NOT NULL)',
  'CREATE TABLE IF NOT EXISTS mf_auto_labels (account_id TEXT NOT NULL,external_id TEXT NOT NULL,category_id TEXT NOT NULL,subcategory_id TEXT,category TEXT NOT NULL,evidence_hash TEXT NOT NULL,source_fingerprint TEXT NOT NULL,receipt_id TEXT NOT NULL,assigned_at TEXT NOT NULL,PRIMARY KEY(account_id,external_id),FOREIGN KEY(account_id,external_id) REFERENCES bank_transactions(account_id,external_id) ON DELETE CASCADE)',
  'CREATE TABLE IF NOT EXISTS mf_auto_receipts (id TEXT PRIMARY KEY,kind TEXT NOT NULL,reference_id TEXT,created_at TEXT NOT NULL,count INTEGER NOT NULL,content_hash TEXT NOT NULL)',
- 'CREATE INDEX IF NOT EXISTS mf_auto_receipt_lookup ON mf_auto_labels(receipt_id)'
+ 'CREATE INDEX IF NOT EXISTS mf_auto_receipt_lookup ON mf_auto_labels(receipt_id)',
+ 'CREATE TABLE IF NOT EXISTS mf_auto_receipt_items (receipt_id TEXT NOT NULL REFERENCES mf_auto_receipts(id),account_id TEXT NOT NULL,external_id TEXT NOT NULL,before_category_id TEXT,before_subcategory_id TEXT,after_category_id TEXT,after_subcategory_id TEXT,source_fingerprint TEXT NOT NULL,evidence_hash TEXT NOT NULL,PRIMARY KEY(receipt_id,account_id,external_id))'
  ].join(';')+';');
 }
 function merchant(desc,aliases){
@@ -95,7 +96,11 @@ class PersonalAutoCategorizer{
     if(actualConsent.size!==consent.size||[...consent].some(x=>!actualConsent.has(x))||after.partial||sha(before.candidates)!==sha(after.candidates))throw Error('Auto: stale authorization or financial facts');
     sql.prepare('INSERT INTO mf_auto_receipts(id,kind,reference_id,created_at,count,content_hash) VALUES (?,"apply",NULL,?,?,?)').run(receiptId,now,after.candidates.length,sha(after.candidates));
     const stmt=sql.prepare('INSERT INTO mf_auto_labels(account_id,external_id,category_id,subcategory_id,category,evidence_hash,source_fingerprint,receipt_id,assigned_at) VALUES (?,?,?,?,?,?,?,?,?)');
-    for(const c of after.candidates)stmt.run(c.accountId,c.externalId,c.categoryId,c.subcategoryId,c.category,c.evidenceHash,c.sourceFingerprint,receiptId,now);
+    const details=sql.prepare('INSERT INTO mf_auto_receipt_items(receipt_id,account_id,external_id,before_category_id,before_subcategory_id,after_category_id,after_subcategory_id,source_fingerprint,evidence_hash) VALUES (?,?,?,?,?,?,?,?,?)');
+    for(const c of after.candidates){
+     stmt.run(c.accountId,c.externalId,c.categoryId,c.subcategoryId,c.category,c.evidenceHash,c.sourceFingerprint,receiptId,now);
+     details.run(receiptId,c.accountId,c.externalId,null,null,c.categoryId,c.subcategoryId,c.sourceFingerprint,c.evidenceHash);
+    }
     if(sql.prepare('PRAGMA foreign_key_check').all().length)throw Error('Auto: FK check');
     sql.exec('COMMIT');
     return {status:'completed',applied:after.candidates.length,review:after.review.length,receiptId,backupCreated:true};
