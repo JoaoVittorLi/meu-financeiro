@@ -23,6 +23,6 @@
 - Não há migração real executada em backup legado, nem E2E interface conectada: toda conclusão de release permanece bloqueada.
 
 ## Resultados dirigidos / QA pendente
-- **PASS:** compilação sintática V8 dos serviços; 6 checks dirigidos V8 de agendamento, calendário local, deduplicação e SQL de migração sintético.
+- **PASS:** compilação sintática V8 dos serviços; 8 verificações dirigidas V8 do agendador com adaptadores MAIN sintéticos (calendário local, sync idempotente, proteção sem grant, aprendizado humano consentido, app fechado). A sintaxe da migração CAT05 também foi inspecionada em V8, mas **o SQLite real não foi executado**.
 - **NOT_RUN:** 19 casos com Node/SQLite real, Node 22.23.4/npm 10.9.9, backup WAL, `npm run test:db`, `npm run test:types`, preload check, ASAR, provenance, Electron/Windows, restauração, 3×210 registros na base SQLite e integração automática completa.
 - Executar gates oficiais **no SHA exato**. Em FAIL corrigir antes de GO. Em NOT_RUN manter NO-GO. O README do PR é contrato de handoff, não confirmação de uso em produção.
