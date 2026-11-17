@@ -309,3 +309,26 @@ test('CAT-P0 no Pluggy Premium: validated direct merchant + narrow MCC yields PA
  assert.equal(db.db.prepare('SELECT subcategory_id AS child FROM mf_auto_labels WHERE account_id=? AND external_id=?')
   .get(A,'premium-free-strong').child,null);
 }));
+
+test('CAT-P0.2 service restart pauses interrupted page job and resumes without duplicate receipts',()=>sandbox(async({root,db,auto,bank})=>{
+ const entries=Array.from({length:260},(_,i)=>({
+  id:'crash-'+i,date:'2026-10-'+String(i%28+1).padStart(2,'0'),
+  description:'MERCEARIA TESTE CRASH '+i,amount:-17-i/100,
+  status:'POSTED',category:'Groceries',creditCardMetadata:{payeeMCC:'5411'}
+ }));
+ db.ingestBank(I,{item:bank.item,data:[{account:bank.data[0].account,transactions:entries}]});
+ auto.configure(scope,true);
+ const version=auto.plan({limit:100}).previewVersion;
+ await auto.confirmInitialPreview(version);
+ const first=auto.startBatch({previewVersion:version});
+ assert.equal((await auto.nextBatch(first.jobId)).committed,250);
+ const restarted=new D05AutoCategorization({finance:()=>db,backupDirectory:()=>path.join(root,'backups')});
+ const paused=restarted.batchStatus(first.jobId);
+ assert.equal(paused.state,'paused');
+ assert.equal(paused.errorCode,'INTERRUPTED_ON_RESTART');
+ assert.equal(paused.committed,250);
+ assert.equal(restarted.resumeBatch(first.jobId).state,'running');
+ const done=await restarted.nextBatch(first.jobId);
+ assert.equal(done.state,'completed');assert.equal(done.committed,261);
+ assert.equal(db.db.prepare("SELECT COUNT(*) AS n FROM mf_auto_receipts WHERE batch_id=?").get(first.jobId).n,261);
+}));
