@@ -86,7 +86,7 @@ async function stablePreMigrationBackup(root,version){
  // Do not delete or bypass it silently.
  if(fs.existsSync(temporary))
   throw Error('Backup parcial anterior requer conferência. Nenhuma migração executada.');
- const uuidSuffix=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\.sqlite$/i;
+ const uuidSuffix=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.sqlite$/i;
  const snapshots=fs.readdirSync(directory).filter(name=>
   name===stem+'.sqlite'||
   (name.startsWith(stem+'-')&&uuidSuffix.test(name.slice(stem.length+1))));
