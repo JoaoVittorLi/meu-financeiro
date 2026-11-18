@@ -192,3 +192,22 @@
   - `mobile-push` (`npm test`): **PASS** (`133/133`, `fail 0`)
   - `npm run test:electron-smoke` + `node scripts/verify-visual-matrix.cjs`: **PASS** (`32/32` PNGs, 8 áreas, 4 presets)
   - `node scripts/nivel-b-interactive-qa.cjs`: **PASS** (`14/14` PASS, `FAIL: 0`, `RuntimeIssues: 0`)
+
+## 15. Iteração 7 — Fechamento de Vetores Wave 6 CAT02, PSPs Brasileiros, Truncamento Raw e Preservação `PAG-MENOS`
+
+- **`electron/cat02-classifier.cjs`**:
+  - **Prefixos POS/gateway numerados**: `TRAILING_DIGITS_RE` expandida de `\d{1,3}` para `\d+` (`/^([a-z0-9]*[a-z])\d+$/`) e adicionada `LEADING_DIGITS_RE` (`/^\d+([a-z]+)$/`) em `isNumberedIntermediaryToken`, encaminhando para `review` variantes com 4+ dígitos e prefixo numérico (`MP1000*`, `MP1234*`, `PAG1234*`, `TON1234*`, `REDE1234*`, `STONE1234*`, `1MP*`).
+  - **Bigrama `"M P"` separado por espaço**: `hasSplitMpBigram` ajustada para detectar `'m'` seguido de `'p'` inclusive com espaço simples (`COMPRA M P PADARIA CENTRAL`, `M P PADARIA CENTRAL`).
+  - **Subadquirentes e PSPs brasileiros**: adicionados `'pags'`, `'paygo'`, `'safrapay'`, `'efipay'`, `'gerencianet'`, `'c6pay'`, `'itaupay'`, `'bempaggo'`, `'magalupay'` em `FULL_INTERMEDIARY_TOKENS` e `'m|pago'`, `'pay|go'`, `'safra|pay'`, `'efi|pay'`, `'c6|pay'`, `'itau|pay'` em `BIGRAM_INTERMEDIARY_PAIRS`.
+  - **Descritores sujos/aglutinados/truncados em `descriptionRaw` e `merchantName` (`ADV-21..24`, `ADV-27`)**: em `hasDescriptorIntermediarySignal`, executada primeiro a varredura `scanIntermediarySpans(spans)` sobre os spans completos (bloqueando `COMPRA PADARIA MP CENTRAL` com `merchantName` sujo `PADARIA MP CENTRAL` via `seenTxVerb`), adicionada detecção de prefixos aglutinados (`mp`, `pag`, `ton`, `pg`, `rede`, `pix`) sobre `merchantTokens[0]` (`length >= 4`, bloqueando `MPPADARIA CENTRAL` / `PAGPADARIA CENTRAL` em `descriptionRaw`), estendida `extractResidualOutsideMerchant` para também remover runs multi-token com truncamento no último token (`tokens 0..n-2` exatos e `merchantTokens[n-1].startsWith(span.token)` com `span.token.length >= 3`), e adicionados `'parc'`, `'parcela'`, `'parcelas'`, `'loja'`, `'loj'`, `'br'` em `STATEMENT_CHANNEL_TOKENS` (bloqueando `PARC 3X MP PADARIA CENT` e `LOJA 01 MP PADARIA CENT`).
+  - **Preservação de `PAG MENOS` / `PAG-MENOS`**: definido o helper `isPagMenosPhrase(spans, i)` e aplicado `!isPagMenosPhrase(spans, i)` tanto em `scanIntermediarySpans` quanto na checagem `NON_SPACE_SEP` de `hasDescriptorIntermediarySignal`, preservando `COMPRA DROGARIA PAG-MENOS`, `descriptionRaw: "DROGARIA PAG-MENOS 10/10"` e `PAG MENOS DROGARIA` em `VERIFIED_DIRECT_MERCHANT_MCC_PARENT` enquanto `COMPRA ONLINE MP DROGARIA PAG MENOS` continua em `review`.
+- **`tests/cat-p0-calibration.test.cjs` (`G6-16`)**:
+  - Adicionada regressão `G6-16` cobrindo todos os 25 novos vetores de bypass (`ADV-01..ADV-24`, `ADV-27`), PSPs brasileiros adicionais, guarda `COMPRA ONLINE MP DROGARIA PAG MENOS` e os 3 casos legítimos `PAG MENOS` / `PAG-MENOS` (unitário `classifyCandidate` e E2E `D05AutoCategorization.plan()` + `apply()`).
+- **Verificação Iteração 7 (`MF_QA_SYNTHETIC=1`)**:
+  - `npm run test:types`: **PASS**
+  - `node scripts/build-preload.cjs check`: **PASS**
+  - `npm run test:asar`: **PASS** (`1/1`)
+  - `npm run test:db`: **PASS** (`998/998`, `fail 0`, `cancelled 0`, `skipped 0`)
+  - `mobile-push` (`npm test`): **PASS** (`133/133`, `fail 0`)
+  - `npm run test:electron-smoke` + `node scripts/verify-visual-matrix.cjs`: **PASS** (`32/32` PNGs, 8 áreas, 4 presets)
+  - `node scripts/nivel-b-interactive-qa.cjs`: **PASS** (`14/14` PASS, `FAIL: 0`, `RuntimeIssues: 0`)

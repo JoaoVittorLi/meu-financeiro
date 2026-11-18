@@ -16,7 +16,8 @@ const FULL_INTERMEDIARY_TOKENS=new Set([
  'asaas','iugu','vindi','zoop','shipay','bcash','moip','wirecard',
  'cloudwalk','ifood','rappi','ubereats','uber','99food','99pay',
  'mpago','amedigital','recargapay','paghiper','pagbrasil','pagueveloz',
- 'nuvempay','cornershop','pix','qrcode'
+ 'nuvempay','cornershop','pix','qrcode',
+ 'pags','paygo','safrapay','efipay','gerencianet','c6pay','itaupay','bempaggo','magalupay'
 ]);
 const BIGRAM_INTERMEDIARY_PAIRS=new Set([
  'mercado|pago','merc|pago','mercado|livre',
@@ -25,10 +26,13 @@ const BIGRAM_INTERMEDIARY_PAIRS=new Set([
  'pagar|me','infinite|pay','cloud|walk',
  'i|food','uber|eats','99|food','99|pay',
  'ame|digital','recarga|pay','pag|hiper','pag|brasil',
- 'pague|veloz','nuvem|pay','qr|code'
+ 'pague|veloz','nuvem|pay','qr|code',
+ 'm|pago','pay|go','safra|pay','efi|pay','c6|pay','itau|pay'
 ]);
 const ABBREV_INTERMEDIARY_TOKENS=new Set(['mp','pag','ton','pg']);
-const TRAILING_DIGITS_RE=/^([a-z0-9]*[a-z])\d{1,3}$/;
+const GLUED_INTERMEDIARY_PREFIXES=['mp','pag','ton','pg','rede','pix'];
+const TRAILING_DIGITS_RE=/^([a-z0-9]*[a-z])\d+$/;
+const LEADING_DIGITS_RE=/^\d+([a-z]+)$/;
 const BANK_TX_VERB_TOKENS=new Set([
  'compra','compras','deb','debito','cred','credito','cartao',
  'pgto','pagto','pagamento','pagamentos','transacao','lancamento',
@@ -40,6 +44,7 @@ const STATEMENT_CHANNEL_TOKENS=new Set([
  'internet','web','site','ecommerce','conta','corrente','poupanca',
  'automatico','automatica','nacional','internacional','vista','parcelado','parcelada',
  'pos','pdv','tef','link','wallet','carteira',
+ 'parc','parcela','parcelas','loja','loj','br',
  'no','na','nos','nas','em','do','da','dos','das','de','via','por','com','pelo','pela','para','ao'
 ]);
 const NON_SPACE_SEP=/\S/;
@@ -71,17 +76,20 @@ function tokenizeWithSeparators(norm){
  return spans;
 }
 function isNumberedIntermediaryToken(tok){
- const m=TRAILING_DIGITS_RE.exec(tok);
- if(!m)return false;
- const base=m[1];
- return ABBREV_INTERMEDIARY_TOKENS.has(base)||FULL_INTERMEDIARY_TOKENS.has(base)||base==='rede';
+ const trailing=TRAILING_DIGITS_RE.exec(tok);
+ if(trailing){
+  const base=trailing[1];
+  if(ABBREV_INTERMEDIARY_TOKENS.has(base)||FULL_INTERMEDIARY_TOKENS.has(base)||base==='rede')return true;
+ }
+ const leading=LEADING_DIGITS_RE.exec(tok);
+ if(leading){
+  const base=leading[1];
+  if(ABBREV_INTERMEDIARY_TOKENS.has(base)||FULL_INTERMEDIARY_TOKENS.has(base)||base==='rede')return true;
+ }
+ return false;
 }
 function hasSplitMpBigram(spans,i){
- return spans[i].token==='m'&&spans[i+1]?.token==='p'&&(
-  NON_SPACE_SEP.test(spans[i].sepBefore)||
-  NON_SPACE_SEP.test(spans[i].sepAfter)||
-  NON_SPACE_SEP.test(spans[i+1].sepAfter)
- );
+ return spans[i].token==='m'&&spans[i+1]?.token==='p';
 }
 function isRedeProcessorAt(spans,i){
  const curr=spans[i];
@@ -93,6 +101,16 @@ function isRedeProcessorAt(spans,i){
  );
  return !isLegitRedeDe;
 }
+function isPagMenosPhrase(spans,i){
+ const curr=spans[i];
+ const next=spans[i+1];
+ if(!curr||curr.token!=='pag'||!next||next.token!=='menos')return false;
+ if(!/^[\s-]+$/.test(curr.sepAfter))return false;
+ if(NON_SPACE_SEP.test(curr.sepBefore))return false;
+ if(i===0)return true;
+ const prev=spans[i-1].token;
+ return !BANK_TX_VERB_TOKENS.has(prev)&&!STATEMENT_CHANNEL_TOKENS.has(prev);
+}
 function scanIntermediarySpans(spans,{inDescriptorResidual=false}={}){
  let seenTxVerb=false;
  for(let i=0;i<spans.length;i++){
@@ -103,17 +121,12 @@ function scanIntermediarySpans(spans,{inDescriptorResidual=false}={}){
   if(isRedeProcessorAt(spans,i))return true;
   if(ABBREV_INTERMEDIARY_TOKENS.has(tok)){
    if(inDescriptorResidual)return true;
-   if(i===0)return true;
-   if(NON_SPACE_SEP.test(curr.sepBefore)||NON_SPACE_SEP.test(curr.sepAfter))return true;
-   if(spans.slice(i+1).every(s=>/^\d+$/.test(s.token)))return true;
-   const prev=spans[i-1].token;
-   if(seenTxVerb||STATEMENT_CHANNEL_TOKENS.has(prev)){
-    const isInteriorPagMenos=tok==='pag'&&
-     spans[i+1]?.token==='menos'&&
-     i>=2&&
-     !BANK_TX_VERB_TOKENS.has(prev)&&
-     !STATEMENT_CHANNEL_TOKENS.has(prev);
-    if(!isInteriorPagMenos)return true;
+   if(!isPagMenosPhrase(spans,i)){
+    if(i===0)return true;
+    if(NON_SPACE_SEP.test(curr.sepBefore)||NON_SPACE_SEP.test(curr.sepAfter))return true;
+    if(spans.slice(i+1).every(s=>/^\d+$/.test(s.token)))return true;
+    const prev=spans[i-1].token;
+    if(seenTxVerb||STATEMENT_CHANNEL_TOKENS.has(prev))return true;
    }
   }
   if(BANK_TX_VERB_TOKENS.has(tok))seenTxVerb=true;
@@ -132,8 +145,16 @@ function extractResidualOutsideMerchant(descSpans,merchantTokens){
  for(let i=0;i<descSpans.length;){
   let match=i+merchantTokens.length<=descSpans.length;
   if(match){
-   for(let j=0;j<merchantTokens.length;j++){
+   const exactPrefixCount=merchantTokens.length>=2?merchantTokens.length-1:merchantTokens.length;
+   for(let j=0;j<exactPrefixCount;j++){
     if(descSpans[i+j].token!==merchantTokens[j]){match=false;break;}
+   }
+   if(match&&merchantTokens.length>=2){
+    const lastSpanTok=descSpans[i+merchantTokens.length-1].token;
+    const lastMerchTok=merchantTokens[merchantTokens.length-1];
+    if(lastSpanTok!==lastMerchTok&&!(lastSpanTok.length>=3&&lastMerchTok.startsWith(lastSpanTok))){
+     match=false;
+    }
    }
   }
   if(match){matchedAny=true;i+=merchantTokens.length;}
@@ -156,15 +177,22 @@ function hasDescriptorIntermediarySignal(raw,merchantTokens){
  const norm=normalizeForIntermediaryScan(raw);
  if(!norm)return false;
  const spans=tokenizeWithSeparators(norm);
+ if(scanIntermediarySpans(spans))return true;
+ const firstMerchantTok=merchantTokens[0];
+ if(firstMerchantTok&&firstMerchantTok.length>=4){
+  for(const span of spans){
+   if(GLUED_INTERMEDIARY_PREFIXES.some(p=>span.token.startsWith(p+firstMerchantTok)))return true;
+  }
+ }
  const residual=extractResidualOutsideMerchant(spans,merchantTokens);
- if(!residual)return scanIntermediarySpans(spans);
+ if(!residual)return false;
  for(let i=0;i<spans.length;i++){
   const curr=spans[i],tok=curr.token;
   if(FULL_INTERMEDIARY_TOKENS.has(tok)||isNumberedIntermediaryToken(tok))return true;
   if(i+1<spans.length&&BIGRAM_INTERMEDIARY_PAIRS.has(tok+'|'+spans[i+1].token))return true;
   if(hasSplitMpBigram(spans,i))return true;
   if(isRedeProcessorAt(spans,i))return true;
-  if(ABBREV_INTERMEDIARY_TOKENS.has(tok)&&
+  if(ABBREV_INTERMEDIARY_TOKENS.has(tok)&&!isPagMenosPhrase(spans,i)&&
      (NON_SPACE_SEP.test(curr.sepBefore)||NON_SPACE_SEP.test(curr.sepAfter)))return true;
  }
  return scanIntermediarySpans(residual,{inDescriptorResidual:true});
