@@ -981,3 +981,118 @@ test('G6-13: 1-2 char tokens after compact separators, UBER dash/slash, Unicode 
     }
   });
 });
+
+test('G6-14: structural tokenizer blocks bank/card-prefixed, underscore, zero-width, aggregator, preposition & receiverName intermediaries while preserving legitimate merchants (unit + E2E)', async () => {
+  const bypassCases = [
+    { id: 'byp3-uber-bare', desc: 'UBER SUPERMERCADO ALFA', name: 'SUPERMERCADO ALFA', mcc: '5411' },
+    { id: 'byp3-visa-mp', desc: 'COMPRA VISA MP PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'byp3-elo-mp', desc: 'COMPRA ELO MP PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'byp3-pagto-mp', desc: 'PAGAMENTO MP PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'byp3-mp-underscore', desc: 'COMPRA MP_PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'byp3-uber-underscore', desc: 'UBER_PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'byp3-meli-star', desc: 'MELI *PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'byp3-99food-star', desc: '99FOOD *SUPERMERCADO ALFA', name: 'SUPERMERCADO ALFA', mcc: '5411' },
+    { id: 'byp3-99-food-star', desc: '99 FOOD *SUPERMERCADO ALFA', name: 'SUPERMERCADO ALFA', mcc: '5411' },
+    { id: 'byp3-rede-star-de', desc: 'REDE *DE POSTOS', name: 'REDE *DE POSTOS', mcc: '5541' },
+    { id: 'byp3-compra-rede', desc: 'COMPRA REDE', name: 'COMPRA REDE', mcc: '5411' },
+    { id: 'byp3-mp-zwsp', desc: 'MP\u200B*PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'byp3-via-mp', desc: 'COMPRA VIA MP PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'byp3-receiver-mp', desc: 'COMPRA CARTAO PADARIA CENTRAL', name: 'PADARIA CENTRAL', receiverName: 'MERCADO PAGO IP', mcc: '5411' }
+  ];
+
+  const legitimateCases = [
+    { id: 'legit3-uberlandia', desc: 'COMPRA CARTAO UBERLANDIA AUTO POSTO', name: 'UBERLANDIA AUTO POSTO', mcc: '5541', expectedCat: 'cat:transporte' },
+    { id: 'legit3-tonelada', desc: 'COMPRA CARTAO TONELADA SUPERMERCADO', name: 'TONELADA SUPERMERCADO', mcc: '5411', expectedCat: 'cat:alimentacao' },
+    { id: 'legit3-pagamento', desc: 'COMPRA CARTAO PAGAMENTO FACIL DROGARIA', name: 'PAGAMENTO FACIL DROGARIA', mcc: '5912', expectedCat: 'cat:saude' },
+    { id: 'legit3-rede-postos', desc: 'COMPRA CARTAO REDE DE POSTOS IPIRANGA 10/10', name: 'REDE DE POSTOS IPIRANGA', mcc: '5541', expectedCat: 'cat:transporte' },
+    { id: 'legit3-pag-menos', desc: 'COMPRA CARTAO DROGARIA PAG MENOS', name: 'DROGARIA PAG MENOS', mcc: '5912', expectedCat: 'cat:saude' },
+    { id: 'legit3-alfa-sul', desc: 'COMPRA CARTAO SUPERMERCADO ALFA SUL', name: 'SUPERMERCADO ALFA SUL', mcc: '5411', expectedCat: 'cat:alimentacao' }
+  ];
+
+  for (const c of bypassCases) {
+    const ev = normalizePluggyEvidence({
+      id: c.id,
+      status: 'POSTED',
+      type: 'DEBIT',
+      operationType: 'CARD_PURCHASE',
+      description: c.desc,
+      category: null,
+      ...(c.receiverName ? {
+        paymentData: { receiver: { name: c.receiverName, documentNumber: { type: 'CNPJ', value: VALID_CNPJS[0] } } }
+      } : {}),
+      merchant: { name: c.name, cnpj: VALID_CNPJS[0] },
+      creditCardMetadata: { payeeMCC: c.mcc }
+    }, { accountId: ACCOUNT_A });
+    const verdict = classifyCandidate({
+      transaction: {
+        accountId: ACCOUNT_A,
+        externalId: c.id,
+        accountType: 'BANK',
+        status: 'POSTED',
+        amountCents: -4500,
+        description: c.desc
+      },
+      evidence: ev
+    });
+    assert.equal(verdict.status, 'review', `${c.id} (${c.desc}) must remain review, got ${verdict.status}:${verdict.reason}`);
+  }
+
+  for (const c of legitimateCases) {
+    const ev = normalizePluggyEvidence({
+      id: c.id,
+      status: 'POSTED',
+      type: 'DEBIT',
+      operationType: 'CARD_PURCHASE',
+      description: c.desc,
+      category: null,
+      merchant: { name: c.name, cnpj: VALID_CNPJS[1] },
+      creditCardMetadata: { payeeMCC: c.mcc }
+    }, { accountId: ACCOUNT_A });
+    const verdict = classifyCandidate({
+      transaction: {
+        accountId: ACCOUNT_A,
+        externalId: c.id,
+        accountType: 'BANK',
+        status: 'POSTED',
+        amountCents: -7500,
+        description: c.desc
+      },
+      evidence: ev
+    });
+    assert.equal(verdict.status, 'apply', `${c.id} (${c.desc}) must apply, got ${verdict.status}:${verdict.reason}`);
+    assert.equal(verdict.reason, 'VERIFIED_DIRECT_MERCHANT_MCC_PARENT');
+    assert.deepEqual(verdict.target, { categoryId: c.expectedCat, subcategoryId: null });
+  }
+
+  await withSandbox(async ({ db, auto }) => {
+    const allCases = [...bypassCases, ...legitimateCases];
+    ingestRows(db, ACCOUNT_A, ITEM_A, allCases.map((c, i) => ({
+      id: c.id,
+      date: `2026-10-${String(1 + i).padStart(2, '0')}`,
+      description: c.desc,
+      amount: -(50 + i),
+      status: 'POSTED',
+      category: null,
+      type: 'DEBIT',
+      operationType: 'CARD_PURCHASE',
+      ...(c.receiverName ? {
+        paymentData: { receiver: { name: c.receiverName, documentNumber: { type: 'CNPJ', value: VALID_CNPJS[0] } } }
+      } : {}),
+      merchant: { name: c.name, cnpj: c.expectedCat ? VALID_CNPJS[1] : VALID_CNPJS[0] },
+      creditCardMetadata: { payeeMCC: c.mcc }
+    })));
+    auto.configure({ accountIds: [ACCOUNT_A], ...SPAN }, true);
+    const plan = auto.plan({ limit: 100 });
+    assert.equal(plan.candidateCount, legitimateCases.length, `Expected only legitimate candidates, got: ${plan.candidates.map((x) => x.externalId).join(',')}`);
+    assert.equal(plan.reviewCount, bypassCases.length);
+    assert.deepEqual(
+      plan.candidates.map((x) => x.externalId).sort(),
+      legitimateCases.map((x) => x.id).sort()
+    );
+    const res = await auto.apply();
+    assert.equal(res.applied, legitimateCases.length);
+    for (const b of bypassCases) {
+      assert.equal(db.db.prepare('SELECT 1 FROM mf_auto_labels WHERE account_id=? AND external_id=?').get(ACCOUNT_A, b.id), undefined);
+    }
+  });
+});

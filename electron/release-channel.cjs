@@ -11,7 +11,9 @@ const STABLE_ID='app.local.meufinanceiro';
 const ISOLATED_DIR='MeuFinanceiro-RC-ALL-01-Experimental';
 const STABLE_CANDIDATES=Object.freeze([STABLE_NAME,'meu-financeiro-desktop']);
 const PROTECTED_SEGMENTS=Object.freeze(['meu-financeiro-desktop','meu financeiro','meufinanceiro-rc-all-01-experimental']);
-const WINDOWS_RESERVED_DEVICE=/^(?:con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\..*)?$/i;
+const WINDOWS_RESERVED_DEVICE=/^(?:con|conin\$|conout\$|prn|aux|nul|com[1-9]|lpt[1-9])(?:\..*)?$/i;
+const WINDOWS_SHORT_NAME_SEGMENT=/~[0-9]+(?:\.[^.]*)?$/i;
+const WINDOWS_INVALID_SEGMENT_CHARS=/[<>:"|?*\x00-\x1f]/;
 function canonicalWin32Segment(seg){
  return String(seg??'').replace(/[. ]+$/,'').toLowerCase();
 }
@@ -27,6 +29,8 @@ function assertValidOverrideSegments(target,message){
  const segments=target.slice(root.length).split(/[\\/]+/).filter(Boolean);
  for(const seg of segments){
   if(/^\s/.test(seg)||/[.\s]+$/.test(seg))throw Error(message);
+  if(process.platform==='win32'&&(WINDOWS_SHORT_NAME_SEGMENT.test(seg)||WINDOWS_INVALID_SEGMENT_CHARS.test(seg)))
+   throw Error(message);
   const canonical=canonicalWin32Segment(seg);
   if(!canonical||WINDOWS_RESERVED_DEVICE.test(canonical))throw Error(message);
  }
@@ -83,6 +87,76 @@ function extractExperimentalUserDataOverride({env=process.env,argv=process.argv}
   throw Error('Conflito entre MEU_FINANCEIRO_EXPERIMENTAL_USER_DATA_DIR e --user-data-dir. Perfil financeiro bloqueado.');
  return envValue??argValue;
 }
+function tryRealpathNative(target){
+ try{
+  return fs.realpathSync.native(target);
+ }catch(_){
+  return null;
+ }
+}
+function resolveDeepestExistingAncestor(resolved){
+ let current=resolved;
+ const nonExistentTail=[];
+ while(true){
+  let stat;
+  try{
+   stat=fs.lstatSync(current);
+  }catch(err){
+   if(err&&err.code==='ENOENT'){
+    const parent=path.dirname(current);
+    if(parent===current)
+     throw Error('Caminho isolado experimental inacessível. Perfil financeiro bloqueado.');
+    nonExistentTail.unshift(path.basename(current));
+    current=parent;
+    continue;
+   }
+   throw Error('Caminho isolado experimental inacessível ('+(err?.code||'erro')+'). Perfil financeiro bloqueado.');
+  }
+  if(stat.isSymbolicLink())
+   throw Error('Caminho isolado contém link simbólico ou junction. Abertura negada.');
+  if(!stat.isDirectory())
+   throw Error('Caminho isolado experimental precisa apontar para um diretório válido. Perfil financeiro bloqueado.');
+  const canonicalAncestor=fs.realpathSync.native(current);
+  const canonicalPath=nonExistentTail.length?path.join(canonicalAncestor,...nonExistentTail):canonicalAncestor;
+  return {existingAncestor:current,canonicalAncestor,nonExistentTail,canonicalPath};
+ }
+}
+function assertAllowedOverrideTarget(app,candidatePath,{env,segError}){
+ if(path.dirname(candidatePath)===candidatePath)
+  throw Error('Caminho isolado experimental não pode ser a raiz do disco. Perfil financeiro bloqueado.');
+ assertValidOverrideSegments(candidatePath,segError);
+ const segments=candidatePath.slice(path.parse(candidatePath).root.length).split(/[\\/]+/).filter(Boolean).map(canonicalWin32Segment);
+ if(segments.some(seg=>PROTECTED_SEGMENTS.includes(seg)))
+  throw Error('Caminho isolado experimental não pode referenciar perfis protegidos. Abertura negada.');
+ const appDataLexical=path.resolve(app.getPath('appData'));
+ const appDataRoots=[appDataLexical];
+ const appDataReal=tryRealpathNative(appDataLexical);
+ if(appDataReal&&normalizeForCompare(appDataReal)!==normalizeForCompare(appDataLexical))
+  appDataRoots.push(appDataReal);
+ for(const appDataRoot of appDataRoots){
+  if(normalizeForCompare(candidatePath)===normalizeForCompare(appDataRoot))
+   throw Error('Caminho isolado experimental não pode apontar para AppData diretamente. Abertura negada.');
+  for(const protectedName of [...STABLE_CANDIDATES,ISOLATED_DIR]){
+   if(isSameOrInside(path.join(appDataRoot,protectedName),candidatePath))
+    throw Error('Caminho isolado experimental não pode apontar para dentro de perfil protegido. Abertura negada.');
+  }
+ }
+ if(env?.LOCALAPPDATA){
+  const localLexical=path.resolve(env.LOCALAPPDATA);
+  const localRoots=[localLexical];
+  const localReal=tryRealpathNative(localLexical);
+  if(localReal&&normalizeForCompare(localReal)!==normalizeForCompare(localLexical))
+   localRoots.push(localReal);
+  for(const localRoot of localRoots){
+   const localPrograms=path.join(localRoot,'Programs');
+   for(const prog of [STABLE_NAME,EXPERIMENTAL_NAME]){
+    if(isSameOrInside(path.join(localPrograms,prog),candidatePath))
+     throw Error('Caminho isolado experimental não pode apontar para pasta de instalação. Abertura negada.');
+   }
+  }
+ }
+ assertSafeProfilePath(candidatePath);
+}
 function validateExperimentalOverridePath(app,rawOverride,{env=process.env}={}){
  if(typeof rawOverride!=='string'||!rawOverride.trim()||rawOverride.includes('\0'))
   throw Error('Caminho isolado experimental inválido. Perfil financeiro bloqueado.');
@@ -93,35 +167,30 @@ function validateExperimentalOverridePath(app,rawOverride,{env=process.env}={}){
   throw Error('Caminho isolado experimental precisa ser absoluto. Perfil financeiro bloqueado.');
  if(process.platform==='win32'&&!/^[A-Za-z]:[\\/]/.test(trimmed))
   throw Error('Caminho isolado experimental precisa usar unidade local absoluta. Perfil financeiro bloqueado.');
- const segError='Caminho isolado experimental contém segmento inválido (ponto final, espaço ou nome reservado). Perfil financeiro bloqueado.';
+ const segError='Caminho isolado experimental contém segmento inválido (ponto final, espaço, nome curto 8.3 ou nome reservado). Perfil financeiro bloqueado.';
  assertValidOverrideSegments(trimmed,segError);
  const resolved=path.resolve(trimmed);
- if(path.dirname(resolved)===resolved)
-  throw Error('Caminho isolado experimental não pode ser a raiz do disco. Perfil financeiro bloqueado.');
- assertValidOverrideSegments(resolved,segError);
+ assertAllowedOverrideTarget(app,resolved,{env,segError});
  assertNoSymlinkOrJunction(resolved);
- const segments=resolved.slice(path.parse(resolved).root.length).split(/[\\/]+/).filter(Boolean).map(canonicalWin32Segment);
- if(segments.some(seg=>PROTECTED_SEGMENTS.includes(seg)))
-  throw Error('Caminho isolado experimental não pode referenciar perfis protegidos. Abertura negada.');
- const appData=path.resolve(app.getPath('appData'));
- if(normalizeForCompare(resolved)===normalizeForCompare(appData))
-  throw Error('Caminho isolado experimental não pode apontar para AppData diretamente. Abertura negada.');
- for(const protectedName of [...STABLE_CANDIDATES,ISOLATED_DIR]){
-  if(isSameOrInside(path.join(appData,protectedName),resolved))
-   throw Error('Caminho isolado experimental não pode apontar para dentro de perfil protegido. Abertura negada.');
- }
- if(env?.LOCALAPPDATA){
-  const localPrograms=path.join(path.resolve(env.LOCALAPPDATA),'Programs');
-  for(const prog of [STABLE_NAME,EXPERIMENTAL_NAME]){
-   if(isSameOrInside(path.join(localPrograms,prog),resolved))
-    throw Error('Caminho isolado experimental não pode apontar para pasta de instalação. Abertura negada.');
+ const {existingAncestor,nonExistentTail,canonicalPath:preCanonical}=resolveDeepestExistingAncestor(resolved);
+ if(normalizeForCompare(preCanonical)!==normalizeForCompare(resolved))
+  throw Error('Caminho isolado experimental aponta para alias de sistema de arquivos não permitido. Abertura negada.');
+ assertAllowedOverrideTarget(app,preCanonical,{env,segError});
+ try{
+  fs.mkdirSync(resolved,{recursive:true,mode:0o700});
+  assertNoSymlinkOrJunction(resolved);
+  const postCanonical=fs.realpathSync.native(resolved);
+  if(normalizeForCompare(postCanonical)!==normalizeForCompare(resolved))
+   throw Error('Caminho isolado experimental aponta para alias de sistema de arquivos não permitido. Abertura negada.');
+  assertAllowedOverrideTarget(app,postCanonical,{env,segError});
+  return postCanonical;
+ }catch(err){
+  for(let i=nonExistentTail.length;i>=1;i--){
+   const createdDir=path.join(existingAncestor,...nonExistentTail.slice(0,i));
+   try{fs.rmdirSync(createdDir);}catch(_){break;}
   }
+  throw err;
  }
- assertSafeProfilePath(resolved);
- fs.mkdirSync(resolved,{recursive:true,mode:0o700});
- assertNoSymlinkOrJunction(resolved);
- assertSafeProfilePath(resolved);
- return resolved;
 }
 function releaseChannel(app,metadata=require('../package.json')){
  if(!app.isPackaged)return 'development';

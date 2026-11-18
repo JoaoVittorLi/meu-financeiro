@@ -128,7 +128,8 @@ async function restoreBackup(currentDb,source,activeFile,folder){
     }
     throw error;
   }finally{
-    fs.rmSync(staging,{force:true});
+    for(const suffix of ['','-wal','-shm'])
+      fs.rmSync(staging+suffix,{force:true});
   }
 }
 module.exports={validateBackupFile,listAutoBackups,automaticBackup,restoreBackup};

@@ -173,3 +173,26 @@ test('Preflight v7 — backup with broken foreign keys rejected while valid snap
   assert.equal(db.load('real').transactions[0].id,'t-validado');
  }finally{db.close();fs.rmSync(f.root,{recursive:true,force:true});}
 });
+
+test('restoreBackup remove auxiliares .importacao-*-wal e -shm após rejeitar cópia WAL corrompida',async()=>{
+ const f=fixture();const db=new FinanceDB(f.file);
+ try{
+  db.save('real',dataset('wal-ativo'));
+  const walCorrupt=path.join(f.root,'wal-corrupt.sqlite');
+  const {DatabaseSync}=require('node:sqlite');
+  const seed=new DatabaseSync(walCorrupt);
+  seed.exec('PRAGMA journal_mode=WAL; CREATE TABLE profiles(id TEXT PRIMARY KEY); CREATE TABLE transactions(id TEXT PRIMARY KEY, profile TEXT REFERENCES profiles(id)); CREATE TABLE budgets(id TEXT PRIMARY KEY); CREATE TABLE financial_settings(id TEXT PRIMARY KEY); CREATE TABLE app_meta(key TEXT PRIMARY KEY, value TEXT);');
+  seed.exec("INSERT INTO app_meta(key,value) VALUES ('schema_version','7');");
+  seed.exec('PRAGMA foreign_keys=OFF; INSERT INTO transactions(id,profile) VALUES (\'orphan\',\'missing-profile\');');
+  seed.close();
+  // Ensure header flags stay in WAL mode (bytes 18-19 = 2,2) so readOnly open creates -shm/-wal
+  const raw=fs.readFileSync(walCorrupt);
+  raw[18]=2;raw[19]=2;
+  fs.writeFileSync(walCorrupt,raw);
+
+  await assert.rejects(()=>restoreBackup(db,walCorrupt,f.file,f.backups),/referências financeiras inválidas/);
+  const leftovers=fs.readdirSync(path.dirname(f.file)).filter(n=>n.startsWith('.importacao-'));
+  assert.deepEqual(leftovers,[]);
+  assert.equal(db.load('real').transactions[0].id,'t-wal-ativo');
+ }finally{db.close();fs.rmSync(f.root,{recursive:true,force:true});}
+});

@@ -159,3 +159,15 @@
   - Em `onGlobalKeydown`: `this.state.planOpen` verificado antes de `this.state.planSelected` no tratamento de `Escape`, e `.p-editor-backdrop [role="dialog"]` / `.modal-backdrop [role="dialog"]` priorizado antes de `.mf-detail-drawer` no aprisionamento de foco `Tab`.
   - Em `toggleMode()`: reset adicional de `budgetFocus: null` e `budgetSearch: ''`.
   - Recompilado `app/app.js` via `npm run compile` e adicionada verificação em `tests/nivel-b-ui-fixes.test.cjs`.
+
+## 13. Iteração 5 — Endurecimento Estrutural (SFN Realpath, Tokenização CAT02 e Cleanup WAL)
+
+- **`electron/release-channel.cjs` (`validateExperimentalOverridePath`, `resolveDeepestExistingAncestor`, `assertAllowedOverrideTarget`)**:
+  - Expansão de `WINDOWS_RESERVED_DEVICE` com `conin$` e `conout$`, mais rejeição Win32 explícita de segmentos curtos 8.3 (`WINDOWS_SHORT_NAME_SEGMENT`) e caracteres inválidos (`WINDOWS_INVALID_SEGMENT_CHARS`, incluindo `:` de NTFS ADS).
+  - Canonicalização baseada em sistema de arquivos via `resolveDeepestExistingAncestor` (`fs.lstatSync` + `fs.realpathSync.native` até o ancestral existente mais profundo, reanexando `nonExistentTail`) e validação completa pré- e pós-`mkdirSync` (`assertAllowedOverrideTarget` verificando tanto o caminho lexical quanto o resolvido de `appData` e `LOCALAPPDATA`), com rollback seguro via `rmdirSync` somente dos diretórios recém-criados vazios em caso de falha pós-criação.
+  - Regressões em `tests/release-channel.test.cjs` usando `fs.realpathSync.native(os.tmpdir())`, cobrindo vetores SFN 8.3 (`MEUFIN~1`, `MEUFIN~1\sub`, `MEU-FI~1`, `Programs\MEUFIN~1\sub`, `PROGRA~1\sub`, `MEUFIN~1.V1`), `CONIN$`/`CONOUT$`, ADS, junctions internas, criação aninhada (`new1\new2`) e rollback.
+- **`electron/cat02-classifier.cjs` (`normalizeForIntermediaryScan`, `tokenizeWithSeparators`, `hasIntermediarySignal`)**:
+  - Substituição das regexes acopladas por normalização determinística com preservação de separadores (remoção de zero-width `[\u200B-\u200D\uFEFF]`, NFD sem diacríticos e normalização de travessões Unicode) e varredura linear sobre tokens e bigramas (`FULL_INTERMEDIARY_TOKENS`, `BIGRAM_INTERMEDIARY_PAIRS`, `ABBREV_INTERMEDIARY_TOKENS`, `BANK_CARD_PREFIX_TOKENS`, `CONNECTOR_PREPOSITIONS`, `INTERMEDIARY_PUNCT_SEP` e `rede` contextual), incluindo `evidence.receiverName || ''`.
+  - Regressão unitária e E2E (`D05AutoCategorization.plan()` + `apply()`) adicionada em `tests/cat-p0-calibration.test.cjs` (`G6-14`).
+- **`electron/recovery.cjs` (`restoreBackup` `finally`)**:
+  - Limpeza completa dos arquivos auxiliares de staging (`['', '-wal', '-shm']`) no bloco `finally`, espelhando `automaticBackup`, com regressão em `tests/recovery.test.cjs` provando zero sobras `.importacao-*-wal`/`.sqlite-shm` após rejeição de backup WAL corrompido.

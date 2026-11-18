@@ -7,6 +7,81 @@ const VERSION='CAT02/CLASSIFIER-V1';
 const fold=x=>String(x??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
  .toLowerCase().replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
 const tokens=x=>[...new Set(fold(x).split(' ').filter(w=>w.length>=3&&w.length<=28))].slice(0,32);
+const FULL_INTERMEDIARY_TOKENS=new Set([
+ 'mercadopago','mercpago','mercadolivre','meli',
+ 'pagseguro','pagseg','pagbank','stone','cielo','paypal','picpay',
+ 'getnet','redecard','sumup','pagarme','infinitepay','ebanx','adyen',
+ 'asaas','iugu','vindi','zoop','shipay','bcash','moip','wirecard',
+ 'cloudwalk','ifood','rappi','ubereats','uber','99food','pix','qrcode'
+]);
+const BIGRAM_INTERMEDIARY_PAIRS=new Set([
+ 'mercado|pago','merc|pago','mercado|livre',
+ 'pag|seguro','pag|seg','pag|bank',
+ 'pay|pal','pic|pay','get|net','rede|card','sum|up',
+ 'pagar|me','infinite|pay','cloud|walk',
+ 'i|food','uber|eats','99|food','qr|code'
+]);
+const ABBREV_INTERMEDIARY_TOKENS=new Set(['mp','pag','ton','pg']);
+const BANK_CARD_PREFIX_TOKENS=new Set([
+ 'compra','compras','deb','debito','cred','credito','cartao',
+ 'pgto','pagto','pagamento','pagamentos',
+ 'visa','elo','master','mastercard','hiper','hipercard','amex','maestro','electron'
+]);
+const CONNECTOR_PREPOSITIONS=new Set(['no','na','em','do','da','de','via','por','com']);
+const INTERMEDIARY_PUNCT_SEP=/[*\-_/.:,+]/;
+function normalizeForIntermediaryScan(raw){
+ return String(raw??'')
+  .replace(/[\u200B-\u200D\uFEFF]/g,'')
+  .normalize('NFD')
+  .replace(/[\u0300-\u036f]/g,'')
+  .replace(/[\u2010-\u2015\u2212]/g,'-')
+  .replace(/\s+/g,' ')
+  .trim()
+  .toLowerCase();
+}
+function tokenizeWithSeparators(norm){
+ if(!norm)return [];
+ const spans=[];
+ const re=/[a-z0-9]+/g;
+ let match,prevEnd=0;
+ while((match=re.exec(norm))!==null){
+  spans.push({
+   token:match[0],
+   sepBefore:norm.slice(prevEnd,match.index),
+   sepAfter:''
+  });
+  if(spans.length>1)spans[spans.length-2].sepAfter=spans[spans.length-1].sepBefore;
+  prevEnd=match.index+match[0].length;
+ }
+ if(spans.length)spans[spans.length-1].sepAfter=norm.slice(prevEnd);
+ return spans;
+}
+function hasIntermediarySignal(raw){
+ const norm=normalizeForIntermediaryScan(raw);
+ if(!norm)return false;
+ const spans=tokenizeWithSeparators(norm);
+ for(let i=0;i<spans.length;i++){
+  const curr=spans[i],tok=curr.token;
+  if(FULL_INTERMEDIARY_TOKENS.has(tok))return true;
+  if(i+1<spans.length&&BIGRAM_INTERMEDIARY_PAIRS.has(tok+'|'+spans[i+1].token))return true;
+  if(tok==='rede'){
+   const next=spans[i+1],afterNext=spans[i+2];
+   const isLegitRedeDe=Boolean(
+    next&&next.token==='de'&&/^\s+$/.test(curr.sepAfter)&&
+    (!afterNext||!/^pagamentos?$/.test(afterNext.token))
+   );
+   if(!isLegitRedeDe)return true;
+  }
+  if(ABBREV_INTERMEDIARY_TOKENS.has(tok)){
+   if(i===0)return true;
+   const prev=spans[i-1].token;
+   if(BANK_CARD_PREFIX_TOKENS.has(prev))return true;
+   if(i>=2&&CONNECTOR_PREPOSITIONS.has(prev)&&BANK_CARD_PREFIX_TOKENS.has(spans[i-2].token))return true;
+   if(INTERMEDIARY_PUNCT_SEP.test(curr.sepAfter)||INTERMEDIARY_PUNCT_SEP.test(curr.sepBefore))return true;
+  }
+ }
+ return false;
+}
 function buildCatalog(catalog=taxonomy){
  if(!catalog||!Array.isArray(catalog.parents))throw Error('CAT-02: catálogo D05 indisponível');
  const byId=new Map(),byText=new Map();
@@ -174,10 +249,6 @@ function classifyCandidate({transaction,evidence={},history=[],rules=[],catalog=
  // never counts as merchant identity; Naive Bayes remains review-only.
  const directName=fold(evidence.merchantName);
  const desc=fold(transaction.description||'');
- const unaccent=x=>String(x??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[\u2010-\u2015\u2212]/g,'-');
- const rawProcessorPrefix=/\b(mp|pag|pagseg|ton|pg|rede|uber)\s*\*|\b(mp|pag|pagseg|ton|pg|uber)\s+[-–—\u2011\u2212/]\s+|\b(mp|pag|pagseg|ton|pg|uber)\s*[-–—\u2011\u2212/]\s*(?=[a-z0-9])|\b(?:compra|deb|debito|credito|cartao|pgto|pagto)\s+(?:mp|pag|pagseg|ton|pg|uber)\b/i;
- const processor=/\b(pag ?seguro|pag ?seg|pag ?bank|merc(?:ado)? ?pago|stone|cielo|pay ?pal|pic ?pay|get ?net|rede ?card|sum ?up|pagar ?me|infinite ?pay|ebanx|adyen|asaas|iugu|vindi|zoop|shipay|bcash|moip|wirecard|cloud ?walk|i ?food|rappi|uber ?eats|pix|qr ?code|qrcode)\b|\brede\b(?! de\b(?! pagamentos?\b))|^(mp|pag|ton|pg)\b/i;
- const hasIntermediary=raw=>rawProcessorPrefix.test(unaccent(raw))||processor.test(fold(raw));
  const narrowMcc=['5411','5541','5912'].includes(String(evidence.mcc||''));
  const directCommerce=narrowMcc&&mcc&&!external&&
   evidence.transactionType==='DEBIT'&&
@@ -186,11 +257,12 @@ function classifyCandidate({transaction,evidence={},history=[],rules=[],catalog=
   fold(evidence.paymentMethod)!=='pix'&&
   typeof evidence.merchantCnpj==='string'&&/^\d{14}$/.test(evidence.merchantCnpj)&&
   directName.length>=8&&
-  !hasIntermediary(evidence.merchantName)&&
-  !hasIntermediary(evidence.merchantBusinessName||'')&&
-  !hasIntermediary(transaction.description||'')&&
-  !hasIntermediary(evidence.description||'')&&
-  !hasIntermediary(evidence.descriptionRaw||'')&&
+  !hasIntermediarySignal(evidence.merchantName)&&
+  !hasIntermediarySignal(evidence.merchantBusinessName||'')&&
+  !hasIntermediarySignal(evidence.receiverName||'')&&
+  !hasIntermediarySignal(transaction.description||'')&&
+  !hasIntermediarySignal(evidence.description||'')&&
+  !hasIntermediarySignal(evidence.descriptionRaw||'')&&
   desc.includes(directName);
  if(directCommerce){
   return result('apply','VERIFIED_DIRECT_MERCHANT_MCC_PARENT',{

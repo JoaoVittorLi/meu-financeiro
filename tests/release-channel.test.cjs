@@ -23,7 +23,7 @@ const fakeApp = (root, name = EXPERIMENTAL_NAME, isPackaged = true) => ({
 });
 
 const withTmp = fn => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'mf-rc-iso-'));
+  const root = fs.mkdtempSync(path.join(fs.realpathSync.native(os.tmpdir()), 'mf-rc-iso-'));
   try {
     return fn(root);
   } finally {
@@ -246,3 +246,91 @@ test('NSIS-only packaging configs exclude portable targets', () => {
   assert.doesNotMatch(previewPs1, /portable/i);
   assert.match(previewPs1, /MeuFinanceiro-Instalador-\$version-x64\.exe/);
 });
+
+test('experimentalProfileDirectory rejects CONIN$/CONOUT$, Windows 8.3 SFN, NTFS ADS and invalid Win32 chars', () => withTmp(root => {
+  const appData = path.join(root, 'appData');
+  const localAppData = path.join(root, 'localAppData');
+  fs.mkdirSync(path.join(appData, 'Meu Financeiro'), { recursive: true });
+  fs.mkdirSync(path.join(appData, 'meu-financeiro-desktop'), { recursive: true });
+  fs.mkdirSync(path.join(localAppData, 'Programs', 'Meu Financeiro'), { recursive: true });
+  const app = fakeApp(appData);
+
+  for (const reserved of ['CONIN$', 'CONOUT$', 'CONIN$.txt', 'conout$.sqlite']) {
+    assert.throws(() => experimentalProfileDirectory(app, {
+      env: { MEU_FINANCEIRO_EXPERIMENTAL_USER_DATA_DIR: path.join(root, reserved), LOCALAPPDATA: localAppData },
+      argv: []
+    }), /segmento inválido|reservado/);
+  }
+
+  if (process.platform === 'win32') {
+    const win32Blocked = [
+      path.join(appData, 'MEUFIN~1'),
+      path.join(appData, 'MEUFIN~1', 'sub'),
+      path.join(appData, 'MEU-FI~1'),
+      path.join(localAppData, 'Programs', 'MEUFIN~1', 'sub'),
+      path.join(root, 'PROGRA~1', 'sub'),
+      path.join(root, 'MEUFIN~1.V1'),
+      path.join(root, 'dir:stream'),
+      path.join(root, 'bad<dir'),
+      path.join(root, 'bad>dir'),
+      path.join(root, 'bad"dir'),
+      path.join(root, 'bad|dir'),
+      path.join(root, 'bad?dir'),
+      path.join(root, 'bad*dir'),
+      path.join(root, 'bad\x01dir')
+    ];
+    for (const candidate of win32Blocked) {
+      assert.throws(() => experimentalProfileDirectory(app, {
+        env: { MEU_FINANCEIRO_EXPERIMENTAL_USER_DATA_DIR: candidate, LOCALAPPDATA: localAppData },
+        argv: []
+      }), /segmento inválido|8\.3|reservado|negada|protegido|instalação|alias/, `Expected rejection for ${JSON.stringify(candidate)}`);
+    }
+
+    // Also verify real junction inside appData pointing from a safe-looking folder to Meu Financeiro is blocked
+    const aliasInAppData = path.join(appData, 'alias-profile');
+    fs.symlinkSync(path.join(appData, 'Meu Financeiro'), aliasInAppData, 'junction');
+    assert.throws(() => experimentalProfileDirectory(app, {
+      env: { MEU_FINANCEIRO_EXPERIMENTAL_USER_DATA_DIR: path.join(aliasInAppData, 'sub'), LOCALAPPDATA: localAppData },
+      argv: []
+    }), /link simbólico|junction|alias|protegido/);
+  }
+}));
+
+test('experimentalProfileDirectory creates nested non-existent dirs (new1/new2) and rolls back empty dirs on post-mkdirSync failure', () => withTmp(root => {
+  const appData = path.join(root, 'appData');
+  const existingBase = path.join(root, 'existing-base');
+  fs.mkdirSync(appData, { recursive: true });
+  fs.mkdirSync(existingBase, { recursive: true });
+  const keepFile = path.join(existingBase, 'keep.txt');
+  fs.writeFileSync(keepFile, 'preserve-me', 'utf8');
+
+  const validNested = path.join(existingBase, 'new1', 'new2');
+  const created = experimentalProfileDirectory(fakeApp(appData), {
+    env: { MEU_FINANCEIRO_EXPERIMENTAL_USER_DATA_DIR: validNested },
+    argv: []
+  });
+  assert.equal(created, fs.realpathSync.native(validNested));
+  assert.equal(fs.existsSync(created), true);
+
+  // Simulate post-mkdirSync validation failure (3rd getPath('appData') call returns candidate itself)
+  const rollbackTarget = path.join(existingBase, 'rb1', 'rb2');
+  let calls = 0;
+  const failingPostApp = {
+    isPackaged: true,
+    getName: () => EXPERIMENTAL_NAME,
+    getPath: key => {
+      assert.equal(key, 'appData');
+      calls++;
+      return calls >= 3 ? rollbackTarget : appData;
+    }
+  };
+  assert.throws(() => experimentalProfileDirectory(failingPostApp, {
+    env: { MEU_FINANCEIRO_EXPERIMENTAL_USER_DATA_DIR: rollbackTarget },
+    argv: []
+  }), /AppData diretamente/);
+
+  assert.equal(fs.existsSync(path.join(existingBase, 'rb1', 'rb2')), false);
+  assert.equal(fs.existsSync(path.join(existingBase, 'rb1')), false);
+  assert.equal(fs.existsSync(existingBase), true);
+  assert.equal(fs.readFileSync(keepFile, 'utf8'), 'preserve-me');
+}));
