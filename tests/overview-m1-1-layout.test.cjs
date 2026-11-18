@@ -81,5 +81,6 @@ test('M1.1 — overview.css integra categorias em largura total, 2 colunas apena
   assert.match(css, /@media \(max-width: 1180px\)\s*\{[\s\S]*?\.u1-overview \.u1-side-stack\s*\{\s*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/);
   assert.match(css, /@media \(max-width: 720px\)\s*\{[\s\S]*?\.u1-overview \.u1-side-stack\s*\{\s*grid-template-columns:\s*minmax\(0, 1fr\)/);
   assert.match(css, /\.u1-shell > \.footer\s*\{\s*padding-right:\s*76px;/);
+  assert.match(css, /\.u1-overview \.u1-context\s*\{[\s\S]*?z-index:\s*10/);
   assert.match(css, /\.u1-overview \.u1-source-stats\s*\{/);
 });
