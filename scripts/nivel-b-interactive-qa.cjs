@@ -592,12 +592,16 @@ class CDPUIDriver {
   }
 }
 
-async function runNivelB() {
+async function runNivelB(options = {}) {
   assertSafeEnvironment();
   const stamp = new Date().toISOString().replace(/[:.]/g, '-');
-  const outputDir = process.env.MF_NIVEL_B_OUTPUT_DIR || path.join(os.tmpdir(), `mf-nivel-b-qa-${stamp}`);
+  const outputDir = options.outputDir || process.env.MF_NIVEL_B_OUTPUT_DIR || path.join(os.tmpdir(), `mf-nivel-b-qa-${stamp}`);
   fs.mkdirSync(outputDir, { recursive: true });
-  const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'mf-d1-electron-nivelb-'));
+  const profile = options.profileDir
+    ? path.resolve(options.profileDir)
+    : fs.mkdtempSync(path.join(os.tmpdir(), 'mf-d1-electron-nivelb-'));
+  fs.mkdirSync(profile, { recursive: true });
+  const startElectron = typeof options.startFn === 'function' ? options.startFn : start;
   const dbFile = path.join(profile, 'meu-financeiro.sqlite');
   const dates = createRichSyntheticProfile(profile);
 
@@ -623,10 +627,13 @@ async function runNivelB() {
     // ------------------------------------------------------------------
     // SESSION 1: PJ-01 .. PJ-09 (part 1) + NJ-01 .. NJ-04
     // ------------------------------------------------------------------
-    running = await start(profile);
+    running = await startElectron(profile);
     const ui = new CDPUIDriver(running, outputDir);
     await ui.init();
     await ensureWindowFocus(running.cdp, running.child.pid);
+    if (typeof options.onSessionReady === 'function') {
+      await options.onSessionReady(running, ui, profile);
+    }
 
     // PJ-01: Overview navigation, masking, source & period switching, charts, drilldown
     await recordJourney('PJ-01', 'Visão geral: startup, mascaramento, fonte, período, gráficos e drilldown B01', async () => {
@@ -1324,7 +1331,7 @@ async function runNivelB() {
       }
 
       // Reopen Electron #2 on the SAME temp userData and verify via UI DOM!
-      running = await start(profile);
+      running = await startElectron(profile);
       try {
         const ui2 = new CDPUIDriver(running, outputDir);
         await ui2.init();
@@ -1434,7 +1441,7 @@ async function runNivelB() {
         seedJobsDb.close();
       }
 
-      running = await start(profile);
+      running = await startElectron(profile);
       const ui3 = new CDPUIDriver(running, outputDir);
       await ui3.init();
       await ensureWindowFocus(running.cdp, running.child.pid);
@@ -1478,11 +1485,14 @@ async function runNivelB() {
       try { running.child.kill(); } catch {}
       await delay(500);
     }
-    fs.rmSync(profile, { recursive: true, force: true, maxRetries: 10, retryDelay: 250 });
+    if (!options.keepProfile) {
+      fs.rmSync(profile, { recursive: true, force: true, maxRetries: 10, retryDelay: 250 });
+    }
   }
 
   // Print clean summary table
-  console.log('\n=== NÍVEL B REAL INTERACTIVE ELECTRON QA SUMMARY ===');
+  const summaryHeading = options.label || 'NÍVEL B REAL INTERACTIVE ELECTRON QA SUMMARY';
+  console.log(`\n=== ${summaryHeading} ===`);
   for (const j of journeys) {
     console.log(`${j.id.padEnd(6)} | ${j.status.padEnd(8)} | ${String(j.durationMs).padStart(6)}ms | ${j.title}`);
   }
@@ -1493,15 +1503,19 @@ async function runNivelB() {
   const report = {
     executedAt: new Date().toISOString(),
     outputDir,
+    profileDir: options.keepProfile ? profile : undefined,
     journeys,
     runtimeIssues: allIssues
   };
-  fs.writeFileSync(path.join(outputDir, 'report.json'), JSON.stringify(report, null, 2) + '\n');
+  const reportName = options.reportFileName || 'report.json';
+  const reportPath = path.join(outputDir, reportName);
+  fs.writeFileSync(reportPath, JSON.stringify(report, null, 2) + '\n');
 
   if (failed.length > 0 || allIssues.length > 0) {
     if (allIssues.length) console.error('Runtime issues:', allIssues);
     process.exitCode = 1;
   }
+  return report;
 }
 
 if (require.main === module) {

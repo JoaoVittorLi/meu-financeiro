@@ -1850,7 +1850,54 @@ test('G6-18: wave 8 adversarial bypass classes (truncated k=1/2, dirty TON/PAG, 
     { id: 'w13-48-pm-deb-em-conta', desc: 'COMPRA SUPERMERCADO ALFA SUL', name: 'SUPERMERCADO ALFA SUL', category: 'Groceries', mcc: '5411', operationType: 'CARD_PAYMENT', paymentMethod: 'DEBITO_EM_CONTA' },
     { id: 'w13-49-terminal-10ml-rec', desc: 'TERMINAL 10ML PADARIA CENTRAL', name: null, category: 'Groceries', mcc: '5411' },
     { id: 'w13-50-receiver-person-no-doc', desc: 'COMPRA SUPERMERCADO ALFA SUL', name: 'SUPERMERCADO ALFA SUL', receiver: { name: 'JOAO DA SILVA' }, mcc: '5411' },
-    { id: 'w13-51-receiver-sol01mpce-no-doc', desc: 'COMPRA SUPERMERCADO ALFA SUL', name: 'SUPERMERCADO ALFA SUL', receiver: { name: 'SOL01MPCE' }, mcc: '5411' }
+    { id: 'w13-51-receiver-sol01mpce-no-doc', desc: 'COMPRA SUPERMERCADO ALFA SUL', name: 'SUPERMERCADO ALFA SUL', receiver: { name: 'SOL01MPCE' }, mcc: '5411' },
+    // Wave 14 (Iteration 15): 7 residual structural classes
+    { id: 'w14-01-terminalstone', desc: 'TERMINALSTONE PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w14-02-terminalstone-rec', desc: 'TERMINALSTONE PADARIA CENTRAL', name: null, category: 'Groceries', mcc: '5411' },
+    { id: 'w14-03-ecstone', desc: 'ECSTONE PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w14-04-ecst-one', desc: 'ECST ONE PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w14-05-terminalvero', desc: 'TERMINALVERO PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w14-06-ecv-ero', desc: 'ECV ERO PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w14-07-terminalrede', desc: 'TERMINALREDE PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w14-08-ecr-ede', desc: 'ECR EDE PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w14-09-slash-mp', desc: 'M/P PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w14-10-slash-pag', desc: 'P/A/G PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w14-11-slash-ton', desc: 'T/O/N PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w14-12-slash-vero', desc: 'V/E/R/O PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w14-13-slash-ifood', desc: 'I/F/O/O/D PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w14-14-slash-pix', desc: 'P/I/X PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w14-15-slash-fw-mp', desc: '\uFF2D/\uFF30 PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w14-16-01drogasilmp01', desc: '01DROGASILMP01', name: '01DROGASILMP01', mcc: '5912' },
+    { id: 'w14-17-01botecocora01', desc: '01BOTECOCORA01', name: '01BOTECOCORA01', mcc: '5411' },
+    { id: 'w14-18-01boteco99paysp', desc: '01BOTECO99PAYSP', name: '01BOTECO99PAYSP', mcc: '5411' },
+    { id: 'w14-19-01botecoc6payce', desc: '01BOTECOC6PAYCE', name: '01BOTECOC6PAYCE', mcc: '5411' },
+    { id: 'w14-20-ec01botecomp', desc: 'EC01BOTECOMP', name: 'EC01BOTECOMP', mcc: '5411' },
+    { id: 'w14-21-ab0199foodsp', desc: 'AB0199FOODSP', name: 'AB0199FOODSP', mcc: '5411' },
+    { id: 'w14-22-quitandampltda', desc: 'QUITANDAMPLTDA', name: 'QUITANDAMPLTDA', mcc: '5411' },
+    { id: 'w14-23-quitandastone', desc: 'QUITANDASTONE', name: 'QUITANDASTONE', mcc: '5411' },
+    { id: 'w14-24-quitandavero', desc: 'QUITANDAVERO', name: 'QUITANDAVERO', mcc: '5411' },
+    { id: 'w14-25-quitandarede', desc: 'QUITANDAREDE', name: 'QUITANDAREDE', mcc: '5411' },
+    { id: 'w14-26-quitandaton', desc: 'QUITANDATON', name: 'QUITANDATON', mcc: '5411' },
+    { id: 'w14-27-quitandacora', desc: 'QUITANDACORA', name: 'QUITANDACORA', mcc: '5411' },
+    { id: 'w14-28-quitandabin', desc: 'QUITANDABIN', name: 'QUITANDABIN', mcc: '5411' },
+    { id: 'w14-29-split-botecom-p', desc: 'BOTECOM P', name: 'BOTECOM P', mcc: '5411' },
+    { id: 'w14-30-split-botecom-pce', desc: 'BOTECOM PCE', name: 'BOTECOM PCE', mcc: '5411' },
+    { id: 'w14-31-split-drogasilm-p', desc: 'DROGASILM P', name: 'DROGASILM P', mcc: '5912' },
+    { id: 'w14-32-split-t-onpadaria', desc: 'T ONPADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w14-33-split-p-agpadaria', desc: 'P AGPADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w14-34-split-botecop-ag01', desc: 'BOTECOP AG01', name: 'BOTECOP AG01', mcc: '5411' },
+    { id: 'w14-35-split-c6paysp', desc: 'BOTECOC 6 P A YSP', name: 'BOTECOC 6 P A YSP', mcc: '5411' },
+    { id: 'w14-36-ec01-10ml-rec', desc: 'EC01 10ML PADARIA CENTRAL', name: null, category: 'Groceries', mcc: '5411' },
+    { id: 'w14-37-pos01-10ml-rec', desc: 'POS01 10ML PADARIA CENTRAL', name: null, category: 'Groceries', mcc: '5411' },
+    { id: 'w14-38-padaria-10ml-rec', desc: 'PADARIA 10ML CENTRAL', name: null, category: 'Groceries', mcc: '5411' },
+    { id: 'w14-39-pm-auto-deb', desc: 'COMPRA SUPERMERCADO ALFA SUL', name: 'SUPERMERCADO ALFA SUL', category: 'Groceries', mcc: '5411', operationType: 'PURCHASE', paymentMethod: 'AUTO_DEB' },
+    { id: 'w14-40-pm-autodeb', desc: 'COMPRA SUPERMERCADO ALFA SUL', name: 'SUPERMERCADO ALFA SUL', category: 'Groceries', mcc: '5411', operationType: 'PURCHASE', paymentMethod: 'AUTODEB' },
+    { id: 'w14-41-pm-debito-automatic', desc: 'COMPRA SUPERMERCADO ALFA SUL', name: 'SUPERMERCADO ALFA SUL', category: 'Groceries', mcc: '5411', operationType: 'PURCHASE', paymentMethod: 'DEBITO_AUTOMATIC' },
+    { id: 'w14-42-pm-debauto01', desc: 'COMPRA SUPERMERCADO ALFA SUL', name: 'SUPERMERCADO ALFA SUL', category: 'Groceries', mcc: '5411', operationType: 'PURCHASE', paymentMethod: 'DEBAUTO01' },
+    { id: 'w14-43-pm-debito-conta', desc: 'COMPRA SUPERMERCADO ALFA SUL', name: 'SUPERMERCADO ALFA SUL', category: 'Groceries', mcc: '5411', operationType: 'PURCHASE', paymentMethod: 'DEBITO_CONTA' },
+    { id: 'w14-44-pm-dda', desc: 'COMPRA SUPERMERCADO ALFA SUL', name: 'SUPERMERCADO ALFA SUL', category: 'Groceries', mcc: '5411', operationType: 'PURCHASE', paymentMethod: 'DDA' },
+    { id: 'w14-45-rec-cnpj-no-name', desc: 'COMPRA SUPERMERCADO ALFA SUL', name: 'SUPERMERCADO ALFA SUL', receiver: { documentNumber: { type: 'CNPJ', value: VALID_CNPJS[0] } }, mcc: '5411' },
+    { id: 'w14-46-rec-cnpj-mismatch', desc: 'COMPRA SUPERMERCADO ALFA SUL', name: 'SUPERMERCADO ALFA SUL', receiver: { name: 'OUTRA EMPRESA LTDA', documentNumber: { type: 'CNPJ', value: VALID_CNPJS[1] } }, mcc: '5411' }
   ];
 
   const legitimateCases = [
@@ -1889,7 +1936,13 @@ test('G6-18: wave 8 adversarial bypass classes (truncated k=1/2, dirty TON/PAG, 
     { id: 'w13-leg-33-campinas', desc: 'AUTO POSTO CAMPINAS', name: 'AUTO POSTO CAMPINAS', mcc: '5541', expectedCat: 'cat:transporte' },
     { id: 'w13-leg-34-olimpo', desc: 'FARMACIA OLIMPO', name: 'FARMACIA OLIMPO', mcc: '5912', expectedCat: 'cat:saude' },
     { id: 'w13-leg-35-melissa', desc: 'DROGARIA MELISSA', name: 'DROGARIA MELISSA', mcc: '5912', expectedCat: 'cat:saude' },
-    { id: 'w13-leg-36-redentor', desc: 'AUTO POSTO REDENTOR', name: 'AUTO POSTO REDENTOR', mcc: '5541', expectedCat: 'cat:transporte' }
+    { id: 'w13-leg-36-redentor', desc: 'AUTO POSTO REDENTOR', name: 'AUTO POSTO REDENTOR', mcc: '5541', expectedCat: 'cat:transporte' },
+    { id: 'w14-leg-37-pague-menos-parc', desc: 'DROGARIA PAGUE MENOS 10/10', name: 'DROGARIA PAGUE MENOS', mcc: '5912', expectedCat: 'cat:saude' },
+    { id: 'w14-leg-38-bar-everton', desc: 'BAR EVERTON', name: 'BAR EVERTON', mcc: '5411', expectedCat: 'cat:alimentacao' },
+    { id: 'w14-leg-39-toninho-01', desc: 'PADARIA TONINHO 01', name: 'PADARIA TONINHO', mcc: '5411', expectedCat: 'cat:alimentacao' },
+    { id: 'w14-leg-40-uberlandia-01', desc: 'AUTO POSTO UBERLANDIA 01', name: 'AUTO POSTO UBERLANDIA', mcc: '5541', expectedCat: 'cat:transporte' },
+    { id: 'w14-leg-41-bom-prato', desc: 'RESTAURANTE BOM PRATO', name: 'RESTAURANTE BOM PRATO', mcc: '5411', expectedCat: 'cat:alimentacao' },
+    { id: 'w14-leg-42-sem-parar', desc: 'AUTO POSTO SEM PARAR', name: 'AUTO POSTO SEM PARAR', mcc: '5541', expectedCat: 'cat:transporte' }
   ];
 
   for (const c of bypassCases) {
@@ -1960,7 +2013,7 @@ test('G6-18: wave 8 adversarial bypass classes (truncated k=1/2, dirty TON/PAG, 
     const allCases = [...bypassCases, ...legitimateCases];
     ingestRows(db, ACCOUNT_A, ITEM_A, allCases.map((c, i) => ({
       id: c.id,
-      date: new Date(Date.UTC(2026, 0, 1 + i)).toISOString().slice(0, 10),
+      date: new Date(Date.UTC(2026, 0, 1 + Math.floor(i / 2))).toISOString().slice(0, 10),
       description: c.desc,
       ...(c.descriptionRaw ? { descriptionRaw: c.descriptionRaw } : {}),
       amount: -(50 + i),
@@ -1982,7 +2035,7 @@ test('G6-18: wave 8 adversarial bypass classes (truncated k=1/2, dirty TON/PAG, 
       creditCardMetadata: { payeeMCC: c.mcc }
     })));
     auto.configure({ accountIds: [ACCOUNT_A], ...SPAN }, true);
-    const plan = auto.plan({ limit: 500 });
+    const plan = auto.plan({ limit: 600 });
     assert.equal(plan.candidateCount, legitimateCases.length, `Expected ${legitimateCases.length} legitimate candidates, got: ${plan.candidates.map((x) => x.externalId).join(',')}`);
     assert.equal(plan.reviewCount, bypassCases.length);
     assert.deepEqual(
