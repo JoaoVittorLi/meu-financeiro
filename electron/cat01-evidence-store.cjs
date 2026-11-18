@@ -73,11 +73,24 @@ function persistEvidenceBatch(db,entries,{withinTransaction=false,observedAt=new
   return {contract:VERSION,received:clean.length,stored,unchanged};
  }catch(e){if(!withinTransaction)db.exec('ROLLBACK');throw e;}
 }
+function evidenceFromRow(row){
+ if(!row)return null;
+ return {
+  version:VERSION,
+  accountId:row.account_id,externalId:row.external_id,accountType:row.account_type,
+  status:row.status,transactionType:row.transaction_type,description:row.description,
+  descriptionRaw:row.description_raw,operationType:row.operation_type,paymentMethod:row.payment_method,
+  receiverName:row.receiver_name,receiverCnpj:row.receiver_cnpj,mcc:row.mcc,
+  merchantName:row.merchant_name,merchantBusinessName:row.merchant_business_name,
+  merchantCnpj:row.merchant_cnpj,merchantCnae:row.merchant_cnae,
+  providerCategory:row.provider_category,providerCategoryId:row.provider_category_id,
+  providerUpdatedAt:row.provider_updated_at,observedAt:row.observed_at,
+  fingerprint:row.fingerprint,presence:JSON.parse(row.presence_json)
+ };
+}
 function evidenceFor(db,accountId,externalId){
  if(typeof accountId!=='string'||typeof externalId!=='string')throw Error('CAT-01: chave inválida');
- const row=db.prepare('SELECT * FROM cat01_metadata WHERE account_id=? AND external_id=?').get(accountId,externalId);
- if(!row)return null;
- return {version:VERSION,...Object.fromEntries(KEYS.map((key,i)=>[key,key==='presence'?JSON.parse(row.presence_json):row[COLUMNS[i]]]))};
+ return evidenceFromRow(db.prepare('SELECT * FROM cat01_metadata WHERE account_id=? AND external_id=?').get(accountId,externalId));
 }
 function coverageDiagnostic(db){
  const sql=[
@@ -95,4 +108,4 @@ function coverageDiagnostic(db){
  return db.prepare(sql).all();
 }
 module.exports={SCHEMA_KEY,MIGRATION,COLUMNS,migrateCat01,revertEmptyCat01,
- persistEvidenceBatch,evidenceFor,coverageDiagnostic};
+ persistEvidenceBatch,evidenceFor,evidenceFromRow,coverageDiagnostic};

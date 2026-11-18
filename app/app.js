@@ -140,6 +140,437 @@ function budgetProgress(budgets, expenses) {
 }
 
 return exports;})();
+const D05_APPROVED_PARENTS = [{ "id": "cat:moradia", "name": "Moradia", "iconKey": "house", "hue": 264, "kind": "expense", "subcategories": [{ "id": "sub:moradia/aluguel", "parentId": "cat:moradia", "name": "Aluguel", "iconKey": "key", "hue": 252, "default": false }, { "id": "sub:moradia/condominio", "parentId": "cat:moradia", "name": "Condomínio", "iconKey": "building", "hue": 259, "default": false }, { "id": "sub:moradia/energia", "parentId": "cat:moradia", "name": "Energia elétrica", "iconKey": "zap", "hue": 268, "default": false }, { "id": "sub:moradia/agua", "parentId": "cat:moradia", "name": "Água e saneamento", "iconKey": "droplet", "hue": 275, "default": false }, { "id": "sub:moradia/internet", "parentId": "cat:moradia", "name": "Internet residencial", "iconKey": "wifi", "hue": 281, "default": false }, { "id": "sub:moradia/manutencao", "parentId": "cat:moradia", "name": "Manutenção da casa", "iconKey": "wrench", "hue": 287, "default": false }] }, { "id": "cat:alimentacao", "name": "Alimentação", "iconKey": "utensils", "hue": 26, "kind": "expense", "subcategories": [{ "id": "sub:alimentacao/supermercados", "parentId": "cat:alimentacao", "name": "Supermercados", "iconKey": "shopping-basket", "hue": 14, "default": false }, { "id": "sub:alimentacao/delivery", "parentId": "cat:alimentacao", "name": "Delivery", "iconKey": "bike", "hue": 21, "default": false }, { "id": "sub:alimentacao/restaurantes", "parentId": "cat:alimentacao", "name": "Restaurantes", "iconKey": "utensils", "hue": 30, "default": false }, { "id": "sub:alimentacao/cafeterias", "parentId": "cat:alimentacao", "name": "Cafeterias", "iconKey": "coffee", "hue": 37, "default": false }, { "id": "sub:alimentacao/feiras", "parentId": "cat:alimentacao", "name": "Feiras e hortifruti", "iconKey": "apple", "hue": 43, "default": false }] }, { "id": "cat:transporte", "name": "Transporte", "iconKey": "car-front", "hue": 205, "kind": "expense", "subcategories": [{ "id": "sub:transporte/combustivel", "parentId": "cat:transporte", "name": "Combustível", "iconKey": "fuel", "hue": 193, "default": false }, { "id": "sub:transporte/aplicativos", "parentId": "cat:transporte", "name": "Aplicativos de transporte", "iconKey": "car-taxi-front", "hue": 200, "default": false }, { "id": "sub:transporte/publico", "parentId": "cat:transporte", "name": "Transporte público", "iconKey": "bus-front", "hue": 209, "default": false }, { "id": "sub:transporte/estacionamento", "parentId": "cat:transporte", "name": "Estacionamento", "iconKey": "parking-square", "hue": 216, "default": false }, { "id": "sub:transporte/manutencao-veiculo", "parentId": "cat:transporte", "name": "Manutenção do veículo", "iconKey": "wrench", "hue": 222, "default": false }] }, { "id": "cat:saude", "name": "Saúde", "iconKey": "heart-pulse", "hue": 166, "kind": "expense", "subcategories": [{ "id": "sub:saude/farmacia", "parentId": "cat:saude", "name": "Farmácia", "iconKey": "pill", "hue": 154, "default": false }, { "id": "sub:saude/consultas", "parentId": "cat:saude", "name": "Consultas", "iconKey": "stethoscope", "hue": 161, "default": false }, { "id": "sub:saude/exames", "parentId": "cat:saude", "name": "Exames", "iconKey": "microscope", "hue": 170, "default": false }, { "id": "sub:saude/academia", "parentId": "cat:saude", "name": "Academia e atividade física", "iconKey": "dumbbell", "hue": 177, "default": false }] }, { "id": "cat:lazer", "name": "Lazer", "iconKey": "ticket", "hue": 332, "kind": "expense", "subcategories": [{ "id": "sub:lazer/cinema", "parentId": "cat:lazer", "name": "Cinema", "iconKey": "clapperboard", "hue": 320, "default": false }, { "id": "sub:lazer/jogos", "parentId": "cat:lazer", "name": "Jogos", "iconKey": "gamepad-2", "hue": 327, "default": false }, { "id": "sub:lazer/viagens", "parentId": "cat:lazer", "name": "Viagens", "iconKey": "plane", "hue": 336, "default": false }, { "id": "sub:lazer/eventos", "parentId": "cat:lazer", "name": "Eventos e passeios", "iconKey": "tickets", "hue": 343, "default": false }] }, { "id": "cat:educacao", "name": "Educação", "iconKey": "graduation-cap", "hue": 231, "kind": "expense", "subcategories": [{ "id": "sub:educacao/faculdade", "parentId": "cat:educacao", "name": "Faculdade", "iconKey": "graduation-cap", "hue": 219, "default": false }, { "id": "sub:educacao/cursos", "parentId": "cat:educacao", "name": "Cursos", "iconKey": "monitor-play", "hue": 226, "default": false }, { "id": "sub:educacao/livros", "parentId": "cat:educacao", "name": "Livros", "iconKey": "book-open", "hue": 235, "default": false }, { "id": "sub:educacao/material", "parentId": "cat:educacao", "name": "Material de estudo", "iconKey": "pencil-ruler", "hue": 242, "default": false }] }, { "id": "cat:assinaturas", "name": "Assinaturas", "iconKey": "repeat-2", "hue": 282, "kind": "expense", "subcategories": [{ "id": "sub:assinaturas/streaming", "parentId": "cat:assinaturas", "name": "Streaming de vídeo", "iconKey": "tv", "hue": 270, "default": false }, { "id": "sub:assinaturas/musica", "parentId": "cat:assinaturas", "name": "Música e áudio", "iconKey": "headphones", "hue": 277, "default": false }, { "id": "sub:assinaturas/software", "parentId": "cat:assinaturas", "name": "Software e aplicativos", "iconKey": "app-window", "hue": 286, "default": false }, { "id": "sub:assinaturas/nuvem", "parentId": "cat:assinaturas", "name": "Armazenamento em nuvem", "iconKey": "cloud", "hue": 293, "default": false }] }, { "id": "cat:compras", "name": "Compras", "iconKey": "shopping-bag", "hue": 37, "kind": "expense", "subcategories": [{ "id": "sub:compras/roupas", "parentId": "cat:compras", "name": "Roupas e acessórios", "iconKey": "shirt", "hue": 25, "default": false }, { "id": "sub:compras/eletronicos", "parentId": "cat:compras", "name": "Eletrônicos", "iconKey": "smartphone", "hue": 32, "default": false }, { "id": "sub:compras/presentes", "parentId": "cat:compras", "name": "Presentes", "iconKey": "gift", "hue": 41, "default": false }, { "id": "sub:compras/casa", "parentId": "cat:compras", "name": "Itens para casa", "iconKey": "lamp-desk", "hue": 48, "default": false }, { "id": "sub:compras/pets", "parentId": "cat:compras", "name": "Pets e animais", "iconKey": "paw-print", "hue": 54, "default": false }] }, { "id": "cat:contas", "name": "Contas", "iconKey": "receipt-text", "hue": 193, "kind": "expense", "subcategories": [{ "id": "sub:contas/telefonia", "parentId": "cat:contas", "name": "Telefonia", "iconKey": "phone", "hue": 181, "default": false }, { "id": "sub:contas/impostos", "parentId": "cat:contas", "name": "Impostos e tributos", "iconKey": "landmark", "hue": 188, "default": false }, { "id": "sub:contas/tarifas", "parentId": "cat:contas", "name": "Tarifas bancárias", "iconKey": "credit-card", "hue": 197, "default": false }, { "id": "sub:contas/seguros", "parentId": "cat:contas", "name": "Seguros", "iconKey": "shield-check", "hue": 204, "default": false }] }, { "id": "cat:outros", "name": "Outros", "iconKey": "shapes", "hue": 215, "kind": "both", "subcategories": [{ "id": "sub:outros/pequenas-despesas", "parentId": "cat:outros", "name": "Pequenas despesas", "iconKey": "coins", "hue": 203, "default": false }, { "id": "sub:outros/doacoes", "parentId": "cat:outros", "name": "Doações", "iconKey": "hand-heart", "hue": 210, "default": false }, { "id": "sub:outros/ajustes", "parentId": "cat:outros", "name": "Ajustes diversos", "iconKey": "sliders-horizontal", "hue": 219, "default": false }, { "id": "sub:outros/servicos", "parentId": "cat:outros", "name": "Serviços diversos", "iconKey": "package", "hue": 226, "default": false }] }, { "id": "cat:salario", "name": "Salário", "iconKey": "wallet", "hue": 151, "kind": "income", "subcategories": [{ "id": "sub:salario/fixo", "parentId": "cat:salario", "name": "Salário fixo", "iconKey": "wallet", "hue": 139, "default": false }, { "id": "sub:salario/horas-extras", "parentId": "cat:salario", "name": "Horas extras", "iconKey": "clock-3", "hue": 146, "default": false }, { "id": "sub:salario/comissoes", "parentId": "cat:salario", "name": "Comissões", "iconKey": "badge-percent", "hue": 155, "default": false }, { "id": "sub:salario/bonus", "parentId": "cat:salario", "name": "Bônus e gratificações", "iconKey": "award", "hue": 162, "default": false }] }, { "id": "cat:transferencias", "name": "Transferências", "iconKey": "arrow-left-right", "hue": 203, "kind": "both", "subcategories": [{ "id": "sub:transferencias/entre-contas", "parentId": "cat:transferencias", "name": "Entre contas próprias", "iconKey": "arrow-left-right", "hue": 191, "default": false }, { "id": "sub:transferencias/reserva", "parentId": "cat:transferencias", "name": "Para reserva própria", "iconKey": "piggy-bank", "hue": 198, "default": false }, { "id": "sub:transferencias/aportes", "parentId": "cat:transferencias", "name": "Aporte em investimentos", "iconKey": "chart-no-axes-combined", "hue": 207, "default": false }, { "id": "sub:transferencias/ajuste-interno", "parentId": "cat:transferencias", "name": "Ajuste entre contas", "iconKey": "refresh-cw", "hue": 214, "default": false }] }, { "id": "cat:rendimentos", "name": "Rendimentos", "iconKey": "trending-up", "hue": 135, "kind": "income", "subcategories": [{ "id": "sub:rendimentos/juros", "parentId": "cat:rendimentos", "name": "Juros", "iconKey": "percent", "hue": 123, "default": false }, { "id": "sub:rendimentos/dividendos", "parentId": "cat:rendimentos", "name": "Dividendos", "iconKey": "coins", "hue": 130, "default": false }, { "id": "sub:rendimentos/renda-fixa", "parentId": "cat:rendimentos", "name": "Renda fixa", "iconKey": "landmark", "hue": 139, "default": false }, { "id": "sub:rendimentos/aluguel-recebido", "parentId": "cat:rendimentos", "name": "Aluguel recebido", "iconKey": "house-plus", "hue": 146, "default": false }] }, { "id": "cat:reembolsos", "name": "Reembolsos", "iconKey": "rotate-ccw", "hue": 174, "kind": "income", "subcategories": [{ "id": "sub:reembolsos/estornos", "parentId": "cat:reembolsos", "name": "Estornos", "iconKey": "rotate-ccw", "hue": 162, "default": false }, { "id": "sub:reembolsos/devolucoes", "parentId": "cat:reembolsos", "name": "Devoluções de compras", "iconKey": "package-check", "hue": 169, "default": false }, { "id": "sub:reembolsos/reembolso-saude", "parentId": "cat:reembolsos", "name": "Reembolso de saúde", "iconKey": "heart-handshake", "hue": 178, "default": false }, { "id": "sub:reembolsos/reembolso-trabalho", "parentId": "cat:reembolsos", "name": "Reembolso de trabalho", "iconKey": "briefcase-business", "hue": 185, "default": false }] }];
+const D05_APPROVED_GLYPHS = { "house": "<path d=\"m3 10 9-7 9 7v11H3V10Zm7 11v-7h4v7\"/>", "key": "<circle cx=\"7.5\" cy=\"15.5\" r=\"3.8\"/><path d=\"m10.3 12.7 9.3-9.3L22 6l-2.5 2.5 1.5 1.5-3 3-1.5-1.5-3.2 3.2\"/>", "building": "<rect x=\"5\" y=\"3\" width=\"14\" height=\"18\" rx=\"1\"/><path d=\"M9 7h2m3 0h2M9 11h2m3 0h2M10 21v-5h4v5\"/>", "zap": "<path d=\"m13 2-9 12h7l-1 8 10-12h-7V2Z\"/>", "droplet": "<path d=\"M12 2C9 7 5 11 5 15a7 7 0 0 0 14 0c0-4-4-8-7-13Z\"/>", "wifi": "<path d=\"M2 9a15 15 0 0 1 20 0M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0M12 20h.01\"/>", "wrench": "<path d=\"M21 7a6 6 0 0 1-8 6L6 20a3 3 0 0 1-4-4l7-7a6 6 0 0 1 8-8l-4 4 5 5 3-3Z\"/>", "utensils": "<path d=\"M4 3v7M2 3v5c0 2 4 2 4 0V3M4 10v11M19 3c-3 3-4 7-4 10h4V3Zm0 10v8\"/>", "shopping-basket": "<path d=\"M3 10h18l-3 10H6L3 10ZM8 10l4-7 4 7M10 13l1 4m3-4-1 4\"/>", "bike": "<circle cx=\"5\" cy=\"17\" r=\"3.5\"/><circle cx=\"19\" cy=\"17\" r=\"3.5\"/><path d=\"m5 17 5-9 4 9H5m9 0 5-9M8 8h4m5 0h4\"/>", "coffee": "<path d=\"M5 7h12v7a6 6 0 0 1-12 0V7ZM17 9h2a2 2 0 0 1 0 4h-2M3 21h17\"/>", "apple": "<path d=\"M12 7c-2-3-8-3-9 3-1 5 2 11 6 11 1 0 2-1 3-1s2 1 3 1c4 0 7-6 6-11-1-6-7-6-9-3Zm0-1c0-3 2-4 5-4\"/>", "car-front": "<path d=\"m5 11 2-5h10l2 5M4 11h16v7H4v-7ZM6 18v2m12-2v2M7 14h2m6 0h2\"/>", "fuel": "<rect x=\"4\" y=\"4\" width=\"11\" height=\"17\" rx=\"2\"/><path d=\"M7 7h5v5H7V7ZM15 10h3l2 3v5a2 2 0 0 1-4 0\"/>", "car-taxi-front": "<path d=\"M7 6h10l2 5H5l2-5ZM4 11h16v7H4v-7ZM6 18v2m12-2v2M10 3h4M8 14h2m4 0h2\"/>", "bus-front": "<rect x=\"5\" y=\"3\" width=\"14\" height=\"16\" rx=\"3\"/><path d=\"M5 11h14M8 15h2m4 0h2M8 19v2m8-2v2\"/>", "parking-square": "<rect x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"3\"/><path d=\"M9 17V7h4a3 3 0 0 1 0 6H9\"/>", "heart-pulse": "<path d=\"M20.8 5.8a5 5 0 0 0-7.3 0L12 7.2l-1.5-1.4a5 5 0 0 0-7.3 7.3L12 22l8.8-8.9a5 5 0 0 0 0-7.3ZM4 13h4l2-4 3 7 2-3h5\"/>", "pill": "<path d=\"m4 13 9-9a5 5 0 0 1 7 7l-9 9a5 5 0 0 1-7-7Zm3-3 7 7\"/>", "stethoscope": "<path d=\"M6 3v7a5 5 0 0 0 10 0V3M4 3h4m6 0h4M11 15v2a4 4 0 0 0 8 0v-1\"/><circle cx=\"19\" cy=\"13\" r=\"2\"/>", "microscope": "<path d=\"m8 3 5 5m-2-7 5 5-4 4-5-5 4-4ZM9 10v4a4 4 0 0 0 8 0M4 21h16M12 18v3\"/>", "dumbbell": "<path d=\"m5 8 11 11M2 8l5-5M1 11l8-8m7 18 5-5m-8 6 9-9\"/>", "ticket": "<path d=\"M3 5h18v5a2 2 0 0 0 0 4v5H3v-5a2 2 0 0 0 0-4V5ZM12 5v14\" stroke-dasharray=\"3 2\"/>", "clapperboard": "<rect x=\"3\" y=\"8\" width=\"18\" height=\"13\" rx=\"2\"/><path d=\"M3 8V4l17-2 1 6M8 3l3 5m3-6 3 6\"/>", "gamepad-2": "<path d=\"M7 8h10c3 0 4 2 5 8 .5 3-2 4-4 2l-3-3H9l-3 3c-2 2-4.5 1-4-2 1-6 2-8 5-8ZM7 11v5m-2.5-2.5h5M16 12h.01M19 14h.01\"/>", "plane": "<path d=\"m2 16 20-11-7 17-4-8-9 2Zm9-2 5-5\"/>", "tickets": "<path d=\"M6 3h14v5a2 2 0 0 0 0 4v5H6v-5a2 2 0 0 0 0-4V3ZM3 7v14h13\"/>", "graduation-cap": "<path d=\"m2 9 10-5 10 5-10 5L2 9Zm4 3v5c3 3 9 3 12 0v-5M22 9v7\"/>", "monitor-play": "<rect x=\"3\" y=\"3\" width=\"18\" height=\"14\" rx=\"2\"/><path d=\"m10 7 5 3-5 3V7ZM8 21h8m-4-4v4\"/>", "book-open": "<path d=\"M12 6c-4-3-7-3-10-2v15c3-1 6-1 10 2 4-3 7-3 10-2V4c-3-1-6-1-10 2Zm0 0v15\"/>", "pencil-ruler": "<path d=\"m3 18 12-12 3 3L6 21H3v-3ZM14 4l2-2 5 5-2 2M11 13l3 3m-1-7 3 3\"/>", "repeat-2": "<path d=\"M4 9V7a4 4 0 0 1 4-4h11l3 3-3 3M20 15v2a4 4 0 0 1-4 4H5l-3-3 3-3\"/>", "tv": "<rect x=\"3\" y=\"5\" width=\"18\" height=\"14\" rx=\"3\"/><path d=\"m10 9 5 3-5 3V9ZM8 22h8\"/>", "headphones": "<path d=\"M3 14v-3a9 9 0 0 1 18 0v3M3 14h4v7H5a2 2 0 0 1-2-2v-5Zm18 0h-4v7h2a2 2 0 0 0 2-2v-5Z\"/>", "app-window": "<rect x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"3\"/><path d=\"M3 8h18M7 6h.01M11 6h.01m-5 8h12m-12 4h8\"/>", "cloud": "<path d=\"M7 18h12a4 4 0 0 0 0-8 7 7 0 0 0-13-2A5 5 0 0 0 7 18Z\"/>", "shopping-bag": "<path d=\"M5 8h14l1 13H4L5 8ZM9 9V6a3 3 0 0 1 6 0v3\"/>", "shirt": "<path d=\"M8 3h8l5 4-3 5-3-2v11H9V10l-3 2-3-5 5-4Z\"/>", "smartphone": "<rect x=\"6\" y=\"2\" width=\"12\" height=\"20\" rx=\"3\"/><path d=\"M10 18h4M9 5h6\"/>", "gift": "<rect x=\"3\" y=\"10\" width=\"18\" height=\"11\" rx=\"2\"/><path d=\"M12 10v11M3 14h18M3 6h18v4H3V6Zm9 0C8 1 5 2 6 5c1 2 5 1 6 1Zm0 0c4-5 7-4 6-1-1 2-5 1-6 1Z\"/>", "lamp-desk": "<path d=\"M3 21h18M8 21l4-8M12 13l-4-5 5-5 6 6-5 5-2-1ZM8 8l-3 3\"/>", "paw-print": "<path d=\"M8 12c2-2 6-2 8 0l3 4a4 4 0 0 1-5 5c-2-1-3-1-4 0a4 4 0 0 1-5-5l3-4Z\"/><circle cx=\"5\" cy=\"9\" r=\"1.5\"/><circle cx=\"10\" cy=\"5\" r=\"1.5\"/><circle cx=\"15\" cy=\"5\" r=\"1.5\"/><circle cx=\"20\" cy=\"9\" r=\"1.5\"/>", "receipt-text": "<path d=\"M5 2h14v20l-3-2-4 2-4-2-3 2V2ZM8 7h8M8 11h8M8 15h5\"/>", "phone": "<rect x=\"6\" y=\"2\" width=\"12\" height=\"20\" rx=\"3\"/><path d=\"M11 19h2M9 5h6\"/>", "landmark": "<path d=\"m2 9 10-6 10 6H2Zm2 3h16M6 12v7m4-7v7m4-7v7m4-7v7M2 21h20\"/>", "credit-card": "<rect x=\"2\" y=\"5\" width=\"20\" height=\"14\" rx=\"3\"/><path d=\"M2 10h20M6 15h5\"/>", "shield-check": "<path d=\"m12 2 9 4v5c0 5-3 9-9 11-6-2-9-6-9-11V6l9-4Zm-4 10 3 3 5-5\"/>", "shapes": "<rect x=\"3\" y=\"3\" width=\"8\" height=\"8\" rx=\"2\"/><circle cx=\"17\" cy=\"7\" r=\"4\"/><path d=\"m3 21 5-8 5 8H3Zm13-8 5 8h-10l5-8Z\"/>", "coins": "<circle cx=\"9\" cy=\"10\" r=\"6\"/><path d=\"M11 7c-3-2-5 2-2 3 4 1 2 5-1 3m1-8v10M16 13a6 6 0 1 1-5 8\"/>", "hand-heart": "<path d=\"M12 11c-3-3-7 1-4 4l4 4 4-4c3-3-1-7-4-4ZM2 15h5l3 5h9l3-4M2 19h5\"/>", "sliders-horizontal": "<path d=\"M3 6h18M3 12h18M3 18h18\"/><circle cx=\"8\" cy=\"6\" r=\"2\" fill=\"currentColor\" stroke=\"var(--bg)\"/><circle cx=\"16\" cy=\"12\" r=\"2\" fill=\"currentColor\" stroke=\"var(--bg)\"/><circle cx=\"10\" cy=\"18\" r=\"2\" fill=\"currentColor\" stroke=\"var(--bg)\"/>", "package": "<path d=\"m3 7 9-4 9 4v10l-9 4-9-4V7Zm0 0 9 4 9-4M12 11v10\"/>", "wallet": "<rect x=\"3\" y=\"6\" width=\"18\" height=\"15\" rx=\"3\"/><path d=\"M3 10h18M16 15h5M5 6V4h13\"/>", "clock-3": "<circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M12 6v6l4 2\"/>", "badge-percent": "<circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"m8 16 8-8M8 8h.01M16 16h.01\"/>", "award": "<circle cx=\"12\" cy=\"8\" r=\"6\"/><path d=\"m8 13-2 9 6-3 6 3-2-9\"/>", "arrow-left-right": "<path d=\"M3 7h18m-5-4 5 4-5 4M21 17H3m5-4-5 4 5 4\"/>", "piggy-bank": "<path d=\"M5 10a8 8 0 0 1 15 2l2 1v4l-3 1-2 3h-3l-1-2h-4l-1 2H5l-1-4-2-2v-3l3-1ZM9 8V6h5\"/><circle cx=\"17\" cy=\"12\" r=\".6\"/>", "chart-no-axes-combined": "<path d=\"M3 21V4m0 17h18M5 17l6-7 4 4 6-8M16 6h5v5\"/>", "refresh-cw": "<path d=\"M20 11a8 8 0 0 0-14-5L3 9m0-6v6h6M4 13a8 8 0 0 0 14 5l3-3m0 6v-6h-6\"/>", "trending-up": "<path d=\"M3 18l6-6 4 3 8-9M15 6h6v6\"/>", "percent": "<path d=\"M4 20 20 4\"/><circle cx=\"7\" cy=\"7\" r=\"3\"/><circle cx=\"17\" cy=\"17\" r=\"3\"/>", "house-plus": "<path d=\"m3 10 9-7 9 7v11H3V10Zm7 11v-7h4v7M8 9h8m-4-4v8\"/>", "rotate-ccw": "<path d=\"M3 11a9 9 0 1 1 2 7M3 4v7h7\"/>", "package-check": "<path d=\"m3 7 9-4 9 4v10l-9 4-9-4V7Zm0 0 9 4 9-4M12 11v10m2 3 2 2 4-4\"/>", "heart-handshake": "<path d=\"M12 20 4 12a5 5 0 0 1 7-7l1 1 1-1a5 5 0 0 1 7 7l-8 8Zm-5-9 4 3 2-2 4 3\"/>", "briefcase-business": "<rect x=\"3\" y=\"7\" width=\"18\" height=\"14\" rx=\"2\"/><path d=\"M8 7V4h8v3M3 13h18m-11 0v3h4v-3\"/>" };
+function D05VectorIcon(props) {
+    const key = props.iconKey && Object.prototype.hasOwnProperty.call(D05_APPROVED_GLYPHS, props.iconKey) ? props.iconKey : 'circle-dot';
+    const markup = D05_APPROVED_GLYPHS[key] || '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2"/>';
+    return React.createElement('span', { className: 'd05-icon-wrapper',
+        style: { '--d05-hue': String(Number.isInteger(props.hue) ? props.hue : 155) },
+        'aria-label': props.label || undefined, 'aria-hidden': props.label ? undefined : 'true' }, React.createElement('svg', { viewBox: '0 0 24 24', width: props.size || 22, height: props.size || 22,
+        fill: 'none', stroke: 'currentColor', strokeWidth: 1.75, strokeLinecap: 'round', strokeLinejoin: 'round',
+        focusable: 'false', role: 'img', 'aria-hidden': 'true',
+        dangerouslySetInnerHTML: { __html: markup } }));
+}
+function D05ApprovedParent(name) {
+    return D05_APPROVED_PARENTS.find(p => p.name === name) || null;
+}
+function qa84LegacyName(text) {
+    return String(text || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .trim().toLocaleLowerCase('pt-BR');
+}
+function qa84SafeHue(value, fallback = 215) {
+    return Number.isInteger(value) && value >= 0 && value <= 360 ? value : fallback;
+}
+function qa84SafeIcon(value, fallback = 'shapes') {
+    return typeof value === 'string' && Object.prototype.hasOwnProperty.call(D05_APPROVED_GLYPHS, value) ? value : fallback;
+}
+function resolveCategoryVisualIdentity(input = {}) {
+    var _a;
+    const approved = D05_APPROVED_PARENTS;
+    const customized = (Array.isArray(input.catalog) ? input.catalog : []).filter((p) => (p === null || p === void 0 ? void 0 : p.id) &&
+        !approved.some((native) => native.id === p.id));
+    const all = approved.concat(customized);
+    const requestedId = typeof input.categoryId === 'string' && input.categoryId ? input.categoryId : null;
+    const requestedChild = typeof input.subcategoryId === 'string' && input.subcategoryId ? input.subcategoryId : null;
+    const rawLabel = String(input.categoryName || '').trim();
+    let p = requestedId ? all.find((x) => x.id === requestedId) : null;
+    const resolvedByLegacy = !requestedId && !!rawLabel;
+    if (!requestedId && rawLabel)
+        p = all.find((x) => qa84LegacyName(x.name) === qa84LegacyName(rawLabel));
+    if (!p && requestedId && ((_a = input.custom) === null || _a === void 0 ? void 0 : _a.id) === requestedId)
+        p = input.custom;
+    const defaultParent = approved.find((x) => x.id === 'cat:outros');
+    if (!p) {
+        return Object.freeze({ categoryId: (defaultParent === null || defaultParent === void 0 ? void 0 : defaultParent.id) || 'cat:outros', subcategoryId: null, source: 'fallback',
+            label: rawLabel || 'Categoria não identificada', parentLabel: rawLabel || 'Categoria não identificada',
+            iconKey: qa84SafeIcon(defaultParent === null || defaultParent === void 0 ? void 0 : defaultParent.iconKey), hue: qa84SafeHue(defaultParent === null || defaultParent === void 0 ? void 0 : defaultParent.hue),
+            kind: 'unknown' });
+    }
+    const builtin = approved.some((x) => x.id === p.id);
+    const custom = !builtin;
+    const selectedChild = !input.aggregate && requestedChild && Array.isArray(p.subcategories) ?
+        p.subcategories.find((c) => c.id === requestedChild &&
+            (c.parentId === p.id || c.parentCategoryId === p.id) && c.active !== 0) : null;
+    const visual = selectedChild || p;
+    const label = String(visual.name || p.name || rawLabel || 'Categoria');
+    const kind = ['income', 'expense', 'both'].includes(String(p.kind)) ? p.kind : 'unknown';
+    return Object.freeze({ categoryId: String(p.id), subcategoryId: selectedChild ? String(selectedChild.id) : null,
+        source: selectedChild ? 'sub' : custom ? 'custom' : resolvedByLegacy ? 'legacy' : 'parent',
+        label, parentLabel: String(p.name || label),
+        iconKey: qa84SafeIcon(visual.iconKey), hue: qa84SafeHue(visual.hue),
+        kind: kind });
+}
+function CategoryVisualGlyph(props) {
+    const d = props.identity;
+    const icon = h('span', { className: 'qa84-category-glyph',
+        style: { '--qa-cat-hue': String(d.hue) } }, h(D05VectorIcon, { iconKey: d.iconKey, hue: d.hue, size: props.size || 20 }));
+    if (props.variant === 'iconLabel')
+        return h('span', { className: 'qa84-category-combo' }, icon, h('span', {}, d.label));
+    return icon;
+}
+function qa84B03Visual(input, parents = D05_APPROVED_PARENTS) {
+    return resolveCategoryVisualIdentity({ ...input, catalog: parents });
+}
+function qa84B04Fold(value) {
+    return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLocaleLowerCase('pt-BR');
+}
+function qa84B04Search(parents, term) {
+    const q = qa84B04Fold(term);
+    return parents.map((parent) => {
+        const matchesParent = !q || qa84B04Fold(parent.name).includes(q);
+        const children = matchesParent ? [] : (parent.subcategories || []).filter((x) => qa84B04Fold(x.name).includes(q));
+        return { parent, children };
+    }).filter((entry) => !q || qa84B04Fold(entry.parent.name).includes(q) || entry.children.length > 0);
+}
+function qa84B04Geometry(rect, viewport) {
+    const width = Math.max(240, Math.min(730, viewport.width - 24));
+    const below = viewport.height - ((rect === null || rect === void 0 ? void 0 : rect.bottom) || 0), above = (rect === null || rect === void 0 ? void 0 : rect.top) || 0;
+    const top = below >= 290 ? Math.max(12, rect.bottom + 7) : above >= 290 ?
+        Math.max(12, Math.min(viewport.height - 290, above - 290)) : 12;
+    const left = rect && rect.left + width <= viewport.width - 12 ?
+        Math.max(12, rect.left) : Math.max(12, Math.floor((viewport.width - width) / 2));
+    return { left, top, width };
+}
+function qa84B04Fingerprint(row) {
+    if (!row)
+        return '';
+    return JSON.stringify([row.source, row.accountId || '', row.id, row.date, row.amount,
+        row.status || '', row.kind || '', row.categoryId || null, row.subcategoryId || null,
+        row.category || '']);
+}
+function qa84B03RequestDrawerPicker(event, source, id, accountId) {
+    var _a;
+    if (!(event === null || event === void 0 ? void 0 : event.currentTarget) || !id)
+        return;
+    (_a = event.stopPropagation) === null || _a === void 0 ? void 0 : _a.call(event);
+    window.dispatchEvent(new CustomEvent('mf2:d05:open-picker', { detail: {
+            source, id, accountId: accountId || '', trigger: event.currentTarget
+        } }));
+}
+function qa84ExpenseDistribution(categories, expenseCents) {
+    const total = Number.isSafeInteger(expenseCents) && expenseCents >= 0 ? expenseCents : 0;
+    const rows = (categories || []).filter(x => x && typeof x.name === 'string' &&
+        Number.isSafeInteger(x.total) && x.total > 0).map(x => ({ name: x.name, total: x.total, isRemainder: false }));
+    const sum = rows.reduce((n, x) => n + x.total, 0);
+    if (!total)
+        return { status: sum ? 'inconsistent' : 'empty', total, rows: [], classified: sum };
+    if (sum > total)
+        return { status: 'inconsistent', total, rows: [], classified: sum };
+    if (sum < total)
+        rows.push({ name: 'Sem categoria identificada', total: total - sum, isRemainder: true });
+    const fractional = rows.map((row, i) => ({ ...row, i, raw: 1000 * row.total / total, units: Math.floor(1000 * row.total / total) }));
+    let remaining = 1000 - fractional.reduce((n, r) => n + r.units, 0);
+    const ranked = fractional.slice().sort((a, b) => (b.raw - b.units) - (a.raw - a.units) || a.i - b.i);
+    for (let i = 0; i < remaining; i++)
+        ranked[i % ranked.length].units++;
+    const out = fractional.map(({ name, total: amount, isRemainder, units }) => ({ name, total: amount, isRemainder, units, percent: units / 10 }));
+    return { status: 'ok', total, rows: out, classified: sum };
+}
+function renderQA84OverviewCategories(host, categories, totalCents, bankSource, hidden) {
+    const state = host.state, model = qa84ExpenseDistribution(categories, totalCents);
+    if (model.status === 'empty')
+        return h('p', { className: 'u1-empty' }, 'Nenhuma despesa nesta fonte e período.');
+    if (model.status === 'inconsistent')
+        return h('p', { className: 'qa84-data-warning', role: 'alert' }, 'Os totais de categorias não coincidem com o total de despesas. Distribuição suspensa até atualização dos dados.');
+    const ranked = model.rows.slice().sort((a, b) => b.total - a.total || a.name.localeCompare(b.name, 'pt-BR'));
+    const all = !!state.qa84OverviewExpanded, shown = all ? ranked : ranked.slice(0, 5);
+    const max = Math.max(1, ...ranked.map(x => x.total));
+    const catalog = state.qa84VisualCatalog || [];
+    const visual = (row) => row.isRemainder ?
+        resolveCategoryVisualIdentity({ categoryName: row.name }) :
+        resolveCategoryVisualIdentity({ categoryName: row.name, catalog, aggregate: true });
+    const selected = state.qa84OverviewSelected || null;
+    const pick = (row) => host.setState({ qa84OverviewSelected: selected === row.name ? null : row.name });
+    const toTransactions = (name) => {
+        if (name === 'Sem categoria identificada')
+            return;
+        const span = dateSpan(state.overviewPeriod, state.customStart, state.customEnd);
+        host.setState({ query: '', bankFilter: '', txSource: bankSource ? 'bank' : 'manual', txReviewOnly: false,
+            txOrganize: false, txCategoryFilter: name, qa84TransactionsSpan: span, qa84TransactionsCategory: name });
+        host.navigate('transactions');
+    };
+    return h('div', { className: 'qa84-overview-breakdown', role: 'region', 'aria-label': 'Distribuição real dos gastos' }, hidden ? h('div', { className: 'qa84-dist-masked', role: 'status' }, 'Distribuição oculta para proteger seus valores') :
+        h('div', { className: 'qa84-distribution', 'aria-label': 'Faixa de distribuição por categoria' }, ranked.map(row => {
+            const identity = visual(row);
+            return h('button', { key: row.name, type: 'button', className: 'qa84-distribution-segment' + (selected === row.name ? ' is-selected' : ''),
+                style: { width: row.percent + '%', '--qa-cat-hue': identity.hue },
+                'aria-label': row.name + ' · ' + row.percent.toFixed(1) + '% · ' + fmt(row.total),
+                'aria-pressed': selected === row.name, title: row.name + ' · ' + row.percent.toFixed(1) + '%',
+                onClick: () => pick(row) }, h('span', { className: 'qa84-sr-only' }, row.name));
+        })), h('div', { className: 'qa84-distribution-list' }, shown.map(row => {
+        const identity = visual(row), active = selected === row.name;
+        return h('button', { type: 'button', key: row.name,
+            className: 'qa84-category-row' + (active ? ' is-selected' : ''),
+            style: { '--qa-cat-hue': identity.hue },
+            'aria-pressed': active, 'aria-label': row.name + (hidden ? ' · valores ocultos' : ' · ' + fmt(row.total) + ' · ' + row.percent.toFixed(1) + '%'),
+            onClick: () => pick(row) }, h('span', { className: 'qa84-category-name-cell' }, h(CategoryVisualGlyph, { identity, size: 19 }), h('span', { className: 'qa84-category-name' }, row.name)), h('span', { className: 'qa84-category-track', 'aria-hidden': 'true' }, h('i', { style: { width: hidden ? '0%' : (row.total / max * 100) + '%' } })), h('strong', { className: 'qa84-category-money' }, hidden ? '••••' : fmt(row.total)), h('small', { className: 'qa84-category-percent' }, hidden ? '••••' : row.percent.toFixed(1) + '%'));
+    })), selected ? h('div', { className: 'qa84-breakdown-selection', role: 'status' }, h('span', {}, 'Selecionada: ' + selected), selected !== 'Sem categoria identificada' ? h('button', { type: 'button',
+        onClick: () => toTransactions(selected) }, 'Ver movimentações', h(Icon, { name: 'arrow', size: 13 })) : null) : null, ranked.length > 5 ? h('button', { type: 'button', className: 'qa84-breakdown-toggle',
+        'aria-expanded': all, onClick: () => host.setState({ qa84OverviewExpanded: !all }) }, all ? 'Mostrar menos categorias' : 'Mostrar todas as ' + ranked.length + ' categorias', h(Icon, { name: all ? 'chevron-up' : 'chevron-down', size: 14 })) : null, model.classified < totalCents ? h('p', { className: 'qa84-breakdown-note', role: 'status' }, 'Existe valor sem categoria identificada. Ele está incluído na distribuição, sem criar classificação nova.') : null);
+}
+function qa84BudgetStatus(spent, limit, hasLimit) {
+    const valid = Number.isSafeInteger(spent) && spent >= 0 ? spent : 0;
+    if (!hasLimit)
+        return { status: 'unlimited', hasLimit: false, spent: valid, limit: null, remaining: null, usedPercent: null, arcPercent: 0 };
+    if (!Number.isSafeInteger(limit) || limit === null || limit < 0)
+        throw Error('Limite inválido');
+    if (limit === 0)
+        return { status: 'zero', hasLimit: true, spent: valid, limit: 0, remaining: -valid, usedPercent: null, arcPercent: 0 };
+    const ratio = valid / limit, percent = 100 * ratio;
+    return { status: ratio > 1 ? 'exceeded' : ratio >= .9 ? 'near' : 'within', hasLimit: true,
+        spent: valid, limit, remaining: limit - valid, usedPercent: percent, arcPercent: Math.min(100, percent) };
+}
+function qa84BudgetLegs(raw, source, start, end) {
+    const legs = [];
+    for (const t of raw || []) {
+        if (!t || typeof t.date !== 'string' || t.date < start || t.date > end)
+            continue;
+        if (source === 'bank') {
+            if (t.status !== 'POSTED')
+                continue;
+            const nature = t.nature && t.nature !== 'auto' ? t.nature : t.amount < 0 ? 'expense' : 'income';
+            if (nature !== 'expense')
+                continue;
+            const amount = Math.abs(t.amount);
+            if (!Number.isSafeInteger(amount) || amount <= 0)
+                continue;
+            const splits = Array.isArray(t.splits) && t.splits.length && !t.splitOutdated ? t.splits : null;
+            const parts = splits || [{ category: t.category, categoryId: t.categoryId || null, subcategoryId: t.subcategoryId || null, amount }];
+            for (const [index, part] of parts.entries()) {
+                if (!Number.isSafeInteger(part.amount) || part.amount <= 0)
+                    continue;
+                legs.push({ key: JSON.stringify([t.accountId, t.id, index]), id: String(t.id),
+                    accountId: String(t.accountId), date: t.date,
+                    description: String(t.customTitle || t.merchant || t.description || 'Movimentação bancária'), amount: part.amount,
+                    category: String(part.category || t.category || ''), categoryId: part.categoryId || null,
+                    subcategoryId: part.subcategoryId || null });
+            }
+        }
+        else {
+            if (t.kind !== 'expense' || !Number.isSafeInteger(t.amount) || t.amount <= 0)
+                continue;
+            legs.push({ key: 'manual|' + t.id, id: String(t.id), accountId: null, date: t.date,
+                description: String(t.description || 'Lançamento manual'), amount: t.amount,
+                category: String(t.category || ''), categoryId: t.categoryId || null,
+                subcategoryId: t.subcategoryId || null });
+        }
+    }
+    return legs;
+}
+function qa84BudgetDetails(legs, parentName, authoritativeCents, catalog = [], truncated = false) {
+    const parent = resolveCategoryVisualIdentity({ categoryName: parentName, catalog, aggregate: true });
+    const grouped = new Map();
+    let invalid = 0;
+    for (const leg of legs) {
+        const identity = resolveCategoryVisualIdentity({ categoryId: leg.categoryId,
+            subcategoryId: leg.subcategoryId, categoryName: leg.category, catalog, aggregate: true });
+        if (identity.categoryId !== parent.categoryId || identity.parentLabel !== parent.parentLabel)
+            continue;
+        const validChild = leg.subcategoryId === null ? null :
+            resolveCategoryVisualIdentity({ categoryId: leg.categoryId || parent.categoryId,
+                subcategoryId: leg.subcategoryId, catalog });
+        if (leg.subcategoryId && !(validChild === null || validChild === void 0 ? void 0 : validChild.subcategoryId)) {
+            invalid++;
+            continue;
+        }
+        const id = leg.subcategoryId || null, key = id || '__null__';
+        const group = grouped.get(key) || { subcategoryId: id, total: 0, count: 0, rows: [] };
+        group.total += leg.amount;
+        group.count++;
+        group.rows.push(leg);
+        grouped.set(key, group);
+    }
+    const groups = [...grouped.values()].sort((a, b) => b.total - a.total || String(a.subcategoryId).localeCompare(String(b.subcategoryId)));
+    const displayed = groups.reduce((n, g) => n + g.total, 0);
+    const complete = !truncated && !invalid && Number.isSafeInteger(authoritativeCents) && displayed === authoritativeCents;
+    const reason = invalid ? 'Algumas classificações de subcategoria não correspondem à categoria principal.' :
+        truncated ? 'O histórico detalhado está incompleto.' :
+            displayed !== authoritativeCents ? 'O histórico detalhado não coincide com o total consolidado.' : '';
+    return { groups, total: displayed, complete, gap: authoritativeCents - displayed, reason };
+}
+function qa84Ring(value, tone, center, caption, size = 'large') {
+    const clamped = Math.max(0, Math.min(100, Number.isFinite(value) ? value : 0));
+    return h('div', { className: 'qa84-orbit qa84-orbit-' + size + ' tone-' + tone, role: 'img',
+        'aria-label': caption, style: { '--qa84-arc': String(clamped) } }, h('svg', { viewBox: '0 0 120 120', className: 'qa84-orbit-svg', 'aria-hidden': 'true', focusable: 'false' }, h('circle', { cx: 60, cy: 60, r: 49, className: 'qa84-orbit-track' }), h('circle', { cx: 60, cy: 60, r: 49, className: 'qa84-orbit-fill', pathLength: 100,
+        strokeDasharray: clamped + ' 100', transform: 'rotate(-90 60 60)' })), h('div', { className: 'qa84-orbit-center' }, h('strong', {}, center), h('small', {}, caption)));
+}
+function qa84BudgetOpen(host, categoryName, mode, useBank) {
+    var _a;
+    const scroll = window.scrollY || 0, month = host.state.month;
+    host.setState({ qa84BudgetDrill: { categoryName, mode, bank: useBank, month, subcategoryId: null, showChild: false,
+            returnScroll: scroll }, qa84BudgetLoading: true, qa84BudgetReadError: '', qa84BudgetPage: 0,
+        qa84BudgetShowAll: false, qa84BudgetRows: [], qa84BudgetPartial: true }, () => void qa84BudgetRefresh(host));
+    (_a = document.scrollingElement) === null || _a === void 0 ? void 0 : _a.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+}
+async function qa84BudgetRefresh(host) {
+    var _a, _b, _c, _d, _e, _f;
+    const drill = host.state.qa84BudgetDrill;
+    if (!drill)
+        return;
+    const bridge = window.financeDesktop || null;
+    const currentKey = JSON.stringify([drill.categoryName, drill.month, drill.bank, host.state.mode]);
+    const source = drill.bank ? 'bank' : 'manual';
+    try {
+        let result;
+        if (drill.bank) {
+            if (!(bridge === null || bridge === void 0 ? void 0 : bridge.d05BankList))
+                throw Error('Consulta bancária hierárquica indisponível no processo principal.');
+            result = await bridge.d05BankList({ limit: 2500 });
+        }
+        else if (bridge === null || bridge === void 0 ? void 0 : bridge.d05ManualList) {
+            result = await bridge.d05ManualList({ profile: host.state.mode, limit: 2500 });
+        }
+        else if (host.state.mode === 'demo') {
+            result = { items: host.state.data.transactions, truncated: false };
+        }
+        else {
+            throw Error('Consulta manual hierárquica indisponível no processo principal.');
+        }
+        if (!result || !Array.isArray(result.items))
+            throw Error('Resposta de histórico inválida.');
+        if (JSON.stringify([(_a = host.state.qa84BudgetDrill) === null || _a === void 0 ? void 0 : _a.categoryName, (_b = host.state.qa84BudgetDrill) === null || _b === void 0 ? void 0 : _b.month, (_c = host.state.qa84BudgetDrill) === null || _c === void 0 ? void 0 : _c.bank, host.state.mode]) !== currentKey)
+            return;
+        const legs = qa84BudgetLegs(result.items, source, firstOfMonth(drill.month), endOfMonth(drill.month));
+        host.setState({ qa84BudgetRows: legs, qa84BudgetPartial: !!result.truncated || result.status === 'partial',
+            qa84BudgetReadError: '', qa84BudgetLoading: false });
+    }
+    catch (e) {
+        if (JSON.stringify([(_d = host.state.qa84BudgetDrill) === null || _d === void 0 ? void 0 : _d.categoryName, (_e = host.state.qa84BudgetDrill) === null || _e === void 0 ? void 0 : _e.month, (_f = host.state.qa84BudgetDrill) === null || _f === void 0 ? void 0 : _f.bank, host.state.mode]) !== currentKey)
+            return;
+        host.setState({ qa84BudgetRows: [], qa84BudgetPartial: true,
+            qa84BudgetReadError: String((e === null || e === void 0 ? void 0 : e.message) || e), qa84BudgetLoading: false });
+    }
+}
+function qa84BudgetReturn(host, toCategory) {
+    var _a;
+    const drill = host.state.qa84BudgetDrill;
+    if (!drill)
+        return;
+    if (toCategory) {
+        host.setState({ qa84BudgetDrill: { ...drill, showChild: false, subcategoryId: null }, qa84BudgetPage: 0 });
+        (_a = document.scrollingElement) === null || _a === void 0 ? void 0 : _a.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    }
+    else {
+        host.setState({ qa84BudgetDrill: null, qa84BudgetRows: [], qa84BudgetPage: 0 }, () => {
+            var _a;
+            (_a = document.scrollingElement) === null || _a === void 0 ? void 0 : _a.scrollTo({ top: drill.returnScroll || 0, left: 0, behavior: 'instant' });
+            const button = document.getElementById('qa84-card-' + encodeURIComponent(drill.categoryName));
+            button === null || button === void 0 ? void 0 : button.focus({ preventScroll: true });
+        });
+    }
+}
+function renderQA84BudgetCards(host, visible, mode, total, bank, suggest) {
+    return h('div', { className: 'qa84-budgets-grid', role: 'list', 'aria-label': 'Orçamentos por categoria' }, visible.map(({ info, total: spent, hasLimit, limit }) => {
+        const identity = resolveCategoryVisualIdentity({ categoryName: info.name, catalog: host.state.qa84VisualCatalog || [], aggregate: true });
+        const model = qa84BudgetStatus(spent, limit !== null && limit !== void 0 ? limit : null, mode === 'expense' && hasLimit);
+        const tone = model.status === 'exceeded' ? 'exceeded' : model.status === 'near' ? 'near' :
+            model.status === 'within' ? 'within' : 'neutral';
+        const center = mode === 'income' ? 'Receita' : model.status === 'unlimited' ? 'Sem limite' :
+            model.status === 'zero' ? fmt(spent) :
+                model.remaining < 0 ? fmt(-model.remaining) : fmt(model.remaining);
+        const caption = mode === 'income' ? 'Recebido' : model.status === 'exceeded' || model.status === 'zero' && spent > 0 ? 'Excedido' :
+            model.status === 'unlimited' ? 'Não definido' : model.status === 'zero' ? 'Definido' : 'Restante';
+        const pctLabel = model.usedPercent === null ? model.status === 'zero' ? 'Limite R$ 0' : model.status === 'unlimited' ? 'Sem limite' :
+            'Sem orçamento' : model.usedPercent.toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + '% utilizado';
+        return h('button', { type: 'button', role: 'listitem', key: info.name, id: 'qa84-card-' + encodeURIComponent(info.name),
+            className: 'qa84-budget-card tone-' + tone, 'aria-label': info.name + ' · ' + pctLabel +
+                ' · gasto ' + fmt(spent) + (hasLimit ? ' · limite ' + fmt(limit) : ' · sem limite'),
+            onClick: () => mode === 'income' ? (host.setState({ txSource: bank ? 'bank' : 'manual', txKindFilter: 'income', txCategoryFilter: info.name }), host.navigate('transactions')) :
+                qa84BudgetOpen(host, info.name, mode, bank) }, h('div', { className: 'qa84-budget-card-head' }, h(CategoryVisualGlyph, { identity, size: 22 }), h('div', {}, h('h3', {}, info.name), h('small', {}, pctLabel)), h('span', { className: 'qa84-budget-chevron', 'aria-hidden': 'true' }, h(Icon, { name: 'chevron-right', size: 18 }))), qa84Ring(model.arcPercent, tone, center, caption), h('div', { className: 'qa84-budget-card-values' }, h('div', {}, h('small', {}, mode === 'income' ? 'Recebido' : 'Gasto'), h('strong', {}, fmt(spent))), h('div', {}, h('small', {}, 'Limite'), h('strong', {}, hasLimit ? fmt(limit) : 'Sem limite'))), hasLimit && limit === 0 ? h('p', { className: 'qa84-budget-zero' }, 'Limite de R$ 0 definido') : null);
+    }));
+}
+function renderQA84BudgetDetail(host, context) {
+    var _a, _b, _c, _d, _e, _f;
+    const drill = host.state.qa84BudgetDrill;
+    if (!drill)
+        return null;
+    const rows = host.state.qa84BudgetRows || [], catalog = host.state.qa84VisualCatalog || [];
+    const info = host.getCategories().find((c) => c.name === drill.categoryName);
+    const identity = resolveCategoryVisualIdentity({ categoryName: drill.categoryName, catalog, aggregate: true });
+    const authoritative = drill.bank ? bankSnapshot(host.state.bank, drill.month) : snapshot(host.state.data, drill.month);
+    const total = drill.mode === 'income' ? ((_a = authoritative.incomeCategories.find((c) => c.name === drill.categoryName)) === null || _a === void 0 ? void 0 : _a.total) || 0 :
+        ((_b = authoritative.categories.find((c) => c.name === drill.categoryName)) === null || _b === void 0 ? void 0 : _b.total) || 0;
+    const hasLimit = Object.prototype.hasOwnProperty.call(host.state.data.budgets, drill.categoryName);
+    const limit = host.state.data.budgets[drill.categoryName];
+    const model = qa84BudgetStatus(total, limit !== null && limit !== void 0 ? limit : null, drill.mode === 'expense' && hasLimit);
+    const tone = model.status === 'exceeded' ? 'exceeded' : model.status === 'near' ? 'near' :
+        model.status === 'within' ? 'within' : 'neutral';
+    const details = qa84BudgetDetails(rows, drill.categoryName, total, catalog, !!host.state.qa84BudgetPartial);
+    const page = Math.max(0, host.state.qa84BudgetPage || 0);
+    const selected = drill.subcategoryId === null ? details.groups.find(g => g.subcategoryId === null) :
+        details.groups.find(g => g.subcategoryId === drill.subcategoryId);
+    const childIdentity = drill.showChild && drill.subcategoryId ?
+        resolveCategoryVisualIdentity({ categoryId: identity.categoryId, subcategoryId: drill.subcategoryId, catalog }) : null;
+    const parent = drill.categoryName, hasChild = !!drill.showChild;
+    const groupLabel = drill.subcategoryId === null ? 'Sem subcategoria' : (childIdentity === null || childIdentity === void 0 ? void 0 : childIdentity.label) || 'Subcategoria';
+    const center = model.status === 'unlimited' ? 'Sem limite' : model.status === 'zero' ? fmt(total) :
+        model.remaining < 0 ? fmt(-model.remaining) : fmt(model.remaining);
+    const contentTotal = hasChild ? ((selected === null || selected === void 0 ? void 0 : selected.total) || 0) : total;
+    const share = total > 0 ? 100 * contentTotal / total : 0;
+    const openChild = (id) => {
+        var _a;
+        host.setState({ qa84BudgetDrill: { ...drill, subcategoryId: id, showChild: true }, qa84BudgetPage: 0 });
+        (_a = document.scrollingElement) === null || _a === void 0 ? void 0 : _a.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    };
+    const pastSpending = Array.from({ length: 3 }, (_, i) => {
+        var _a;
+        const priorMonth = shiftMonth(drill.month, -i - 1);
+        const prior = drill.bank ? bankSnapshot(host.state.bank, priorMonth) : snapshot(host.state.data, priorMonth);
+        return ((_a = prior.categories.find((c) => c.name === parent)) === null || _a === void 0 ? void 0 : _a.total) || 0;
+    });
+    const suggestedLimit = pastSpending.filter(v => v > 0).length >= 2 ?
+        Math.max(2000, Math.ceil(pastSpending.reduce((a, b) => a + b, 0) / 3 * 1.1 / 1000) * 1000) : null;
+    const openEdit = (suggested = false) => {
+        if (suggested && suggestedLimit === null)
+            return;
+        host.setState({ editModal: { type: 'budget', key: parent, title: suggested ? 'Limite sugerido · ' + parent : hasLimit ? 'Editar limite · ' + parent : 'Definir limite · ' + parent,
+                value: suggested ? moneyString(suggestedLimit) : hasLimit ? moneyString(limit) : '' } });
+    };
+    const partial = host.state.qa84BudgetLoading || host.state.qa84BudgetReadError || !details.complete;
+    return h('div', { className: 'qa84-budget-detail section' }, h('nav', { className: 'qa84-crumbs', 'aria-label': 'Caminho de orçamento' }, h('button', { type: 'button', onClick: () => qa84BudgetReturn(host, false) }, 'Orçamentos'), h(Icon, { name: 'chevron-right', size: 13 }), hasChild ? h('button', { type: 'button', onClick: () => qa84BudgetReturn(host, true) }, parent) : h('strong', {}, parent), hasChild ? h(Icon, { name: 'chevron-right', size: 13 }) : null, hasChild ? h('strong', {}, groupLabel) : null), h('section', { className: 'qa84-budget-hero' }, h('div', { className: 'qa84-budget-hero-head' }, h(CategoryVisualGlyph, { identity: hasChild && childIdentity ? childIdentity : identity, size: 23, variant: 'iconLabel' }), h('span', {}, prettyMonth(drill.month) + ' · ' + (drill.bank ? 'Contas conectadas' : 'Adicionado por você'))), h('div', { className: 'qa84-budget-hero-body' }, hasChild ? qa84Ring(share, 'participation', share.toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + '%', 'do gasto da categoria') :
+        qa84Ring(model.arcPercent, tone, center, model.status === 'exceeded' || model.status === 'zero' && total > 0 ? 'Excedido' : model.status === 'unlimited' ? 'Não definido' : 'Restante'), h('div', { className: 'qa84-budget-hero-copy' }, h('h1', {}, hasChild ? groupLabel : parent), h('strong', {}, fmt(contentTotal)), h('p', {}, hasChild ? 'Participação no gasto da categoria principal. Não é um orçamento separado.' :
+        model.status === 'unlimited' ? 'Esta categoria ainda não possui limite.' :
+            model.status === 'zero' ? 'Limite zero definido explicitamente.' :
+                model.usedPercent.toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + '% do limite utilizado.'), !hasChild ? h('div', { className: 'qa84-budget-hero-financial' }, h('div', {}, h('small', {}, 'Gasto'), h('b', {}, fmt(total))), h('div', {}, h('small', {}, 'Limite'), h('b', {}, hasLimit ? fmt(limit) : 'Sem limite')), h('div', {}, h('small', {}, model.remaining !== null && model.remaining < 0 ? 'Excedido' : 'Restante'), h('b', {}, model.remaining === null ? '—' : fmt(Math.abs(model.remaining))))) : null, !hasChild ? h('div', { className: 'qa84-budget-edit-actions' }, h('button', { type: 'button', onClick: () => openEdit(false) }, hasLimit ? 'Editar limite' : 'Definir limite'), h('button', { type: 'button', disabled: suggestedLimit === null,
+        title: suggestedLimit === null ? 'Sugestão exige gastos em pelo menos dois dos três meses anteriores' : 'Sugestão não é aplicada sem sua confirmação',
+        onClick: () => openEdit(true) }, 'Sugerir limite')) : null))), host.state.qa84BudgetLoading ? h('div', { className: 'qa84-budget-loading', role: 'status' }, 'Carregando detalhamento autorizado…', h('div', { className: 'qa84-skeleton', 'aria-hidden': 'true' }, h('i', {}), h('i', {}), h('i', {}))) : null, host.state.qa84BudgetReadError ? h('div', { className: 'qa84-budget-error', role: 'alert' }, h('p', {}, host.state.qa84BudgetReadError), h('button', { type: 'button', onClick: () => void qa84BudgetRefresh(host) }, 'Tentar novamente')) : null, !host.state.qa84BudgetLoading && !host.state.qa84BudgetReadError && !details.complete ? h('p', { className: 'qa84-budget-partial', role: 'status' }, details.reason + ' Total do orçamento: ' + fmt(total) + '. Movimentações detalhadas disponíveis: ' + fmt(details.total) +
+        '. Não apresentamos percentuais como completos até a conciliação.') : null, !hasChild ? h('section', { className: 'qa84-subcategories' }, h('div', { className: 'qa84-budget-section-heading' }, h('div', {}, h('h2', {}, 'Onde você gastou'), h('p', {}, 'Participação por subcategoria. Os mini-anéis não representam limites próprios.')), h('button', { type: 'button', onClick: () => host.setState({ qa84BudgetShowAll: !host.state.qa84BudgetShowAll }) }, host.state.qa84BudgetShowAll ? 'Mostrar só com gasto' : 'Mostrar todas')), details.complete ? h('div', { className: 'qa84-category-share-strip', 'aria-label': 'Distribuição real por subcategoria' }, details.groups.filter(g => g.total > 0).map(g => {
+        const id = g.subcategoryId;
+        const visual = id ? resolveCategoryVisualIdentity({ categoryId: identity.categoryId, subcategoryId: id, catalog }) :
+            resolveCategoryVisualIdentity({ categoryId: identity.categoryId, catalog });
+        return h('button', { type: 'button', key: id || '__none__',
+            style: { width: (total > 0 ? g.total / total * 100 : 0) + '%', '--qa-cat-hue': visual.hue },
+            'aria-label': (id ? visual.label : 'Sem subcategoria') + ' · ' + fmt(g.total),
+            onClick: () => openChild(id) });
+    })) : null, h('div', { className: 'qa84-subcategory-grid' }, (() => {
+        var _a;
+        const approved = D05_APPROVED_PARENTS.find((p) => p.id === identity.categoryId);
+        const candidates = ((_a = (catalog.find((p) => p.id === identity.categoryId) || approved)) === null || _a === void 0 ? void 0 : _a.subcategories) || [];
+        const listed = details.groups.slice();
+        if (host.state.qa84BudgetShowAll && details.complete) {
+            for (const child of candidates)
+                if (!listed.some(g => g.subcategoryId === child.id))
+                    listed.push({ subcategoryId: child.id, total: 0, count: 0, rows: [] });
+        }
+        if (details.complete && total === 0 && !listed.length && host.state.qa84BudgetShowAll) {
+            for (const child of candidates)
+                listed.push({ subcategoryId: child.id, total: 0, count: 0, rows: [] });
+        }
+        return listed.filter(g => host.state.qa84BudgetShowAll || g.total > 0).map(g => {
+            const visual = g.subcategoryId ? resolveCategoryVisualIdentity({ categoryId: identity.categoryId,
+                subcategoryId: g.subcategoryId, catalog }) : resolveCategoryVisualIdentity({ categoryId: identity.categoryId, catalog });
+            const name = g.subcategoryId ? visual.label : 'Sem subcategoria', percent = total > 0 ? 100 * g.total / total : 0;
+            return h('button', { type: 'button', key: g.subcategoryId || '__none__', className: 'qa84-subcategory-card',
+                onClick: () => openChild(g.subcategoryId) }, h(CategoryVisualGlyph, { identity: visual, size: 20 }), h('div', { className: 'qa84-subcategory-card-copy' }, h('strong', {}, name), h('small', {}, g.count + ' movimentação(ões)'), h('b', {}, fmt(g.total))), details.complete ? qa84Ring(percent, 'participation', percent.toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + '%', 'dos gastos', 'mini') :
+                qa84Ring(0, 'neutral', '—', 'dados parciais', 'mini'));
+        });
+    })()), details.complete && details.groups.length === 0 ? h('p', {}, 'Nenhuma despesa nesta categoria e período.') : null) : h('section', { className: 'qa84-subcategory-history' }, h('h2', {}, 'Histórico da subcategoria'), !details.complete ? h('p', { className: 'qa84-budget-partial' }, 'Histórico parcial: a conciliação com a categoria principal ainda não foi concluída.') : null, h('div', { className: 'qa84-history-list' }, ((selected === null || selected === void 0 ? void 0 : selected.rows) || []).slice(page * 25, (page + 1) * 25).map(t => h('div', { className: 'qa84-history-row', key: t.key }, h('div', {}, h('strong', {}, t.description), h('small', {}, t.date.split('-').reverse().join('/') +
+        ' · ID ' + t.id + (t.accountId ? ' · Conta ' + t.accountId : ''))), h('strong', {}, fmt(t.amount))))), !((_c = selected === null || selected === void 0 ? void 0 : selected.rows) === null || _c === void 0 ? void 0 : _c.length) ? h('p', { className: 'qa84-budget-empty' }, 'Nenhuma movimentação registrada nesta subcategoria no período.') : null, (((_d = selected === null || selected === void 0 ? void 0 : selected.rows) === null || _d === void 0 ? void 0 : _d.length) || 0) > 25 ? h('div', { className: 'qa84-history-pagination' }, h('button', { type: 'button', disabled: page === 0, onClick: () => host.setState({ qa84BudgetPage: page - 1 }) }, 'Anterior'), h('span', {}, 'Página ' + (page + 1) + ' de ' + Math.ceil(((selected === null || selected === void 0 ? void 0 : selected.rows.length) || 0) / 25)), h('button', { type: 'button', disabled: (page + 1) * 25 >= selected.rows.length,
+        onClick: () => host.setState({ qa84BudgetPage: page + 1 }) }, 'Próxima')) : null), drill.bank && (!((_e = host.state.bank.data.last) === null || _e === void 0 ? void 0 : _e.completedAt) || Date.now() - Date.parse(host.state.bank.data.last.completedAt) > 48 * 3600000) ?
+        h('p', { className: 'qa84-budget-partial', role: 'status' }, 'A última atualização bancária pode estar desatualizada. Data informada: ' +
+            (((_f = host.state.bank.data.last) === null || _f === void 0 ? void 0 : _f.completedAt) ? new Date(host.state.bank.data.last.completedAt).toLocaleString('pt-BR') : 'não disponível')) : null, host.state.qa84BudgetPartial ? h('p', { className: 'qa84-budget-partial' }, 'Alguns registros bancários antigos podem não constar da janela carregada.') : null);
+}
 const h = React.createElement;
 function simInputsEqual(a, b) {
     if (!a || !b)
@@ -434,7 +865,12 @@ function safeData(v) {
         const amount = Number(r.amount);
         if (!/^\d{4}-\d{2}-\d{2}$/.test(r.date) || !['income', 'expense'].includes(r.kind) || !Number.isSafeInteger(amount) || amount <= 0 || amount > 100000000000 || typeof r.description !== 'string')
             throw new Error('Transação inválida.');
-        return { id: String(r.id || Math.random()), date: r.date, kind: r.kind, description: r.description.slice(0, 180), amount, category: String(r.category || 'Outros').slice(0, 70), origin: 'restored' };
+        const categoryId = typeof r.categoryId === 'string' && r.categoryId.length <= 128 ? r.categoryId : null;
+        const subcategoryId = categoryId && typeof r.subcategoryId === 'string' && r.subcategoryId.length <= 128 ?
+            r.subcategoryId : null;
+        return { id: String(r.id || Math.random()), date: r.date, kind: r.kind,
+            description: r.description.slice(0, 180), amount, category: String(r.category || 'Outros').slice(0, 70),
+            categoryId, subcategoryId, origin: 'restored' };
     });
     for (const [c, raw] of Object.entries(v.budgets || {})) {
         const b = Number(raw);
@@ -817,7 +1253,11 @@ class App extends React.Component {
         this.categorySavingKeys = new Set();
         this.categorySaveQueue = Promise.resolve();
         this.simRequest = 0;
+        this.qa84D05DrawerIds = null;
+        this.qa84BankCategoryGateAuthorized = false;
         this.onGlobalKeydown = (event) => {
+            if (document.querySelector('.d05-overlay'))
+                return;
             if (event.key === 'Escape' && this.state.contextCategory) {
                 event.preventDefault();
                 this.closeContextCategory();
@@ -877,6 +1317,11 @@ class App extends React.Component {
                 this.setState({ editModal: null });
                 return;
             }
+            if (this.state.page === 'budgets' && this.state.qa84BudgetDrill) {
+                event.preventDefault();
+                qa84BudgetReturn(this, !!this.state.qa84BudgetDrill.showChild);
+                return;
+            }
             if (this.state.showEntry)
                 this.setState({ showEntry: false });
         };
@@ -913,6 +1358,7 @@ class App extends React.Component {
             const persisted = await desktop.load('real');
             this.setState({ data: persisted ? safeData(persisted) : starter(), busy: false, booting: false });
             await this.refreshCategories();
+            void this.loadQA84VisualCatalog();
             const currentBank = await this.refreshBank();
             await this.refreshPlanning();
             this.unsubscribePersonalCloud = ((_b = desktop.onCloudPersonalUpdated) === null || _b === void 0 ? void 0 : _b.call(desktop, (event) => {
@@ -988,7 +1434,9 @@ class App extends React.Component {
             return;
         try {
             const bank = await desktop.bankStatus();
-            this.setState({ bank, bankForm: { clientId: bank.config.clientId || '', clientSecret: '', itemIds: (bank.config.itemIds || []).join(', ') } });
+            const autoCategoryStatus = this.state.mode === 'real' && desktop.bankAutoStatus ?
+                await desktop.bankAutoStatus().catch(() => null) : null;
+            this.setState({ bank, autoCategoryStatus, bankForm: { clientId: bank.config.clientId || '', clientSecret: '', itemIds: (bank.config.itemIds || []).join(', ') } });
             return bank;
         }
         catch (e) {
@@ -1019,11 +1467,23 @@ class App extends React.Component {
                 return;
             this.setState({ categories: result.categories.categories, rules: result.categories.rules, bank: { ...this.state.bank, data: result.data },
                 categoryMessage: `Sugestões aplicadas: ${result.rulesAdded} regras, ${result.overridesAdded} classificações. Outras movimentações continuam disponíveis para revisão.` });
+            void this.loadQA84VisualCatalog();
             await this.refreshPlanning();
         }
         catch (e) {
             this.setState({ categoryMessage: 'Não foi possível importar as sugestões: ' + String((e === null || e === void 0 ? void 0 : e.message) || e) });
         }
+    }
+    async loadQA84VisualCatalog() {
+        const api = desktop;
+        if (!(api === null || api === void 0 ? void 0 : api.d05Catalog))
+            return;
+        try {
+            const result = await api.d05Catalog();
+            if (result && Array.isArray(result.parents))
+                this.setState({ qa84VisualCatalog: result.parents });
+        }
+        catch (_) { }
     }
     async refreshCategories() {
         if (!(desktop === null || desktop === void 0 ? void 0 : desktop.categoriesStatus))
@@ -1049,6 +1509,7 @@ class App extends React.Component {
             const persisted = await desktop.load(this.state.mode);
             this.setState({ categories: state.categories, rules: state.rules, categoryEditor: { previousName: '', name: '', color: '#3e9a85', emoji: '✨', kind: 'expense' }, categoryMessage: 'Categoria salva.', data: persisted ? safeData(persisted) : this.state.data });
             await this.refreshBank();
+            void this.loadQA84VisualCatalog();
             if (context && this.state.contextCategory === context) {
                 const same = this.state.mode === context.mode && this.state.bankFilter === context.account && this.state.query === context.query;
                 this.setState({ contextCategory: undefined, categoryEditor: context.editor, ...(same ? (context.target === 'entry' ? { entry: { ...this.state.entry, category: value.name.trim() }, entryCategoryTouched: true } : context.target === 'quick' ? { quickCategoryQuery: value.name.trim(), quickCategoryIndex: 0 } : { txBatchCategory: value.name.trim() }) : {}) });
@@ -1069,6 +1530,7 @@ class App extends React.Component {
             const state = await desktop.categoryDelete(name);
             const persisted = await desktop.load(this.state.mode);
             this.setState({ categories: state.categories, rules: state.rules, data: persisted ? safeData(persisted) : this.state.data, categoryMessage: 'Categoria excluída.' });
+            void this.loadQA84VisualCatalog();
         }
         catch (e) {
             this.setState({ categoryMessage: String((e === null || e === void 0 ? void 0 : e.message) || e) });
@@ -1133,11 +1595,16 @@ class App extends React.Component {
     }
     bankTxSelected(tx) { return this.state.txSelected.includes(tx.accountId + '|' + tx.id); }
     toggleSelected(tx) { const key = tx.accountId + '|' + tx.id; this.setState({ txSelected: this.bankTxSelected(tx) ? this.state.txSelected.filter(x => x !== key) : this.state.txSelected.length >= 100 ? this.state.txSelected : [...this.state.txSelected, key] }); }
-    openBankDetail(tx) {
-        var _a;
-        this.setState({ detail: { origin: 'bank', id: tx.id, accountId: tx.accountId }, detailDraft: { merchant: tx.merchant || '', note: tx.note || '', nature: tx.nature || 'auto', reviewed: !!tx.reviewed, aliasPattern: tx.description.slice(0, 60), splitParts: (((_a = tx.splits) === null || _a === void 0 ? void 0 : _a.length) ? tx.splits : [{ category: tx.category, amount: Math.floor(Math.abs(tx.amount) / 2) }, { category: tx.category, amount: Math.abs(tx.amount) - Math.floor(Math.abs(tx.amount) / 2) }]).map(p => ({ category: p.category, value: moneyString(p.amount) })) } });
+    openBankDetail(tx, visual) {
+        var _a, _b;
+        this.qa84D05DrawerIds = { origin: 'bank', id: tx.id, accountId: tx.accountId,
+            categoryId: (visual === null || visual === void 0 ? void 0 : visual.categoryId) || null, subcategoryId: (_a = visual === null || visual === void 0 ? void 0 : visual.subcategoryId) !== null && _a !== void 0 ? _a : null };
+        this.setState({ detail: { origin: 'bank', id: tx.id, accountId: tx.accountId }, detailDraft: { merchant: tx.merchant || '', note: tx.note || '', nature: tx.nature || 'auto', reviewed: !!tx.reviewed, aliasPattern: tx.description.slice(0, 60), splitParts: (((_b = tx.splits) === null || _b === void 0 ? void 0 : _b.length) ? tx.splits : [{ category: tx.category, amount: Math.floor(Math.abs(tx.amount) / 2) }, { category: tx.category, amount: Math.abs(tx.amount) - Math.floor(Math.abs(tx.amount) / 2) }]).map(p => ({ category: p.category, value: moneyString(p.amount) })) } });
     }
-    openManualDetail(tx) {
+    openManualDetail(tx, visual) {
+        var _a;
+        this.qa84D05DrawerIds = { origin: 'manual', id: tx.id, categoryId: (visual === null || visual === void 0 ? void 0 : visual.categoryId) || null,
+            subcategoryId: (_a = visual === null || visual === void 0 ? void 0 : visual.subcategoryId) !== null && _a !== void 0 ? _a : null };
         this.setState({ detail: { origin: 'manual', id: tx.id },
             manualDraft: { description: tx.description, date: tx.date, value: moneyString(tx.amount), category: tx.category } });
     }
@@ -1167,6 +1634,10 @@ class App extends React.Component {
         }
         const allowed = this.getCategories().some(c => c.name === draft.category &&
             (original.kind === 'income' ? c.kind !== 'expense' : c.kind !== 'income'));
+        if (draft.category !== original.category) {
+            this.flash('Classificação exige a prévia supervisionada D05.');
+            return false;
+        }
         if (!allowed && draft.category !== original.category) {
             this.flash('Selecione uma categoria compatível.');
             return false;
@@ -1175,7 +1646,7 @@ class App extends React.Component {
             this.flash('Desvincule este lançamento da movimentação bancária antes de mudar data ou valor.');
             return false;
         }
-        const result = await this.updateData({ ...this.state.data, transactions: this.state.data.transactions.map(t => t.id === id ? { ...t, description, date: draft.date, amount, category: draft.category } : t) }, 'Lançamento atualizado.');
+        const result = await this.updateData({ ...this.state.data, transactions: this.state.data.transactions.map(t => t.id === id ? { ...t, description, date: draft.date, amount, category: original.category } : t) }, 'Lançamento atualizado.');
         if (result)
             this.setState({ detail: null, manualDraft: null });
         return result;
@@ -1368,6 +1839,10 @@ class App extends React.Component {
         await this.runBankOperation('bankBatch', { items, ...changes }, 'Alterações aplicadas a ' + items.length + ' movimentações.');
     }
     async saveSplit() {
+        if (!this.qa84BankCategoryGateAuthorized) {
+            this.flash('Divisão por categoria requer prévia D05 homologada; nenhuma alteração efetuada.');
+            return;
+        }
         const sel = this.state.detail;
         if (!sel || sel.origin !== 'bank')
             return;
@@ -1377,6 +1852,10 @@ class App extends React.Component {
         await this.runBankOperation('bankSplit', { accountId: sel.accountId, externalId: sel.id, parts }, parts.length ? 'Divisão salva.' : 'Divisão removida.');
     }
     async createCategoryRuleFromDetail() {
+        if (!this.qa84BankCategoryGateAuthorized) {
+            this.flash('Regra de categoria requer prévia D05 homologada; nenhuma alteração efetuada.');
+            return;
+        }
         const sel = this.state.detail, tx = this.state.bank.data.transactions.find(x => x.accountId === (sel === null || sel === void 0 ? void 0 : sel.accountId) && x.id === (sel === null || sel === void 0 ? void 0 : sel.id));
         if (!desktop || !tx || !sel || sel.origin !== 'bank' || this.state.detailBusy)
             return;
@@ -1745,7 +2224,7 @@ class App extends React.Component {
         const span = dateSpan(this.state.overviewPeriod, this.state.customStart, this.state.customEnd);
         const newMonth = span.end.slice(0, 7), useMonth = newMonth >= nowYM && newMonth <= shiftMonth(nowYM, 12);
         const enteringPlan = target === 'planning' && this.state.page !== 'planning' && useMonth;
-        this.setState({ page: target, txReviewOnly: page === 'review', txOrganize: page === 'categories', quickAddOpen: false, quickCategory: null,
+        this.setState({ page: target, ...(target === 'budgets' && pageChanged ? { qa84BudgetDrill: null } : {}), txReviewOnly: page === 'review', txOrganize: page === 'categories', quickAddOpen: false, quickCategory: null,
             month: newMonth, ...(enteringPlan ? { planMonth: newMonth, planDay: newMonth === nowYM ? iso(new Date()) : newMonth + '-01' } : {}),
             showEntry: false, outcome: null, simBusy: false }, () => {
             var _a;
@@ -1791,9 +2270,9 @@ class App extends React.Component {
             txSelected: [], quickCategory: null });
     }
     renderMovements() {
-        const count = this.state.bank.data.transactions.filter(t => !t.reviewed).length;
-        const review = this.state.txReviewOnly, organized = this.state.txOrganize;
-        return h('div', { className: 'movement-shell' }, h('div', { className: 'mf-tx-tabs mf-unified-tabs', role: 'group', 'aria-label': 'Seções de movimentações' }, h('button', { type: 'button', className: !review && !organized ? 'active' : '', onClick: () => this.setState({ txReviewOnly: false, txOrganize: false, txSelected: [] }) }, 'Histórico'), h('button', { type: 'button', className: review ? 'active' : '', onClick: () => this.setState({ txReviewOnly: true, txOrganize: false, txSelected: [] }) }, 'A revisar (' + count + ')'), h('button', { type: 'button', className: organized ? 'active' : '', onClick: () => this.setState({ txOrganize: true, txReviewOnly: false, txSelected: [] }) }, 'Categorias e regras')), organized ? this.renderCategories() : this.renderTransactions());
+        if (this.state.txOrganize)
+            return h('div', { className: 'movement-shell' }, h('button', { type: 'button', className: 'd05-back', onClick: () => this.setState({ txOrganize: false }) }, '← Voltar ao histórico'), this.renderCategories());
+        return h(D05Movements, { host: this, key: this.state.txReviewOnly ? 'review' : 'history' });
     }
     monthData() { return snapshot(this.state.data, this.state.month); }
     async saveEntry() { const f = this.state.entry, v = parsePositiveBRLInput(f.value); if (!f.description.trim())
@@ -1838,7 +2317,11 @@ class App extends React.Component {
         return false;
     } return this.updateData({ ...this.state.data, settings: { ...this.state.data.settings, [k]: v } }, 'Configuração salva.'); }
     exportJSON() { const blob = new Blob([JSON.stringify({ ...this.state.data, exportedAt: new Date().toISOString() }, null, 2)], { type: 'application/json' }); download(blob, 'meu-financeiro-backup-' + this.state.mode + '-' + iso(new Date()) + '.json'); this.flash('Backup exportado. Guarde o arquivo em local seguro.'); }
-    exportCSV() { const s = ['data;descricao;tipo;valor;categoria', ...this.state.data.transactions.map(t => [t.date, '"' + t.description.replace(/"/g, '""') + '"', t.kind, moneyString(t.amount), t.category].join(';'))].join('\r\n'); download(new Blob(['\ufeff' + s], { type: 'text/csv;charset=utf-8' }), 'meu-financeiro-extrato.csv'); }
+    exportCSV() {
+        const cell = (v) => '"' + d05CsvFormulaSafe(v).replace(/"/g, '""') + '"';
+        const s = ['data;descricao;tipo;valor;categoria', ...this.state.data.transactions.map(t => [cell(t.date), cell(t.description), cell(t.kind), cell(moneyString(t.amount)), cell(t.category)].join(';'))].join('\r\n');
+        download(new Blob(['\ufeff' + s], { type: 'text/csv;charset=utf-8' }), 'meu-financeiro-extrato.csv');
+    }
     async importJSON(file) { try {
         const d = safeData(JSON.parse(await file.text()));
         if (!confirm('Substituir todos os dados do modo ' + (this.state.mode === 'real' ? 'pessoal' : 'demonstração') + ' pelo backup selecionado?'))
@@ -1850,47 +2333,100 @@ class App extends React.Component {
     } }
     async importCSV(file) {
         try {
-            const bytes = await file.text();
-            let lines = bytes.replace(/^\ufeff/, '').trim().split(/\r?\n/);
-            if (lines.length < 2)
-                throw new Error('Arquivo vazio.');
-            const separator = lines[0].includes(';') ? ';' : ',';
-            const header = splitCSV(lines.shift() || '', separator).map(x => x.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim());
-            const find = (...aliases) => header.findIndex(x => aliases.includes(x));
-            const di = find('data', 'date'), de = find('descricao', 'historico', 'description'), va = find('valor', 'amount'), ca = find('categoria', 'category'), ki = find('tipo', 'kind');
-            if (di < 0 || de < 0 || va < 0)
-                throw new Error('Use colunas data, descricao e valor.');
-            const found = new Set(this.state.data.transactions.map(x => [x.date, x.description, x.kind, x.amount].join('|')));
-            const add = [];
-            for (const [i, line] of lines.entries()) {
-                if (!line.trim())
+            if (this.state.csvPreview)
+                throw Error('Conclua ou cancele a prévia atual.');
+            if (file.size > 4000000)
+                throw Error('CSV acima de 4 MB.');
+            const raw = await file.text(), digest = await d05CsvDigest(raw), parsed = d05CsvTable(raw);
+            const { rows, find } = parsed, di = find('data', 'date'), de = find('descricao', 'historico', 'description'), va = find('valor', 'amount'), ca = find('categoria', 'category'), ki = find('tipo', 'kind');
+            const categories = new Set(this.getCategories().map(c => c.name));
+            const known = new Set(this.state.data.transactions.map(x => [x.date, x.description.trim(), x.kind, x.amount].join('|')));
+            const add = [], previewRows = [];
+            let skipped = 0;
+            for (const [i, row] of rows.entries()) {
+                const idx = i + 2, date = d05CsvDate(row[di] || '');
+                const description = d05CsvSafeText(row[de] || '', 150, 'descrição da linha ' + idx);
+                const value = parseMoney(String(row[va] || ''));
+                if (!Number.isSafeInteger(value) || value === 0 || Math.abs(value) > 100000000000)
+                    throw Error('CSV: centavos inválidos na linha ' + idx);
+                const csvKind = String(row[ki] || '').trim().toLowerCase();
+                if (csvKind && !['expense', 'despesa', 'saida', 'saída', 'income', 'receita', 'entrada'].includes(csvKind))
+                    throw Error('CSV: tipo desconhecido na linha ' + idx);
+                const kind = ['expense', 'despesa', 'saida', 'saída'].includes(csvKind) ?
+                    'expense' : (['income', 'receita', 'entrada'].includes(csvKind) ? 'income' : value >= 0 ? 'income' : 'expense');
+                const label = String(row[ca] || '').trim();
+                if (label)
+                    d05CsvSafeText(label, 70, 'categoria da linha ' + idx);
+                const inferred = findCategoryRule(description, 'manual', this.state.rules);
+                const category = categories.has(label) ? label :
+                    (inferred && categories.has(inferred) ? inferred : 'Outros');
+                const amount = Math.abs(value), key = [date, description, kind, amount].join('|');
+                const duplicate = known.has(key);
+                previewRows.push({ line: idx, date, description, kind, amount, category, duplicate });
+                if (duplicate) {
+                    skipped++;
                     continue;
-                const row = splitCSV(line, separator);
-                let date = (row[di] || '').trim();
-                if (/^\d{2}\/\d{2}\/\d{4}$/.test(date)) {
-                    let [d, m, y] = date.split('/');
-                    date = y + '-' + m + '-' + d;
                 }
-                let value = parseMoney(row[va] || '');
-                if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !Number.isFinite(value) || value === 0)
-                    throw new Error('Linha ' + (i + 2) + ' com data ou valor inválido.');
-                const description = (row[de] || '').trim();
-                if (!description)
-                    throw new Error('Linha ' + (i + 2) + ' sem descrição.');
-                const csvKind = (row[ki] || '').trim().toLowerCase();
-                const kind = ['expense', 'despesa', 'saida', 'saída'].includes(csvKind) ? 'expense' : (['income', 'receita', 'entrada'].includes(csvKind) ? 'income' : (value >= 0 ? 'income' : 'expense'));
-                const tr = { id: 'csv-' + Date.now() + '-' + i, date, description, kind, amount: Math.abs(value), category: (this.getCategories().some(c => c.name === (row[ca] || '').trim()) ? (row[ca] || '').trim() : (findCategoryRule(description, 'manual', this.state.rules) || 'Outros')), origin: 'csv' };
-                const key = [tr.date, tr.description, tr.kind, tr.amount].join('|');
-                if (!found.has(key)) {
-                    found.add(key);
-                    add.push(tr);
-                }
+                known.add(key);
+                add.push({ id: 'csv-' + digest.slice(0, 16) + '-' + idx, date, description, kind, amount, category, origin: 'csv' });
             }
-            this.updateData({ ...this.state.data, transactions: [...this.state.data.transactions, ...add] }, add.length + ' novos lançamentos importados.');
+            if (!add.length) {
+                this.flash('CSV: todos os registros já existem no histórico.');
+                return;
+            }
+            this.setState({ csvPreview: { raw, digest, rows: previewRows, add, skipped,
+                    mode: this.state.mode, dataRef: this.state.data, categoriesRef: this.state.categories,
+                    fileName: file.name } });
         }
         catch (e) {
-            this.flash('CSV: ' + e.message);
+            this.flash('CSV não importado: ' + String((e === null || e === void 0 ? void 0 : e.message) || e).slice(0, 220));
         }
+    }
+    async commitCSVPreview() {
+        const preview = this.state.csvPreview;
+        if (!preview || this.state.busy || this.__csvCommitBusy)
+            return;
+        this.__csvCommitBusy = true;
+        try {
+            if (preview.dataRef !== this.state.data || preview.mode !== this.state.mode ||
+                preview.categoriesRef !== this.state.categories)
+                throw Error('Histórico ou perfil mudou; importe o arquivo novamente.');
+            if (await d05CsvDigest(preview.raw) !== preview.digest)
+                throw Error('Fingerprint CSV alterado; nenhum dado foi importado.');
+            const keys = new Set(this.state.data.transactions.map(x => [x.date, x.description.trim(), x.kind, x.amount].join('|')));
+            if (preview.add.some((x) => keys.has([x.date, x.description.trim(), x.kind, x.amount].join('|'))))
+                throw Error('Foram encontradas duplicatas após a prévia; refaça a importação.');
+            if (desktop) {
+                const backup = await desktop.backupSQLite();
+                if ((backup === null || backup === void 0 ? void 0 : backup.ok) !== true)
+                    throw Error('Backup completo não confirmado; importação cancelada.');
+            }
+            if (preview.dataRef !== this.state.data || preview.mode !== this.state.mode)
+                throw Error('Histórico mudou enquanto o backup era criado; refaça a importação.');
+            const ok = await this.updateData({ ...this.state.data, transactions: [
+                    ...this.state.data.transactions, ...preview.add
+                ] }, preview.add.length + ' lançamentos CSV registrados.');
+            if (!ok)
+                throw Error('Persistência não confirmada pelo SQLite.');
+            this.setState({ csvPreview: null });
+        }
+        catch (e) {
+            this.flash('Importação cancelada: ' + String((e === null || e === void 0 ? void 0 : e.message) || e).slice(0, 220));
+        }
+        finally {
+            this.__csvCommitBusy = false;
+        }
+    }
+    renderCSVPreview() {
+        const p = this.state.csvPreview;
+        if (!p)
+            return null;
+        const fmt = (n) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(n / 100);
+        return h('div', { className: 'mf-d04-modal-overlay', role: 'presentation' }, h('section', { className: 'mf-d04-modal mf-d05-csv-preview', role: 'dialog', 'aria-modal': true,
+            'aria-label': 'Prévia completa de importação CSV' }, h('h2', {}, 'Confira todas as linhas antes de importar'), h('p', {}, String(p.fileName || 'CSV') + ' · ' + p.add.length + ' novas · ' + p.skipped + ' já existentes · ' +
+            p.rows.length + ' linhas analisadas. Um backup completo será obrigatório antes de gravar.'), h('p', {}, 'SHA-256 do arquivo: ' + String(p.digest)), h('div', { className: 'mf-d05-csv-scroll' }, h('table', {}, h('thead', {}, h('tr', {}, ...['Linha', 'Data', 'Descrição', 'Natureza', 'Categoria', 'Valor', 'Situação'].map(x => h('th', {}, x)))), h('tbody', {}, ...p.rows.map((x) => h('tr', { key: x.line }, h('td', {}, String(x.line)), h('td', {}, x.date), h('td', {}, x.description), h('td', {}, x.kind === 'expense' ? 'Despesa' : 'Receita'), h('td', {}, x.category), h('td', {}, fmt(x.amount)), h('td', {}, x.duplicate ? 'Duplicada: ignorar' : 'Nova')))))), h('div', { className: 'mf-d04-actions' }, h('button', { type: 'button', className: 'ghost-button', disabled: this.state.busy,
+            onClick: () => this.setState({ csvPreview: null }) }, 'Cancelar, sem alterações'), h('button', { type: 'button', className: 'primary-button', disabled: this.state.busy,
+            onClick: () => void this.commitCSVPreview() }, 'Confirmar e fazer backup antes de importar'))));
     }
     setSimulation(patch) {
         const next = { ...this.state.sim, ...patch };
@@ -2007,11 +2543,9 @@ class App extends React.Component {
         const totalLimit = limits.reduce((n, c) => n + c.limit, 0), spentLimited = limits.reduce((n, c) => n + c.total, 0), budgetCoverage = overviewCoverage(budget.expense, spentLimited), used = totalLimit > 0 ? Math.round(spentLimited / totalLimit * 100) : spentLimited > 0 ? 100 : 0;
         const recent = useBank ? bank.data.transactions.filter(x => x.date >= start && x.date <= end && x.status === 'POSTED' && ['income', 'expense'].includes(effectiveNature(x))).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5).map(x => ({ key: x.accountId + '|' + x.id, title: x.customTitle || x.merchant || x.description, original: x.description, date: x.date, category: x.category, amount: Math.abs(x.amount), kind: effectiveNature(x), raw: x })) : d.transactions.filter(x => x.date >= start && x.date <= end).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5).map(x => ({ key: x.id, title: x.description, original: '', date: x.date, category: x.category, amount: x.amount, kind: x.kind, raw: x }));
         const openBudget = () => { this.setState({ month }); this.navigate('budgets'); };
-        const palette = ['#8066d5', '#329b89', '#d29844', '#5a8fc9', '#c7759c'];
-        const categoryColor = (name, index) => { const info = this.getCategories().find(c => c.name === name); return info && (!info.builtIn || info.color.toLowerCase() !== '#3e9a85') ? info.color : palette[index]; };
         const metric = (label, value, icon, hint, tone) => h('button', { type: 'button', className: 'u1-metric mf-border-reveal mf-tone-' + (tone === 'net' ? 'net' : tone) + ' ' + tone + ' mf-overview-metric' + (tone === 'net' ? (value > 0 ? ' is-positive' : value < 0 ? ' is-negative' : ' is-neutral') : ''), 'aria-label': label + ' · ' + money(value) + ' · ver movimentações', onClick: () => this.openOverviewTransactions(tone === 'income' ? 'income' : tone === 'expense' ? 'expense' : 'all') }, h('div', { className: 'u1-metric-label' }, h(Icon, { name: icon, size: 16 }), label, h(Icon, { name: 'arrow', size: 13 })), h('strong', {}, money(value)), h('small', {}, hint));
         const reviewCount = useBank ? bank.data.transactions.filter(t => !t.reviewed).length : null;
-        return h('div', { className: 'overview-content u1-overview mf-premium-overview ' + (hidden ? 'u1-values-hidden' : '') }, h('div', { className: 'u1-context' }, this.renderSourcePicker(), h('span', {}, date(start) + ' — ' + date(end) + ' · ' + (useBank ? 'Movimentos confirmados' + (bank.data.truncated ? ' · histórico parcial' : '') : 'Registros manuais'))), h('section', { className: 'mf-overview-brief', 'aria-label': 'Prioridades financeiras' }, h('div', { className: 'mf-overview-brief-title' }, h('span', { className: 'micro-label' }, 'SEU DIA FINANCEIRO'), h('h2', {}, 'Clareza para a próxima decisão'), h('p', {}, 'Fonte ' + (useBank ? 'bancária' : 'manual') + ' · ' + date(start) + ' a ' + date(end))), h('div', { className: 'mf-overview-priorities' }, h('button', { type: 'button', onClick: () => useBank ? this.openOverviewTransactions('all', true) : this.openOverviewTransactions() }, h(Icon, { name: 'check', size: 18 }), h('span', {}, h('strong', {}, reviewCount === null ? 'Conferir registros manuais' : reviewCount + ' a conferir'), h('small', {}, useBank ? 'Somente histórico bancário carregado' : 'Abra os lançamentos desta fonte')), h(Icon, { name: 'arrow', size: 14 })), h('button', { type: 'button', onClick: () => this.navigate('planning') }, h(Icon, { name: 'calendar', size: 18 }), h('span', {}, h('strong', {}, generated ? upcoming.length + ' compromissos' : 'Conferir agenda'), h('small', {}, generated ? 'Próximos 7 dias · inclui vencidos' : 'Abra para carregar seus compromissos')), h(Icon, { name: 'arrow', size: 14 })), h('button', { type: 'button', onClick: () => this.openIntelligenceContext('overview') }, h(Icon, { name: 'spark', size: 18 }), h('span', {}, h('strong', {}, 'Entender meus números'), h('small', {}, 'Consulta local sob autorização')), h(Icon, { name: 'arrow', size: 14 })))), state.bankMessage && bank.config.configured ? h('div', { className: 'sync-feedback', role: 'status' }, state.bankMessage) : null, h('div', { className: 'stats-grid' }, h('section', { className: 'u1-balance mf-border-reveal mf-tone-balance', role: 'group', tabIndex: 0, 'aria-label': useBank ? 'Saldo nas contas' : 'Saldo manual' }, h('div', { className: 'u1-balance-label' }, h('span', {}, useBank ? 'Saldo nas contas' : 'Saldo manual'), h('button', { type: 'button', className: 'u1-icon-button', 'aria-label': hidden ? 'Mostrar valores' : 'Ocultar valores', 'aria-pressed': hidden, onClick: () => this.setState({ overviewHideValues: !hidden }) }, h(Icon, { name: hidden ? 'eye-off' : 'eye', size: 18 }))), h('strong', { className: 'u1-balance-value' }, hidden ? '••••' : coverage ? bankBalanceLabel(coverage) : money(s.balance)), h('details', { className: 'u1-balance-info' }, h('summary', {}, h('span', { className: 'u1-status-dot ' + ((coverage === null || coverage === void 0 ? void 0 : coverage.missingCount) ? 'is-partial' : '') }), (coverage === null || coverage === void 0 ? void 0 : coverage.missingCount) ? 'Saldo parcial · conferir' : useBank ? 'Referência das instituições' : 'Como é calculado'), h('p', {}, coverage ? 'Saldos disponíveis de ' + coverage.knownCount + ' de ' + coverage.totalCount + ' conta(s). Não representa dinheiro livre. A consulta pode ser mais recente que o saldo informado.' : 'Saldo inicial mais receitas menos despesas manuais. Não somado ao banco.'))), metric('Receitas', s.income, 'trend', 'No período selecionado', 'income'), metric('Despesas', s.expense, 'down', 'No período selecionado', 'expense'), metric('Resultado', s.net, 'chart', 'Receitas menos despesas', 'net')), h('div', { className: 'u1-main-grid' }, h('div', { className: 'u1-left-stack' }, h('section', { className: 'u1-panel u1-rhythm' }, h('div', { className: 'u1-panel-head' }, h('div', {}, h('h2', {}, 'Seu ritmo de gastos'), h('p', {}, 'Entenda como suas despesas evoluíram.')), h('div', { className: 'u1-chart-tabs', role: 'group', 'aria-label': 'Visualização do período' }, ['spending', 'flow'].map(tab => h('button', { type: 'button', key: tab, 'aria-pressed': (state.overviewChart || 'spending') === tab, onClick: () => this.setState({ overviewChart: tab }) }, tab === 'spending' ? 'Acumulado' : 'Entradas e saídas')))), h('div', { className: 'u1-rhythm-summary' }, h('div', {}, h('strong', {}, money(s.expense)), h('span', {}, 'gastos no período')), h('div', { className: 'u1-comparison ' + (comparison.percent !== null && comparison.percent <= 0 ? 'is-lower' : '') }, hidden ? 'Valores ocultos' : comparison.label, h('small', {}, compareAvailable ? date(previous.start) + ' a ' + date(previous.end) + ' · mesma fonte' : 'Comparação exige histórico disponível nos dois intervalos'))), hidden ? h('div', { className: 'u1-chart-hidden' }, h(Icon, { name: 'eye-off', size: 26 }), h('p', {}, 'Mostre os valores para visualizar o gráfico.')) : (state.overviewChart || 'spending') === 'flow' ? h(Chart, { data: flowSegments(start, end, range) }) : h(OverviewSpendingChart, { rows: points, compare: compareAvailable }), h('div', { className: 'u1-chart-footer' }, h('span', {}, h('i', { className: 'u1-current-dot' }), 'Período selecionado'), compareAvailable ? h('span', {}, h('i', { className: 'u1-previous-dot' }), 'Intervalo anterior') : null, h('span', { className: 'u1-daily-average' }, 'Média diária ', h('b', {}, money(Math.round(s.expense / daysInSpan(start, end))))))), h('section', { className: 'u1-panel u1-categories' }, h('div', { className: 'u1-panel-head' }, h('div', {}, h('h2', {}, 'Para onde foi seu dinheiro'), h('p', {}, 'Categorias do período selecionado')), h('span', { className: 'u1-count' }, s.categories.length + ' categorias')), s.categories.length ? h('div', { className: 'u1-category-list' }, s.categories.slice(0, 5).map((cat, i) => h('button', { type: 'button', className: 'u1-category-row', key: cat.name, onClick: () => { this.setState({ query: cat.name, txSource: useBank ? 'bank' : 'manual', txReviewOnly: false, txOrganize: false, bankFilter: '' }); this.navigate('transactions'); } }, h('span', { className: 'u1-category-dot', style: { background: categoryColor(cat.name, i) } }), h('span', { className: 'u1-category-name' }, cat.name), h('span', { className: 'u1-category-bar' }, h('i', { style: { width: hidden ? '0%' : Math.round(cat.total / Math.max(1, s.expense) * 100) + '%', background: categoryColor(cat.name, i) } })), h('strong', {}, money(cat.total)), h('small', {}, hidden ? '••••' : Math.round(cat.total / Math.max(1, s.expense) * 100) + '%')))) : h('p', { className: 'u1-empty' }, 'Nenhuma despesa nesta fonte e período.'), s.categories.length > 5 ? h('p', { className: 'u1-microcopy' }, 'Mostrando as 5 maiores categorias. Consulte todas em Movimentações.') : null)), h('aside', { className: 'u1-side-stack' }, h('section', { className: 'mf-plan-shortcut' }, h('div', { className: 'u1-panel-head' }, h('div', {}, h('h2', {}, 'Na sua agenda'), h('p', {}, 'Hoje e próximos 7 dias · compromissos cadastrados')), h('button', { type: 'button', className: 'u1-icon-button', 'aria-label': 'Abrir Planejamento', onClick: () => this.navigate('planning') }, h(Icon, { name: 'arrow', size: 17 }))), generated ? h('div', { className: 'u1-agenda-stats' }, h('div', {}, h('strong', {}, overdue.length), h('span', {}, 'vencidos')), h('div', {}, h('strong', {}, money(upcoming.reduce((n, x) => n + x.remaining, 0))), h('span', {}, 'a pagar · inclui vencidos'))) : null, upcoming.length ? h('div', { className: 'mf-agenda-list' }, upcoming.slice(0, 3).map(item => h('button', { type: 'button', className: 'mf-agenda-row', key: item.id, onClick: () => this.openPlanDetail(item.id) }, h('span', { className: 'u1-agenda-date' }, date(item.dueDate)), h('span', { className: 'mf-agenda-copy' }, h('strong', {}, item.title), h('small', {}, item.dueDate < today ? 'Vencido' : item.dueDate === today ? 'Hoje' : item.certainty === 'estimated' ? 'Estimado' : 'A vencer')), h('strong', { className: 'mf-agenda-amount' }, money(item.remaining))))) : h('div', { className: 'u1-empty-agenda' }, h(Icon, { name: 'calendar', size: 22 }), h('div', {}, h('b', {}, generated ? 'Sem vencimentos cadastrados neste intervalo' : 'Agenda ainda não carregada'), h('p', {}, generated ? 'Isso não confirma a ausência de contas a pagar.' : 'Abra o Planejamento para conferir seus compromissos.'))), h('button', { type: 'button', className: 'u1-subtle-link', onClick: () => this.navigate('planning') }, 'Ver agenda', h(Icon, { name: 'arrow', size: 14 }))), h('section', { className: 'u1-panel u1-budget' }, h('div', { className: 'u1-panel-head' }, h('div', {}, h('h2', {}, 'Orçamento em foco'), h('p', {}, prettyMonth(month))), h('button', { type: 'button', className: 'u1-icon-button', 'aria-label': 'Abrir Orçamentos', onClick: openBudget }, h(Icon, { name: 'arrow', size: 17 }))), h('div', { className: 'u1-budget-summary' }, h('strong', {}, money(spentLimited)), h('span', {}, 'de ' + money(totalLimit) + ' em limites')), limits.length ? h('div', { className: 'u1-budget-meter ' + (spentLimited > totalLimit ? 'is-over' : ''), role: 'img', 'aria-label': hidden ? 'Valores ocultos' : used + '% dos limites utilizados' }, h('i', { style: { width: hidden ? '0%' : Math.min(100, used) + '%' } })) : null, h('p', { className: 'u1-budget-caption' }, !limits.length ? 'Você ainda não definiu limites.' : hidden ? 'Valores ocultos' : (spentLimited > totalLimit ? money(spentLimited - totalLimit) + ' acima dos limites' : money(totalLimit - spentLimited) + ' de margem nos limites')), h('div', { className: 'u1-coverage' }, h('span', {}, 'Cobertura dos gastos'), h('b', {}, hidden ? '••••' : budgetCoverage === null ? 'Sem gastos' : budgetCoverage + '%')), h('p', { className: 'u1-microcopy' }, 'Considera apenas categorias com limite. Margem não é saldo disponível.'), h('button', { type: 'button', className: 'u1-subtle-link', onClick: openBudget }, 'Gerenciar orçamento', h(Icon, { name: 'arrow', size: 14 }))))), h('div', { className: 'u1-detail-grid' }, h('section', { className: 'u1-panel u1-recent' }, h('div', { className: 'u1-panel-head' }, h('div', {}, h('h2', {}, 'Últimas movimentações'), h('p', {}, 'Confirmadas no período')), h('button', { type: 'button', className: 'u1-subtle-link', onClick: () => { this.setState({ query: '', bankFilter: '', txSource: useBank ? 'bank' : 'manual', txReviewOnly: false, txOrganize: false }); this.navigate('transactions'); } }, 'Ver tudo', h(Icon, { name: 'arrow', size: 14 }))), recent.length ? h('div', { className: 'u1-recent-list' }, recent.map(t => h('button', { type: 'button', className: 'u1-recent-row', key: t.key, onClick: () => useBank ? this.openBankDetail(t.raw) : this.openManualDetail(t.raw) }, h('span', { className: 'u1-transaction-icon ' + t.kind }, h(Icon, { name: t.kind === 'income' ? 'trend' : 'down', size: 17 })), h('span', { className: 'u1-recent-copy' }, h('strong', {}, t.title), h('small', {}, t.original && t.original !== t.title ? t.original : t.category + ' · ' + date(t.date))), h('strong', { className: t.kind === 'income' ? 'good-text' : 'bad-text' }, hidden ? '••••' : (t.kind === 'income' ? '+' : '−') + money(t.amount))))) : h('p', { className: 'u1-empty' }, 'Nenhuma movimentação confirmada neste período.')), h('section', { className: 'u1-panel u1-accounts' }, h('div', { className: 'u1-panel-head' }, h('div', {}, h('h2', {}, useBank ? 'Suas contas' : 'Fonte dos seus indicadores'), h('p', {}, useBank ? 'Saldo de referência por instituição · não depende do período acima' : 'Acompanhamento com registros adicionados por você')), h('button', { type: 'button', className: 'u1-subtle-link', onClick: () => this.navigate('banks') }, 'Ver contas', h(Icon, { name: 'arrow', size: 14 }))), useBank ? h('div', { className: 'u1-accounts-grid' }, bank.data.accounts.map(account => h('button', { type: 'button', className: 'u1-account', key: account.id, onClick: () => { this.setState({ bankFilter: account.id, query: '', txSource: 'bank', txReviewOnly: false, txOrganize: false }); this.navigate('transactions'); } }, h('span', { className: 'u1-account-icon' }, h(Icon, { name: 'bank', size: 19 })), h('span', { className: 'u1-account-copy' }, h('b', {}, account.name), h('small', {}, 'Referência: ' + bankReferenceLabel(account.updatedAt))), h('strong', {}, Number.isFinite(account.balance) ? money(account.balance) : 'Indisponível')))) : h('p', { className: 'u1-microcopy' }, 'Os registros manuais e o extrato bancário são consultados separadamente para evitar duplicidades.'))), null);
+        return h('div', { className: 'overview-content u1-overview mf-premium-overview ' + (hidden ? 'u1-values-hidden' : '') }, h('div', { className: 'u1-context' }, this.renderSourcePicker(), h('span', {}, date(start) + ' — ' + date(end) + ' · ' + (useBank ? 'Movimentos confirmados' + (bank.data.truncated ? ' · histórico parcial' : '') : 'Registros manuais'))), h('section', { className: 'mf-overview-brief', 'aria-label': 'Prioridades financeiras' }, h('div', { className: 'mf-overview-brief-title' }, h('span', { className: 'micro-label' }, 'SEU DIA FINANCEIRO'), h('h2', {}, 'Clareza para a próxima decisão'), h('p', {}, 'Fonte ' + (useBank ? 'bancária' : 'manual') + ' · ' + date(start) + ' a ' + date(end))), h('div', { className: 'mf-overview-priorities' }, h('button', { type: 'button', onClick: () => useBank ? this.openOverviewTransactions('all', true) : this.openOverviewTransactions() }, h(Icon, { name: 'check', size: 18 }), h('span', {}, h('strong', {}, reviewCount === null ? 'Conferir registros manuais' : reviewCount + ' a conferir'), h('small', {}, useBank ? 'Somente histórico bancário carregado' : 'Abra os lançamentos desta fonte')), h(Icon, { name: 'arrow', size: 14 })), h('button', { type: 'button', onClick: () => this.navigate('planning') }, h(Icon, { name: 'calendar', size: 18 }), h('span', {}, h('strong', {}, generated ? upcoming.length + ' compromissos' : 'Conferir agenda'), h('small', {}, generated ? 'Próximos 7 dias · inclui vencidos' : 'Abra para carregar seus compromissos')), h(Icon, { name: 'arrow', size: 14 })), h('button', { type: 'button', onClick: () => this.openIntelligenceContext('overview') }, h(Icon, { name: 'spark', size: 18 }), h('span', {}, h('strong', {}, 'Entender meus números'), h('small', {}, 'Consulta local sob autorização')), h(Icon, { name: 'arrow', size: 14 })))), state.bankMessage && bank.config.configured ? h('div', { className: 'sync-feedback', role: 'status' }, state.bankMessage) : null, h('div', { className: 'stats-grid' }, h('section', { className: 'u1-balance mf-border-reveal mf-tone-balance', role: 'group', tabIndex: 0, 'aria-label': useBank ? 'Saldo nas contas' : 'Saldo manual' }, h('div', { className: 'u1-balance-label' }, h('span', {}, useBank ? 'Saldo nas contas' : 'Saldo manual'), h('button', { type: 'button', className: 'u1-icon-button', 'aria-label': hidden ? 'Mostrar valores' : 'Ocultar valores', 'aria-pressed': hidden, onClick: () => this.setState({ overviewHideValues: !hidden }) }, h(Icon, { name: hidden ? 'eye-off' : 'eye', size: 18 }))), h('strong', { className: 'u1-balance-value' }, hidden ? '••••' : coverage ? bankBalanceLabel(coverage) : money(s.balance)), h('details', { className: 'u1-balance-info' }, h('summary', {}, h('span', { className: 'u1-status-dot ' + ((coverage === null || coverage === void 0 ? void 0 : coverage.missingCount) ? 'is-partial' : '') }), (coverage === null || coverage === void 0 ? void 0 : coverage.missingCount) ? 'Saldo parcial · conferir' : useBank ? 'Referência das instituições' : 'Como é calculado'), h('p', {}, coverage ? 'Saldos disponíveis de ' + coverage.knownCount + ' de ' + coverage.totalCount + ' conta(s). Não representa dinheiro livre. A consulta pode ser mais recente que o saldo informado.' : 'Saldo inicial mais receitas menos despesas manuais. Não somado ao banco.'))), metric('Receitas', s.income, 'trend', 'No período selecionado', 'income'), metric('Despesas', s.expense, 'down', 'No período selecionado', 'expense'), metric('Resultado', s.net, 'chart', 'Receitas menos despesas', 'net')), h('div', { className: 'u1-main-grid' }, h('div', { className: 'u1-left-stack' }, h('section', { className: 'u1-panel u1-rhythm' }, h('div', { className: 'u1-panel-head' }, h('div', {}, h('h2', {}, 'Seu ritmo de gastos'), h('p', {}, 'Entenda como suas despesas evoluíram.')), h('div', { className: 'u1-chart-tabs', role: 'group', 'aria-label': 'Visualização do período' }, ['spending', 'flow'].map(tab => h('button', { type: 'button', key: tab, 'aria-pressed': (state.overviewChart || 'spending') === tab, onClick: () => this.setState({ overviewChart: tab }) }, tab === 'spending' ? 'Acumulado' : 'Entradas e saídas')))), h('div', { className: 'u1-rhythm-summary' }, h('div', {}, h('strong', {}, money(s.expense)), h('span', {}, 'gastos no período')), h('div', { className: 'u1-comparison ' + (comparison.percent !== null && comparison.percent <= 0 ? 'is-lower' : '') }, hidden ? 'Valores ocultos' : comparison.label, h('small', {}, compareAvailable ? date(previous.start) + ' a ' + date(previous.end) + ' · mesma fonte' : 'Comparação exige histórico disponível nos dois intervalos'))), hidden ? h('div', { className: 'u1-chart-hidden' }, h(Icon, { name: 'eye-off', size: 26 }), h('p', {}, 'Mostre os valores para visualizar o gráfico.')) : (state.overviewChart || 'spending') === 'flow' ? h(Chart, { data: flowSegments(start, end, range) }) : h(OverviewSpendingChart, { rows: points, compare: compareAvailable }), h('div', { className: 'u1-chart-footer' }, h('span', {}, h('i', { className: 'u1-current-dot' }), 'Período selecionado'), compareAvailable ? h('span', {}, h('i', { className: 'u1-previous-dot' }), 'Intervalo anterior') : null, h('span', { className: 'u1-daily-average' }, 'Média diária ', h('b', {}, money(Math.round(s.expense / daysInSpan(start, end))))))), h('section', { className: 'u1-panel u1-categories' }, h('div', { className: 'u1-panel-head' }, h('div', {}, h('h2', {}, 'Para onde foi seu dinheiro'), h('p', {}, 'Categorias do período selecionado')), h('span', { className: 'u1-count' }, s.categories.length + ' categorias')), renderQA84OverviewCategories(this, s.categories, s.expense, useBank, hidden)), h('aside', { className: 'u1-side-stack' }, h('section', { className: 'mf-plan-shortcut' }, h('div', { className: 'u1-panel-head' }, h('div', {}, h('h2', {}, 'Na sua agenda'), h('p', {}, 'Hoje e próximos 7 dias · compromissos cadastrados')), h('button', { type: 'button', className: 'u1-icon-button', 'aria-label': 'Abrir Planejamento', onClick: () => this.navigate('planning') }, h(Icon, { name: 'arrow', size: 17 }))), generated ? h('div', { className: 'u1-agenda-stats' }, h('div', {}, h('strong', {}, overdue.length), h('span', {}, 'vencidos')), h('div', {}, h('strong', {}, money(upcoming.reduce((n, x) => n + x.remaining, 0))), h('span', {}, 'a pagar · inclui vencidos'))) : null, upcoming.length ? h('div', { className: 'mf-agenda-list' }, upcoming.slice(0, 3).map(item => h('button', { type: 'button', className: 'mf-agenda-row', key: item.id, onClick: () => this.openPlanDetail(item.id) }, h('span', { className: 'u1-agenda-date' }, date(item.dueDate)), h('span', { className: 'mf-agenda-copy' }, h('strong', {}, item.title), h('small', {}, item.dueDate < today ? 'Vencido' : item.dueDate === today ? 'Hoje' : item.certainty === 'estimated' ? 'Estimado' : 'A vencer')), h('strong', { className: 'mf-agenda-amount' }, money(item.remaining))))) : h('div', { className: 'u1-empty-agenda' }, h(Icon, { name: 'calendar', size: 22 }), h('div', {}, h('b', {}, generated ? 'Sem vencimentos cadastrados neste intervalo' : 'Agenda ainda não carregada'), h('p', {}, generated ? 'Isso não confirma a ausência de contas a pagar.' : 'Abra o Planejamento para conferir seus compromissos.'))), h('button', { type: 'button', className: 'u1-subtle-link', onClick: () => this.navigate('planning') }, 'Ver agenda', h(Icon, { name: 'arrow', size: 14 }))), h('section', { className: 'u1-panel u1-budget' }, h('div', { className: 'u1-panel-head' }, h('div', {}, h('h2', {}, 'Orçamento em foco'), h('p', {}, prettyMonth(month))), h('button', { type: 'button', className: 'u1-icon-button', 'aria-label': 'Abrir Orçamentos', onClick: openBudget }, h(Icon, { name: 'arrow', size: 17 }))), h('div', { className: 'u1-budget-summary' }, h('strong', {}, money(spentLimited)), h('span', {}, 'de ' + money(totalLimit) + ' em limites')), limits.length ? h('div', { className: 'u1-budget-meter ' + (spentLimited > totalLimit ? 'is-over' : ''), role: 'img', 'aria-label': hidden ? 'Valores ocultos' : used + '% dos limites utilizados' }, h('i', { style: { width: hidden ? '0%' : Math.min(100, used) + '%' } })) : null, h('p', { className: 'u1-budget-caption' }, !limits.length ? 'Você ainda não definiu limites.' : hidden ? 'Valores ocultos' : (spentLimited > totalLimit ? money(spentLimited - totalLimit) + ' acima dos limites' : money(totalLimit - spentLimited) + ' de margem nos limites')), h('div', { className: 'u1-coverage' }, h('span', {}, 'Cobertura dos gastos'), h('b', {}, hidden ? '••••' : budgetCoverage === null ? 'Sem gastos' : budgetCoverage + '%')), h('p', { className: 'u1-microcopy' }, 'Considera apenas categorias com limite. Margem não é saldo disponível.'), h('button', { type: 'button', className: 'u1-subtle-link', onClick: openBudget }, 'Gerenciar orçamento', h(Icon, { name: 'arrow', size: 14 })))))), h('div', { className: 'u1-detail-grid' }, h('section', { className: 'u1-panel u1-recent' }, h('div', { className: 'u1-panel-head' }, h('div', {}, h('h2', {}, 'Últimas movimentações'), h('p', {}, 'Confirmadas no período')), h('button', { type: 'button', className: 'u1-subtle-link', onClick: () => { this.setState({ query: '', bankFilter: '', txSource: useBank ? 'bank' : 'manual', txReviewOnly: false, txOrganize: false }); this.navigate('transactions'); } }, 'Ver tudo', h(Icon, { name: 'arrow', size: 14 }))), recent.length ? h('div', { className: 'u1-recent-list' }, recent.map(t => h('button', { type: 'button', className: 'u1-recent-row', key: t.key, onClick: () => useBank ? this.openBankDetail(t.raw) : this.openManualDetail(t.raw) }, h('span', { className: 'u1-transaction-icon ' + t.kind }, h(Icon, { name: t.kind === 'income' ? 'trend' : 'down', size: 17 })), h('span', { className: 'u1-recent-copy' }, h('strong', {}, t.title), h('small', {}, t.original && t.original !== t.title ? t.original : t.category + ' · ' + date(t.date))), h('strong', { className: t.kind === 'income' ? 'good-text' : 'bad-text' }, hidden ? '••••' : (t.kind === 'income' ? '+' : '−') + money(t.amount))))) : h('p', { className: 'u1-empty' }, 'Nenhuma movimentação confirmada neste período.')), h('section', { className: 'u1-panel u1-accounts' }, h('div', { className: 'u1-panel-head' }, h('div', {}, h('h2', {}, useBank ? 'Suas contas' : 'Fonte dos seus indicadores'), h('p', {}, useBank ? 'Saldo de referência por instituição · não depende do período acima' : 'Acompanhamento com registros adicionados por você')), h('button', { type: 'button', className: 'u1-subtle-link', onClick: () => this.navigate('banks') }, 'Ver contas', h(Icon, { name: 'arrow', size: 14 }))), useBank ? h('div', { className: 'u1-accounts-grid' }, bank.data.accounts.map(account => h('button', { type: 'button', className: 'u1-account', key: account.id, onClick: () => { this.setState({ bankFilter: account.id, query: '', txSource: 'bank', txReviewOnly: false, txOrganize: false }); this.navigate('transactions'); } }, h('span', { className: 'u1-account-icon' }, h(Icon, { name: 'bank', size: 19 })), h('span', { className: 'u1-account-copy' }, h('b', {}, account.name), h('small', {}, 'Referência: ' + bankReferenceLabel(account.updatedAt))), h('strong', {}, Number.isFinite(account.balance) ? money(account.balance) : 'Indisponível')))) : h('p', { className: 'u1-microcopy' }, 'Os registros manuais e o extrato bancário são consultados separadamente para evitar duplicidades.'))), null);
     }
     renderTransactions() {
         var _a;
@@ -2160,25 +2694,15 @@ class App extends React.Component {
             const average = values.reduce((a, b) => a + b, 0) / 3;
             return Math.max(2000, Math.ceil(average * 1.1 / 1000) * 1000);
         };
+        if (this.state.qa84BudgetDrill)
+            return renderQA84BudgetDetail(this, {});
         return h('div', { className: 'section mf-budget-section u3-budgets' }, h('div', { className: 'mf-budget-heading' }, h('div', {}, h('p', {}, mode === 'expense' ? 'Acompanhe seus limites por categoria.' : 'Veja a composição das receitas recebidas.')), h('div', { className: 'mf-budget-switch', role: 'group', 'aria-label': 'Visualização financeira' }, h('button', { type: 'button', className: mode === 'expense' ? 'active' : '', 'aria-pressed': mode === 'expense', onClick: () => this.setState({ budgetTab: 'expense', showAllBudgetCategories: false, budgetFocus: 'all', budgetSearch: '' }) }, 'Gastos'), h('button', { type: 'button', className: mode === 'income' ? 'active' : '', 'aria-pressed': mode === 'income', onClick: () => this.setState({ budgetTab: 'income', showAllBudgetCategories: false, budgetFocus: 'all', budgetSearch: '' }) }, 'Receitas'))), this.renderSourcePicker(), h('p', { className: 'mf-budget-context' }, prettyMonth(this.state.month) + ' · ' + (mode === 'expense' ? 'Gastos do mês e limites cadastrados por categoria' : 'Composição das receitas recebidas, sem incluir transferências próprias confirmadas')), mode === 'expense' ? h('div', { className: 'mf-budget-summary mf-budget-summary-four' }, h('div', { className: 'mf-border-reveal mf-tone-expense', role: 'group', tabIndex: 0 }, h('small', {}, 'Gasto nas categorias com limite'), h('strong', {}, fmt(spentLimited))), h('div', { className: 'mf-border-reveal mf-tone-balance', role: 'group', tabIndex: 0 }, h('small', {}, 'Limites cadastrados'), h('strong', {}, limited.length ? fmt(limitTotal) : 'Sem limites')), h('div', { className: 'mf-border-reveal mf-tone-net ' + (limited.length ? (margin < 0 ? 'is-negative' : 'is-positive') : 'is-neutral'), role: 'group', tabIndex: 0 }, h('small', {}, margin < 0 ? 'Excesso nos limites' : 'Margem nos limites'), h('strong', { className: margin < 0 ? 'bad-text' : '' }, limited.length ? fmt(Math.abs(margin)) : 'Sem limites'), h('small', {}, 'Não representa saldo disponível')), h('div', { className: 'mf-border-reveal mf-tone-warning', role: 'group', tabIndex: 0 }, h('small', {}, 'Gasto fora dos limites'), h('strong', {}, fmt(Math.max(0, total - spentLimited))))) :
             h('div', { className: 'mf-budget-summary' }, h('div', {}, h('small', {}, 'Total recebido no período'), h('strong', {}, fmt(total))), h('div', {}, h('small', {}, 'Origens com recebimentos'), h('strong', {}, String(entries.filter(x => x.total > 0).length))), h('div', {}, h('small', {}, 'Maior fonte de receita'), h('strong', {}, entries.length ? entries.slice().sort((a, b) => b.total - a.total)[0].info.name : 'Nenhuma ainda'))), mode === 'expense' ? h('section', { className: 'u3-budget-insight' }, h('div', { className: 'u3-coverage' }, h('div', { className: 'u3-coverage-ring', 'aria-hidden': 'true', style: { background: 'conic-gradient(var(--u3-accent) ' + (signals.covered || 0) + '%, var(--surface3) 0)' } }, h('strong', {}, signals.covered === null ? '—' : signals.covered + '%')), h('div', {}, h('h2', {}, 'Gastos com um limite definido'), h('p', {}, signals.covered === null ? 'Sem gastos nesta fonte e mês.' : signals.covered + '% dos gastos do mês estão em categorias com limite.'), h('small', {}, 'Cobertura do orçamento · não é dinheiro reservado'))), h('div', { className: 'u3-budget-actions' }, [
             { key: 'attention', count: signals.exceeded + signals.near, title: 'Pedem atenção', description: signals.exceeded + ' acima · ' + signals.near + ' perto do limite', icon: 'alert' },
             { key: 'unlimited', count: signals.unlimited, title: 'Sem limite', description: 'Categorias com gastos para organizar', icon: 'layers' }
         ].map(x => h('button', { type: 'button', className: 'u3-insight-action', 'aria-pressed': focus === x.key, onClick: () => this.setState({ budgetFocus: focus === x.key ? 'all' : x.key, budgetSearch: '' }) }, h(Icon, { name: x.icon, size: 18 }), h('span', {}, h('b', {}, x.title), h('small', {}, x.description)), h('strong', {}, x.count), h(Icon, { name: 'chevron-right', size: 15 }))))) : null, useBank && this.state.bank.data.truncated && !this.state.bank.data.dailyTotals ? h('p', { className: 'mf-budget-warning' }, 'Histórico carregado parcialmente. Valores e cobertura refletem somente os registros disponíveis.') : null, mode === 'expense' ? h('p', { className: 'mf-budget-contract' }, 'O mês filtra os gastos. Os limites cadastrados são recorrentes e valem para todos os meses.') : null, mode === 'income' && this.state.planning.items.some(x => x.kind === 'income' && x.dueDate.slice(0, 7) === this.state.month && x.remaining > 0 && x.status !== 'cancelled') ?
-            h('p', { className: 'mf-budget-expected' }, 'Recebimentos ainda previstos no Planejamento: ' + fmt(this.state.planning.items.filter(x => x.kind === 'income' && x.dueDate.slice(0, 7) === this.state.month && x.remaining > 0 && x.status !== 'cancelled').reduce((sum, x) => sum + x.remaining, 0)) + '. Não somados às receitas já recebidas.') : null, unclassified > 0 ? h('div', { className: 'mf-budget-warning', role: 'status' }, 'Há ' + fmt(unclassified) + ' em ' + (mode === 'expense' ? 'despesas' : 'receitas') + ' com categorias incompatíveis ou ainda não identificadas. Confira em Movimentações.') : null, h('div', { className: 'u3-budget-toolbar' }, h('div', { className: 'u2-view-tabs', 'aria-label': 'Filtro de categorias' }, (mode === 'income' ? [{ value: 'all', label: 'Recebimentos' }] : [{ value: 'all', label: 'Todas' }, { value: 'attention', label: 'Atenção' }, { value: 'unlimited', label: 'Sem limite' }]).map(x => h('button', { type: 'button', 'aria-pressed': focus === x.value, onClick: () => this.setState({ budgetFocus: x.value }) }, x.label))), h('div', { className: 'search-box' }, h(Icon, { name: 'search', size: 16 }), h('input', { 'aria-label': 'Buscar categoria no orçamento', placeholder: 'Buscar categoria', value: search, onChange: (e) => this.setState({ budgetSearch: e.target.value }) }))), h('div', { className: 'u3-budget-list-heading' }, h('h2', {}, mode === 'expense' ? 'Limites por categoria' : 'Origens da sua renda'), h('span', { role: 'status' }, visible.length + ' categoria(s)')), visible.length ? h('div', { className: 'budget-grid' }, visible.map(({ info, total: spent, hasLimit, limit }, index) => {
-            const pct = hasLimit && limit > 0 ? Math.round(spent / limit * 100) : hasLimit ? (spent > 0 ? 100 : 0) : 0;
-            const share = total > 0 ? Math.round(spent / total * 100) : 0;
-            const status = !hasLimit ? 'unlimited' : spent > limit ? 'exceeded' : limit > 0 && spent / limit >= .9 ? 'near' : 'within';
-            const gauge = mode === 'expense' && hasLimit && limit > 0 ? budgetB3Visual(spent, limit) : null;
-            const remaining = limit - spent;
-            const row = h(Card, { className: 'budget-item mf-budget-card mf-budget-' + status + (gauge ? ' mf-budget-card-b3' : ''), key: info.name }, h('div', { className: 'budget-item-top' }, h('span', { className: 'cat-symbol', style: { background: info.color + '28', color: info.color } }, info.emoji || '✨'), h('div', {}, h('h3', {}, info.name), h('small', { className: 'u3-budget-state' }, mode === 'income' ? 'Recebimentos do mês' : status === 'exceeded' ? 'Acima do limite' : status === 'near' ? 'Próximo do limite' : status === 'unlimited' ? 'Sem limite' : 'Dentro do limite'))), gauge ? h('div', { className: 'mf-budget-b3', role: 'group', 'aria-label': 'Orçamento de ' + info.name + ': ' + gauge.percent + '% utilizado; gasto ' + fmt(spent) + ' de ' + fmt(limit) + (remaining < 0 ? '; excedido em ' + fmt(-remaining) : '; restante ' + fmt(remaining)) }, h('div', { className: 'mf-budget-b3-dial', style: { '--mf-budget-b3-color': gauge.color } }, h('svg', { className: 'mf-budget-b3-svg', viewBox: '0 0 200 110', 'aria-hidden': true, focusable: 'false' }, h('path', { className: 'mf-budget-b3-track', d: 'M 14 96 A 86 86 0 0 1 186 96', pathLength: 100 }), gauge.fill > 0 ? h('path', { className: 'mf-budget-b3-fill', d: 'M 14 96 A 86 86 0 0 1 186 96', pathLength: 100, strokeDasharray: gauge.fill + ' 100' }) : null), h('strong', { className: 'mf-budget-b3-percent' }, gauge.percent + '%'), h('span', { className: 'mf-budget-b3-caption' }, 'do limite utilizado')), h('div', { className: 'mf-budget-b3-values' }, h('div', {}, h('small', {}, 'Gasto atual'), h('strong', {}, fmt(spent))), h('div', {}, h('small', {}, 'Limite configurado'), h('strong', {}, fmt(limit)))), h('p', { className: 'mf-budget-b3-remaining' + (remaining < 0 ? ' is-exceeded' : '') }, remaining < 0 ? 'Limite ultrapassado · excesso de ' + fmt(-remaining) : 'Restam ' + fmt(remaining))) :
-                h('div', { className: 'mf-budget-money' }, h('strong', {}, fmt(spent)), h('span', {}, mode === 'expense' ? 'gasto até agora' : 'recebido no período')), mode === 'income' ? h('div', { className: 'mf-income-share' }, h('div', { className: 'progress-track' }, h('div', { className: 'progress-bar', style: { background: info.color, width: (spent > 0 ? Math.max(2, Math.min(share, 100)) : 0) + '%' } })), h('small', {}, share === 0 && spent > 0 ? 'Menos de 1% das receitas' : share + '% das receitas')) :
-                gauge ? null : hasLimit ? h('div', { className: 'mf-budget-limit' }, h('div', { className: 'mf-budget-limit-head' }, h('span', {}, 'Limite ' + fmt(limit)), h('strong', { className: spent > limit ? 'bad-text' : '' }, limit === 0 ? (spent > 0 ? 'Acima do limite' : 'Limite zero definido') : pct + '% utilizado')), limit > 0 ? h('div', { className: 'progress-track' }, h('div', { className: 'progress-bar', style: { width: Math.min(pct, 100) + '%' } })) : null, h('small', {}, spent > limit ? 'Ultrapassou em ' + fmt(spent - limit) : status === 'near' ? 'Próximo do limite · restam ' + fmt(limit - spent) : limit === 0 ? 'Limite zero definido' : 'Restam ' + fmt(limit - spent))) :
-                    h('div', { className: 'mf-no-budget' }, h('span', {}, 'Sem limite definido'), h('div', { className: 'mf-budget-limit-actions' }, suggestLimit(info.name) ? h('button', { type: 'button', className: 'small-link', title: 'Sugestão: média dos últimos três meses com 10% de margem, arredondada para R$ 10. Você confirma antes de salvar.', onClick: () => this.setState({ editModal: { type: 'budget', key: info.name, title: 'Limite sugerido · ' + info.name, value: moneyString(suggestLimit(info.name)) } }) }, 'Sugerir ' + fmt(suggestLimit(info.name))) : null, h('button', { type: 'button', className: 'small-link', onClick: () => this.setState({ editModal: { type: 'budget', key: info.name, title: 'Definir limite · ' + info.name, value: '' } }) }, 'Definir limite'))), mode === 'expense' && hasLimit ? h('div', { className: 'budget-item-bottom' }, h('button', { className: 'small-link', onClick: () => this.setState({ editModal: { type: 'budget', key: info.name, title: 'Editar limite · ' + info.name, value: moneyString(limit) } }) }, 'Editar limite')) : null);
-            const group = mode === 'expense' && (index === 0 || hasLimit !== visible[index - 1].hasLimit);
-            return group ? [h('h3', { className: 'mf-budget-group-title', key: 'group-' + info.name }, hasLimit ? 'Categorias com limite' : 'Gastos sem limite'), row] : row;
-        })) : h(Card, { className: 'mf-budget-empty' }, h('h3', {}, entries.length ? 'Nenhuma categoria para estes filtros' : mode === 'income' ? 'Nenhuma receita neste período' : 'Nenhum gasto neste período'), h('p', {}, entries.length ? 'Altere o filtro ou a busca para ver outras categorias.' : mode === 'income' ? 'As receitas aparecerão aqui depois de serem registradas ou sincronizadas.' : 'Suas despesas aparecerão aqui quando houver movimentações.')), quiet.length ? h('div', { className: 'mf-budget-quiet' }, h('button', { className: 'mf-budget-quiet-trigger', type: 'button', 'aria-expanded': this.state.showAllBudgetCategories,
-            onClick: () => this.setState({ showAllBudgetCategories: !this.state.showAllBudgetCategories }) }, this.state.showAllBudgetCategories ? 'Ocultar outras categorias' : 'Ver outras categorias (' + quiet.length + ')', h(Icon, { name: this.state.showAllBudgetCategories ? 'chevron-up' : 'chevron-down', size: 16 })), this.state.showAllBudgetCategories ? h('div', { className: 'mf-budget-quiet-grid' }, quiet.map(c => h('div', { className: 'mf-budget-quiet-row', key: c.name }, h('span', {}, c.emoji || '✨', '  ', c.name), mode === 'expense' ? h('button', { className: 'small-link', onClick: () => this.setState({ editModal: { type: 'budget', key: c.name, title: 'Definir limite · ' + c.name, value: '' } }) }, 'Definir limite') : h('span', { className: 'muted' }, 'Sem receitas neste mês')))) : null) : null, h('p', { className: 'mf-budget-disclaimer' }, 'Pix para terceiros continuam como entradas ou saídas até que sejam identificados como transferências próprias. Reembolsos sem vínculo são mostrados como entradas, não abatimentos automáticos de gastos.'));
+            h('p', { className: 'mf-budget-expected' }, 'Recebimentos ainda previstos no Planejamento: ' + fmt(this.state.planning.items.filter(x => x.kind === 'income' && x.dueDate.slice(0, 7) === this.state.month && x.remaining > 0 && x.status !== 'cancelled').reduce((sum, x) => sum + x.remaining, 0)) + '. Não somados às receitas já recebidas.') : null, unclassified > 0 ? h('div', { className: 'mf-budget-warning', role: 'status' }, 'Há ' + fmt(unclassified) + ' em ' + (mode === 'expense' ? 'despesas' : 'receitas') + ' com categorias incompatíveis ou ainda não identificadas. Confira em Movimentações.') : null, h('div', { className: 'u3-budget-toolbar' }, h('div', { className: 'u2-view-tabs', 'aria-label': 'Filtro de categorias' }, (mode === 'income' ? [{ value: 'all', label: 'Recebimentos' }] : [{ value: 'all', label: 'Todas' }, { value: 'attention', label: 'Atenção' }, { value: 'unlimited', label: 'Sem limite' }]).map(x => h('button', { type: 'button', 'aria-pressed': focus === x.value, onClick: () => this.setState({ budgetFocus: x.value }) }, x.label))), h('div', { className: 'search-box' }, h(Icon, { name: 'search', size: 16 }), h('input', { 'aria-label': 'Buscar categoria no orçamento', placeholder: 'Buscar categoria', value: search, onChange: (e) => this.setState({ budgetSearch: e.target.value }) }))), h('div', { className: 'u3-budget-list-heading' }, h('h2', {}, mode === 'expense' ? 'Limites por categoria' : 'Origens da sua renda'), h('span', { role: 'status' }, visible.length + ' categoria(s)')), visible.length ? renderQA84BudgetCards(this, visible, mode, total, useBank, suggestLimit) : h(Card, { className: 'mf-budget-empty' }, h('h3', {}, entries.length ? 'Nenhuma categoria para estes filtros' : mode === 'income' ? 'Nenhuma receita neste período' : 'Nenhum gasto neste período'), h('p', {}, entries.length ? 'Altere o filtro ou a busca para ver outras categorias.' : mode === 'income' ? 'As receitas aparecerão aqui depois de serem registradas ou sincronizadas.' : 'Suas despesas aparecerão aqui quando houver movimentações.')), quiet.length ? h('div', { className: 'mf-budget-quiet' }, h('button', { className: 'mf-budget-quiet-trigger', type: 'button', 'aria-expanded': this.state.showAllBudgetCategories,
+            onClick: () => this.setState({ showAllBudgetCategories: !this.state.showAllBudgetCategories }) }, this.state.showAllBudgetCategories ? 'Ocultar outras categorias' : 'Ver outras categorias (' + quiet.length + ')', h(Icon, { name: this.state.showAllBudgetCategories ? 'chevron-up' : 'chevron-down', size: 16 })), this.state.showAllBudgetCategories ? h('div', { className: 'mf-budget-quiet-grid' }, quiet.map(c => h('div', { className: 'mf-budget-quiet-row', key: c.name }, h('span', { className: 'qa84-category-combo' }, h(CategoryVisualGlyph, { identity: resolveCategoryVisualIdentity({ categoryName: c.name, catalog: this.state.qa84VisualCatalog || [], aggregate: true }), size: 17 }), c.name), mode === 'expense' ? h('button', { className: 'small-link', onClick: () => this.setState({ editModal: { type: 'budget', key: c.name, title: 'Definir limite · ' + c.name, value: '' } }) }, 'Definir limite') : h('span', { className: 'muted' }, 'Sem receitas neste mês')))) : null) : null, h('p', { className: 'mf-budget-disclaimer' }, 'Pix para terceiros continuam como entradas ou saídas até que sejam identificados como transferências próprias. Reembolsos sem vínculo são mostrados como entradas, não abatimentos automáticos de gastos.'));
     }
     renderAssistant(includeBanner = true) {
         const d = this.state.data, out = this.state.outcome, daily = !!desktop && this.state.mode === 'real', stale = this.isSimulationStale();
@@ -2234,7 +2758,7 @@ class App extends React.Component {
         return h('div', { className: 'bank-quick' }, h('div', {}, h('small', {}, 'SALDOS INFORMADOS PELAS INSTITUIÇÕES'), h('strong', {}, a.length ? bankBalanceLabel(coverage) : 'Configuração bancária salva'), h('span', {}, a.length ? a.length + ' conta(s) · atualização: ' + ((last === null || last === void 0 ? void 0 : last.completedAt) ? new Date(last.completedAt).toLocaleString('pt-BR') : 'pendente') : 'Sincronize para obter suas contas')), h('button', { className: 'outlined-action', onClick: () => this.navigate('banks') }, 'Ver contas bancárias', h(Icon, { name: 'arrow', size: 16 })), h('p', {}, 'Saldos e extratos bancários não são somados aos lançamentos manuais para evitar duplicidades.'), b.data.truncated ? h('p', { className: 'bank-warning' }, 'Alguns registros antigos não estão incluídos nos totais exibidos. Uma atualização futura ampliará a consulta histórica.') : null);
     }
     renderBanks() {
-        var _a, _b, _c, _d, _e;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q;
         if (this.state.mode === 'demo')
             return h('div', { className: 'section' }, h(Card, { className: 'settings-card' }, h('h2', {}, 'Suas contas estão disponíveis nos dados pessoais'), h('p', { className: 'muted-desc' }, 'O modo demonstração é isolado e nunca consulta suas contas bancárias.'), h('button', { className: 'primary-button', onClick: () => this.toggleMode() }, 'Voltar aos meus dados')));
         if (!desktop)
@@ -2242,9 +2766,12 @@ class App extends React.Component {
         const b = this.state.bank, c = b.config || EMPTY_BANK.config, accounts = b.data.accounts || [], tx = b.data.transactions || [], f = this.state.bankForm;
         const coverage = bankBalanceCoverage(accounts), now = Date.now(), signals = accounts.map(account => ({ account, ...u3AccountSignals(account, tx, now) })), attention = signals.filter(x => x.attention), shown = this.state.accountFocus === 'attention' ? signals.filter(x => x.attention) : signals;
         const issues = (b.data.items || []).filter(x => !['UPDATED', 'UPDATING'].includes(x.status));
-        return h('div', { className: 'section bank-page u3-accounts' }, h('div', { className: 'u3-section-heading' }, h('div', {}, h('h2', {}, 'Seu dinheiro, conta por conta.'), h('p', {}, 'Saldos recebidos e qualidade da referência em um só lugar.')), h('button', { type: 'button', className: 'primary-button', disabled: !c.configured || this.state.bankBusy, onClick: () => this.syncBank() }, h(Icon, { name: 'refresh', size: 16 }), this.state.bankBusy ? 'Atualizando…' : 'Atualizar contas')), h('div', { className: 'mf-accounts-summary u3-account-summary' }, h(Card, { className: 'mf-account-total mf-border-reveal mf-tone-balance' }, h('small', {}, 'Saldo bancário de referência'), h('strong', {}, bankBalanceLabel(coverage)), h('p', {}, 'Não somado aos registros manuais')), h(Card, { className: 'mf-account-count mf-border-reveal mf-tone-neutral' }, h('small', {}, 'Contas com saldo informado'), h('strong', {}, coverage.knownCount + ' de ' + accounts.length), h('p', {}, coverage.missingCount ? coverage.missingCount + ' saldo(s) indisponível(is)' : 'Zero informado é diferente de saldo ausente')), h(Card, { className: 'u3-account-signal mf-border-reveal mf-tone-income' }, h('small', {}, 'Referência de até 24h'), h('strong', {}, signals.filter(x => x.reference.status === 'recent').length + ' conta(s)'), h('p', {}, 'O horário não garante saldo em tempo real')), h('button', { type: 'button', className: 'u3-account-signal u3-clickable-card mf-border-reveal mf-tone-warning', 'aria-pressed': this.state.accountFocus === 'attention', onClick: () => this.setState({ accountFocus: this.state.accountFocus === 'attention' ? 'all' : 'attention' }) }, h('small', {}, 'Conferir referência'), h('strong', {}, attention.length + ' conta(s)'), h('p', {}, 'Saldo ausente, antigo ou sem horário'))), issues.length ? h('div', { className: 'u3-connection-alert', role: 'status' }, h(Icon, { name: 'alert', size: 18 }), h('span', {}, issues.length + ' conexão(ões) precisam de conferência. Os valores abaixo podem estar desatualizados.'), h('button', { type: 'button', className: 'mf-small-link', onClick: () => this.setState({ bankIntegrationsOpen: true }) }, 'Ver conexão')) : null, accounts.length ? h('section', { className: 'mf-accounts-first' }, h('div', { className: 'mf-bank-account-heading' }, h('h2', {}, 'Saldos por conta'), h('small', {}, 'Atualização: ' + (((_a = b.data.last) === null || _a === void 0 ? void 0 : _a.completedAt) ? new Date(b.data.last.completedAt).toLocaleString('pt-BR') : 'não informada'))), h('div', { className: 'u3-account-toolbar' }, h('div', { className: 'u2-view-tabs', 'aria-label': 'Filtro de contas' }, [{ value: 'all', label: 'Todas as contas' }, { value: 'attention', label: 'Conferir referência' }].map(x => h('button', { type: 'button', 'aria-pressed': (this.state.accountFocus || 'all') === x.value, onClick: () => this.setState({ accountFocus: x.value }) }, x.label))), h('span', {}, 'Contadores do histórico carregado · todos os períodos')), shown.length ? h('div', { className: 'bank-account-grid' }, shown.map(({ account: a, reference, pending, review, count }) => h(Card, { className: 'bank-account u3-account-card', key: a.id }, h('div', { className: 'u3-account-card-head' }, h('span', { className: 'bank-account-icon' }, h(Icon, { name: 'bank', size: 20 })), h('div', {}, h('h3', {}, a.name), h('small', {}, u3AccountType(a.subtype))), h('span', { className: 'u3-reference-badge is-' + reference.status }, reference.label)), h('small', { className: 'u3-balance-label' }, 'Saldo informado'), h('strong', {}, Number.isFinite(a.balance) ? fmt(a.balance) : 'Saldo não disponível'), h('span', { className: 'u3-reference-date' }, 'Referência recebida: ' + bankReferenceLabel(a.updatedAt)), h('div', { className: 'u3-account-counts' }, h('div', {}, h('b', {}, count), h('small', {}, 'registros')), h('div', {}, h('b', {}, pending), h('small', {}, 'pendentes no banco')), h('div', {}, h('b', {}, review), h('small', {}, 'a conferir'))), h('button', { type: 'button', className: 'u3-account-open', onClick: () => { this.setState({ bankFilter: a.id, txSource: 'bank', query: '', txSelected: [] }); this.navigate('transactions'); } }, 'Abrir movimentações', h(Icon, { name: 'arrow', size: 15 }))))) : h('p', { className: 'u3-empty' }, 'Nenhuma conta precisa de conferência de referência.')) :
+        return h('div', { className: 'section bank-page u3-accounts' }, h('div', { className: 'u3-section-heading' }, h('div', {}, h('h2', {}, 'Seu dinheiro, conta por conta.'), h('p', {}, 'Saldos recebidos e qualidade da referência em um só lugar.')), h('button', { type: 'button', className: 'primary-button', disabled: !c.configured || this.state.bankBusy || ((_a = b.connection) === null || _a === void 0 ? void 0 : _a.isolated), onClick: () => this.syncBank() }, h(Icon, { name: 'refresh', size: 16 }), this.state.bankBusy ? 'Atualizando…' : 'Atualizar contas')), h('div', { className: 'mf-accounts-summary u3-account-summary' }, h(Card, { className: 'mf-account-total mf-border-reveal mf-tone-balance' }, h('small', {}, 'Saldo bancário de referência'), h('strong', {}, bankBalanceLabel(coverage)), h('p', {}, 'Não somado aos registros manuais')), h(Card, { className: 'mf-account-count mf-border-reveal mf-tone-neutral' }, h('small', {}, 'Contas com saldo informado'), h('strong', {}, coverage.knownCount + ' de ' + accounts.length), h('p', {}, coverage.missingCount ? coverage.missingCount + ' saldo(s) indisponível(is)' : 'Zero informado é diferente de saldo ausente')), h(Card, { className: 'u3-account-signal mf-border-reveal mf-tone-income' }, h('small', {}, 'Referência de até 24h'), h('strong', {}, signals.filter(x => x.reference.status === 'recent').length + ' conta(s)'), h('p', {}, 'O horário não garante saldo em tempo real')), h('button', { type: 'button', className: 'u3-account-signal u3-clickable-card mf-border-reveal mf-tone-warning', 'aria-pressed': this.state.accountFocus === 'attention', onClick: () => this.setState({ accountFocus: this.state.accountFocus === 'attention' ? 'all' : 'attention' }) }, h('small', {}, 'Conferir referência'), h('strong', {}, attention.length + ' conta(s)'), h('p', {}, 'Saldo ausente, antigo ou sem horário'))), ((_b = b.connection) === null || _b === void 0 ? void 0 : _b.isolated) ? h('div', { className: 'u3-connection-alert', role: 'status' }, h(Icon, { name: 'shield', size: 18 }), h('span', {}, 'Esta versão de testes utiliza dados separados da instalação principal. Pluggy e sincronização estão desativadas neste canal.'), h('button', { type: 'button', className: 'mf-small-link',
+            onClick: () => this.setState({ bankIntegrationsOpen: true }) }, 'Ver conexão')) : null, ((_c = b.connection) === null || _c === void 0 ? void 0 : _c.error) ? h('div', { className: 'u3-connection-alert', role: 'alert' }, h(Icon, { name: 'alert', size: 18 }), h('span', {}, b.connection.error), h('button', { type: 'button', className: 'mf-small-link', onClick: () => this.setState({ bankIntegrationsOpen: true }) }, 'Ver conexão')) : null, !c.configured && !((_d = b.connection) === null || _d === void 0 ? void 0 : _d.isolated) ? h('div', { className: 'u3-connection-alert', role: 'status' }, h(Icon, { name: 'bank', size: 18 }), h('span', {}, ((_e = b.connection) === null || _e === void 0 ? void 0 : _e.profileState) === 'new' ?
+            'Instalação estável nova: nenhum banco anterior foi encontrado nos perfis reconhecidos. Não importe dados nem configure antes de conferir seu perfil anterior.' :
+            'Não há conexão Pluggy configurada neste perfil. O histórico salvo, se existir, continua disponível offline.'), h('button', { type: 'button', className: 'mf-small-link', onClick: () => this.setState({ bankIntegrationsOpen: true }) }, 'Configurar conexão')) : null, issues.length ? h('div', { className: 'u3-connection-alert', role: 'status' }, h(Icon, { name: 'alert', size: 18 }), h('span', {}, issues.length + ' conexão(ões) precisam de conferência. Os valores abaixo podem estar desatualizados.'), h('button', { type: 'button', className: 'mf-small-link', onClick: () => this.setState({ bankIntegrationsOpen: true }) }, 'Ver conexão')) : null, accounts.length ? h('section', { className: 'mf-accounts-first' }, h('div', { className: 'mf-bank-account-heading' }, h('h2', {}, 'Saldos por conta'), h('small', {}, 'Atualização: ' + (((_f = b.data.last) === null || _f === void 0 ? void 0 : _f.completedAt) ? new Date(b.data.last.completedAt).toLocaleString('pt-BR') : 'não informada'))), h('div', { className: 'u3-account-toolbar' }, h('div', { className: 'u2-view-tabs', 'aria-label': 'Filtro de contas' }, [{ value: 'all', label: 'Todas as contas' }, { value: 'attention', label: 'Conferir referência' }].map(x => h('button', { type: 'button', 'aria-pressed': (this.state.accountFocus || 'all') === x.value, onClick: () => this.setState({ accountFocus: x.value }) }, x.label))), h('span', {}, 'Contadores do histórico carregado · todos os períodos')), shown.length ? h('div', { className: 'bank-account-grid' }, shown.map(({ account: a, reference, pending, review, count }) => h(Card, { className: 'bank-account u3-account-card', key: a.id }, h('div', { className: 'u3-account-card-head' }, h('span', { className: 'bank-account-icon' }, h(Icon, { name: 'bank', size: 20 })), h('div', {}, h('h3', {}, a.name), h('small', {}, u3AccountType(a.subtype))), h('span', { className: 'u3-reference-badge is-' + reference.status }, reference.label)), h('small', { className: 'u3-balance-label' }, 'Saldo informado'), h('strong', {}, Number.isFinite(a.balance) ? fmt(a.balance) : 'Saldo não disponível'), h('span', { className: 'u3-reference-date' }, 'Referência recebida: ' + bankReferenceLabel(a.updatedAt)), h('div', { className: 'u3-account-counts' }, h('div', {}, h('b', {}, count), h('small', {}, 'registros')), h('div', {}, h('b', {}, pending), h('small', {}, 'pendentes no banco')), h('div', {}, h('b', {}, review), h('small', {}, 'a conferir'))), h('button', { type: 'button', className: 'u3-account-open', onClick: () => { this.setState({ bankFilter: a.id, txSource: 'bank', query: '', txSelected: [] }); this.navigate('transactions'); } }, 'Abrir movimentações', h(Icon, { name: 'arrow', size: 15 }))))) : h('p', { className: 'u3-empty' }, 'Nenhuma conta precisa de conferência de referência.')) :
             h(Card, { className: 'u3-empty-accounts' }, h(Icon, { name: 'bank', size: 28 }), h('h2', {}, c.configured ? 'Sua conexão está configurada' : 'Vamos conectar suas contas?'), h('p', {}, c.configured ? 'Atualize para receber as contas e seus saldos.' : 'Configure sua conexão abaixo. Nenhuma senha bancária é solicitada aqui.')), h('details', { className: 'mf-bank-integrations', open: this.state.bankIntegrationsOpen || !accounts.length, onToggle: (e) => { if (this.state.bankIntegrationsOpen !== e.currentTarget.open)
-                this.setState({ bankIntegrationsOpen: e.currentTarget.open }); } }, h('summary', {}, h(Icon, { name: 'settings', size: 17 }), 'Conexão e sincronização'), h('div', { className: 'bank-grid' }, h(Card, { className: 'settings-card' }, h('div', { className: 'card-heading' }, h('div', {}, h('h2', {}, 'Sua conexão bancária'), h('p', {}, c.configured ? 'Acesso conectado e protegido' : 'Conecte suas contas para acompanhar tudo aqui')), h('span', { className: 'bank-status ' + (c.configured ? 'enabled' : '') }, c.configured ? 'Configurada' : 'Não configurada')), !c.secure ? h('p', { className: 'bank-warning' }, 'Não foi possível proteger sua chave neste computador. Evite configurar a conexão agora.') : null, c.configured ? h('button', { type: 'button', className: 'bank-details-toggle', 'aria-expanded': this.state.bankConfigOpen, onClick: () => this.setState({ bankConfigOpen: !this.state.bankConfigOpen }) }, h(Icon, { name: 'settings', size: 16 }), this.state.bankConfigOpen ? 'Ocultar detalhes da conexão' : 'Alterar dados da conexão') : null, (!c.configured || this.state.bankConfigOpen) ? h('div', { className: 'bank-settings-details' }, this.field('Código da aplicação', h('input', { className: 'form-control', value: f.clientId, placeholder: 'Cole o código de identificação', maxLength: 300, autoComplete: 'off', onChange: (e) => this.setState({ bankForm: { ...f, clientId: e.target.value } }) })), this.field('Chave privada', h('input', { className: 'form-control', type: 'password', value: f.clientSecret, placeholder: c.configured ? 'Já protegido — deixe vazio para manter' : 'Cole sua chave de acesso', maxLength: 1000, autoComplete: 'new-password', onChange: (e) => this.setState({ bankForm: { ...f, clientSecret: e.target.value } }) })), this.field('Código da conexão (separe por vírgula, se houver mais de uma)', h('textarea', { className: 'form-control bank-item-field', value: f.itemIds, rows: 2, placeholder: 'Cole o código da conta autorizada', onChange: (e) => this.setState({ bankForm: { ...f, itemIds: e.target.value } }) }), 'Use os códigos fornecidos ao autorizar a conexão. Nunca informe sua senha bancária.'), h('div', { className: 'bank-actions' }, h('button', { className: 'primary-button', disabled: !c.secure || this.state.bankBusy, onClick: () => this.configureBank() }, h(Icon, { name: 'shield', size: 17 }), 'Salvar conexão'))) : null, h('div', { className: 'bank-actions' }, h('button', { className: 'outlined-action full', disabled: !c.configured || this.state.bankBusy, onClick: () => this.syncBank() }, h(Icon, { name: 'refresh', size: 17 }), this.state.bankBusy ? 'Atualizando…' : 'Atualizar minhas contas')), h('div', { className: 'privacy-small' }, h(Icon, { name: 'shield', size: 17 }), 'Sua chave é protegida neste computador e não faz parte das cópias de segurança.'), c.configured ? h('button', { className: 'bank-forget', onClick: () => this.forgetBank(), disabled: this.state.bankBusy }, 'Desconectar conta deste computador') : null, this.state.bankMessage ? h('p', { className: 'bank-feedback', role: 'status' }, this.state.bankMessage) : null), h(Card, { className: 'settings-card' }, h('h2', {}, 'Resumo da sincronização'), h('div', { className: 'bank-metric-list' }, h('div', {}, h('span', {}, 'Contas bancárias'), h('strong', {}, String(accounts.length))), h('div', {}, h('span', {}, 'Movimentações no histórico local'), h('strong', {}, String((_b = b.data.totalTransactions) !== null && _b !== void 0 ? _b : tx.length))), h('div', {}, h('span', {}, 'Última sincronização'), h('strong', {}, ((_c = b.data.last) === null || _c === void 0 ? void 0 : _c.completedAt) ? new Date(b.data.last.completedAt).toLocaleString('pt-BR') : 'Nunca')), h('div', {}, h('span', {}, 'Novas na última consulta'), h('strong', {}, String((_e = (_d = b.data.last) === null || _d === void 0 ? void 0 : _d.newCount) !== null && _e !== void 0 ? _e : '—')))), h('p', { className: 'muted-desc' }, 'As instituições podem demorar para enviar novas movimentações. Atualizar busca as informações mais recentes disponíveis.'), h('div', { className: 'info-box' }, h(Icon, { name: 'alert', size: 19 }), h('p', {}, 'As movimentações do banco não são misturadas automaticamente aos lançamentos adicionados por você. Isso evita despesas em duplicidade.')), (b.data.items || []).map(x => h('div', { className: 'bank-item-info', key: x.itemId }, h('b', {}, (!x.institution || x.institution === 'Meu Pluggy' ? 'Conta conectada' : x.institution)), h('small', {}, 'Situação: ' + (x.status === 'UPDATED' ? 'Atualizada' : x.status === 'UPDATING' ? 'Atualizando' : x.status === 'LOGIN_ERROR' ? 'Precisa reconectar' : 'Verifique sua conexão')), h('small', {}, 'Consentimento: ' + (x.consentExpiresAt ? new Date(x.consentExpiresAt).toLocaleDateString('pt-BR') : 'conforme seu banco'))))))), h(Card, { className: 'mf-bank-route' }, h('div', {}, h('h2', {}, 'Histórico financeiro em um só lugar'), h('p', { className: 'muted-desc' }, 'Consulte as transações, revise categorias e veja detalhes em Movimentações. Aqui você gerencia apenas suas conexões e saldos.')), h('button', { className: 'primary-button', onClick: () => { this.setState({ bankFilter: '', txSource: 'bank' }); this.navigate('transactions'); } }, 'Ver movimentações', h(Icon, { name: 'arrow', size: 16 }))));
+                this.setState({ bankIntegrationsOpen: e.currentTarget.open }); } }, h('summary', {}, h(Icon, { name: 'settings', size: 17 }), 'Conexão e sincronização'), h('div', { className: 'bank-grid' }, h(Card, { className: 'settings-card' }, h('div', { className: 'card-heading' }, h('div', {}, h('h2', {}, 'Sua conexão bancária'), h('p', {}, c.configured ? 'Acesso conectado e protegido' : ((_g = b.connection) === null || _g === void 0 ? void 0 : _g.isolated) ? 'Nesta RC, os dados são separados e a conexão é desativada.' : 'Conecte suas contas para acompanhar tudo aqui')), h('span', { className: 'bank-status ' + (c.configured ? 'enabled' : '') }, c.configured ? 'Configurada' : 'Não configurada')), ((_h = b.connection) === null || _h === void 0 ? void 0 : _h.isolated) ? h('p', { className: 'bank-warning' }, 'Canal experimental isolado: não configure credenciais pessoais nesta versão.') : null, !c.secure && !((_j = b.connection) === null || _j === void 0 ? void 0 : _j.isolated) ? h('p', { className: 'bank-warning' }, 'Não foi possível proteger sua chave neste computador. Evite configurar a conexão agora.') : null, c.configured ? h('button', { type: 'button', className: 'bank-details-toggle', 'aria-expanded': this.state.bankConfigOpen, onClick: () => this.setState({ bankConfigOpen: !this.state.bankConfigOpen }) }, h(Icon, { name: 'settings', size: 16 }), this.state.bankConfigOpen ? 'Ocultar detalhes da conexão' : 'Alterar dados da conexão') : null, (!c.configured || this.state.bankConfigOpen) ? h('div', { className: 'bank-settings-details' }, this.field('Código da aplicação', h('input', { className: 'form-control', value: f.clientId, placeholder: 'Cole o código de identificação', maxLength: 300, autoComplete: 'off', onChange: (e) => this.setState({ bankForm: { ...f, clientId: e.target.value } }) })), this.field('Chave privada', h('input', { className: 'form-control', type: 'password', value: f.clientSecret, placeholder: c.configured ? 'Já protegido — deixe vazio para manter' : 'Cole sua chave de acesso', maxLength: 1000, autoComplete: 'new-password', onChange: (e) => this.setState({ bankForm: { ...f, clientSecret: e.target.value } }) })), this.field('Código da conexão (separe por vírgula, se houver mais de uma)', h('textarea', { className: 'form-control bank-item-field', value: f.itemIds, rows: 2, placeholder: 'Cole o código da conta autorizada', onChange: (e) => this.setState({ bankForm: { ...f, itemIds: e.target.value } }) }), 'Use os códigos fornecidos ao autorizar a conexão. Nunca informe sua senha bancária.'), h('div', { className: 'bank-actions' }, h('button', { className: 'primary-button', disabled: !c.secure || this.state.bankBusy || ((_k = b.connection) === null || _k === void 0 ? void 0 : _k.isolated), onClick: () => this.configureBank() }, h(Icon, { name: 'shield', size: 17 }), 'Salvar conexão'))) : null, h('div', { className: 'bank-actions' }, h('button', { className: 'outlined-action full', disabled: !c.configured || this.state.bankBusy || ((_l = b.connection) === null || _l === void 0 ? void 0 : _l.isolated), onClick: () => this.syncBank() }, h(Icon, { name: 'refresh', size: 17 }), this.state.bankBusy ? 'Atualizando…' : 'Atualizar minhas contas')), h('div', { className: 'privacy-small' }, h(Icon, { name: 'shield', size: 17 }), 'Sua chave é protegida neste computador e não faz parte das cópias de segurança.'), c.configured ? h('button', { className: 'bank-forget', onClick: () => this.forgetBank(), disabled: this.state.bankBusy }, 'Desconectar conta deste computador') : null, this.state.bankMessage ? h('p', { className: 'bank-feedback', role: 'status' }, this.state.bankMessage) : null), h(Card, { className: 'settings-card' }, h('h2', {}, 'Resumo da sincronização'), h('div', { className: 'bank-metric-list' }, h('div', {}, h('span', {}, 'Contas bancárias'), h('strong', {}, String(accounts.length))), h('div', {}, h('span', {}, 'Movimentações no histórico local'), h('strong', {}, String((_m = b.data.totalTransactions) !== null && _m !== void 0 ? _m : tx.length))), h('div', {}, h('span', {}, 'Última sincronização'), h('strong', {}, ((_o = b.data.last) === null || _o === void 0 ? void 0 : _o.completedAt) ? new Date(b.data.last.completedAt).toLocaleString('pt-BR') : 'Nunca')), h('div', {}, h('span', {}, 'Novas na última consulta'), h('strong', {}, String((_q = (_p = b.data.last) === null || _p === void 0 ? void 0 : _p.newCount) !== null && _q !== void 0 ? _q : '—')))), h('p', { className: 'muted-desc' }, 'As instituições podem demorar para enviar novas movimentações. Atualizar busca as informações mais recentes disponíveis.'), h('div', { className: 'info-box' }, h(Icon, { name: 'alert', size: 19 }), h('p', {}, 'As movimentações do banco não são misturadas automaticamente aos lançamentos adicionados por você. Isso evita despesas em duplicidade.')), (b.data.items || []).map(x => h('div', { className: 'bank-item-info', key: x.itemId }, h('b', {}, (!x.institution || x.institution === 'Meu Pluggy' ? 'Conta conectada' : x.institution)), h('small', {}, 'Situação: ' + (x.status === 'UPDATED' ? 'Atualizada' : x.status === 'UPDATING' ? 'Atualizando' : x.status === 'LOGIN_ERROR' ? 'Precisa reconectar' : 'Verifique sua conexão')), h('small', {}, 'Consentimento: ' + (x.consentExpiresAt ? new Date(x.consentExpiresAt).toLocaleDateString('pt-BR') : 'conforme seu banco'))))))), h(Card, { className: 'mf-bank-route' }, h('div', {}, h('h2', {}, 'Histórico financeiro em um só lugar'), h('p', { className: 'muted-desc' }, 'Consulte as transações, revise categorias e veja detalhes em Movimentações. Aqui você gerencia apenas suas conexões e saldos.')), h('button', { className: 'primary-button', onClick: () => { this.setState({ bankFilter: '', txSource: 'bank' }); this.navigate('transactions'); } }, 'Ver movimentações', h(Icon, { name: 'arrow', size: 16 }))));
     }
     renderSettings() {
         var _a;
@@ -2288,7 +2815,7 @@ class App extends React.Component {
             h('p', { className: 'muted-desc' }, 'Análise mensal limitada; detalhes restantes precisam ser conferidos.') : null) : null) : null, h(Card, { className: 'settings-card', 'data-settings-group': 'data' }, h('h2', {}, 'Dados e cópias de segurança'), h('p', { className: 'muted-desc' }, desktop ? (this.state.cloudPersonalTransferred ? 'Existem personalizações em quarentena protegida na nuvem; a sincronização financeira ainda não foi ativada. A cópia local completa é independente da exportação manual.' : 'A cópia SQLite completa e a exportação de lançamentos manuais são diferentes. Credenciais bancárias são guardadas separadamente.') : 'A exportação de lançamentos manuais não é um backup completo do banco SQLite.'), h('button', { className: 'outlined-action full', onClick: () => this.exportJSON() }, h(Icon, { name: 'download', size: 17 }), 'Exportar lançamentos manuais'), h('button', { className: 'outlined-action full', onClick: () => { var _a; return (_a = this.fileInput) === null || _a === void 0 ? void 0 : _a.click(); } }, h(Icon, { name: 'upload', size: 17 }), 'Importar lançamentos manuais'), desktop ? h('button', { className: 'outlined-action full', onClick: () => this.backupDB() }, h(Icon, { name: 'download', size: 17 }), 'Salvar cópia completa') : null, desktop ? h('button', { className: 'outlined-action full', onClick: () => this.restoreDB() }, h(Icon, { name: 'upload', size: 17 }), 'Restaurar cópia completa') : null, desktop ? h('div', { className: 'backups-info' }, h(Icon, { name: 'shield', size: 18 }), h('div', {}, h('b', {}, 'Cópias automáticas locais'), h('small', {}, this.state.backupInfo.last ? 'Última cópia: ' + new Date(this.state.backupInfo.last).toLocaleString('pt-BR') + ' · Até 7 datas preservadas' : 'Uma cópia por dia em que o app estiver aberto.'))) : null, desktop ? h('button', { className: 'outlined-action full', onClick: () => this.openBackupsFolder() }, h(Icon, { name: 'folder', size: 17 }), 'Ver minhas cópias automáticas') : null, desktop ? h('button', { className: 'outlined-action full', onClick: () => this.openDataDir() }, h(Icon, { name: 'bank', size: 17 }), 'Abrir pasta dos meus dados') : null, h('div', { className: 'privacy-small' }, h(Icon, { name: 'shield', size: 17 }), 'Exportar lançamentos manuais não substitui uma cópia completa. Consulte a situação da nuvem acima.')), h('div', { 'data-settings-group': 'intelligence' }, renderIntelligenceSettings(this)), h(Card, { className: 'settings-card', 'data-settings-group': 'demo' }, h('h2', {}, 'Modo de demonstração'), h('p', { className: 'muted-desc' }, 'O modo de demonstração tem transações fictícias e armazenamento separado dos seus dados pessoais.'), h('button', { className: 'outlined-action full', onClick: () => this.toggleMode() }, this.state.mode === 'real' ? 'Entrar na demonstração' : 'Voltar aos dados pessoais', h(Icon, { name: 'arrow', size: 16 }))))));
     }
     renderDetailDrawer() {
-        var _a;
+        var _a, _b, _c, _d;
         const selected = this.state.detail;
         if (!selected)
             return null;
@@ -2302,12 +2829,26 @@ class App extends React.Component {
         const category = (tx === null || tx === void 0 ? void 0 : tx.category) || (manual === null || manual === void 0 ? void 0 : manual.category) || 'Outros';
         const cats = this.getCategories();
         const cat = cats.find(c => c.name === category);
+        const sourceId = bank ? 'bank' : 'manual';
+        const context = this.qa84D05DrawerIds;
+        const matching = (context === null || context === void 0 ? void 0 : context.origin) === sourceId && context.id === selected.id &&
+            (!bank || context.accountId === selected.accountId) ? context : null;
+        const identity = qa84B03Visual({
+            categoryId: (manual === null || manual === void 0 ? void 0 : manual.categoryId) || (tx === null || tx === void 0 ? void 0 : tx.categoryId) || (matching === null || matching === void 0 ? void 0 : matching.categoryId) || null,
+            subcategoryId: (_c = (_b = (_a = manual === null || manual === void 0 ? void 0 : manual.subcategoryId) !== null && _a !== void 0 ? _a : tx === null || tx === void 0 ? void 0 : tx.subcategoryId) !== null && _b !== void 0 ? _b : matching === null || matching === void 0 ? void 0 : matching.subcategoryId) !== null && _c !== void 0 ? _c : null,
+            categoryName: category
+        }, this.state.qa84VisualCatalog || D05_APPROVED_PARENTS);
+        const categoryAction = (label) => h('button', { type: 'button',
+            className: 'mf-drawer-d05-category', title: 'Abrir classificação D05',
+            'aria-label': label, onClick: (event) => qa84B03RequestDrawerPicker(event, sourceId, selected.id, bank ? selected.accountId : undefined) }, h(D05VectorIcon, { iconKey: identity.iconKey, hue: identity.hue, size: 24 }), h('span', {}, identity.source === 'sub' ? identity.parentLabel + ' › ' + identity.label :
+            identity.source === 'fallback' ? category : identity.label));
         const f = this.state.detailDraft;
         const matchSuggestions = tx && tx.status === 'POSTED' ? this.state.data.transactions.filter(m => m.kind === (tx.amount >= 0 ? 'income' : 'expense') && m.amount === Math.abs(tx.amount) && Math.abs((Date.parse(m.date + 'T00:00:00Z') - Date.parse(tx.date + 'T00:00:00Z')) / 86400000) <= 3 && !this.state.bank.data.transactions.some(other => other.linkedManualId === m.id && (other.id !== tx.id || other.accountId !== tx.accountId))).slice(0, 6) : [];
         const opposite = tx ? this.state.bank.data.transactions.filter(other => other.accountId !== tx.accountId && other.amount === -tx.amount && Math.abs((Date.parse(other.date + 'T00:00:00Z') - Date.parse(tx.date + 'T00:00:00Z')) / 86400000) <= 2 && other.status === 'POSTED').slice(0, 3) : [];
         const splitTotal = f.splitParts.reduce((a, p) => a + parseMoney(p.value), 0);
         return h('div', { className: 'mf-drawer-backdrop', role: 'presentation', onMouseDown: (e) => { if (e.currentTarget === e.target)
-                this.setState({ detail: null }); } }, h('aside', { className: 'mf-detail-drawer', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Detalhes da movimentação' }, h('div', { className: 'mf-drawer-head' }, h('div', {}, h('small', { className: 'micro-label' }, 'DETALHES'), h('h2', {}, 'Movimentação')), h('button', { className: 'close-button', type: 'button', 'aria-label': 'Fechar painel', title: 'Fechar', onClick: () => this.setState({ detail: null }) }, h(Icon, { name: 'close', size: 18 }))), h('div', { className: 'mf-detail-scroll' }, h('div', { className: 'mf-detail-hero' }, h('span', { className: 'mf-hero-emoji' }, (cat === null || cat === void 0 ? void 0 : cat.emoji) || '✨'), h('h3', {}, name), h('strong', { className: amount >= 0 ? 'good-text' : 'bad-text' }, (amount >= 0 ? '+' : '−') + fmt(Math.abs(amount))), h('span', {}, ((tx === null || tx === void 0 ? void 0 : tx.date) || (manual === null || manual === void 0 ? void 0 : manual.date) || '').split('-').reverse().join('/') + ' · ' + ((tx === null || tx === void 0 ? void 0 : tx.accountName) || 'Adicionado por você'))), h('button', { type: 'button', className: 'mf-ai-detail-trigger', onClick: () => this.openIntelligenceContext('transactions') }, h(Icon, { name: 'spark', size: 17 }), 'Analisar com Inteligência', h('span', {}, 'Prévia')), tx ? h('div', { className: 'mf-detail-section' }, h('div', { className: 'mf-detail-section-title' }, h('b', {}, 'Organização'), h('span', { className: tx.reviewed ? 'mf-reviewed' : 'mf-to-review' }, tx.reviewed ? '✓ Revisada' : 'A conferir')), h('div', { className: 'mf-detail-grid' }, this.field('Categoria principal', h(StyledSelect, { className: 'mf-transaction-category-select', value: tx.category, disabled: this.state.categorySaving.includes(tx.accountId + '|' + tx.id), options: cats.map(c => ({ value: c.name, label: c.emoji + ' ' + c.name })), onChange: (v) => this.setBankCategory(tx, v) })), this.field('Tipo de movimentação', h(StyledSelect, { value: f.nature, options: [{ value: 'auto', label: 'Padrão' }, { value: 'income', label: 'Receita' }, { value: 'expense', label: 'Despesa' }, { value: 'transfer', label: 'Transferência própria' }, { value: 'ignore', label: 'Não contar nas análises' }], onChange: (nature) => this.setState({ detailDraft: { ...f, nature } }) }))), this.field('Nome do estabelecimento', h('input', { className: 'form-control', value: f.merchant, maxLength: 100, placeholder: 'Ex.: iFood, Mercado, Academia', onChange: (e) => this.setState({ detailDraft: { ...f, merchant: e.target.value } }) })), this.field('Anotações pessoais', h('textarea', { className: 'form-control mf-note-input', rows: 3, value: f.note, maxLength: 600, placeholder: 'Opcional: detalhes para lembrar desta compra', onChange: (e) => this.setState({ detailDraft: { ...f, note: e.target.value } }) })), h('label', { className: 'mf-review-checkbox' }, h('input', { type: 'checkbox', checked: f.reviewed, onChange: (e) => this.setState({ detailDraft: { ...f, reviewed: e.target.checked } }) }), 'Conferi esta movimentação'), h('button', { className: 'primary-button mf-full-action', disabled: this.state.detailBusy, onClick: () => this.updateBankInfo() }, 'Salvar detalhes')) : null, tx ? h('div', { className: 'mf-detail-section' }, h('b', {}, 'Reconhecer estabelecimento'), h('p', { className: 'muted-desc' }, 'Aplique o nome escolhido às próximas movimentações com o mesmo trecho de descrição.'), this.field('Trecho que identifica esse estabelecimento', h('input', { className: 'form-control', value: f.aliasPattern, maxLength: 120, onChange: (e) => this.setState({ detailDraft: { ...f, aliasPattern: e.target.value } }) })), h('button', { className: 'outlined-action full', disabled: this.state.detailBusy, onClick: () => this.createMerchantAlias() }, 'Usar este nome nas movimentações semelhantes'), h('button', { className: 'ghost-button', disabled: this.state.detailBusy, onClick: () => this.createCategoryRuleFromDetail() }, 'Usar categoria nas movimentações semelhantes'), (this.state.bank.data.aliases || []).filter(a => fold(tx.description).includes(fold(a.pattern))).map(a => h('div', { className: 'mf-suggestion', key: a.id }, h('small', {}, 'Regra: ' + a.pattern + ' → ' + a.displayName), h('button', { className: 'mf-small-link', disabled: this.state.detailBusy, onClick: async () => { if (!confirm('Remover esta regra de nome?'))
+                this.setState({ detail: null }); } }, h('aside', { className: 'mf-detail-drawer', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Detalhes da movimentação' }, h('div', { className: 'mf-drawer-head' }, h('div', {}, h('small', { className: 'micro-label' }, 'DETALHES'), h('h2', {}, 'Movimentação')), h('button', { className: 'close-button', type: 'button', 'aria-label': 'Fechar painel', title: 'Fechar', onClick: () => this.setState({ detail: null }) }, h(Icon, { name: 'close', size: 18 }))), h('div', { className: 'mf-detail-scroll' }, h('div', { className: 'mf-detail-hero' }, categoryAction('Alterar categoria de ' + name), h('h3', {}, name), h('strong', { className: amount >= 0 ? 'good-text' : 'bad-text' }, (amount >= 0 ? '+' : '−') + fmt(Math.abs(amount))), h('span', {}, ((tx === null || tx === void 0 ? void 0 : tx.date) || (manual === null || manual === void 0 ? void 0 : manual.date) || '').split('-').reverse().join('/') + ' · ' + ((tx === null || tx === void 0 ? void 0 : tx.accountName) || 'Adicionado por você'))), h('button', { type: 'button', className: 'mf-ai-detail-trigger', onClick: () => this.openIntelligenceContext('transactions') }, h(Icon, { name: 'spark', size: 17 }), 'Analisar com Inteligência', h('span', {}, 'Prévia')), tx ? h('div', { className: 'mf-detail-section' }, h('div', { className: 'mf-detail-section-title' }, h('b', {}, 'Organização'), h('span', { className: tx.reviewed ? 'mf-reviewed' : 'mf-to-review' }, tx.reviewed ? '✓ Revisada' : 'A conferir')), h('div', { className: 'mf-detail-grid' }, this.field('Categoria principal', categoryAction('Alterar classificação bancária de ' + name)), this.field('Tipo de movimentação', h(StyledSelect, { value: f.nature, options: [{ value: 'auto', label: 'Padrão' }, { value: 'income', label: 'Receita' }, { value: 'expense', label: 'Despesa' }, { value: 'transfer', label: 'Transferência própria' }, { value: 'ignore', label: 'Não contar nas análises' }], onChange: (nature) => this.setState({ detailDraft: { ...f, nature } }) }))), this.field('Nome do estabelecimento', h('input', { className: 'form-control', value: f.merchant, maxLength: 100, placeholder: 'Ex.: iFood, Mercado, Academia', onChange: (e) => this.setState({ detailDraft: { ...f, merchant: e.target.value } }) })), this.field('Anotações pessoais', h('textarea', { className: 'form-control mf-note-input', rows: 3, value: f.note, maxLength: 600, placeholder: 'Opcional: detalhes para lembrar desta compra', onChange: (e) => this.setState({ detailDraft: { ...f, note: e.target.value } }) })), h('label', { className: 'mf-review-checkbox' }, h('input', { type: 'checkbox', checked: f.reviewed, onChange: (e) => this.setState({ detailDraft: { ...f, reviewed: e.target.checked } }) }), 'Conferi esta movimentação'), h('button', { className: 'primary-button mf-full-action', disabled: this.state.detailBusy, onClick: () => this.updateBankInfo() }, 'Salvar detalhes')) : null, tx ? h('div', { className: 'mf-detail-section' }, h('b', {}, 'Reconhecer estabelecimento'), h('p', { className: 'muted-desc' }, 'Aplique o nome escolhido às próximas movimentações com o mesmo trecho de descrição.'), this.field('Trecho que identifica esse estabelecimento', h('input', { className: 'form-control', value: f.aliasPattern, maxLength: 120, onChange: (e) => this.setState({ detailDraft: { ...f, aliasPattern: e.target.value } }) })), h('button', { className: 'outlined-action full', disabled: this.state.detailBusy, onClick: () => this.createMerchantAlias() }, 'Usar este nome nas movimentações semelhantes'), h('button', { className: 'ghost-button', disabled: !this.qa84BankCategoryGateAuthorized || this.state.detailBusy,
+            title: 'Regra bancária exige prévia supervisionada D05', onClick: () => this.createCategoryRuleFromDetail() }, 'Usar categoria nas movimentações semelhantes'), (this.state.bank.data.aliases || []).filter(a => fold(tx.description).includes(fold(a.pattern))).map(a => h('div', { className: 'mf-suggestion', key: a.id }, h('small', {}, 'Regra: ' + a.pattern + ' → ' + a.displayName), h('button', { className: 'mf-small-link', disabled: this.state.detailBusy, onClick: async () => { if (!confirm('Remover esta regra de nome?'))
                 return; try {
                 const data = await desktop.bankDeleteAlias(a.id);
                 this.setState({ bank: { ...this.state.bank, data } });
@@ -2315,19 +2856,14 @@ class App extends React.Component {
             }
             catch (e) {
                 this.flash('Não foi possível remover: ' + String((e === null || e === void 0 ? void 0 : e.message) || e));
-            } } }, 'Excluir')))) : null, tx && tx.amount < 0 ? h('div', { className: 'mf-detail-section' }, h('b', {}, 'Dividir compra'), h('p', { className: 'muted-desc' }, 'Distribua o valor entre categorias sem alterar o total da compra original.'), tx.splitOutdated ? h('p', { className: 'mf-inline-warning' }, 'O banco atualizou o valor desta compra. Revise a divisão antes de aplicá-la novamente.') : null, f.splitParts.map((part, i) => h('div', { className: 'mf-split-row', key: i }, h(StyledSelect, { value: part.category, options: cats.map(c => ({ value: c.name, label: c.emoji + ' ' + c.name })), onChange: (category) => this.setState({ detailDraft: { ...f, splitParts: f.splitParts.map((v, j) => i === j ? { ...v, category } : v) } }) }), h('input', { className: 'form-control', value: part.value, inputMode: 'decimal', placeholder: '0,00', onChange: (e) => this.setState({ detailDraft: { ...f, splitParts: f.splitParts.map((v, j) => i === j ? { ...v, value: e.target.value } : v) } }) }), h('button', { className: 'mf-small-link', title: 'Remover parte', disabled: f.splitParts.length <= 2, onClick: () => this.setState({ detailDraft: { ...f, splitParts: f.splitParts.filter((_, j) => j !== i) } }) }, h(Icon, { name: 'close', size: 18 })))), h('div', { className: 'mf-detail-split-footer' }, h('button', { className: 'mf-small-link', disabled: f.splitParts.length >= 20, onClick: () => this.setState({ detailDraft: { ...f, splitParts: [...f.splitParts, { category: category, value: '0,00' }] } }) }, '+ Adicionar parte'), h('strong', { className: splitTotal === Math.abs(tx.amount) ? 'good-text' : 'bad-text' }, fmt(Number.isFinite(splitTotal) ? splitTotal : 0) + ' / ' + fmt(Math.abs(tx.amount)))), h('div', { className: 'mf-action-row' }, h('button', { className: 'primary-button', disabled: this.state.detailBusy || splitTotal !== Math.abs(tx.amount) || f.splitParts.some(p => parseMoney(p.value) <= 0), onClick: () => this.saveSplit() }, 'Salvar divisão'), h('button', { className: 'ghost-button', disabled: this.state.detailBusy || !((_a = tx.splits) === null || _a === void 0 ? void 0 : _a.length), onClick: () => this.runBankOperation('bankSplit', { accountId: tx.accountId, externalId: tx.id, parts: [] }, 'Divisão removida.') }, 'Remover divisão'))) : null, tx ? h('div', { className: 'mf-detail-section' }, h('b', {}, 'Conferir com um lançamento seu'), tx.linkedManualId ? h('div', { className: 'mf-suggestion' }, h('span', {}, '✓ Vinculado a um lançamento que você adicionou'), h('button', { className: 'mf-small-link', disabled: this.state.detailBusy, onClick: () => this.setManualLink(null) }, 'Desvincular')) :
+            } } }, 'Excluir')))) : null, tx && tx.amount < 0 ? h('div', { className: 'mf-detail-section' }, h('b', {}, 'Dividir compra'), h('p', { className: 'muted-desc' }, 'Distribua o valor entre categorias sem alterar o total da compra original.'), tx.splitOutdated ? h('p', { className: 'mf-inline-warning' }, 'O banco atualizou o valor desta compra. Revise a divisão antes de aplicá-la novamente.') : null, f.splitParts.map((part, i) => h('div', { className: 'mf-split-row', key: i }, h(StyledSelect, { value: part.category, options: cats.map(c => ({ value: c.name, label: c.emoji + ' ' + c.name })), onChange: (category) => this.setState({ detailDraft: { ...f, splitParts: f.splitParts.map((v, j) => i === j ? { ...v, category } : v) } }) }), h('input', { className: 'form-control', value: part.value, inputMode: 'decimal', placeholder: '0,00', onChange: (e) => this.setState({ detailDraft: { ...f, splitParts: f.splitParts.map((v, j) => i === j ? { ...v, value: e.target.value } : v) } }) }), h('button', { className: 'mf-small-link', title: 'Remover parte', disabled: f.splitParts.length <= 2, onClick: () => this.setState({ detailDraft: { ...f, splitParts: f.splitParts.filter((_, j) => j !== i) } }) }, h(Icon, { name: 'close', size: 18 })))), h('div', { className: 'mf-detail-split-footer' }, h('button', { className: 'mf-small-link', disabled: f.splitParts.length >= 20, onClick: () => this.setState({ detailDraft: { ...f, splitParts: [...f.splitParts, { category: category, value: '0,00' }] } }) }, '+ Adicionar parte'), h('strong', { className: splitTotal === Math.abs(tx.amount) ? 'good-text' : 'bad-text' }, fmt(Number.isFinite(splitTotal) ? splitTotal : 0) + ' / ' + fmt(Math.abs(tx.amount)))), h('div', { className: 'mf-action-row' }, h('button', { className: 'primary-button', disabled: !this.qa84BankCategoryGateAuthorized || this.state.detailBusy || splitTotal !== Math.abs(tx.amount) || f.splitParts.some(p => parseMoney(p.value) <= 0), title: 'Divisão bancária exige prévia D05', onClick: () => this.saveSplit() }, 'Salvar divisão'), h('button', { className: 'ghost-button', disabled: !this.qa84BankCategoryGateAuthorized || this.state.detailBusy || !((_d = tx.splits) === null || _d === void 0 ? void 0 : _d.length), title: 'Divisão bancária exige prévia D05', onClick: () => this.runBankOperation('bankSplit', { accountId: tx.accountId, externalId: tx.id, parts: [] }, 'Divisão removida.') }, 'Remover divisão'))) : null, tx ? h('div', { className: 'mf-detail-section' }, h('b', {}, 'Conferir com um lançamento seu'), tx.linkedManualId ? h('div', { className: 'mf-suggestion' }, h('span', {}, '✓ Vinculado a um lançamento que você adicionou'), h('button', { className: 'mf-small-link', disabled: this.state.detailBusy, onClick: () => this.setManualLink(null) }, 'Desvincular')) :
             matchSuggestions.length ? matchSuggestions.map(m => h('div', { className: 'mf-suggestion', key: m.id }, h('div', {}, h('b', {}, m.description), h('small', {}, m.date.split('-').reverse().join('/') + ' · ' + fmt(m.amount))), h('button', { className: 'ghost-button', disabled: this.state.detailBusy, onClick: () => this.setManualLink(m.id) }, 'Vincular'))) : h('p', { className: 'muted-desc' }, 'Nenhum lançamento manual com mesmo valor, tipo e data próxima.')) : null, tx && opposite.length ? h('div', { className: 'mf-detail-section' }, h('b', {}, 'Possível transferência entre suas contas'), h('p', { className: 'muted-desc' }, 'Encontramos um valor oposto em outra conta. Confira antes de classificar.'), opposite.map(other => h('div', { className: 'mf-suggestion', key: other.id }, h('span', {}, other.accountName + ' · ' + fmt(Math.abs(other.amount))), h('button', { className: 'ghost-button', disabled: this.state.detailBusy, onClick: () => { if (confirm('Marcar ambas como transferência própria?'))
                 this.runBankOperation('bankBatch', { items: [{ accountId: tx.accountId, externalId: tx.id }, { accountId: other.accountId, externalId: other.id }], nature: 'transfer', reviewed: true }, 'Movimentações marcadas como transferência interna.'); } }, 'Marcar ambas')))) : null, manual && this.state.manualDraft ? h('div', { className: 'mf-detail-section mf-manual-editor' }, h('b', {}, 'Editar lançamento manual'), h('p', { className: 'muted-desc' }, 'Altere os dados deste lançamento sem modificar os extratos das instituições conectadas.'), this.field('Descrição', h('input', { className: 'form-control', maxLength: 150, value: this.state.manualDraft.description,
             onChange: (e) => this.setState({ manualDraft: { ...this.state.manualDraft, description: e.target.value } }) })), h('div', { className: 'mf-detail-grid' }, this.field('Valor (R$)', h('input', { className: 'form-control', inputMode: 'decimal',
             value: this.state.manualDraft.value, disabled: this.isManualLinked(manual.id),
             onChange: (e) => this.setState({ manualDraft: { ...this.state.manualDraft, value: e.target.value } }) })), this.field('Data', h(SingleDatePicker, { value: this.state.manualDraft.date,
             disabled: this.isManualLinked(manual.id),
-            onChange: (value) => this.setState({ manualDraft: { ...this.state.manualDraft, date: value } }) }))), this.field('Categoria do lançamento', h(StyledSelect, {
-            className: 'mf-transaction-category-select', value: this.state.manualDraft.category,
-            options: cats.filter(c => manual.kind === 'income' ? c.kind !== 'expense' : c.kind !== 'income')
-                .map(c => ({ value: c.name, label: c.emoji + ' ' + c.name })),
-            onChange: (v) => this.setState({ manualDraft: { ...this.state.manualDraft, category: v } })
-        })), this.isManualLinked(manual.id) ? h('p', { className: 'mf-manual-warning' }, 'Lançamento vinculado a uma movimentação bancária: desvincule antes de alterar data, valor ou excluir.') : null, h('div', { className: 'mf-manual-actions' }, h('button', { type: 'button', className: 'primary-button', disabled: this.state.busy,
+            onChange: (value) => this.setState({ manualDraft: { ...this.state.manualDraft, date: value } }) }))), this.field('Categoria do lançamento', categoryAction('Alterar categoria manual de ' + name)), this.isManualLinked(manual.id) ? h('p', { className: 'mf-manual-warning' }, 'Lançamento vinculado a uma movimentação bancária: desvincule antes de alterar data, valor ou excluir.') : null, h('div', { className: 'mf-manual-actions' }, h('button', { type: 'button', className: 'primary-button', disabled: this.state.busy,
             onClick: () => this.saveManualDetail(manual.id) }, h(Icon, { name: 'check', size: 16 }), 'Salvar alterações'), h('button', { type: 'button', className: 'ghost-button', disabled: this.state.busy,
             onClick: () => this.setState({ manualDraft: { description: manual.description, date: manual.date,
                     value: moneyString(manual.amount), category: manual.category } }) }, 'Cancelar alterações'), h('button', { type: 'button', className: 'ghost-button mf-danger-action',
@@ -2342,7 +2878,7 @@ class App extends React.Component {
             this.setState({ showEntry: false }); } }, h('div', { className: 'modal', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Registrar movimentação' }, h('div', { className: 'modal-head' }, h('div', {}, h('small', { className: 'micro-label' }, 'NOVO LANÇAMENTO'), h('h2', {}, 'Registrar movimentação')), h('button', { className: 'close-button', type: 'button', 'aria-label': 'Fechar painel', onClick: () => this.setState({ showEntry: false }) }, h(Icon, { name: 'close', size: 18 }))), h('div', { className: 'segmented' }, ['expense', 'income'].map(k => h('button', { key: k, className: f.kind === k ? 'selected' : '', onClick: () => this.setState({ entry: { ...f, kind: k, category: this.state.entryCategoryTouched && this.getCategories().some(c => c.name === f.category && (k === 'income' ? c.kind !== 'expense' : c.kind !== 'income')) ? f.category : k === 'income' ? 'Salário' : 'Outros' } }) }, k === 'expense' ? 'Despesa' : 'Receita'))), this.field('Descrição', h('input', { className: 'form-control', placeholder: 'Ex.: supermercado', value: f.description, maxLength: 150, onChange: (e) => { const description = e.target.value; const category = this.state.entryCategoryTouched ? f.category : (findCategoryRule(description, 'manual', this.state.rules) || 'Outros'); this.setState({ entry: { ...f, description, category } }); } })), h('div', { className: 'two-inputs' }, this.field('Valor (R$)', h('input', { className: 'form-control', placeholder: '0,00', inputMode: 'decimal', value: f.value, onChange: (e) => this.setState({ entry: { ...f, value: e.target.value } }) })), this.field('Data', h(SingleDatePicker, { value: f.date, onChange: (value) => this.setState({ entry: { ...f, date: value } }) }))), this.field('Categoria', h(StyledSelect, { className: 'form-control', value: f.category, options: this.getCategories().filter(c => f.kind === 'income' ? c.kind !== 'expense' : c.kind !== 'income').map(c => ({ value: c.name, label: (c.emoji || '✨') + '  ' + c.name })), onChange: (value) => this.setState({ entry: { ...f, category: value }, entryCategoryTouched: true }) })), this.state.mode === 'real' ? h('button', { type: 'button', className: 'mf-new-category', onClick: () => this.openContextCategory('entry') }, '+ Nova categoria') : null, h('div', { className: 'modal-actions' }, h('button', { className: 'ghost-button', onClick: () => this.setState({ showEntry: false }) }, 'Cancelar'), h('button', { className: 'primary-button', onClick: () => this.saveEntry() }, h(Icon, { name: 'check', size: 18 }), 'Salvar lançamento')))); }
     render() { if (this.state.fatal)
         return h('main', { className: 'startup-error' }, h('h1', {}, 'Não foi possível abrir seus dados'), h('p', {}, this.state.fatal), h('p', {}, 'Se houver arquivos importantes, não desinstale a versão anterior nem apague a pasta de dados.')); if (this.state.booting && desktop)
-        return h('main', { className: 'startup-error' }, h('h1', {}, 'Meu Financeiro'), h('p', {}, 'Preparando seus dados…')); return h('div', { className: 'shell' }, this.renderSide(), h('main', { className: 'main-area ' + (this.state.page === 'overview' ? 'u1-shell' : ['transactions', 'planning'].includes(this.state.page) ? 'u2-shell' : ['budgets', 'banks', 'assistant'].includes(this.state.page) ? 'u3-shell' : '') }, this.renderWorkspaceBar(), this.renderTop(), this.state.mode === 'demo' ? h('div', { className: 'demo-strip' }, h(Icon, { name: 'spark', size: 17 }), 'Você está explorando dados fictícios. Nada aqui altera suas finanças pessoais.', h('button', { onClick: () => this.toggleMode() }, 'Sair da demonstração')) : null, ({ overview: this.renderOverview, planning: this.renderPlanning, transactions: this.renderMovements, budgets: this.renderBudgets, banks: this.renderBanks, categories: this.renderCategories, assistant: this.renderAssistant, settings: this.renderSettings, intelligence: () => renderIntelligenceView(this) }[this.state.page] || this.renderOverview).call(this), h('footer', { className: 'footer' }, h('span', {}, desktop ? 'Meu Financeiro v0.9.5-beta.8 · Interface U3 · Feito para você' : 'Meu Financeiro v0.9.5-beta.8 · Interface U3 · Feito para você'), h('span', {}, this.state.cloudPersonalTransferred ? 'Personalizações em revisão na nuvem' : 'Fonte local · integração sob autorização'))), this.state.toast ? h('div', { className: 'toast' }, h(Icon, { name: 'check', size: 17 }), this.state.toast) : null, this.state.showEntry && !this.state.contextCategory ? this.renderEntryModal() : null, this.state.editModal ? this.renderEditModal() : null, this.state.detail ? this.renderDetailDrawer() : null, this.state.quickCategory && !this.state.contextCategory ? this.renderQuickCategoryPopover() : null, this.state.contextCategory ? this.renderContextCategory() : null, this.state.planOpen ? this.renderPlanModal() : null, this.state.planSelected ? this.renderPlanDetail() : null, renderIntelligencePanel(this), !this.state.intelligencePanelOpen && !this.state.showEntry && !this.state.editModal && !this.state.detail && !this.state.planOpen && !this.state.planSelected ? h('button', { type: 'button', className: 'mf-ai-fab', 'aria-label': 'Perguntar à IA sobre esta página', title: 'Perguntar à IA sobre esta página', onClick: () => this.openIntelligenceContext() }, h(Icon, { name: 'spark', size: 24 })) : null, h('input', { type: 'file', accept: '.json,application/json', style: { display: 'none' }, ref: (e) => this.fileInput = e, onChange: (e) => { var _a; if ((_a = e.target.files) === null || _a === void 0 ? void 0 : _a[0])
+        return h('main', { className: 'startup-error' }, h('h1', {}, 'Meu Financeiro'), h('p', {}, 'Preparando seus dados…')); return h('div', { className: 'shell' }, this.renderSide(), h('main', { className: 'main-area ' + (this.state.page === 'overview' ? 'u1-shell' : ['transactions', 'planning'].includes(this.state.page) ? 'u2-shell' : ['budgets', 'banks', 'assistant'].includes(this.state.page) ? 'u3-shell' : '') }, this.renderWorkspaceBar(), this.renderTop(), this.state.mode === 'demo' ? h('div', { className: 'demo-strip' }, h(Icon, { name: 'spark', size: 17 }), 'Você está explorando dados fictícios. Nada aqui altera suas finanças pessoais.', h('button', { onClick: () => this.toggleMode() }, 'Sair da demonstração')) : null, ({ overview: this.renderOverview, planning: this.renderPlanning, transactions: this.renderMovements, budgets: this.renderBudgets, banks: this.renderBanks, categories: this.renderCategories, assistant: this.renderAssistant, settings: this.renderSettings, intelligence: () => renderIntelligenceView(this) }[this.state.page] || this.renderOverview).call(this), h('footer', { className: 'footer' }, h('span', {}, desktop ? 'Meu Financeiro v0.9.5-beta.8 · Interface U3 · Feito para você' : 'Meu Financeiro v0.9.5-beta.8 · Interface U3 · Feito para você'), h('span', {}, this.state.cloudPersonalTransferred ? 'Personalizações em revisão na nuvem' : 'Fonte local · integração sob autorização'))), this.state.toast ? h('div', { className: 'toast' }, h(Icon, { name: 'check', size: 17 }), this.state.toast) : null, this.state.showEntry && !this.state.contextCategory ? this.renderEntryModal() : null, this.state.editModal ? this.renderEditModal() : null, this.state.detail ? this.renderDetailDrawer() : null, this.state.quickCategory && !this.state.contextCategory ? this.renderQuickCategoryPopover() : null, this.state.contextCategory ? this.renderContextCategory() : null, this.state.planOpen ? this.renderPlanModal() : null, this.state.planSelected ? this.renderPlanDetail() : null, renderIntelligencePanel(this), this.renderCSVPreview(), !this.state.intelligencePanelOpen && !this.state.showEntry && !this.state.editModal && !this.state.detail && !this.state.planOpen && !this.state.planSelected ? h('button', { type: 'button', className: 'mf-ai-fab', 'aria-label': 'Perguntar à IA sobre esta página', title: 'Perguntar à IA sobre esta página', onClick: () => this.openIntelligenceContext() }, h(Icon, { name: 'spark', size: 24 })) : null, h('input', { type: 'file', accept: '.json,application/json', style: { display: 'none' }, ref: (e) => this.fileInput = e, onChange: (e) => { var _a; if ((_a = e.target.files) === null || _a === void 0 ? void 0 : _a[0])
             this.importJSON(e.target.files[0]); e.target.value = ''; } }), h('input', { type: 'file', accept: '.csv,text/csv', style: { display: 'none' }, ref: (e) => this.csvInput = e, onChange: (e) => { var _a; if ((_a = e.target.files) === null || _a === void 0 ? void 0 : _a[0])
             this.importCSV(e.target.files[0]); e.target.value = ''; } })); }
 }
@@ -2365,6 +2901,1245 @@ function splitCSV(line, separator) { const result = []; let current = '', quoted
 } result.push(current); return result; }
 function download(blob, name) { const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 1200); }
 ReactDOM.render(h(App, {}), document.getElementById('app'));
+function d05CsvRecords(input) {
+    if (typeof input !== 'string' || input.length > 4000000)
+        throw Error('CSV excede limite de 4 MB.');
+    const text = input.replace(/^\ufeff/, '');
+    const firstLine = text.slice(0, text.indexOf('\n') >= 0 ? text.indexOf('\n') : Math.min(text.length, 2000));
+    const separator = (firstLine.match(/;/g) || []).length >= (firstLine.match(/,/g) || []).length ? ';' : ',';
+    const rows = [];
+    let row = [], field = '', quoted = false, closed = false;
+    for (let i = 0; i < text.length; i++) {
+        const ch = text[i];
+        if (ch === '"') {
+            if (quoted && text[i + 1] === '"') {
+                field += '"';
+                i++;
+                continue;
+            }
+            if (quoted) {
+                quoted = false;
+                closed = true;
+                continue;
+            }
+            if (!field && !closed) {
+                quoted = true;
+                continue;
+            }
+            throw Error('CSV com aspas inválidas na linha ' + (rows.length + 1));
+        }
+        if (!quoted && (ch === separator || ch === '\n' || ch === '\r')) {
+            row.push(field);
+            field = '';
+            closed = false;
+            if (ch !== separator) {
+                if (ch === '\r' && text[i + 1] === '\n')
+                    i++;
+                if (row.some(x => x.trim()))
+                    rows.push(row);
+                if (rows.length > 10001)
+                    throw Error('CSV excede 10.000 linhas.');
+                row = [];
+            }
+            continue;
+        }
+        if (closed && !/\s/.test(ch))
+            throw Error('CSV com texto após as aspas');
+        if (field.length >= 1000)
+            throw Error('CSV contém campo acima de 1.000 caracteres.');
+        field += ch;
+    }
+    if (quoted)
+        throw Error('CSV com campo entre aspas não encerrado.');
+    if (field.length || row.length) {
+        row.push(field);
+        if (row.some(x => x.trim()))
+            rows.push(row);
+    }
+    if (rows.length < 2)
+        throw Error('CSV vazio ou sem lançamentos.');
+    if (rows.length > 10001)
+        throw Error('CSV excede 10.000 linhas.');
+    const cols = rows[0].length;
+    if (cols < 3 || cols > 40 || rows.some(r => r.length !== cols))
+        throw Error('CSV possui número irregular de colunas.');
+    return rows;
+}
+function d05CsvSafeText(value, max, label) {
+    const s = String(value || '').trim();
+    if (!s || s.length > max || /[\x00-\x08\x0b-\x1f]/.test(s))
+        throw Error('CSV: ' + label + ' inválido');
+    if (/^[\s\uFEFF]*[=+@-]/.test(s))
+        throw Error('CSV: ' + label + ' com possível fórmula de planilha');
+    return s;
+}
+function d05CsvDate(value) {
+    let date = value.trim();
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(date)) {
+        const [d, m, y] = date.split('/');
+        date = y + '-' + m + '-' + d;
+    }
+    if (!/^20\d{2}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/.test(date))
+        throw Error('CSV: data inválida');
+    const [y, m, d] = date.split('-').map(Number), v = new Date(Date.UTC(y, m - 1, d));
+    if (v.toISOString().slice(0, 10) !== date)
+        throw Error('CSV: data impossível');
+    return date;
+}
+async function d05CsvDigest(text) {
+    if (typeof crypto === 'undefined' || !crypto.subtle)
+        throw Error('Importação segura exige digest SHA-256 disponível.');
+    const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+    return Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+function d05CsvTable(input) {
+    const rows = d05CsvRecords(input);
+    const headers = rows.shift().map(h => h.toLowerCase().normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '').trim());
+    if (new Set(headers).size !== headers.length)
+        throw Error('CSV com colunas duplicadas.');
+    const find = (...aliases) => headers.findIndex(x => aliases.includes(x));
+    if (find('data', 'date') < 0 || find('descricao', 'historico', 'description') < 0 ||
+        find('valor', 'amount') < 0)
+        throw Error('CSV deve informar data, descrição e valor.');
+    return { rows, headers, find };
+}
+function d05CsvFormulaSafe(value) {
+    const text = String(value !== null && value !== void 0 ? value : '');
+    return /^[\s\uFEFF]*[=+@-]/.test(text) ? "'" + text : text;
+}
+class D05Movements extends React.Component {
+    constructor(props) {
+        super(props);
+        this.slots = [];
+        this.refSlots = [];
+        this.registered = [];
+        this.pending = [];
+        this.stateCursor = 0;
+        this.refCursor = 0;
+        this.alive = false;
+        this.state = { renderVersion: 0 };
+    }
+    componentDidMount() { this.alive = true; this.flushEffects(); }
+    componentDidUpdate() { this.flushEffects(); }
+    componentWillUnmount() {
+        this.alive = false;
+        for (const item of this.registered)
+            if (typeof (item === null || item === void 0 ? void 0 : item.cleanup) === 'function')
+                item.cleanup();
+    }
+    flushEffects() {
+        for (let i = 0; i < this.pending.length; i++) {
+            const next = this.pending[i], before = this.registered[i];
+            const changed = !before || !next.deps || !before.deps || next.deps.length !== before.deps.length ||
+                next.deps.some((v, j) => !Object.is(v, before.deps[j]));
+            if (!changed)
+                continue;
+            if (typeof (before === null || before === void 0 ? void 0 : before.cleanup) === 'function')
+                before.cleanup();
+            const cleanup = next.callback();
+            this.registered[i] = { deps: next.deps ? next.deps.slice() : null, cleanup };
+        }
+    }
+    render() {
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y;
+        this.stateCursor = 0;
+        this.refCursor = 0;
+        this.pending = [];
+        const props = this.props;
+        const useState = (initial) => {
+            const index = this.stateCursor++;
+            if (!(index in this.slots))
+                this.slots[index] = initial;
+            return [this.slots[index], (update) => {
+                    if (!this.alive)
+                        return;
+                    const prior = this.slots[index];
+                    const next = typeof update === 'function' ? update(prior) : update;
+                    if (Object.is(next, prior))
+                        return;
+                    this.slots[index] = next;
+                    this.setState((s) => ({ renderVersion: (s.renderVersion || 0) + 1 }));
+                }];
+        };
+        const useRef = (initial) => {
+            const index = this.refCursor++;
+            if (!(index in this.refSlots))
+                this.refSlots[index] = { current: initial };
+            return this.refSlots[index];
+        };
+        const useEffect = (callback, deps) => { this.pending.push({ callback, deps }); };
+        const host = props.host, state = host.state, bridge = window.financeDesktop || null;
+        const [catalog, setCatalog] = useState(null);
+        const [decor, setDecor] = useState({ bank: {}, manual: {} });
+        const [loadState, setLoadState] = useState('loading');
+        const [accessMessage, setAccessMessage] = useState('');
+        const incomingCategory = state.qa84TransactionsCategory || state.txCategoryFilter || '';
+        const incomingIdentity = incomingCategory ? resolveCategoryVisualIdentity({ categoryName: incomingCategory,
+            catalog: state.qa84VisualCatalog || [], aggregate: true }) : null;
+        const [search, setSearch] = useState((incomingIdentity === null || incomingIdentity === void 0 ? void 0 : incomingIdentity.source) === 'fallback' ? incomingCategory : '');
+        const [source, setSource] = useState(state.txSource || 'all');
+        const [metricSource, setMetricSource] = useState('bank');
+        const [tab, setTab] = useState(state.txReviewOnly ? 'pending' : 'all');
+        const [period, setPeriod] = useState(state.qa84TransactionsSpan ? '' : state.month || iso(new Date()).slice(0, 7));
+        const [account, setAccount] = useState('');
+        const [kind, setKind] = useState('all');
+        const [categoryId, setCategoryId] = useState(incomingIdentity && incomingIdentity.source !== 'fallback' ? incomingIdentity.categoryId : '');
+        const [subcategoryId, setSubcategoryId] = useState('');
+        const [sort, setSort] = useState('newest');
+        const [group, setGroup] = useState(true);
+        const [advanced, setAdvanced] = useState(false);
+        const [selected, setSelected] = useState(new Set());
+        const [picker, setPicker] = useState(null);
+        const [preview, setPreview] = useState(null);
+        const [review, setReview] = useState(null);
+        const [manual, setManual] = useState(null);
+        const [busy, setBusy] = useState(false);
+        const [error, setError] = useState('');
+        const [notice, setNotice] = useState('');
+        const [confirmedIdentity, setConfirmedIdentity] = useState(null);
+        const [autoInfo, setAutoInfo] = useState(null);
+        const [autoPreview, setAutoPreview] = useState(null);
+        const [autoView, setAutoView] = useState('activation');
+        const [autoHistoryEnabled, setAutoHistoryEnabled] = useState(true);
+        const [autoNewEnabled, setAutoNewEnabled] = useState(true);
+        const [autoReceipts, setAutoReceipts] = useState([]);
+        const [autoReceiptCursor, setAutoReceiptCursor] = useState(null);
+        const [autoReceiptTotal, setAutoReceiptTotal] = useState(0);
+        const [autoReceiptFilter, setAutoReceiptFilter] = useState('all');
+        const [autoReceiptBusy, setAutoReceiptBusy] = useState(false);
+        const [autoReceiptDetail, setAutoReceiptDetail] = useState(null);
+        const [autoProgress, setAutoProgress] = useState(null);
+        const [autoWriteJob, setAutoWriteJob] = useState(null);
+        const [autoSelected, setAutoSelected] = useState(new Set());
+        const [autoStart, setAutoStart] = useState('2000-01-01');
+        const [autoEnd, setAutoEnd] = useState('2099-12-31');
+        const [autoPanel, setAutoPanel] = useState(true);
+        const [autoBusy, setAutoBusy] = useState(false);
+        const [autoMessage, setAutoMessage] = useState('');
+        const [autoRules, setAutoRules] = useState([]);
+        const autoScanRef = useRef({ jobId: null, stop: false });
+        const autoWriteRef = useRef({ jobId: null, stop: false });
+        const activeTrigger = useRef(null);
+        const modalRef = useRef(null);
+        const refreshId = useRef(0);
+        const approved = D05_APPROVED_PARENTS;
+        const parents = ((_a = catalog === null || catalog === void 0 ? void 0 : catalog.parents) === null || _a === void 0 ? void 0 : _a.length) ? catalog.parents : approved;
+        const byName = (name) => parents.find((p) => p.name === name) || D05ApprovedParent(name);
+        const byId = (id) => parents.find((p) => p.id === id) || approved.find((p) => p.id === id);
+        const format = (cents) => fmt(cents);
+        const inRange = (date) => period ? date.slice(0, 7) === period : state.qa84TransactionsSpan ?
+            date >= state.qa84TransactionsSpan.start && date <= state.qa84TransactionsSpan.end : true;
+        const bankData = state.mode === 'demo' ? [] : state.bank.data.transactions || [];
+        const realBank = bankData.map((tx) => {
+            const key = JSON.stringify([tx.accountId, tx.id]), data = decor.bank[key] || {};
+            const parent = byName(tx.category);
+            const nature = tx.nature && tx.nature !== 'auto' ? tx.nature : (tx.amount >= 0 ? 'income' : 'expense');
+            return { key: 'bank|' + key, id: tx.id, source: 'bank', raw: tx, date: tx.date, description: tx.description,
+                merchant: tx.customTitle || tx.merchant || tx.description, category: tx.category,
+                categoryId: data.categoryId || (parent === null || parent === void 0 ? void 0 : parent.id) || '', subcategoryId: data.subcategoryId || null,
+                amount: tx.amount, kind: nature, account: tx.accountName, accountId: tx.accountId,
+                status: tx.status, reviewed: !!tx.reviewed };
+        });
+        const realManual = (state.data.transactions || []).map((tx) => {
+            var _a, _b;
+            const data = decor.manual[tx.id] || {}, parent = byName(tx.category);
+            return { key: 'manual|' + tx.id, id: tx.id, source: 'manual', raw: tx, date: tx.date,
+                description: tx.description, merchant: tx.description, category: tx.category,
+                categoryId: tx.categoryId || data.categoryId || (parent === null || parent === void 0 ? void 0 : parent.id) || '',
+                subcategoryId: (_b = (_a = tx.subcategoryId) !== null && _a !== void 0 ? _a : data.subcategoryId) !== null && _b !== void 0 ? _b : null,
+                amount: tx.kind === 'income' ? tx.amount : -tx.amount, kind: tx.kind,
+                account: 'Adicionado por você', accountId: '', status: 'MANUAL', reviewed: false };
+        });
+        const rows = realBank.concat(realManual);
+        const refreshHierarchy = async () => {
+            if (!(bridge === null || bridge === void 0 ? void 0 : bridge.d05Catalog)) {
+                setLoadState('unavailable');
+                setAccessMessage('A hierarquia D05 ainda não está conectada pelo processo principal. Consultas legadas disponíveis; classificação bancária por subcategoria bloqueada.');
+                return;
+            }
+            const req = ++refreshId.current;
+            try {
+                setLoadState('loading');
+                if (!bridge.d05SessionAuthorize)
+                    throw Error('D05: autorização de sessão não instalada no MAIN');
+                const authorization = await bridge.d05SessionAuthorize({ profile: state.mode });
+                if ((authorization === null || authorization === void 0 ? void 0 : authorization.profile) !== state.mode)
+                    throw Error('D05: sessão vinculada a outro perfil');
+                const parentsResult = await bridge.d05Catalog();
+                const bankResult = state.mode === 'demo' ? { items: [], truncated: false } :
+                    bridge.d05BankList ? await bridge.d05BankList({ limit: 2500 }) : { items: [] };
+                const manualResult = bridge.d05ManualList ? await bridge.d05ManualList({ profile: state.mode, limit: 2500 }) : { items: [] };
+                if (req !== refreshId.current)
+                    return;
+                if (!parentsResult || !Array.isArray(parentsResult.parents))
+                    throw Error('Catálogo D05 inválido');
+                const b = {}, m = {};
+                for (const t of bankResult.items || [])
+                    b[JSON.stringify([t.accountId, t.id])] = { categoryId: t.categoryId, subcategoryId: t.subcategoryId };
+                for (const t of manualResult.items || [])
+                    m[t.id] = { categoryId: t.categoryId, subcategoryId: t.subcategoryId };
+                setCatalog(parentsResult);
+                setDecor({ bank: b, manual: m });
+                const readComplete = typeof bridge.d05BankList === 'function' && typeof bridge.d05ManualList === 'function';
+                setLoadState(readComplete ? 'ready' : 'partial');
+                setAccessMessage(readComplete ? '' : 'Consulta hierárquica parcial: as referências de banco/manual não foram registradas no preload. As linhas legadas permanecem visíveis sem inventar subcategorias.');
+            }
+            catch (e) {
+                if (req !== refreshId.current)
+                    return;
+                setLoadState(/autoriz|negado|denied|permiss/i.test(String((e === null || e === void 0 ? void 0 : e.message) || e)) ? 'denied' : 'error');
+                setAccessMessage('Catálogo D05 indisponível: ' + String((e === null || e === void 0 ? void 0 : e.message) || e));
+            }
+        };
+        useEffect(() => {
+            if (state.mode === 'real' && (bridge === null || bridge === void 0 ? void 0 : bridge.bankAutoStatus)) {
+                void bridge.bankAutoStatus().then((status) => {
+                    if ((status === null || status === void 0 ? void 0 : status.contract) === 'D05/AUTO-CATEGORY-V1') {
+                        setAutoInfo(status);
+                        if (status.applyJob && autoWriteJob === null)
+                            setAutoWriteJob(status.applyJob);
+                        if (autoInfo === null) {
+                            const enabled = (status.permissions || []).filter((p) => p.enabled && p.expiresAt > new Date().toISOString());
+                            setAutoSelected(new Set(enabled.map((p) => p.accountId)));
+                            if (enabled.length) {
+                                setAutoHistoryEnabled(enabled[0].historyEnabled !== 0);
+                                setAutoNewEnabled(enabled[0].newEnabled !== 0);
+                                setAutoStart(enabled[0].startDate || '2000-01-01');
+                                setAutoEnd(enabled[0].endDate || '2099-12-31');
+                                setAutoView('center');
+                            }
+                        }
+                    }
+                }).catch((e) => setAutoMessage(String((e === null || e === void 0 ? void 0 : e.message) || e)));
+            }
+        }, [state.mode, state.bank.data.accounts, state.bank.data.transactions]);
+        const refreshAuto = async () => {
+            if ((bridge === null || bridge === void 0 ? void 0 : bridge.bankAutoStatus) && state.mode === 'real') {
+                const result = await bridge.bankAutoStatus();
+                setAutoInfo(result);
+            }
+        };
+        const scanAutoPages = async (jobId) => {
+            autoScanRef.current.jobId = jobId;
+            autoScanRef.current.stop = false;
+            while (!autoScanRef.current.stop) {
+                let next;
+                try {
+                    next = await bridge.bankAutoPreviewNext(jobId);
+                }
+                catch (e) {
+                    if (autoScanRef.current.stop)
+                        break;
+                    throw e;
+                }
+                if (autoScanRef.current.stop)
+                    break;
+                setAutoProgress(next);
+                if (next.state === 'ready') {
+                    setAutoPreview(next.preview);
+                    setAutoMessage('Análise de todo o histórico concluída sem categorizar. Revise a prévia antes de confirmar.');
+                    break;
+                }
+                if (next.state !== 'scanning')
+                    break;
+                await new Promise(resolve => setTimeout(resolve, 0));
+            }
+        };
+        const pauseAutoScan = async () => {
+            const id = autoScanRef.current.jobId;
+            if (!id || !(bridge === null || bridge === void 0 ? void 0 : bridge.bankAutoPreviewPause))
+                return;
+            autoScanRef.current.stop = true;
+            try {
+                setAutoProgress(await bridge.bankAutoPreviewPause(id));
+                setAutoMessage('Análise pausada; nenhuma categoria foi aplicada.');
+            }
+            catch (e) {
+                setAutoMessage(String((e === null || e === void 0 ? void 0 : e.message) || e));
+            }
+        };
+        const resumeAutoScan = async () => {
+            const id = autoScanRef.current.jobId;
+            if (!id || !(bridge === null || bridge === void 0 ? void 0 : bridge.bankAutoPreviewResume))
+                return;
+            setAutoBusy(true);
+            setAutoMessage('');
+            try {
+                setAutoProgress(await bridge.bankAutoPreviewResume(id));
+                await scanAutoPages(id);
+            }
+            catch (e) {
+                setAutoMessage(String((e === null || e === void 0 ? void 0 : e.message) || e));
+            }
+            finally {
+                setAutoBusy(false);
+            }
+        };
+        const cancelAutoScan = async () => {
+            const id = autoScanRef.current.jobId;
+            if (!id || !(bridge === null || bridge === void 0 ? void 0 : bridge.bankAutoPreviewCancel))
+                return;
+            autoScanRef.current.stop = true;
+            try {
+                await bridge.bankAutoPreviewCancel(id);
+                autoScanRef.current.jobId = null;
+                setAutoProgress(null);
+                setAutoPreview(null);
+                setAutoMessage('Análise cancelada; nenhuma classificação aplicada.');
+            }
+            catch (e) {
+                setAutoMessage(String((e === null || e === void 0 ? void 0 : e.message) || e));
+            }
+        };
+        const loadAutoReceipts = async (filter = 'all', cursor = null) => {
+            if (!(bridge === null || bridge === void 0 ? void 0 : bridge.bankAutoReceipts) || state.mode !== 'real')
+                return;
+            setAutoReceiptBusy(true);
+            try {
+                const page = await bridge.bankAutoReceipts({ action: filter, cursor, limit: 20 });
+                setAutoReceipts((prev) => cursor ? [...prev, ...(page.items || [])] : page.items || []);
+                setAutoReceiptCursor(page.nextCursor || null);
+                setAutoReceiptTotal(page.total || 0);
+            }
+            catch (e) {
+                setAutoMessage('Falha na consulta de recibos: ' + String((e === null || e === void 0 ? void 0 : e.message) || e));
+            }
+            finally {
+                setAutoReceiptBusy(false);
+            }
+        };
+        const openAutoView = (view) => {
+            setAutoView(view);
+            if (view === 'receipts')
+                void loadAutoReceipts(autoReceiptFilter);
+        };
+        const undoAutoReceipt = async (item) => {
+            if (!(bridge === null || bridge === void 0 ? void 0 : bridge.bankAutoUndo) || autoBusy || !(item === null || item === void 0 ? void 0 : item.active))
+                return;
+            setAutoBusy(true);
+            setAutoMessage('');
+            try {
+                const result = await bridge.bankAutoUndo({ accountId: item.accountId, externalId: item.externalId });
+                if (result === null || result === void 0 ? void 0 : result.cancelled) {
+                    setAutoMessage('Desfazer cancelado; classificação preservada.');
+                    return;
+                }
+                if (!(result === null || result === void 0 ? void 0 : result.undone))
+                    throw Error('O recibo não está mais associado a um rótulo ativo.');
+                await host.refreshBank();
+                await refreshAuto();
+                await loadAutoReceipts(autoReceiptFilter);
+                setAutoReceiptDetail(null);
+                setAutoMessage('Classificação revertida e protegida contra reaplicação automática.');
+            }
+            catch (e) {
+                setAutoMessage('A reversão não foi confirmada: ' + String((e === null || e === void 0 ? void 0 : e.message) || e));
+            }
+            finally {
+                setAutoBusy(false);
+            }
+        };
+        const runWritePages = async (jobId) => {
+            if (!(bridge === null || bridge === void 0 ? void 0 : bridge.bankAutoBatchNext))
+                throw Error('Aplicação paginada indisponível no preload.');
+            autoWriteRef.current = { jobId, stop: false };
+            let last = null;
+            while (!autoWriteRef.current.stop) {
+                try {
+                    last = await bridge.bankAutoBatchNext(jobId);
+                }
+                catch (e) {
+                    if (autoWriteRef.current.stop)
+                        break;
+                    throw e;
+                }
+                setAutoWriteJob(last);
+                if (last.state !== 'running')
+                    break;
+                await new Promise(resolve => setTimeout(resolve, 0));
+            }
+            if (last && !autoWriteRef.current.stop) {
+                await host.refreshBank();
+                await refreshAuto();
+                if (last.state === 'completed')
+                    setAutoMessage('Aplicação concluída: ' + String(last.committed) + ' classificações com recibo confirmado.');
+                else if (last.state === 'stale')
+                    setAutoMessage('Prévia desatualizada. ' + String(last.committed) + ' categorias gravadas permanecem válidas; não houve nova escrita depois da divergência.');
+                else if (last.state === 'failed')
+                    setAutoMessage('Falha protegida. ' + String(last.committed) + ' categorias já confirmadas permanecem; lote seguinte bloqueado até revisão.');
+            }
+        };
+        const pauseWrite = async () => {
+            const id = autoWriteRef.current.jobId || (autoWriteJob === null || autoWriteJob === void 0 ? void 0 : autoWriteJob.jobId);
+            if (!id || !(bridge === null || bridge === void 0 ? void 0 : bridge.bankAutoBatchPause))
+                return;
+            autoWriteRef.current.stop = true;
+            try {
+                const job = await bridge.bankAutoBatchPause(id);
+                setAutoWriteJob(job);
+                setAutoMessage('Aplicação pausada após ' + String(job.committed) + ' confirmações. Nenhuma categoria será reprocessada.');
+            }
+            catch (e) {
+                setAutoMessage(String((e === null || e === void 0 ? void 0 : e.message) || e));
+            }
+        };
+        const resumeWrite = async () => {
+            const id = autoWriteJob === null || autoWriteJob === void 0 ? void 0 : autoWriteJob.jobId;
+            if (!id || !(bridge === null || bridge === void 0 ? void 0 : bridge.bankAutoBatchResume))
+                return;
+            setAutoBusy(true);
+            setAutoMessage('');
+            try {
+                const job = await bridge.bankAutoBatchResume(id);
+                setAutoWriteJob(job);
+                await runWritePages(id);
+            }
+            catch (e) {
+                setAutoMessage('Retomada bloqueada: ' + String((e === null || e === void 0 ? void 0 : e.message) || e));
+            }
+            finally {
+                setAutoBusy(false);
+            }
+        };
+        const cancelWrite = async () => {
+            const id = autoWriteJob === null || autoWriteJob === void 0 ? void 0 : autoWriteJob.jobId;
+            if (!id || !(bridge === null || bridge === void 0 ? void 0 : bridge.bankAutoBatchCancel))
+                return;
+            autoWriteRef.current.stop = true;
+            try {
+                const job = await bridge.bankAutoBatchCancel(id);
+                setAutoWriteJob(job);
+                await host.refreshBank();
+                await refreshAuto();
+                setAutoMessage('Lote cancelado. ' + String(job.committed) + ' classificações confirmadas foram preservadas; nenhuma reversão em massa foi executada.');
+            }
+            catch (e) {
+                setAutoMessage(String((e === null || e === void 0 ? void 0 : e.message) || e));
+            }
+        };
+        const runAutoAction = async (action, accountId = null) => {
+            if (!bridge || autoBusy || state.mode !== 'real')
+                return;
+            setAutoBusy(true);
+            setAutoMessage('');
+            try {
+                let result;
+                if (action === 'enable') {
+                    result = await bridge.bankAutoConfigure({ accountIds: Array.from(autoSelected), startDate: autoStart, endDate: autoEnd,
+                        historyEnabled: autoHistoryEnabled, newEnabled: autoNewEnabled, insufficientAction: 'review' });
+                    autoScanRef.current.stop = true;
+                    autoScanRef.current.jobId = null;
+                    setAutoProgress(null);
+                    setAutoPreview(null);
+                    setAutoView('preview');
+                }
+                else if (action === 'revoke') {
+                    result = await bridge.bankAutoRevoke(accountId);
+                    autoScanRef.current.stop = true;
+                    setAutoProgress(null);
+                    setAutoPreview(null);
+                }
+                else if (action === 'pause')
+                    result = await bridge.bankAutoPause();
+                else if (action === 'resume')
+                    result = await bridge.bankAutoResume();
+                else if (action === 'preview') {
+                    if (!bridge.bankAutoPreviewStart || !bridge.bankAutoPreviewNext)
+                        throw Error('Serviço de prévia paginada indisponível no preload.');
+                    const started = await bridge.bankAutoPreviewStart();
+                    autoScanRef.current.jobId = started.jobId;
+                    setAutoProgress(started);
+                    setAutoPreview(null);
+                    if (started.state === 'ready') {
+                        setAutoPreview(started.preview);
+                        setAutoMessage('Análise anterior concluída e revalidada; nenhuma categoria aplicada.');
+                    }
+                    else if (started.state === 'paused') {
+                        setAutoMessage('Análise anterior pausada. Use Retomar.');
+                    }
+                    else
+                        await scanAutoPages(started.jobId);
+                    return;
+                }
+                else if (action === 'confirm') {
+                    if (!(autoPreview === null || autoPreview === void 0 ? void 0 : autoPreview.previewVersion))
+                        throw Error('Analise o histórico antes de confirmar.');
+                    result = await bridge.bankAutoApply({ previewVersion: autoPreview.previewVersion, limit: 20000 });
+                    if (!(result === null || result === void 0 ? void 0 : result.cancelled)) {
+                        setAutoPreview(null);
+                        setAutoView('center');
+                    }
+                }
+                else if (action === 'run')
+                    result = await bridge.bankAutoApply({ limit: 20000 });
+                else if (action === 'suggest')
+                    result = await bridge.bankAutoRuleSuggestions({ limit: 5 });
+                if (action === 'suggest') {
+                    setAutoRules((result === null || result === void 0 ? void 0 : result.rules) || []);
+                    setAutoMessage('Sugestões somente para prévia; nenhuma regra foi criada.');
+                    return;
+                }
+                if (result === null || result === void 0 ? void 0 : result.cancelled) {
+                    setAutoMessage('Operação cancelada; nenhuma classificação aplicada.');
+                    return;
+                }
+                if (result === null || result === void 0 ? void 0 : result.batch) {
+                    setAutoWriteJob(result.batch);
+                    setAutoView('center');
+                    await runWritePages(result.batch.jobId);
+                    return;
+                }
+                if (['failed', 'busy', 'paused', 'awaiting_explicit_consent_or_first_confirmation', 'initial_batch_requires_resolution'].includes(result === null || result === void 0 ? void 0 : result.state))
+                    throw Error('A aplicação NÃO foi concluída: ' + String(result.state) + '. Confira os backups e o estado dos jobs antes de tentar novamente.');
+                await host.refreshBank();
+                await refreshHierarchy();
+                await refreshAuto();
+                setAutoMessage(action === 'enable' ? 'Contas autorizadas, mas nenhuma classificação aplicada. Confira a prévia inicial.' :
+                    action === 'revoke' ? 'Permissão revogada; recibos e rótulos anteriores preservados.' :
+                        action === 'pause' ? 'Próximas verificações automáticas pausadas. Uma aplicação já em curso não é cancelada.' :
+                            action === 'resume' ? 'Verificações locais reativadas, limitadas às contas já autorizadas.' :
+                                'Verificação concluída. Movimentos incertos permanecem para revisão.');
+            }
+            catch (e) {
+                setAutoMessage(String((e === null || e === void 0 ? void 0 : e.message) || e));
+            }
+            finally {
+                setAutoBusy(false);
+            }
+        };
+        useEffect(() => {
+            let current = true;
+            if (current)
+                void refreshHierarchy();
+            return () => { current = false; refreshId.current++; };
+        }, [state.mode, state.bank.data.transactions, state.data.transactions]);
+        useEffect(() => {
+            if (!picker && !review && !manual)
+                return;
+            const onKey = (event) => {
+                var _a, _b;
+                if (event.key === 'Tab' && modalRef.current) {
+                    const controls = Array.from(modalRef.current.querySelectorAll('button:not([disabled]),input:not([disabled]),select:not([disabled]),[tabindex="0"]'));
+                    if (controls.length) {
+                        const first = controls[0], last = controls[controls.length - 1];
+                        if (event.shiftKey && document.activeElement === first) {
+                            event.preventDefault();
+                            last.focus();
+                        }
+                        else if (!event.shiftKey && document.activeElement === last) {
+                            event.preventDefault();
+                            first.focus();
+                        }
+                    }
+                }
+                if (event.key === 'Escape' && !busy) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    setPicker(null);
+                    setReview(null);
+                    setManual(null);
+                    setPreview(null);
+                    (_b = (_a = activeTrigger.current) === null || _a === void 0 ? void 0 : _a.focus) === null || _b === void 0 ? void 0 : _b.call(_a);
+                }
+            };
+            window.addEventListener('keydown', onKey, true);
+            return () => window.removeEventListener('keydown', onKey, true);
+        }, [picker, review, manual, busy]);
+        useEffect(() => {
+            var _a;
+            if (!(picker || review || manual) || !modalRef.current)
+                return;
+            const searchField = picker && ['parent', 'child'].includes(picker.phase) ?
+                modalRef.current.querySelector('.d05-picker-search input') : null;
+            (_a = (searchField || modalRef.current.querySelector('input,button'))) === null || _a === void 0 ? void 0 : _a.focus();
+        }, [picker === null || picker === void 0 ? void 0 : picker.phase, review === null || review === void 0 ? void 0 : review.id, manual !== null]);
+        useEffect(() => { var _a, _b; if (!picker && !review && !manual)
+            (_b = (_a = activeTrigger.current) === null || _a === void 0 ? void 0 : _a.focus) === null || _b === void 0 ? void 0 : _b.call(_a); }, [!!picker, !!review, !!manual]);
+        const resetSelected = () => { setSelected(new Set()); setPicker(null); setPreview(null); setError(''); };
+        const setFilter = (update) => { update(); resetSelected(); };
+        const folded = (text) => String(text || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+        const contains = (row, q) => {
+            var _a;
+            if (!q)
+                return true;
+            const parent = byId(row.categoryId), child = (_a = parent === null || parent === void 0 ? void 0 : parent.subcategories) === null || _a === void 0 ? void 0 : _a.find((c) => c.id === row.subcategoryId);
+            return [row.merchant, row.description, row.category, child === null || child === void 0 ? void 0 : child.name, row.account].some(t => folded(t).includes(q));
+        };
+        const filtered = rows.filter((row) => {
+            if (source !== 'all' && row.source !== source)
+                return false;
+            if (!inRange(row.date))
+                return false;
+            if (account && (row.source !== 'bank' || row.accountId !== account))
+                return false;
+            if (kind !== 'all' && row.kind !== kind)
+                return false;
+            if (categoryId && row.categoryId !== categoryId)
+                return false;
+            if (subcategoryId && row.subcategoryId !== subcategoryId)
+                return false;
+            if (!contains(row, folded(search.trim())))
+                return false;
+            if (tab === 'pending')
+                return row.source === 'bank' && row.status === 'POSTED' && !row.reviewed && row.raw.categorySource !== 'automatic';
+            if (tab === 'reviewed')
+                return row.source === 'bank' && row.status === 'POSTED' && row.reviewed;
+            return true;
+        }).sort((a, b) => {
+            if (sort === 'oldest')
+                return a.date.localeCompare(b.date) || a.key.localeCompare(b.key);
+            if (sort === 'largest')
+                return Math.abs(b.amount) - Math.abs(a.amount) || a.key.localeCompare(b.key);
+            if (sort === 'smallest')
+                return Math.abs(a.amount) - Math.abs(b.amount) || a.key.localeCompare(b.key);
+            return b.date.localeCompare(a.date) || a.key.localeCompare(b.key);
+        });
+        const onScreen = filtered.slice(0, 500);
+        const sources = new Set(filtered.map((r) => r.source));
+        const totalsSource = source === 'manual' ? 'manual' : source === 'bank' ? 'bank' : sources.has(metricSource) ? metricSource : (sources.has('bank') ? 'bank' : 'manual');
+        const metricsRows = filtered.filter((r) => r.source === totalsSource);
+        let income = 0, expense = 0, needs = 0, ignored = 0, pending = 0;
+        for (const r of metricsRows) {
+            if (r.source === 'bank' && r.status === 'POSTED' && !r.reviewed && r.raw.categorySource !== 'automatic')
+                needs++;
+            if (r.source === 'bank' && r.status !== 'POSTED') {
+                pending++;
+                continue;
+            }
+            if (r.kind === 'ignore' || r.kind === 'transfer') {
+                ignored++;
+                continue;
+            }
+            if (r.kind === 'income')
+                income += Math.abs(r.amount);
+            else if (r.kind === 'expense')
+                expense += Math.abs(r.amount);
+        }
+        const partial = state.mode === 'real' && !!state.bank.data.truncated;
+        const openPicker = (event, row = null, kindName = 'row') => {
+            var _a;
+            (_a = event === null || event === void 0 ? void 0 : event.stopPropagation) === null || _a === void 0 ? void 0 : _a.call(event);
+            const trigger = event === null || event === void 0 ? void 0 : event.currentTarget;
+            if (!(trigger === null || trigger === void 0 ? void 0 : trigger.getBoundingClientRect))
+                return;
+            activeTrigger.current = trigger;
+            const geometry = qa84B04Geometry(trigger.getBoundingClientRect(), { width: window.innerWidth, height: window.innerHeight });
+            const old = row ? byId(row.categoryId) : null;
+            setError('');
+            setNotice('');
+            setConfirmedIdentity(null);
+            setPreview(null);
+            setPicker({ kind: kindName, row, phase: 'parent', query: '', categoryId: (old === null || old === void 0 ? void 0 : old.id) || null,
+                subcategoryId: (row === null || row === void 0 ? void 0 : row.subcategoryId) || null, ...geometry,
+                originalFingerprint: qa84B04Fingerprint(row),
+                selectionSignature: kindName === 'batch' ? JSON.stringify(Array.from(selected).sort()) : null });
+        };
+        useEffect(() => {
+            const fromDrawer = (event) => {
+                const request = event === null || event === void 0 ? void 0 : event.detail;
+                if (!request || !['bank', 'manual'].includes(request.source) || !request.id)
+                    return;
+                const row = rows.find((r) => r.source === request.source && r.id === request.id &&
+                    (r.source === 'manual' || r.accountId === request.accountId));
+                if (!row) {
+                    setError('Movimentação não encontrada; atualize o histórico.');
+                    return;
+                }
+                openPicker({ currentTarget: request.trigger, stopPropagation: () => { } }, row, 'drawer');
+            };
+            window.addEventListener('mf2:d05:open-picker', fromDrawer);
+            return () => window.removeEventListener('mf2:d05:open-picker', fromDrawer);
+        }, [state.mode, state.data.transactions, state.bank.data.transactions, catalog, decor, selected]);
+        const openDetail = (r) => r.source === 'bank' ?
+            host.openBankDetail(r.raw, { categoryId: r.categoryId, subcategoryId: r.subcategoryId }) :
+            host.openManualDetail(r.raw, { categoryId: r.categoryId, subcategoryId: r.subcategoryId });
+        const setParent = (p) => {
+            setPreview(null);
+            setError('');
+            setPicker((old) => ({ ...old, categoryId: p.id, subcategoryId: null, phase: 'child', query: '' }));
+        };
+        const setDestination = (sub) => {
+            setPreview(null);
+            setError('');
+            setPicker((old) => ({ ...old, subcategoryId: (sub === null || sub === void 0 ? void 0 : sub.id) || null, phase: 'confirm' }));
+        };
+        const labelTarget = (parentId, childId) => {
+            var _a;
+            const p = byId(parentId), child = (_a = p === null || p === void 0 ? void 0 : p.subcategories) === null || _a === void 0 ? void 0 : _a.find((x) => x.id === childId);
+            return ((p === null || p === void 0 ? void 0 : p.name) || 'Categoria') + (child ? ' › ' + child.name : '');
+        };
+        const handleClassify = async () => {
+            var _a, _b, _c, _d, _e, _f, _g;
+            if (!(picker === null || picker === void 0 ? void 0 : picker.categoryId))
+                return;
+            const destination = { categoryId: picker.categoryId, subcategoryId: picker.subcategoryId || null };
+            setBusy(true);
+            setError('');
+            try {
+                if (picker.kind === 'batch') {
+                    if (!(bridge === null || bridge === void 0 ? void 0 : bridge.d05BankBatchPreview) || !(bridge === null || bridge === void 0 ? void 0 : bridge.d05BankBatchApply))
+                        throw Error('Classificação em lote D05 indisponível: integração segura MAIN/preload pendente');
+                    const ids = Array.from(selected).map((key) => rows.find((r) => r.key === key)).filter((r) => (r === null || r === void 0 ? void 0 : r.source) === 'bank');
+                    if (ids.length !== selected.size || !ids.length || JSON.stringify(Array.from(selected).sort()) !== picker.selectionSignature)
+                        throw Error('Seleção alterada; inicie outra prévia');
+                    const items = ids.map((r) => ({ accountId: r.accountId, externalId: r.id }));
+                    const data = await bridge.d05BankBatchPreview({ items, target: destination });
+                    if ((data === null || data === void 0 ? void 0 : data.contract) !== 'D05/BANK-BATCH-PREVIEW-V1' || !(data === null || data === void 0 ? void 0 : data.previewVersion) ||
+                        data.count !== items.length)
+                        throw Error('Prévia de lote inválida');
+                    if (picker.selectionSignature !== JSON.stringify(Array.from(selected).sort()))
+                        throw Error('A seleção mudou durante a prévia');
+                    setPreview({ ...data, items, rows: ids, destination,
+                        fingerprints: ids.map((r) => qa84B04Fingerprint(r)),
+                        selectionSignature: picker.selectionSignature,
+                        totalCents: ids.reduce((sum, r) => sum + Math.abs(r.amount), 0) });
+                    setPicker((old) => ({ ...old, phase: 'batch-verify' }));
+                }
+                else if (((_a = picker.row) === null || _a === void 0 ? void 0 : _a.source) === 'manual') {
+                    const tx = picker.row, existing = state.data.transactions.find((t) => t.id === tx.id);
+                    if (!existing || state.mode !== host.state.mode)
+                        throw Error('Lançamento desatualizado: atualize o histórico');
+                    const parent = byId(destination.categoryId);
+                    if (!parent || destination.subcategoryId &&
+                        !((_b = parent.subcategories) === null || _b === void 0 ? void 0 : _b.some((s) => s.id === destination.subcategoryId)))
+                        throw Error('Categoria/subcategoria incompatível');
+                    const current = rows.find((r) => r.key === tx.key);
+                    if (!current || qa84B04Fingerprint(current) !== picker.originalFingerprint)
+                        throw Error('Movimentação alterada; nova prévia necessária');
+                    if (state.mode === 'real') {
+                        if (!(bridge === null || bridge === void 0 ? void 0 : bridge.d05PersonalWritePreview))
+                            throw Error('Gateway de prévia supervisionada indisponível');
+                        const proposed = await bridge.d05PersonalWritePreview({ action: 'manual.categorize',
+                            profile: 'real', id: tx.id, target: destination });
+                        if ((proposed === null || proposed === void 0 ? void 0 : proposed.contract) !== 'D05/PERSONAL-SUPERVISED-PREVIEW-V1' ||
+                            (proposed === null || proposed === void 0 ? void 0 : proposed.changesApplied) !== false || ((_c = proposed === null || proposed === void 0 ? void 0 : proposed.after) === null || _c === void 0 ? void 0 : _c.categoryId) !== destination.categoryId ||
+                            ((_d = proposed === null || proposed === void 0 ? void 0 : proposed.after) === null || _d === void 0 ? void 0 : _d.subcategoryId) !== destination.subcategoryId)
+                            throw Error('Prévia supervisionada não validada');
+                        setPreview(proposed);
+                        setPicker((old) => ({ ...old, phase: 'personal-locked' }));
+                        setNotice('Prévia financeira validada; confirmação pessoal ainda indisponível.');
+                    }
+                    else {
+                        setPreview({ type: 'manual', profile: state.mode, id: tx.id, source: tx.source,
+                            before: { categoryId: tx.categoryId, subcategoryId: tx.subcategoryId, category: tx.category },
+                            after: destination, parentName: parent.name, fingerprint: picker.originalFingerprint,
+                            amount: tx.amount, date: tx.date, changesApplied: false });
+                        setPicker((old) => ({ ...old, phase: 'manual-verify' }));
+                    }
+                }
+                else if (((_e = picker.row) === null || _e === void 0 ? void 0 : _e.source) === 'bank') {
+                    if (!(bridge === null || bridge === void 0 ? void 0 : bridge.d05AssignBank))
+                        throw Error('Classificação bancária D05 indisponível: autorização MAIN/preload pendente');
+                    const tx = picker.row, current = state.bank.data.transactions.find((t) => t.id === tx.id && t.accountId === tx.accountId);
+                    if (!current || current.amount !== tx.amount || current.status !== tx.status)
+                        throw Error('Movimentação alterada; atualize antes de classificar');
+                    if ((autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.enabled) && (bridge === null || bridge === void 0 ? void 0 : bridge.bankAutoCorrect) && state.mode === 'real' &&
+                        (autoInfo.permissions || []).some((p) => p.accountId === tx.accountId && p.enabled)) {
+                        const accepted = await bridge.bankAutoCorrect({ accountId: tx.accountId, externalId: tx.id, target: destination });
+                        if (accepted === null || accepted === void 0 ? void 0 : accepted.corrected) {
+                            await host.refreshBank();
+                            await refreshHierarchy();
+                            await refreshAuto();
+                            setNotice('Correção humana protegida e confirmada por recibo SQLite.');
+                            setPicker(null);
+                            setPreview(null);
+                            return;
+                        }
+                        if (accepted === null || accepted === void 0 ? void 0 : accepted.cancelled) {
+                            setNotice('Correção cancelada no MAIN.');
+                            return;
+                        }
+                    }
+                    if (!(bridge === null || bridge === void 0 ? void 0 : bridge.d05BankAccountAuthorize) || !(bridge === null || bridge === void 0 ? void 0 : bridge.d05PersonalWritePreview))
+                        throw Error('Gateway pessoal supervisionado D05 ainda indisponível');
+                    await bridge.d05BankAccountAuthorize({ accountId: tx.accountId });
+                    const proposed = await bridge.d05PersonalWritePreview({
+                        action: 'bank.categorize', accountId: tx.accountId, externalId: tx.id, target: destination
+                    });
+                    if ((proposed === null || proposed === void 0 ? void 0 : proposed.contract) !== 'D05/PERSONAL-SUPERVISED-PREVIEW-V1' ||
+                        (proposed === null || proposed === void 0 ? void 0 : proposed.changesApplied) !== false || ((_f = proposed === null || proposed === void 0 ? void 0 : proposed.after) === null || _f === void 0 ? void 0 : _f.categoryId) !== destination.categoryId ||
+                        ((_g = proposed === null || proposed === void 0 ? void 0 : proposed.after) === null || _g === void 0 ? void 0 : _g.subcategoryId) !== destination.subcategoryId)
+                        throw Error('Prévia supervisionada inválida; nenhuma alteração foi feita');
+                    setPreview(proposed);
+                    setPicker((old) => ({ ...old, phase: 'personal-locked' }));
+                    setNotice('Prévia supervisionada conferida. A gravação pessoal permanece bloqueada até homologação.');
+                }
+            }
+            catch (e) {
+                setError(String((e === null || e === void 0 ? void 0 : e.message) || e));
+            }
+            finally {
+                setBusy(false);
+            }
+        };
+        const commitManual = async () => {
+            var _a, _b, _c;
+            if (!picker || picker.phase !== 'manual-verify' || (preview === null || preview === void 0 ? void 0 : preview.type) !== 'manual' || busy)
+                return;
+            if (state.mode !== 'demo' || preview.profile !== 'demo') {
+                setError('Gravação pessoal ainda não homologada. Prévia somente para consulta.');
+                return;
+            }
+            const tx = state.data.transactions.find((t) => t.id === preview.id);
+            const current = rows.find((r) => r.source === 'manual' && r.id === preview.id);
+            if (!tx || !current || qa84B04Fingerprint(current) !== preview.fingerprint ||
+                preview.id !== ((_a = picker.row) === null || _a === void 0 ? void 0 : _a.id) || picker.originalFingerprint !== preview.fingerprint) {
+                setError('Movimentação modificada; prepare outra prévia.');
+                return;
+            }
+            const parent = byId(preview.after.categoryId);
+            if (!parent || preview.after.subcategoryId && !((_b = parent.subcategories) === null || _b === void 0 ? void 0 : _b.some((s) => s.id === preview.after.subcategoryId))) {
+                setError('Categoria/subcategoria não existe mais.');
+                return;
+            }
+            setBusy(true);
+            setError('');
+            try {
+                if (!(bridge === null || bridge === void 0 ? void 0 : bridge.save) || !(bridge === null || bridge === void 0 ? void 0 : bridge.load))
+                    throw Error('SQLite de demonstração indisponível');
+                const next = { ...state.data, transactions: state.data.transactions.map((t) => t.id === preview.id ? {
+                        ...t, category: parent.name, categoryId: preview.after.categoryId, subcategoryId: preview.after.subcategoryId
+                    } : t) };
+                const saved = await host.updateData(next, 'Classificação de demonstração salva.');
+                if (!saved)
+                    throw Error('Persistência não confirmada');
+                const verified = await bridge.load('demo');
+                const item = (_c = verified === null || verified === void 0 ? void 0 : verified.transactions) === null || _c === void 0 ? void 0 : _c.find((t) => t.id === preview.id);
+                if ((item === null || item === void 0 ? void 0 : item.categoryId) !== preview.after.categoryId || (item === null || item === void 0 ? void 0 : item.subcategoryId) !== preview.after.subcategoryId)
+                    throw Error('Recibo não confirmado: releia os dados antes de prosseguir');
+                setConfirmedIdentity(qa84B03Visual({ categoryId: item.categoryId,
+                    subcategoryId: item.subcategoryId, categoryName: item.category }, parents));
+                setNotice('Classificação de demonstração confirmada no SQLite.');
+                setPreview(null);
+                setPicker(null);
+                await refreshHierarchy();
+            }
+            catch (e) {
+                setError('Gravação não confirmada: ' + String((e === null || e === void 0 ? void 0 : e.message) || e));
+            }
+            finally {
+                setBusy(false);
+            }
+        };
+        const commitBatch = async () => {
+            if (!picker || !(preview === null || preview === void 0 ? void 0 : preview.previewVersion) || !(bridge === null || bridge === void 0 ? void 0 : bridge.d05BankBatchApply))
+                return;
+            if (state.mode !== 'demo') {
+                setError('Lote pessoal somente em prévia até homologação.');
+                return;
+            }
+            setBusy(true);
+            setError('');
+            try {
+                const ids = Array.from(selected).sort();
+                const expected = preview.rows.map((r) => r.key).sort();
+                const fresh = preview.rows.map((r) => rows.find((now) => now.key === r.key));
+                if (JSON.stringify(ids) !== JSON.stringify(expected) ||
+                    preview.selectionSignature !== JSON.stringify(ids) ||
+                    fresh.some((r, i) => !r || qa84B04Fingerprint(r) !== preview.fingerprints[i]))
+                    throw Error('Seleção ou movimentação alterada; nova prévia necessária');
+                const result = await bridge.d05BankBatchApply({ items: preview.items, target: preview.destination, previewVersion: preview.previewVersion });
+                if ((result === null || result === void 0 ? void 0 : result.changed) !== preview.items.length)
+                    throw Error('Recibo incompleto: verifique o histórico');
+                await host.refreshBank();
+                await refreshHierarchy();
+                setNotice(result.changed + ' classificação(ões) persistidas.');
+                setPicker(null);
+                setPreview(null);
+                setSelected(new Set());
+            }
+            catch (e) {
+                setError('Prévia desatualizada ou acesso negado: ' + String((e === null || e === void 0 ? void 0 : e.message) || e));
+            }
+            finally {
+                setBusy(false);
+            }
+        };
+        const reviewNow = async () => {
+            var _a, _b;
+            if (!review || review.source !== 'bank' || review.status !== 'POSTED' || review.reviewed)
+                return;
+            const latest = state.bank.data.transactions.find((t) => t.accountId === review.accountId && t.id === review.id);
+            if (!latest || latest.status !== 'POSTED' || latest.reviewed || latest.amount !== review.amount) {
+                setError('Esta movimentação foi atualizada; reabra a revisão.');
+                return;
+            }
+            setBusy(true);
+            setError('');
+            try {
+                await host.markBankReviewed(latest);
+                const current = await host.refreshBank();
+                const updated = (_b = (_a = current === null || current === void 0 ? void 0 : current.data) === null || _a === void 0 ? void 0 : _a.transactions) === null || _b === void 0 ? void 0 : _b.find((t) => t.accountId === review.accountId && t.id === review.id);
+                if (!(updated === null || updated === void 0 ? void 0 : updated.reviewed))
+                    throw Error('Sem confirmação persistida da revisão');
+                setReview(null);
+                setNotice('Conferência registrada.');
+            }
+            catch (e) {
+                setError(String((e === null || e === void 0 ? void 0 : e.message) || e));
+            }
+            finally {
+                setBusy(false);
+            }
+        };
+        const saveManual = async () => {
+            var _a;
+            if (!manual || !(bridge === null || bridge === void 0 ? void 0 : bridge.save))
+                return;
+            const amount = parsePositiveBRLInput(manual.value), parent = byId(manual.categoryId);
+            if (!parent || !Number.isSafeInteger(amount) || amount <= 0 ||
+                !/^\d{4}-\d{2}-\d{2}$/.test(manual.date) || iso(fromISO(manual.date)) !== manual.date ||
+                !((_a = manual.description) === null || _a === void 0 ? void 0 : _a.trim()) || !['income', 'expense'].includes(manual.kind)) {
+                setError('Confira descrição, data, valor e categoria antes de salvar.');
+                return;
+            }
+            setBusy(true);
+            setError('');
+            try {
+                const id = 'd05-' + Date.now() + '-' + Math.random().toString(36).slice(2, 10);
+                const tx = { id, date: manual.date, description: manual.description.trim().slice(0, 180),
+                    kind: manual.kind, amount, category: parent.name, categoryId: parent.id,
+                    subcategoryId: manual.subcategoryId || null, origin: 'manual' };
+                const data = { ...state.data, transactions: [...state.data.transactions, tx] };
+                const saved = await host.updateData(data, 'Movimentação manual registrada.');
+                if (!saved)
+                    throw Error('A gravação não foi confirmada');
+                setManual(null);
+                setNotice('Lançamento registrado no SQLite.');
+                await refreshHierarchy();
+            }
+            catch (e) {
+                setError(String((e === null || e === void 0 ? void 0 : e.message) || e));
+            }
+            finally {
+                setBusy(false);
+            }
+        };
+        const portal = (body, left = 20, top = 60, width = 355) => {
+            const safeTop = Math.max(12, Math.min(top, Math.max(12, window.innerHeight - 130)));
+            const safeWidth = Math.max(0, Math.min(width, window.innerWidth - 24));
+            return ReactDOM.createPortal(h('div', { className: 'd05-overlay', onMouseDown: (e) => {
+                    var _a, _b;
+                    if (e.target === e.currentTarget && !busy) {
+                        setPicker(null);
+                        setReview(null);
+                        setManual(null);
+                        setPreview(null);
+                        (_b = (_a = activeTrigger.current) === null || _a === void 0 ? void 0 : _a.focus) === null || _b === void 0 ? void 0 : _b.call(_a);
+                    }
+                } }, h('section', { ref: modalRef, className: 'd05-floating', role: 'dialog', 'aria-modal': 'true',
+                style: { left: Math.max(12, Math.min(left, window.innerWidth - safeWidth - 12)), top: safeTop,
+                    width: safeWidth, maxHeight: Math.max(80, window.innerHeight - safeTop - 12) } }, body)), document.body);
+        };
+        const categoryGrid = (selectedId, onSelect, searchText) => h('div', { className: 'd05-catalog-grid', role: 'group', 'aria-label': 'Categorias principais' }, parents.filter((p) => folded(p.name).includes(folded(searchText))).map((p) => h('button', { key: p.id, type: 'button',
+            className: 'd05-catalog-choice ' + (p.id === selectedId ? 'is-current' : ''),
+            'aria-pressed': p.id === selectedId, onClick: () => onSelect(p) }, h(D05VectorIcon, { iconKey: p.iconKey, hue: p.hue, size: 20 }), h('span', {}, p.name))));
+        const chooser = picker ? (() => {
+            var _a, _b, _c, _d, _e, _f, _g, _h;
+            const parent = byId(picker.categoryId), children = (parent === null || parent === void 0 ? void 0 : parent.subcategories) || [];
+            const matches = qa84B04Search(parents, picker.query || '');
+            const searchable = h('label', { className: 'd05-picker-search' }, h('span', {}, 'Buscar categoria ou subcategoria'), h('input', { className: 'd05-search', type: 'search', autoFocus: true, value: picker.query,
+                placeholder: 'Ex.: Streaming, alimentação, transporte',
+                onChange: (e) => setPicker({ ...picker, query: e.target.value }) }));
+            const resultGrid = h('div', { className: 'd05-catalog-grid', role: 'group', 'aria-label': 'Categorias principais' }, matches.map((entry) => h('div', { className: 'd05-catalog-result', key: entry.parent.id }, h('button', { type: 'button', className: 'd05-catalog-choice ' + (entry.parent.id === picker.categoryId ? 'is-current' : ''),
+                'aria-pressed': entry.parent.id === picker.categoryId,
+                onClick: () => setParent(entry.parent) }, h(D05VectorIcon, { iconKey: entry.parent.iconKey, hue: entry.parent.hue, size: 21 }), h('span', {}, entry.parent.name)), entry.children.length ? h('div', { className: 'd05-catalog-match' }, entry.children.map((child) => h('button', { type: 'button', key: child.id,
+                onClick: () => {
+                    setPreview(null);
+                    setError('');
+                    setPicker((prior) => ({ ...prior, categoryId: entry.parent.id,
+                        subcategoryId: child.id, phase: 'confirm', query: '' }));
+                } }, h(D05VectorIcon, { iconKey: child.iconKey, hue: child.hue, size: 17 }), entry.parent.name + ' › ' + child.name))) : null)), !matches.length ? h('p', { className: 'd05-message', role: 'status' }, 'Nenhuma categoria encontrada.') : null);
+            return portal(h('div', { className: 'd05-picker' }, h('header', { className: 'd05-floating-head' }, h('div', {}, h('small', {}, 'CLASSIFICAÇÃO'), h('h3', {}, picker.kind === 'batch' ? 'Classificar seleção' : 'Categoria da movimentação')), h('button', { type: 'button', 'aria-label': 'Cancelar classificação', onClick: () => { setPicker(null); setPreview(null); } }, '×')), ['parent', 'child'].includes(picker.phase) ? searchable : null, picker.phase === 'parent' ? resultGrid :
+                picker.phase === 'child' ? h('div', {}, h('button', { type: 'button', className: 'd05-back', onClick: () => setPicker({ ...picker, phase: 'parent', query: '' }) }, '← Todas as categorias'), h('p', { className: 'd05-picker-caption' }, 'Escolha uma subcategoria ou mantenha apenas ' + (parent === null || parent === void 0 ? void 0 : parent.name)), h('div', { className: 'd05-child-list' }, h('button', { type: 'button', className: 'd05-child', onClick: () => setDestination(null) }, h(D05VectorIcon, { iconKey: parent === null || parent === void 0 ? void 0 : parent.iconKey, hue: parent === null || parent === void 0 ? void 0 : parent.hue }), 'Somente ' + (parent === null || parent === void 0 ? void 0 : parent.name)), children.filter((child) => qa84B04Fold(child.name).includes(qa84B04Fold(picker.query || '')))
+                    .map((child) => h('button', { type: 'button', className: 'd05-child', key: child.id, onClick: () => setDestination(child) }, h(D05VectorIcon, { iconKey: child.iconKey, hue: child.hue }), child.name)))) :
+                    picker.phase === 'batch-verify' ? h('div', {}, h('p', {}, 'Prévia: ', h('strong', {}, (preview === null || preview === void 0 ? void 0 : preview.count) || 0), ' movimentações na seleção.'), h('p', { className: 'd05-picker-caption' }, 'POSTED: ' + String((preview === null || preview === void 0 ? void 0 : preview.posted) || 0) +
+                        ' · PENDING: ' + String((preview === null || preview === void 0 ? void 0 : preview.pending) || 0) + ' · Valor total: ' + format((preview === null || preview === void 0 ? void 0 : preview.totalCents) || 0)), h('p', { className: 'd05-picker-caption' }, 'Destino: ' + labelTarget(picker.categoryId, picker.subcategoryId)), h('ul', { className: 'd05-preview-items' }, ((preview === null || preview === void 0 ? void 0 : preview.rows) || []).slice(0, 20).map((r) => h('li', { key: r.key }, r.merchant, ' · ', format(Math.abs(r.amount))))), (((_a = preview === null || preview === void 0 ? void 0 : preview.rows) === null || _a === void 0 ? void 0 : _a.length) || 0) > 20 ? h('small', {}, 'Demais itens incluídos na prévia validada.') : null, state.mode !== 'demo' ? h('p', { className: 'd05-message', role: 'status' }, 'Classificação em lote pessoal ainda não homologada. Prévia somente para consulta.') : null, h('button', { type: 'button', className: 'd05-confirm', disabled: busy || state.mode !== 'demo',
+                        onClick: () => void commitBatch() }, busy ? 'Gravando…' : 'Reconfirmar e aplicar lote')) :
+                        picker.phase === 'manual-verify' ? h('div', { className: 'd05-confirm-step' }, h('p', {}, 'Antes: ', h('b', {}, ((_b = preview === null || preview === void 0 ? void 0 : preview.before) === null || _b === void 0 ? void 0 : _b.category) || 'Categoria anterior')), h('p', {}, 'Depois: ', h('b', {}, labelTarget((_c = preview === null || preview === void 0 ? void 0 : preview.after) === null || _c === void 0 ? void 0 : _c.categoryId, (_d = preview === null || preview === void 0 ? void 0 : preview.after) === null || _d === void 0 ? void 0 : _d.subcategoryId))), h('p', { className: 'd05-picker-caption' }, ((_e = picker.row) === null || _e === void 0 ? void 0 : _e.date) + ' · ' + format(Math.abs((preview === null || preview === void 0 ? void 0 : preview.amount) || 0))), state.mode !== 'demo' ? h('p', { className: 'd05-message', role: 'status' }, 'Classificação pessoal indisponível até homologação; nenhuma alteração será gravada.') : null, h('button', { type: 'button', className: 'd05-confirm', disabled: busy || state.mode !== 'demo',
+                            onClick: () => void commitManual() }, busy ? 'Gravando…' : 'Reconfirmar e salvar demonstração')) :
+                            picker.phase === 'personal-locked' ? h('div', { className: 'd05-confirm-step' }, h('p', {}, 'Antes: ', h('b', {}, ((_f = picker.row) === null || _f === void 0 ? void 0 : _f.category) || 'Categoria atual')), h('p', {}, 'Depois: ', h('b', {}, labelTarget(picker.categoryId, picker.subcategoryId))), h('p', { className: 'd05-message', role: 'status' }, 'Prévia supervisionada concluída. Gravação pessoal ainda não autorizada; nenhum dado foi alterado.')) :
+                                h('div', { className: 'd05-confirm-step' }, h('p', {}, 'Antes: ', h('b', {}, ((_g = picker.row) === null || _g === void 0 ? void 0 : _g.category) || 'Seleção atual')), h('p', {}, 'Depois: ', h('b', {}, labelTarget(picker.categoryId, picker.subcategoryId))), h('button', { type: 'button', className: 'd05-confirm', disabled: busy, onClick: () => void handleClassify() }, busy ? 'Conferindo…' : 'Conferir prévia antes de salvar')), error ? h('p', { className: 'd05-message is-error', role: 'alert' }, error) : null, !(bridge === null || bridge === void 0 ? void 0 : bridge.d05AssignBank) && ((_h = picker.row) === null || _h === void 0 ? void 0 : _h.source) === 'bank' ? h('p', { className: 'd05-message', role: 'status' }, 'Salvar no banco indisponível até a conexão segura do processo principal.') : null), picker.left, picker.top, picker.width);
+        })() : null;
+        const reviewPanel = review ? portal(h('div', {}, h('header', { className: 'd05-floating-head' }, h('div', {}, h('small', {}, 'CONFERÊNCIA'), h('h3', {}, review.merchant)), h('button', { type: 'button', 'aria-label': 'Fechar revisão', onClick: () => setReview(null) }, '×')), h('p', {}, review.date.split('-').reverse().join('/'), ' · ', review.account), h('strong', { className: review.amount < 0 ? 'd05-negative' : 'd05-positive' }, (review.amount < 0 ? '−' : '+') + format(Math.abs(review.amount))), h('p', { className: 'd05-picker-caption' }, 'Categoria: ' + labelTarget(review.categoryId, review.subcategoryId)), h('div', { className: 'd05-review-actions' }, h('button', { type: 'button', className: 'd05-confirm', disabled: busy, onClick: () => void reviewNow() }, busy ? 'Conferindo…' : 'Marcar como revisada'), h('button', { type: 'button', onClick: (e) => { const row = review; setReview(null); openPicker(e, row); } }, 'Corrigir categoria'), h('button', { type: 'button', onClick: () => setReview(null) }, 'Agora não')), error ? h('p', { className: 'd05-message is-error', role: 'alert' }, error) : null), Math.max(14, Math.floor((window.innerWidth - 355) / 2)), Math.max(20, Math.floor((window.innerHeight - 360) / 2)), 355) : null;
+        const manualPanel = manual ? portal(h('div', {}, h('header', { className: 'd05-floating-head' }, h('div', {}, h('small', {}, 'LANÇAMENTO MANUAL'), h('h3', {}, 'Nova movimentação')), h('button', { type: 'button', 'aria-label': 'Cancelar lançamento', onClick: () => setManual(null) }, '×')), h('label', { className: 'd05-field' }, 'Descrição', h('input', { value: manual.description, maxLength: 180, onChange: (e) => setManual({ ...manual, description: e.target.value }) })), h('div', { className: 'd05-inline-fields' }, h('label', { className: 'd05-field' }, 'Data', h('input', { type: 'date', value: manual.date, onChange: (e) => setManual({ ...manual, date: e.target.value }) })), h('label', { className: 'd05-field' }, 'Valor (R$)', h('input', { inputMode: 'decimal', value: manual.value, placeholder: '0,00', onChange: (e) => setManual({ ...manual, value: e.target.value }) }))), h('div', { className: 'd05-switch-row' }, ['expense', 'income'].map((v) => h('button', { type: 'button', className: manual.kind === v ? 'active' : '', onClick: () => setManual({ ...manual, kind: v }) }, v === 'expense' ? 'Saída' : 'Entrada'))), h('p', { className: 'd05-picker-caption' }, 'Categoria: ' + labelTarget(manual.categoryId, manual.subcategoryId)), categoryGrid(manual.categoryId, (p) => setManual({ ...manual, categoryId: p.id, subcategoryId: null }), ''), h('div', { className: 'd05-child-list' }, (((_b = byId(manual.categoryId)) === null || _b === void 0 ? void 0 : _b.subcategories) || []).length ? h('div', {}, h('button', { type: 'button', className: !manual.subcategoryId ? 'd05-child is-current' : 'd05-child', onClick: () => setManual({ ...manual, subcategoryId: null }) }, 'Somente categoria-pai'), (((_c = byId(manual.categoryId)) === null || _c === void 0 ? void 0 : _c.subcategories) || []).map((c) => h('button', { type: 'button', key: c.id, className: manual.subcategoryId === c.id ? 'd05-child is-current' : 'd05-child', onClick: () => setManual({ ...manual, subcategoryId: c.id }) }, h(D05VectorIcon, { iconKey: c.iconKey, hue: c.hue, size: 16 }), c.name))) : null), h('button', { type: 'button', className: 'd05-confirm', disabled: busy, onClick: () => void saveManual() }, busy ? 'Salvando…' : 'Confirmar lançamento'), error ? h('p', { className: 'd05-message is-error', role: 'alert' }, error) : null), Math.max(12, Math.floor((window.innerWidth - 540) / 2)), 22, 540) : null;
+        if (state.booting)
+            return h('section', { className: 'd05-screen', id: 'd05-movements', role: 'status' }, h('p', { className: 'd05-notice' }, 'Carregando registros financeiros…'));
+        return h('section', { className: 'd05-screen', id: 'd05-movements' }, h('header', { className: 'd05-head' }, h('div', {}, h('h1', {}, 'Movimentações'), h('p', {}, 'Seu histórico organizado, com contexto e controle.')), h('div', { className: 'd05-head-actions' }, h('button', { type: 'button', onClick: () => { var _a; return (_a = host.csvInput) === null || _a === void 0 ? void 0 : _a.click(); } }, 'Importar CSV'), h('button', { type: 'button', className: 'd05-primary', onClick: (e) => { activeTrigger.current = e.currentTarget; setError(''); setManual({ description: '', date: iso(new Date()), value: '', kind: 'expense', categoryId: 'cat:outros', subcategoryId: null }); } }, '+ Nova movimentação'))), state.booting ? h('p', { className: 'd05-notice', role: 'status' }, 'Carregando dados financeiros…') : null, loadState === 'loading' && (bridge === null || bridge === void 0 ? void 0 : bridge.d05Catalog) ? h('p', { className: 'd05-notice', role: 'status' }, 'Conferindo hierarquia D05…') : null, loadState !== 'ready' && loadState !== 'loading' ? h('p', { className: 'd05-notice', role: 'status' }, accessMessage) : null, notice ? h('p', { className: 'd05-notice', role: 'status' }, confirmedIdentity ? h(D05VectorIcon, { iconKey: confirmedIdentity.iconKey,
+            hue: confirmedIdentity.hue, size: 17 }) : null, confirmedIdentity ? confirmedIdentity.label + ' · ' : null, notice) : null, state.mode === 'real' && (bridge === null || bridge === void 0 ? void 0 : bridge.bankAutoStatus) ? h('section', {
+            className: 'd05-auto-box mf-cat-shell', 'aria-label': 'Central de categorização automática'
+        }, h('header', { className: 'mf-cat-hero' }, h('div', { className: 'mf-cat-identity' }, h('span', { className: 'mf-cat-eyebrow' }, 'INTELIGÊNCIA FINANCEIRA  ·  CAT-UX'), h('h2', {}, 'Categorização inteligente'), h('p', {}, 'Evidências locais verificáveis, sempre sob o seu controle.')), h('div', { className: 'mf-cat-header-actions' }, h('span', { className: 'mf-cat-state', 'data-state': !(autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.available) ? 'unavailable' :
+                ((_d = autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.jobs) === null || _d === void 0 ? void 0 : _d.paused) ? 'paused' : (autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.enabled) ? 'active' : 'inactive' }, !(autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.available) ? 'Aguardando homologação' : ((_e = autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.jobs) === null || _e === void 0 ? void 0 : _e.paused) ? 'Pausada' :
+            (autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.enabled) ? 'Contas autorizadas' : 'Não ativada'), h('button', { type: 'button', className: 'd05-ghost', 'aria-expanded': autoPanel,
+            onClick: () => setAutoPanel(!autoPanel) }, autoPanel ? 'Recolher' : 'Abrir central'))), h('div', { className: 'mf-cat-glance', role: 'status', 'aria-label': 'Resumo da automação' }, h('div', {}, h('small', {}, 'Aplicadas no momento'), h('strong', {}, String((_g = (_f = autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.counts) === null || _f === void 0 ? void 0 : _f.classified) !== null && _g !== void 0 ? _g : 0))), h('div', {}, h('small', {}, 'Precisam de revisão'), h('strong', {}, String((_j = (_h = autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.counts) === null || _h === void 0 ? void 0 : _h.awaitingReview) !== null && _j !== void 0 ? _j : 0))), h('div', {}, h('small', {}, 'Contas autorizadas'), h('strong', {}, String(((autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.permissions) || []).filter((p) => p.enabled && p.expiresAt > new Date().toISOString()).length)))), autoPanel ? h('div', { className: 'mf-cat-content' }, h('nav', { className: 'mf-cat-nav', role: 'tablist', 'aria-label': 'Etapas e recursos da categorização' }, [{ id: 'activation', name: 'Ativação', number: '01' },
+            { id: 'preview', name: 'Análise', number: '02' },
+            { id: 'center', name: 'Central', number: '03' },
+            { id: 'rules', name: 'Regras', number: '04' },
+            { id: 'receipts', name: 'Recibos', number: '05' },
+            { id: 'security', name: 'Segurança', number: '06' }].map((v) => h('button', { key: v.id, id: 'mf-cat-tab-' + v.id, type: 'button', role: 'tab',
+            'aria-selected': autoView === v.id, 'aria-controls': 'mf-cat-panel-' + v.id,
+            className: autoView === v.id ? 'is-current' : '',
+            onClick: () => openAutoView(v.id) }, h('small', {}, v.number), v.name))), autoWriteJob ? h('div', { className: 'mf-cat-write-state', role: 'status', 'aria-live': 'polite' }, h('div', { className: 'mf-cat-progress-label' }, h('strong', {}, 'Aplicação em lotes · ' + (autoWriteJob.state === 'completed' ? 'Concluída' :
+            autoWriteJob.state === 'running' ? 'Gravando recibos' : autoWriteJob.state === 'paused' ? 'Pausada' :
+                autoWriteJob.state === 'cancelled' ? 'Cancelada' : autoWriteJob.state === 'stale' ? 'Prévia desatualizada' : 'Falha protegida')), h('span', {}, String(autoWriteJob.committed || 0) + ' / ' + String(autoWriteJob.proposedTotal || 0) + ' commits')), h('progress', { max: Math.max(1, autoWriteJob.proposedTotal || 0),
+            value: Math.min(autoWriteJob.committed || 0, Math.max(1, autoWriteJob.proposedTotal || 0)),
+            'aria-label': 'Classificações efetivamente confirmadas no SQLite' }), h('p', { className: 'mf-cat-footnote' }, autoWriteJob.state === 'completed' ?
+            'Todas as propostas válidas foram processadas; confira os recibos.' :
+            autoWriteJob.state === 'stale' ? 'Dados ou autorizações mudaram. O lote está bloqueado até nova prévia.' :
+                autoWriteJob.state === 'failed' ? 'Erro de backup ou COMMIT. O que já foi confirmado possui recibo; nenhuma conclusão foi declarada.' :
+                    autoWriteJob.state === 'cancelled' ? 'As classificações confirmadas permanecem. Não foi feito desfazer em massa.' :
+                        'A contagem só avança depois do COMMIT SQLite.'), ['running', 'paused', 'failed'].includes(autoWriteJob.state) ? h('div', { className: 'mf-cat-toolbar' }, autoWriteJob.state === 'running' ? h('button', { type: 'button', onClick: () => void pauseWrite() }, 'Pausar aplicação') :
+            h('button', { type: 'button', onClick: () => void resumeWrite() }, 'Retomar com revalidação'), h('button', { type: 'button', onClick: () => void cancelWrite() }, 'Cancelar novas aplicações')) : null) : null, h('div', { id: 'mf-cat-panel-' + autoView, role: 'tabpanel', 'aria-labelledby': 'mf-cat-tab-' + autoView,
+            className: 'mf-cat-stage', tabIndex: 0 }, autoView === 'activation' ? h('div', { className: 'mf-cat-grid-layout' }, h('section', { className: 'mf-cat-surface' }, h('div', { className: 'mf-cat-section-top' }, h('span', { className: 'mf-cat-step' }, '01 / CONFIGURAÇÃO'), h('h3', {}, 'Escolha onde a automação pode atuar'), h('p', {}, 'Nenhuma conta é escolhida automaticamente. O consentimento será solicitado no aplicativo.')), !(state.bank.data.accounts || []).length ? h('p', { className: 'mf-cat-empty', role: 'status' }, 'Nenhuma conta bancária disponível. Conecte uma conta e sincronize seus dados antes de autorizar.') : null, h('div', { className: 'mf-cat-account-list' }, (state.bank.data.accounts || []).map((account) => {
+            const permission = ((autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.permissions) || []).find((p) => p.accountId === account.id);
+            const expired = !!permission && permission.expiresAt <= new Date().toISOString();
+            return h('button', { key: account.id, type: 'button',
+                className: 'mf-cat-account ' + (autoSelected.has(account.id) ? 'is-selected' : ''),
+                disabled: autoBusy || !(autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.available),
+                'aria-pressed': autoSelected.has(account.id),
+                onClick: () => {
+                    const next = new Set(autoSelected);
+                    if (next.has(account.id))
+                        next.delete(account.id);
+                    else
+                        next.add(account.id);
+                    setAutoSelected(next);
+                } }, h('span', { className: 'mf-cat-account-mark', 'aria-hidden': 'true' }, autoSelected.has(account.id) ? '✓' : ''), h('span', { className: 'mf-cat-account-text' }, h('strong', {}, account.name), h('small', {}, expired ? 'Autorização expirada · renove para continuar' :
+                (permission === null || permission === void 0 ? void 0 : permission.enabled) ? 'Autorização existente · alterável' : 'Não autorizada')), h('span', { className: 'mf-cat-account-tail', 'aria-hidden': 'true' }, autoSelected.has(account.id) ? 'Selecionada' : 'Selecionar'));
+        })), h('div', { className: 'd05-auto-period mf-cat-period' }, h('label', {}, 'Histórico desde', h('input', { type: 'date', value: autoStart,
+            disabled: autoBusy || !autoHistoryEnabled, onChange: (e) => setAutoStart(e.target.value) })), h('label', {}, 'Até', h('input', { type: 'date', value: autoEnd, disabled: autoBusy,
+            onChange: (e) => setAutoEnd(e.target.value) }))), h('p', { className: 'mf-cat-footnote' }, 'Alterar contas ou período exige novo consentimento e invalida a prévia anterior.')), h('aside', { className: 'mf-cat-surface mf-cat-preferences' }, h('span', { className: 'mf-cat-step' }, 'PREFERÊNCIAS'), h('h3', {}, 'Como a classificação deve funcionar?'), h('button', { type: 'button', className: 'mf-cat-policy ' + (autoHistoryEnabled ? 'is-selected' : ''),
+            disabled: autoBusy || !(autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.available), 'aria-pressed': autoHistoryEnabled,
+            onClick: () => setAutoHistoryEnabled(!autoHistoryEnabled) }, h('span', {}, h('strong', {}, 'Analisar meu histórico disponível'), h('small', {}, 'Prévia de registros anteriores, sem alterar os originais')), h('span', { className: 'mf-cat-switch', 'aria-hidden': 'true' })), h('button', { type: 'button', className: 'mf-cat-policy ' + (autoNewEnabled ? 'is-selected' : ''),
+            disabled: autoBusy || !(autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.available), 'aria-pressed': autoNewEnabled,
+            onClick: () => setAutoNewEnabled(!autoNewEnabled) }, h('span', {}, h('strong', {}, 'Categorizar novas movimentações'), h('small', {}, 'Verificações locais após sync e durante o uso do app')), h('span', { className: 'mf-cat-switch', 'aria-hidden': 'true' })), h('div', { className: 'mf-cat-policy is-fixed' }, h('span', {}, h('strong', {}, 'Quando não houver evidência suficiente'), h('small', {}, 'Enviar à revisão. Nunca adivinhar categorias.')), h('span', { className: 'mf-cat-fixed' }, 'Sempre revisar')), h('div', { className: 'mf-cat-guarantee' }, h('strong', {}, 'O que permanece protegido'), h('p', {}, 'Valores, datas, extratos originais, classificações manuais, splits, transferências e regras aprovadas.')), h('button', { type: 'button', className: 'd05-confirm mf-cat-main-action',
+            disabled: autoBusy || !(autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.available) || autoSelected.size === 0 || (!autoHistoryEnabled && !autoNewEnabled),
+            onClick: () => void runAutoAction('enable') }, autoBusy ? 'Aguardando confirmação…' : 'Autorizar contas e avançar'), h('p', { className: 'mf-cat-footnote' }, 'As opções acima são sugestões. Só a confirmação nativa concede permissão; nenhuma categoria será aplicada nesta etapa.'))) : null, autoView === 'preview' ? h('section', { className: 'mf-cat-surface' }, h('div', { className: 'mf-cat-section-top' }, h('span', { className: 'mf-cat-step' }, '02 / EVIDENCE FLOW'), h('h3', {}, 'Análise e prévia verificável'), h('p', {}, 'O histórico é lido no SQLite em lotes de até 250; nenhum resultado é gravado antes de sua confirmação.')), h('div', { className: 'mf-cat-toolbar' }, h('button', { type: 'button', className: 'd05-confirm',
+            disabled: autoBusy || !(autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.available) || !(autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.enabled) || (autoProgress === null || autoProgress === void 0 ? void 0 : autoProgress.state) === 'scanning',
+            onClick: () => void runAutoAction('preview') }, autoBusy ? 'Analisando…' : 'Analisar histórico autorizado'), (autoProgress === null || autoProgress === void 0 ? void 0 : autoProgress.state) === 'scanning' ? h('button', { type: 'button',
+            onClick: () => void pauseAutoScan() }, 'Pausar') : null, (autoProgress === null || autoProgress === void 0 ? void 0 : autoProgress.state) === 'paused' ? h('button', { type: 'button',
+            onClick: () => void resumeAutoScan() }, 'Retomar') : null, ['scanning', 'paused'].includes(autoProgress === null || autoProgress === void 0 ? void 0 : autoProgress.state) ? h('button', { type: 'button',
+            onClick: () => void cancelAutoScan() }, 'Cancelar leitura') : null), autoProgress ? h('div', { className: 'mf-cat-progress', role: 'status', 'aria-live': 'polite' }, h('div', { className: 'mf-cat-progress-label' }, h('strong', {}, autoProgress.state === 'ready' ? 'Leitura concluída' :
+            autoProgress.state === 'paused' ? 'Leitura pausada' : 'Lendo movimentações'), h('span', {}, String(autoProgress.processed || 0) + ' / ' + String(autoProgress.total || 0))), h('progress', { value: autoProgress.processed || 0, max: Math.max(1, autoProgress.total || 0),
+            'aria-label': 'Movimentações efetivamente lidas' })) : null, ((_k = autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.applyJob) === null || _k === void 0 ? void 0 : _k.state) === 'stale' ? h('p', { className: 'd05-notice', role: 'alert' }, 'O lote anterior ficou desatualizado. Uma nova leitura e confirmação são obrigatórias; os recibos já gravados serão preservados.') : null, autoPreview ? h('div', {}, h('div', { className: 'mf-cat-metric-grid' }, [{ title: 'Aplicáveis', value: autoPreview.candidateCount || 0 },
+            { title: 'A revisar', value: autoPreview.reviewCount || 0 },
+            { title: 'Protegidas', value: autoPreview.protectedCount || 0 },
+            { title: 'Indisponíveis', value: autoPreview.unavailableCount || 0 }].map((m) => h('div', { key: m.title, className: 'mf-cat-mini-stat' }, h('small', {}, m.title), h('strong', {}, String(m.value))))), h('p', { className: 'mf-cat-caption' }, 'Total analisado no escopo: ' + String((_l = autoPreview.analyzedCount) !== null && _l !== void 0 ? _l : '—') +
+            '. As contagens acima não incluem registros fora do consentimento.'), h('div', { className: 'mf-cat-section-top' }, h('h3', {}, 'Amostras de propostas D05'), h('p', {}, 'Mostrando ' + Math.min(12, (autoPreview.candidates || []).length) + ' de ' +
+            String(autoPreview.candidateCount || 0) + ' aplicáveis. Nenhuma categoria foi aplicada.')), h('div', { className: 'mf-cat-proposal-list' }, (autoPreview.candidates || []).slice(0, 12).map((item) => {
+            var _a, _b;
+            const parent = byId((_a = item.target) === null || _a === void 0 ? void 0 : _a.categoryId);
+            const child = ((parent === null || parent === void 0 ? void 0 : parent.subcategories) || []).find((c) => { var _a; return c.id === ((_a = item.target) === null || _a === void 0 ? void 0 : _a.subcategoryId); });
+            return h('article', { className: 'mf-cat-proposal', key: item.accountId + '|' + item.externalId }, h('div', { className: 'mf-cat-proposal-icon' }, parent ? h(D05VectorIcon, { iconKey: parent.iconKey, hue: parent.hue, size: 20 }) : null), h('div', {}, h('strong', {}, item.merchant || 'Identificação comercial'), h('small', {}, item.explanation || 'Evidência local')), h('span', { className: 'mf-cat-proposal-target' }, ((parent === null || parent === void 0 ? void 0 : parent.name) || ((_b = item.target) === null || _b === void 0 ? void 0 : _b.categoryId) || 'Categoria') +
+                (child ? ' · ' + child.name : '')));
+        })), h('div', { className: 'mf-cat-confirm-strip' }, h('div', {}, h('strong', {}, 'Pronto para confirmar?'), h('p', {}, 'A confirmação nativa revalidará o manifesto e criará backups e recibos antes de gravar.')), h('button', { type: 'button', className: 'd05-confirm',
+            disabled: autoBusy || !(autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.available) || (autoProgress === null || autoProgress === void 0 ? void 0 : autoProgress.state) !== 'ready' ||
+                !autoPreview.previewVersion || ((autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.initialConfirmed) && !!(autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.applyJob) && ((_m = autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.applyJob) === null || _m === void 0 ? void 0 : _m.state) !== 'stale'),
+            onClick: () => void runAutoAction('confirm') }, 'Conferi; aplicar propostas elegíveis')), autoPreview.candidateCount > 20000 ? h('p', { className: 'mf-cat-caption' }, 'Volume elevado: o motor fará commits atômicos de até 250 propostas, com progresso e recuperação persistentes.') : null) : h('p', { className: 'mf-cat-empty' }, 'Nenhuma prévia confirmável nesta sessão. Autorize suas contas e execute a análise somente leitura.'), !(autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.available) ? h('p', { className: 'd05-notice' }, 'A RC experimental não possui permissão para escrita pessoal.') : null) : null, autoView === 'center' ? h('div', { className: 'mf-cat-grid-layout' }, h('section', { className: 'mf-cat-surface' }, h('span', { className: 'mf-cat-step' }, '03 / RASTRO VIVO'), h('h3', {}, 'Central da automação'), h('p', { className: 'mf-cat-caption' }, 'Eventos reais de sincronização, verificações locais e classificações confirmadas.'), h('div', { className: 'mf-cat-metric-grid' }, [{ title: 'Aplicadas atualmente', value: ((_o = autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.counts) === null || _o === void 0 ? void 0 : _o.classified) || 0 },
+            { title: 'Encaminhadas à revisão', value: ((_p = autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.counts) === null || _p === void 0 ? void 0 : _p.awaitingReview) || 0 },
+            { title: 'Protegidas', value: ((_q = autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.counts) === null || _q === void 0 ? void 0 : _q.protected) || 0 }].map((m) => h('div', { key: m.title, className: 'mf-cat-mini-stat' }, h('small', {}, m.title), h('strong', {}, String(m.value))))), h('h4', {}, 'Atividade recente'), (((_r = autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.jobs) === null || _r === void 0 ? void 0 : _r.jobs) || []).length ?
+            h('div', { className: 'mf-cat-timeline' }, (autoInfo.jobs.jobs || []).slice(0, 8).map((j) => h('div', { key: j.jobKey, className: 'mf-cat-timeline-row' }, h('span', { className: 'mf-cat-timeline-dot', 'data-state': j.state, 'aria-hidden': 'true' }), h('div', {}, h('strong', {}, j.trigger === 'sync' ? 'Após sincronização' :
+                j.trigger === 'daily' ? 'Verificação diária' : 'Ação manual'), h('small', {}, j.startedAt ? new Date(j.startedAt).toLocaleString('pt-BR') : 'Horário indisponível')), h('span', {}, j.state === 'completed' ? String(j.applied || 0) + ' aplicadas' :
+                j.state === 'running' ? 'Interrompida / em andamento' : 'Falha protegida')))) :
+            h('p', { className: 'mf-cat-empty' }, 'Ainda não há execução registrada.'), h('div', { className: 'mf-cat-toolbar' }, h('button', { type: 'button', disabled: autoBusy || !(autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.enabled) || !(autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.available) || ((_s = autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.jobs) === null || _s === void 0 ? void 0 : _s.paused),
+            onClick: () => void runAutoAction('run') }, 'Verificar movimentações'), h('button', { type: 'button', onClick: () => openAutoView('receipts') }, 'Ver recibos'), h('button', { type: 'button', onClick: () => { setTab('pending'); setSource('bank'); setAutoPanel(false); } }, 'Abrir A conferir (D05)'), h('button', { type: 'button', onClick: () => void categoryReviewOpen(host) }, 'Central de Revisão D04')), h('p', { className: 'mf-cat-footnote' }, 'O histórico financeiro completo permanece em Movimentações; a Central não duplica seus lançamentos.')), h('aside', { className: 'mf-cat-surface' }, h('span', { className: 'mf-cat-step' }, 'CONTROLE POR CONTA'), h('h3', {}, 'Permissões e execução'), ((autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.permissions) || []).length ? h('div', { className: 'mf-cat-permissions' }, (autoInfo.permissions || []).map((p) => {
+            var _a;
+            const expired = p.expiresAt <= new Date().toISOString();
+            return h('div', { key: p.accountId, className: 'mf-cat-permission-row' }, h('div', {}, h('strong', {}, p.name), h('small', {}, expired ? 'Expirada' :
+                p.enabled ? ((_a = autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.jobs) === null || _a === void 0 ? void 0 : _a.paused) ? 'Ativa · automação pausada' : 'Ativa' : 'Revogada')), p.enabled ? h('button', { type: 'button', disabled: autoBusy || !(autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.available),
+                onClick: () => void runAutoAction('revoke', p.accountId) }, 'Revogar') : null);
+        })) : h('p', { className: 'mf-cat-empty' }, 'Nenhuma conta autorizada.'), h('div', { className: 'mf-cat-toolbar' }, (autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.enabled) ? h('button', { type: 'button', disabled: autoBusy || !(autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.available),
+            onClick: () => { var _a; return void runAutoAction(((_a = autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.jobs) === null || _a === void 0 ? void 0 : _a.paused) ? 'resume' : 'pause'); } }, ((_t = autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.jobs) === null || _t === void 0 ? void 0 : _t.paused) ? 'Reativar automação' : 'Pausar automação') : null, h('button', { type: 'button', onClick: () => openAutoView('activation') }, 'Gerenciar contas')), h('p', { className: 'mf-cat-footnote' }, 'Pausar mantém o consentimento; revogar impede novas classificações automáticas.'))) : null, autoView === 'rules' ? h('section', { className: 'mf-cat-surface' }, h('span', { className: 'mf-cat-step' }, '04 / REGRAS E EVIDÊNCIAS'), h('h3', {}, 'Laboratório de padrões'), h('p', {}, 'Sugestões são somente leitura. Aprovar ou editar regras exige o fluxo protegido do catálogo D05.'), h('div', { className: 'mf-cat-toolbar' }, h('button', { type: 'button', className: 'd05-confirm', disabled: autoBusy || !(autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.available) || !(autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.enabled),
+            onClick: () => void runAutoAction('suggest') }, 'Buscar padrões verificáveis'), h('button', { type: 'button', onClick: () => host.setState({ txOrganize: true }) }, 'Abrir editor D05')), autoRules.length ? h('div', { className: 'mf-cat-rule-grid' }, autoRules.map((r) => {
+            var _a;
+            return h('article', { key: r.accountId + '|' + r.pattern, className: 'mf-cat-rule' }, h('small', { className: 'mf-cat-step' }, 'SUGESTÃO · NÃO APLICADA'), h('h4', {}, r.pattern), h('p', {}, 'Conta: ' + String(((_a = (state.bank.data.accounts || []).find((x) => x.id === r.accountId)) === null || _a === void 0 ? void 0 : _a.name) || 'Conta autorizada')), h('div', { className: 'mf-cat-rule-facts' }, h('span', {}, String(r.suggestedFor || 0) + ' ocorrências verificadas'), h('span', {}, String(r.possibleMatches || 0) + ' possíveis correspondências'), h('span', {}, String(r.possiblePrecedenceConflicts || 0) + ' conflitos de precedência')), h('p', { className: 'mf-cat-caption' }, r.possiblePrecedenceConflicts ?
+                'Revisar conflitos antes de considerar qualquer regra.' : 'Nenhuma regra foi criada. Confira o alcance no editor D05.'), h('button', { type: 'button', onClick: () => host.setState({ txOrganize: true }) }, 'Revisar no D05'));
+        })) :
+            h('p', { className: 'mf-cat-empty' }, 'Nenhuma sugestão consultada ou com evidência suficiente. Isso não significa que uma regra foi aprovada.'), h('h4', {}, 'Regras já ativas no D05'), (state.rules || []).filter((r) => r.enabled && (r.scope === 'bank' || r.scope === 'both')).length ?
+            h('div', { className: 'mf-cat-rule-grid' }, (state.rules || []).filter((r) => r.enabled && (r.scope === 'bank' || r.scope === 'both'))
+                .slice(0, 8).map((r) => h('article', { key: r.id, className: 'mf-cat-rule' }, h('span', { className: 'mf-cat-step' }, 'REGRA ATIVA DO D05'), h('h4', {}, r.pattern), h('p', {}, 'Destino: ' + r.category + ' · Correspondência: ' + r.matchMode +
+                ' · Prioridade: ' + r.priority), h('button', { type: 'button', onClick: () => host.setState({ txOrganize: true }) }, 'Gerenciar no catálogo')))) :
+            h('p', { className: 'mf-cat-empty' }, 'Nenhuma regra bancária ativa disponível no catálogo D05.'), h('p', { className: 'mf-cat-footnote' }, 'Âncoras humanas duplicadas e classificação probabilística não calibrada não autorizam regras.'))
+            : null, autoView === 'receipts' ? h('section', { className: 'mf-cat-surface' }, h('span', { className: 'mf-cat-step' }, '05 / AUDITORIA E REVERSÃO'), h('h3', {}, 'Histórico de recibos confirmados'), h('p', {}, 'Cada recibo é um registro persistido pelo SQLite. Reversões são individuais e exigem confirmação nativa.'), h('div', { className: 'mf-cat-toolbar', role: 'group', 'aria-label': 'Filtrar recibos' }, [{ id: 'all', label: 'Todas' }, { id: 'apply', label: 'Aplicações' },
+            { id: 'correct', label: 'Correções' }, { id: 'undo', label: 'Reversões' }].map((v) => h('button', { key: v.id, type: 'button', 'aria-pressed': autoReceiptFilter === v.id,
+            className: autoReceiptFilter === v.id ? 'is-selected' : '',
+            disabled: autoReceiptBusy, onClick: () => {
+                setAutoReceiptFilter(v.id);
+                setAutoReceiptDetail(null);
+                void loadAutoReceipts(v.id);
+            } }, v.label))), h('p', { className: 'mf-cat-caption' }, String(autoReceiptTotal) + ' recibo(s) neste filtro. ' +
+            'A listagem não altera movimentações.'), autoReceipts.length ? h('div', { className: 'mf-cat-receipt-list' }, autoReceipts.map((r) => {
+            var _a, _b, _c;
+            return h('article', { key: r.receiptId, className: 'mf-cat-receipt' }, h('div', { className: 'mf-cat-receipt-top' }, h('span', { className: 'mf-cat-step' }, r.action === 'apply' ? 'CATEGORIZAÇÃO' :
+                r.action === 'undo' ? 'REVERSÃO' : 'CORREÇÃO HUMANA'), h('small', {}, r.at ? new Date(r.at).toLocaleString('pt-BR') : 'Sem data confirmada')), h('strong', {}, r.description || 'Movimentação bancária'), h('p', {}, (r.accountName || 'Conta do histórico') + ' · ' +
+                String(((_a = byId(r.afterCategoryId)) === null || _a === void 0 ? void 0 : _a.name) || r.afterCategoryId || 'Sem categoria após operação')), h('div', { className: 'mf-cat-toolbar' }, h('button', { type: 'button', 'aria-expanded': (autoReceiptDetail === null || autoReceiptDetail === void 0 ? void 0 : autoReceiptDetail.receiptId) === r.receiptId,
+                onClick: () => setAutoReceiptDetail((autoReceiptDetail === null || autoReceiptDetail === void 0 ? void 0 : autoReceiptDetail.receiptId) === r.receiptId ? null : r) }, 'Detalhes'), r.action === 'apply' && r.active && !r.reversed ? h('button', { type: 'button',
+                disabled: autoBusy || !(autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.available), onClick: () => void undoAutoReceipt(r) }, 'Desfazer classificação') : null, h('button', { type: 'button', onClick: () => {
+                    setSearch(r.description || '');
+                    setSource('bank');
+                    setTab('all');
+                    setAutoPanel(false);
+                } }, 'Localizar em Movimentações')), (autoReceiptDetail === null || autoReceiptDetail === void 0 ? void 0 : autoReceiptDetail.receiptId) === r.receiptId ? h('div', { className: 'mf-cat-receipt-detail' }, h('p', {}, 'ID do recibo: ' + r.receiptId), h('p', {}, 'Movimentação: ' + r.accountId + ' / ' + r.externalId), h('p', {}, 'Antes: ' + (((_b = byId(r.beforeCategoryId)) === null || _b === void 0 ? void 0 : _b.name) || r.beforeCategoryId || 'Sem classificação D05')), h('p', {}, 'Depois: ' + (((_c = byId(r.afterCategoryId)) === null || _c === void 0 ? void 0 : _c.name) || r.afterCategoryId || 'Sem classificação D05')), h('p', {}, 'Evidência: ' + (r.explanation || 'Hash registrado no recibo (detalhes não preservados neste registro).')), h('p', {}, 'Commit SQLite confirmado · ' + (r.reversed ? 'Revertida' : r.active ? 'Ativa' : 'Não ativa'))) : null);
+        })) : h('p', { className: 'mf-cat-empty' }, autoReceiptBusy ? 'Consultando recibos…' : 'Nenhum recibo encontrado neste filtro.'), autoReceiptCursor ? h('button', { type: 'button', disabled: autoReceiptBusy,
+            onClick: () => void loadAutoReceipts(autoReceiptFilter, autoReceiptCursor) }, autoReceiptBusy ? 'Carregando…' : 'Carregar mais recibos') : null) : null, autoView === 'security' ? h('div', { className: 'mf-cat-grid-layout' }, h('section', { className: 'mf-cat-surface' }, h('span', { className: 'mf-cat-step' }, '06 / RESILIÊNCIA'), h('h3', {}, 'Segurança e recuperação'), h('p', {}, 'Esta área informa estados existentes. Não faz reparos destrutivos ou sincronizações adicionais.'), h('div', { className: 'mf-cat-security-list' }, [{ title: 'Disponibilidade', value: (autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.available) ? 'Distribuição estável habilitada' : 'Somente após homologação' },
+            { title: 'Autorização', value: (autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.enabled) ? 'Contas no período de validade' : 'Sem contas válidas autorizadas' },
+            { title: 'Primeiro lote', value: (autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.initialConfirmed) ? 'Confirmado no MAIN' : 'Aguardando prévia e confirmação' },
+            { title: 'Verificações', value: ((_u = autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.jobs) === null || _u === void 0 ? void 0 : _u.paused) ? 'Pausadas explicitamente' : 'Automação local não pausada' },
+            { title: 'Último job', value: ((_w = (((_v = autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.jobs) === null || _v === void 0 ? void 0 : _v.jobs) || [])[0]) === null || _w === void 0 ? void 0 : _w.state) || 'Nenhuma execução' }].map((v) => h('div', { key: v.title, className: 'mf-cat-security-row' }, h('strong', {}, v.title), h('span', {}, v.value)))), (((_x = autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.jobs) === null || _x === void 0 ? void 0 : _x.jobs) || []).some((x) => x.state === 'failed' || x.state === 'running') ?
+            h('p', { className: 'd05-notice', role: 'alert' }, 'Há job falho ou interrompido. Consulte os recibos; uma nova tentativa só deve ocorrer com consentimento válido e estado íntegro.') : null, autoMessage ? h('p', { className: 'd05-notice', role: 'alert' }, autoMessage) : null), h('aside', { className: 'mf-cat-surface' }, h('span', { className: 'mf-cat-step' }, 'GARANTIAS'), h('h3', {}, 'O que nunca muda sem sua decisão'), h('p', {}, 'A categorização utiliza overlay separado. O extrato bancário e os valores originais não são substituídos.'), h('p', {}, 'Um backup verificado é necessário antes da escrita. Falhas de aplicação bloqueiam novas tentativas automáticas.'), h('div', { className: 'mf-cat-toolbar' }, h('button', { type: 'button', onClick: () => openAutoView('receipts') }, 'Consultar recibos'), h('button', { type: 'button', onClick: () => openAutoView('activation') }, 'Revisar autorizações')), !(autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.available) ? h('p', { className: 'mf-cat-empty' }, 'Disponível após homologação Windows. Nenhuma escrita pessoal será habilitada na RC experimental.') : null)) : null), autoView !== 'security' && autoMessage ? h('p', { className: 'd05-notice', role: 'status', 'aria-live': 'polite' }, autoMessage) : null) : null) : null, h('div', { className: 'd05-metrics' }, [{ name: 'Entradas confirmadas', value: format(income), tone: 'positive', note: 'No escopo selecionado' },
+            { name: 'Saídas confirmadas', value: format(expense), tone: 'negative', note: 'Sem pendentes' },
+            { name: 'Resultado dos registros', value: format(income - expense), tone: income - expense >= 0 ? 'positive' : 'negative', note: 'Não é saldo disponível' },
+            { name: 'A conferir', value: String(needs), tone: 'review', note: 'Banco POSTED não revisado' }
+        ].map((m, i) => h(i === 3 ? 'button' : 'article', { key: m.name, type: i === 3 ? 'button' : undefined,
+            className: 'd05-metric is-' + m.tone, onClick: i === 3 ? () => setFilter(() => { setTab('pending'); setSource('bank'); setMetricSource('bank'); }) : undefined }, h('small', {}, m.name), h('strong', {}, m.value), h('span', {}, m.note)))), h('section', { className: 'd05-history' }, h('div', { className: 'd05-section-head' }, h('div', {}, h('h2', {}, 'Seu histórico'), h('p', {}, 'Valores por ' + (totalsSource === 'bank' ? 'contas bancárias' : 'movimentações manuais') +
+            (source === 'all' && sources.size > 1 ? ' · outras origens visíveis, sem somar duplicatas' : ''))), h('button', { type: 'button', className: 'd05-ghost', onClick: () => { host.setState({ txOrganize: true }); } }, 'Categorias e regras')), h('div', { className: 'd05-tabs', role: 'group', 'aria-label': 'Situação da conferência' }, [{ id: 'all', label: 'Todas' }, { id: 'pending', label: 'A conferir' }, { id: 'reviewed', label: 'Revisadas' }].map((x) => h('button', { type: 'button', key: x.id, 'aria-pressed': tab === x.id, className: tab === x.id ? 'active' : '',
+            onClick: () => setFilter(() => setTab(x.id)) }, x.label))), h('div', { className: 'd05-toolbar' }, h('label', { className: 'd05-search-wrap' }, h('span', { className: 'd05-sr-only' }, 'Buscar movimentações'), h('input', {
+            value: search, placeholder: 'Buscar estabelecimento, descrição ou categoria',
+            onChange: (e) => setFilter(() => setSearch(e.target.value))
+        })), h('label', { className: 'd05-filter' }, 'Origem', h('select', { value: source, onChange: (e) => setFilter(() => setSource(e.target.value)) }, h('option', { value: 'all' }, 'Todas'), h('option', { value: 'bank' }, 'Banco'), h('option', { value: 'manual' }, 'Manuais'))), h('label', { className: 'd05-filter' }, 'Mês', h('input', { type: 'month', value: period, onChange: (e) => setFilter(() => setPeriod(e.target.value)) })), h('button', { type: 'button', className: 'd05-more', onClick: () => setAdvanced(!advanced), 'aria-expanded': advanced }, 'Filtros ' + (advanced ? '−' : '+'))), advanced ? h('div', { className: 'd05-advanced' }, h('label', { className: 'd05-filter' }, 'Conta', h('select', { value: account, onChange: (e) => setFilter(() => setAccount(e.target.value)) }, h('option', { value: '' }, 'Todas as contas'), (state.bank.data.accounts || []).map((a) => h('option', { key: a.id, value: a.id }, a.name)))), h('label', { className: 'd05-filter' }, 'Natureza', h('select', { value: kind, onChange: (e) => setFilter(() => setKind(e.target.value)) }, [['all', 'Todas'], ['income', 'Entradas'], ['expense', 'Saídas'], ['transfer', 'Transferências'], ['ignore', 'Ignoradas']].map((x) => h('option', { value: x[0], key: x[0] }, x[1])))), h('label', { className: 'd05-filter' }, 'Ordenação', h('select', { value: sort, onChange: (e) => setFilter(() => setSort(e.target.value)) }, [['newest', 'Mais recentes'], ['oldest', 'Mais antigas'], ['largest', 'Maior valor'], ['smallest', 'Menor valor']].map((x) => h('option', { value: x[0], key: x[0] }, x[1])))), h('label', { className: 'd05-filter' }, 'Resumo financeiro', h('select', { value: metricSource, onChange: (e) => setMetricSource(e.target.value) }, h('option', { value: 'bank' }, 'Bancário'), h('option', { value: 'manual' }, 'Manual'))), h('div', { className: 'd05-parent-filters' }, h('span', {}, 'Categorias'), h('button', { type: 'button', className: !categoryId ? 'active' : '', onClick: () => setFilter(() => { setCategoryId(''); setSubcategoryId(''); }) }, 'Todas'), parents.map((p) => h('button', { type: 'button', key: p.id, className: categoryId === p.id ? 'active' : '', onClick: () => setFilter(() => { setCategoryId(p.id); setSubcategoryId(''); }) }, h(D05VectorIcon, { iconKey: p.iconKey, hue: p.hue, size: 15 }), p.name))), categoryId ? h('div', { className: 'd05-parent-filters' }, h('span', {}, 'Subcategoria'), h('button', { type: 'button', className: !subcategoryId ? 'active' : '', onClick: () => setFilter(() => setSubcategoryId('')) }, 'Todas'), (((_y = byId(categoryId)) === null || _y === void 0 ? void 0 : _y.subcategories) || []).map((c) => h('button', { type: 'button', key: c.id, className: subcategoryId === c.id ? 'active' : '', onClick: () => setFilter(() => setSubcategoryId(c.id)) }, c.name))) : null) : null, h('div', { className: 'd05-history-controls' }, h('button', { type: 'button', role: 'switch', 'aria-checked': group, 'aria-label': 'Agrupar por dia', className: 'd05-group-toggle', onClick: () => setGroup(!group) }, h('span', { className: 'd05-switch-track' }, h('span', { className: 'd05-switch-thumb' })), 'Agrupar por dia'), h('span', {}, filtered.length + ' movimentações no escopo' + (filtered.length > 500 ? ' · exibindo 500' : ''), pending ? ' · ' + pending + ' em processamento' : '', ignored ? ' · ' + ignored + ' transferência(s)/ignorada(s) fora dos totais' : '')), partial ? h('p', { className: 'd05-notice', role: 'status' }, 'Histórico parcial: ' + bankData.length + ' de ' + String(state.bank.data.totalTransactions || '?') + ' movimentações bancárias carregadas. Métricas apenas desta amostra.') : null, selected.size ? h('div', { className: 'd05-bulk-bar', role: 'region', 'aria-label': 'Ações em lote' }, h('b', {}, selected.size + ' selecionada(s)'), h('button', { type: 'button', onClick: (e) => openPicker(e, null, 'batch') }, 'Categorizar seleção'), h('button', { type: 'button', onClick: () => setSelected(new Set()) }, 'Limpar seleção')) : null, filtered.length ? h('div', { className: 'd05-list' }, onScreen.map((r, i) => {
+            var _a;
+            const p = byId(r.categoryId) || byName(r.category), child = (_a = p === null || p === void 0 ? void 0 : p.subcategories) === null || _a === void 0 ? void 0 : _a.find((c) => c.id === r.subcategoryId);
+            const icon = resolveCategoryVisualIdentity({ categoryId: r.categoryId || null,
+                subcategoryId: r.subcategoryId || null, categoryName: r.category, catalog: parents });
+            const isReview = r.source === 'bank' && r.status === 'POSTED' && !r.reviewed;
+            const signed = r.kind === 'transfer' || r.kind === 'ignore' ? 'neutral' : r.amount >= 0 ? 'positive' : 'negative';
+            const isSelected = selected.has(r.key);
+            const selectAllowed = r.source === 'bank';
+            return h('div', { className: 'd05-list-item', key: r.key }, group && (i === 0 || onScreen[i - 1].date !== r.date) ? h('div', { className: 'd05-day' }, pDate(r.date)) : null, h('article', { className: 'd05-row ' + (isSelected ? 'is-selected' : ''),
+                onClick: () => openDetail(r) }, h('button', { type: 'button', className: 'd05-select ' + (isSelected ? 'selected' : ''),
+                'aria-label': 'Selecionar ' + r.merchant, 'aria-pressed': isSelected, disabled: !selectAllowed,
+                onClick: (e) => { e.stopPropagation(); const next = new Set(selected); if (next.has(r.key))
+                    next.delete(r.key);
+                else
+                    next.add(r.key); setSelected(next); setPicker(null); setPreview(null); } }, h('span', { 'aria-hidden': 'true' }, isSelected ? '✓' : '')), h('button', { type: 'button', className: 'd05-row-icon', 'aria-label': 'Alterar categoria de ' + r.merchant,
+                onClick: (e) => openPicker(e, r) }, h(CategoryVisualGlyph, { identity: icon, size: 23 })), h('div', { className: 'd05-row-info' }, h('div', { className: 'd05-merchant-line' }, h('button', { type: 'button', className: 'd05-merchant', onClick: (e) => { e.stopPropagation(); openDetail(r); } }, r.merchant), isReview ? h('button', { type: 'button', className: 'd05-review-dot', 'aria-label': 'Conferir movimentação ' + r.merchant,
+                title: 'A conferir', onClick: (e) => { e.stopPropagation(); activeTrigger.current = e.currentTarget; setError(''); setReview(r); } }, h('span', { 'aria-hidden': 'true' })) : null, r.source === 'bank' && r.status === 'PENDING' ? h('span', { className: 'd05-pending', title: 'Em processamento', 'aria-label': 'Em processamento' }, h(D05VectorIcon, { iconKey: 'clock-3', hue: 37, size: 16 })) : null), h('small', {}, r.account + ' · ' + ((p === null || p === void 0 ? void 0 : p.name) || r.category) + (child ? ' › ' + child.name : ''), r.source === 'manual' ? ' · Manual' : r.raw.categorySource === 'automatic' ? ' · Automática (evidência verificada)' : ''), r.merchant !== r.description ? h('small', { className: 'd05-desc' }, r.description) : null), h('div', { className: 'd05-row-end' }, h('strong', { className: 'd05-amount ' + signed }, (r.amount >= 0 ? '+' : '−') + format(Math.abs(r.amount))), r.source === 'bank' && r.raw.categorySource === 'automatic' ?
+                h('small', { title: r.raw.automaticEvidence || 'Evidência de histórico local' }, 'Categorização local verificada') : null, r.source === 'bank' && r.raw.categorySource === 'automatic' && (autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.available) && (bridge === null || bridge === void 0 ? void 0 : bridge.bankAutoUndo) ?
+                h('button', { type: 'button', className: 'd05-ghost', disabled: autoBusy,
+                    onClick: async (e) => {
+                        e.stopPropagation();
+                        setAutoBusy(true);
+                        setAutoMessage('');
+                        try {
+                            const outcome = await bridge.bankAutoUndo({ accountId: r.accountId, externalId: r.id });
+                            if (outcome === null || outcome === void 0 ? void 0 : outcome.undone) {
+                                await host.refreshBank();
+                                await refreshHierarchy();
+                                await refreshAuto();
+                                setAutoMessage('Classificação revertida. Movimento protegido contra reaplicação automática.');
+                            }
+                        }
+                        catch (error) {
+                            setAutoMessage(String((error === null || error === void 0 ? void 0 : error.message) || error));
+                        }
+                        finally {
+                            setAutoBusy(false);
+                        }
+                    } }, 'Desfazer') : null, r.kind === 'transfer' || r.kind === 'ignore' ? h('small', {}, r.kind === 'transfer' ? 'Transferência' : 'Desconsiderada') : null)));
+        })) : h('div', { className: 'd05-empty' }, h('strong', {}, 'Nenhuma movimentação encontrada'), h('p', {}, 'Altere a pesquisa ou os filtros para continuar.'), h('button', { type: 'button', onClick: () => { setSearch(''); setPeriod(''); setAccount(''); setCategoryId(''); setSubcategoryId(''); setKind('all'); setTab('all'); setSource('all'); } }, 'Limpar filtros'))), chooser, reviewPanel, manualPanel);
+    }
+}
 function pDate(v) { return v.split('-').reverse().join('/'); }
 function pShort(v) { const [y, m, d] = v.split('-').map(Number); return new Date(y, m - 1, d).toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', ''); }
 function pStatus(v) { return { paid: 'Pago', pending: 'Pendente', overdue: 'Vencido', cancelled: 'Cancelado' }[v] || v; }
@@ -2655,17 +4430,18 @@ function intelligenceOpenFullChat(app) {
     if (typeof intelligenceEnsureHydrated === 'function')
         intelligenceEnsureHydrated(app);
     const scope = app.state.intelligencePanelOpen && app.state.intelligenceContextSnapshot ? app.state.intelligenceContextSnapshot : intelligencePageScope(app);
-    app.setState({ page: 'intelligence', intelligenceTab: 'chat', categoryReviewOpen: false, intelligenceDraftScope: scope, intelligencePanelOpen: false, detail: null, planSelected: null }, () => { var _a; return (_a = document.scrollingElement) === null || _a === void 0 ? void 0 : _a.scrollTo({ top: 0, behavior: 'instant' }); });
+    app.setState({ page: 'intelligence', intelligenceTab: 'chat', intelligenceMainMode: 'chat', categoryReviewOpen: false, intelligenceDraftScope: scope, intelligencePanelOpen: false, detail: null, planSelected: null }, () => { var _a; return (_a = document.scrollingElement) === null || _a === void 0 ? void 0 : _a.scrollTo({ top: 0, behavior: 'instant' }); });
 }
 function intelligencePrepare(app, question) {
     if (typeof intelligenceEnsureHydrated === 'function')
         intelligenceEnsureHydrated(app);
-    app.setState({ page: 'intelligence', intelligenceTab: 'chat', intelligenceDraft: question, intelligenceDraftScope: app.state.intelligencePanelOpen && app.state.intelligenceContextSnapshot ? app.state.intelligenceContextSnapshot : intelligencePageScope(app), intelligencePanelOpen: false, detail: null, planSelected: null });
+    app.setState({ page: 'intelligence', intelligenceTab: 'chat', intelligenceMainMode: 'chat', intelligenceDraft: question, intelligenceDraftScope: app.state.intelligencePanelOpen && app.state.intelligenceContextSnapshot ? app.state.intelligenceContextSnapshot : intelligencePageScope(app), intelligencePanelOpen: false, detail: null, planSelected: null });
 }
 function renderIntelligenceStructuredCard(card) {
     return h('div', { className: 'mf-ai-structured-card', role: 'region', 'aria-label': card.title }, h('div', { className: 'mf-ai-structured-head' }, h('strong', {}, card.title), card.subtitle ? h('small', {}, card.subtitle) : null), Array.isArray(card.metrics) && card.metrics.length ? h('div', { className: 'mf-ai-structured-metrics' }, ...card.metrics.map((m, idx) => h('div', { key: idx, className: 'mf-ai-structured-metric is-' + (m.tone || 'neutral') }, h('small', {}, m.label), h('strong', {}, m.value)))) : null, Array.isArray(card.rows) && card.rows.length ? h('div', { className: 'mf-ai-table-wrap' }, h('table', {}, card.headers ? h('thead', {}, h('tr', {}, h('th', {}, card.headers[0]), h('th', {}, card.headers[1]), card.headers[2] ? h('th', {}, card.headers[2]) : null)) : null, h('tbody', {}, ...card.rows.map((r, idx) => h('tr', { key: idx }, h('td', {}, r.col1), h('td', {}, r.col2), r.col3 !== undefined ? h('td', {}, r.col3) : null))))) : null, card.footnote ? h('small', { className: 'mf-ai-structured-foot' }, card.footnote) : null);
 }
 function renderIntelligenceActionProposalCard(app, proposal) {
+    return renderMfD01Proposal(app, proposal);
     const moneyFmt = (cents) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format((cents || 0) / 100);
     const isAmbiguous = proposal.status === 'ambiguous';
     const isPending = proposal.status === 'pending';
@@ -2681,12 +4457,16 @@ function renderIntelligenceActionProposalCard(app, proposal) {
     return h('div', { className: 'mf-ai-proposal-card status-' + proposal.status, role: 'region', 'aria-label': 'Prévia de categorização supervisionada' }, h('div', { className: 'mf-ai-proposal-head' }, h('span', { className: 'micro-label' }, isAmbiguous ? 'DESAMBIGUAÇÃO DE LANÇAMENTOS' : proposal.origin === 'bank' ? 'PRÉVIA · MOVIMENTAÇÃO BANCÁRIA' : 'PRÉVIA · LANÇAMENTO MANUAL'), h('span', { className: 'mf-ai-status' }, statusLabel)), isAmbiguous && allCandidates.length ? h('div', { className: 'mf-ai-candidate-list', role: 'group', 'aria-label': 'Escolha o lançamento exato' }, h('p', { className: 'mf-ai-proposal-notice' }, 'Múltiplos lançamentos correspondem ao pedido. Nunca escolhemos um registro arbitrariamente; selecione abaixo qual deseja preparar para “' + proposal.proposedCategory + '”:'), allCandidates.length > 8 ? h('p', { className: 'mf-ai-refine-hint' }, 'Para refinar a busca entre os ' + allCandidates.length + ' lançamentos, informe data (ex.: ontem ou DD/MM/AAAA), valor exato (ex.: R$ 50,00) ou origem (banco / manual).') : null, ...visibleCandidates.map((c) => h('div', { key: c.candidateKey, className: 'mf-ai-candidate-row' }, h('div', { className: 'mf-ai-candidate-copy' }, h('strong', {}, c.description), h('small', {}, (c.origin === 'bank' ? 'Banco (' + c.accountName + ')' : 'Manual') + ' · ' + c.date + ' · ' + moneyFmt(c.amountCents) + ' · Atual: ' + c.currentCategory)), h('button', { type: 'button', className: 'ghost-button', onClick: () => intelligenceSelectActionCandidate(app, proposal.id, c.candidateKey) }, 'Selecionar lançamento'))), hiddenCount > 0 ? h('button', { type: 'button', className: 'ghost-button mf-ai-expand-candidates', onClick: () => intelligenceExpandProposalCandidates(app, proposal.id) }, 'Mostrar mais ' + hiddenCount + ' lançamento(s) (ver todos os ' + allCandidates.length + ')') : null, h('div', { className: 'mf-ai-proposal-actions' }, h('button', { type: 'button', className: 'ghost-button', onClick: () => intelligenceResolveActionProposal(app, proposal.id, 'deny') }, 'Cancelar proposta'))) : null, !isAmbiguous ? h('div', { className: 'mf-ai-proposal-tx' }, h('strong', {}, proposal.description), h('small', {}, (proposal.origin === 'bank' ? 'Banco (' + (proposal.accountName || proposal.accountId || 'Conta') + ')' : 'Manual') + ' · ' + proposal.date + ' · ' + moneyFmt(proposal.amountCents))) : null, !isAmbiguous ? h('div', { className: 'mf-ai-proposal-diff' }, h('div', { className: 'mf-ai-diff-col' }, h('small', {}, 'Categoria atual'), h('b', {}, proposal.currentCategory || 'Sem categoria')), h('span', { className: 'mf-ai-diff-arrow', 'aria-hidden': 'true' }, '→'), h('div', { className: 'mf-ai-diff-col is-proposed' }, h('small', {}, 'Categoria proposta'), h('b', {}, proposal.proposedCategory))) : null, isPending ? h('p', { className: 'mf-ai-proposal-notice' }, 'Prévia sem gravação: confirmar valida identidade, origem, data, valor e categoria, mas não persiste alterações no SQLite até a entrega I2-B.') : null, isPending ? h('div', { className: 'mf-ai-proposal-actions' }, h('button', { type: 'button', className: 'primary-button', onClick: () => intelligenceResolveActionProposal(app, proposal.id, 'approve') }, 'Confirmar prévia (sem gravar)'), h('button', { type: 'button', className: 'ghost-button', onClick: () => intelligenceResolveActionProposal(app, proposal.id, 'deny') }, 'Negar alteração')) : null, proposal.resultMessage ? h('p', { className: 'mf-ai-proposal-result', role: 'status' }, proposal.resultMessage) : null);
 }
 function renderIntelligenceMessageItem(app, msg) {
+    if (msg.id.startsWith('local-a-') && !mfLocalMessageLive(app, msg))
+        return h('article', { className: 'mf-ai-msg is-assistant is-unavailable' }, h('p', { role: 'status' }, 'Resposta anterior indisponível: a autorização ou o período mudou. Faça uma nova consulta.'));
+    if (msg.id.startsWith('ic2-a-') && !mfIC2MessageLive(app, msg))
+        return h('article', { className: 'mf-ai-msg is-assistant is-unavailable' }, h('p', { role: 'status' }, 'Consulta anterior bloqueada: a autorização mudou ou expirou. Autorize e consulte novamente.'));
     const isUser = msg.role === 'user';
     const badge = msg.status === 'unavailable' ? h('span', { className: 'mf-ai-msg-badge is-warn' }, 'Consulta não autorizada') :
         msg.status === 'unsupported' ? h('span', { className: 'mf-ai-msg-badge is-info' }, 'Consulta não reconhecida') :
             msg.status === 'unimplemented' ? h('span', { className: 'mf-ai-msg-badge is-info' }, 'Aguarda I2-A') :
                 msg.status === 'error' ? h('span', { className: 'mf-ai-msg-badge is-error' }, 'Serviço indisponível') : null;
-    return h('article', { key: msg.id, className: 'mf-ai-msg ' + (isUser ? 'is-user' : 'is-assistant') + ' is-' + msg.status }, h('header', { className: 'mf-ai-msg-meta' }, h('strong', {}, isUser ? 'Você' : 'Assistente MF'), h('span', {}, msg.scopeLabel + ' · ' + msg.periodLabel + ' · ' + msg.createdAt), badge), h('div', { className: 'mf-ai-msg-body mf-ai-markdown' }, ...aiMarkdownNodes(msg.text)), msg.structuredCard ? renderIntelligenceStructuredCard(msg.structuredCard) : null, msg.operationalEvidence ? h('small', { className: 'mf-premium-evidence' }, msg.operationalEvidence) : null, Array.isArray(msg.operationalActions) && msg.operationalActions.length ? h('div', { className: 'mf-premium-tile-actions' }, ...msg.operationalActions.map((action) => intelligencePremiumButton(app, null, action))) : null, msg.proposal ? renderIntelligenceActionProposalCard(app, msg.proposal) : null, msg.id.startsWith('review-answer-') ? h('button', { type: 'button', className: 'primary-button', onClick: () => void categoryReviewOpen(app) }, 'Abrir Central de Revisão') : null, msg.details ? h('details', { className: 'mf-ai-msg-details' }, h('summary', {}, 'Ver contexto e diagnóstico'), h('p', {}, msg.details)) : null);
+    return h('article', { key: msg.id, className: 'mf-ai-msg ' + (isUser ? 'is-user' : 'is-assistant') + ' is-' + msg.status }, h('header', { className: 'mf-ai-msg-meta' }, h('strong', {}, isUser ? 'Você' : 'Assistente MF'), h('span', {}, msg.scopeLabel + ' · ' + msg.periodLabel + ' · ' + msg.createdAt), badge), h('div', { className: 'mf-ai-msg-body mf-ai-markdown' }, ...aiMarkdownNodes(msg.text)), msg.structuredCard && !msg.visual && !msg.visualV3 ? renderIntelligenceStructuredCard(msg.structuredCard) : null, msg.visualV3 ? mfV3Render(app, msg) : msg.visual ? renderMfVisual(app, msg) : null, msg.operationalEvidence ? h('small', { className: 'mf-premium-evidence' }, msg.operationalEvidence) : null, Array.isArray(msg.operationalActions) && msg.operationalActions.length ? h('div', { className: 'mf-premium-tile-actions' }, ...msg.operationalActions.map((action) => intelligencePremiumButton(app, null, action))) : null, msg.proposal ? renderIntelligenceActionProposalCard(app, msg.proposal) : null, msg.id.startsWith('review-answer-') ? h('button', { type: 'button', className: 'primary-button', onClick: () => void categoryReviewOpen(app) }, 'Abrir Central de Revisão') : null, msg.details ? h('details', { className: 'mf-ai-msg-details' }, h('summary', {}, 'Ver contexto e diagnóstico'), h('p', {}, msg.details)) : null);
 }
 function intelligenceExampleCard(app, id, title, description, icon, question) {
     return h('div', { className: 'mf-ai-example-card', key: id }, h('span', { className: 'mf-ai-example-icon' }, h(Icon, { name: icon, size: 20 })), h('div', { className: 'mf-ai-example-copy' }, h('strong', {}, title), h('p', {}, description), h('button', { type: 'button', className: 'mf-ai-link', onClick: () => intelligencePrepare(app, question) }, 'Preparar análise', h(Icon, { name: 'arrow', size: 15 }))));
@@ -2785,7 +4565,7 @@ function intelligencePremiumAction(app, c, a) {
             setTimeout(() => { const node = document.getElementById('mf-category-editor-heading'); node === null || node === void 0 ? void 0 : node.scrollIntoView({ block: 'center' }); node === null || node === void 0 ? void 0 : node.focus(); }, 0);
             return;
         case 'navigation:intelligence-chat':
-            app.setState({ page: 'intelligence', intelligenceTab: 'chat', categoryReviewOpen: false });
+            app.setState({ page: 'intelligence', intelligenceTab: 'chat', intelligenceMainMode: 'chat', categoryReviewOpen: false });
             return;
         case 'navigation:review-history':
             if ((_a = app.state.categoryReviewGrant) === null || _a === void 0 ? void 0 : _a.token)
@@ -2842,33 +4622,7 @@ function intelligencePremiumBudgetChart(c) {
             'aria-valuemin': 0, 'aria-valuemax': 100, 'aria-valuenow': Math.min(100, Math.max(0, b.percentage)) }, h('span', { className: b.percentage >= 100 ? 'is-over' : '', style: { width: Math.min(100, Math.max(0, b.percentage)) + '%' } })) : null)));
 }
 function renderIntelligencePremiumToday(app) {
-    var _a, _b, _c, _d, _e, _f, _g, _h;
-    const s = app.state, signature = intelligencePremiumSignature(app);
-    const stale = !!s.intelligencePremiumReport && s.intelligencePremiumSignature !== signature;
-    const report = !stale ? s.intelligencePremiumReport : null;
-    const loading = !!s.intelligencePremiumLoading && !stale;
-    const cards = Array.isArray(report === null || report === void 0 ? void 0 : report.cards) ? report.cards : [];
-    const get = (id) => cards.find(c => c.id === id) || null;
-    const radar = get('UI-03'), review = get('UI-01'), budgets = get('UI-04'), commit = get('UI-05'), rules = get('UI-02'), categories = get('UI-06'), conversation = get('UI-07'), history = get('UI-08');
-    const meaningful = (radar === null || radar === void 0 ? void 0 : radar.uiState) === 'ready' && radar.count > 0;
-    const sourceLabel = ((_a = s.categoryReviewGrant) === null || _a === void 0 ? void 0 : _a.token) ? 'Revisão sintética' : ((_b = s.localFinancialAccess) === null || _b === void 0 ? void 0 : _b.source) === 'bank' ? 'Fonte bancária' :
-        ((_c = s.localFinancialAccess) === null || _c === void 0 ? void 0 : _c.source) === 'manual' ? 'Lançamentos manuais' : 'Sem leitura autorizada';
-    const grant = ((_d = s.localFinancialAccess) === null || _d === void 0 ? void 0 : _d.token) || ((_e = s.categoryReviewGrant) === null || _e === void 0 ? void 0 : _e.token);
-    return h('div', { className: 'mf-ai-premium-today', role: 'region', 'aria-label': 'Inteligência Hoje' }, h('div', { className: 'mf-premium-head' }, h('div', {}, h('span', { className: 'mf-premium-eyebrow' }, h(Icon, { name: 'spark', size: 15 }), 'VISÃO OPERACIONAL · ' + sourceLabel), h('h2', {}, 'O que merece sua atenção?'), h('p', {}, 'Sinais verificáveis para transformar informação em decisão. Nenhuma mudança é aplicada sem sua confirmação.')), h('div', { className: 'mf-premium-head-controls' }, h('span', { className: 'mf-premium-period' }, s.localFinancialMonth || s.month), h('button', { type: 'button', className: 'mf-premium-refresh', disabled: loading,
-        onClick: () => void intelligencePremiumLoad(app) }, h(Icon, { name: 'arrow', size: 15 }), loading ? 'Consultando…' : 'Atualizar visão'))), !grant ? h('div', { className: 'mf-premium-consent', role: 'status' }, h(Icon, { name: 'shield', size: 20 }), h('p', {}, s.mode === 'real' && !((_g = (_f = s.bank) === null || _f === void 0 ? void 0 : _f.config) === null || _g === void 0 ? void 0 : _g.configured) && s.localFinancialSource !== 'manual' ?
-        'Nenhuma conexão bancária configurada. Você pode escolher lançamentos manuais na autorização de leitura local acima.' :
-        'Autorize a leitura local acima para consultar suas movimentações. Categorias e estados de disponibilidade continuam acessíveis sem autorização financeira.')) : null, stale ? h('div', { className: 'mf-premium-alert', role: 'status' }, 'Fonte, perfil, conta ou período mudou. A consulta anterior foi ocultada. Atualize para ver os novos dados.') : null, s.intelligencePremiumError ? h('div', { className: 'mf-premium-alert', role: 'alert' }, s.intelligencePremiumError) : null, loading ? h('div', { className: 'mf-premium-loading', role: 'status', 'aria-label': 'Carregando informações financeiras' }, h('div', { className: 'mf-premium-skeleton' }), h('div', { className: 'mf-premium-skeleton' }), h('div', { className: 'mf-premium-skeleton' })) : null, report ? h('div', { className: 'mf-premium-dashboard' }, h('div', { className: 'mf-premium-lead' }, h('section', { className: 'mf-premium-radar ' + (meaningful ? 'has-attention' : ''), 'aria-labelledby': 'mf-premium-radar-title' }, h('span', { className: 'mf-premium-kicker' }, 'UI-03 · RADAR FINANCEIRO'), h('h3', { id: 'mf-premium-radar-title' }, meaningful ? 'Pontos de atenção encontrados.' : 'Visão do período'), (radar === null || radar === void 0 ? void 0 : radar.uiState) === 'ready' || (radar === null || radar === void 0 ? void 0 : radar.uiState) === 'empty' ?
-        h('div', {}, radar.count !== null && Number.isSafeInteger(radar.count) ?
-            h('div', { className: 'mf-premium-radar-count' }, h('strong', {}, String(radar.count)), h('span', {}, radar.count === 1 ? 'ponto de atenção' : 'pontos de atenção')) : null, Array.isArray(radar.observations) && radar.observations.length ?
-            h('ul', { className: 'mf-premium-observations' }, ...radar.observations.slice(0, 3).map((o) => h('li', { key: o.category }, h('strong', {}, o.category), h('span', {}, intelligencePremiumMoney(o.spentCents) + ' / ' + intelligencePremiumMoney(o.limitCents))))) :
-            h('p', {}, intelligencePremiumState({ ...radar, uiState: 'empty' })), intelligencePremiumEvidence(radar), h('div', { className: 'mf-premium-tile-actions' }, ...(radar.actions || []).map((a) => intelligencePremiumButton(app, radar, a)))) :
-        h('p', { className: 'mf-premium-state' }, intelligencePremiumState(radar))), intelligencePremiumTile(app, review, 'filter', 'mf-premium-review')), h('div', { className: 'mf-premium-major-grid' }, h('section', { className: 'mf-premium-budget-card', 'aria-labelledby': 'mf-premium-budget-title' }, h('div', { className: 'mf-premium-tile-head' }, h('span', { className: 'mf-premium-tile-icon' }, h(Icon, { name: 'pie', size: 19 })), h('span', { className: 'mf-premium-contract' }, 'UI-04')), h('h3', { id: 'mf-premium-budget-title' }, 'Orçamentos em perspectiva'), (budgets === null || budgets === void 0 ? void 0 : budgets.uiState) === 'ready' || (budgets === null || budgets === void 0 ? void 0 : budgets.uiState) === 'empty' ?
-        h('div', {}, intelligencePremiumBudgetChart(budgets), !((_h = budgets === null || budgets === void 0 ? void 0 : budgets.budgets) === null || _h === void 0 ? void 0 : _h.length) ? h('p', {}, 'Nenhum limite cadastrado com dados aplicáveis.') : null, intelligencePremiumEvidence(budgets), h('div', { className: 'mf-premium-tile-actions' }, ...(budgets.actions || []).map((a) => intelligencePremiumButton(app, budgets, a)))) :
-        h('p', {}, intelligencePremiumState(budgets))), intelligencePremiumTile(app, commit, 'calendar', 'mf-premium-commitment')), h('div', { className: 'mf-premium-lower-grid' }, intelligencePremiumTile(app, rules, 'spark'), intelligencePremiumTile(app, categories, 'filter'), intelligencePremiumTile(app, conversation, 'spark'), intelligencePremiumTile(app, history, 'calendar')), h('div', { className: 'mf-premium-bottom-note' }, h(Icon, { name: 'shield', size: 16 }), h('span', {}, 'Valores em centavos da fonte autorizada. ' +
-        intelligencePremiumCoverage((radar === null || radar === void 0 ? void 0 : radar.coverage) || 'unknown') +
-        '. Revisões e recibos sintéticos nunca representam alterações pessoais.'))) :
-        !loading && !s.intelligencePremiumError && !stale ?
-            h('div', { className: 'mf-premium-empty', role: 'status' }, h('strong', {}, 'Sua central está pronta para consultar.'), h('p', {}, 'Use “Atualizar visão” para carregar os contratos reais disponíveis nesta instalação.')) : null);
+    return typeof renderMfB05Today === 'function' ? renderMfB05Today(app) : renderMfD03Today(app);
 }
 function renderIntelligenceAccess(app) {
     if (typeof renderLocalFinancialAccess !== 'function')
@@ -2893,41 +4647,80 @@ function renderIntelligenceComposer(app, drawer = false) {
         } } }), h('div', { className: 'mf-chat-compose-footer' }, h('small', {}, session.temporary ? 'Somente nesta sessão · sem IA externa' : 'Histórico local · não inclua credenciais'), h('small', {}, draft.length + '/750 · Shift + Enter para nova linha'), h('button', { type: 'submit', className: 'primary-button', disabled: !draft.trim() || session.busy || session.expired }, session.busy ? 'Consultando…' : 'Enviar', h(Icon, { name: 'arrow', size: 16 }))));
 }
 function renderIntelligenceFollowups(app) {
-    const questions = app.state.categoryReviewGrant ? ['Revise todas as minhas movimentações pendentes.', 'Quais regras são recomendadas?'] : ['Quais foram minhas maiores despesas?', 'Quais despesas aumentaram?', 'Que movimentações preciso revisar?'];
-    return h('div', { className: 'mf-chat-followups', 'aria-label': 'Continuar a análise' }, ...questions.map(q => h('button', { type: 'button', key: q, disabled: intelligenceChatSession(app).busy || intelligenceChatSession(app).expired, onClick: () => intelligenceSubmitQuestion(app, q) }, q, h(Icon, { name: 'arrow', size: 13 }))));
+    var _a;
+    const session = intelligenceChatSession(app), state = app.state, history = intelligenceHistoryList(app);
+    const answered = new Set(history.filter(m => m.role === 'user')
+        .map(m => String(m.text || '').trim().toLocaleLowerCase('pt-BR')));
+    const grant = state.localFinancialAccess;
+    const live = !!(grant === null || grant === void 0 ? void 0 : grant.token) && grant.expiresAt > Date.now() && grant.profile === state.mode;
+    const review = !!((_a = state.categoryReviewGrant) === null || _a === void 0 ? void 0 : _a.token) && state.categoryReviewGrant.expiresAt > Date.now();
+    const report = state.intelligencePremiumSignature === intelligencePremiumSignature(app) ?
+        state.intelligencePremiumReport : null;
+    const signals = typeof mfD03EligibleReport === 'function' &&
+        mfD03EligibleReport(report, app) ? mfD03Signals(report, app) : [];
+    const sourceQuestions = [];
+    if (live) {
+        for (const signal of signals) {
+            if (signal.kind === 'budget')
+                sourceQuestions.push('Quais categorias ultrapassaram o orçamento?');
+            if (signal.kind === 'commitment')
+                sourceQuestions.push('Quanto tenho comprometido para o próximo mês?');
+            if (signal.kind === 'review')
+                sourceQuestions.push('Que movimentações preciso revisar?');
+        }
+        const latest = history.filter(m => m.role === 'assistant' && m.status === 'done').slice(-1)[0];
+        if (latest && /alimentação|alimentacao/i.test(latest.text))
+            sourceQuestions.push('Quanto gastei com alimentação neste mês?');
+    }
+    if (review)
+        sourceQuestions.push('Que movimentações preciso revisar?');
+    const scope = intelligenceContextFor(state.intelligenceContext || state.page);
+    const fallbacks = live ? ['Quais foram minhas maiores despesas?', 'Quais despesas aumentaram?',
+        'Que movimentações preciso revisar?'] : scope.questions || [];
+    const candidates = [...new Set([...sourceQuestions, ...fallbacks])];
+    const available = candidates.filter(q => !answered.has(q.trim().toLocaleLowerCase('pt-BR')))
+        .filter(q => live || review || !/minhas|meus|foram|minha renda|comprometido/i.test(q)).slice(0, 3);
+    if (!available.length)
+        return null;
+    return h('div', { className: 'mf-chat-followups', 'aria-label': 'Continuar a análise' }, ...available.map(q => h('button', { type: 'button', key: q, disabled: session.busy || session.expired,
+        onClick: () => void intelligenceSubmitQuestion(app, q) }, q, h(Icon, { name: 'arrow', size: 13 }))));
 }
 function renderIntelligenceView(app) {
+    if (typeof renderMfB05Main === 'function' && typeof renderMfB05Today === 'function' &&
+        typeof renderMfB05Chat === 'function' && typeof renderMfB05Actions === 'function')
+        return renderMfB05Main(app);
+    return renderIntelligenceViewLegacy(app);
+}
+function renderIntelligenceViewLegacy(app) {
     var _a, _b, _c, _d, _e;
     if (((_a = app.state.workIntelligenceDemo) === null || _a === void 0 ? void 0 : _a.enabled) && typeof renderWorkIntelligenceDemo === 'function')
         return renderWorkIntelligenceDemo(app);
     if (typeof intelligenceEnsureHydrated === 'function')
         intelligenceEnsureHydrated(app);
-    const s = app.state, tab = s.intelligenceTab || 'today';
+    const s = app.state, tab = ['chat', 'today', 'actions'].includes(s.intelligenceMainMode) ? s.intelligenceMainMode : 'chat';
     if (s.categoryReviewOpen)
         return h('section', { className: 'section mf-intelligence-page' }, renderCategoryReview(app));
     const tabs = [{ id: 'today', label: 'Hoje' }, { id: 'chat', label: 'Conversar' }, { id: 'actions', label: 'Plano de ação' }];
     const messages = intelligenceHistoryList(app);
     const allProposals = typeof intelligenceAllProposals === 'function' ? intelligenceAllProposals(app) : messages.map(m => m.proposal).filter(Boolean);
-    const convState = typeof intelligenceConversationState === 'function' ? intelligenceConversationState(app) : { kind: 'oauth_disconnected', pill: 'Conta desconectada · modo local', badge: 'Conta desconectada', css: 'is-offline' };
+    const convState = typeof intelligenceConversationState === 'function' ? intelligenceConversationState(app) : { kind: 'oauth_disconnected', pill: 'IA externa desconectada · leitura local requer autorização', badge: 'Conta desconectada', css: 'is-offline' };
     const activeScope = s.intelligenceDraftScope || intelligencePageScope(app, s.intelligenceContext || s.page);
     let section = null;
     if (tab === 'today')
         section = renderIntelligencePremiumToday(app);
     if (tab === 'chat')
-        section = h('div', { className: 'mf-ai-workbench' }, renderIntelligenceHistorySidebar(app), h('div', { className: 'mf-ai-chat-main mf-ai-workbench-main' }, h('div', { className: 'mf-ai-workbench-header' }, h('div', { className: 'mf-ai-chat-hero' }, h('span', { className: 'mf-ai-orb' }, h(Icon, { name: 'spark', size: 25 })), h('h2', {}, 'Uma conversa, mais clareza.'), h('p', {}, (s.categoryReviewGrant || ((_b = s.localFinancialAccess) === null || _b === void 0 ? void 0 : _b.token)) ? 'Conversa temporária compartilhada com o chat lateral. Prévia e confirmação continuam disponíveis na Central.' : 'Histórico compartilhado com o chat lateral, salvo localmente quando disponível. Não cole credenciais.')), h('div', { className: 'mf-ai-workbench-badges' }, h('span', { className: 'mf-ai-conn-pill ' + convState.css }, ((_c = s.localFinancialAccess) === null || _c === void 0 ? void 0 : _c.token) ? 'Leitura local autorizada' : convState.pill), h('span', { className: 'mf-ai-scope-badge' }, 'Contexto: ' + activeScope.label + ' · ' + activeScope.period))), s.intelligenceDraftScope ? h('div', { className: 'mf-ai-context-meta' }, h('span', {}, 'Rascunho de ' + s.intelligenceDraftScope.label), h('span', {}, s.intelligenceDraftScope.period)) : null, s.intelligencePreparedQuestion ? h('div', { className: 'mf-ai-prepared', role: 'status' }, h('span', { className: 'micro-label' }, 'PERGUNTA PREPARADA · NÃO ENVIADA'), h('p', {}, s.intelligencePreparedQuestion), h('small', {}, 'Este rascunho não é enviado ao Sol. Use os casos fictícios autorizados abaixo; nenhuma chamada ocorreu aqui.')) : null, messages.length === 0 ? h('div', { className: 'mf-ai-empty-thread' }, h('h3', {}, 'Comece uma análise ou prepare uma categorização supervisionada'), h('p', {}, 'Escolha um ponto de partida. A mesma conversa acompanha você no chat lateral; consultas financeiras autorizadas ficam apenas nesta sessão.'), h('div', { className: 'mf-ai-starter-grid' }, ['Quais foram meus maiores gastos deste mês?', 'Compare minhas despesas com o mês anterior.', 'Quais orçamentos merecem atenção?', 'Quais compromissos tenho para o próximo mês?'].map((q, i) => h('button', { type: 'button', className: 'mf-ai-context-prompt', key: i, onClick: () => intelligenceSubmitQuestion(app, q) }, h('span', {}, q), h(Icon, { name: 'arrow', size: 14 }))))) :
+        section = h('div', { className: 'mf-ai-workbench' + (s.intelligenceHistoryOpen ? '' : ' is-history-closed') }, s.intelligenceHistoryOpen ? renderIntelligenceHistorySidebar(app) : null, h('div', { className: 'mf-ai-chat-main mf-ai-workbench-main' }, h('div', { className: 'mf-ai-workbench-header' }, h('button', { type: 'button', className: 'ghost-button mf-ai-v3-history-toggle',
+            'aria-expanded': !!s.intelligenceHistoryOpen, onClick: () => app.setState({ intelligenceHistoryOpen: !s.intelligenceHistoryOpen }) }, s.intelligenceHistoryOpen ? 'Recolher histórico' : 'Histórico de conversas'), h('div', { className: 'mf-ai-chat-hero' }, h('span', { className: 'mf-ai-orb' }, h(Icon, { name: 'spark', size: 25 })), h('h2', {}, 'Uma conversa, mais clareza.'), h('p', {}, (s.categoryReviewGrant || ((_b = s.localFinancialAccess) === null || _b === void 0 ? void 0 : _b.token)) ? 'Conversa temporária compartilhada com o chat lateral. Prévia e confirmação continuam disponíveis na Central.' : 'Histórico compartilhado com o chat lateral, salvo localmente quando disponível. Não cole credenciais.')), h('div', { className: 'mf-ai-workbench-badges' }, h('span', { className: 'mf-ai-conn-pill ' + convState.css }, ((_c = s.localFinancialAccess) === null || _c === void 0 ? void 0 : _c.token) ? 'Leitura local autorizada' : convState.pill), h('span', { className: 'mf-ai-scope-badge' }, 'Contexto: ' + activeScope.label + ' · ' + activeScope.period))), s.intelligenceDraftScope ? h('div', { className: 'mf-ai-context-meta' }, h('span', {}, 'Rascunho de ' + s.intelligenceDraftScope.label), h('span', {}, s.intelligenceDraftScope.period)) : null, s.intelligencePreparedQuestion ? h('div', { className: 'mf-ai-prepared', role: 'status' }, h('span', { className: 'micro-label' }, 'PERGUNTA PREPARADA · NÃO ENVIADA'), h('p', {}, s.intelligencePreparedQuestion), h('small', {}, 'Este rascunho não é enviado ao Sol. Use os casos fictícios autorizados abaixo; nenhuma chamada ocorreu aqui.')) : null, messages.length === 0 ? h('div', { className: 'mf-ai-empty-thread' }, h('h3', {}, 'Comece uma análise ou prepare uma categorização supervisionada'), h('p', {}, 'Escolha um ponto de partida. A mesma conversa acompanha você no chat lateral; consultas financeiras autorizadas ficam apenas nesta sessão.'), h('div', { className: 'mf-ai-starter-grid' }, ['Quais foram meus maiores gastos deste mês?', 'Compare minhas despesas com o mês anterior.', 'Quais orçamentos merecem atenção?', 'Quais compromissos tenho para o próximo mês?'].map((q, i) => h('button', { type: 'button', className: 'mf-ai-context-prompt', key: i, onClick: () => intelligenceSubmitQuestion(app, q) }, h('span', {}, q), h(Icon, { name: 'arrow', size: 14 }))))) :
             h('div', { className: 'mf-ai-thread', role: 'log', 'aria-live': 'polite' }, ...messages.map(m => renderIntelligenceMessageItem(app, m)), (s.aiBusy || s.localFinancialBusy) ? h('div', { className: 'mf-ai-msg is-assistant is-streaming', role: 'status' }, h('strong', {}, 'Assistente MF'), h('p', {}, 'Processando solicitação…')) : null), s.aiError ? h('p', { className: 'mf-ai-error', role: 'alert' }, s.aiError) : null, renderIntelligenceFollowups(app), renderIntelligenceComposer(app)));
     else if (tab === 'actions')
         section = h('div', { className: 'mf-ai-actions' }, h('div', { className: 'mf-ai-welcome' }, h('span', { className: 'micro-label' }, 'AÇÕES SUPERVISIONADAS E EXEMPLOS · SEM GRAVAÇÃO AUTOMÁTICA'), h('h2', {}, 'Sugestões e prévias para revisar, nunca automáticas.'), h('p', {}, 'As propostas preparadas nas suas conversas aparecem abaixo mantendo a prévia sem gravação até a entrega I2-B.')), allProposals.length ? h('div', { className: 'mf-ai-proposals-list', 'aria-label': 'Propostas supervisionadas da sessão' }, ...allProposals.map(p => renderIntelligenceActionProposalCard(app, p))) :
             h('div', { className: 'mf-ai-empty-actions' }, h('p', {}, 'Nenhuma proposta supervisionada pendente nesta conversa. Peça no chat, por exemplo: “Categorize minha compra do mercado como Alimentação”.')), [{ id: 'limits', title: 'Revisar limites de categorias', description: 'Compare médias, compromissos e uma margem de segurança.', question: 'Prepare uma proposta de limites por categoria para o próximo mês.' },
             { id: 'reserve', title: 'Planejar reserva de emergência', description: 'Estime um objetivo compatível com despesas essenciais e liquidez.', question: 'Como construir uma reserva de emergência considerando meus compromissos?' },
             { id: 'review', title: 'Revisar despesas recorrentes', description: 'Identifique cobranças repetidas antes de propor mudanças.', question: 'Como posso avaliar se meus gastos recorrentes precisam de revisão?' }].map((item) => h('div', { className: 'mf-ai-action-card', key: item.id }, h('div', { className: 'mf-ai-action-text' }, h('span', { className: 'mf-ai-status' }, 'Exemplo ilustrativo'), h('h3', {}, item.title), h('p', {}, item.description), s.intelligenceExpandedAction === item.id ? h('div', { className: 'mf-ai-action-detail' }, 'Na versão conectada, esta proposta mostrará dados utilizados, impacto esperado, validade da análise e ações de aceitar, editar ou rejeitar. Nada será aplicado automaticamente.') : null), h('div', { className: 'mf-ai-action-buttons' }, h('button', { type: 'button', className: 'ghost-button', onClick: () => app.setState({ intelligenceExpandedAction: s.intelligenceExpandedAction === item.id ? null : item.id }) }, s.intelligenceExpandedAction === item.id ? 'Recolher' : 'Ver detalhes'), h('button', { type: 'button', className: 'mf-ai-link', onClick: () => intelligencePrepare(app, item.question) }, 'Preparar análise', h(Icon, { name: 'arrow', size: 15 }))))));
-    return h('section', { className: 'section mf-intelligence-page', 'aria-label': 'Inteligência financeira' }, h('div', { className: 'mf-ai-intro' }, h('div', {}, h('span', { className: 'micro-label' }, 'INTELIGÊNCIA FINANCEIRA'), h('h2', {}, 'Seu centro de comando financeiro'), h('p', {}, ((_d = s.localFinancialAccess) === null || _d === void 0 ? void 0 : _d.token) ? 'Hoje e chat consultam os registros autorizados; respostas somente nesta sessão.' : 'Leitura sob autorização, explicações verificáveis e decisões supervisionadas.')), h('span', { className: 'mf-ai-preview-label' }, h(Icon, { name: 'shield', size: 15 }), s.mode === 'demo' ? 'Demonstração isolada' : ((_e = s.localFinancialAccess) === null || _e === void 0 ? void 0 : _e.token) ? 'Leitura local autorizada' : 'Sem consulta externa')), renderIntelligenceAccess(app), h('button', { type: 'button', className: 'outlined-action', onClick: () => void categoryReviewOpen(app) }, 'Central de revisão · categorização supervisionada'), s.categoryReviewPreview ? h('div', { className: 'mf-review-drawer-pending', role: 'status' }, h('p', {}, 'Uma prévia de categorização aguarda sua decisão.'), h('button', { type: 'button', className: 'primary-button', onClick: () => void categoryReviewOpen(app) }, 'Revisar prévia na Central')) : null, h('div', { className: 'mf-ai-tabbar', role: 'tablist', 'aria-label': 'Seções da Inteligência' }, tabs.map((item) => h('button', { type: 'button', key: item.id, role: 'tab', 'aria-selected': tab === item.id,
-        id: 'mf-ai-tab-' + item.id, 'aria-controls': 'mf-ai-section-' + item.id, tabIndex: tab === item.id ? 0 : -1, className: tab === item.id ? 'active' : '', onClick: () => app.setState({ intelligenceTab: item.id, categoryReviewOpen: false }, () => { if (item.id === 'today')
-            void intelligencePremiumLoad(app); }), onKeyDown: (e) => { const next = intelligenceNextTab(item.id, e.key); if (next) {
-            e.preventDefault();
-            app.setState({ intelligenceTab: next, categoryReviewOpen: false }, () => { var _a; (_a = document.getElementById('mf-ai-tab-' + next)) === null || _a === void 0 ? void 0 : _a.focus(); if (next === 'today')
-                void intelligencePremiumLoad(app); });
-        } } }, item.label))), h('div', { id: 'mf-ai-section-' + tab, role: 'tabpanel', 'aria-labelledby': 'mf-ai-tab-' + tab, tabIndex: 0 }, section), h('details', { className: 'mf-ai-lab-disclosure' }, h('summary', {}, h(Icon, { name: 'settings', size: 17 }), h('span', {}, 'Laboratório de Inteligência'), h('small', {}, 'Configurações técnicas, conexão OAuth, memória e contexto sintético')), renderIntelligenceConnection(app), renderIntelligencePrivacy(app), renderIntelligenceFinancialContext(app)));
+    return h('section', { className: 'section mf-intelligence-page', 'aria-label': 'Inteligência financeira' }, h('div', { className: 'mf-ai-intro' }, h('div', {}, h('span', { className: 'micro-label' }, 'INTELIGÊNCIA FINANCEIRA'), h('h2', {}, 'Seu centro de comando financeiro'), h('p', {}, ((_d = s.localFinancialAccess) === null || _d === void 0 ? void 0 : _d.token) ? 'Hoje e chat consultam os registros autorizados; respostas somente nesta sessão.' : 'Leitura sob autorização, explicações verificáveis e decisões supervisionadas.')), h('span', { className: 'mf-ai-preview-label' }, h(Icon, { name: 'shield', size: 15 }), s.mode === 'demo' ? 'Demonstração isolada' : ((_e = s.localFinancialAccess) === null || _e === void 0 ? void 0 : _e.token) ? 'Leitura local autorizada' : 'Sem consulta externa')), h('details', { className: 'mf-ai-v3-access' }, h('summary', {}, 'Permissões de consulta'), renderIntelligenceAccess(app)), h('button', { type: 'button', className: 'outlined-action', onClick: () => void categoryReviewOpen(app) }, 'Central de revisão · categorização supervisionada'), s.categoryReviewPreview ? h('div', { className: 'mf-review-drawer-pending', role: 'status' }, h('p', {}, 'Uma prévia de categorização aguarda sua decisão.'), h('button', { type: 'button', className: 'primary-button', onClick: () => void categoryReviewOpen(app) }, 'Revisar prévia na Central')) : null, h('details', { className: 'mf-ai-v3-tools' }, h('summary', {}, 'Mais ferramentas'), h('div', { className: 'mf-ai-v3-tool-list' }, ...tabs.filter(item => item.id !== tab).map((item) => h('button', { type: 'button', key: item.id,
+        className: 'ghost-button', onClick: () => app.setState({ intelligenceMainMode: item.id, categoryReviewOpen: false }, () => { if (item.id === 'today')
+            void intelligencePremiumLoad(app); }) }, item.id === 'today' ? 'Ver panorama existente' : item.id === 'actions' ? 'Ver propostas supervisionadas' : 'Voltar à conversa')), tab !== 'chat' ? h('button', { type: 'button', className: 'primary-button',
+        onClick: () => app.setState({ intelligenceMainMode: 'chat' }) }, 'Voltar à conversa') : null)), h('div', { className: 'mf-ai-v3-content', role: 'region', 'aria-label': tab === 'chat' ? 'Conversa financeira' : tab === 'today' ? 'Panorama financeiro' : 'Propostas supervisionadas' }, section), h('details', { className: 'mf-ai-lab-disclosure' }, h('summary', {}, h(Icon, { name: 'settings', size: 17 }), h('span', {}, 'Laboratório de Inteligência'), h('small', {}, 'Configurações técnicas, conexão OAuth, memória e contexto sintético')), renderIntelligenceConnection(app), renderIntelligencePrivacy(app), renderIntelligenceFinancialContext(app)));
 }
 function renderIntelligencePanel(app) {
     var _a, _b;
@@ -2942,15 +4735,1925 @@ function renderIntelligencePanel(app) {
     const messages = intelligenceHistoryList(app);
     const threads = Array.isArray(app.state.intelligenceThreads) ? app.state.intelligenceThreads : [];
     const activeThreadId = app.state.intelligenceActiveThreadId || '';
-    const convState = typeof intelligenceConversationState === 'function' ? intelligenceConversationState(app) : { kind: 'oauth_disconnected', pill: 'Conta desconectada · modo local', badge: 'Conta desconectada', css: 'is-offline' };
+    const convState = typeof intelligenceConversationState === 'function' ? intelligenceConversationState(app) : { kind: 'oauth_disconnected', pill: 'IA externa desconectada · leitura local requer autorização', badge: 'Conta desconectada', css: 'is-offline' };
     const busy = Boolean(app.state.aiBusy || app.state.localFinancialBusy || app.state.intelligenceDrawerBusy);
     const draft = String(app.state.intelligenceDraft || '');
     return h('div', { className: 'mf-ai-backdrop', role: 'presentation', onMouseDown: (e) => { if (e.target === e.currentTarget)
-            app.setState({ intelligencePanelOpen: false }); } }, h('aside', { className: 'mf-ai-drawer mf-ai-drawer-compact', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Assistente contextual de ' + info.label }, h('div', { className: 'mf-ai-drawer-head' }, h('div', { className: 'mf-ai-drawer-title-wrap' }, h('div', { className: 'mf-ai-drawer-kicker-row' }, h('span', { className: 'micro-label' }, 'COPILOTO CONTEXTUAL'), h('span', { className: 'mf-ai-conn-pill ' + convState.css }, ((_b = app.state.localFinancialAccess) === null || _b === void 0 ? void 0 : _b.token) ? 'Leitura local autorizada' : convState.pill)), h('h2', {}, info.label)), h('div', { className: 'mf-ai-drawer-head-actions' }, h('button', { type: 'button', className: 'ghost-button mf-ai-expand-btn', 'aria-label': 'Nova conversa', title: 'Iniciar nova conversa', onClick: () => intelligenceCreateThread(app) }, 'Nova'), h('button', { type: 'button', className: 'ghost-button mf-ai-expand-btn', 'aria-label': 'Expandir na aba Inteligência', title: 'Abrir na aba Inteligência mantendo a conversa ativa', onClick: () => intelligenceOpenFullChat(app) }, 'Expandir'), h('button', { type: 'button', className: 'close-button', 'aria-label': 'Fechar assistente', onClick: () => app.setState({ intelligencePanelOpen: false }) }, '×'))), h('div', { className: 'mf-ai-context-meta mf-ai-drawer-scope' }, h('span', {}, scope.label), h('span', {}, scope.period), h('span', {}, scope.mode), ...scope.filters.map((filter) => h('span', { key: filter }, filter)), threads.length > 1 ? h('select', { className: 'mf-ai-drawer-thread-select', 'aria-label': 'Alternar conversa ativa', value: activeThreadId, onChange: (e) => intelligenceSelectThread(app, e.target.value) }, ...threads.map((t) => h('option', { key: t.id, value: t.id }, t.title + ' (' + t.messages.length + ')'))) : null), renderIntelligenceAccess(app), app.state.categoryReviewPreview ? h('div', { className: 'mf-review-drawer-pending' }, h('p', {}, 'Uma prévia de categorização aguarda sua decisão.'), h('button', { type: 'button', className: 'primary-button', onClick: () => void categoryReviewOpen(app) }, 'Revisar prévia na Central')) : null, h('div', { className: 'mf-ai-drawer-body' }, messages.length === 0 ? h('div', { className: 'mf-ai-drawer-empty' }, h('p', { className: 'muted-desc' }, info.description), h('div', { className: 'mf-ai-drawer-suggestions', 'aria-label': 'Sugestões rápidas para ' + info.label }, ...info.questions.map((q, i) => h('button', { type: 'button', className: 'mf-ai-context-prompt', key: i, onClick: () => intelligenceSubmitQuestion(app, q) }, h('span', {}, q), h(Icon, { name: 'arrow', size: 15 }))))) :
+            app.setState({ intelligencePanelOpen: false }); } }, h('aside', { className: 'mf-ai-drawer mf-ai-drawer-compact mf-d01', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Assistente contextual de ' + info.label }, h('div', { className: 'mf-ai-drawer-head' }, h('div', { className: 'mf-ai-drawer-title-wrap' }, h('div', { className: 'mf-ai-drawer-kicker-row' }, h('span', { className: 'mf-d01-spark', 'aria-hidden': 'true' }, '✦'), h('span', { className: 'micro-label' }, 'SEU ASSISTENTE')), h('h2', {}, 'Assistente Financeiro'), h('small', { className: 'mf-d01-context-subtitle' }, 'Ajudando em ' + info.label)), h('div', { className: 'mf-ai-drawer-head-actions' }, h('button', { type: 'button', className: 'ghost-button mf-ai-expand-btn', 'aria-label': 'Nova conversa', title: 'Iniciar nova conversa', onClick: () => intelligenceCreateThread(app) }, 'Nova'), h('button', { type: 'button', className: 'ghost-button mf-ai-expand-btn', 'aria-label': 'Expandir na aba Inteligência', title: 'Abrir na aba Inteligência mantendo a conversa ativa', onClick: () => intelligenceOpenFullChat(app) }, 'Expandir'), h('button', { type: 'button', className: 'close-button', 'aria-label': 'Fechar assistente', onClick: () => app.setState({ intelligencePanelOpen: false }) }, '×'))), h('details', { className: 'mf-d01-context-disclosure' }, h('summary', {}, 'Contexto da conversa', h(Icon, { name: 'chevron-down', size: 14 })), h('div', { className: 'mf-ai-context-meta mf-ai-drawer-scope' }, h('span', {}, scope.label), h('span', {}, scope.period), h('span', {}, scope.mode), ...scope.filters.map((filter) => h('span', { key: filter }, filter)), h('span', {}, ((_b = app.state.localFinancialAccess) === null || _b === void 0 ? void 0 : _b.token) ? 'Leitura local autorizada' : convState.pill)), threads.length > 1 ? h('select', { className: 'mf-ai-drawer-thread-select', 'aria-label': 'Alternar conversa ativa', value: activeThreadId, onChange: (e) => intelligenceSelectThread(app, e.target.value) }, ...threads.map((t) => h('option', { key: t.id, value: t.id }, t.title + ' (' + t.messages.length + ')'))) : null), h('details', { className: 'mf-d01-access' }, h('summary', {}, 'Permissões de consulta'), renderIntelligenceAccess(app)), app.state.categoryReviewPreview ? h('div', { className: 'mf-review-drawer-pending' }, h('p', {}, 'Uma prévia de categorização aguarda sua decisão.'), h('button', { type: 'button', className: 'primary-button', onClick: () => void categoryReviewOpen(app) }, 'Revisar prévia na Central')) : null, h('div', { className: 'mf-ai-drawer-body' }, messages.length === 0 ? h('div', { className: 'mf-ai-drawer-empty' }, h('p', { className: 'muted-desc' }, info.description), h('div', { className: 'mf-ai-drawer-suggestions', 'aria-label': 'Sugestões rápidas para ' + info.label }, ...info.questions.filter(q => !intelligenceHistoryList(app).some(m => m.role === 'user' && m.text === q)).slice(0, 2).map((q, i) => h('button', { type: 'button', className: 'mf-ai-context-prompt', key: i, onClick: () => intelligenceSubmitQuestion(app, q) }, h('span', {}, q), h(Icon, { name: 'arrow', size: 15 }))))) :
         h('div', { className: 'mf-ai-drawer-messages', role: 'log', 'aria-live': 'polite' }, ...messages.map(m => renderIntelligenceMessageItem(app, m)), busy ? h('div', { className: 'mf-ai-msg is-assistant is-streaming', role: 'status' }, h('strong', {}, 'Assistente MF'), h('p', {}, 'Processando solicitação no contexto de ' + scope.label + '…')) : null), app.state.intelligenceStorageError ? h('p', { className: 'mf-ai-error', role: 'alert' }, app.state.intelligenceStorageError) : null, app.state.aiError ? h('p', { className: 'mf-ai-error', role: 'alert' }, app.state.aiError) : null), renderIntelligenceFollowups(app), renderIntelligenceComposer(app, true)));
 }
 function renderIntelligenceSettings(app) {
-    return h(Card, { className: 'settings-card mf-ai-settings' }, h('div', { className: 'card-heading' }, h('div', {}, h('h2', {}, 'Inteligência artificial'), h('p', {}, 'Autenticação local e testes fictícios · Entrega 2'))), h('div', { className: 'mf-ai-setting-line' }, h('span', {}, 'Estado'), h('strong', {}, app.state.aiStatus.connected ? 'Conectada' : 'Não conectada')), h('div', { className: 'mf-ai-setting-line' }, h('span', {}, 'Modelo previsto'), h('strong', {}, 'GPT-6.1 Sol')), h('div', { className: 'mf-ai-setting-line' }, h('span', {}, 'Raciocínio'), h('strong', {}, 'Low / Medium automático')), h('div', { className: 'mf-ai-setting-line' }, h('span', {}, 'Economia de tokens'), h('strong', {}, 'Contexto mínimo + aprovação por teste')), h('p', { className: 'muted-desc' }, 'OAuth e memórias aprovadas são protegidos localmente no Windows. Nenhuma memória é enviada sem consentimento por teste. Dados bancários e sincronização de memórias no PWA continuam indisponíveis para a IA.'), h('button', { type: 'button', className: 'outlined-action full', onClick: () => app.navigate('intelligence') }, h(Icon, { name: 'spark', size: 17 }), 'Abrir prévia da Inteligência'));
+    return h(Card, { className: 'settings-card mf-ai-settings' }, h('div', { className: 'card-heading' }, h('div', {}, h('h2', {}, 'Inteligência artificial'), h('p', {}, 'Autenticação local e testes fictícios · Entrega 2'))), h('div', { className: 'mf-ai-setting-line' }, h('span', {}, 'Estado'), h('strong', {}, app.state.aiStatus.connected ? 'Conectada' : 'Não conectada')), h('div', { className: 'mf-ai-setting-line' }, h('span', {}, 'Modelo previsto'), h('strong', {}, 'GPT-6.1 Sol')), h('div', { className: 'mf-ai-setting-line' }, h('span', {}, 'Raciocínio'), h('strong', {}, 'Low / Medium automático')), h('div', { className: 'mf-ai-setting-line' }, h('span', {}, 'Economia de tokens'), h('strong', {}, 'Contexto mínimo + aprovação por teste')), h('p', { className: 'muted-desc' }, 'OAuth e memórias aprovadas são protegidos localmente no Windows. Nenhuma memória é enviada sem consentimento por teste. Dados bancários e sincronização de memórias no PWA continuam indisponíveis para a IA.'), h('details', { className: 'mf-ai-advanced-settings' }, h('summary', {}, 'Inteligência · configurações avançadas'), renderIntelligenceConnection(app), renderIntelligencePrivacy(app), renderIntelligenceFinancialContext(app)), h('button', { type: 'button', className: 'outlined-action full', onClick: () => app.navigate('intelligence') }, h(Icon, { name: 'spark', size: 17 }), 'Abrir Inteligência'));
+}
+function mfB05Money(cents) {
+    return Number.isSafeInteger(cents) ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(cents / 100) : '—';
+}
+function mfB05IsoDate(value) {
+    if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value))
+        return null;
+    const date = new Date(value + 'T12:00:00Z');
+    return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value ? value : null;
+}
+function mfB05SafeCents(value) {
+    return Number.isSafeInteger(value) && value >= 0 ? value : null;
+}
+function mfB05Unavailable(reason) {
+    return { available: false, reason, timeline: [], ending: null, commitments: [], reserveSuggestionCents: null,
+        availableBalanceCents: null, bufferCents: null, sourceId: null, asOf: null, period: null };
+}
+function mfB05VerifiedNumber(value) {
+    return value && value.coverage === 'verified' && mfB05SafeCents(value.value) !== null ? value.value : null;
+}
+function mfB05Events(value, asOf, end, label) {
+    if (!value || value.coverage !== 'verified')
+        return { error: label + ' sem cobertura verificada.' };
+    const v = value.value;
+    if (mfB05SafeCents(v) === 0)
+        return { events: [] };
+    if (!Array.isArray(v))
+        return { error: label + ' precisa de registros datados e verificáveis.' };
+    const out = [], seen = new Map();
+    for (const e of v) {
+        if (!e || typeof e.id !== 'string' || !e.id || !mfB05IsoDate(e.due) || mfB05SafeCents(e.amountCents) === null)
+            return { error: label + ' contém registro inválido.' };
+        const key = e.id, signature = e.due + '|' + e.amountCents;
+        if (seen.has(key)) {
+            if (seen.get(key) !== signature)
+                return { error: label + ' contém IDs conflitantes.' };
+            continue;
+        }
+        seen.set(key, signature);
+        if (e.due > asOf && e.due <= end)
+            out.push({ id: key, due: e.due, amountCents: e.amountCents });
+    }
+    return { events: out };
+}
+function mfB05Project(input) {
+    var _a, _b;
+    if (!input || input.coverage !== 'verified' || !mfB05IsoDate(input.asOf) ||
+        !mfB05IsoDate((_a = input.period) === null || _a === void 0 ? void 0 : _a.from) || !mfB05IsoDate((_b = input.period) === null || _b === void 0 ? void 0 : _b.to) ||
+        input.period.from > input.asOf || input.period.to < input.asOf)
+        return mfB05Unavailable('Fonte, período ou cobertura da projeção não verificados.');
+    const baseline = mfB05VerifiedNumber(input.availableBalance);
+    if (baseline === null)
+        return mfB05Unavailable('Saldo disponível verificado não fornecido pelo serviço atual.');
+    const commitments = input.unpaidFutureCommitments;
+    if (!commitments || commitments.coverage !== 'verified' || !Array.isArray(commitments.value))
+        return mfB05Unavailable('Agenda de compromissos futuros sem cobertura verificável.');
+    const seen = new Map(), future = [];
+    for (const c of commitments.value) {
+        if (!c || typeof c.id !== 'string' || !c.id || !mfB05IsoDate(c.due) ||
+            mfB05SafeCents(c.amountCents) === null)
+            return mfB05Unavailable('Compromisso futuro inválido ou sem identificador.');
+        if (!['scheduled_unpaid', 'posted', 'paid', 'cancelled'].includes(c.status))
+            return mfB05Unavailable('Status de compromisso não verificável para projeção.');
+        const signature = c.due + '|' + c.amountCents + '|' + c.status;
+        if (seen.has(c.id)) {
+            if (seen.get(c.id) !== signature)
+                return mfB05Unavailable('Compromissos com IDs conflitantes.');
+            continue;
+        }
+        seen.set(c.id, signature);
+        if (c.status === 'scheduled_unpaid' && c.due > input.asOf && c.due <= input.period.to)
+            future.push({ id: c.id, due: c.due, amountCents: c.amountCents, description: String(c.description || 'Compromisso previsto') });
+    }
+    const inc = mfB05Events(input.expectedIncome, input.asOf, input.period.to, 'Receita futura');
+    if (inc.error)
+        return mfB05Unavailable(inc.error);
+    const other = mfB05Events(input.plannedOtherOutflow, input.asOf, input.period.to, 'Outras saídas');
+    if (other.error)
+        return mfB05Unavailable(other.error);
+    const dates = [...new Set([input.asOf, input.period.to,
+            ...future.map(x => x.due), ...inc.events.map(x => x.due), ...other.events.map(x => x.due)])].sort();
+    const buffer = mfB05SafeCents(input.safetyBufferCents);
+    const timeline = [];
+    for (const date of dates) {
+        const due = future.filter(x => x.due <= date);
+        const sum = list => list.reduce((total, item) => total + item.amountCents, 0);
+        const consideredCents = sum(due), incomeCents = sum(inc.events.filter(x => x.due <= date)), otherCents = sum(other.events.filter(x => x.due <= date));
+        const projectedCents = baseline + incomeCents - consideredCents - otherCents;
+        if (!Number.isSafeInteger(projectedCents))
+            return mfB05Unavailable('Cálculo excede a faixa monetária segura.');
+        const headroomCents = buffer === null ? null : projectedCents - buffer;
+        const protectedCents = buffer === null ? null : Math.min(buffer, Math.max(0, projectedCents));
+        const freeCents = headroomCents === null ? null : Math.max(0, headroomCents);
+        const simpleReconciled = buffer !== null && inc.events.length === 0 && other.events.length === 0 &&
+            projectedCents >= buffer && consideredCents + buffer + freeCents === baseline;
+        timeline.push({ date, consideredCents, incomeCents, otherCents, projectedCents,
+            protectedCents, headroomCents, freeCents, commitmentIds: due.map(x => x.id),
+            canRenderSegments: simpleReconciled, isFutureProjection: date > input.asOf });
+    }
+    const ending = timeline[timeline.length - 1];
+    return { available: true, reason: null, sourceId: String(input.availableBalance.sourceId || ''),
+        asOf: input.asOf, period: input.period, availableBalanceCents: baseline,
+        bufferCents: buffer, commitments: future, timeline, ending,
+        reserveSuggestionCents: ending && ending.canRenderSegments ? Math.floor(ending.freeCents / 2) : null };
+}
+function mfB05Budget(spentCents, limitCents) {
+    if (mfB05SafeCents(spentCents) === null || mfB05SafeCents(limitCents) === null)
+        return null;
+    return { spentCents, limitCents, excessCents: Math.max(0, spentCents - limitCents),
+        usagePercent: limitCents === 0 ? null : spentCents * 100 / limitCents,
+        remainingCents: Math.max(0, limitCents - spentCents) };
+}
+function mfB05Comparison(previousCents, currentCents, equalPeriods) {
+    if (equalPeriods !== true || mfB05SafeCents(previousCents) === null ||
+        mfB05SafeCents(currentCents) === null)
+        return null;
+    return { previousCents, currentCents, deltaCents: currentCents - previousCents,
+        percent: previousCents === 0 ? null : (currentCents - previousCents) * 100 / previousCents };
+}
+function mfB05ChangeMode(app, mode) {
+    if (!['today', 'chat', 'actions'].includes(mode))
+        return;
+    const previous = app.state.intelligenceMainMode;
+    app.setState({ intelligenceMainMode: mode, intelligenceTab: mode, categoryReviewOpen: false,
+        intelligenceHistoryOpen: false, mfB05DrawerKind: null }, () => {
+        if (mode === 'today' && previous !== mode && typeof intelligencePremiumLoad === 'function' &&
+            !app.state.intelligencePremiumLoading && (!app.state.intelligencePremiumReport ||
+            app.state.intelligencePremiumSignature !== intelligencePremiumSignature(app)))
+            void intelligencePremiumLoad(app);
+    });
+}
+function mfB05Tabs(app, selected) {
+    const tabs = [{ id: 'today', label: 'Hoje' }, { id: 'chat', label: 'Conversar' }, { id: 'actions', label: 'Plano de Ação' }];
+    return h('nav', { className: 'mf-b05-tabs', role: 'tablist', 'aria-label': 'Áreas da Inteligência' }, ...tabs.map((tab, i) => h('button', { key: tab.id, id: 'mf-b05-tab-' + tab.id, type: 'button',
+        role: 'tab', 'aria-selected': selected === tab.id, 'aria-controls': 'mf-b05-panel',
+        tabIndex: selected === tab.id ? 0 : -1,
+        className: 'mf-b05-tab' + (selected === tab.id ? ' is-active' : ''),
+        onClick: () => mfB05ChangeMode(app, tab.id),
+        onKeyDown: (event) => {
+            var _a;
+            if (!['ArrowRight', 'ArrowLeft', 'Home', 'End'].includes(event.key))
+                return;
+            const next = typeof intelligenceNextTab === 'function' ? intelligenceNextTab(tab.id, event.key) : null;
+            if (next) {
+                event.preventDefault();
+                mfB05ChangeMode(app, next);
+                if (typeof document !== 'undefined')
+                    (_a = document.getElementById('mf-b05-tab-' + next)) === null || _a === void 0 ? void 0 : _a.focus();
+            }
+        } }, tab.label)));
+}
+function mfB05DrawerKeyboard(event, close) {
+    if (event.key === 'Escape') {
+        event.preventDefault();
+        close();
+        return;
+    }
+    if (event.key !== 'Tab' || typeof document === 'undefined')
+        return;
+    const root = event.currentTarget;
+    if (!root || typeof root.querySelectorAll !== 'function')
+        return;
+    const targets = Array.from(root.querySelectorAll('button:not(:disabled),input:not(:disabled),[tabindex="0"]'));
+    if (!targets.length)
+        return;
+    const index = targets.indexOf(document.activeElement);
+    if (event.shiftKey && index <= 0) {
+        event.preventDefault();
+        targets[targets.length - 1].focus();
+    }
+    else if (!event.shiftKey && index === targets.length - 1) {
+        event.preventDefault();
+        targets[0].focus();
+    }
+}
+function mfB05ReducedMotion() {
+    return typeof window !== 'undefined' && typeof window.matchMedia === 'function' &&
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+function renderMfB05Main(app) {
+    var _a, _b, _c;
+    if (((_a = app.state.workIntelligenceDemo) === null || _a === void 0 ? void 0 : _a.enabled) && typeof renderWorkIntelligenceDemo === 'function')
+        return renderWorkIntelligenceDemo(app);
+    if (typeof intelligenceEnsureHydrated === 'function')
+        intelligenceEnsureHydrated(app);
+    const s = app.state, tab = ['today', 'chat', 'actions'].includes(s.intelligenceMainMode) ?
+        s.intelligenceMainMode : 'chat';
+    if (s.categoryReviewOpen)
+        return h('section', { className: 'section mf-intelligence-page' }, renderCategoryReview(app));
+    const messages = intelligenceHistoryList(app);
+    const proposals = typeof intelligenceAllProposals === 'function' ? intelligenceAllProposals(app) :
+        messages.map(m => m.proposal).filter(Boolean);
+    const convState = typeof intelligenceConversationState === 'function' ? intelligenceConversationState(app) :
+        { kind: 'oauth_disconnected', pill: 'Conta desconectada · modo local', css: 'is-offline' };
+    const scope = s.intelligenceDraftScope || intelligencePageScope(app, s.intelligenceContext || s.page);
+    const active = ((_b = s.localFinancialAccess) === null || _b === void 0 ? void 0 : _b.token) && ((_c = s.localFinancialAccess) === null || _c === void 0 ? void 0 : _c.expiresAt) > Date.now();
+    const section = tab === 'today' ? renderMfB05Today(app) :
+        tab === 'chat' ? renderMfB05Chat(app, messages, convState, scope) :
+            renderMfB05Actions(app, proposals);
+    return h('section', { className: 'section mf-intelligence-page mf-b05-page',
+        'aria-label': 'Inteligência Financeira' }, h('div', { className: 'mf-b05-top' }, h('strong', { className: 'mf-b05-brand' }, 'Inteligência'), h('span', { className: 'mf-b05-status' }, h('i', { className: 'mf-b05-status-dot', 'aria-hidden': 'true' }), s.mode === 'demo' ? 'Ambiente de demonstração' : active ? 'Leitura local autorizada' : 'Sem leitura pessoal autorizada')), mfB05Tabs(app, tab), h('details', { className: 'mf-b05-permissions' }, h('summary', {}, active ? 'Gerenciar permissão de consulta' : 'Autorizar consulta financeira'), renderIntelligenceAccess(app)), s.categoryReviewPreview ? h('div', { className: 'mf-b05-review-pending', role: 'status' }, h('span', {}, 'Existe uma prévia supervisionada aguardando revisão. '), h('button', { type: 'button', className: 'mf-b05-link', onClick: () => void categoryReviewOpen(app) }, 'Abrir Central de Revisão')) : null, h('div', { id: 'mf-b05-panel', className: 'mf-b05-content', role: 'tabpanel',
+        'aria-labelledby': 'mf-b05-tab-' + tab }, section));
+}
+function mfB05DateLabel(date) {
+    if (typeof date !== 'string')
+        return '—';
+    const p = date.split('-');
+    return p.length === 3 ? p[2] + '/' + p[1] : '—';
+}
+function mfB05TodaySelected(app, projection) {
+    if (!projection.available)
+        return null;
+    return projection.timeline.find(p => p.date === app.state.mfB05SelectedDate) ||
+        projection.timeline[projection.timeline.length - 1] || null;
+}
+function mfB05OpenDrawer(app, kind, opener) {
+    app.setState({ mfB05DrawerKind: kind, mfB05DrawerOpener: opener }, () => {
+        var _a;
+        if (typeof document !== 'undefined')
+            (_a = document.getElementById('mf-b05-drawer-close')) === null || _a === void 0 ? void 0 : _a.focus();
+    });
+}
+function mfB05CloseDrawer(app) {
+    const opener = app.state.mfB05DrawerOpener;
+    app.setState({ mfB05DrawerKind: null, mfB05DrawerOpener: null }, () => {
+        var _a;
+        if (opener && typeof document !== 'undefined')
+            (_a = document.getElementById(opener)) === null || _a === void 0 ? void 0 : _a.focus();
+    });
+}
+function mfB05Ring(app, projection, point) {
+    if (!projection.available || !point || !point.canRenderSegments)
+        return h('div', { className: 'mf-b05-ring-empty', role: 'status' }, h(Icon, { name: 'shield', size: 23 }), h('strong', {}, point && point.projectedCents < 0 ? 'Saldo projetado insuficiente' : 'Projeção ainda indisponível'), h('p', {}, point && point.headroomCents < 0 ? 'O cenário apresenta falta de cobertura; um anel positivo seria incorreto.' :
+            'O serviço atual não fornece saldo e compromissos futuros reconciliados com cobertura suficiente.'));
+    const parts = [
+        { key: 'commitments', label: 'Compromissos considerados', cents: point.consideredCents, color: 'var(--mf-b05-commit)' },
+        { key: 'margin', label: 'Margem protegida', cents: point.protectedCents, color: 'var(--mf-b05-margin)' },
+        { key: 'free', label: 'Folga acima da margem', cents: point.freeCents, color: 'var(--mf-b05-green)' }
+    ];
+    let offset = 0;
+    const circumference = 2 * Math.PI * 82, denominator = projection.availableBalanceCents;
+    const segments = parts.map(p => {
+        const length = denominator > 0 ? p.cents / denominator * circumference : 0;
+        const element = h('circle', { key: p.key, cx: 105, cy: 105, r: 82, fill: 'none', stroke: p.color, strokeWidth: 20,
+            strokeDasharray: length + ' ' + circumference, strokeDashoffset: -offset, transform: 'rotate(-90 105 105)',
+            className: 'mf-b05-ring-segment', role: 'presentation' });
+        offset += length;
+        return element;
+    });
+    return h('div', { className: 'mf-b05-ring-wrap' }, h('div', { className: 'mf-b05-ring-art' }, h('svg', { viewBox: '0 0 210 210', role: 'img', 'aria-label': 'Decomposição do saldo disponível verificado' }, h('circle', { cx: 105, cy: 105, r: 82, fill: 'none', stroke: 'var(--mf-b05-border)', strokeWidth: 20 }), ...segments), h('div', { className: 'mf-b05-ring-center' }, h('small', {}, 'SALDO PROJETADO'), h('strong', {}, mfB05Money(point.projectedCents)), h('span', {}, 'até ' + mfB05DateLabel(point.date)))), h('div', { className: 'mf-b05-ring-legend' }, ...parts.map((p, i) => h('button', { key: p.key, id: 'mf-b05-ring-' + p.key, type: 'button', className: 'mf-b05-legend-row',
+        onClick: () => mfB05OpenDrawer(app, p.key, 'mf-b05-ring-' + p.key) }, h('span', { className: 'mf-b05-legend-dot', style: { background: p.color }, 'aria-hidden': 'true' }), h('span', {}, p.label), h('strong', {}, mfB05Money(p.cents))))));
+}
+function mfB05Timeline(app, projection, selected) {
+    if (!projection.available || !selected)
+        return h('section', { className: 'mf-b05-route mf-b05-unavailable' }, h('header', {}, h('h3', {}, 'A rota dos próximos dias'), h('small', {}, 'Sem calendário de caixa reconciliado')), h('p', {}, 'Os compromissos registrados podem ser consultados no Planejamento. Para traçar saldos futuros, também precisamos do saldo disponível e das fontes reconciliadas.'), h('button', { type: 'button', className: 'ghost-button', onClick: () => app.navigate('planning') }, 'Abrir Planejamento'));
+    const points = projection.timeline, min = Math.min(0, ...points.map(p => p.projectedCents)), max = Math.max(...points.map(p => p.projectedCents)), span = Math.max(1, max - min);
+    const coords = points.map((p, i) => ({ x: 30 + i * (540 / Math.max(1, points.length - 1)),
+        y: 140 - (p.projectedCents - min) / span * 105, point: p }));
+    let d = 'M' + coords[0].x + ' ' + coords[0].y;
+    for (let i = 1; i < coords.length; i++)
+        d += ' H' + coords[i].x + ' V' + coords[i].y;
+    const current = coords.find(x => x.point.date === selected.date) || coords[coords.length - 1];
+    return h('section', { className: 'mf-b05-route', role: 'region', 'aria-label': 'Linha do tempo financeira' }, h('header', {}, h('div', {}, h('small', {}, 'ROTA DO PERÍODO'), h('h3', {}, 'Os próximos movimentos')), h('span', { className: 'mf-b05-future-tag' }, 'Valores projetados, não pagamentos realizados')), h('svg', { viewBox: '0 0 600 164', className: 'mf-b05-route-chart', role: 'img',
+        'aria-label': 'Saldos projetados por vencimento em degraus' }, h('path', { d, fill: 'none', stroke: 'var(--mf-b05-green)', strokeWidth: 3, strokeLinejoin: 'round' }), h('line', { x1: current.x, y1: 12, x2: current.x, y2: 148, stroke: 'var(--mf-b05-green)', strokeDasharray: '4 5', opacity: .75 }), ...coords.map(p => h('circle', { key: p.point.date, cx: p.x, cy: p.y, r: p.point.date === selected.date ? 6 : 4,
+        fill: p.point.date === selected.date ? 'var(--mf-b05-green)' : 'var(--mf-b05-surface)', stroke: 'var(--mf-b05-green)', strokeWidth: 2 }))), h('div', { className: 'mf-b05-route-dates', 'aria-label': 'Marcos financeiros' }, ...points.map(p => h('button', { key: p.date, type: 'button', className: 'mf-b05-date' + (p.date === selected.date ? ' is-active' : ''),
+        id: 'mf-b05-date-' + p.date.replace(/-/g, ''), 'aria-pressed': p.date === selected.date,
+        onClick: () => app.setState({ mfB05SelectedDate: p.date }) }, mfB05DateLabel(p.date)))), h('aside', { className: 'mf-b05-milestone', role: 'status', 'aria-live': 'polite' }, h('small', {}, 'MARCO DE ' + mfB05DateLabel(selected.date)), h('strong', {}, mfB05Money(selected.projectedCents)), h('span', {}, 'Saldo projetado após compromissos até esta data'), h('p', {}, selected.commitmentIds.length + ' compromisso(s) considerado(s) · ' + mfB05Money(selected.consideredCents)), selected.headroomCents !== null ? h('p', { className: selected.headroomCents < 0 ? 'mf-b05-negative' : '' }, (selected.headroomCents < 0 ? 'Abaixo da margem: ' : 'Folga sobre a margem: ') + mfB05Money(Math.abs(selected.headroomCents))) : null, h('button', { type: 'button', className: 'mf-b05-link', id: 'mf-b05-events',
+        onClick: () => mfB05OpenDrawer(app, 'commitments', 'mf-b05-events') }, 'Conferir compromissos')));
+}
+function mfB05ScenarioKey(app, input) {
+    var _a, _b, _c, _d, _e, _f;
+    const records = value => {
+        var _a;
+        return Array.isArray(value === null || value === void 0 ? void 0 : value.value) ?
+            value.value.map(x => [x === null || x === void 0 ? void 0 : x.id, x === null || x === void 0 ? void 0 : x.due, x === null || x === void 0 ? void 0 : x.amountCents, x === null || x === void 0 ? void 0 : x.status]) : (_a = value === null || value === void 0 ? void 0 : value.value) !== null && _a !== void 0 ? _a : null;
+    };
+    return JSON.stringify([intelligencePremiumSignature(app), (input === null || input === void 0 ? void 0 : input.snapshotVersion) || '',
+        (input === null || input === void 0 ? void 0 : input.coverage) || '', (input === null || input === void 0 ? void 0 : input.asOf) || '', ((_a = input === null || input === void 0 ? void 0 : input.period) === null || _a === void 0 ? void 0 : _a.from) || '', ((_b = input === null || input === void 0 ? void 0 : input.period) === null || _b === void 0 ? void 0 : _b.to) || '',
+        ((_c = input === null || input === void 0 ? void 0 : input.availableBalance) === null || _c === void 0 ? void 0 : _c.sourceId) || '', (_e = (_d = input === null || input === void 0 ? void 0 : input.availableBalance) === null || _d === void 0 ? void 0 : _d.value) !== null && _e !== void 0 ? _e : null, (_f = input === null || input === void 0 ? void 0 : input.safetyBufferCents) !== null && _f !== void 0 ? _f : null, records(input === null || input === void 0 ? void 0 : input.unpaidFutureCommitments), records(input === null || input === void 0 ? void 0 : input.expectedIncome),
+        records(input === null || input === void 0 ? void 0 : input.plannedOtherOutflow)]);
+}
+function mfB05ScenarioInput(app, input) {
+    if (!input)
+        return null;
+    const st = app.state, valid = st.mfB05ScenarioSignature === mfB05ScenarioKey(app, input);
+    if (!valid)
+        return input;
+    const cash = Number.isSafeInteger(st.mfB05ScenarioBalanceCents) && st.mfB05ScenarioBalanceCents >= 0 ?
+        st.mfB05ScenarioBalanceCents : null;
+    const margin = Number.isSafeInteger(st.mfB05ScenarioBufferCents) && st.mfB05ScenarioBufferCents >= 0 ?
+        st.mfB05ScenarioBufferCents : null;
+    return { ...input,
+        availableBalance: cash === null ? input.availableBalance : { ...input.availableBalance, value: cash },
+        safetyBufferCents: margin === null ? input.safetyBufferCents : margin };
+}
+function mfB05ScenarioSet(app, input, key, cents) {
+    if (!Number.isSafeInteger(cents) || cents < 0)
+        return;
+    app.setState({ mfB05ScenarioSignature: mfB05ScenarioKey(app, input), [key]: cents });
+}
+function mfB05ContextDrawer(app, projection, point, originalInput) {
+    var _a;
+    const kind = app.state.mfB05DrawerKind;
+    if (!kind || !projection.available || !point)
+        return null;
+    const titles = { commitments: 'Compromissos considerados', margin: 'Margem de segurança', free: 'Folga financeira', scenario: 'Ajustar cenário' };
+    const values = { commitments: point.consideredCents, margin: point.protectedCents, free: point.freeCents };
+    const close = () => mfB05CloseDrawer(app);
+    const items = projection.commitments.filter(c => c.due <= point.date);
+    return h('div', { className: 'mf-b05-backdrop', onMouseDown: (e) => { if (e.target === e.currentTarget)
+            close(); } }, h('aside', { className: 'mf-b05-drawer', role: 'dialog', 'aria-modal': 'true',
+        'aria-label': titles[kind] || 'Detalhamento da projeção', onKeyDown: (e) => mfB05DrawerKeyboard(e, close) }, h('header', {}, h('span', {}, 'EVIDÊNCIAS · ' + mfB05DateLabel(point.date)), h('button', { id: 'mf-b05-drawer-close', type: 'button', className: 'ghost-button', onClick: close }, 'Fechar')), h('h2', {}, titles[kind] || 'Cenário'), kind !== 'scenario' ? h('strong', { className: 'mf-b05-drawer-total' }, mfB05Money(values[kind])) : null, kind === 'scenario' && originalInput ? h('div', { className: 'mf-b05-scenario' }, h('p', {}, 'Cenário hipotético da projeção verificada. Nenhum ajuste modifica conta, margem cadastrada ou SQLite.'), ...[{ key: 'mfB05ScenarioBalanceCents', label: 'Saldo disponível hipotético',
+            value: projection.availableBalanceCents, original: (_a = originalInput.availableBalance) === null || _a === void 0 ? void 0 : _a.value },
+        { key: 'mfB05ScenarioBufferCents', label: 'Margem protegida hipotética',
+            value: projection.bufferCents === null ? 0 : projection.bufferCents,
+            original: originalInput.safetyBufferCents }].map(item => h('div', { key: item.key, className: 'mf-b05-scenario-field' }, h('label', { htmlFor: 'mf-b05-slider-' + item.key }, item.label + ' · ' + mfB05Money(item.value)), h('input', { id: 'mf-b05-slider-' + item.key, type: 'range', min: 0,
+        max: Math.min(100000, Math.max(100, Math.ceil((Math.max(0, item.original || 0) + 100000) / 100) * 2)),
+        value: Math.round(item.value / 100), step: 1,
+        onChange: (e) => mfB05ScenarioSet(app, originalInput, item.key, Number(e.target.value) * 100) }))), h('button', { type: 'button', className: 'ghost-button',
+        onClick: () => app.setState({ mfB05ScenarioSignature: null, mfB05ScenarioBalanceCents: null, mfB05ScenarioBufferCents: null }) }, 'Restaurar premissas verificadas')) : null, kind !== 'scenario' ? h('p', {}, kind === 'commitments' ? 'Compromissos futuros únicos com vencimento até o marco selecionado. Ainda não são pagamentos realizados.' :
+        kind === 'margin' ? 'Valor protegido no cenário verificado; não representa dinheiro transferido.' :
+            'Valor disponível acima da margem no cenário. Não é uma economia já realizada.') : null, kind === 'commitments' ? h('ul', { className: 'mf-b05-evidence-list' }, ...items.map(c => h('li', { key: c.id }, h('span', {}, c.description + ' · ' + mfB05DateLabel(c.due)), h('strong', {}, mfB05Money(c.amountCents))))) : null, h('small', {}, 'Fonte: ' + projection.sourceId + ' · cenário em ' + projection.asOf), h('button', { type: 'button', className: 'primary-button', onClick: () => { close(); app.navigate('planning'); } }, 'Abrir Planejamento')));
+}
+function mfB05CategoryBadge(categoryId, subcategoryId, categoryName) {
+    if (typeof resolveCategoryVisualIdentity !== 'function' || typeof CategoryVisualGlyph !== 'function')
+        return h(Icon, { name: 'pie', size: 18 });
+    const identity = resolveCategoryVisualIdentity({ categoryId, subcategoryId, categoryName,
+        aggregate: !subcategoryId });
+    return h(CategoryVisualGlyph, { identity, size: 22 });
+}
+function mfB05BudgetDiagnostic(app, categoryId, categoryName, spent, limit, source) {
+    const b = mfB05Budget(spent, limit);
+    if (!b)
+        return null;
+    return h('article', { className: 'mf-b05-diagnostic', role: 'group', 'aria-label': 'Orçamento de ' + categoryName }, h('header', {}, mfB05CategoryBadge(categoryId, null, categoryName), h('div', {}, h('small', {}, 'ORÇAMENTO'), h('h3', {}, categoryName))), h('div', { className: 'mf-b05-diagnostic-body' }, h('div', { className: 'mf-b05-mini-orbit',
+        style: { '--mf-b05-mini-progress': Math.min(100, b.usagePercent || 0) + '%' } }, h('strong', {}, b.usagePercent === null ? '—' : Math.round(b.usagePercent) + '%')), h('div', {}, h('strong', {}, mfB05Money(spent)), h('p', {}, 'de ' + mfB05Money(limit) + (b.limitCents === 0 ? ' · limite explicitamente zero' : '')), b.excessCents > 0 ? h('p', { className: 'mf-b05-negative' }, 'Acima do limite: ' + mfB05Money(b.excessCents)) : null)), h('small', {}, 'Fonte: ' + String(source || 'consulta autorizada')), h('button', { type: 'button', className: 'mf-b05-link', onClick: () => app.navigate('budgets') }, 'Ver orçamento completo'));
+}
+function mfB05DeliveryEvidence(input) {
+    var _a, _b;
+    if (!input || input.coverage !== 'verified' || ((_a = input.comparisons) === null || _a === void 0 ? void 0 : _a.equalDays) !== true ||
+        ((_b = input.currentExpenses) === null || _b === void 0 ? void 0 : _b.coverage) !== 'verified')
+        return null;
+    const c = input.comparisons, p = c.periodA, q = c.periodB;
+    if (!p || !q || !mfB05IsoDate(p.from) || !mfB05IsoDate(p.to) ||
+        !mfB05IsoDate(q.from) || !mfB05IsoDate(q.to))
+        return null;
+    const days1 = (Date.parse(p.to + 'T12:00:00Z') - Date.parse(p.from + 'T12:00:00Z')) / 86400000, days2 = (Date.parse(q.to + 'T12:00:00Z') - Date.parse(q.from + 'T12:00:00Z')) / 86400000;
+    if (days1 < 0 || days1 !== days2)
+        return null;
+    const found = Array.isArray(input.currentExpenses.value) && input.currentExpenses.value.some(x => x.categoryId === 'sub:alimentacao/delivery' &&
+        x.postedCents === c.deliveryCurrentCents && x.periodStart === q.from && x.periodEnd === q.to);
+    if (!found)
+        return null;
+    return mfB05Comparison(c.deliveryPreviousCents, c.deliveryCurrentCents, true);
+}
+function mfB05DeliveryDiagnostic(app, comparison) {
+    if (!comparison)
+        return null;
+    const max = Math.max(1, comparison.previousCents, comparison.currentCents);
+    return h('article', { className: 'mf-b05-diagnostic', role: 'group', 'aria-label': 'Delivery — comparação equivalente' }, h('header', {}, mfB05CategoryBadge('cat:alimentacao', 'sub:alimentacao/delivery', 'Delivery'), h('div', {}, h('small', {}, 'PERÍODOS EQUIVALENTES'), h('h3', {}, 'Delivery'))), h('div', { className: 'mf-b05-delivery-bars' }, ...[{ label: 'Anterior', cents: comparison.previousCents },
+        { label: 'Atual', cents: comparison.currentCents }].map(x => h('div', { key: x.label, className: 'mf-b05-delivery-row' }, h('span', {}, x.label), h('div', { className: 'mf-b05-delivery-track' }, h('i', { style: { width: (x.cents / max * 100) + '%' } })), h('strong', {}, mfB05Money(x.cents))))), h('p', { className: comparison.deltaCents > 0 ? 'mf-b05-amber' : '' }, (comparison.deltaCents > 0 ? 'Aumento: ' : 'Variação: ') + mfB05Money(comparison.deltaCents) +
+        (comparison.percent === null ? '' : ' · ' + comparison.percent.toFixed(1).replace('.', ',') + '%')), h('button', { type: 'button', className: 'mf-b05-link', onClick: () => mfB05ChangeMode(app, 'actions') }, 'Examinar Plano de Ação'));
+}
+function renderMfB05Today(app, explicitVerifiedInput) {
+    var _a, _b;
+    const s = app.state, signature = intelligencePremiumSignature(app), report = s.intelligencePremiumSignature === signature ? s.intelligencePremiumReport : null, live = mfD03EligibleReport(report, app), signals = live ? mfD03Signals(report, app) : [], simulatedInput = mfB05ScenarioInput(app, explicitVerifiedInput), projection = simulatedInput ? mfB05Project(simulatedInput) :
+        mfB05Unavailable('O contrato IC-READ atual não entrega saldo disponível e agenda reconciliada.');
+    const selected = mfB05TodaySelected(app, projection);
+    return h('section', { className: 'mf-b05-today', role: 'region', 'aria-label': 'Pulso Financeiro' }, h('div', { className: 'mf-b05-editorial' }, h('span', { className: 'mf-b05-kicker' }, 'SEU PANORAMA · ' + (s.localFinancialMonth || s.month || 'PERÍODO ATUAL')), h('h2', {}, 'O mês ainda está em movimento.'), h('p', {}, live ? 'Aqui estão sinais observados nos seus registros autorizados. Projeções futuras exigem informações adicionais verificadas.' :
+        'Conecte uma fonte autorizada para transformar registros em decisões com evidência.')), h('article', { className: 'mf-b05-hero' }, h('div', { className: 'mf-b05-hero-copy' }, h('small', {}, projection.available ? 'PULSO FINANCEIRO · PROJEÇÃO VERIFICADA' : 'PULSO FINANCEIRO · DADOS A CONCILIAR'), h('h3', {}, projection.available ? 'Seu dinheiro, com espaço para respirar.' : 'Um panorama claro, sem saldos inventados.'), h('p', {}, projection.available ? 'Selecione os marcos para acompanhar compromissos, margem e folga no mesmo cenário.' :
+        'Temos prioridades e orçamento quando autorizados. A projeção de saldo depende de uma fonte que ainda não está disponível no serviço atual.'), projection.available && projection.reserveSuggestionCents !== null ?
+        h('div', { className: 'mf-b05-reserve-note' }, h('span', {}, 'Reserva sugerida neste cenário'), h('strong', {}, mfB05Money(projection.reserveSuggestionCents)), h('small', {}, 'Simulação · nada foi transferido')) : null, h('div', { className: 'mf-b05-hero-actions' }, h('button', { type: 'button', className: 'primary-button', onClick: () => mfB05ChangeMode(app, 'chat') }, 'Conversar sobre meu cenário'), projection.available ? h('button', { id: 'mf-b05-adjust', type: 'button', className: 'ghost-button',
+        onClick: () => mfB05OpenDrawer(app, 'scenario', 'mf-b05-adjust') }, 'Ajustar cenário') : null, h('button', { type: 'button', className: 'ghost-button', onClick: () => void intelligencePremiumLoad(app),
+        disabled: !!s.intelligencePremiumLoading }, s.intelligencePremiumLoading ? 'Atualizando…' : 'Atualizar sinais'))), mfB05Ring(app, projection, selected)), mfB05Timeline(app, projection, selected), s.intelligencePremiumError ? h('p', { role: 'alert', className: 'mf-ai-error' }, s.intelligencePremiumError) : null, h('div', { className: 'mf-b05-signals-head' }, h('h3', {}, 'Sinais que merecem atenção'), h('small', {}, live ? 'Somente fatos da fonte autorizada' : 'Aguardando consulta e autorização')), h('div', { className: 'mf-b05-signals' }, ...(function () {
+        var _a, _b, _c, _d;
+        const shown = [];
+        if ((explicitVerifiedInput === null || explicitVerifiedInput === void 0 ? void 0 : explicitVerifiedInput.coverage) === 'verified' &&
+            ((_a = explicitVerifiedInput.currentExpenses) === null || _a === void 0 ? void 0 : _a.coverage) === 'verified' &&
+            ((_b = explicitVerifiedInput.budgets) === null || _b === void 0 ? void 0 : _b.coverage) === 'verified') {
+            const food = (_c = explicitVerifiedInput.currentExpenses.value) === null || _c === void 0 ? void 0 : _c.find(x => x.categoryId === 'cat:alimentacao');
+            const limit = (_d = explicitVerifiedInput.budgets.value) === null || _d === void 0 ? void 0 : _d.find(x => x.categoryId === 'cat:alimentacao');
+            if (food && limit)
+                shown.push(mfB05BudgetDiagnostic(app, 'cat:alimentacao', 'Alimentação', food.postedCents, limit.limitCents, explicitVerifiedInput.budgets.sourceId));
+        }
+        const delivery = mfB05DeliveryEvidence(explicitVerifiedInput);
+        if (delivery)
+            shown.push(mfB05DeliveryDiagnostic(app, delivery));
+        if (!shown.length)
+            return signals.slice(0, 2).map(signal => mfD03SignalCard(app, signal));
+        return shown;
+    })(), !signals.length && !mfB05DeliveryEvidence(explicitVerifiedInput) &&
+        !(((_a = explicitVerifiedInput === null || explicitVerifiedInput === void 0 ? void 0 : explicitVerifiedInput.currentExpenses) === null || _a === void 0 ? void 0 : _a.coverage) === 'verified' &&
+            ((_b = explicitVerifiedInput === null || explicitVerifiedInput === void 0 ? void 0 : explicitVerifiedInput.budgets) === null || _b === void 0 ? void 0 : _b.coverage) === 'verified') ? h('div', { className: 'mf-b05-empty' }, h('strong', {}, live ? 'Nenhum alerta confirmado neste recorte.' : 'Ainda não há sinais disponíveis.'), h('p', {}, live ? 'Ausência de alerta não garante ausência de despesas futuras.' :
+        'Use Permissões de consulta acima e atualize os dados para começar.'), h('button', { type: 'button', className: 'ghost-button', onClick: () => app.navigate('budgets') }, 'Ver Orçamentos')) : null), h('footer', { className: 'mf-b05-footer' }, h('span', {}, 'Da informação à decisão — sempre sob seu controle.'), h('button', { type: 'button', className: 'mf-b05-link', onClick: () => mfB05ChangeMode(app, 'actions') }, 'Explorar Plano de Ação')), mfB05ContextDrawer(app, projection, selected, explicitVerifiedInput), mfD03ContextDrawer(app));
+}
+function mfB05CloseHistory(app) {
+    app.setState({ intelligenceHistoryOpen: false }, () => {
+        var _a;
+        if (typeof document !== 'undefined')
+            (_a = document.getElementById('mf-b05-history-trigger')) === null || _a === void 0 ? void 0 : _a.focus();
+    });
+}
+function mfB05HistoryDrawer(app) {
+    if (!app.state.intelligenceHistoryOpen)
+        return null;
+    const close = () => mfB05CloseHistory(app);
+    return h('div', { className: 'mf-b05-backdrop mf-b05-history-scrim',
+        onMouseDown: (event) => { if (event.target === event.currentTarget)
+            close(); } }, h('aside', { className: 'mf-b05-drawer mf-b05-history-drawer', role: 'dialog', 'aria-modal': 'true',
+        'aria-label': 'Histórico de conversas', onKeyDown: (event) => mfB05DrawerKeyboard(event, close) }, h('div', { className: 'mf-b05-drawer-heading' }, h('strong', {}, 'Seu histórico'), h('button', { type: 'button', className: 'ghost-button', onClick: close }, 'Fechar')), renderIntelligenceHistorySidebar(app)));
+}
+function renderMfB05Chat(app, messages, convState, activeScope) {
+    var _a, _b, _c, _d;
+    const s = app.state, session = intelligenceChatSession(app);
+    const items = Array.isArray(messages) ? messages : [];
+    const authorized = !!((_a = s.localFinancialAccess) === null || _a === void 0 ? void 0 : _a.token) && ((_b = s.localFinancialAccess) === null || _b === void 0 ? void 0 : _b.expiresAt) > Date.now();
+    const hasReview = !!((_c = s.categoryReviewGrant) === null || _c === void 0 ? void 0 : _c.token) && ((_d = s.categoryReviewGrant) === null || _d === void 0 ? void 0 : _d.expiresAt) > Date.now();
+    return h('section', { className: 'mf-b05-chat', role: 'region', 'aria-label': 'Conversar com a Inteligência' }, h('header', { className: 'mf-b05-chat-head' }, h('div', {}, h('span', { className: 'mf-b05-kicker' }, 'INTELLIGENCE ALIVE · CONVERSAR'), h('h2', {}, 'Uma boa conversa muda a perspectiva.'), h('p', {}, 'Pergunte, compare e decida com contexto e evidências quando disponíveis.')), h('div', { className: 'mf-b05-chat-controls' }, h('button', { id: 'mf-b05-history-trigger', type: 'button', className: 'ghost-button',
+        'aria-expanded': !!s.intelligenceHistoryOpen,
+        onClick: () => app.setState({ intelligenceHistoryOpen: true }) }, h(Icon, { name: 'clock', size: 16 }), 'Histórico'), h('button', { type: 'button', className: 'primary-button',
+        onClick: () => { intelligenceCreateThread(app); app.setState({ intelligenceHistoryOpen: false }); } }, h(Icon, { name: 'plus', size: 15 }), 'Nova conversa'))), h('div', { className: 'mf-b05-chat-scope' }, h('span', { className: (convState === null || convState === void 0 ? void 0 : convState.css) || 'is-offline' }, authorized ? 'Leitura autorizada' : hasReview ? 'Revisão sintética' : (convState === null || convState === void 0 ? void 0 : convState.pill) || 'Sem conexão autorizada'), h('span', {}, 'Contexto: ' + ((activeScope === null || activeScope === void 0 ? void 0 : activeScope.label) || 'Inteligência') + ' · ' + ((activeScope === null || activeScope === void 0 ? void 0 : activeScope.period) || 'Sem período')), session.expired ? h('strong', { className: 'mf-b05-warning' }, 'Permissão expirada — renove em Permissões de consulta') : null), s.intelligenceDraftScope ? h('p', { className: 'mf-b05-chat-context' }, 'Rascunho preparado a partir de ' + s.intelligenceDraftScope.label) : null, s.intelligencePreparedQuestion ? h('div', { className: 'mf-ai-prepared', role: 'status' }, h('p', {}, s.intelligencePreparedQuestion), h('small', {}, 'Pergunta preparada, ainda não enviada.')) : null, h('div', { className: 'mf-b05-chat-thread', role: 'log', 'aria-label': 'Mensagens da conversa', 'aria-live': 'polite' }, items.length ? items.map(msg => renderIntelligenceMessageItem(app, msg)) :
+        h('div', { className: 'mf-b05-chat-welcome' }, h('span', { className: 'mf-b05-chat-orb' }, h(Icon, { name: 'spark', size: 30 })), h('h3', {}, 'O que você gostaria de entender hoje?'), h('p', {}, authorized ? 'Explore seus registros autorizados e identifique oportunidades reais.' :
+            'Você pode começar com uma pergunta geral. Informações pessoais exigem autorização.'), h('div', { className: 'mf-b05-starters' }, ...(authorized ? ['Quais foram minhas maiores despesas?', 'Quais categorias ultrapassaram o orçamento?'] :
+            ['Como organizar minhas despesas mensais?', 'Como planejar uma reserva com segurança?'])
+            .map(q => h('button', { type: 'button', key: q, onClick: () => intelligencePrepare(app, q) }, q, h(Icon, { name: 'arrow', size: 14 }))))), s.aiBusy || s.localFinancialBusy ? h('p', { className: 'mf-b05-chat-thinking', role: 'status' }, 'Consultando a fonte disponível…') : null, s.aiError ? h('p', { role: 'alert', className: 'mf-ai-error' }, s.aiError) : null, s.intelligenceStorageError ? h('p', { role: 'alert', className: 'mf-ai-error' }, s.intelligenceStorageError) : null), renderIntelligenceFollowups(app), h('div', { className: 'mf-b05-chat-composer' }, renderIntelligenceComposer(app)), mfB05HistoryDrawer(app));
+}
+function mfB05ActionSignals(app) {
+    const report = app.state.intelligencePremiumReport;
+    return mfD03EligibleReport(report, app) ? mfD03Signals(report, app) : [];
+}
+function mfB05ActionBudget(signal) {
+    var _a;
+    if (!signal || signal.kind !== 'budget')
+        return null;
+    const list = Array.isArray((_a = signal.sourceCard) === null || _a === void 0 ? void 0 : _a.budgets) ? signal.sourceCard.budgets : [];
+    const matched = list.find(b => signal.title.endsWith(String(b.category || '')));
+    const b = matched;
+    if (!b || typeof b.category !== 'string')
+        return null;
+    const values = mfB05Budget(b.spentCents, b.limitCents);
+    return values ? { ...values, category: b.category } : null;
+}
+function mfB05ActionSnapshotKey(app, signal, budget) {
+    var _a, _b, _c, _d;
+    const c = signal === null || signal === void 0 ? void 0 : signal.sourceCard, report = app.state.intelligencePremiumReport;
+    return JSON.stringify([intelligencePremiumSignature(app), (report === null || report === void 0 ? void 0 : report.snapshotVersion) || '',
+        (report === null || report === void 0 ? void 0 : report.asOf) || '', (c === null || c === void 0 ? void 0 : c.asOf) || '', ((_a = c === null || c === void 0 ? void 0 : c.period) === null || _a === void 0 ? void 0 : _a.start) || '', ((_b = c === null || c === void 0 ? void 0 : c.period) === null || _b === void 0 ? void 0 : _b.end) || '',
+        (signal === null || signal === void 0 ? void 0 : signal.id) || '', (signal === null || signal === void 0 ? void 0 : signal.sourceId) || '', (budget === null || budget === void 0 ? void 0 : budget.category) || '', (_c = budget === null || budget === void 0 ? void 0 : budget.spentCents) !== null && _c !== void 0 ? _c : null, (_d = budget === null || budget === void 0 ? void 0 : budget.limitCents) !== null && _d !== void 0 ? _d : null]);
+}
+function mfB05ActionStage(app, step) {
+    if (!['understand', 'simulate', 'review'].includes(step))
+        return;
+    const current = mfB05ActionSignals(app).find(x => x.id === app.state.mfB05ActionId) ||
+        mfB05ActionSignals(app)[0] || null;
+    const key = mfB05ActionSnapshotKey(app, current, mfB05ActionBudget(current));
+    const stale = !!app.state.mfB05ActionSourceSig && app.state.mfB05ActionSourceSig !== key;
+    if (stale) {
+        app.setState({ mfB05ActionStage: step === 'review' ? 'understand' : step,
+            mfB05ActionSourceSig: null, mfB05ActionPreviewCents: null });
+        return;
+    }
+    app.setState({ mfB05ActionStage: step });
+}
+function mfB05ActionFocus(app, signal) {
+    app.setState({ mfB05ActionId: signal.id, mfB05ActionStage: 'understand',
+        mfB05ActionPreviewCents: null, mfB05ActionSourceSig: null });
+}
+function mfB05ActionVisual(app, signal, budget, signature) {
+    if (signal.kind === 'budget' && budget) {
+        const valid = app.state.mfB05ActionSourceSig === signature;
+        const proposed = valid && Number.isSafeInteger(app.state.mfB05ActionPreviewCents) ?
+            app.state.mfB05ActionPreviewCents : budget.limitCents;
+        const simulated = mfB05Budget(budget.spentCents, proposed);
+        const usage = simulated === null || simulated === void 0 ? void 0 : simulated.usagePercent;
+        return h('div', { className: 'mf-b05-plan-visual', role: 'group', 'aria-label': 'Orçamento da categoria' }, h('div', { className: 'mf-b05-plan-orbit', style: { '--mf-b05-progress': Math.min(100, usage || 0) + '%' } }, h('small', {}, 'GASTO VERIFICADO'), h('strong', {}, mfB05Money(budget.spentCents)), h('span', {}, usage === null ? 'Limite explícito: R$ 0,00' : Math.round(usage) + '% do limite simulado')), h('div', { className: 'mf-b05-plan-parts' }, h('span', {}, 'Limite atual'), h('strong', {}, mfB05Money(budget.limitCents)), h('span', {}, 'Limite no cenário'), h('strong', {}, mfB05Money(proposed)), h('span', {}, 'Excesso hipotético'), h('strong', { className: simulated.excessCents > 0 ? 'mf-b05-negative' : '' }, mfB05Money(simulated.excessCents))), h('small', {}, 'O gasto registrado permanece igual. Ajustar este cenário não modifica o orçamento.'));
+    }
+    return h('div', { className: 'mf-b05-plan-visual mf-b05-plan-readonly' }, h(Icon, { name: signal.kind === 'commitment' ? 'calendar' : 'shield', size: 32 }), Number.isSafeInteger(signal.amountCents) ? h('strong', {}, mfB05Money(signal.amountCents)) : null, h('p', {}, signal.kind === 'commitment' ? 'Valor comprometido no planejamento; não é o saldo disponível.' :
+        'Há registros que merecem revisão. Este cenário não executa alterações automáticas.'), h('small', {}, 'Fluxo de caixa futuro exige saldo e agenda reconciliados antes de desenhar suas fatias.'));
+}
+function renderMfB05Actions(app, proposals) {
+    var _a, _b, _c;
+    const s = app.state, signals = mfB05ActionSignals(app), items = Array.isArray(proposals) ? proposals : [], selected = signals.find(x => x.id === s.mfB05ActionId) || signals[0] || null, budget = mfB05ActionBudget(selected), signature = mfB05ActionSnapshotKey(app, selected, budget), scenarioStale = !!s.mfB05ActionSourceSig && s.mfB05ActionSourceSig !== signature, stage = scenarioStale ? 'understand' :
+        ['understand', 'simulate', 'review'].includes(s.mfB05ActionStage) ? s.mfB05ActionStage : 'understand';
+    return h('section', { className: 'mf-b05-plan', role: 'region', 'aria-label': 'Plano de Ação' }, h('header', { className: 'mf-b05-plan-head' }, h('span', { className: 'mf-b05-kicker' }, 'INTELLIGENCE ALIVE · PLANO DE AÇÃO'), h('h2', {}, 'Decisões melhores começam com clareza.'), h('p', {}, 'Entenda o fato, teste possibilidades e revise antes de qualquer decisão.')), s.mode === 'real' && s.autoCategoryStatus ? h('section', { className: 'mf-b05-plan-proposals',
+        'aria-label': 'Automação bancária autorizada' }, h('h3', {}, 'Categorização automática · contas bancárias'), h('p', {}, s.autoCategoryStatus.enabled ?
+        'Ativa em ' + String((s.autoCategoryStatus.permissions || []).filter((x) => x.enabled).length) +
+            ' conta(s). Rótulos aplicados: ' + String(((_a = s.autoCategoryStatus.counts) === null || _a === void 0 ? void 0 : _a.classified) || 0) +
+            ' · revisão: ' + String(((_b = s.autoCategoryStatus.counts) === null || _b === void 0 ? void 0 : _b.awaitingReview) || 0) + '.' :
+        'Desativada. Habilite explicitamente as contas no módulo Movimentações quando o canal estável estiver homologado.'), h('p', {}, 'Motor local de evidências históricas, não inferência de um modelo. Regras e correções humanas prevalecem.'), h('button', { type: 'button', className: 'ghost-button', onClick: () => {
+            app.setState({ txSource: 'bank', txReviewOnly: true });
+            app.navigate('transactions');
+        } }, 'Abrir Movimentações e A conferir')) : null, !selected && !items.length ? h('div', { className: 'mf-b05-plan-empty', role: 'status' }, h(Icon, { name: 'shield', size: 28 }), h('h3', {}, 'Nenhuma oportunidade verificável disponível.'), h('p', {}, 'Autorize a leitura, atualize o período ou converse sobre organização financeira. Não criamos recomendações pessoais sem fatos.'), h('button', { type: 'button', className: 'primary-button', onClick: () => mfB05ChangeMode(app, 'chat') }, 'Abrir Conversar')) : null, selected ? h('div', { className: 'mf-b05-plan-layout' }, h('article', { className: 'mf-b05-plan-feature' }, h('div', { className: 'mf-b05-plan-feature-head' }, h('span', {}, 'FOCO PRINCIPAL · ' + (selected.kind === 'budget' ? 'ORÇAMENTO' :
+        selected.kind === 'commitment' ? 'AGENDA' : selected.kind === 'review' ? 'REVISÃO' : 'REGRAS')), h('span', { className: 'mf-b05-plan-chip' }, 'Dado autorizado')), h('h3', {}, selected.title), h('p', {}, selected.detail), mfB05ActionVisual(app, selected, budget, signature), h('div', { className: 'mf-b05-steps', role: 'tablist', 'aria-label': 'Etapas da decisão' }, ...[{ id: 'understand', label: 'Entender' }, { id: 'simulate', label: 'Simular' }, { id: 'review', label: 'Revisar' }]
+        .map(x => h('button', { key: x.id, type: 'button', role: 'tab', 'aria-selected': stage === x.id,
+        className: stage === x.id ? 'is-active' : '', onClick: () => mfB05ActionStage(app, x.id) }, x.label))), h('div', { className: 'mf-b05-stage', role: 'tabpanel', 'aria-live': 'polite' }, stage === 'understand' ? h('div', {}, h('h4', {}, 'O que os registros mostram'), scenarioStale ? h('p', { className: 'mf-b05-warning', role: 'alert' }, 'Os dados do cenário mudaram. A prévia foi invalidada; faça uma nova simulação.') : null, h('p', {}, selected.meaning + ' · ' + selected.detail), intelligencePremiumEvidence(selected.sourceCard), h('button', { type: 'button', className: 'primary-button', onClick: () => mfB05ActionStage(app, 'simulate') }, 'Explorar cenário')) : null, stage === 'simulate' ? h('div', {}, h('h4', {}, 'Experimente sem alterar seus dados'), budget ? h('div', { className: 'mf-b05-simulator' }, h('label', { htmlFor: 'mf-b05-budget-slider' }, 'Limite hipotético de ' + budget.category), h('input', { id: 'mf-b05-budget-slider', type: 'range', min: 0,
+        max: Math.max(100, Math.min(100000, Math.ceil(Math.max(budget.limitCents, budget.spentCents) / 100) * 2)),
+        step: 1, value: Math.round((s.mfB05ActionSourceSig === signature &&
+            Number.isSafeInteger(s.mfB05ActionPreviewCents) ? s.mfB05ActionPreviewCents : budget.limitCents) / 100),
+        onChange: (e) => app.setState({ mfB05ActionSourceSig: signature,
+            mfB05ActionPreviewCents: Number(e.target.value) * 100 }) }), h('p', {}, 'A hipótese altera apenas a visualização. O gasto realizado e o limite cadastrado não mudam.')) :
+        h('p', {}, 'Este tipo de sinal ainda não possui uma simulação verificável no contrato atual. Nenhuma mudança foi preparada.'), h('button', { type: 'button', className: 'primary-button', onClick: () => mfB05ActionStage(app, 'review') }, 'Revisar cenário')) : null, stage === 'review' ? h('div', {}, h('h4', {}, 'Sua revisão, sem aplicação automática'), h('dl', { className: 'mf-b05-plan-review' }, h('dt', {}, 'Fonte'), h('dd', {}, selected.sourceId), h('dt', {}, 'Escopo'), h('dd', {}, s.localFinancialMonth || s.month || 'Período consultado'), budget ? h('dt', {}, 'Limite original') : null, budget ? h('dd', {}, mfB05Money(budget.limitCents)) : null, budget ? h('dt', {}, 'Limite hipotético') : null, budget ? h('dd', {}, mfB05Money(s.mfB05ActionSourceSig === signature &&
+        Number.isSafeInteger(s.mfB05ActionPreviewCents) ? s.mfB05ActionPreviewCents : budget.limitCents)) : null), h('p', { className: 'mf-b05-warning' }, 'Não há capacidade autorizada para aplicar esta simulação pela Inteligência. O SQLite permanece inalterado.'), h('button', { type: 'button', className: 'ghost-button', onClick: () => mfB05ActionStage(app, 'understand') }, 'Voltar ao entendimento'), h('button', { type: 'button', className: 'primary-button', onClick: () => selected.action === 'review' ? void categoryReviewOpen(app) : app.navigate(selected.action),
+        disabled: selected.action === 'review' && !((_c = s.categoryReviewGrant) === null || _c === void 0 ? void 0 : _c.token) }, selected.action === 'review' ? 'Abrir revisão supervisionada' : 'Consultar módulo de origem')) : null)), h('aside', { className: 'mf-b05-plan-alternatives' }, h('h3', {}, 'Outras oportunidades'), ...signals.filter(x => x.id !== selected.id).map(x => h('button', { type: 'button', key: x.id, className: 'mf-b05-alternative',
+        onClick: () => mfB05ActionFocus(app, x) }, h('strong', {}, x.title), h('span', {}, x.meaning), h(Icon, { name: 'arrow', size: 15 }))), signals.length === 1 ? h('p', {}, 'Outras oportunidades aparecerão quando houver evidências.') : null)) : null, items.length ? h('section', { className: 'mf-b05-plan-proposals', 'aria-label': 'Propostas existentes da sessão' }, h('h3', {}, 'Prévia e revisão supervisionada'), h('p', {}, 'As propostas abaixo usam o mecanismo já existente. Nenhum botão deste plano autoriza escrita pessoal.'), ...items.map(p => renderIntelligenceActionProposalCard(app, p))) : null);
+}
+function mfD03EligibleReport(report, app) {
+    var _a, _b, _c, _d;
+    const s = app.state, access = s.localFinancialAccess, review = s.categoryReviewGrant;
+    if (!report || report.contract !== 'IC-v1/I-P0.1' || ((_a = report.privacy) === null || _a === void 0 ? void 0 : _a.readOnly) !== true ||
+        ((_b = report.privacy) === null || _b === void 0 ? void 0 : _b.changesApplied) !== false || ((_c = report.privacy) === null || _c === void 0 ? void 0 : _c.modelCalled) !== false ||
+        ((_d = report.privacy) === null || _d === void 0 ? void 0 : _d.personalAIWritingEnabled) !== false || !Array.isArray(report.cards) ||
+        report.cards.length !== 8 || MF_PREMIUM_IDS.some((id, i) => { var _a; return ((_a = report.cards[i]) === null || _a === void 0 ? void 0 : _a.id) !== id; }))
+        return false;
+    if (s.intelligencePremiumSignature !== intelligencePremiumSignature(app))
+        return false;
+    const a = (access === null || access === void 0 ? void 0 : access.token) && Number.isFinite(access.expiresAt) && access.expiresAt > Date.now() &&
+        access.profile === s.mode && ['bank', 'manual'].includes(access.source);
+    const b = (review === null || review === void 0 ? void 0 : review.token) && Number.isFinite(review.expiresAt) && review.expiresAt > Date.now();
+    return !!(a || b);
+}
+function mfD03Signals(report, app) {
+    var _a, _b, _c, _d, _e, _f;
+    if (!mfD03EligibleReport(report, app))
+        return [];
+    const s = app.state, activeGrant = !!((_a = s.localFinancialAccess) === null || _a === void 0 ? void 0 : _a.token) &&
+        ((_b = s.localFinancialAccess) === null || _b === void 0 ? void 0 : _b.expiresAt) > Date.now() && ((_c = s.localFinancialAccess) === null || _c === void 0 ? void 0 : _c.profile) === s.mode;
+    const activeReview = !!((_d = s.categoryReviewGrant) === null || _d === void 0 ? void 0 : _d.token) && s.categoryReviewGrant.expiresAt > Date.now();
+    const cards = report.cards, get = (id) => cards.find((c) => c.id === id);
+    const result = [];
+    const budgets = get('UI-04');
+    if (activeGrant && (budgets === null || budgets === void 0 ? void 0 : budgets.source) === s.localFinancialAccess.source &&
+        budgets.profile === s.localFinancialAccess.profile &&
+        (budgets.uiState === 'ready' || budgets.uiState === 'empty') &&
+        budgets.capability === 'available_read_only' && Array.isArray(budgets.budgets)) {
+        const b = budgets.budgets.filter((r) => r && typeof r.category === 'string' &&
+            Number.isSafeInteger(r.spentCents) && r.spentCents >= 0 &&
+            Number.isSafeInteger(r.limitCents) && r.limitCents >= 0);
+        const excess = b.filter((r) => r.spentCents > r.limitCents).sort((a, c) => (c.spentCents - c.limitCents) - (a.spentCents - a.limitCents));
+        if (excess.length) {
+            const first = excess[0], delta = first.spentCents - first.limitCents;
+            if (Number.isSafeInteger(delta))
+                result.push({ id: 'budget-excess', priority: 100, kind: 'budget',
+                    title: 'Revise o orçamento de ' + first.category,
+                    detail: excess.length + ' categoria(s) superaram o limite registrado. O excesso indicado é do período consultado.',
+                    amountCents: delta, meaning: 'Excesso observado · ' + first.category, sourceId: 'UI-04',
+                    action: 'budgets', actionLabel: 'Ver limites', sourceCard: budgets });
+        }
+        else {
+            const near = b.filter((r) => r.limitCents > 0 && r.spentCents >= r.limitCents * 0.8)
+                .sort((a, c) => c.spentCents / c.limitCents - a.spentCents / a.limitCents);
+            if (near.length)
+                result.push({ id: 'budget-near', priority: 75, kind: 'budget',
+                    title: 'Acompanhe ' + near[0].category, detail: 'O consumo atingiu 80% ou mais do limite configurado. Ainda não é uma previsão de estouro.',
+                    amountCents: near[0].limitCents - near[0].spentCents,
+                    meaning: 'Restante do limite · ' + near[0].category, sourceId: 'UI-04',
+                    action: 'budgets', actionLabel: 'Conferir orçamento', sourceCard: budgets });
+        }
+    }
+    const commitments = get('UI-05');
+    if (activeGrant && ((_e = s.localFinancialAccess) === null || _e === void 0 ? void 0 : _e.planning) === true &&
+        (commitments === null || commitments === void 0 ? void 0 : commitments.profile) === s.mode && (commitments === null || commitments === void 0 ? void 0 : commitments.source) === 'planning' &&
+        (commitments === null || commitments === void 0 ? void 0 : commitments.uiState) === 'ready' && commitments.capability === 'available_read_only' &&
+        Number.isSafeInteger(commitments.valueCents) && commitments.valueCents >= 0 &&
+        Number.isSafeInteger(commitments.count) && commitments.count > 0)
+        result.push({ id: 'commitments', priority: 80, kind: 'commitment',
+            title: 'Compromissos futuros confirmados',
+            detail: commitments.count + ' compromisso(s) ainda previstos no planejamento. Não representa dinheiro já descontado ou saldo disponível.',
+            amountCents: commitments.valueCents, meaning: 'Total restante planejado · próximo período', sourceId: 'UI-05',
+            action: 'planning', actionLabel: 'Ver agenda', sourceCard: commitments });
+    const review = get('UI-01');
+    if (activeGrant && ((_f = s.localFinancialAccess) === null || _f === void 0 ? void 0 : _f.source) === 'bank' &&
+        (review === null || review === void 0 ? void 0 : review.source) === 'bank' && (review === null || review === void 0 ? void 0 : review.uiState) === 'ready' &&
+        Number.isSafeInteger(review.count) && review.count > 0)
+        result.push({ id: 'review', priority: 72, kind: 'review', title: 'Há movimentações para conferir',
+            detail: review.count + ' movimentação(ões) não revisada(s) no histórico bancário local. PENDING não significa erro de categorização.',
+            amountCents: null, meaning: 'Registros para revisão', sourceId: 'UI-01',
+            action: 'transactions', actionLabel: 'Inspecionar registros', sourceCard: review });
+    const rules = get('UI-02');
+    if (activeReview && (rules === null || rules === void 0 ? void 0 : rules.profile) === 'synthetic' && rules.uiState === 'ready' &&
+        Number.isSafeInteger(rules.count) && rules.count > 0)
+        result.push({ id: 'rules', priority: 67, kind: 'rule', title: 'Regras aguardando sua análise',
+            detail: rules.count + ' sugestão(ões) do ambiente sintético. Nenhuma categorização pessoal foi aplicada.',
+            amountCents: null, meaning: 'Revisões supervisionadas', sourceId: 'UI-02',
+            action: 'review', actionLabel: 'Abrir Central de Revisão', sourceCard: rules });
+    return result.sort((a, b) => b.priority - a.priority || a.id.localeCompare(b.id)).slice(0, 3);
+}
+function mfD03OpenDrawer(app, signal, openerId) {
+    app.setState({ mfD03Drawer: signal || { id: 'projection', title: 'Ajustar previsão',
+            detail: 'O serviço autorizado atual não disponibiliza saldo disponível e calendário futuro reconciliados no mesmo escopo. Ajuste premissas apenas no Simulador original.',
+            meaning: 'Sem previsão certificada', action: 'simulator', actionLabel: 'Abrir Simular Compra',
+            amountCents: null }, mfD03OpenerId: openerId }, () => {
+        var _a;
+        (_a = document.getElementById('mf-d03-drawer-close')) === null || _a === void 0 ? void 0 : _a.focus();
+    });
+}
+function mfD03CloseDrawer(app) {
+    const opener = app.state.mfD03OpenerId;
+    app.setState({ mfD03Drawer: null, mfD03OpenerId: null }, () => {
+        var _a;
+        if (opener)
+            (_a = document.getElementById(opener)) === null || _a === void 0 ? void 0 : _a.focus();
+    });
+}
+function mfD03Go(app, action) {
+    mfD03CloseDrawer(app);
+    if (action === 'review') {
+        void categoryReviewOpen(app);
+        return;
+    }
+    if (action === 'transactions') {
+        app.navigate('review');
+        return;
+    }
+    if (action === 'budgets' || action === 'planning' || action === 'simulator') {
+        app.navigate(action);
+        return;
+    }
+    if (action === 'chat') {
+        intelligenceOpenFullChat(app);
+        return;
+    }
+}
+function mfD03SignalCard(app, s) {
+    const id = 'mf-d03-signal-' + s.id;
+    return h('article', { key: s.id, className: 'mf-d03-signal', role: 'group', 'aria-label': s.title }, h('div', { className: 'mf-d03-signal-head' }, h('span', { className: 'mf-d03-symbol', 'aria-hidden': 'true' }, h(Icon, { name: s.kind === 'commitment' ? 'calendar' : s.kind === 'budget' ? 'pie' : s.kind === 'review' ? 'filter' : 'spark', size: 18 })), h('span', { className: 'mf-d03-kind' }, s.kind === 'budget' ? 'ORÇAMENTO' :
+        s.kind === 'commitment' ? 'AGENDA' : s.kind === 'review' ? 'MOVIMENTAÇÕES' : 'REVISÃO')), h('h3', {}, s.title), Number.isSafeInteger(s.amountCents) ? h('div', { className: 'mf-d03-signal-value' }, h('strong', {}, intelligencePremiumMoney(s.amountCents)), h('small', {}, s.meaning)) : h('small', { className: 'mf-d03-signal-meaning' }, s.meaning), h('p', {}, s.detail), h('button', { id, type: 'button', className: 'mf-d03-signal-action',
+        onClick: () => mfD03OpenDrawer(app, s, id) }, s.actionLabel, h(Icon, { name: 'arrow', size: 14 })));
+}
+function mfD03ContextDrawer(app) {
+    const d = app.state.mfD03Drawer;
+    if (!d)
+        return null;
+    const trap = (e) => {
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            mfD03CloseDrawer(app);
+            return;
+        }
+        if (e.key !== 'Tab')
+            return;
+        const root = document.getElementById('mf-d03-drawer');
+        const focusable = Array.from((root === null || root === void 0 ? void 0 : root.querySelectorAll('button:not(:disabled),[tabindex="0"]')) || []);
+        if (!focusable.length)
+            return;
+        const i = focusable.indexOf(document.activeElement);
+        if (e.shiftKey && i <= 0) {
+            e.preventDefault();
+            focusable[focusable.length - 1].focus();
+        }
+        else if (!e.shiftKey && i === focusable.length - 1) {
+            e.preventDefault();
+            focusable[0].focus();
+        }
+    };
+    return h('div', { className: 'mf-d03-backdrop', onClick: () => mfD03CloseDrawer(app) }, h('aside', { id: 'mf-d03-drawer', className: 'mf-d03-drawer', role: 'dialog', 'aria-modal': 'true',
+        'aria-labelledby': 'mf-d03-drawer-title', tabIndex: -1, onKeyDown: trap,
+        onClick: (e) => e.stopPropagation() }, h('div', { className: 'mf-d03-drawer-top' }, h('span', { className: 'mf-d03-kicker' }, 'EXPLORAR SINAL'), h('button', { id: 'mf-d03-drawer-close', type: 'button', className: 'ghost-button', onClick: () => mfD03CloseDrawer(app) }, 'Fechar')), h('h3', { id: 'mf-d03-drawer-title' }, d.title), h('p', {}, d.detail), Number.isSafeInteger(d.amountCents) ? h('div', { className: 'mf-d03-drawer-amount' }, h('strong', {}, intelligencePremiumMoney(d.amountCents)), h('span', {}, d.meaning)) : null, d.sourceCard ? intelligencePremiumEvidence(d.sourceCard) :
+        h('small', { className: 'mf-premium-evidence' }, 'Projeção pessoal não disponível neste contrato de leitura.'), h('p', { className: 'mf-d03-drawer-caution' }, 'Ação informativa: nenhum saldo é movimentado e nenhuma proposta da IA aplica alterações financeiras.'), h('div', { className: 'mf-d03-drawer-actions' }, h('button', { type: 'button', className: 'primary-button', onClick: () => mfD03Go(app, d.action) }, d.actionLabel), h('button', { type: 'button', className: 'ghost-button', onClick: () => mfD03Go(app, 'chat') }, 'Conversar sobre isso'))));
+}
+function renderMfD03Today(app) {
+    const s = app.state;
+    const signature = intelligencePremiumSignature(app);
+    const report = s.intelligencePremiumSignature === signature ? s.intelligencePremiumReport : null;
+    const live = mfD03EligibleReport(report, app);
+    const signals = live ? mfD03Signals(report, app) : [];
+    const pending = !!s.intelligencePremiumLoading;
+    const period = s.localFinancialMonth || s.month;
+    return h('section', { className: 'mf-d03-today', role: 'region', 'aria-label': 'Inteligência Hoje' }, h('header', { className: 'mf-d03-top' }, h('div', {}, h('span', { className: 'mf-d03-kicker' }, 'INTELIGÊNCIA HOJE · ' + period), h('h2', {}, 'O que merece sua atenção?'), h('p', {}, live ?
+        'Prioridades calculadas dos registros autorizados. Você decide o próximo passo.' :
+        'Autorize os registros para receber prioridades financeiras com evidência, sem números estimados.')), h('div', { className: 'mf-d03-toolbar' }, h('button', { id: 'mf-d03-adjust', type: 'button', className: 'ghost-button',
+        onClick: () => mfD03OpenDrawer(app, null, 'mf-d03-adjust') }, 'Ajustar previsão'), h('button', { id: 'mf-d03-chat', type: 'button', className: 'primary-button',
+        onClick: () => intelligenceOpenFullChat(app) }, 'Conversar'), h('button', { type: 'button', className: 'ghost-button', disabled: pending,
+        onClick: () => void intelligencePremiumLoad(app) }, pending ? 'Consultando…' : 'Atualizar'))), h('div', { className: 'mf-d03-hero' }, h('small', {}, 'SEU CONTEXTO FINANCEIRO'), h('h3', {}, !live ? 'Uma visão clara começa com dados autorizados.' :
+        signals.length ? 'Estes são os assuntos mais relevantes do período.' : 'Nenhum alerta confirmado nos registros consultados.'), h('p', {}, 'O resultado do mês não é saldo bancário. Projeções de disponibilidade e sugestões de reserva permanecem indisponíveis sem saldo e compromissos verificados no mesmo escopo.')), s.intelligencePremiumError ? h('p', { role: 'alert', className: 'mf-ai-error' }, s.intelligencePremiumError) : null, pending ? h('div', { role: 'status', className: 'mf-d03-loading' }, 'Atualizando prioridades com dados locais…') : null, h('div', { className: 'mf-d03-layout' }, h('div', { className: 'mf-d03-signals', 'aria-label': 'Prioridades deste período' }, ...signals.map((signal) => mfD03SignalCard(app, signal)), !signals.length ? h('div', { className: 'mf-d03-no-signals', role: 'status' }, h('h3', {}, live ? 'Sem prioridades críticas comprovadas.' : 'Sem leitura financeira habilitada.'), h('p', {}, live ? 'A ausência de alertas locais não confirma ausência de despesas futuras.' :
+        'Abra Permissões de consulta acima, autorize uma fonte e atualize esta visão.')) : null), h('aside', { className: 'mf-d03-side', 'aria-label': 'Agenda e revisão' }, h('section', { className: 'mf-d03-side-card' }, h('h3', {}, 'Próximos compromissos'), signals.some((x) => x.kind === 'commitment') ?
+        h('p', {}, 'Total confirmado pelo Planejamento autorizado para o próximo período. Datas individuais devem ser consultadas na agenda.') :
+        h('p', {}, 'Agenda detalhada indisponível ou sem compromissos confirmados nesta consulta.'), h('button', { type: 'button', className: 'mf-d03-side-link', onClick: () => app.navigate('planning') }, 'Abrir Planejamento')), h('section', { className: 'mf-d03-side-card' }, h('h3', {}, 'Revisar decisões'), h('p', {}, 'Examine sugestões e movimentações. Revisões pessoais pela IA permanecem somente em prévia.'), h('button', { type: 'button', className: 'mf-d03-side-link', onClick: () => void categoryReviewOpen(app) }, 'Central de Revisão')))), h('footer', { className: 'mf-d03-footer' }, h('span', {}, 'Uma conversa continua de onde você parou.'), h('button', { type: 'button', className: 'mf-d03-side-link', onClick: () => intelligenceOpenFullChat(app) }, 'Abrir conversa')), mfD03ContextDrawer(app));
+}
+const MF_I2_PERSONAL_BINDINGS = new WeakMap();
+function mfI2Month(app) { return app.state.localFinancialMonth || app.state.month; }
+function mfI2PersonalVisible(app) {
+    const r = app.state.mfI2PersonalResult;
+    const b = r && MF_I2_PERSONAL_BINDINGS.get(r);
+    const a = app.state.localFinancialAccess;
+    return !!b && b.access === a && b.token === (a === null || a === void 0 ? void 0 : a.token) && b.month === mfI2Month(app) &&
+        b.signature === intelligencePremiumSignature(app) &&
+        Number.isFinite(a === null || a === void 0 ? void 0 : a.expiresAt) && a.expiresAt > Date.now() &&
+        a.profile === app.state.mode;
+}
+function mfI2SandboxLive(app) {
+    const s = app.state.mfI2Sandbox;
+    return !!s && typeof s.sessionId === 'string' && s.month === mfI2Month(app) &&
+        Number.isFinite(s.expiresAt) && s.expiresAt > Date.now();
+}
+async function mfI2PersonalRequest(app, request) {
+    const a = app.state.localFinancialAccess, month = mfI2Month(app);
+    const api = desktop, signature = intelligencePremiumSignature(app);
+    if (!(api === null || api === void 0 ? void 0 : api.intelligenceCategoryPersonal) || !(a === null || a === void 0 ? void 0 : a.token) ||
+        !Number.isFinite(a.expiresAt) || a.expiresAt <= Date.now()) {
+        app.setState({ mfI2Error: 'Autorize a leitura local antes de investigar suas categorias.' });
+        return;
+    }
+    if (app.state.mfI2Busy)
+        return;
+    const serial = (app.__mfI2PersonalSerial || 0) + 1;
+    app.__mfI2PersonalSerial = serial;
+    app.setState({ mfI2Busy: true, mfI2Error: '', mfI2PersonalResult: null });
+    try {
+        const reply = await api.intelligenceCategoryPersonal({ ...request, scope: {
+                token: a.token, source: a.source, profile: a.profile, month
+            } });
+        if (serial !== app.__mfI2PersonalSerial || app.state.localFinancialAccess !== a ||
+            a.expiresAt <= Date.now() || mfI2Month(app) !== month ||
+            signature !== intelligencePremiumSignature(app))
+            return;
+        if (reply && typeof reply === 'object')
+            MF_I2_PERSONAL_BINDINGS.set(reply, { access: a, token: a.token, month, signature });
+        app.setState({ mfI2PersonalResult: reply });
+    }
+    catch (err) {
+        if (serial === app.__mfI2PersonalSerial)
+            app.setState({
+                mfI2Error: String((err === null || err === void 0 ? void 0 : err.message) || 'Consulta indisponível.').slice(0, 240)
+            });
+    }
+    finally {
+        if (serial === app.__mfI2PersonalSerial)
+            app.setState({ mfI2Busy: false });
+    }
+}
+async function mfI2SandboxStart(app) {
+    const api = desktop;
+    if (app.state.mfI2Busy)
+        return;
+    if (!(api === null || api === void 0 ? void 0 : api.intelligenceCategorySandboxStart)) {
+        app.setState({ mfI2Error: 'Laboratório indisponível nesta versão do Electron.' });
+        return;
+    }
+    const month = mfI2Month(app);
+    app.setState({ mfI2Busy: true, mfI2Error: '' });
+    try {
+        const session = await api.intelligenceCategorySandboxStart(month);
+        if (!session || session.mode !== 'SYNTHETIC_PREVIEW' || session.month !== month ||
+            typeof session.sessionId !== 'string' || session.expiresAt <= Date.now())
+            throw Error('Sessão de laboratório inválida.');
+        if (mfI2Month(app) !== month) {
+            void api.intelligenceCategorySandboxStop(session.sessionId);
+            return;
+        }
+        app.setState({ mfI2Sandbox: session, mfI2SandboxResult: null, mfI2Proposal: null, mfI2LastProposalId: null,
+            mfI2Action: 'category.create', mfI2Name: 'Pets', mfI2NewName: '',
+            mfI2Ids: 'demo-market', mfI2RuleId: '', mfI2Question: 'Quais categorias estão sem uso?' });
+    }
+    catch (err) {
+        app.setState({ mfI2Error: String((err === null || err === void 0 ? void 0 : err.message) || 'Laboratório indisponível.').slice(0, 240) });
+    }
+    finally {
+        app.setState({ mfI2Busy: false });
+    }
+}
+async function mfI2SandboxStop(app) {
+    var _a;
+    const s = app.state.mfI2Sandbox, api = desktop;
+    app.setState({ mfI2Sandbox: null, mfI2SandboxResult: null, mfI2Proposal: null, mfI2LastProposalId: null, mfI2Error: '' });
+    if (s === null || s === void 0 ? void 0 : s.sessionId)
+        try {
+            await ((_a = api === null || api === void 0 ? void 0 : api.intelligenceCategorySandboxStop) === null || _a === void 0 ? void 0 : _a.call(api, s.sessionId));
+        }
+        catch { }
+}
+async function mfI2SandboxCommand(app, method, additional = {}) {
+    const api = desktop, s = app.state.mfI2Sandbox;
+    if (!mfI2SandboxLive(app)) {
+        app.setState({ mfI2SandboxResult: null, mfI2Proposal: null,
+            mfI2Error: 'Sessão sintética encerrada ou expirada. Inicie outra.' });
+        return;
+    }
+    if (app.state.mfI2Busy)
+        return;
+    app.setState({ mfI2Busy: true, mfI2Error: '' });
+    try {
+        const response = await api.intelligenceCategorySandboxCommand({
+            sessionId: s.sessionId, method, ...additional
+        });
+        if (app.state.mfI2Sandbox !== s || !mfI2SandboxLive(app))
+            return;
+        const data = response === null || response === void 0 ? void 0 : response.data;
+        const p = (data === null || data === void 0 ? void 0 : data.proposalId) ? data : Array.isArray(data === null || data === void 0 ? void 0 : data.proposals) ?
+            data.proposals.find((x) => x === null || x === void 0 ? void 0 : x.proposalId) : null;
+        const selected = method === 'propose' || method === 'ask' || method === 'edit' ?
+            p || null : method === 'reject' || (response === null || response === void 0 ? void 0 : response.status) === 'applied' ? null : app.state.mfI2Proposal;
+        app.setState({ mfI2SandboxResult: response, mfI2Proposal: selected,
+            mfI2LastProposalId: additional.proposalId || (p === null || p === void 0 ? void 0 : p.proposalId) || app.state.mfI2LastProposalId || null });
+    }
+    catch (err) {
+        if (app.state.mfI2Sandbox === s)
+            app.setState({
+                mfI2Error: String((err === null || err === void 0 ? void 0 : err.message) || 'Operação de laboratório indisponível.').slice(0, 240)
+            });
+    }
+    finally {
+        app.setState({ mfI2Busy: false });
+    }
+}
+function mfI2Params(app, action, source = 'manual') {
+    const name = String(app.state.mfI2Name || '').trim();
+    const next = String(app.state.mfI2NewName || '').trim();
+    if (action === 'category.create')
+        return { name, color: '#2aa898', kind: 'expense', emoji: '✨' };
+    if (action === 'category.update')
+        return { name, newName: next };
+    if (action === 'category.delete')
+        return { name };
+    if (action === 'transaction.categorize') {
+        const ids = [...new Set(String(app.state.mfI2Ids || '').split(',').map(x => x.trim()).filter(Boolean))];
+        return { category: next || name, items: ids.map(id => {
+                if (source === 'bank') {
+                    const sep = id.indexOf('|');
+                    return { accountId: sep >= 0 ? id.slice(0, sep) : '',
+                        externalId: sep >= 0 ? id.slice(sep + 1) : '' };
+                }
+                return { id };
+            }) };
+    }
+    return {};
+}
+function mfI2Evidence(result) {
+    var _a, _b, _c, _d, _e, _f, _g, _h;
+    if (!result)
+        return null;
+    const v = result.data || {}, p = (v === null || v === void 0 ? void 0 : v.proposalId) ? v : Array.isArray(v === null || v === void 0 ? void 0 : v.proposals) ? v.proposals[0] : null;
+    const catalog = v.catalog || (!p && v.categories ? v : null);
+    const reasons = [...(Array.isArray(p === null || p === void 0 ? void 0 : p.conflicts) ? p.conflicts : []),
+        ...(Array.isArray(p === null || p === void 0 ? void 0 : p.notes) ? p.notes : [])].slice(0, 5);
+    const money = (n) => Number.isSafeInteger(n) ?
+        new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(n / 100) : 'Valor não verificável';
+    return h('div', { className: 'mf-i2-evidence', role: 'status' }, h('p', {}, h('strong', {}, String(result.status || 'indisponível')), ' · ' + String(result.mode || '') + ' · ' + String(result.contract || '')), v.answer ? h('p', {}, String(v.answer).slice(0, 1000)) : null, result.reason ? h('p', {}, String(result.reason).slice(0, 400)) : null, catalog ? h('div', {}, h('strong', {}, 'Catálogo verificado · ' + String(((_a = catalog.categories) === null || _a === void 0 ? void 0 : _a.length) || 0) + ' categorias'), h('p', {}, 'Possíveis duplicidades: ' + String(((_b = catalog.possibleDuplicates) === null || _b === void 0 ? void 0 : _b.length) || 0) +
+        ' · Sem referência explícita: ' + String(((_c = catalog.categories) === null || _c === void 0 ? void 0 : _c.filter((x) => x.probablyUnused).length) || 0)), h('p', {}, (catalog.categories || []).slice(0, 14).map((x) => String(x.name)).join(' · ')), h('small', {}, String(catalog.caveat || 'Amostra local; cobertura total não garantida.'))) : null, p ? h('div', {}, h('strong', {}, 'Prévia ' + String(p.actionType || '') + ' · ' + String(p.status)), h('p', {}, 'Referências verificadas: ' + String((_e = (_d = p.impact) === null || _d === void 0 ? void 0 : _d.count) !== null && _e !== void 0 ? _e : 0) +
+        ' · Impacto amostral: ' + money((_f = p.impact) === null || _f === void 0 ? void 0 : _f.amountCents)), h('p', {}, 'Antes: ' + JSON.stringify((_g = p.before) !== null && _g !== void 0 ? _g : null).slice(0, 300)), h('p', {}, 'Depois: ' + JSON.stringify((_h = p.after) !== null && _h !== void 0 ? _h : null).slice(0, 300)), ...reasons.map((line) => h('p', {}, String(line).slice(0, 240)))) : null, Array.isArray(v) ? h('p', {}, 'Recibos sintéticos: ' + String(v.length) + ' · ' +
+        v.slice(0, 8).map((row) => String(row.proposalId || '') + ' (' + String(row.state || '') + ')').join(' · ')) : null, (v === null || v === void 0 ? void 0 : v.receipt) ? h('div', {}, h('strong', {}, 'Recibo somente sintético · ' + String(v.status || result.status)), h('p', {}, 'ID: ' + String(v.receipt.proposalId || '') + ' · ' + String(v.receipt.confirmedAt || ''))) : null, (v === null || v === void 0 ? void 0 : v.ruleImpact) ? h('p', {}, 'Abrangência de regra: ' + String(v.ruleImpact.matchesLoaded || 0) +
+        ' lançamentos carregados; ' + String(v.ruleImpact.wouldChangeLoaded || 0) + ' alterações potenciais') : null, !p && !catalog && !(v === null || v === void 0 ? void 0 : v.receipt) && (v === null || v === void 0 ? void 0 : v.status) ? h('p', {}, String(v.reason || v.status)) : null);
+}
+function mfI2CategoryPanel(app) {
+    var _a;
+    const s = app.state, active = mfI2SandboxLive(app), access = s.localFinancialAccess;
+    const personalLive = !!(access === null || access === void 0 ? void 0 : access.token) && access.expiresAt > Date.now() &&
+        access.profile === s.mode;
+    const p = s.mfI2Proposal;
+    const confirmable = active && (p === null || p === void 0 ? void 0 : p.status) === 'ready' && (p === null || p === void 0 ? void 0 : p.mayExecuteSynthetic) === true &&
+        typeof (p === null || p === void 0 ? void 0 : p.confirmationNonce) === 'string' && p.confirmationNonce.length >= 20 &&
+        Number.isFinite(p.expiresAt) && p.expiresAt > Date.now() &&
+        Array.isArray(p.conflicts) && p.conflicts.length === 0;
+    const busy = !!s.mfI2Busy;
+    const button = (title, fn, disabled = false) => h('button', {
+        type: 'button', className: 'ghost-button', disabled: busy || disabled, onClick: fn
+    }, title);
+    const field = (label, key, placeholder) => h('label', { className: 'mf-i2-field' }, h('span', {}, label), h('input', { type: 'text', value: String(s[key] || ''),
+        placeholder, onChange: (e) => app.setState({ [key]: e.target.value }) }));
+    return h('section', { className: 'mf-i2-rc mf-d04-advanced', 'aria-label': 'Laboratório de categorias I2-B e I2-C' }, h('small', {}, 'I2-B / I2-C · RECURSOS JÁ DESENVOLVIDOS'), h('h3', {}, 'Categorias, regras e propostas verificáveis'), h('p', {}, 'Perfil pessoal: investigação e prévia sem gravação. Confirmação disponível exclusivamente no banco sintético TEMP, por diálogo nativo. D05 14×61 conectado ao SQLite, sujeito a QA.'), h('div', { className: 'mf-i2-group' }, h('strong', {}, '1. Investigar categorias autorizadas (somente leitura)'), personalLive ? h('div', { className: 'mf-i2-controls' }, button('Sem uso ou semelhantes', () => void mfI2PersonalRequest(app, { method: 'analyze' })), button('Listar categorias e regras', () => void mfI2PersonalRequest(app, { method: 'list' })), button('Perguntar sobre categorias', () => void mfI2PersonalRequest(app, { method: 'ask',
+        question: String(s.mfI2Question || '').slice(0, 700) })), button('Prévia pessoal de criação', () => void mfI2PersonalRequest(app, { method: 'propose',
+        action: 'category.create', params: mfI2Params(app, 'category.create') })), button('Prévia pessoal de edição', () => void mfI2PersonalRequest(app, { method: 'propose',
+        action: 'category.update', params: mfI2Params(app, 'category.update') })), button('Prévia pessoal de reclassificação por ID', () => void mfI2PersonalRequest(app, { method: 'propose',
+        action: 'transaction.categorize', params: mfI2Params(app, 'transaction.categorize', access.source) })), button('Investigar regra por ID', () => void mfI2PersonalRequest(app, { method: 'inspectRule',
+        ruleId: Number(s.mfI2RuleId) }), !Number.isInteger(Number(s.mfI2RuleId)) || Number(s.mfI2RuleId) <= 0)) : h('p', {}, 'Autorize a leitura local no painel de permissões da Inteligência para habilitar dados pessoais.'), mfI2PersonalVisible(app) ? mfI2Evidence(s.mfI2PersonalResult) : null), mfI2QualityPanel(app), h('div', { className: 'mf-i2-group' }, h('strong', {}, '3. Experimentar no banco sintético isolado'), active ? h('p', {}, 'Sessão TEMP · ' + String(s.mfI2Sandbox.month) +
+        ' · três registros inventados · gravação exclusivamente sintética') :
+        h('p', {}, 'Nenhum dado pessoal será copiado. Uma nova sessão cria um SQLite TEMP independente.'), h('div', { className: 'mf-i2-controls' }, s.mfI2Sandbox ? button('Encerrar e destruir teste', () => void mfI2SandboxStop(app)) :
+        button('Iniciar laboratório sintético', () => void mfI2SandboxStart(app)), active ? button('Analisar categorias de teste', () => void mfI2SandboxCommand(app, 'analyze')) : null, active ? button('Listar categorias e regras de teste', () => void mfI2SandboxCommand(app, 'list')) : null, active ? button('Histórico de recibos sintéticos', () => void mfI2SandboxCommand(app, 'history')) : null, active && s.mfI2LastProposalId ? button('Consultar último recibo', () => void mfI2SandboxCommand(app, 'receipt', { proposalId: s.mfI2LastProposalId })) : null), h('div', { className: 'mf-i2-fields' }, field('Categoria atual ou nova', 'mfI2Name', 'Ex.: Pets'), field('Novo nome ou categoria destino', 'mfI2NewName', 'Ex.: Alimentação'), field('IDs por vírgula (banco: conta|ID; teste: demo-market)', 'mfI2Ids', 'demo-market, demo-delivery'), field('ID numérico de regra', 'mfI2RuleId', 'Ex.: 1'), field('Pergunta de categorias ou regras', 'mfI2Question', 'Quais categorias estão sem uso?')), active ? h('div', { className: 'mf-i2-controls' }, button('Propor criação', () => void mfI2SandboxCommand(app, 'propose', {
+        action: 'category.create', params: mfI2Params(app, 'category.create')
+    })), button('Propor edição', () => void mfI2SandboxCommand(app, 'propose', {
+        action: 'category.update', params: mfI2Params(app, 'category.update')
+    })), button('Propor exclusão', () => void mfI2SandboxCommand(app, 'propose', {
+        action: 'category.delete', params: mfI2Params(app, 'category.delete')
+    })), button('Prévia reclassificar por ID', () => void mfI2SandboxCommand(app, 'propose', {
+        action: 'transaction.categorize', params: mfI2Params(app, 'transaction.categorize')
+    })), button('Perguntar', () => void mfI2SandboxCommand(app, 'ask', {
+        question: String(s.mfI2Question || '').slice(0, 700)
+    })), button('Investigar regra por ID', () => void mfI2SandboxCommand(app, 'inspectRule', { ruleId: Number(s.mfI2RuleId) }), !Number.isInteger(Number(s.mfI2RuleId)) || Number(s.mfI2RuleId) <= 0)) : null, active && p ? h('div', { className: 'mf-i2-controls' }, button('Editar prévia', () => void mfI2SandboxCommand(app, 'edit', {
+        proposalId: p.proposalId, patch: p.actionType === 'category.create' ?
+            { name: String(s.mfI2NewName || '').trim() } :
+            p.actionType === 'transaction.categorize' ? { category: String(s.mfI2NewName || '').trim() } :
+                { newName: String(s.mfI2NewName || '').trim() }
+    }), !String(s.mfI2NewName || '').trim()), button('Rejeitar proposta', () => void mfI2SandboxCommand(app, 'reject', { proposalId: p.proposalId })), button('Confirmar APENAS no teste', () => void mfI2SandboxCommand(app, 'confirm', {
+        proposalId: p.proposalId, confirmationNonce: p.confirmationNonce
+    }), !confirmable)) : null, active ? mfI2Evidence(s.mfI2SandboxResult) : null, active && ((_a = s.mfI2SandboxResult) === null || _a === void 0 ? void 0 : _a.status) === 'recovery_required' && p ?
+        button('Consultar recibo, sem reexecutar', () => void mfI2SandboxCommand(app, 'recovery', { proposalId: p.proposalId })) : null, !active && s.mfI2Sandbox ? h('p', {}, 'Sessão encerrada, expirada ou de outro mês. Encerre-a antes de iniciar outra.') : null, h('small', {}, 'Regras bancárias futuras e importação bancária não fazem parte desta amostra manual. Escritas pessoais pela IA permanecem desativadas.')), busy ? h('p', { role: 'status' }, 'Verificando serviço local…') : null, s.mfI2Error ? h('p', { role: 'alert' }, String(s.mfI2Error).slice(0, 240)) : null);
+}
+const MF_QUALITY_BINDINGS = new WeakMap();
+function mfQualityLive(app, reply) {
+    const b = reply && MF_QUALITY_BINDINGS.get(reply);
+    const a = app.state.localFinancialAccess;
+    return !!b && a === b.access && b.token === (a === null || a === void 0 ? void 0 : a.token) && b.month === (app.state.localFinancialMonth || app.state.month) &&
+        b.signature === intelligencePremiumSignature(app) && b.account === app.state.mfQualityAccount &&
+        Number.isFinite(a.expiresAt) && a.expiresAt > Date.now() &&
+        a.source === 'bank' && a.profile === 'real' && app.state.mode === 'real';
+}
+function mfQualityTarget(app) {
+    var _a, _b;
+    const parents = ((_a = app.state.mfQualityCatalog) === null || _a === void 0 ? void 0 : _a.parents) || [];
+    const p = parents.find((x) => x.id === app.state.mfQualityParent);
+    if (!p)
+        return null;
+    const child = app.state.mfQualityChild || null;
+    if (child && !((_b = p.subcategories) === null || _b === void 0 ? void 0 : _b.some((s) => s.id === child)))
+        return null;
+    return { categoryId: p.id, subcategoryId: child };
+}
+async function mfQualityAuthorize(app) {
+    var _a;
+    const s = app.state, api = desktop, accountId = s.mfQualityDesiredAccount;
+    if (!((_a = s.localFinancialAccess) === null || _a === void 0 ? void 0 : _a.token) || s.localFinancialAccess.source !== 'bank' ||
+        s.mode !== 'real' || !accountId) {
+        app.setState({ mfQualityError: 'Autorize primeiro a leitura bancária e escolha a conta.' });
+        return;
+    }
+    if (s.mfQualityBusy)
+        return;
+    app.setState({ mfQualityBusy: true, mfQualityError: '' });
+    try {
+        if (!(api === null || api === void 0 ? void 0 : api.d05SessionAuthorize) || !(api === null || api === void 0 ? void 0 : api.d05BankAccountAuthorize) || !(api === null || api === void 0 ? void 0 : api.d05Catalog))
+            throw Error('D05 MAIN/preload ainda indisponível');
+        await api.d05SessionAuthorize({ profile: 'real' });
+        const grant = await api.d05BankAccountAuthorize({ accountId });
+        const catalog = await api.d05Catalog();
+        if (app.state.mfQualityDesiredAccount !== accountId)
+            return;
+        if ((grant === null || grant === void 0 ? void 0 : grant.accountId) !== accountId || !Array.isArray(catalog === null || catalog === void 0 ? void 0 : catalog.parents))
+            throw Error('Não foi possível comprovar conta e catálogo D05');
+        app.setState({ mfQualityAccount: accountId, mfQualityCatalog: catalog,
+            mfQualityParent: '', mfQualityChild: '', mfQualityId: '',
+            mfQualityScan: null, mfQualityResult: null });
+    }
+    catch (e) {
+        app.setState({ mfQualityError: String((e === null || e === void 0 ? void 0 : e.message) || e).slice(0, 240) });
+    }
+    finally {
+        app.setState({ mfQualityBusy: false });
+    }
+}
+async function mfQualityRequest(app, request) {
+    const api = desktop, s = app.state, a = s.localFinancialAccess;
+    const account = s.mfQualityAccount, month = s.localFinancialMonth || s.month;
+    const signature = intelligencePremiumSignature(app);
+    if (!(api === null || api === void 0 ? void 0 : api.intelligenceCategoryPersonal) || !(a === null || a === void 0 ? void 0 : a.token) || a.source !== 'bank' ||
+        a.profile !== 'real' || a.expiresAt <= Date.now() || !account) {
+        app.setState({ mfQualityError: 'Concessão IC-READ/conta bancária ausente ou expirada.' });
+        return;
+    }
+    if (s.mfQualityBusy)
+        return;
+    const serial = (app.__mfQualitySerial || 0) + 1;
+    app.__mfQualitySerial = serial;
+    app.setState({ mfQualityBusy: true, mfQualityError: '', mfQualityResult: null });
+    try {
+        const reply = await api.intelligenceCategoryPersonal({ ...request, scope: {
+                token: a.token, source: a.source, profile: a.profile, month
+            } });
+        if (app.__mfQualitySerial !== serial || app.state.localFinancialAccess !== a ||
+            a.expiresAt <= Date.now() || app.state.mfQualityAccount !== account ||
+            (app.state.localFinancialMonth || app.state.month) !== month ||
+            intelligencePremiumSignature(app) !== signature)
+            return;
+        if (reply && typeof reply === 'object')
+            MF_QUALITY_BINDINGS.set(reply, { access: a, token: a.token, month, signature, account });
+        app.setState({ mfQualityResult: reply,
+            ...(request.method === 'qualityScan' ? { mfQualityScan: reply, mfQualityId: '' } : {}) });
+    }
+    catch (e) {
+        if (app.__mfQualitySerial === serial)
+            app.setState({ mfQualityError: String((e === null || e === void 0 ? void 0 : e.message) || 'Análise indisponível').slice(0, 240) });
+    }
+    finally {
+        if (app.__mfQualitySerial === serial)
+            app.setState({ mfQualityBusy: false });
+    }
+}
+function mfI2QualityPanel(app) {
+    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m;
+    const s = app.state, a = s.localFinancialAccess;
+    const live = !!(a === null || a === void 0 ? void 0 : a.token) && a.expiresAt > Date.now() && a.profile === 'real' && a.source === 'bank' && s.mode === 'real';
+    const result = mfQualityLive(app, s.mfQualityResult) ? s.mfQualityResult : null;
+    const scan = mfQualityLive(app, s.mfQualityScan) ? s.mfQualityScan : null;
+    const qualities = Array.isArray((_a = scan === null || scan === void 0 ? void 0 : scan.data) === null || _a === void 0 ? void 0 : _a.quality) ? scan.data.quality : [];
+    const accounts = ((_c = (_b = s.bank) === null || _b === void 0 ? void 0 : _b.data) === null || _c === void 0 ? void 0 : _c.accounts) || [];
+    const parents = ((_d = s.mfQualityCatalog) === null || _d === void 0 ? void 0 : _d.parents) || [];
+    const selected = qualities.find((q) => q.qualityId === s.mfQualityId);
+    const target = mfQualityTarget(app);
+    const busy = !!s.mfQualityBusy;
+    const btn = (text, action, disabled = false) => h('button', {
+        type: 'button', className: 'ghost-button', disabled: busy || disabled, onClick: action
+    }, text);
+    const dropdown = (title, value, update, items, empty) => h('label', { className: 'mf-i2-field' }, h('span', {}, title), h('select', { value, onChange: (e) => update(e.target.value) }, h('option', { value: '' }, empty), ...items.map((item) => h('option', { key: item.id, value: item.id }, item.name || item.id))));
+    const reason = (r) => String(r || '').slice(0, 200);
+    return h('div', { className: 'mf-i2-group mf-i2-quality', role: 'region',
+        'aria-label': 'I2-E · recomendações com evidências verificáveis' }, h('strong', {}, '2. I2-D / I2-E · qualidade obrigatória'), h('p', {}, 'Investigações proativas em conta autorizada, com evidências por dia e ID. Sem confirmação pessoal, mesmo com boa qualidade.'), dropdown('Conta que será analisada', String(s.mfQualityDesiredAccount || ''), accountId => app.setState({ mfQualityDesiredAccount: accountId, mfQualityAccount: null,
+        mfQualityResult: null, mfQualityScan: null, mfQualityId: '' }), accounts.map((x) => ({ id: x.id, name: x.name || x.id })), 'Escolha a conta'), btn('Autorizar esta conta pelo MAIN', () => void mfQualityAuthorize(app), !live || !s.mfQualityDesiredAccount), live && s.mfQualityAccount ? btn('Pesquisar oportunidades I2-E', () => void mfQualityRequest(app, {
+        method: 'qualityScan', filters: { accountId: s.mfQualityAccount }
+    })) : null, qualities.length ? dropdown('Evidência encontrada', String(s.mfQualityId || ''), qualityId => app.setState({ mfQualityId: qualityId }), qualities.map((q) => ({ id: q.qualityId,
+        name: (q.pattern || q.qualityId) + ' · ' + q.qualityStatus + ' · ' + q.qualityConfidence })), 'Selecione uma evidência') : null, qualities.length ? h('div', { className: 'mf-i2-evidence' }, h('strong', {}, 'Análises: ' + qualities.length), ...qualities.slice(0, 10).map((q) => {
+        var _a, _b;
+        return h('p', { key: q.qualityId }, String(q.pattern || '') + ' · ' + String(((_a = q.anchorSummary) === null || _a === void 0 ? void 0 : _a.independentDates) || 0) +
+            ' dias independentes · ' + String(((_b = q.candidateSummary) === null || _b === void 0 ? void 0 : _b.count) || 0) +
+            ' candidatos · ' + (q.reasons || []).map(reason).join(', '));
+    })) : null, selected ? h('div', { className: 'mf-i2-evidence' }, h('strong', {}, String(selected.pattern || '') + ' · ' + String(selected.qualityStatus)), h('p', {}, 'Origem ' + String(selected.coverage || '') +
+        ' · hash ' + String(selected.evidenceHash || '').slice(0, 20)), h('p', {}, 'Possíveis duplicatas: ' + String(((_e = selected.duplicateWarnings) === null || _e === void 0 ? void 0 : _e.length) || 0) +
+        ' · Regras concorrentes: ' + String(((_g = (_f = selected.rulePrecedence) === null || _f === void 0 ? void 0 : _f.affectedRules) === null || _g === void 0 ? void 0 : _g.length) || 0)), h('p', {}, 'O destino deve ser escolhido explicitamente; nenhuma subcategoria será inferida.')) : null, selected && parents.length ? h('div', { className: 'mf-i2-fields' }, dropdown('Categoria-pai D05', String(s.mfQualityParent || ''), id => app.setState({ mfQualityParent: id, mfQualityChild: '' }), parents, 'Escolha categoria'), dropdown('Subcategoria opcional', String(s.mfQualityChild || ''), id => app.setState({ mfQualityChild: id }), ((_h = parents.find((p) => p.id === s.mfQualityParent)) === null || _h === void 0 ? void 0 : _h.subcategories) || [], 'Sem subcategoria')) : null, selected ? h('div', { className: 'mf-i2-controls' }, btn('Inspecionar evidência', () => void mfQualityRequest(app, {
+        method: 'qualityDetail', qualityId: selected.qualityId
+    })), btn('Prévia hierárquica D05', () => void mfQualityRequest(app, {
+        method: 'qualityDraft', qualityId: selected.qualityId, action: 'historical', target
+    }), !target), btn('Compor plano (sem executar)', () => void mfQualityRequest(app, {
+        method: 'qualityCompose', items: [{ qualityId: selected.qualityId,
+                action: 'historical', target }]
+    }), !target)) : null, result ? h('div', { className: 'mf-i2-evidence', role: 'status' }, h('strong', {}, String(result.status || 'indisponível') + ' · ' + String(result.contract || '')), result.reason ? h('p', {}, reason(result.reason)) : null, ((_k = (_j = result.data) === null || _j === void 0 ? void 0 : _j.quality) === null || _k === void 0 ? void 0 : _k.qualityId) ? h('p', {}, 'Evidência ' + result.data.quality.qualityId +
+        ' · ' + String(result.data.quality.qualityConfidence || '')) : null, ((_l = result.data) === null || _l === void 0 ? void 0 : _l.previewVersion) ? h('p', {}, 'D05 previewVersion: ' + result.data.previewVersion +
+        ' · ' + String(result.data.count) + ' lançamentos · escrita pessoal NÃO autorizada') : null, ((_m = result.data) === null || _m === void 0 ? void 0 : _m.steps) ? h('p', {}, 'Plano: ' + String(result.data.steps.length) +
+        ' etapas · aplicação bloqueada') : null) : null, !live ? h('p', {}, 'Ative a leitura bancária nas permissões antes de usar o I2-E.') : null, busy ? h('p', { role: 'status' }, 'Conferindo as evidências locais…') : null, s.mfQualityError ? h('p', { role: 'alert' }, String(s.mfQualityError).slice(0, 240)) : null);
+}
+const MF_D04_PALETTE = ['#53d896', '#79a6fa', '#f5bc63', '#ff7a88', '#b49be8'];
+function mfD04StableId(r) { return JSON.stringify([r.accountId || '', r.externalId || '']); }
+function mfD04Entries(app) {
+    const s = app.state, grant = s.categoryReviewGrant, report = s.categoryReviewReport, queue = s.categoryReviewQueue;
+    if (!(grant === null || grant === void 0 ? void 0 : grant.token) || !(Number.isFinite(grant.expiresAt) && grant.expiresAt > Date.now()) || !report)
+        return [];
+    const entries = [];
+    for (const r of Array.isArray(report.suggestions) ? report.suggestions : []) {
+        if (!r || typeof r.id !== 'string' || !r.id)
+            continue;
+        const cands = [];
+        const seen = new Set();
+        for (const x of Array.isArray(r.examples) ? r.examples : []) {
+            if (!x || !Number.isSafeInteger(x.amount) || !x.description)
+                continue;
+            const id = mfD04StableId(x);
+            if (seen.has(id) || id === '["",""]')
+                continue;
+            seen.add(id);
+            cands.push({ id, title: String(x.description).slice(0, 120), date: String(x.date || ''),
+                amountCents: Math.abs(x.amount) });
+        }
+        entries.push({ id: 'rule:' + r.id, kind: 'category_rule', title: String(r.name || r.pattern || 'Sugestão').slice(0, 100),
+            status: 'pending', source: 'Sugestão supervisionada', category: String(r.category || ''), original: r, candidates: cands });
+    }
+    for (const r of Array.isArray(queue === null || queue === void 0 ? void 0 : queue.rows) ? queue.rows : []) {
+        if (!r || !r.externalId || !r.accountId || !Number.isSafeInteger(r.amount))
+            continue;
+        const id = mfD04StableId(r);
+        entries.push({ id: 'row:' + id, kind: 'category_change', title: String(r.description || 'Movimentação').slice(0, 100),
+            status: 'pending', source: String(r.accountName || 'Fonte de teste'),
+            category: String(r.suggestedCategory || r.category || ''), original: r,
+            candidates: [{ id, title: String(r.description || ''), date: String(r.date || ''), amountCents: Math.abs(r.amount) }] });
+    }
+    for (const a of Array.isArray(report.audit) ? report.audit : []) {
+        if (!(a === null || a === void 0 ? void 0 : a.id))
+            continue;
+        entries.push({ id: 'audit:' + String(a.id), kind: 'audit', title: String(a.action || 'Decisão'),
+            status: 'history', source: 'Auditoria do serviço', category: '', original: a, candidates: [] });
+    }
+    return entries;
+}
+function mfD04DraftFor(app, entry) {
+    var _a, _b;
+    const existing = (_a = app.state.mfD04Drafts) === null || _a === void 0 ? void 0 : _a[entry.id];
+    if (existing)
+        return existing;
+    return { name: entry.title, category: entry.category,
+        terms: String(((_b = entry.original) === null || _b === void 0 ? void 0 : _b.pattern) || entry.title), color: MF_D04_PALETTE[0],
+        past: entry.kind === 'category_change', future: entry.kind === 'category_rule', revision: 0, saved: false };
+}
+function mfD04Patch(app, entry, patch) {
+    const current = mfD04DraftFor(app, entry);
+    const next = { ...current, ...patch, revision: current.revision + 1, saved: false };
+    app.setState({ mfD04Drafts: { ...app.state.mfD04Drafts, [entry.id]: next },
+        categoryReviewPreview: null, categoryReviewConfirmed: false, categoryReviewReceipt: null });
+}
+function mfD04Discard(app, entry) {
+    const drafts = { ...app.state.mfD04Drafts };
+    delete drafts[entry.id];
+    const excluded = { ...app.state.mfD04Excluded };
+    delete excluded[entry.id];
+    app.setState({ mfD04Drafts: drafts, mfD04Excluded: excluded,
+        categoryReviewPreview: null, categoryReviewConfirmed: false, mfD04Edit: false });
+}
+function mfD04SelectedIds(entry, exclusions) {
+    const excluded = new Set(exclusions);
+    return entry.candidates.filter(x => !excluded.has(x.id)).map(x => x.id);
+}
+function mfD04Impact(entry, draft, exclusions) {
+    const selected = mfD04SelectedIds(entry, exclusions);
+    const unique = new Set(selected);
+    let cents = 0;
+    if (draft.past) {
+        for (const c of entry.candidates) {
+            if (!unique.has(c.id))
+                continue;
+            if (!Number.isSafeInteger(c.amountCents) || c.amountCents < 0)
+                return { count: 0, cents: null, eligible: false };
+            cents += c.amountCents;
+            if (!Number.isSafeInteger(cents))
+                return { count: 0, cents: null, eligible: false };
+        }
+    }
+    const active = draft.past || draft.future;
+    const changed = entry.kind === 'category_rule' ? !!draft.category.trim() : entry.kind === 'category_change' ?
+        !!draft.category.trim() && draft.category !== String(entry.original.category || '') : false;
+    return { count: draft.past ? unique.size : 0, cents,
+        eligible: active && changed && (draft.future || unique.size > 0),
+        samplePartial: entry.kind === 'category_rule' &&
+            (entry.original.compatible > entry.candidates.length ||
+                entry.original.examplesPartial === true) };
+}
+function mfD04SavedDraft(app, entry) {
+    const current = mfD04DraftFor(app, entry);
+    if (!current.name.trim() || !current.category.trim() || !current.terms.trim()) {
+        app.setState({ mfD04Error: 'Informe nome, critério e categoria antes de salvar o rascunho.' });
+        return;
+    }
+    const next = { ...current, saved: true, revision: current.revision + 1 };
+    app.setState({ mfD04Drafts: { ...app.state.mfD04Drafts, [entry.id]: next },
+        mfD04Error: 'Rascunho local salvo. Somente alterações suportadas pelo serviço podem virar prévia de aplicação.',
+        categoryReviewPreview: null, categoryReviewConfirmed: false, mfD04Edit: false });
+}
+function mfD04ServiceEligible(app, entry, draft, exclusions) {
+    var _a, _b, _c;
+    if (!((_a = app.state.categoryReviewGrant) === null || _a === void 0 ? void 0 : _a.token) ||
+        !(Number.isFinite(app.state.categoryReviewGrant.expiresAt) && app.state.categoryReviewGrant.expiresAt > Date.now()) ||
+        !app.state.categoryReviewAvailable || !mfD04Impact(entry, draft, exclusions).eligible ||
+        exclusions.length || draft.color !== MF_D04_PALETTE[0])
+        return false;
+    if (entry.kind === 'category_rule') {
+        return !draft.past && draft.future && draft.name === entry.title &&
+            draft.terms === String(entry.original.pattern || entry.title) &&
+            ((_b = entry.original) === null || _b === void 0 ? void 0 : _b.state) !== 'denied' && ((_c = entry.original) === null || _c === void 0 ? void 0 : _c.state) !== 'deferred';
+    }
+    if (entry.kind === 'category_change') {
+        const r = entry.original;
+        return draft.past && !draft.future && draft.name === entry.title &&
+            r.batchEligible === true && r.status === 'POSTED' && !r.manual && !r.hasSplits;
+    }
+    return false;
+}
+function mfD04Prepare(app, entry) {
+    var _a;
+    const draft = mfD04DraftFor(app, entry), excluded = ((_a = app.state.mfD04Excluded) === null || _a === void 0 ? void 0 : _a[entry.id]) || [];
+    if (!mfD04ServiceEligible(app, entry, draft, excluded)) {
+        app.setState({ mfD04Error: 'Esta combinação de rascunho, exclusões e escopos não possui aplicação segura neste serviço. Revise os dados manualmente ou mantenha como proposta.' });
+        return;
+    }
+    app.mfD04ModalFocused = false;
+    app.setState({ mfD04Error: '', categoryReviewPreview: null, categoryReviewConfirmed: false });
+    if (entry.kind === 'category_rule') {
+        void categoryReviewPrepare(app, 'rule', { suggestionId: entry.original.id, category: draft.category });
+        return;
+    }
+    void categoryReviewPrepare(app, 'classify', { items: [entry.original], category: draft.category });
+}
+function mfD04PreviewModal(app) {
+    const p = app.state.categoryReviewPreview;
+    if (!p)
+        return null;
+    const dismiss = () => app.setState({ categoryReviewPreview: null, categoryReviewConfirmed: false });
+    const key = (e) => {
+        var _a;
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            dismiss();
+            return;
+        }
+        if (e.key !== 'Tab')
+            return;
+        const nodes = Array.from(((_a = document.getElementById('mf-d04-modal')) === null || _a === void 0 ? void 0 : _a.querySelectorAll('button:not(:disabled),input:not(:disabled)')) || []);
+        if (!nodes.length)
+            return;
+        const i = nodes.indexOf(document.activeElement);
+        if (e.shiftKey && i <= 0) {
+            e.preventDefault();
+            nodes[nodes.length - 1].focus();
+        }
+        else if (!e.shiftKey && i === nodes.length - 1) {
+            e.preventDefault();
+            nodes[0].focus();
+        }
+    };
+    return h('div', { className: 'mf-d04-modal-overlay', onClick: dismiss }, h('div', { id: 'mf-d04-modal', className: 'mf-d04-modal', role: 'dialog', 'aria-modal': 'true',
+        'aria-label': 'Conferir prévia do serviço sintético', onKeyDown: key,
+        onClick: (e) => e.stopPropagation() }, h('div', { className: 'mf-d04-modal-top' }, h('strong', {}, 'Conferência obrigatória'), h('button', { type: 'button', className: 'ghost-button', onClick: dismiss,
+        ref: (node) => { if (node && !app.mfD04ModalFocused) {
+            app.mfD04ModalFocused = true;
+            node.focus();
+        } } }, 'Fechar')), renderCategoryReviewPreview(app)));
+}
+function mfD04Queue(app, entries, selected) {
+    const s = app.state, stage = s.mfD04Stage || 'pending';
+    const q = String(s.mfD04Search || '').toLocaleLowerCase('pt-BR');
+    const visible = entries.filter(e => (stage === 'all' || e.status === stage) &&
+        (e.title + ' ' + e.category + ' ' + e.source).toLocaleLowerCase('pt-BR').includes(q));
+    const controls = ['pending', 'history', 'all'].map(id => h('button', { key: id, type: 'button',
+        className: stage === id ? 'active' : '', 'aria-pressed': stage === id,
+        onClick: () => app.setState({ mfD04Stage: id, categoryReviewPreview: null, categoryReviewConfirmed: false }) }, id === 'pending' ? 'Pendentes' : id === 'history' ? 'Histórico' : 'Todas'));
+    const items = visible.slice(0, 80).map(entry => h('button', { type: 'button', key: entry.id,
+        className: 'mf-d04-item' + (entry.id === (selected === null || selected === void 0 ? void 0 : selected.id) ? ' is-selected' : ''),
+        'aria-pressed': entry.id === (selected === null || selected === void 0 ? void 0 : selected.id),
+        onClick: () => app.setState({ mfD04Selected: entry.id, mfD04Edit: false,
+            categoryReviewPreview: null, categoryReviewConfirmed: false, mfD04Error: '' }) }, h('span', { className: 'mf-d04-item-head' }, h('strong', {}, entry.title), h('small', {}, entry.status === 'history' ? 'Histórico' : 'Pendente')), h('span', {}, entry.source + ' · ' + (entry.kind === 'category_rule' ? 'Regra' : entry.kind === 'category_change' ? 'Movimentação' : 'Decisão')), h('small', {}, entry.candidates.length + ' registro(s) na amostra')));
+    return h('section', { className: 'mf-d04-queue', 'aria-label': 'Fila de revisão' }, h('div', { className: 'mf-d04-queue-top' }, h('h3', {}, 'Fila de decisões'), h('span', {}, entries.filter(e => e.status === 'pending').length + ' pendentes nesta consulta')), h('label', { className: 'mf-d04-search' }, 'Buscar revisões', h('input', { type: 'search', value: s.mfD04Search || '', placeholder: 'Nome, origem ou categoria',
+        onChange: (e) => app.setState({ mfD04Search: e.target.value,
+            categoryReviewPreview: null, categoryReviewConfirmed: false }) })), h('div', { className: 'mf-d04-filters', role: 'group', 'aria-label': 'Filtrar revisões' }, ...controls), h('div', { className: 'mf-d04-items' }, ...items, !items.length ? h('p', { className: 'mf-d04-no-results' }, 'Nenhuma revisão neste filtro.') : null));
+}
+function mfD04Details(app, entry) {
+    var _a;
+    if (!entry)
+        return h('section', { className: 'mf-d04-detail' }, h('p', {}, 'Selecione uma revisão para conferir.'));
+    const s = app.state, d = mfD04DraftFor(app, entry);
+    if (entry.kind === 'audit')
+        return h('section', { className: 'mf-d04-detail' }, h('div', { className: 'mf-d04-summary' }, h('h3', {}, 'Decisão auditada: ' + entry.title), h('p', {}, 'ID ' + String(entry.original.id) + ' · ' + String(entry.original.appliedAt || '')), h('p', {}, 'Desfazer: ' + String(entry.original.undoState || 'indisponível')), entry.original.undoState === 'available' ? h('button', { type: 'button', className: 'ghost-button',
+            onClick: () => void categoryReviewPrepare(app, 'undo', { commandId: entry.original.id }) }, 'Preparar desfazer pelo serviço') : null));
+    const excluded = ((_a = s.mfD04Excluded) === null || _a === void 0 ? void 0 : _a[entry.id]) || [];
+    const impact = mfD04Impact(entry, d, excluded);
+    const change = (patch) => mfD04Patch(app, entry, patch);
+    const canPrepare = mfD04ServiceEligible(app, entry, d, excluded);
+    const fields = [['name', 'Nome da proposta'], ['category', 'Categoria de destino'], ['terms', 'Critério']].map(([key, label]) => h('label', { key }, label, h('input', { type: 'text', value: d[key],
+        onChange: (e) => change({ [key]: e.target.value }) })));
+    const colorButtons = MF_D04_PALETTE.map(color => h('button', { key: color, type: 'button',
+        style: { background: color }, 'aria-pressed': d.color === color, 'aria-label': 'Cor ' + color,
+        onClick: () => change({ color }) }));
+    const editor = s.mfD04Edit ? h('section', { className: 'mf-d04-editor', 'aria-label': 'Editor isolado' }, ...fields, h('div', { className: 'mf-d04-colors' }, ...colorButtons), h('div', { className: 'mf-d04-actions' }, h('button', { type: 'button', className: 'primary-button', onClick: () => mfD04SavedDraft(app, entry) }, 'Salvar ajustes locais'), h('button', { type: 'button', className: 'ghost-button', onClick: () => mfD04Discard(app, entry) }, 'Descartar alterações'))) : null;
+    const candidates = entry.candidates.map(item => h('label', { key: item.id }, h('input', { type: 'checkbox', checked: !excluded.includes(item.id),
+        onChange: (e) => {
+            var _a;
+            const old = ((_a = app.state.mfD04Excluded) === null || _a === void 0 ? void 0 : _a[entry.id]) || [];
+            const next = e.target.checked ? old.filter(id => id !== item.id) : [...old, item.id];
+            app.setState({ mfD04Excluded: { ...app.state.mfD04Excluded, [entry.id]: next },
+                categoryReviewPreview: null, categoryReviewConfirmed: false });
+        } }), h('span', {}, item.title + ' · ' + item.date), h('strong', {}, intelligencePremiumMoney(item.amountCents))));
+    const actions = [
+        h('button', { type: 'button', className: 'primary-button', disabled: !canPrepare,
+            title: canPrepare ? 'Revalidação real no serviço sintético' : 'Este rascunho/escopo não possui aplicação segura',
+            onClick: () => mfD04Prepare(app, entry) }, 'Preparar no serviço')
+    ];
+    if (entry.kind === 'category_rule' && s.categoryReviewAvailable) {
+        for (const state of ['denied', 'deferred']) {
+            actions.push(h('button', { key: state, type: 'button', className: 'ghost-button',
+                onClick: () => void categoryReviewPrepare(app, 'decision', { suggestionId: entry.original.id, state }) }, state === 'denied' ? 'Recusar' : 'Adiar'));
+        }
+    }
+    return h('section', { className: 'mf-d04-detail', 'aria-label': 'Detalhe da proposta' }, h('div', { className: 'mf-d04-detail-inner' }, h('div', { className: 'mf-d04-detail-head' }, h('div', {}, h('small', {}, entry.source), h('h3', {}, entry.title)), h('button', { type: 'button', className: 'ghost-button',
+        onClick: () => app.setState({ mfD04Edit: !s.mfD04Edit }) }, s.mfD04Edit ? 'Recolher editor' : 'Editar rascunho')), h('div', { className: 'mf-d04-diff' }, h('div', {}, h('small', {}, 'SITUAÇÃO ATUAL'), h('strong', {}, String(entry.original.category || 'Sem categoria'))), h('span', { 'aria-hidden': 'true' }, '→'), h('div', {}, h('small', {}, 'PROPOSTA'), h('strong', {}, d.category || 'Sem categoria'))), editor, h('div', { className: 'mf-d04-scopes' }, h('label', {}, h('input', { type: 'checkbox', checked: d.past,
+        onChange: (e) => change({ past: e.target.checked }) }), 'Organizar anteriores'), h('label', {}, h('input', { type: 'checkbox', checked: d.future,
+        onChange: (e) => change({ future: e.target.checked }) }), 'Categorizar futuras')), h('div', { className: 'mf-d04-impact' }, h('strong', {}, impact.count + ' registro(s) anteriores nesta amostra'), h('strong', {}, impact.cents === null ? 'Valor indisponível' : intelligencePremiumMoney(impact.cents)), h('small', {}, impact.samplePartial ? 'Amostra parcial, não todo o histórico elegível.' : 'Soma apenas de IDs selecionados.'), !d.past ? h('p', {}, 'Passado desligado: impacto histórico R$ 0,00.') : null, d.future ? h('p', {}, 'Futuro não representa quantidade prevista de transações.') : null), h('div', { className: 'mf-d04-candidates' }, h('h4', {}, 'Registros de referência'), ...candidates, !candidates.length ? h('p', {}, 'Sem registros elegíveis nesta amostra.') : null), h('div', { className: 'mf-d04-actions' }, ...actions), h('p', { className: 'mf-d04-footnote' }, 'Alterações de termos, cor, escopos ou exclusões que o serviço não consegue revalidar permanecem rascunho, sem escrita pessoal.')));
+}
+function mfD04Render(app) {
+    var _a, _b;
+    const s = app.state, grant = s.categoryReviewGrant;
+    const grantLive = !!(grant === null || grant === void 0 ? void 0 : grant.token) && Number.isFinite(grant.expiresAt) && grant.expiresAt > Date.now();
+    const report = grantLive ? s.categoryReviewReport : null;
+    const entries = mfD04Entries(app), stage = s.mfD04Stage || 'pending';
+    const query = String(s.mfD04Search || '').toLocaleLowerCase('pt-BR');
+    const visible = entries.filter(e => (stage === 'all' || e.status === stage) &&
+        (e.title + ' ' + e.category + ' ' + e.source).toLocaleLowerCase('pt-BR').includes(query));
+    const selected = visible.find(e => e.id === s.mfD04Selected) || visible[0] || null;
+    const body = grantLive && report ? h('div', { className: 'mf-d04-body' }, mfD04Queue(app, entries, selected), mfD04Details(app, selected), h('details', { className: 'mf-d04-advanced' }, h('summary', {}, 'Outras ferramentas do serviço de revisão'), renderCategoryReviewLegacy(app))) : null;
+    const empty = !grantLive ? h('div', { className: 'mf-d04-empty', role: 'status' }, h('h3', {}, s.categoryReviewAvailable === false ? 'Revisão legada indisponível neste perfil' : 'Autorize uma revisão supervisionada'), h('p', {}, 'Escrita pela IA no perfil pessoal permanece desativada. A prévia de teste exige perfil sintético validado.'), s.categoryReviewAvailable ? h('button', { type: 'button', className: 'primary-button',
+        disabled: s.categoryReviewBusy, onClick: () => void categoryReviewEnable(app) }, 'Autorizar revisão sintética') : null) : null;
+    return h('section', { className: 'mf-d04-review', role: 'region', 'aria-label': 'Central de Revisão V1.1' }, h('header', { className: 'mf-d04-heading' }, h('div', {}, h('small', {}, 'INTELIGÊNCIA / CENTRAL DE REVISÕES'), h('h2', {}, 'Revise antes de decidir.'), h('p', {}, 'Sugestões e movimentações do serviço autorizado, com decisão supervisionada.')), h('div', { className: 'mf-d04-heading-actions' }, h('button', { type: 'button', className: 'ghost-button',
+        onClick: () => app.setState({ categoryReviewOpen: false, intelligenceMainMode: 'chat' }) }, 'Voltar à conversa'), grant ? h('button', { type: 'button', className: 'ghost-button',
+        onClick: () => void categoryReviewRun(app, () => categoryReviewRefresh(app)) }, 'Atualizar fila') : null)), s.mode === 'real' && s.autoCategoryStatus ? h('section', { className: 'mf-d04-auto-summary',
+        role: 'region', 'aria-label': 'Categorização automática' }, h('strong', {}, 'Categorização automática do banco · ' + (s.autoCategoryStatus.enabled ? 'Ativada' : 'Desativada')), h('p', {}, String(((_a = s.autoCategoryStatus.counts) === null || _a === void 0 ? void 0 : _a.classified) || 0) + ' rótulos automáticos registrados · ' +
+        String(((_b = s.autoCategoryStatus.counts) === null || _b === void 0 ? void 0 : _b.awaitingReview) || 0) + ' movimentações requerem conferência.'), h('button', { type: 'button', className: 'ghost-button', onClick: () => {
+            app.setState({ categoryReviewOpen: false, txSource: 'bank', txReviewOnly: true });
+            app.navigate('transactions');
+        } }, 'Abrir fila bancária no D05')) : null, empty, body, mfI2CategoryPanel(app), s.mfD04Error ? h('p', { className: 'mf-ai-error', role: 'status' }, s.mfD04Error) : null, s.categoryReviewError ? h('p', { className: 'mf-ai-error', role: 'alert' }, s.categoryReviewError) : null, s.categoryReviewBusy ? h('p', { role: 'status' }, 'Conferindo o serviço…') : null, s.categoryReviewReceipt && grantLive ? h('p', { className: 'mf-d04-receipt', role: 'status' }, 'Ação confirmada pelo serviço: ' + String(s.categoryReviewReceipt.id)) : null, grantLive ? mfD04PreviewModal(app) : null);
+}
+const MF_D01_COLORS = ['#53d896', '#ff7a88', '#f5bc63', '#79a6fa', '#b49be8', '#57bbba'];
+function mfD01Revision(p, edit) {
+    return JSON.stringify([p.id, p.origin, p.txId, p.accountId || '', p.amountCents, p.date,
+        p.currentCategory, p.proposedCategory, edit.name, edit.color, edit.criterion,
+        edit.history, edit.future, edit.selected]);
+}
+function mfD01Default(p) {
+    return { proposalId: p.id, name: p.proposedCategory || '', color: MF_D01_COLORS[0],
+        criterion: String(p.rawDescription || p.description || '').slice(0, 100),
+        history: true, future: false, selected: !!p.txId };
+}
+function mfD01Current(app, p) {
+    var _a;
+    const value = (_a = app.state.mfD01Committed) === null || _a === void 0 ? void 0 : _a[p.id];
+    return value && value.proposalId === p.id ? value : mfD01Default(p);
+}
+function mfD01EditBegin(app, p) {
+    const old = mfD01Current(app, p);
+    app.setState({ mfD01Edit: { ...old }, mfD01Review: null });
+}
+function mfD01EditChange(app, patch) {
+    if (!app.state.mfD01Edit)
+        return;
+    app.setState({ mfD01Edit: { ...app.state.mfD01Edit, ...patch }, mfD01Review: null });
+}
+function mfD01EditDiscard(app) {
+    app.setState({ mfD01Edit: null, mfD01Review: null });
+}
+function mfD01Original(p, edit) {
+    const original = mfD01Default(p);
+    return edit.name === original.name && edit.color === original.color && edit.criterion === original.criterion &&
+        edit.history === original.history && edit.future === false && edit.selected === original.selected;
+}
+function mfD01EditSave(app, p) {
+    const edit = app.state.mfD01Edit;
+    if (!edit || edit.proposalId !== p.id)
+        return;
+    if (!String(edit.name || '').trim())
+        return;
+    const next = { ...edit, name: edit.name.trim(), criterion: edit.criterion.trim() };
+    app.setState({ mfD01Committed: { ...(app.state.mfD01Committed || {}), [p.id]: next },
+        mfD01Edit: null, mfD01Review: null, mfD01LocalVerified: null });
+}
+function mfD01EnterReview(app, p) {
+    const edit = mfD01Current(app, p);
+    if (!edit.history && !edit.future)
+        return;
+    const revision = mfD01Revision(p, edit);
+    let freshness = false;
+    if (edit.history && edit.selected && p.txId && p.status !== 'ambiguous' &&
+        typeof intelligenceVerifyProposalRecord === 'function') {
+        const verified = intelligenceVerifyProposalRecord(app, p);
+        freshness = !!(verified === null || verified === void 0 ? void 0 : verified.ok);
+    }
+    app.setState({ mfD01Review: { proposalId: p.id, revision, consent: false, freshness } });
+}
+function mfD01VerifyReview(app, p) {
+    var _a;
+    const edit = mfD01Current(app, p), review = app.state.mfD01Review;
+    if (!review || review.proposalId !== p.id || review.revision !== mfD01Revision(p, edit))
+        return false;
+    if (!edit.history || !edit.selected || !p.txId ||
+        (p.status !== 'pending' && p.status !== 'preview_confirmed'))
+        return false;
+    if (typeof intelligenceVerifyProposalRecord !== 'function' || !((_a = intelligenceVerifyProposalRecord(app, p)) === null || _a === void 0 ? void 0 : _a.ok))
+        return false;
+    return true;
+}
+function mfD01FormatCents(value) {
+    return Number.isSafeInteger(value) ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Math.abs(value) / 100) : '—';
+}
+function renderMfD01Proposal(app, p) {
+    var _a, _b, _c, _d, _e;
+    const edit = mfD01Current(app, p);
+    const review = ((_a = app.state.mfD01Review) === null || _a === void 0 ? void 0 : _a.proposalId) === p.id ? app.state.mfD01Review : null;
+    const all = Array.isArray(p.candidates) ? p.candidates : [];
+    const ambiguous = p.status === 'ambiguous', eligible = p.status === 'pending' || p.status === 'preview_confirmed';
+    const fresh = review && mfD01VerifyReview(app, p);
+    const money = mfD01FormatCents(p.amountCents);
+    const signed = p.txKind === 'expense' ? '-' + money : money;
+    const current = p.currentCategory || 'Não categorizada';
+    const revision = mfD01Revision(p, edit);
+    const priorVerified = ((_b = app.state.mfD01LocalVerified) === null || _b === void 0 ? void 0 : _b.proposalId) === p.id && ((_c = app.state.mfD01LocalVerified) === null || _c === void 0 ? void 0 : _c.revision) === revision &&
+        typeof intelligenceVerifyProposalRecord === 'function' && ((_d = intelligenceVerifyProposalRecord(app, p)) === null || _d === void 0 ? void 0 : _d.ok) === true;
+    const unchanged = mfD01Original(p, edit);
+    const activeEdit = ((_e = app.state.mfD01Edit) === null || _e === void 0 ? void 0 : _e.proposalId) === p.id ? app.state.mfD01Edit : null;
+    return h('section', { className: 'mf-d01-proposal status-' + p.status, role: 'region', 'aria-label': 'Proposta de categoria supervisionada' }, h('div', { className: 'mf-d01-proposal-lead' }, h('span', { className: 'mf-d01-category-icon', style: { color: edit.color, '--mf-d01-icon-color': edit.color } }, '✦'), h('div', { className: 'mf-d01-proposal-title' }, h('small', {}, 'Proposta de organização · somente leitura'), h('h3', {}, edit.name || 'Nova categoria'), h('p', {}, 'Critério: ' + (edit.criterion || 'A definir'))), h('button', { type: 'button', className: 'ghost-button mf-d01-edit-trigger', onClick: () => mfD01EditBegin(app, p) }, 'Personalizar')), h('div', { className: 'mf-d01-stats' }, h('div', {}, h('small', {}, 'Selecionadas'), h('strong', {}, String(!ambiguous && edit.selected && p.txId ? 1 : 0))), h('div', {}, h('small', {}, 'Valor na prévia'), h('strong', {}, !ambiguous && edit.selected && p.txId ? signed : '—')), h('div', {}, h('small', {}, 'A conferir'), h('strong', {}, String(ambiguous ? Math.max(1, p.candidatesCount || all.length) : 0)))), ambiguous ? h('div', { className: 'mf-d01-warning', role: 'status' }, h('strong', {}, 'Encontramos lançamentos parecidos'), h('p', {}, 'Escolha o registro correto antes de continuar. Nenhuma correspondência ambígua será aplicada automaticamente.'), ...all.slice(0, p.visibleLimit || 8).map((c) => h('button', { type: 'button', className: 'mf-d01-candidate', key: c.candidateKey,
+        onClick: () => intelligenceSelectActionCandidate(app, p.id, c.candidateKey) }, h('span', {}, c.description + ' · ' + c.date), h('strong', {}, mfD01FormatCents(c.amountCents)))), all.length > (p.visibleLimit || 8) ? h('button', { type: 'button', className: 'ghost-button', onClick: () => intelligenceExpandProposalCandidates(app, p.id) }, 'Mostrar mais registros') : null) :
+        h('div', { className: 'mf-d01-affected' }, h('strong', {}, 'Movimentação identificada'), h('label', { className: 'mf-d01-transaction' }, h('input', { type: 'checkbox', checked: edit.selected, disabled: !p.txId || !eligible, onChange: (e) => {
+                app.setState({ mfD01Committed: { ...(app.state.mfD01Committed || {}), [p.id]: { ...edit, selected: e.target.checked } }, mfD01Review: null });
+            } }), h('span', {}, h('b', {}, p.description), h('small', {}, p.date + ' · ' + (p.origin === 'bank' ? 'Banco' : 'Manual') + ' · ' + current + ' → ' + edit.name)), h('strong', {}, signed))), h('div', { className: 'mf-d01-scopes' }, h('label', {}, h('input', { type: 'checkbox', checked: edit.history, disabled: ambiguous, onChange: (e) => {
+            app.setState({ mfD01Committed: { ...(app.state.mfD01Committed || {}), [p.id]: { ...edit, history: e.target.checked } }, mfD01Review: null });
+        } }), 'Organizar compras anteriores'), h('label', {}, h('input', { type: 'checkbox', checked: edit.future, onChange: (e) => {
+            app.setState({ mfD01Committed: { ...(app.state.mfD01Committed || {}), [p.id]: { ...edit, future: e.target.checked } }, mfD01Review: null });
+        } }), 'Categorizar próximas compras')), edit.future ? h('p', { className: 'mf-d01-warning' }, 'A regra para compras futuras ainda não possui prévia e serviço transacional autorizados; não será ativada aqui.') : null, h('div', { className: 'mf-d01-actions' }, h('button', { type: 'button', className: 'primary-button',
+        disabled: ambiguous || !eligible || (!edit.history && !edit.future),
+        onClick: () => mfD01EnterReview(app, p) }, 'Conferir proposta'), h('button', { type: 'button', className: 'ghost-button', disabled: p.status === 'denied',
+        onClick: () => { intelligenceResolveActionProposal(app, p.id, 'deny'); app.setState({ mfD01Review: null, mfD01Edit: null }); } }, 'Recusar')), review ? h('div', { className: 'mf-d01-confirm', role: 'group', 'aria-label': 'Reconfirmação de prévia sem gravação' }, h('strong', {}, 'Confira antes de prosseguir'), h('p', {}, edit.name + ' · ' + (edit.history ? 'Compras anteriores' : 'Sem histórico') +
+        (edit.future ? ' + próximas compras' : '') + ' · ' + (edit.selected && p.txId ? money : 'Nenhum lançamento selecionado')), h('small', {}, 'Prévia local ' + (fresh ? 'conferida' : 'desatualizada ou sem cobertura') +
+        ' · identificador ' + p.id.slice(0, 22) + ' · nenhuma escrita disponível'), !fresh ? h('p', { role: 'alert' }, 'A identificação mudou ou falta cobertura. Revise a seleção antes de confirmar.') : null, h('label', {}, h('input', { type: 'checkbox', checked: !!review.consent, disabled: !fresh,
+        onChange: (e) => app.setState({ mfD01Review: { ...review, consent: e.target.checked } }) }), 'Confirmo que conferi os dados desta prévia sem gravação.'), h('div', { className: 'mf-d01-actions' }, h('button', { type: 'button', className: 'ghost-button', onClick: () => app.setState({ mfD01Review: null }) }, 'Voltar'), h('button', { type: 'button', className: 'primary-button', disabled: !fresh || !review.consent || !edit.history || !edit.selected || !p.txId,
+        onClick: () => {
+            var _a;
+            if (!mfD01VerifyReview(app, p) || !((_a = app.state.mfD01Review) === null || _a === void 0 ? void 0 : _a.consent))
+                return;
+            if (mfD01Original(p, edit))
+                intelligenceResolveActionProposal(app, p.id, 'approve');
+            app.setState({ mfD01Review: null, mfD01LocalVerified: { proposalId: p.id, revision } });
+        } }, 'Validar prévia sem gravar'))) :
+        null, unchanged && p.resultMessage ? h('p', { className: 'mf-d01-result', role: 'status' }, p.resultMessage) : null, priorVerified ? h('p', { className: 'mf-d01-readonly', role: 'status' }, 'Prévia conferida. Não foi aplicada nenhuma alteração. A aplicação por IA no perfil pessoal permanece indisponível.') : null, h('div', { className: 'mf-d01-manual' }, h('p', {}, 'Para criar uma categoria agora, use o editor manual. Isso é separado desta proposta.'), h('button', { type: 'button', className: 'ghost-button', disabled: app.state.mode === 'demo',
+        onClick: () => { app.setState({ mfD01Review: null, intelligencePanelOpen: false }); app.navigate('categories'); } }, 'Abrir editor manual')), activeEdit ? h('div', { className: 'mf-d01-modal-backdrop', role: 'presentation' }, h('div', { className: 'mf-d01-modal', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Personalizar proposta',
+        onKeyDown: (e) => { if (e.key === 'Escape') {
+            e.preventDefault();
+            e.stopPropagation();
+            mfD01EditDiscard(app);
+        } } }, h('h3', {}, 'Personalizar categoria'), h('label', {}, 'Nome', h('input', { autoFocus: true, value: activeEdit.name, maxLength: 60, onChange: (e) => mfD01EditChange(app, { name: e.target.value }) })), h('label', {}, 'Critério de identificação', h('input', { value: activeEdit.criterion, maxLength: 100, onChange: (e) => mfD01EditChange(app, { criterion: e.target.value }) })), h('fieldset', {}, h('legend', {}, 'Cor da categoria'), ...MF_D01_COLORS.map(color => h('button', { type: 'button', key: color, className: 'mf-d01-color ' + (color === activeEdit.color ? 'is-selected' : ''),
+        style: { backgroundColor: color }, 'aria-label': 'Selecionar cor ' + color, 'aria-pressed': color === activeEdit.color,
+        onClick: () => mfD01EditChange(app, { color }) }, ' '))), h('div', { className: 'mf-d01-actions' }, h('button', { type: 'button', className: 'ghost-button', onClick: () => mfD01EditDiscard(app) }, 'Descartar edição'), h('button', { type: 'button', className: 'primary-button', disabled: !activeEdit.name.trim(),
+        onClick: () => mfD01EditSave(app, p) }, 'Salvar prévia')))) : null);
+}
+const MF_VISUAL_COLORS = ['#60b8a6', '#f4b560', '#7ca3e9', '#b48ee7', '#ed8995', '#9bc86e', '#c6a470', '#80b6ce'];
+function mfVisualMoney(cents) {
+    return Number.isSafeInteger(cents) ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(cents / 100) : '—';
+}
+function mfVisualRequested(question) {
+    const q = String(question || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    if (/para onde (?:foi|vai) (?:minha |meu |a )?(?:renda|dinheiro)|fluxo de (?:dinheiro|renda)|sankey|distribuicao da renda/.test(q))
+        return 'sankey';
+    if (/treemap|mapa de (?:gastos|despesas|categorias)|distribuicao (?:dos |de )?gastos|despesas por categoria/.test(q))
+        return 'treemap';
+    return null;
+}
+function mfVisualFromOperational(o, kind) {
+    var _a;
+    if (!o || o.contract !== 'IC-v1/I-P0.2-read-only' || o.readOnly !== true ||
+        o.changesApplied !== false || o.modelCalled !== false ||
+        !['bank', 'manual'].includes(o.source) || !['real', 'demo'].includes(o.profile))
+        return null;
+    const f = o.facts, p = (_a = o.period) === null || _a === void 0 ? void 0 : _a.start;
+    if (!f || f.visualSource !== 'finance-period-ledger-v1' || typeof p !== 'string' ||
+        !/^\d{4}-\d{2}-\d{2}$/.test(p))
+        return null;
+    if (![f.incomeCents, f.expenseCents, f.netCents].every(Number.isSafeInteger) ||
+        f.incomeCents < 0 || f.expenseCents < 0 || f.netCents !== f.incomeCents - f.expenseCents)
+        return null;
+    if (!Array.isArray(f.expenseCategories) || f.expenseCategories.length > 10000)
+        return null;
+    const seen = new Set();
+    let sum = 0;
+    const categories = [];
+    for (const item of f.expenseCategories) {
+        if (!item || typeof item.name !== 'string' || !item.name.trim() || seen.has(item.name) ||
+            !Number.isSafeInteger(item.amountCents) || item.amountCents <= 0 ||
+            !Number.isSafeInteger(item.movementCount) || item.movementCount < 1 ||
+            !Array.isArray(item.movements) || item.movements.length > 20)
+            return null;
+        seen.add(item.name);
+        sum += item.amountCents;
+        if (!Number.isSafeInteger(sum))
+            return null;
+        const movements = [];
+        for (const m of item.movements) {
+            if (!m || typeof m.id !== 'string' || typeof m.date !== 'string' ||
+                !/^\d{4}-\d{2}-\d{2}$/.test(m.date) || typeof m.description !== 'string' ||
+                !Number.isSafeInteger(m.amountCents) || m.amountCents <= 0)
+                return null;
+            movements.push({ id: m.id.slice(0, 100), date: m.date, description: m.description.slice(0, 120), amountCents: m.amountCents });
+        }
+        if (movements.length > item.movementCount)
+            return null;
+        const partial = !!item.detailsPartial || movements.length < item.movementCount;
+        if (!partial && movements.reduce((n, m) => n + m.amountCents, 0) !== item.amountCents)
+            return null;
+        categories.push({ name: item.name, amountCents: item.amountCents, movementCount: item.movementCount,
+            movements, detailsPartial: partial });
+    }
+    if (sum !== f.expenseCents)
+        return null;
+    categories.sort((a, b) => b.amountCents - a.amountCents || a.name.localeCompare(b.name, 'pt-BR'));
+    const coverage = o.coverage === 'partial_local' ? 'partial_local' : o.coverage === 'complete_local' ? 'complete_local' : 'unknown';
+    const cannotShowSankey = kind === 'sankey' && (f.incomeCents === 0 || f.netCents < 0);
+    const state = f.expenseCents === 0 ? 'empty' : cannotShowSankey ? 'partial' : 'ready';
+    const reason = cannotShowSankey ?
+        'Neste período as despesas excederam as entradas, ou não houve receita. Não é possível desenhar um fluxo de saída de renda sem criar números fictícios.' :
+        coverage === 'partial_local' ? 'Histórico parcial: números proporcionais apenas aos registros locais carregados.' :
+            coverage === 'unknown' ? 'A origem local foi reconciliada no período, mas a cobertura do extrato completo não está certificada.' : 'Valores reconciliados no período.';
+    return { kind, source: o.source, profile: o.profile, period: p.slice(0, 7), coverage,
+        incomeCents: f.incomeCents, expenseCents: f.expenseCents, netCents: f.netCents,
+        categories, state, reason };
+}
+function mfVisualRects(cats, x = 0, y = 0, w = 100, h = 100) {
+    if (!cats.length)
+        return [];
+    if (cats.length === 1)
+        return [{ name: cats[0].name, x, y, w, h, amountCents: cats[0].amountCents }];
+    const total = cats.reduce((sum, c) => sum + c.amountCents, 0);
+    let split = 1, part = cats[0].amountCents;
+    while (split < cats.length - 1 && part < total / 2) {
+        part += cats[split].amountCents;
+        split++;
+    }
+    const frac = part / total;
+    if (w >= h)
+        return [...mfVisualRects(cats.slice(0, split), x, y, w * frac, h),
+            ...mfVisualRects(cats.slice(split), x + w * frac, y, w * (1 - frac), h)];
+    return [...mfVisualRects(cats.slice(0, split), x, y, w, h * frac),
+        ...mfVisualRects(cats.slice(split), x, y + h * frac, w, h * (1 - frac))];
+}
+function mfVisualSelected(app, messageId, data) {
+    var _a;
+    const active = app.state.mfVisualSelection;
+    return (active === null || active === void 0 ? void 0 : active.messageId) === messageId && (data.categories.some(c => c.name === active.name) ||
+        (data.kind === 'sankey' && data.netCents > 0 && active.name === '__result__')) ? active.name : (((_a = data.categories[0]) === null || _a === void 0 ? void 0 : _a.name) || '');
+}
+function mfVisualChoose(app, messageId, name) {
+    app.setState({ mfVisualSelection: { messageId, name } });
+}
+function mfVisualOpenTransactions(app, name, month, source) {
+    app.navigate('transactions');
+    if (typeof app.setSharedMonth === 'function')
+        app.setSharedMonth(month);
+    app.setState({ txSource: source, txCategoryFilter: name, txKindFilter: 'expense', txReviewOnly: false,
+        txSelected: [], query: '' });
+}
+function mfVisualMonthBefore(month) {
+    const m = /^(20\d{2})-(0[1-9]|1[0-2])$/.exec(month);
+    if (!m)
+        return '';
+    const year = Number(m[1]), mo = Number(m[2]);
+    return (mo === 1 ? year - 1 : year) + '-' + String(mo === 1 ? 12 : mo - 1).padStart(2, '0');
+}
+async function mfVisualComparePrevious(app, messageId, current, name) {
+    var _a, _b, _c, _d;
+    const token = (_a = app.state.localFinancialAccess) === null || _a === void 0 ? void 0 : _a.token;
+    const prev = mfVisualMonthBefore(current.period);
+    const api = desktop;
+    if (!token || !prev || !(api === null || api === void 0 ? void 0 : api.intelligenceOperationalAsk))
+        return;
+    const signature = intelligencePremiumSignature(app), request = (app.__mfVisualRequest || 0) + 1;
+    app.__mfVisualRequest = request;
+    app.setState({ mfVisualCompare: { messageId, name, status: 'loading' } });
+    try {
+        const r = await api.intelligenceOperationalAsk({ month: prev, token, question: 'Radar financeiro' });
+        const prior = mfVisualFromOperational(r, 'treemap');
+        if (request !== app.__mfVisualRequest || signature !== intelligencePremiumSignature(app) ||
+            ((_b = app.state.localFinancialAccess) === null || _b === void 0 ? void 0 : _b.token) !== token)
+            return;
+        if (!prior || prior.source !== current.source || prior.profile !== current.profile ||
+            prior.period !== prev || prior.coverage === 'partial_local') {
+            app.setState({ mfVisualCompare: { messageId, name, status: 'partial' } });
+            return;
+        }
+        const before = ((_c = prior.categories.find(c => c.name === name)) === null || _c === void 0 ? void 0 : _c.amountCents) || 0;
+        const now = ((_d = current.categories.find(c => c.name === name)) === null || _d === void 0 ? void 0 : _d.amountCents) || 0;
+        app.setState({ mfVisualCompare: { messageId, name, status: 'ready', before, now, prev } });
+    }
+    catch {
+        if (request === app.__mfVisualRequest)
+            app.setState({ mfVisualCompare: { messageId, name, status: 'error' } });
+    }
+}
+function mfVisualRibbon(x1, x2, top1, top2, height) {
+    const bend = (x2 - x1) * .46;
+    return 'M' + x1 + ' ' + top1 + ' C' + (x1 + bend) + ' ' + top1 + ' ' + (x2 - bend) + ' ' + top2 + ' ' + x2 + ' ' + top2 +
+        ' L' + x2 + ' ' + (top2 + height) + ' C' + (x2 - bend) + ' ' + (top2 + height) + ' ' + (x1 + bend) + ' ' + (top1 + height) + ' ' + x1 + ' ' + (top1 + height) + ' Z';
+}
+function renderMfVisual(app, msg) {
+    var _a, _b, _c, _d, _e;
+    const data = msg.visual;
+    if (!data)
+        return null;
+    const selected = mfVisualSelected(app, msg.id, data), active = data.categories.find(c => c.name === selected);
+    const total = data.expenseCents;
+    const resultSelected = selected === '__result__';
+    const detailOpen = ((_a = app.state.mfVisualDetailsOpen) === null || _a === void 0 ? void 0 : _a.messageId) === msg.id && ((_b = app.state.mfVisualDetailsOpen) === null || _b === void 0 ? void 0 : _b.name) === selected;
+    const compact = app.state.intelligencePanelOpen === true;
+    const compare = ((_c = app.state.mfVisualCompare) === null || _c === void 0 ? void 0 : _c.messageId) === msg.id && ((_d = app.state.mfVisualCompare) === null || _d === void 0 ? void 0 : _d.name) === selected ? app.state.mfVisualCompare : null;
+    const tone = (index) => MF_VISUAL_COLORS[index % MF_VISUAL_COLORS.length];
+    const open = (name) => mfVisualChoose(app, msg.id, name);
+    const legend = h('div', { className: 'mf-vr-legend', role: 'list', 'aria-label': 'Categorias incluídas no período' }, ...data.categories.map((c, i) => h('button', { type: 'button', role: 'listitem', className: 'mf-vr-legend-item ' + (c.name === selected ? 'is-selected' : ''),
+        key: c.name, 'aria-pressed': c.name === selected, onClick: () => open(c.name) }, h('span', { className: 'mf-vr-dot', style: { backgroundColor: tone(i) }, 'aria-hidden': 'true' }), h('span', { className: 'mf-vr-legend-title' }, c.name), h('strong', {}, mfVisualMoney(c.amountCents) + ' · ' + (total ? ((c.amountCents / total) * 100).toFixed(1) : '0') + '%'))));
+    let graphic = null;
+    if (data.state === 'ready' && data.kind === 'treemap') {
+        const rects = mfVisualRects(data.categories);
+        graphic = h('div', { className: 'mf-vr-treemap', role: 'group', 'aria-label': 'Treemap com área proporcional aos gastos' }, ...rects.map(rect => {
+            const i = data.categories.findIndex(c => c.name === rect.name);
+            return h('button', { type: 'button', key: rect.name, className: 'mf-vr-tile ' + (rect.name === selected ? 'is-selected' : ''),
+                title: rect.name + ' · ' + mfVisualMoney(rect.amountCents), onClick: () => open(rect.name),
+                'aria-label': rect.name + ' · ' + mfVisualMoney(rect.amountCents),
+                style: { left: rect.x + '%', top: rect.y + '%', width: rect.w + '%', height: rect.h + '%',
+                    '--mf-vr-color': tone(i) } }, rect.w >= 17 && rect.h >= 19 ? h('span', {}, rect.name) : null, rect.w >= 20 && rect.h >= 25 ? h('strong', {}, mfVisualMoney(rect.amountCents)) : null);
+        }));
+    }
+    if (data.state === 'ready' && data.kind === 'sankey') {
+        const hTotal = 190, scale = hTotal / data.incomeCents;
+        const eHeight = data.expenseCents * scale, nHeight = data.netCents * scale;
+        let current = 25;
+        graphic = h('div', { className: 'mf-vr-flow-wrap' }, h('svg', { className: 'mf-vr-flow', viewBox: '0 0 900 258', role: 'img', 'aria-label': 'Receitas distribuídas em despesas por categoria e resultado do período' }, h('rect', { x: 20, y: 25, width: 26, height: hTotal, rx: 6, fill: '#6b8fa9' }), h('path', { d: mfVisualRibbon(46, 320, 25, 25, eHeight), fill: '#d98b7e', opacity: .55 }), nHeight > 0 ? h('g', { role: 'button', tabIndex: 0, 'aria-label': 'Resultado do período ' + mfVisualMoney(data.netCents),
+            onClick: () => open('__result__'), onKeyDown: (e) => { if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                open('__result__');
+            } } }, h('path', { d: mfVisualRibbon(46, 710, 25 + eHeight, 25 + eHeight, nHeight), fill: '#53d896', opacity: resultSelected ? 1 : .67 })) : null, h('rect', { x: 320, y: 25, width: 24, height: eHeight, rx: 5, fill: '#d98b7e' }), ...data.categories.map((c, i) => {
+            const height = c.amountCents * scale, top = current;
+            current += height;
+            return h('g', { key: c.name, role: 'button', tabIndex: 0, 'aria-label': c.name + ' ' + mfVisualMoney(c.amountCents),
+                onClick: () => open(c.name), onKeyDown: (e) => { if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    open(c.name);
+                } } }, h('path', { className: 'mf-vr-flow-ribbon ' + (c.name === selected ? 'is-selected' : ''),
+                d: mfVisualRibbon(344, 710, top, top, height), fill: tone(i), opacity: c.name === selected ? .9 : .55 }), h('rect', { x: 710, y: top, width: 24, height: height, fill: tone(i) }));
+        }), nHeight > 0 ? h('rect', { x: 710, y: 25 + eHeight, width: 24, height: nHeight, fill: '#53d896' }) : null, h('text', { x: 20, y: 15, fill: 'currentColor' }, 'Receitas'), h('text', { x: 320, y: 15, fill: 'currentColor' }, 'Despesas'), h('text', { x: 710, y: 15, fill: 'currentColor' }, 'Categorias / resultado')));
+    }
+    return h('section', { className: 'mf-vr-card mf-vr-' + data.kind + (compact ? ' is-compact' : ''), role: 'region',
+        'aria-label': data.kind === 'treemap' ? 'Distribuição dos gastos por categoria' : 'Fluxo de dinheiro reconciliado' }, h('header', { className: 'mf-vr-head' }, h('div', {}, h('small', {}, data.period + ' · ' + (data.source === 'bank' ? 'Banco' : 'Manual') + ' · ' + (data.coverage === 'partial_local' ? 'Histórico parcial' : 'Registros locais')), h('h3', {}, data.kind === 'treemap' ? 'Para onde foram os gastos' : 'Para onde foi a renda?')), h('strong', {}, mfVisualMoney(data.kind === 'treemap' ? data.expenseCents : data.incomeCents))), data.kind === 'sankey' ? h('div', { className: 'mf-vr-totals' }, h('span', {}, 'Receitas ' + mfVisualMoney(data.incomeCents)), h('span', {}, 'Despesas ' + mfVisualMoney(data.expenseCents)), h('button', { type: 'button', className: 'mf-vr-result-action', disabled: data.netCents <= 0,
+        'aria-pressed': resultSelected, onClick: () => open('__result__') }, 'Resultado do período ' + mfVisualMoney(data.netCents))) : null, h('p', { className: 'mf-vr-cover', role: data.state === 'partial' ? 'alert' : 'note' }, data.reason), data.state === 'empty' ? h('p', { className: 'mf-vr-empty' }, 'Não existem despesas reconciliadas para esse período.') : null, graphic, data.categories.length ? legend : null, active ? h('div', { className: 'mf-vr-inspector' }, h('strong', {}, active.name), h('p', {}, mfVisualMoney(active.amountCents) + ' · ' + ((active.amountCents / data.expenseCents) * 100).toFixed(1) + '% das despesas · ' + active.movementCount + ' movimentação(ões) considerada(s)'), detailOpen ? h('div', { className: 'mf-vr-details', role: 'region', 'aria-label': 'Movimentações de ' + active.name }, h('strong', {}, 'Movimentações de ' + active.name), h('ul', {}, ...active.movements.map(m => h('li', { key: m.id + '-' + m.date }, m.date + ' · ' + m.description + ' · ' + mfVisualMoney(m.amountCents)))), active.detailsPartial ? h('p', { role: 'status' }, 'Amostra parcial: ' + active.movements.length + ' de ' + active.movementCount + ' registros.') : null, active.detailsPartial ? h('button', { type: 'button', onClick: () => mfVisualOpenTransactions(app, active.name, data.period, data.source) }, 'Abrir histórico completo') : null) : null, h('div', { className: 'mf-vr-actions' }, h('button', { type: 'button', 'aria-expanded': !!detailOpen,
+        onClick: () => app.setState({ mfVisualDetailsOpen: detailOpen ? null : { messageId: msg.id, name: active.name } }) }, detailOpen ? 'Ocultar movimentações' : 'Ver movimentações'), h('button', { type: 'button', disabled: !((_e = app.state.localFinancialAccess) === null || _e === void 0 ? void 0 : _e.token),
+        onClick: () => void mfVisualComparePrevious(app, msg.id, data, active.name) }, 'Comparar mês anterior')), compare ? h('p', { role: 'status' }, compare.status === 'ready' ?
+        'Anterior ' + mfVisualMoney(compare.before) + ' · atual ' + mfVisualMoney(compare.now) + ' · diferença ' + mfVisualMoney(compare.now - compare.before) :
+        compare.status === 'loading' ? 'Consultando mês anterior…' :
+            'Não há uma comparação completa e autorizada disponível.') : null) : null, resultSelected ? h('p', { className: 'mf-vr-result-note', role: 'status' }, 'Resultado do período: ' + mfVisualMoney(data.netCents) + '. Isso representa receitas menos despesas efetivas do período; não é o saldo disponível da conta.') : null, h('details', { className: 'mf-vr-table' }, h('summary', {}, 'Tabela acessível · ' + data.categories.length + ' categorias'), h('table', {}, h('thead', {}, h('tr', {}, h('th', {}, 'Categoria'), h('th', {}, 'Despesas'), h('th', {}, 'Participação'))), h('tbody', {}, ...data.categories.map(c => h('tr', { key: c.name }, h('td', {}, c.name), h('td', {}, mfVisualMoney(c.amountCents)), h('td', {}, ((c.amountCents / (data.expenseCents || 1)) * 100).toFixed(1) + '%')))))));
+}
+const MF_V3_GRANT_BINDINGS = new WeakMap();
+function mfV3BindGrant(card, access, signature) {
+    if (card && (access === null || access === void 0 ? void 0 : access.token) && typeof signature === 'string') {
+        MF_V3_GRANT_BINDINGS.set(card, { access, token: access.token, signature });
+    }
+    return card;
+}
+function mfV3MatchesGrant(card, access, signature) {
+    const binding = card && MF_V3_GRANT_BINDINGS.get(card);
+    return !!binding && binding.access === access && binding.token === (access === null || access === void 0 ? void 0 : access.token) &&
+        binding.signature === signature;
+}
+const MF_V3_KINDS = [
+    ['VR-01', 'summary', 'Resumo executivo'], ['VR-02', 'kpi', 'Indicador financeiro'],
+    ['VR-03', 'compare', 'Antes e depois'], ['VR-04', 'trend', 'Tendência temporal'],
+    ['VR-05', 'bar', 'Barras comparativas'], ['VR-06', 'donut', 'Distribuição de despesas'],
+    ['VR-07', 'treemap', 'Treemap de despesas'], ['VR-08', 'sankey', 'Fluxo de dinheiro'],
+    ['VR-09', 'rank', 'Ranking de variações'], ['VR-10', 'drilldown', 'Investigar despesas'],
+    ['VR-11', 'table', 'Tabela de movimentações'], ['VR-12', 'recurring', 'Recorrências'],
+    ['VR-13', 'budget', 'Orçamento'], ['VR-14', 'cashflow', 'Fluxo de caixa'],
+    ['VR-15', 'whatif', 'Simulação'], ['VR-16', 'scenario', 'Cenários'],
+    ['VR-17', 'goal', 'Metas'], ['VR-18', 'debt', 'Dívidas'],
+    ['VR-19', 'portfolio', 'Patrimônio'], ['VR-20', 'insight', 'Oportunidades'],
+    ['VR-21', 'plan', 'Plano de ação'], ['VR-22', 'proposal', 'Propostas'],
+    ['VR-23', 'approval', 'Aprovações e recibos'], ['VR-24', 'report', 'Relatório'],
+    ['VR-25', 'quality', 'Qualidade dos dados'], ['VR-26', 'state', 'Estados especiais']
+];
+const MF_V3_HEAT = ['#ff516a', '#ff7470', '#fa935d', '#f4b350', '#f4d363'];
+function mfV3Registry() {
+    const approved = new Set(['treemap', 'sankey', 'rank']);
+    const connected = new Set(['summary', 'kpi', 'compare', 'trend', 'bar', 'donut', 'treemap', 'sankey',
+        'rank', 'drilldown', 'table', 'budget', 'cashflow', 'insight', 'report', 'quality', 'state']);
+    return MF_V3_KINDS.map(x => ({ id: x[0], kind: x[1], title: x[2],
+        designStatus: approved.has(x[1]) ? 'DESIGN_APPROVED' :
+            x[1] === 'drilldown' ? 'BASELINE_ACCEPTED_FOR_BATCH' : 'DESIGN_SPECIFIED_BY_INHERITANCE',
+        capability: connected.has(x[1]) ? 'LOCAL_FACTS_ADAPTER' :
+            x[1] === 'proposal' ? 'D01_SUPERVISED_PREVIEW' : 'AWAITING_BACKEND_OR_OPERATION',
+        implementation: 'RENDERER_IMPLEMENTED_NOT_HOMOLOGATED' }));
+}
+function mfV3Allowed(kind) { return MF_V3_KINDS.some(x => x[1] === kind); }
+function mfV3Title(kind) { const hit = MF_V3_KINDS.find(x => x[1] === kind); return hit ? hit[2] : 'Resposta financeira'; }
+function mfV3Money(n) { return Number.isSafeInteger(n) ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(n / 100) : '—'; }
+function mfV3Delta(a, b) { return Number.isSafeInteger(a) && Number.isSafeInteger(b) && Number.isSafeInteger(a - b) ? a - b : null; }
+function mfV3Pct(now, before) { return Number.isSafeInteger(now) && Number.isSafeInteger(before) && before > 0 ? Math.round((now - before) * 1000 / before) / 10 : null; }
+function mfV3Fold(q) { return String(q || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim(); }
+function mfV3Requested(q) {
+    const s = mfV3Fold(q);
+    const patterns = [
+        ['sankey', /para onde foi (minha|a) renda|fluxo de dinheiro|sankey/],
+        ['treemap', /treemap|mapa de (gastos|despesas|categorias)/],
+        ['rank', /quem aumentou|ranking (de )?(aumentos|variac|despesas)|aumentos por categoria/],
+        ['drilldown', /investig(ar|acao)|de onde veio (esse|essa|o) (total|valor|gasto)|detalhar categoria/],
+        ['table', /tabela de (transac|moviment)|liste (as )?(transac|moviment)/],
+        ['recurring', /recorrenc|assinaturas (recorrentes|que pago)|cobrancas repetidas/],
+        ['budget', /orcamento|limites por categoria|meus limites/],
+        ['cashflow', /fluxo de caixa|entradas e saidas do mes/],
+        ['whatif', /e se (eu )?(comprar|gastar)|simular gasto/],
+        ['scenario', /cenario|cenarios financeiros/],
+        ['goal', /meta financeira|metas de econom/],
+        ['debt', /minhas dividas|emprestimos|dividas cadastradas/],
+        ['portfolio', /patrimonio|investimentos/],
+        ['insight', /oportunidades de econom|economizar mais/],
+        ['plan', /plano de acao|criar plano financeiro/],
+        ['proposal', /minhas propostas|proposta de categoria/],
+        ['approval', /recibo de (acao|alteracao)|aprovacoes/],
+        ['report', /relatorio de despesas|relatorio financeiro/],
+        ['quality', /qualidade dos dados|cobertura do extrato|dados faltantes/],
+        ['trend', /tendencia temporal|evolucao mensal|linha de tendencia/],
+        ['compare', /compare|comparar|mes anterior|antes e depois/],
+        ['bar', /barras comparativas|grafico de barras/],
+        ['donut', /grafico de rosca|rosca de gastos|distribuicao percentual/],
+        ['kpi', /indicador isolado|quanto gastei com |total de despesas/],
+        ['summary', /resumo executivo|como foi meu mes|meu mes financeiro|panorama financeiro/],
+        ['state', /estado da consulta|porque nao aparece/]
+    ];
+    const found = patterns.find(([kind, re]) => re.test(s));
+    return found ? found[0] : null;
+}
+function mfV3NeedsPrevious(kind) { return kind === 'compare' || kind === 'rank' || kind === 'drilldown' || kind === 'trend'; }
+function mfV3FromOperational(op, kind, prior) {
+    if (!mfV3Allowed(kind) || !op || op.contract !== 'IC-v1/I-P0.2-read-only' || op.readOnly !== true ||
+        op.changesApplied !== false || op.modelCalled !== false || !['ready', 'empty'].includes(op.uiState))
+        return null;
+    const original = mfVisualFromOperational(op, 'treemap');
+    if (!original)
+        return null;
+    const p = op.facts, budgets = [];
+    if (Array.isArray(p.budgets)) {
+        for (const b of p.budgets) {
+            if (typeof b.category !== 'string' || !b.category.trim() ||
+                !Number.isSafeInteger(b.spentCents) || b.spentCents < 0 ||
+                !Number.isSafeInteger(b.limitCents) || b.limitCents < 0)
+                return null;
+            budgets.push({ category: b.category, spentCents: b.spentCents, limitCents: b.limitCents });
+        }
+    }
+    let prev = null;
+    if (prior && prior.contract === 'IC-v1/I-P0.2-read-only' && prior.readOnly === true &&
+        prior.changesApplied === false && prior.modelCalled === false &&
+        prior.source === original.source && prior.profile === original.profile) {
+        const v = mfVisualFromOperational(prior, 'treemap');
+        if (v && v.period === mfVisualMonthBefore(original.period))
+            prev = { period: v.period, categories: v.categories, expenseCents: v.expenseCents,
+                incomeCents: v.incomeCents, coverage: v.coverage };
+    }
+    const sourcePartial = original.coverage === 'partial_local';
+    const sankeyNotRepresentable = kind === 'sankey' && (original.incomeCents === 0 || original.netCents < 0);
+    const blockedPrev = mfV3NeedsPrevious(kind) && (!prev || prev.coverage === 'partial_local' || sourcePartial);
+    const unsupported = ['recurring', 'goal', 'debt', 'portfolio', 'approval', 'whatif', 'scenario'].includes(kind);
+    const quality = unsupported ? 'unavailable' : blockedPrev || sourcePartial || sankeyNotRepresentable ? 'partial' :
+        original.expenseCents === 0 && original.incomeCents === 0 ? 'empty' : 'ready';
+    const reason = sankeyNotRepresentable ? 'Receita ausente ou resultado negativo: não há fluxo de receitas que represente estes gastos sem criar dinheiro fictício. Consulte a tabela.' :
+        unsupported ? 'Os serviços locais ainda não fornecem fatos verificáveis para esta família. Nenhuma operação foi executada.' :
+            blockedPrev ? 'Comparação indisponível: a fonte e a cobertura dos dois meses não foram verificadas.' :
+                sourcePartial ? 'Histórico parcial: valores limitados aos registros locais carregados.' :
+                    original.coverage === 'unknown' ? 'Totais reconciliados dos registros locais; cobertura integral não certificada.' :
+                        'Totais reconciliados dos registros autorizados neste período.';
+    return { kind, period: original.period, source: original.source, profile: original.profile,
+        coverage: original.coverage, asOf: typeof op.asOf === 'string' ? op.asOf : null, quality, reason,
+        incomeCents: original.incomeCents, expenseCents: original.expenseCents, netCents: original.netCents,
+        categories: original.categories, budgets, previous: prev,
+        original: kind === 'sankey' ? mfVisualFromOperational(op, 'sankey') : original };
+}
+function mfV3CompareRows(v) {
+    if (!v || !v.previous)
+        return [];
+    const base = new Map(v.previous.categories.map((c) => [c.name, c.amountCents]));
+    const current = new Map(v.categories.map((c) => [c.name, c.amountCents]));
+    const names = new Set([...base.keys(), ...current.keys()]);
+    return [...names].map((name) => {
+        var _a, _b;
+        const before = (_a = base.get(name)) !== null && _a !== void 0 ? _a : 0, now = (_b = current.get(name)) !== null && _b !== void 0 ? _b : 0, delta = mfV3Delta(now, before);
+        return { name, before, now, delta, relative: mfV3Pct(now, before) };
+    }).sort((a, b) => {
+        if (a.delta === null)
+            return b.delta === null ? a.name.localeCompare(b.name, 'pt-BR') : 1;
+        if (b.delta === null)
+            return -1;
+        return b.delta - a.delta || a.name.localeCompare(b.name, 'pt-BR');
+    });
+}
+function mfV3Heat(rows) {
+    const positive = rows.filter(x => x.delta !== null && x.delta > 0).sort((a, b) => { var _a, _b; return ((_a = b.delta) !== null && _a !== void 0 ? _a : 0) - ((_b = a.delta) !== null && _b !== void 0 ? _b : 0) || a.name.localeCompare(b.name, 'pt-BR'); });
+    const unique = [...new Set(positive.flatMap(x => x.delta === null ? [] : [x.delta]))];
+    return rows.map(r => ({ ...r, heat: r.delta === null || r.delta <= 0 ? null :
+            MF_V3_HEAT[Math.min(4, unique.indexOf(r.delta))] }));
+}
+function mfV3Records(v) {
+    const records = [];
+    for (const c of v.categories)
+        for (const m of c.movements)
+            records.push({ category: c.name, id: m.id, date: m.date, description: m.description, amountCents: m.amountCents });
+    return records;
+}
+function mfV3RecordsPartial(v) { return v.categories.some(c => c.detailsPartial); }
+function mfV3Schema() {
+    return { schemaVersion: '1', kinds: mfV3Registry().map(x => x.kind), maxPrimary: 1, maxSupplementary: 2,
+        densities: ['compact', 'standard', 'analysis', 'mobile'], source: 'authorized local deterministic read' };
+}
+function mfV3Mode(app, msg) {
+    return app.state.mfV3AnalysisMessageId === msg.id ? 'analysis' : app.state.intelligencePanelOpen ? 'compact' : 'standard';
+}
+function mfV3Table(headers, rows) {
+    return h('div', { className: 'mf-v3-scroll' }, h('table', {}, h('thead', {}, h('tr', {}, ...headers.map(x => h('th', { key: x }, x)))), h('tbody', {}, ...rows.map((row, i) => h('tr', { key: i }, ...row.map((cell, j) => h('td', { key: j }, cell)))))));
+}
+function mfV3Bar(label, value, pct, color, onClick) {
+    return h('button', { type: 'button', className: 'mf-v3-bar', onClick }, h('div', { className: 'mf-v3-bar-head' }, h('span', {}, label), h('strong', {}, value)), h('div', { className: 'mf-v3-track' }, h('span', { style: { width: Math.max(0, Math.min(100, pct || 0)) + '%', background: color } })));
+}
+function mfV3Live(app, d) {
+    const a = app.state.localFinancialAccess;
+    const month = app.state.localFinancialMonth || app.state.month;
+    return !!(a === null || a === void 0 ? void 0 : a.token) && mfV3MatchesGrant(d, a, intelligencePremiumSignature(app)) &&
+        Number.isFinite(a.expiresAt) && a.expiresAt > Date.now() &&
+        a.source === d.source && a.profile === d.profile && month === d.period &&
+        app.state.mode === d.profile;
+}
+function mfV3Render(app, msg) {
+    var _a, _b, _c, _d, _e, _f, _g, _h;
+    const d = msg.visualV3;
+    if (!d || !mfV3Allowed(d.kind))
+        return null;
+    if (!mfV3Live(app, d))
+        return h('section', { className: 'mf-v3-card state-stale', role: 'alert',
+            'aria-label': 'Análise local desatualizada' }, h('strong', {}, 'Atualize esta consulta para visualizar os números.'), h('p', {}, 'A autorização, fonte, perfil ou período mudou ou expirou. Abra Permissões de consulta e execute novamente a pergunta.'), h('small', {}, 'Nenhum dado antigo será exibido nem alterado.'));
+    const mode = mfV3Mode(app, msg), kind = d.kind, compact = mode === 'compact', analysis = mode === 'analysis';
+    const cap = analysis ? 100 : compact ? 5 : 12;
+    const money = mfV3Money;
+    const action = (label, fn, disabled = false) => h('button', { type: 'button', className: 'mf-v3-action', disabled, onClick: fn }, label);
+    const expand = () => app.setState({ mfV3AnalysisMessageId: analysis ? null : msg.id });
+    const info = (text) => h('p', { className: 'mf-v3-info', role: 'status' }, text);
+    const missing = (text) => h('div', { className: 'mf-v3-missing', role: 'status' }, h('strong', {}, text), info(d.reason));
+    const kpi = (label, cents, tone = '') => h('div', { className: 'mf-v3-kpi ' + tone }, h('small', {}, label), h('strong', {}, money(cents)));
+    const cats = d.categories;
+    const choose = (name) => app.setState({ mfV3Selected: { messageId: msg.id, name } });
+    const selected = ((_a = app.state.mfV3Selected) === null || _a === void 0 ? void 0 : _a.messageId) === msg.id ?
+        cats.find(x => x.name === app.state.mfV3Selected.name) : null;
+    const legend = h('div', { className: 'mf-v3-legend' }, ...cats.slice(0, cap).map((c, i) => action(c.name + ' · ' + money(c.amountCents), () => choose(c.name))));
+    let view = null;
+    if (kind === 'treemap' || kind === 'sankey') {
+        view = renderMfVisual(app, { ...msg, visual: { ...d.original, kind } });
+    }
+    else if (kind === 'summary') {
+        view = h('div', { className: 'mf-v3-stack' }, h('div', { className: 'mf-v3-kpis' }, kpi('Entradas', d.incomeCents, 'positive'), kpi('Despesas', d.expenseCents, 'negative'), kpi('Resultado do mês', d.netCents, d.netCents >= 0 ? 'positive' : 'negative')), cats.length ? legend : info('Nenhuma categoria de despesa registrada.'), action('Explorar categorias', expand));
+    }
+    else if (kind === 'kpi') {
+        const cat = selected || cats[0];
+        view = h('div', { className: 'mf-v3-highlight' }, h('span', {}, cat ? cat.name : 'Despesas efetivas'), h('strong', {}, money(cat ? cat.amountCents : d.expenseCents)), legend);
+    }
+    else if (kind === 'compare' || kind === 'trend' || kind === 'rank') {
+        if (!d.previous || d.quality === 'partial')
+            view = missing('Comparação sem cobertura verificável');
+        else {
+            const rows = mfV3Heat(mfV3CompareRows(d));
+            const changePct = mfV3Pct(d.expenseCents, d.previous.expenseCents);
+            if (kind === 'compare')
+                view = h('div', { className: 'mf-v3-stack' }, h('div', { className: 'mf-v3-kpis' }, kpi(d.previous.period, d.previous.expenseCents), kpi(d.period, d.expenseCents), kpi('Diferença', mfV3Delta(d.expenseCents, d.previous.expenseCents))), info(changePct === null ?
+                    'Base zero ou valores não verificáveis: percentual omitido.' :
+                    'Variação ' + changePct.toFixed(1) + '%'), action('Explorar diferenças por categoria', expand), analysis ? mfV3DeltaList(app, msg, rows) : null);
+            else if (kind === 'trend')
+                view = h('div', { className: 'mf-v3-stack' }, info('Somente dois meses estão disponíveis: comparação factual, não tendência de longo prazo.'), h('div', { className: 'mf-v3-kpis' }, kpi(d.previous.period, d.previous.expenseCents), kpi(d.period, d.expenseCents)), mfV3DeltaList(app, msg, rows.slice(0, cap)));
+            else {
+                const sort = ((_b = app.state.mfV3Sort) === null || _b === void 0 ? void 0 : _b.messageId) === msg.id ? app.state.mfV3Sort.mode : 'absolute';
+                const rowsUnknown = rows.filter(r => r.delta === null);
+                const rowsPositive = rows.filter((r) => r.delta !== null && r.delta > 0)
+                    .sort((a, b) => {
+                    var _a, _b;
+                    return sort === 'relative' ?
+                        ((_a = b.relative) !== null && _a !== void 0 ? _a : -Infinity) - ((_b = a.relative) !== null && _b !== void 0 ? _b : -Infinity) || b.delta - a.delta : b.delta - a.delta;
+                });
+                const max = rowsPositive.reduce((m, r) => Math.max(m, r.delta), 1);
+                view = h('div', { className: 'mf-v3-stack' }, h('div', { className: 'mf-v3-toolbar' }, action('Impacto em R$', () => app.setState({ mfV3Sort: { messageId: msg.id, mode: 'absolute' } })), action('Crescimento %', () => app.setState({ mfV3Sort: { messageId: msg.id, mode: 'relative' } }))), info('Cores de calor representam a magnitude dos aumentos de despesas, nunca saldos ou receitas.'), ...rowsPositive.slice(0, cap).map(r => mfV3Bar(r.name, money(r.delta) + ' · ' +
+                    (r.relative === null ? 'base zero' : r.relative.toFixed(1) + '%'), r.delta / max * 100, r.heat, () => choose(r.name))), rowsPositive.length === 0 ? info('Nenhum aumento confirmado.') : null, rowsUnknown.length ? info(rowsUnknown.length + ' variação(ões) com valor não verificável, omitidas do ranking.') : null, rows.filter(r => r.delta !== null && r.delta <= 0).length ? h('div', { className: 'mf-v3-neutral' }, action(app.state.mfV3ShowNeutral === msg.id ? 'Ocultar sem aumento' : 'Mostrar sem aumento', () => app.setState({ mfV3ShowNeutral: app.state.mfV3ShowNeutral === msg.id ? null : msg.id })), app.state.mfV3ShowNeutral === msg.id ? rows.filter(r => r.delta !== null && r.delta <= 0).map(r => mfV3Bar(r.name, money(r.delta), 0, 'var(--muted)', () => choose(r.name))) : null) : null);
+            }
+        }
+    }
+    else if (kind === 'bar') {
+        const max = Math.max(1, ...cats.map(c => c.amountCents));
+        view = h('div', { className: 'mf-v3-stack' }, ...cats.slice(0, cap).map(c => mfV3Bar(c.name, money(c.amountCents), c.amountCents / max * 100, 'var(--green)', () => choose(c.name))), cats.length > cap ? info('Mostrando ' + cap + ' de ' + cats.length + ' categorias; explore a análise para ver todas.') : null);
+    }
+    else if (kind === 'donut') {
+        if (!d.expenseCents)
+            view = missing('Distribuição sem despesas confirmadas');
+        else {
+            let offset = 0;
+            const slices = cats.map((c, i) => {
+                const first = offset;
+                offset += c.amountCents / d.expenseCents * 100;
+                return MF_VISUAL_COLORS[i % MF_VISUAL_COLORS.length] + ' ' + first.toFixed(5) + '% ' + offset.toFixed(5) + '%';
+            });
+            view = h('div', { className: 'mf-v3-donut-wrap' }, h('div', { className: 'mf-v3-donut', role: 'img', 'aria-label': 'Rosca de distribuição; valores disponíveis na lista',
+                style: { background: 'conic-gradient(' + slices.join(',') + ')' } }, h('span', {}, money(d.expenseCents))), legend);
+        }
+    }
+    else if (kind === 'drilldown') {
+        const current = ((_c = app.state.mfV3Drill) === null || _c === void 0 ? void 0 : _c.messageId) === msg.id ? app.state.mfV3Drill : {};
+        const cat = cats.find(c => c.name === current.category) || cats[0];
+        const write = (patch) => app.setState({ mfV3Drill: { messageId: msg.id, ...current, ...patch } });
+        const groups = cat ? [...new Set(cat.movements.map(m => m.description))] : [];
+        const rows = cat ? cat.movements.filter(m => (!current.group || m.description === current.group) &&
+            (!current.search || m.description.toLowerCase().includes(String(current.search).toLowerCase())))
+            .sort((a, b) => current.sort === 'amount' ? b.amountCents - a.amountCents : b.date.localeCompare(a.date)) : [];
+        view = h('div', { className: 'mf-v3-stack' }, h('div', { className: 'mf-v3-crumb' }, action('Categorias', () => write({ category: null, group: null, search: '' })), current.category ? info(' / ' + current.category) : null, current.group ? info(' / ' + current.group) : null), !current.category ? cats.slice(0, cap).map(c => action(c.name + ' · ' + money(c.amountCents), () => write({ category: c.name, group: null }))) : null, current.category ? h('div', { className: 'mf-v3-stack' }, info((cat.detailsPartial ? 'Amostra parcial. ' : '') + 'Agrupamento por descrição; não atribui estabelecimento automaticamente.'), h('label', {}, 'Buscar descrição', h('input', { type: 'search', value: current.search || '',
+            onChange: (e) => write({ search: e.target.value }) })), !current.group ? groups.map(g => action(g, () => write({ group: g }))) : action('Voltar aos grupos', () => write({ group: null })), h('div', { className: 'mf-v3-toolbar' }, action('Recentes', () => write({ sort: 'date' })), action('Maior valor', () => write({ sort: 'amount' }))), mfV3Table(['Data', 'Registro', 'Valor'], rows.slice(0, cap).map(r => [r.date, r.description, money(r.amountCents)]))) : null);
+    }
+    else if (kind === 'table' || kind === 'report') {
+        const rows = mfV3Records(d);
+        const query = ((_d = app.state.mfV3Search) === null || _d === void 0 ? void 0 : _d.messageId) === msg.id ? app.state.mfV3Search.value : '';
+        const order = ((_e = app.state.mfV3TableOrder) === null || _e === void 0 ? void 0 : _e.messageId) === msg.id ? app.state.mfV3TableOrder.order : 'date';
+        const list = rows.filter(r => (r.description + ' ' + r.category).toLowerCase().includes(String(query).toLowerCase()))
+            .sort((a, b) => order === 'amount' ? b.amountCents - a.amountCents : b.date.localeCompare(a.date));
+        view = h('div', { className: 'mf-v3-stack' }, h('label', {}, 'Pesquisar registros', h('input', { type: 'search', value: query,
+            onChange: (e) => app.setState({ mfV3Search: { messageId: msg.id, value: e.target.value } }) })), h('div', { className: 'mf-v3-toolbar' }, action('Mais recentes', () => app.setState({ mfV3TableOrder: { messageId: msg.id, order: 'date' } })), action('Maior gasto', () => app.setState({ mfV3TableOrder: { messageId: msg.id, order: 'amount' } }))), info((mfV3RecordsPartial(d) ? 'Amostra parcial; ' : '') + 'Tabela dos registros locais verificados. Nenhum arquivo foi gerado.'), mfV3Table(['Data', 'Categoria / descrição', 'Valor'], list.slice(0, cap).map(r => [r.date, r.category + ' · ' + r.description, money(r.amountCents)])), list.length > cap ? action('Mostrar mais registros', expand) : null);
+    }
+    else if (kind === 'budget') {
+        view = d.budgets.length ? h('div', { className: 'mf-v3-stack' }, ...d.budgets.slice(0, cap).map(b => h('div', { className: 'mf-v3-budget', key: b.category }, h('div', { className: 'mf-v3-bar-head' }, h('strong', {}, b.category), h('span', {}, money(b.spentCents) + ' / ' + money(b.limitCents))), b.limitCents > 0 ? h('div', { className: 'mf-v3-track' }, h('span', { style: { width: Math.min(100, b.spentCents / b.limitCents * 100) + '%', background: 'var(--red)' } })) : null, h('small', {}, b.limitCents === 0 ? 'Limite zero definido' + (b.spentCents ? ' · excedido em ' + money(b.spentCents) : '') :
+            b.spentCents > b.limitCents ? 'Excedido em ' + money(b.spentCents - b.limitCents) :
+                'Restam ' + money(b.limitCents - b.spentCents))))) : missing('Limites financeiros indisponíveis neste período');
+    }
+    else if (kind === 'cashflow') {
+        view = h('div', { className: 'mf-v3-stack' }, h('div', { className: 'mf-v3-kpis' }, kpi('Receitas do período', d.incomeCents), kpi('Despesas do período', d.expenseCents), kpi('Resultado do período', d.netCents)), info('Resultado mensal observado, não saldo bancário, nem projeção futura.'));
+    }
+    else if (kind === 'insight') {
+        const c = cats[0];
+        view = c ? h('div', { className: 'mf-v3-stack' }, h('strong', {}, 'Maior participação: ' + c.name), h('p', {}, money(c.amountCents) + ' · ' + (100 * c.amountCents / d.expenseCents).toFixed(1) + '% das despesas locais.'), info('Concentração observada não demonstra desperdício ou causalidade.'), action('Examinar categorias', expand)) : missing('Sem despesas para identificar concentrações');
+    }
+    else if (kind === 'plan') {
+        view = h('div', { className: 'mf-v3-stack' }, info('Etapas sugeridas para conferência, não ações realizadas.'), h('ol', {}, h('li', {}, 'Verificar lançamentos.'), h('li', {}, 'Rever limites.'), h('li', {}, 'Simular propostas no módulo próprio.')), action('Abrir Planejamento', () => app.navigate('planning')));
+    }
+    else if (kind === 'quality') {
+        view = h('div', { className: 'mf-v3-stack' }, info('Origem ' + d.source + ' · ' + d.period + ' · cobertura ' + d.coverage +
+            ' · data da leitura ' + (d.asOf || 'não informada')), info(mfV3RecordsPartial(d) ? 'Algumas categorias têm apenas uma amostra de transações.' :
+            'Registros por categoria localmente conciliados; cobertura bancária integral não certificada.'));
+    }
+    else if (kind === 'proposal') {
+        view = msg.proposal ? renderMfD01Proposal(app, msg.proposal) : missing('Nenhuma proposta autorizada nesta conversa');
+    }
+    else if (kind === 'whatif' || kind === 'scenario') {
+        view = h('div', { className: 'mf-v3-stack' }, info('Simulações precisam do motor original com premissas, compromissos e fluxo diário. Nenhum resultado foi calculado aqui.'), action('Abrir Simular Compra', () => app.navigate('simulator')));
+    }
+    else if (kind === 'approval') {
+        view = missing('Sem recibo durável de operação confirmada');
+    }
+    else if (kind === 'state') {
+        view = missing(d.quality === 'ready' ? 'Consulta somente de leitura disponível' : 'Consulta indisponível ou incompleta');
+    }
+    else {
+        view = missing('Dados financeiros verificáveis ainda não disponíveis para esta família');
+    }
+    const detail = selected && ['bar', 'donut', 'rank'].includes(kind) ?
+        h('div', { className: 'mf-v3-selection', role: 'region', 'aria-label': 'Detalhes selecionados' }, h('strong', {}, selected.name), h('p', {}, money(selected.amountCents) + ' de ' + money(d.expenseCents) + ' em ' + d.period), kind === 'rank' && d.previous ? h('p', {}, 'Antes ' + money(((_f = d.previous.categories.find(c => c.name === selected.name)) === null || _f === void 0 ? void 0 : _f.amountCents) || 0) +
+            ' · agora ' + money(selected.amountCents) + ' · variação ' +
+            money(mfV3Delta(selected.amountCents, (_h = (_g = d.previous.categories.find(c => c.name === selected.name)) === null || _g === void 0 ? void 0 : _g.amountCents) !== null && _h !== void 0 ? _h : 0))) : null, h('details', {}, h('summary', {}, 'Ver movimentações' + (selected.detailsPartial ? ' · amostra parcial' : '')), mfV3Table(['Data', 'Descrição', 'Valor'], selected.movements.map(m => [m.date, m.description, money(m.amountCents)])))) : null;
+    return h('section', { className: 'mf-v3-card mf-v3-' + kind + ' mf-v3-' + mode + ' state-' + d.quality, role: 'region',
+        'aria-label': mfV3Title(kind) + ' · ' + d.period }, h('header', { className: 'mf-v3-head' }, h('div', {}, h('small', {}, d.period + ' · ' + (d.source === 'bank' ? 'Banco' : 'Manual')), h('h3', {}, mfV3Title(kind))), !compact ? action(analysis ? 'Recolher análise' : 'Explorar análise', expand, ['unavailable', 'expired', 'denied'].includes(d.quality)) : null), h('p', { className: 'mf-v3-evidence', role: d.quality === 'partial' ? 'status' : 'note' }, d.reason), view, detail, h('details', { className: 'mf-v3-evidence-more' }, h('summary', {}, 'Fonte e limitações'), h('p', {}, 'Origem: ' + d.source + ' · perfil ' + d.profile + ' · ' + d.period + ' · cobertura ' + d.coverage +
+        ' · atualizado ' + (d.asOf || 'sem horário registrado'))));
+}
+function mfV3DeltaList(app, msg, rows) {
+    const max = Math.max(1, ...rows.filter(r => r.delta > 0).map(r => r.delta));
+    return h('div', { className: 'mf-v3-stack' }, ...rows.map(r => mfV3Bar(r.name, mfV3Money(r.delta) + (r.relative === null ? '' : ' · ' + r.relative.toFixed(1) + '%'), r.delta > 0 ? r.delta / max * 100 : 0, r.delta > 0 ? r.heat : 'var(--muted)', () => app.setState({ mfV3Selected: { messageId: msg.id, name: r.name } }))));
 }
 function aiMarkdownInline(text) {
     const source = String(text || '');
@@ -3231,7 +6934,7 @@ function intelligenceConversationState(app) {
         }
         return { kind: 'oauth_connected_unimplemented', pill: 'Conta autenticada · chat aberto na I2-A', badge: 'Aguarda I2-A', css: 'is-auth-only' };
     }
-    return { kind: 'oauth_disconnected', pill: 'Conta desconectada · modo local', badge: 'Sem OAuth', css: 'is-offline' };
+    return { kind: 'oauth_disconnected', pill: 'IA externa desconectada · leitura local requer autorização', badge: 'Sem OAuth', css: 'is-offline' };
 }
 function intelligenceReferenceToday(app) {
     var _a;
@@ -4384,6 +8087,146 @@ function renderWorkIntelligencePanel(app) {
     return h('div', { className: 'mf-ai-backdrop', onMouseDown: (e) => { if (e.target === e.currentTarget)
             app.setState({ intelligencePanelOpen: false }); } }, h('aside', { className: 'mf-ai-drawer mf-work-demo mf-work-drawer', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Demonstração contextual de ' + context, ref: workDemoPanelRef(app), onKeyDown: (e) => workDemoPanelKey(app, e) }, h('header', { className: 'mf-work-hero' }, h('div', {}, h('span', { className: 'micro-label' }, 'DEMONSTRAÇÃO · CONTEXTO AUTORIZADO'), h('h2', {}, context), h('p', {}, 'Apenas o nome da seção; os números são fictícios.')), h('div', { className: 'mf-work-actions' }, h('button', { type: 'button', className: 'ghost-button', onClick: () => app.setState({ page: 'intelligence', intelligencePanelOpen: false, workIntelligenceDemo: { ...d, tab: 'chat' } }) }, 'Expandir demonstração'), h('button', { type: 'button', className: 'close-button', 'aria-label': 'Fechar demonstração contextual', onClick: () => app.setState({ intelligencePanelOpen: false }) }, '×'))), renderWorkDemoChat(app, d, true)));
 }
+function mfIC2Valid(r, access, month) {
+    var _a, _b, _c, _d;
+    if (!r || r.version !== 2 || r.contract !== 'I2-A/D02-V3' ||
+        r.readOnly !== true || r.changesApplied !== false || r.modelCalled !== false ||
+        r.source !== (access === null || access === void 0 ? void 0 : access.source) || r.profile !== (access === null || access === void 0 ? void 0 : access.profile) || r.period !== month ||
+        typeof r.answer !== 'string' || r.answer.length > 4000 ||
+        typeof r.conversationId !== 'string' ||
+        !Array.isArray(r.facts) || r.facts.length > 4 ||
+        !Array.isArray(r.blocks) || r.blocks.length > 3 ||
+        !Array.isArray(r.actions) || r.actions.length !== 0 ||
+        !Array.isArray(r.alerts) || !Array.isArray(r.followUps) ||
+        !['ready', 'partial', 'denied', 'stale', 'unavailable', 'needs_clarification', 'unsupported'].includes(r.status))
+        return false;
+    const ids = new Set();
+    for (const f of r.facts) {
+        if ((f === null || f === void 0 ? void 0 : f.version) !== 2 || typeof f.id !== 'string' || !f.id.startsWith('i2a:') ||
+            f.source !== access.source || f.profile !== access.profile ||
+            ((_b = (_a = f.period) === null || _a === void 0 ? void 0 : _a.start) === null || _b === void 0 ? void 0 : _b.slice(0, 7)) !== month || ((_d = (_c = f.period) === null || _c === void 0 ? void 0 : _c.end) === null || _d === void 0 ? void 0 : _d.slice(0, 7)) !== month ||
+            !f.value || typeof f.value !== 'object')
+            return false;
+        ids.add(f.id);
+    }
+    return r.blocks.every((b) => b && typeof b.kind === 'string' &&
+        (b.factRef === null || ids.has(b.factRef)));
+}
+function mfIC2Card(r) {
+    var _a;
+    if (!['ready', 'partial'].includes(r.status) || !r.facts.length)
+        return null;
+    const money = (v) => Number.isSafeInteger(v) ?
+        new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v / 100) : 'Sem evidência';
+    const metrics = [];
+    const rows = [];
+    let title = 'Leitura financeira verificada';
+    let headers = ['Fato', 'Valor'];
+    for (const fact of r.facts) {
+        const f = fact.value || {};
+        if (fact.tool === 'summary' || fact.tool === 'categories') {
+            title = fact.tool === 'categories' ? 'Gastos na categoria' : 'Resumo financeiro do mês';
+            if (Number.isSafeInteger(f.incomeCents))
+                metrics.push({ label: 'Receitas', value: money(f.incomeCents) });
+            if (Number.isSafeInteger(f.expenseCents))
+                metrics.push({ label: 'Despesas', value: money(f.expenseCents) });
+            if (fact.tool === 'categories' && Number.isSafeInteger(f.selectedCents))
+                metrics.push({ label: 'Categoria selecionada', value: money(f.selectedCents) });
+            for (const c of (Array.isArray(f.categories) ? f.categories : []).slice(0, 12))
+                if (typeof c.name === 'string' && Number.isSafeInteger(c.amountCents))
+                    rows.push({ col1: c.name.slice(0, 100), col2: money(c.amountCents) });
+        }
+        else if (fact.tool === 'compare_spending_breakdown') {
+            title = 'Investigação das despesas';
+            if (Number.isSafeInteger(f.previousCents))
+                metrics.push({ label: 'Anterior', value: money(f.previousCents) });
+            if (Number.isSafeInteger(f.currentCents))
+                metrics.push({ label: 'Atual', value: money(f.currentCents) });
+            if (Number.isSafeInteger(f.deltaCents))
+                metrics.push({ label: 'Variação', value: money(f.deltaCents),
+                    tone: f.deltaCents > 0 ? 'warning' : 'neutral' });
+            headers = ['Categoria', 'Anterior / atual', 'Variação'];
+            for (const x of (Array.isArray(f.contributions) ? f.contributions : []).slice(0, 12))
+                if (typeof x.label === 'string' && Number.isSafeInteger(x.deltaCents))
+                    rows.push({ col1: x.label.slice(0, 100),
+                        col2: money(x.previousCents) + ' / ' + money(x.currentCents), col3: money(x.deltaCents) });
+        }
+        else if (fact.tool === 'compare') {
+            title = 'Comparação com o mês anterior';
+            if (Number.isSafeInteger(f.deltaExpenseCents))
+                metrics.push({ label: 'Variação de despesas', value: money(f.deltaExpenseCents), tone: f.deltaExpenseCents > 0 ? 'warning' : 'neutral' });
+            headers = ['Categoria', 'Atual / anterior', 'Variação'];
+            for (const x of (Array.isArray(f.rank) ? f.rank : []).slice(0, 12))
+                if (typeof x.category === 'string')
+                    rows.push({ col1: x.category.slice(0, 100), col2: money(x.nowCents) + ' / ' + money(x.previousCents), col3: money(x.deltaCents) });
+        }
+        else if (fact.tool === 'merchants') {
+            title = 'Estabelecimentos nos registros locais';
+            headers = ['Estabelecimento', 'Gasto atual', 'Variação'];
+            for (const m of (Array.isArray(f.merchants) ? f.merchants : []).slice(0, 12))
+                if (typeof m.merchant === 'string')
+                    rows.push({ col1: m.merchant.slice(0, 100), col2: money(m.amountCents), col3: money(m.deltaCents) });
+        }
+        else if (fact.tool === 'budgets') {
+            title = 'Orçamentos registrados';
+            headers = ['Categoria', 'Gasto', 'Limite'];
+            for (const b of (Array.isArray(f.budgets) ? f.budgets : []).slice(0, 12))
+                if (typeof b.category === 'string')
+                    rows.push({ col1: b.category.slice(0, 100), col2: money(b.spentCents), col3: money(b.limitCents) });
+        }
+        else if (fact.tool === 'commitments') {
+            title = 'Compromissos confirmados';
+            if (Number.isSafeInteger((_a = f.commitments) === null || _a === void 0 ? void 0 : _a.totalCents))
+                metrics.push({ label: 'Total restante planejado', value: money(f.commitments.totalCents) });
+        }
+        else if (fact.tool === 'simulate') {
+            title = 'Simulação hipotética, sem lançamento';
+            if (Number.isSafeInteger(f.hypotheticalSavingsCents))
+                metrics.push({ label: 'Economia hipotética', value: money(f.hypotheticalSavingsCents) });
+        }
+        else if (fact.tool === 'quality') {
+            title = 'Qualidade dos dados consultados';
+            if (Number.isSafeInteger(f.loaded))
+                metrics.push({ label: 'Registros carregados', value: String(f.loaded) });
+        }
+    }
+    const warnings = r.alerts.filter(x => typeof x === 'string').slice(0, 3).map(x => x.slice(0, 220));
+    const notice = r.status === 'partial' ? 'Cobertura parcial; os valores não representam o histórico integral.' : 'Fatos calculados localmente a partir da origem autorizada.';
+    return { title, subtitle: r.period + ' · ' + (r.source === 'bank' ? 'Banco' : 'Manual') +
+            ' · ' + (r.profile === 'demo' ? 'Demonstração' : 'Pessoal'),
+        metrics: metrics.slice(0, 4), rows: rows.slice(0, 12), headers,
+        footnote: [notice, 'Resultado mensal não equivale ao saldo disponível.', ...warnings].join(' ') };
+}
+const MF_IC2_MESSAGE_GRANTS = new WeakMap();
+function mfIC2BindMessage(msg, access, signature, month) {
+    if (access === null || access === void 0 ? void 0 : access.token)
+        MF_IC2_MESSAGE_GRANTS.set(msg, { access, token: access.token, signature, month });
+    return msg;
+}
+function mfIC2MessageLive(app, msg) {
+    const b = MF_IC2_MESSAGE_GRANTS.get(msg), access = app.state.localFinancialAccess;
+    return !!b && b.access === access && b.token === (access === null || access === void 0 ? void 0 : access.token) &&
+        b.signature === intelligencePremiumSignature(app) &&
+        b.month === (app.state.localFinancialMonth || app.state.month) &&
+        (access === null || access === void 0 ? void 0 : access.profile) === (app.state.mode === 'demo' ? 'demo' : 'real') &&
+        Number.isFinite(access.expiresAt) && access.expiresAt > Date.now();
+}
+const MF_LOCAL_MESSAGE_GRANTS = new WeakMap();
+function mfLocalBindMessage(msg, access, signature, month) {
+    if (access === null || access === void 0 ? void 0 : access.token)
+        MF_LOCAL_MESSAGE_GRANTS.set(msg, { access, token: access.token, signature, month });
+    return msg;
+}
+function mfLocalMessageLive(app, msg) {
+    const b = MF_LOCAL_MESSAGE_GRANTS.get(msg);
+    const access = app.state.localFinancialAccess;
+    return !!b && b.access === access && b.token === (access === null || access === void 0 ? void 0 : access.token) &&
+        b.signature === intelligencePremiumSignature(app) &&
+        b.month === (app.state.localFinancialMonth || app.state.month) &&
+        msg.periodLabel === b.month &&
+        (access === null || access === void 0 ? void 0 : access.profile) === (app.state.mode === 'demo' ? 'demo' : 'real') &&
+        Number.isFinite(access === null || access === void 0 ? void 0 : access.expiresAt) && access.expiresAt > Date.now();
+}
 function localFinancialAPI() { return desktop; }
 function localFinancialParse(question, categories = []) {
     const q = intelligenceFoldText(question);
@@ -4432,6 +8275,8 @@ async function localFinancialEnable(app) {
             void ((_a = api.localFinancialRevoke) === null || _a === void 0 ? void 0 : _a.call(api, grant.token));
             return;
         }
+        app.__ic2Conversation = null;
+        app.__ic2InvestigationActive = false;
         const backup = ((_b = s.localFinancialAccess) === null || _b === void 0 ? void 0 : _b.backup) || { intelligenceThreads: s.intelligenceThreads, intelligenceMessages: s.intelligenceMessages, intelligenceActiveThreadId: s.intelligenceActiveThreadId, intelligenceHydratedMode: s.intelligenceHydratedMode };
         app.setState({ localFinancialAccess: { ...grant, backup }, localFinancialBusy: false, localFinancialRadar: null, intelligenceThreads: [], intelligenceMessages: [], intelligenceActiveThreadId: null, intelligenceDraft: '', intelligencePreparedQuestion: '', workIntelligenceDemo: s.workIntelligenceDemo ? { ...s.workIntelligenceDemo, enabled: false } : undefined }, () => { void localFinancialRadar(app); if (typeof intelligencePremiumLoad === 'function')
             void intelligencePremiumLoad(app); });
@@ -4442,6 +8287,9 @@ async function localFinancialEnable(app) {
 }
 function localFinancialDisable(app) {
     var _a, _b;
+    app.__ic2Conversation = null;
+    app.__ic2InvestigationActive = false;
+    app.__localRadarRequest = (app.__localRadarRequest || 0) + 1;
     const access = app.state.localFinancialAccess;
     app.__localReadGeneration = (app.__localReadGeneration || 0) + 1;
     app.setState({ ...access === null || access === void 0 ? void 0 : access.backup, localFinancialAccess: null, localFinancialRadar: null, localFinancialBusy: false, localFinancialError: '', intelligenceDraft: '' }, () => { if (typeof intelligencePremiumLoad === 'function')
@@ -4465,34 +8313,73 @@ async function localFinancialQuery(app, intent) {
     return response;
 }
 async function localFinancialRadar(app) {
+    const request = (app.__localRadarRequest || 0) + 1;
+    app.__localRadarRequest = request;
     try {
         const result = await localFinancialQuery(app, { intent: 'radar' });
+        if (app.__localRadarRequest !== request)
+            return;
         app.setState({ localFinancialRadar: result, localFinancialError: '' });
     }
     catch (e) {
+        if (app.__localRadarRequest !== request)
+            return;
         app.setState({ localFinancialError: String(e.message || 'Consulta indisponível.').slice(0, 180) });
     }
 }
 async function localFinancialSubmit(app, question) {
-    var _a;
+    var _a, _b, _c, _d;
     if (app.state.localFinancialBusy || !String(question || '').trim())
         return;
     const access = app.state.localFinancialAccess;
     const q = String(question).trim().slice(0, 700), scope = intelligencePageScope(app), messages = [...intelligenceHistoryList(app)];
+    const threadAtStart = app.state.intelligenceActiveThreadId || null;
+    const api = localFinancialAPI();
     const month = app.state.localFinancialMonth || app.state.month, signature = intelligencePremiumSignature(app);
+    const foldedQuestion = intelligenceFoldText(q);
+    const financialInvestigation = /por que.*(despes|gast)|investig|categorias?.*contribu|estabelec.*(cresc|aument)|mostre.*estabelec|despes.*(aument|subi)|gast.*(aument|mais)|onde.*gastando|o que aumentou|compar.*(janeiro|fevereiro|marco|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro|mes)/.test(foldedQuestion);
+    const sameThread = !!((_a = app.__ic2Conversation) === null || _a === void 0 ? void 0 : _a.answerId) && messages.some((m) => m.id === app.__ic2Conversation.answerId);
+    const i3Followup = sameThread && !!app.__ic2InvestigationActive &&
+        /^(e |esse |essa |no |na |quanto |me mostre|mostre |onde )|recorrente|isolado|pontual/.test(foldedQuestion);
+    const i3Requested = financialInvestigation || i3Followup;
+    const v3Requested = mfV3Requested(q);
+    const v3Kind = !i3Requested && typeof (api === null || api === void 0 ? void 0 : api.intelligenceOperationalAsk) === 'function' &&
+        v3Requested && v3Requested !== 'proposal' && v3Requested !== 'approval' ? v3Requested : null;
+    let previousOperational = null;
     const request = (app.__localChatRequest || 0) + 1;
     app.__localChatRequest = request;
     const user = { id: 'local-u-' + Date.now(), role: 'user', text: q, status: 'sent',
         createdAt: intelligenceNowTime(), scopeLabel: scope.label, periodLabel: month };
     app.setState({ localFinancialBusy: true, intelligenceDraft: '' });
-    let reply = null, operational = null, error = '';
+    let reply = null, operational = null, ic2 = null, error = '';
     try {
-        const api = localFinancialAPI();
-        if (typeof (api === null || api === void 0 ? void 0 : api.intelligenceOperationalAsk) === 'function') {
-            operational = await api.intelligenceOperationalAsk({ token: access.token, month, question: q });
+        if (!v3Kind && typeof (api === null || api === void 0 ? void 0 : api.intelligenceIC2ReadQuery) === 'function') {
+            const previous = app.__ic2Conversation;
+            const conversationId = (previous === null || previous === void 0 ? void 0 : previous.access) === access && (previous === null || previous === void 0 ? void 0 : previous.signature) === signature &&
+                (previous === null || previous === void 0 ? void 0 : previous.answerId) && messages.some((m) => m.id === previous.answerId) ? previous.id : null;
+            ic2 = await api.intelligenceIC2ReadQuery({ token: access.token,
+                source: access.source, profile: access.profile, month, question: q, density: 'standard',
+                ...(conversationId ? { conversationId } : {}) });
+            if (!mfIC2Valid(ic2, access, month))
+                throw Error('Resposta IC2 não verificada.');
+        }
+        else if (typeof (api === null || api === void 0 ? void 0 : api.intelligenceOperationalAsk) === 'function') {
+            operational = await api.intelligenceOperationalAsk({ token: access.token, month,
+                question: v3Kind ? 'Radar financeiro' : q });
             if ((operational === null || operational === void 0 ? void 0 : operational.contract) !== 'IC-v1/I-P0.2-read-only' || operational.readOnly !== true ||
                 operational.changesApplied !== false || operational.modelCalled !== false)
                 throw Error('Resposta operacional não verificada.');
+            if (v3Kind && mfV3NeedsPrevious(v3Kind) && (operational === null || operational === void 0 ? void 0 : operational.uiState) === 'ready') {
+                const priorMonth = mfVisualMonthBefore(month);
+                if (priorMonth) {
+                    try {
+                        previousOperational = await api.intelligenceOperationalAsk({ token: access.token, month: priorMonth, question: 'Radar financeiro' });
+                    }
+                    catch {
+                        previousOperational = null;
+                    }
+                }
+            }
         }
         else {
             const parsed = localFinancialParse(q, app.state.categories);
@@ -4505,29 +8392,59 @@ async function localFinancialSubmit(app, question) {
     catch (e) {
         error = String((e === null || e === void 0 ? void 0 : e.message) || 'Consulta local indisponível.').slice(0, 220);
     }
-    if (request !== app.__localChatRequest || ((_a = app.state.localFinancialAccess) === null || _a === void 0 ? void 0 : _a.token) !== (access === null || access === void 0 ? void 0 : access.token) ||
+    if (request !== app.__localChatRequest || (app.state.intelligenceActiveThreadId || null) !== threadAtStart ||
+        app.state.localFinancialAccess !== access ||
+        ((_b = app.state.localFinancialAccess) === null || _b === void 0 ? void 0 : _b.token) !== (access === null || access === void 0 ? void 0 : access.token) ||
         signature !== intelligencePremiumSignature(app)) {
         if (request === app.__localChatRequest)
             app.setState({ localFinancialBusy: false });
         return;
     }
+    app.__ic2InvestigationActive = !!(ic2 && ['ready', 'partial'].includes(ic2.status) &&
+        ((_c = ic2.facts) === null || _c === void 0 ? void 0 : _c.some((fact) => fact.tool === 'compare_spending_breakdown')));
+    if (ic2 && ['ready', 'partial', 'needs_clarification', 'unsupported'].includes(ic2.status))
+        app.__ic2Conversation = { access, signature, id: ic2.conversationId };
     const state = operational === null || operational === void 0 ? void 0 : operational.uiState;
-    const answerText = (operational === null || operational === void 0 ? void 0 : operational.answer) || (reply === null || reply === void 0 ? void 0 : reply.text) || error || 'Consulta indisponível.';
-    const finalStatus = operational ?
+    let answerText = (ic2 === null || ic2 === void 0 ? void 0 : ic2.answer) || (operational === null || operational === void 0 ? void 0 : operational.answer) || (reply === null || reply === void 0 ? void 0 : reply.text) || error || 'Consulta indisponível.';
+    const finalStatus = ic2 ?
+        (['ready', 'partial'].includes(ic2.status) ? 'done' : ic2.status === 'unsupported' || ic2.status === 'needs_clarification' ? 'unsupported' :
+            ic2.status === 'denied' || ic2.status === 'stale' ? 'unavailable' : 'error') : operational ?
         (state === 'ready' || state === 'empty' ? 'done' : state === 'unsupported' ? 'unsupported' : state === 'denied' || state === 'expired' ? 'unavailable' : 'error') :
         reply ? 'done' : 'error';
     const factsValid = operational && (state === 'ready' || state === 'empty');
-    const evidence = factsValid ? (operational.profile === 'synthetic' ? 'Ambiente sintético' : 'Fonte ' + (operational.source === 'bank' ? 'bancária' : 'manual')) +
-        ' · ' + intelligencePremiumCoverage(operational.coverage) + ' · ' + month : '';
+    const evidence = ic2 && ['ready', 'partial'].includes(ic2.status) ?
+        'IC2 · ' + (ic2.source === 'bank' ? 'Fonte bancária' : 'Fonte manual') + ' · ' + month + ' · leitura local' :
+        factsValid ? (operational.profile === 'synthetic' ? 'Ambiente sintético' : 'Fonte ' + (operational.source === 'bank' ? 'bancária' : 'manual')) +
+            ' · ' + intelligencePremiumCoverage(operational.coverage) + ' · ' + month : '';
+    const visualV3 = v3Kind && factsValid ? mfV3BindGrant(mfV3FromOperational(operational, v3Kind, previousOperational), access, signature) : null;
+    if (v3Kind) {
+        answerText = !visualV3 ? 'Não há evidência suficiente para apresentar esta análise com segurança. Nenhum valor foi estimado.' :
+            visualV3.quality === 'unavailable' ? 'Esta família visual não tem serviço financeiro operacional compatível neste momento.' :
+                visualV3.quality === 'partial' ? 'Os registros são parciais ou não permitem uma comparação completa. Veja as limitações a seguir.' :
+                    'Consulte a visualização calculada a partir dos registros locais autorizados.';
+    }
+    const visualKind = !v3Kind && factsValid ? mfVisualRequested(q) : null;
+    const visual = visualKind ? mfVisualFromOperational(operational, visualKind) : null;
     const answer = {
-        id: 'local-a-' + Date.now(), role: 'assistant', text: answerText, status: finalStatus,
+        id: (ic2 ? 'ic2-a-' : 'local-a-') + Date.now(), role: 'assistant', text: answerText, status: finalStatus,
         createdAt: intelligenceNowTime(), scopeLabel: scope.label, periodLabel: month,
-        structuredCard: factsValid && operational.card ? operational.card : (reply === null || reply === void 0 ? void 0 : reply.card) || null,
-        operationalActions: factsValid && Array.isArray(operational.actions) ? operational.actions : [],
+        structuredCard: ic2 ? mfIC2Card(ic2) : factsValid && operational.card ? operational.card : (reply === null || reply === void 0 ? void 0 : reply.card) || null,
+        visual, visualV3,
+        operationalActions: factsValid && !visualV3 && Array.isArray(operational.actions) ? operational.actions : [],
         operationalEvidence: evidence,
-        details: factsValid ? 'Consulta local determinística, sem IA externa. Não foi executada qualquer alteração.' :
-            reply ? JSON.stringify(reply.references) : 'Nenhuma alteração financeira nem envio externo.'
+        details: ic2 ? 'IC2-READ-QUERY · ' + (ic2.status === 'partial' ? 'Cobertura parcial. ' : '') +
+            'Fatos locais verificáveis, sem escrita financeira ou modelo externo.' : v3Kind && !visualV3 ? 'Os fatos autorizados não permitem esta visualização; nenhuma informação foi estimada.' :
+            visualKind && !visual ? 'Não há evidências suficientes para desenhar o gráfico com totais reconciliados. Confira fonte e cobertura.' :
+                factsValid ? 'Consulta local determinística, sem IA externa. Não foi executada qualquer alteração.' :
+                    reply ? JSON.stringify(reply.references) : 'Nenhuma alteração financeira nem envio externo.'
     };
+    if (ic2) {
+        mfIC2BindMessage(answer, access, signature, month);
+        if (((_d = app.__ic2Conversation) === null || _d === void 0 ? void 0 : _d.id) === ic2.conversationId)
+            app.__ic2Conversation.answerId = answer.id;
+    }
+    else
+        mfLocalBindMessage(answer, access, signature, month);
     intelligenceSyncThreadMessages(app, [...messages, user, answer], scope);
     app.setState({ localFinancialBusy: false });
 }
@@ -4540,7 +8457,7 @@ function renderLocalFinancialAccess(app) {
 }
 function renderLocalFinancialRadar(app) {
     const report = app.state.localFinancialRadar;
-    return h('div', { className: 'mf-ai-today' }, h('h2', {}, 'O que seus registros mostram hoje'), report ? renderIntelligenceStructuredCard(report.card) : h('p', { role: 'status' }, 'Atualize o radar para consultar o mês escolhido.'), h('div', { className: 'mf-ai-starter-grid' }, ...['Quanto gastei com alimentação neste mês?', 'Quais foram minhas maiores despesas?', 'Quais categorias ultrapassaram o orçamento?', 'Quanto tenho comprometido para o próximo mês?', 'Quais despesas aumentaram?', 'Que movimentações preciso revisar?', 'Quanto gastei em assinaturas?', 'Quais dados faltam para avaliar uma compra?'].map(q => h('button', { type: 'button', className: 'mf-ai-context-prompt', key: q, onClick: () => { app.setState({ intelligenceTab: 'chat' }); void localFinancialSubmit(app, q); } }, q))));
+    return h('div', { className: 'mf-ai-today' }, h('h2', {}, 'O que seus registros mostram hoje'), report ? renderIntelligenceStructuredCard(report.card) : h('p', { role: 'status' }, 'Atualize o radar para consultar o mês escolhido.'), h('div', { className: 'mf-ai-starter-grid' }, ...['Quanto gastei com alimentação neste mês?', 'Quais foram minhas maiores despesas?', 'Quais categorias ultrapassaram o orçamento?', 'Quanto tenho comprometido para o próximo mês?', 'Quais despesas aumentaram?', 'Que movimentações preciso revisar?', 'Quanto gastei em assinaturas?', 'Quais dados faltam para avaliar uma compra?'].map(q => h('button', { type: 'button', className: 'mf-ai-context-prompt', key: q, onClick: () => { app.setState({ intelligenceTab: 'chat', intelligenceMainMode: 'chat' }); void localFinancialSubmit(app, q); } }, q))));
 }
 function categoryReviewAPI() { return desktop; }
 const categoryReviewKey = (r) => JSON.stringify([r.accountId, r.externalId]);
@@ -4571,7 +8488,7 @@ async function categoryReviewRefresh(app, after = 0) {
     const [report, queue] = await Promise.all([api.categoryReviewList({ token: grant.token }), api.categoryReviewQueue({ token: grant.token, after, limit: 50, filters })]);
     if (((_a = app.state.categoryReviewGrant) === null || _a === void 0 ? void 0 : _a.token) !== grant.token || app.categoryReviewRequest !== request || (app.state.categoryReviewFilterRevision || 0) !== revision)
         return;
-    app.setState({ categoryReviewReport: report, categoryReviewQueue: queue, categoryReviewCursor: after, categoryReviewFiltersDirty: false, categoryReviewSelected: [] });
+    app.setState({ categoryReviewReport: report, categoryReviewQueue: queue, categoryReviewCursor: after, categoryReviewFiltersDirty: false, categoryReviewSelected: [], categoryReviewPreview: null, categoryReviewConfirmed: false });
 }
 function categoryReviewSetFilter(app, name, value) {
     app.setState({ categoryReviewFilters: { ...app.state.categoryReviewFilters, [name]: value }, categoryReviewFilterRevision: (app.state.categoryReviewFilterRevision || 0) + 1, categoryReviewFiltersDirty: true, categoryReviewQueue: null, categoryReviewSelected: [], categoryReviewPreview: null, categoryReviewConfirmed: false, categoryReviewDetail: null });
@@ -4594,7 +8511,8 @@ async function categoryReviewOpen(app) {
         var _a, _b;
         const status = await ((_b = (_a = categoryReviewAPI()) === null || _a === void 0 ? void 0 : _a.categoryReviewStatus) === null || _b === void 0 ? void 0 : _b.call(_a));
         app.setState({ categoryReviewAvailable: (status === null || status === void 0 ? void 0 : status.available) === true });
-        if (app.state.categoryReviewGrant)
+        if (app.state.categoryReviewGrant && (!app.state.categoryReviewReport ||
+            !app.state.categoryReviewQueue || app.state.categoryReviewFiltersDirty))
             await categoryReviewRefresh(app);
     });
 }
@@ -4609,14 +8527,25 @@ async function categoryReviewEnable(app) {
             return;
         }
         const backup = { intelligenceThreads: app.state.intelligenceThreads, intelligenceMessages: app.state.intelligenceMessages, intelligenceActiveThreadId: app.state.intelligenceActiveThreadId, intelligenceHydratedMode: app.state.intelligenceHydratedMode };
-        app.setState({ categoryReviewGrant: grant, categoryReviewBackup: backup, intelligenceThreads: [], intelligenceMessages: [], intelligenceActiveThreadId: null });
+        app.setState({ categoryReviewGrant: grant, categoryReviewBackup: backup,
+            categoryReviewReport: null, categoryReviewQueue: null, categoryReviewPreview: null,
+            categoryReviewConfirmed: false, categoryReviewReceipt: null, categoryReviewSelected: [], categoryReviewDetail: null,
+            categoryReviewFilters: {}, categoryReviewFilterRevision: (app.state.categoryReviewFilterRevision || 0) + 1,
+            mfD04Drafts: {}, mfD04Excluded: {}, mfD04Selected: null, mfD04Error: '', mfD04Stage: 'pending', mfD04Search: '',
+            intelligenceThreads: [], intelligenceMessages: [], intelligenceActiveThreadId: null });
         await categoryReviewRefresh(app);
     });
 }
 function categoryReviewDisable(app) {
     var _a;
     const grant = app.state.categoryReviewGrant;
-    app.setState({ ...app.state.categoryReviewBackup, categoryReviewGrant: null, categoryReviewBackup: null, categoryReviewReport: null, categoryReviewQueue: null, categoryReviewPreview: null, categoryReviewSelected: [], categoryReviewReceipt: null, categoryReviewOpen: false, categoryReviewError: '', categoryReviewBusy: false });
+    app.categoryReviewRequest = (app.categoryReviewRequest || 0) + 1;
+    app.setState({ ...app.state.categoryReviewBackup, categoryReviewGrant: null, categoryReviewBackup: null,
+        categoryReviewReport: null, categoryReviewQueue: null, categoryReviewPreview: null, categoryReviewSelected: [],
+        categoryReviewConfirmed: false, categoryReviewReceipt: null, categoryReviewDetail: null,
+        categoryReviewFilters: {}, categoryReviewFilterRevision: (app.state.categoryReviewFilterRevision || 0) + 1,
+        mfD04Drafts: {}, mfD04Excluded: {}, mfD04Selected: null, mfD04Error: '', mfD04Stage: 'pending', mfD04Search: '',
+        categoryReviewOpen: false, categoryReviewError: '', categoryReviewBusy: false });
     if (grant)
         void ((_a = categoryReviewAPI()) === null || _a === void 0 ? void 0 : _a.categoryReviewRevoke({ token: grant.token }).catch(() => { }));
 }
@@ -4632,7 +8561,7 @@ async function categoryReviewPrepare(app, action, payload) {
 }
 async function categoryReviewConfirm(app) {
     const p = app.state.categoryReviewPreview, g = app.state.categoryReviewGrant;
-    if (!p || !g || !app.state.categoryReviewConfirmed)
+    if (!p || !g || !Number.isFinite(g.expiresAt) || g.expiresAt <= Date.now() || !app.state.categoryReviewConfirmed)
         return;
     await categoryReviewRun(app, async () => {
         var _a;
@@ -4674,7 +8603,7 @@ function renderCategoryReviewRow(app, r, selected, button) {
         disabled: app.state.categoryReviewBusy || !r.batchEligible, checked: selected.some(x => categoryReviewKey(x) === categoryReviewKey(r)),
         onChange: (e) => app.setState({ categoryReviewSelected: e.target.checked ? [...selected, r].slice(0, 100) : selected.filter(x => categoryReviewKey(x) !== categoryReviewKey(r)) }) })), h('td', {}, r.description, h('small', {}, r.date + ' · ' + r.accountName + ' · ' + r.status)), h('td', {}, h('strong', {}, r.category), h('small', {}, r.suggestedCategory ? 'Sugestão: ' + r.suggestedCategory : 'Sem sugestão automática'), h('span', { className: 'mf-review-confidence is-' + r.confidence }, categoryReviewConfidence(r.confidence)), h('small', {}, r.reasons.map(v => reasons[v]).join(' · '))), h('td', {}, fmt(Math.abs(r.amount))), h('td', {}, button('Detalhes', () => app.setState({ categoryReviewDetail: r })), button('Revisar individualmente', () => void categoryReviewPrepare(app, 'classify', { items: [r], category: app.state.categoryReviewCategory || r.suggestedCategory || 'Alimentação' }), r.manual || r.hasSplits || r.status !== 'POSTED'), button('Marcar como revisada', () => void categoryReviewPrepare(app, 'reviewed', { items: [r] }))));
 }
-function renderCategoryReview(app) {
+function renderCategoryReviewLegacy(app) {
     var _a, _b, _c;
     const s = app.state, g = s.categoryReviewGrant, report = s.categoryReviewReport, queue = s.categoryReviewQueue, busy = !!s.categoryReviewBusy, selected = s.categoryReviewSelected || [], filters = s.categoryReviewFilters || {};
     const button = (label, action, disabled = false) => h('button', { type: 'button', className: 'ghost-button', disabled: busy || disabled, onClick: action }, label);
@@ -4687,4 +8616,7 @@ function renderCategoryReview(app) {
         var _a;
         return h('article', { key: r.id, className: 'mf-review-suggestion' }, h('div', { className: 'mf-review-suggestion-head' }, h('h4', {}, r.name), h('span', { className: 'mf-review-confidence is-' + r.confidence }, 'Confiança ' + categoryReviewConfidence(r.confidence) + (r.state === 'deferred' ? ' · adiada' : ''))), h('p', {}, r.reason), h('p', {}, r.accountName + ' · ' + (r.nature === 'expense' ? 'Saídas' : 'Entradas') + ' · descrição exata · ' + r.compatible + ' compatíveis'), r.conflicts.length ? h('p', { className: 'mf-ai-error' }, 'Divergências: ' + r.conflicts.join(' · ')) : null, h('ul', {}, ...r.examples.map((e) => h('li', { key: categoryReviewKey(e) }, e.date + ' · ' + e.description + ' · ' + fmt(Math.abs(e.amount)) + ' · ' + e.category))), h('div', { className: 'mf-review-actions' }, categorySelect(((_a = s.categoryReviewEdits) === null || _a === void 0 ? void 0 : _a[r.id]) || r.category, v => app.setState({ categoryReviewEdits: { ...s.categoryReviewEdits, [r.id]: v } }), 'Editar categoria da sugestão ' + r.pattern), button('Aceitar / simular regra', () => { var _a; return void categoryReviewPrepare(app, 'rule', { suggestionId: r.id, category: ((_a = s.categoryReviewEdits) === null || _a === void 0 ? void 0 : _a[r.id]) || r.category }); }), button('Negar', () => void categoryReviewPrepare(app, 'decision', { suggestionId: r.id, state: 'denied' })), button('Adiar', () => void categoryReviewPrepare(app, 'decision', { suggestionId: r.id, state: 'deferred' }))));
     })), h('section', { id: 'mf-review-section-1', hidden: tab !== 1, tabIndex: -1, 'aria-label': 'Movimentações para revisar' }, h('h3', {}, 'Sua fila de revisão'), h('p', {}, 'Selecione registros ou abra os detalhes para conferir a evidência. Nenhuma categoria muda sem prévia e confirmação.'), h('label', { className: 'mf-review-search' }, 'Buscar nesta página', h('input', { type: 'search', value: s.categoryReviewSearch || '', placeholder: 'Descrição, conta ou categoria', onChange: (e) => app.setState({ categoryReviewSearch: e.target.value, categoryReviewSelected: [], categoryReviewDetail: null }) })), h('div', { className: 'mf-review-filters' }, h('label', {}, 'Conta', h('select', { value: filters.accountId || '', onChange: (e) => setFilter('accountId', e.target.value) }, h('option', { value: '' }, 'Todas as contas'), ...report.accounts.map((a) => h('option', { key: a.id, value: a.id }, a.name)))), h('label', {}, 'De', h('input', { type: 'date', value: filters.start || '', onChange: (e) => setFilter('start', e.target.value) })), h('label', {}, 'Até', h('input', { type: 'date', value: filters.end || '', onChange: (e) => setFilter('end', e.target.value) })), h('label', {}, 'Confiança', h('select', { value: filters.confidence || '', onChange: (e) => setFilter('confidence', e.target.value) }, ...['', 'high', 'medium', 'low', 'none'].map(v => h('option', { key: v, value: v }, v ? categoryReviewConfidence(v) : 'Todas')))), button('Aplicar filtros', () => void categoryReviewRun(app, () => categoryReviewRefresh(app))), filters.pattern ? button('Limpar padrão', () => app.setState({ categoryReviewFilters: { ...filters, pattern: '' } }, () => void categoryReviewRun(app, () => categoryReviewRefresh(app)))) : null), s.categoryReviewFiltersDirty ? h('p', { className: 'mf-review-filter-notice', role: 'status' }, 'Filtros alterados. Aplique-os para carregar e selecionar os registros da nova consulta.') : null, paging(), h('div', { className: 'mf-review-actions mf-review-selection' }, h('span', { role: 'status' }, selected.length + ' selecionado(s)'), button('Selecionar elegíveis desta página', () => app.setState({ categoryReviewSelected: pageEligible }), !pageEligible.length || s.categoryReviewFiltersDirty), categorySelect(s.categoryReviewCategory || 'Alimentação', v => app.setState({ categoryReviewCategory: v }), 'Categoria da seleção'), h('button', { type: 'button', className: 'primary-button', disabled: busy || !selected.length || s.categoryReviewFiltersDirty, onClick: () => void categoryReviewPrepare(app, 'classify', { items: selected, category: s.categoryReviewCategory || 'Alimentação' }) }, 'Preparar classificação da seleção'), button('Limpar seleção', () => app.setState({ categoryReviewSelected: [] }))), queue ? h('small', {}, pageEligible.length + ' elegíveis nesta página. Classificações manuais, divisões, baixa confiança e registros bancários ainda não confirmados ficam fora da seleção em lote.') : null, detail ? h('aside', { className: 'mf-review-inspector', 'aria-label': 'Detalhes da movimentação' }, h('div', {}, h('span', { className: 'micro-label' }, 'INSPEÇÃO · SEM ALTERAÇÃO'), h('h3', {}, detail.description), h('p', {}, detail.date + ' · ' + detail.accountName), h('strong', {}, fmt(Math.abs(detail.amount)))), h('div', {}, h('p', {}, 'Atual: ' + detail.category + ' · Sugestão: ' + (detail.suggestedCategory || 'sem evidência suficiente')), h('p', {}, 'Confiança ' + categoryReviewConfidence(detail.confidence) + ' · ' + detail.status), categorySelect(s.categoryReviewCategory || detail.suggestedCategory || 'Alimentação', v => app.setState({ categoryReviewCategory: v }), 'Categoria para revisar este registro'), button('Preparar revisão deste registro', () => void categoryReviewPrepare(app, 'classify', { items: [detail], category: s.categoryReviewCategory || detail.suggestedCategory || 'Alimentação' }), detail.manual || detail.hasSplits || detail.status !== 'POSTED'), button('Fechar detalhes', () => app.setState({ categoryReviewDetail: null })))) : null, queue ? h('div', { className: 'mf-review-table-wrap', tabIndex: 0, role: 'region', 'aria-label': 'Registros da página para revisar' }, h('table', {}, h('thead', {}, h('tr', {}, ...['Selecionar', 'Movimentação', 'Categoria / evidência', 'Valor', 'Revisão'].map(t => h('th', { key: t, scope: 'col' }, t)))), h('tbody', {}, ...visibleRows.map((r) => renderCategoryReviewRow(app, r, selected, button))))) : null, !s.categoryReviewFiltersDirty && !((_c = queue === null || queue === void 0 ? void 0 : queue.rows) === null || _c === void 0 ? void 0 : _c.length) ? h('p', { className: 'mf-review-empty' }, 'Nenhum registro para estes filtros.') : null), h('section', { id: 'mf-review-section-2', hidden: tab !== 2, tabIndex: -1, 'aria-label': 'Gestão de regras' }, h('h3', {}, 'Regras ativas e pausadas'), !report.rules.length ? h('p', { className: 'mf-review-empty' }, 'Nenhuma regra criada. Aceite uma sugestão após conferir sua prévia.') : null, ...report.rules.map((r) => { var _a; return h('div', { className: 'mf-review-managed', key: r.id }, h('strong', {}, r.pattern + ' → ' + r.category), h('small', {}, (r.enabled ? 'Ativa' : 'Pausada') + ' · prioridade ' + r.priority + (r.constraint ? ' · conta específica · importações futuras' : ' · regra existente')), r.constraint ? h('div', { className: 'mf-review-actions' }, categorySelect(((_a = s.categoryReviewRuleEdits) === null || _a === void 0 ? void 0 : _a[r.id]) || r.category, v => app.setState({ categoryReviewRuleEdits: { ...s.categoryReviewRuleEdits, [r.id]: v } }), 'Categoria da regra ' + r.id), button('Simular edição', () => { var _a; return void categoryReviewPrepare(app, 'manage-rule', { ruleId: r.id, change: 'edit', category: ((_a = s.categoryReviewRuleEdits) === null || _a === void 0 ? void 0 : _a[r.id]) || r.category }); }), button(r.enabled ? 'Pausar' : 'Reativar', () => void categoryReviewPrepare(app, 'manage-rule', { ruleId: r.id, change: r.enabled ? 'pause' : 'resume' })), button('Excluir com prévia', () => void categoryReviewPrepare(app, 'manage-rule', { ruleId: r.id, change: 'delete' }))) : h('small', {}, 'Editar em Configurações de categorias.')); })), h('details', { id: 'mf-review-section-3', hidden: tab !== 3, tabIndex: -1 }, h('summary', {}, 'Decisões e auditoria local'), ...report.audit.map((a) => h('div', { className: 'mf-review-audit', key: a.id }, h('span', {}, ({ rule: 'Regra criada', classify: 'Classificação', reviewed: 'Revisão', decision: 'Decisão', undo: 'Reversão', forget: 'Preferências apagadas', 'manage-rule': 'Regra atualizada' }[a.action] || 'Ação') + ' · ' + new Date(a.appliedAt).toLocaleString('pt-BR') + ' · ' + ({ available: 'Pode desfazer', undone: 'Desfeita', not_applicable: 'Registrada' }[a.undoState] || 'Registrada')), a.undoState === 'available' ? button('Preparar desfazer', () => void categoryReviewPrepare(app, 'undo', { commandId: a.id })) : null)), h('p', {}, report.decisions.length + ' decisão(ões) recente(s): ' + report.decisions.map((d) => ({ denied: 'negada', deferred: 'adiada', accepted: 'aceita', edited: 'editada' }[d.state])).join(', ')), button('Apagar preferências de sugestões', () => void categoryReviewPrepare(app, 'forget', {})))) : null);
+}
+function renderCategoryReview(app) {
+    return mfD04Render(app);
 }

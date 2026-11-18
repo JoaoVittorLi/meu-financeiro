@@ -174,7 +174,7 @@ function classifyCandidate({transaction,evidence={},history=[],rules=[],catalog=
  // never counts as merchant identity; Naive Bayes remains review-only.
  const directName=fold(evidence.merchantName);
  const desc=fold(transaction.description||'');
- const processor=/\b(pagseguro|mercado pago|stone|cielo|paypal|picpay|getnet|rede|sumup|pagar me)\b/i;
+ const processor=/\b(pag ?seguro|pag ?bank|mercado ?pago|stone|cielo|pay ?pal|pic ?pay|get ?net|rede|sum ?up|pagar ?me|infinite ?pay)\b/i;
  const narrowMcc=['5411','5541','5912'].includes(String(evidence.mcc||''));
  const directCommerce=narrowMcc&&mcc&&!external&&
   evidence.transactionType==='DEBIT'&&

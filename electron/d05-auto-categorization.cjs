@@ -7,22 +7,33 @@ const {randomUUID,createHash}=require('node:crypto');
 const {D05CategoryService}=require('./d05-category-service.cjs');
 const {matchRule,normalizeLabel}=require('./db.cjs');
 const {evidenceVerdict}=require('./intelligence-category-quality.cjs');
-const {evidenceFor}=require('./cat01-evidence-store.cjs');
+const {evidenceFromRow}=require('./cat01-evidence-store.cjs');
 const {classifyCandidate}=require('./cat02-classifier.cjs');
 const {DatabaseSync}=require('node:sqlite');
 const ISO=/^\d{4}-\d{2}-\d{2}$/;
 const MIN_ANCHORS=5,MIN_DATES=3;
 const key=(row)=>JSON.stringify([row.accountId,row.externalId]);
 const hash=(data)=>createHash('sha256').update(JSON.stringify(data)).digest('hex');
-function validDate(x){return typeof x==='string'&&ISO.test(x)&&!Number.isNaN(Date.parse(x+'T12:00:00Z'))&&new Date(x+'T12:00:00Z').toISOString().slice(0,10)===x;}
+const validDateCache=new Map();
+function validDate(x){
+ if(typeof x!=='string')return false;
+ const cached=validDateCache.get(x);
+ if(cached!==undefined)return cached;
+ const ok=ISO.test(x)&&!Number.isNaN(Date.parse(x+'T12:00:00Z'))&&new Date(x+'T12:00:00Z').toISOString().slice(0,10)===x;
+ if(validDateCache.size<8192)validDateCache.set(x,ok);
+ return ok;
+}
 function requireString(x,label){if(typeof x!=='string'||!x.trim()||x.length>140||/[\x00-\x1f<>]/.test(x))throw Error('Auto D05: '+label+' inválido');return x;}
 function fingerprint(r){return hash([r.accountId,r.externalId,r.date,r.description,r.amountCents,r.status]);}
 function merchantKey(row,aliases){
  const raw=normalizeLabel(row.description);
  if(!raw||raw.length<8||raw.length>180||/\b(PIX|TRANSFERENCIA|SAQUE|ESTORNO|TARIFA|PAGAMENTO BOLETO)\b/.test(raw))return null;
- const found=aliases.filter(a=>normalizeLabel(a.pattern).length>=8&&raw.includes(normalizeLabel(a.pattern)));
+ const found=aliases.filter(a=>{
+  const pattern=a._pattern??normalizeLabel(a.pattern);
+  return pattern.length>=8&&raw.includes(pattern);
+ });
  if(found.length){
-  const names=[...new Set(found.map(a=>normalizeLabel(a.displayName)))];
+  const names=[...new Set(found.map(a=>a._displayName??normalizeLabel(a.displayName)))];
   return names.length===1&&names[0].length>=8?'alias:'+names[0]:null;
  }
  // Exact normalized name only. Never assume that a reference suffix identifies
@@ -228,7 +239,7 @@ class D05AutoCategorization{
   return this.status();
  }
  allRows(){
-  return this.sql.prepare(`SELECT b.rowid,b.account_id AS accountId,b.external_id AS externalId,
+  const list=this.sql.prepare(`SELECT b.rowid,b.account_id AS accountId,b.external_id AS externalId,
    b.date,b.description,b.amount_cents AS amountCents,b.status,bi.status AS syncStatus,
    o.category_id AS manualCategoryId,o.subcategory_id AS manualSubcategoryId,
    n.nature,n.reviewed_at AS reviewedAt,
@@ -242,44 +253,84 @@ class D05AutoCategorization{
    LEFT JOIN bank_category_overrides o USING(account_id,external_id)
    LEFT JOIN bank_transaction_notes n USING(account_id,external_id)
    LEFT JOIN bank_manual_links l USING(account_id,external_id)
-   ORDER BY b.date,b.account_id,b.external_id`).all().map(r=>({...r,hasSplits:!!r.hasSplits,blockedByFeedback:!!r.blockedByFeedback,hasAuto:!!r.hasAuto}));
+   ORDER BY b.date,b.account_id,b.external_id`).all();
+  for(let i=0;i<list.length;i++){
+   const r=list[i];
+   r.hasSplits=!!r.hasSplits;r.blockedByFeedback=!!r.blockedByFeedback;r.hasAuto=!!r.hasAuto;
+  }
+  return list;
  }
  plan({limit=100,accountId=null,futureOnly=false}={}){
   if(typeof futureOnly!=='boolean')throw Error('Auto D05: escopo inválido');
   if(!Number.isInteger(limit)||limit<1||limit>20000)throw Error('Auto D05: limite inválido');
   if(accountId!==null)requireString(accountId,'conta');
-  const permissions=this.permissions().filter(p=>p.enabled===1&&p.expiresAt>this.clock().toISOString()&&(!accountId||p.accountId===accountId));
+  const nowIso=this.clock().toISOString();
+  const permissions=this.permissions().filter(p=>p.enabled===1&&p.expiresAt>nowIso&&(!accountId||p.accountId===accountId));
   const sql=this.sql,rules=this.finance().listCategories().rules.filter(r=>r.enabled);
   const aliases=sql.prepare('SELECT pattern,display_name AS displayName FROM merchant_aliases').all();
-  const rows=this.allRows(),groups=new Map(),byId=new Map(),duplicates=new Map();
+  const preparedAliases=aliases.map(a=>({...a,_pattern:normalizeLabel(a.pattern),_displayName:normalizeLabel(a.displayName)}));
+  // Preload lookup tables once per plan() call to eliminate per-row N+1 SQLite queries.
+  new D05CategoryService(this.finance());
+  const categoryById=new Map(
+   sql.prepare('SELECT id,name,kind,icon_key AS iconKey,hue,built_in FROM categories').all()
+    .map(c=>[c.id,c]));
+  const subcategoryById=new Map(
+   sql.prepare('SELECT id,parent_category_id AS parentCategoryId,name,icon_key AS iconKey,hue,kind,active,built_in FROM subcategories').all()
+    .map(s=>[s.id,s]));
+  const resolveBuiltInTarget=(target)=>{
+   if(!target||typeof target!=='object'||Array.isArray(target))return null;
+   const cid=target.categoryId,sid=target.subcategoryId===null||target.subcategoryId===undefined?null:target.subcategoryId;
+   if(typeof cid!=='string'||!cid||cid.length>140||/[\x00-\x1f<>]/.test(cid))return null;
+   if(sid!==null&&(typeof sid!=='string'||!sid||sid.length>140||/[\x00-\x1f<>]/.test(sid)))return null;
+   const parent=categoryById.get(cid);
+   if(!parent||parent.built_in!==1)return null;
+   let child=null;
+   if(sid!==null){
+    child=subcategoryById.get(sid);
+    if(!child||child.parentCategoryId!==cid||child.active!==1||child.built_in!==1)return null;
+   }
+   return {categoryId:cid,parentName:parent.name,subcategoryId:sid,parent,child};
+  };
+  const autoFingerprints=new Map();
+  for(const a of sql.prepare('SELECT account_id,external_id,source_fingerprint FROM mf_auto_labels').all()){
+   let inner=autoFingerprints.get(a.account_id);
+   if(!inner){inner=new Map();autoFingerprints.set(a.account_id,inner);}
+   inner.set(a.external_id,a.source_fingerprint);
+  }
+  const metadataRows=sql.prepare('SELECT * FROM cat01_metadata ORDER BY account_id,external_id').all();
+  const metadata=new Array(metadataRows.length);
+  const evidenceRows=new Map();
+  for(let i=0;i<metadataRows.length;i++){
+   const m=metadataRows[i];
+   metadata[i]={account_id:m.account_id,external_id:m.external_id,fingerprint:m.fingerprint};
+   let inner=evidenceRows.get(m.account_id);
+   if(!inner){inner=new Map();evidenceRows.set(m.account_id,inner);}
+   inner.set(m.external_id,m);
+  }
+  const rows=this.allRows(),groups=new Map(),duplicates=new Map();
   const active=new Map(permissions.map(p=>[p.accountId,p]));
-  const service=new D05CategoryService(this.finance());
+  const rowFp=r=>r._fp??(r._fp=fingerprint(r));
   for(const row of rows){
    const scope=active.get(row.accountId);
    if(!scope||row.date<scope.startDate||row.date>scope.endDate)continue;
-   const merchant=merchantKey(row,aliases);byId.set(key(row),merchant);
-   if(!merchant||!eligible({...row,reviewedAt:null})||!row.manualCategoryId||!validDate(row.date))continue;
+   const merchant=merchantKey(row,preparedAliases);row._merchant=merchant;
+   if(!merchant||!row.manualCategoryId||!eligible({...row,reviewedAt:null})||!validDate(row.date))continue;
    // Only explicit D05 manual overrides serve as anchor evidence, never auto labels.
-   try{
-    const target=service.resolve({categoryId:row.manualCategoryId,subcategoryId:row.manualSubcategoryId??null});
-    // Only the owner-approved built-in 14x61 taxonomy can be inferred automatically.
-    const builtin=sql.prepare('SELECT built_in FROM categories WHERE id=?').get(target.categoryId);
-    const builtinChild=target.subcategoryId?
-     sql.prepare('SELECT built_in,active FROM subcategories WHERE id=?').get(target.subcategoryId):null;
-    if(builtin?.built_in!==1||(target.subcategoryId&&(!builtinChild||builtinChild.built_in!==1||builtinChild.active!==1)))continue;
-    if(!['both',kind(row)].includes(target.parent.kind)||
-      (target.child&&!['both',kind(row)].includes(target.child.kind)))continue;
-    const groupKey=row.accountId+'|'+kind(row)+'|'+merchant;
-    if(!groups.has(groupKey))groups.set(groupKey,[]);
-    groups.get(groupKey).push({categoryId:target.categoryId,subcategoryId:target.subcategoryId,
-     date:row.date,amountCents:row.amountCents,externalId:row.externalId});
-   }catch(_){/* Legacy or orphaned manual labels never authorize automation. */}
+   // Only the owner-approved built-in 14x61 taxonomy can be inferred automatically.
+   const target=resolveBuiltInTarget({categoryId:row.manualCategoryId,subcategoryId:row.manualSubcategoryId??null});
+   if(!target)continue;
+   if(!['both',kind(row)].includes(target.parent.kind)||
+     (target.child&&!['both',kind(row)].includes(target.child.kind)))continue;
+   const groupKey=row.accountId+'|'+kind(row)+'|'+merchant;
+   if(!groups.has(groupKey))groups.set(groupKey,[]);
+   groups.get(groupKey).push({categoryId:target.categoryId,subcategoryId:target.subcategoryId,
+    date:row.date,amountCents:row.amountCents,externalId:row.externalId});
   }
   for(const row of rows){
-   const merchant=byId.get(key(row));if(!merchant)continue;
+   const merchant=row._merchant;if(!merchant)continue;
    const duplicateKey=JSON.stringify([row.accountId,row.date,row.amountCents,merchant]);
-   if(!duplicates.has(duplicateKey))duplicates.set(duplicateKey,[]);
-   duplicates.get(duplicateKey).push(row.externalId);
+   row._dupKey=duplicateKey;
+   duplicates.set(duplicateKey,(duplicates.get(duplicateKey)||0)+1);
   }
   const candidates=[],review=[],perAccount={},candidateDigest=createHash('sha256');
   let candidateCount=0,reviewCount=0,scopedCount=0;
@@ -292,8 +343,8 @@ class D05AutoCategorization{
      (!permission.newEnabled&&row.rowid>permission.boundaryRowid)))continue;
    scopedCount++;
    if(row.hasAuto){
-    const existing=this.sql.prepare('SELECT source_fingerprint FROM mf_auto_labels WHERE account_id=? AND external_id=?').get(row.accountId,row.externalId);
-    if(existing?.source_fingerprint!==fingerprint(row)){
+    const existingFp=autoFingerprints.get(row.accountId)?.get(row.externalId);
+    if(existingFp!==rowFp(row)){
      reviewCount++;if(review.length<limit)review.push({accountId:row.accountId,externalId:row.externalId,reason:'Movimentação alterada após categorização; revisar rótulo antigo'});
     }
     continue;
@@ -304,11 +355,10 @@ class D05AutoCategorization{
     continue;
    }
    if(!eligible(row)||row.manualCategoryId||row.blockedByFeedback)continue;
-   if(restrictRule(row,rules))continue; // Existing approved rules always win.
-   const merchant=byId.get(key(row));
+   if(rules.length&&restrictRule(row,rules))continue; // Existing approved rules always win.
+   const merchant=row._merchant;
    if(!merchant){reviewCount++;if(review.length<limit)review.push({accountId:row.accountId,externalId:row.externalId,reason:'Estabelecimento sem identificação segura'});continue;}
-   const duplicateKey=JSON.stringify([row.accountId,row.date,row.amountCents,merchant]);
-   if((duplicates.get(duplicateKey)||[]).length>1){
+   if((duplicates.get(row._dupKey)||0)>1){
     reviewCount++;if(review.length<limit)review.push({accountId:row.accountId,externalId:row.externalId,reason:'Possível transação duplicada ou PENDING/POSTED com IDs diferentes'});
     continue;
    }
@@ -340,7 +390,8 @@ class D05AutoCategorization{
     // CAT-02 is a read-only advisor. Only its strict agreement between MCC
     // and provider category can authorize the canonical D05 overlay writer.
     // Human conflicts and all uncalibrated local-model suggestions are excluded.
-    const evidence=evidenceFor(sql,row.accountId,row.externalId);
+    const rawEvidence=evidenceRows.get(row.accountId)?.get(row.externalId);
+    const evidence=rawEvidence?evidenceFromRow(rawEvidence):null;
     const external=evidence?classifyCandidate({
      transaction:{accountId:row.accountId,externalId:row.externalId,
       accountType:evidence.accountType,status:row.status,amountCents:row.amountCents,
@@ -357,21 +408,16 @@ class D05AutoCategorization{
      external.evidenceTypes.includes('verified_commercial_cnpj');
     if(external?.status==='apply'&&(corroborated||directParent)&&
        (!verified.length||sameTarget(verified[0],external.target))){
-     try{
-      const resolved=service.resolve(external.target);
-      const builtin=sql.prepare('SELECT built_in FROM categories WHERE id=?').get(resolved.categoryId);
-      const child=resolved.subcategoryId?
-       sql.prepare('SELECT built_in,active FROM subcategories WHERE id=?').get(resolved.subcategoryId):null;
-      if(builtin?.built_in===1&&(!resolved.subcategoryId||(child?.built_in===1&&child.active===1))&&
-         ['both',kind(row)].includes(resolved.parent.kind)&&
-         (!resolved.child||['both',kind(row)].includes(resolved.child.kind))){
-       target={categoryId:resolved.categoryId,subcategoryId:resolved.subcategoryId};
-       evidenceHash=hash(['cat02-external-v1',evidence.fingerprint,merchant,target]);
-       explanation=directParent?
-        'MCC comercial restrito com identidade direta e CNPJ verificados; somente categoria-pai D05, sem subcategoria inferida.':
-        'MCC e categoria do provedor Pluggy concordantes; destino D05 oficial verificado. Sem correções humanas exigidas.';
-      }
-     }catch(_){/* External evidence not resolvable against the local D05 catalog. */}
+     const resolved=resolveBuiltInTarget(external.target);
+     if(resolved&&
+        ['both',kind(row)].includes(resolved.parent.kind)&&
+        (!resolved.child||['both',kind(row)].includes(resolved.child.kind))){
+      target={categoryId:resolved.categoryId,subcategoryId:resolved.subcategoryId};
+      evidenceHash=hash(['cat02-external-v1',evidence.fingerprint,merchant,target]);
+      explanation=directParent?
+       'MCC comercial restrito com identidade direta e CNPJ verificados; somente categoria-pai D05, sem subcategoria inferida.':
+       'MCC e categoria do provedor Pluggy concordantes; destino D05 oficial verificado. Sem correções humanas exigidas.';
+     }
     }
    }
    if(!target){
@@ -380,7 +426,7 @@ class D05AutoCategorization{
     continue;
    }
    const proposal={accountId:row.accountId,externalId:row.externalId,merchant,target,
-     sourceFingerprint:fingerprint(row),evidenceHash,consentRevision:permission.revision,
+     sourceFingerprint:rowFp(row),evidenceHash,consentRevision:permission.revision,
      explanation};
    candidateCount++;
    candidateDigest.update(JSON.stringify([proposal.accountId,proposal.externalId,proposal.target,proposal.evidenceHash])+'\n');
@@ -390,15 +436,14 @@ class D05AutoCategorization{
   // The preview manifest covers ALL scoped bank rows, not just the visual
   // sample. Metadata, rule, alias, protection and permission revisions are
   // included so a stale preview cannot activate unattended automation.
-  const metadata=sql.prepare('SELECT account_id,external_id,fingerprint FROM cat01_metadata ORDER BY account_id,external_id').all();
   // Source/preview hashes scan at most one SQLite row at a time; do not
   // materialize a second 20k+ row array just to compute the fingerprint.
   const sourceRowsHash=createHash('sha256'),previewRowsHash=createHash('sha256');
   for(const r of rows){
-   const base=[r.accountId,r.externalId,fingerprint(r),r.syncStatus,r.manualCategoryId,
-    r.manualSubcategoryId,r.nature,r.reviewedAt,r.linkedManualId,r.hasSplits,r.blockedByFeedback];
-   sourceRowsHash.update(JSON.stringify(base)+'\n');
-   previewRowsHash.update(JSON.stringify([...base,r.hasAuto])+'\n');
+   const baseLine=JSON.stringify([r.accountId,r.externalId,rowFp(r),r.syncStatus,r.manualCategoryId,
+    r.manualSubcategoryId,r.nature,r.reviewedAt,r.linkedManualId,r.hasSplits,r.blockedByFeedback]);
+   sourceRowsHash.update(baseLine+'\n');
+   previewRowsHash.update(baseLine.slice(0,-1)+','+r.hasAuto+']\n');
   }
   const staticSource=[permissions.map(p=>[p.accountId,p.revision,p.startDate,p.endDate,p.expiresAt,
     p.historyEnabled,p.newEnabled,p.boundaryRowid]),futureOnly,
@@ -484,63 +529,84 @@ class D05AutoCategorization{
   if(this.busy)throw Error('Auto D05: aplicação concorrente');
   this.busy=true;
   try{
-   const current=this.plan({accountId,limit,futureOnly});
-   if(expectedSourceVersion!==null&&current.sourceVersion!==expectedSourceVersion)
-    throw Error('Auto D05: MANIFEST_STALE antes do backup');
-   if(!current.candidates.length)return {applied:0,reviewCount:current.reviewCount,receipts:[],state:'no_eligible_evidence'};
    // All pages share one verified, durable pre-batch SQLite backup, so a
    // 20k run does not create 80 copies of the same growing database.
    // Every subsequent COMMIT rechecks that snapshot and its integrity.
+   let preflight=null;
    if(batchId){
     const job=this.sql.prepare('SELECT backup_path AS backupPath,state FROM mf_auto_apply_jobs WHERE job_id=?').get(batchId);
     if(!job||job.state!=='running')throw Error('Auto D05: lote revogado ou interrompido');
-    if(job.backupPath)this.verifyBatchBackup(job.backupPath);
-    else{
+    if(job.backupPath){
+     this.verifyBatchBackup(job.backupPath);
+    }else{
+     preflight=this.plan({accountId,limit,futureOnly});
+     if(expectedSourceVersion!==null&&preflight.sourceVersion!==expectedSourceVersion)
+      throw Error('Auto D05: MANIFEST_STALE antes do backup');
+     if(!preflight.candidates.length)return {applied:0,reviewCount:preflight.reviewCount,receipts:[],state:'no_eligible_evidence',remainingCandidateCount:0};
      const created=await this.backupVerified('apply');
      this.sql.prepare("UPDATE mf_auto_apply_jobs SET backup_path=? WHERE job_id=? AND state='running'")
       .run(created,batchId);
      this.verifyBatchBackup(created);
     }
-   }else await this.backupVerified('apply');
-   const f=this.finance(),sql=this.sql,at=this.clock().toISOString(),batch=batchId||randomUUID(),receipts=[];let reviewCount=current.reviewCount;
+   }else{
+    preflight=this.plan({accountId,limit,futureOnly});
+    if(expectedSourceVersion!==null&&preflight.sourceVersion!==expectedSourceVersion)
+     throw Error('Auto D05: MANIFEST_STALE antes do backup');
+    if(!preflight.candidates.length)return {applied:0,reviewCount:preflight.reviewCount,receipts:[],state:'no_eligible_evidence',remainingCandidateCount:0};
+    await this.backupVerified('apply');
+   }
+   const f=this.finance(),sql=this.sql,at=this.clock().toISOString(),batch=batchId||randomUUID(),receipts=[];let reviewCount=preflight?preflight.reviewCount:0,remainingCandidateCount=0;
    sql.exec('BEGIN IMMEDIATE');
    try{
     // Recompute from authoritative DB INSIDE transaction. Do not trust renderer's plan.
     const now=this.plan({accountId,limit,futureOnly});reviewCount=now.reviewCount;
     if(expectedSourceVersion!==null&&now.sourceVersion!==expectedSourceVersion)
      throw Error('Auto D05: MANIFEST_STALE durante revalidação');
-    const currentHashes=new Map(current.candidates.map(p=>[key(p),p.sourceFingerprint+'|'+p.evidenceHash+'|'+p.consentRevision]));
-    for(const proposal of now.candidates){
-     if(batchId&&sql.prepare("SELECT state FROM mf_auto_apply_jobs WHERE job_id=?").get(batchId)?.state!=='running')
-      throw Error('Auto D05: BATCH_STOPPED por pausa, cancelamento ou revogação');
-     if(currentHashes.get(key(proposal))!==
-       proposal.sourceFingerprint+'|'+proposal.evidenceHash+'|'+proposal.consentRevision)continue;
-     const row=sql.prepare('SELECT account_id AS accountId,external_id AS externalId,date,description,amount_cents AS amountCents,status FROM bank_transactions WHERE account_id=? AND external_id=?').get(proposal.accountId,proposal.externalId);
-     if(!row||fingerprint(row)!==proposal.sourceFingerprint)continue;
-     const perm=sql.prepare('SELECT enabled,revision,expires_at AS expiresAt FROM mf_auto_permissions WHERE account_id=?').get(proposal.accountId);
-     if(!perm||perm.enabled!==1||perm.expiresAt<=this.clock().toISOString()||perm.revision!==proposal.consentRevision)continue;
-     if(sql.prepare('SELECT 1 FROM bank_category_overrides WHERE account_id=? AND external_id=?').get(proposal.accountId,proposal.externalId))continue;
-     if(sql.prepare('SELECT 1 FROM mf_auto_feedback WHERE account_id=? AND external_id=?').get(proposal.accountId,proposal.externalId))continue;
-     if(sql.prepare('SELECT 1 FROM mf_auto_labels WHERE account_id=? AND external_id=?').get(proposal.accountId,proposal.externalId))continue;
-     const resolved=new D05CategoryService(f).resolve(proposal.target);
-     const id=randomUUID();
-     sql.prepare(`INSERT INTO mf_auto_labels(account_id,external_id,category_id,subcategory_id,parent_name,
+    if(!now.candidates.length){
+     sql.exec('COMMIT');
+     return {applied:0,reviewCount,receipts:[],state:'no_eligible_evidence',remainingCandidateCount:0};
+    }
+    const currentHashes=preflight?new Map(preflight.candidates.map(p=>[key(p),p.sourceFingerprint+'|'+p.evidenceHash+'|'+p.consentRevision])):null;
+    const stmtJobState=batchId?sql.prepare("SELECT state FROM mf_auto_apply_jobs WHERE job_id=?"):null;
+    const stmtBankRow=sql.prepare('SELECT account_id AS accountId,external_id AS externalId,date,description,amount_cents AS amountCents,status FROM bank_transactions WHERE account_id=? AND external_id=?');
+    const stmtPerm=sql.prepare('SELECT enabled,revision,expires_at AS expiresAt FROM mf_auto_permissions WHERE account_id=?');
+    const stmtOverride=sql.prepare('SELECT 1 FROM bank_category_overrides WHERE account_id=? AND external_id=?');
+    const stmtFeedback=sql.prepare('SELECT 1 FROM mf_auto_feedback WHERE account_id=? AND external_id=?');
+    const stmtLabel=sql.prepare('SELECT 1 FROM mf_auto_labels WHERE account_id=? AND external_id=?');
+    const stmtInsertLabel=sql.prepare(`INSERT INTO mf_auto_labels(account_id,external_id,category_id,subcategory_id,parent_name,
       source_fingerprint,merchant_key,evidence_hash,explanation,receipt_id,applied_at)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?)`).run(proposal.accountId,proposal.externalId,
+      VALUES (?,?,?,?,?,?,?,?,?,?,?)`);
+    const stmtInsertReceipt=sql.prepare(`INSERT INTO mf_auto_receipts(id,batch_id,action,account_id,external_id,
+      before_category_id,before_subcategory_id,after_category_id,after_subcategory_id,
+      source_fingerprint,evidence_hash,consent_revision,at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`);
+    const d05=new D05CategoryService(f);
+    for(const proposal of now.candidates){
+     if(stmtJobState&&stmtJobState.get(batchId)?.state!=='running')
+      throw Error('Auto D05: BATCH_STOPPED por pausa, cancelamento ou revogação');
+     if(currentHashes&&currentHashes.get(key(proposal))!==
+       proposal.sourceFingerprint+'|'+proposal.evidenceHash+'|'+proposal.consentRevision)continue;
+     const row=stmtBankRow.get(proposal.accountId,proposal.externalId);
+     if(!row||fingerprint(row)!==proposal.sourceFingerprint)continue;
+     const perm=stmtPerm.get(proposal.accountId);
+     if(!perm||perm.enabled!==1||perm.expiresAt<=this.clock().toISOString()||perm.revision!==proposal.consentRevision)continue;
+     if(stmtOverride.get(proposal.accountId,proposal.externalId))continue;
+     if(stmtFeedback.get(proposal.accountId,proposal.externalId))continue;
+     if(stmtLabel.get(proposal.accountId,proposal.externalId))continue;
+     const resolved=d05.resolve(proposal.target);
+     const id=randomUUID();
+     stmtInsertLabel.run(proposal.accountId,proposal.externalId,
       resolved.categoryId,resolved.subcategoryId,resolved.parentName,proposal.sourceFingerprint,
       proposal.merchant,proposal.evidenceHash,proposal.explanation,id,at);
-     sql.prepare(`INSERT INTO mf_auto_receipts(id,batch_id,action,account_id,external_id,
-      before_category_id,before_subcategory_id,after_category_id,after_subcategory_id,
-      source_fingerprint,evidence_hash,consent_revision,at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`)
-      .run(id,batch,'apply',proposal.accountId,proposal.externalId,null,null,
-       resolved.categoryId,resolved.subcategoryId,proposal.sourceFingerprint,
-       proposal.evidenceHash,proposal.consentRevision,at);
+     stmtInsertReceipt.run(id,batch,'apply',proposal.accountId,proposal.externalId,null,null,
+      resolved.categoryId,resolved.subcategoryId,proposal.sourceFingerprint,
+      proposal.evidenceHash,proposal.consentRevision,at);
      receipts.push(id);
      if(typeof this.fault==='function')this.fault('during-commit',receipts.length);
     }
+    remainingCandidateCount=Math.max(0,now.candidateCount-receipts.length);
     sql.exec('COMMIT');
    }catch(e){sql.exec('ROLLBACK');throw e;}
-   return {applied:receipts.length,reviewCount,batchId:batch,receipts,backupCreated:true};
+   return {applied:receipts.length,reviewCount,batchId:batch,receipts,backupCreated:true,remainingCandidateCount};
   }finally{this.busy=false;}
  }
  startBatch({previewVersion,futureOnly=false,jobId=null}={}){
@@ -606,17 +672,17 @@ class D05AutoCategorization{
   const row=this.sql.prepare('SELECT * FROM mf_auto_apply_jobs WHERE job_id=?').get(id);
   if(!row||row.state!=='running')throw Error('Auto D05: lote não está ativo');
   if(!this.initialReady())throw Error('Auto D05: autorização inicial revogada');
-  if(this.plan({limit:1,futureOnly:row.future_only===1}).sourceVersion!==row.source_version){
-   this.sql.prepare("UPDATE mf_auto_apply_jobs SET state='stale',error_code='MANIFEST_STALE',finished_at=? WHERE job_id=? AND state='running'")
-    .run(this.clock().toISOString(),id);
-   return this.batchStatus(id);
-  }
   try{
-   await this.apply({limit,expectedSourceVersion:row.source_version,batchId:id,
+   const applied=await this.apply({limit,expectedSourceVersion:row.source_version,batchId:id,
     futureOnly:row.future_only===1});
-   const fresh=this.plan({limit:1,futureOnly:row.future_only===1});
-   const nextState=fresh.sourceVersion!==row.source_version?'stale':
-    fresh.candidateCount===0?'completed':'running';
+   let nextState;
+   if(!this.fault&&applied.applied===limit&&applied.remainingCandidateCount>0){
+    nextState='running';
+   }else{
+    const fresh=this.plan({limit:1,futureOnly:row.future_only===1});
+    nextState=fresh.sourceVersion!==row.source_version?'stale':
+     fresh.candidateCount===0?'completed':'running';
+   }
    this.sql.prepare(`UPDATE mf_auto_apply_jobs SET state=?,
     error_code=?,finished_at=? WHERE job_id=? AND state='running'`)
     .run(nextState,nextState==='stale'?'MANIFEST_STALE':null,

@@ -262,7 +262,7 @@ button.d05-metric:hover{background:var(--d05-hover);border-color:var(--d05-blue)
 .d05-screen .mf-cat-nav button{min-width:0;min-height:48px;display:flex;flex-direction:column;align-items:flex-start;
  justify-content:center;gap:2px;padding:8px 12px;border-radius:11px;border:1px solid transparent;
  background:transparent;color:var(--d05-muted);font-size:12px;font-weight:700;text-align:left;transition:background .16s ease,border-color .16s ease}
-.mf-cat-nav button small{font-size:10px;opacity:.72;letter-spacing:.06em}
+.mf-cat-nav button small{font-size:10px;letter-spacing:.06em}
 .d05-screen .mf-cat-nav button.is-current{background:var(--d05-raised);color:var(--d05-text);border-color:var(--d05-border);
  box-shadow:inset 0 2px 0 var(--d05-blue)}
 .d05-screen .mf-cat-nav button:hover{background:var(--d05-hover)}
@@ -316,9 +316,10 @@ button.d05-metric:hover{background:var(--d05-hover);border-color:var(--d05-blue)
 .d05-screen .mf-cat-toolbar button,.d05-screen .mf-cat-receipt button{min-height:36px;padding:7px 12px;
  border:1px solid var(--d05-border);border-radius:9px;background:var(--d05-raised);color:var(--d05-text);
  font-size:11px;font-weight:700}
-.d05-screen .mf-cat-toolbar button:hover,.d05-screen .mf-cat-receipt button:hover{background:var(--d05-hover)}
+.d05-screen .mf-cat-toolbar button:not(.d05-confirm):hover:not(:disabled),.d05-screen .mf-cat-receipt button:hover:not(:disabled){background:var(--d05-hover)}
 .d05-screen .mf-cat-toolbar button.is-selected{border-color:var(--d05-blue)}
-.d05-screen .mf-cat-toolbar .d05-confirm{background:var(--d05-selected);border-color:var(--d05-positive)}
+.d05-screen .mf-cat-toolbar .d05-confirm{background:#16835c;border-color:#16835c;color:#fff}
+.d05-screen .mf-cat-toolbar .d05-confirm:hover:not(:disabled){background:#116c4c;border-color:#116c4c}
 .mf-cat-progress{display:grid;gap:8px;padding:12px;background:var(--d05-raised);border-radius:12px;margin:12px 0}
 .mf-cat-progress-label{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:11px}
 .mf-cat-progress-label strong{font-size:12px;color:var(--d05-text)}
