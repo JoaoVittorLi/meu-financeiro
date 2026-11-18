@@ -309,3 +309,24 @@
   - `npm --prefix mobile-push test`: **PASS** (`133/133`, `fail 0`, `duration_ms 7873.94`)
   - `npm run test:electron-smoke` + `node scripts/verify-visual-matrix.cjs`: **PASS** (`32 entradas JSON, 32 PNGs, 8 áreas, 4 presets, arquivos e dimensões conferidos`)
   - `node scripts/nivel-b-interactive-qa.cjs`: **PASS** (`14/14` jornadas `PJ-01..09`, `NJ-01..05`, `FAIL: 0`, `RuntimeIssues: 0`)
+
+## 20. Iteração 12 — Invariantes de Mundo Fechado Wave 11 (`CAT-02`: Anti-Não-ASCII Pós-NFKD, Whitelist de Cartão, Janela Deslizante `2..6` e Wrappers/Colados Universais)
+
+- **Origem:** Auditoria forense independente Wave 11 devolveu `GO`, porém o Guardião Financeiro Wave 11 (`c816b30e`) devolveu `REJECT` no SHA `44cbb417` apontando `4` classes generalizáveis extras (com `63/63` Wave 8/9/10 bloqueados e `31/31` nomes BR reais aprovados).
+- **`electron/cat02-classifier.cjs`**:
+  - **Unicode fechado (`hasNonAsciiLetterOrSymbol`) & homóglifos**: além da expansão de `CONFUSABLE_HOMOGLYPHS` (`\u03F9`/`\u03F2`, `\u0196`/`\u01C0`/`\u0269`, `\uA7AF`/`\u024A`/`\u024B`, `\u04AE`/`\u04AF`, `\u0474`/`\u0475`, numerais romanos `\u2160-\u217F`), qualquer caractere restante `> 0x7F` em `\p{L}|\p{Nl}|\p{So}` pós-NFKD/`[\p{Mn}\p{Me}]` (exceto `\u00A9`/`\u00AE`) falha para `review` em `hasIntermediarySignal`, `hasDescriptorIntermediarySignal` e `isNonCardPaymentMethod` (português acentuado normalizado decompõe integralmente para ASCII).
+  - **Whitelist fechada de fluxo e trilhos não-cartão**: adicionada rejeição `NON_DEBIT_TRANSACTION_TYPE` para `evidence.transactionType && !== 'DEBIT'`; `allowedCardOp` (`CARD_PURCHASE` / `PURCHASE` / ausente) e `NON_CARD_RAIL_RE` (aplicado após `fold` sobre `paymentMethod`, `operationType`, `providerCategory`, `transaction.description`, `evidence.description`, `evidence.descriptionRaw`, junto com `hasIntermediarySignal` em `paymentMethod`/`operationType`/`providerCategory`) bloqueiam `PAGAMENTO_FATURA`, `PAGAMENTO_DE_FATURA`, `AUTOMATIC_DEBIT`, `DIRECT_DEBIT`, `DEBITO_AUTOMATICO`, `WITHDRAWAL`, `QR_CODE`, `MERCADO_PAGO`, `CREDIT` negativo e descrições `BOLETO`/`TED`/`DOC`/`TRANSF` em ambos os caminhos (`MULTI_SIGNAL_RECONCILED` e `VERIFIED_DIRECT_MERCHANT_MCC_PARENT`).
+  - **Janela deslizante algorítmica (`hasSplitIntermediaryWindow`)**: substitui enumeração de pares fixos por concatenação de `2..6` tokens adjacentes contra `FULL_INTERMEDIARY_TOKENS`, `ALWAYS_BLOCKED_SHORT_PROCESSORS`, `pag` (exceto `PAG MENOS` legítimo), `cora` (exceto `DONA/TIA/SANTA CORA` / `CORA CORALINA` legítimo) e `rede`, capturando `V ERO`, `S TONE`, `COR A`, `P GS`, `R EDE`, `RE DE`, `V.E.R.O`, `C.O.R.A`, `MER CPAG`, `PI CPAY`, `U BER`, `CI ELO`.
+  - **Wrappers POS universais & radicais colados cross-field (`POS_WRAPPED_INTERMEDIARY_RE`, `SAFE_PORTUGUESE_PREFIX_WORDS`, `COMMON_MERCHANT_STEMS`)**: captura combinações `<wrapper>*<base><wrapper>*` mesmo sem dígitos internos (`ECMP`, `POSMP`, `ECPAG`, `ECTON`, `CAIXAMP`, `MPAPP`, `MPLINK`, `MPSP`, `MERCADOPAGOBR`, `EC01MPPAY`, `01CAIXA02MPPOS`) protegendo palavras portuguesas válidas via `SAFE_PORTUGUESE_PREFIX_WORDS`, e generaliza `hasDescriptorIntermediarySignal` (executado também sobre `merchantName`, `merchantBusinessName` e `receiverName`) para prefixos, sufixos e infixos colados inclusive com UF/filial/ometimento de preposição (`MPPADARIACENTRALSP`, `PAGPADARIACENTRAL01`, `MPBARJOAO`, `MPP CENT`, `MPL PADARIA`, `LAMP PADARIA`, `PADARIAVEROCENTRAL`, `PADARIASTONECENTRAL`, `PADARIAMPCE`, `PADARIAMPSP`, `MPPADARIA CENTRAL`, `PADARIA CENTRALMP`).
+- **`tests/cat-p0-calibration.test.cjs` (`G6-18`)**:
+  - Adicionados `59` vetores adversariais Wave 11 (`w11-01..w11-59`, unitário + E2E SQLite) cobrindo todos os 4 blocos.
+- **Verificação Iteração 12 (`MF_QA_SYNTHETIC=1`, Node `v22.23.4`, npm `10.9.9`)**:
+  - `npm run test:types`: **PASS**
+  - `npm run compile`: **PASS**
+  - `node scripts/build-preload.cjs check`: **PASS**
+  - `node scripts/renderer-provenance.cjs check-bundle`: **PASS** (`31 entradas`)
+  - `npm run test:asar`: **PASS** (`1/1`, `duration_ms 222.92`)
+  - `npm run test:db`: **PASS** (`1000/1000`, `fail 0`, `cancelled 0`, `skipped 0`, `duration_ms 136929.25`)
+  - `npm --prefix mobile-push test`: **PASS** (`133/133`, `fail 0`, `duration_ms 7991.27`)
+  - `npm run test:electron-smoke` + `node scripts/verify-visual-matrix.cjs`: **PASS** (`32 entradas JSON, 32 PNGs, 8 áreas, 4 presets, arquivos e dimensões conferidos`)
+  - `node scripts/nivel-b-interactive-qa.cjs`: **PASS** (`14/14` jornadas `PJ-01..09`, `NJ-01..05`, `FAIL: 0`, `RuntimeIssues: 0`)

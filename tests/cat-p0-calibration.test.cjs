@@ -1681,7 +1681,70 @@ test('G6-18: wave 8 adversarial bypass classes (truncated k=1/2, dirty TON/PAG, 
     { id: 'w10-59-dot-pix', desc: 'P.I.X*PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
     { id: 'w10-60-space-pag', desc: 'P A G *PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
     { id: 'w10-61-space-ton', desc: 'T O N *PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
-    { id: 'w10-62-space-pix', desc: 'P I X *PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' }
+    { id: 'w10-62-space-pix', desc: 'P I X *PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    // Wave 11 Block 1: underscore non-card ops/paymentMethods, CREDIT type, BOLETO/TED/DOC/TRANSF descriptions
+    { id: 'w11-01-pm-pag-fatura', desc: 'COMPRA SUPERMERCADO ALFA SUL', name: 'SUPERMERCADO ALFA SUL', mcc: '5411', operationType: 'CARD_PURCHASE', paymentMethod: 'PAGAMENTO_FATURA' },
+    { id: 'w11-02-pm-pag-fatura-rec', desc: 'COMPRA SUPERMERCADO ALFA SUL', name: 'SUPERMERCADO ALFA SUL', category: 'Groceries', mcc: '5411', operationType: 'PURCHASE', paymentMethod: 'PAGAMENTO_FATURA' },
+    { id: 'w11-03-op-pag-de-fatura', desc: 'COMPRA SUPERMERCADO ALFA SUL', name: 'SUPERMERCADO ALFA SUL', category: 'Groceries', mcc: '5411', operationType: 'PAGAMENTO_DE_FATURA' },
+    { id: 'w11-04-op-auto-debit', desc: 'COMPRA SUPERMERCADO ALFA SUL', name: 'SUPERMERCADO ALFA SUL', category: 'Groceries', mcc: '5411', operationType: 'AUTOMATIC_DEBIT' },
+    { id: 'w11-05-op-direct-debit', desc: 'COMPRA SUPERMERCADO ALFA SUL', name: 'SUPERMERCADO ALFA SUL', category: 'Groceries', mcc: '5411', operationType: 'DIRECT_DEBIT' },
+    { id: 'w11-06-op-deb-auto', desc: 'COMPRA SUPERMERCADO ALFA SUL', name: 'SUPERMERCADO ALFA SUL', category: 'Groceries', mcc: '5411', operationType: 'DEBITO_AUTOMATICO' },
+    { id: 'w11-07-op-withdrawal', desc: 'COMPRA SUPERMERCADO ALFA SUL', name: 'SUPERMERCADO ALFA SUL', category: 'Groceries', mcc: '5411', operationType: 'WITHDRAWAL' },
+    { id: 'w11-08-op-qrcode', desc: 'COMPRA SUPERMERCADO ALFA SUL', name: 'SUPERMERCADO ALFA SUL', category: 'Groceries', mcc: '5411', operationType: 'QR_CODE' },
+    { id: 'w11-09-credit-type-rec', desc: 'COMPRA SUPERMERCADO ALFA SUL', name: 'SUPERMERCADO ALFA SUL', category: 'Groceries', mcc: '5411', transactionType: 'CREDIT', operationType: 'PURCHASE' },
+    { id: 'w11-10-pm-qrcode', desc: 'COMPRA SUPERMERCADO ALFA SUL', name: 'SUPERMERCADO ALFA SUL', mcc: '5411', paymentMethod: 'QR_CODE' },
+    { id: 'w11-11-pm-mercadopago', desc: 'COMPRA SUPERMERCADO ALFA SUL', name: 'SUPERMERCADO ALFA SUL', mcc: '5411', paymentMethod: 'MERCADO_PAGO' },
+    { id: 'w11-12-desc-boleto-card', desc: 'BOLETO SUPERMERCADO ALFA SUL', name: 'SUPERMERCADO ALFA SUL', mcc: '5411', operationType: 'CARD_PURCHASE' },
+    { id: 'w11-13-desc-ted-rec', desc: 'TED SUPERMERCADO ALFA SUL', name: 'SUPERMERCADO ALFA SUL', category: 'Groceries', mcc: '5411', operationType: 'PURCHASE' },
+    { id: 'w11-14-desc-doc-rec', desc: 'DOC SUPERMERCADO ALFA SUL', name: 'SUPERMERCADO ALFA SUL', category: 'Groceries', mcc: '5411', operationType: 'PURCHASE' },
+    { id: 'w11-15-desc-transf-rec', desc: 'TRANSF SUPERMERCADO ALFA SUL', name: 'SUPERMERCADO ALFA SUL', category: 'Groceries', mcc: '5411', operationType: 'PURCHASE' },
+    // Wave 11 Block 2: glued UF/branch, short 1-char stems, infixes, POS wrappers & glued merchant/receiver fields
+    { id: 'w11-16-glued-sp', desc: 'COMPRA PADARIA CENTRAL', descriptionRaw: 'MPPADARIACENTRALSP', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w11-17-glued-branch', desc: 'COMPRA PADARIA CENTRAL', descriptionRaw: 'PAGPADARIACENTRAL01', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w11-18-mpbarjoao', desc: 'COMPRA BAR DO JOAO', descriptionRaw: 'MPBARJOAO', name: 'BAR DO JOAO', mcc: '5411' },
+    { id: 'w11-19-mpp-cent', desc: 'COMPRA PADARIA CENTRAL', descriptionRaw: 'MPP CENT', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w11-20-mpl-padaria', desc: 'COMPRA LA PADARIA CENTRAL', descriptionRaw: 'MPL PADARIA CENTRAL', name: 'LA PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w11-21-lamp-padaria', desc: 'COMPRA LA PADARIA CENTRAL', descriptionRaw: 'LAMP PADARIA CENTRAL', name: 'LA PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w11-22-infix-vero', desc: 'COMPRA PADARIA CENTRAL', descriptionRaw: 'PADARIAVEROCENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w11-23-infix-stone', desc: 'COMPRA PADARIA CENTRAL', descriptionRaw: 'PADARIASTONECENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w11-24-infix-mpce', desc: 'COMPRA PADARIA CENTRAL', descriptionRaw: 'PADARIAMPCE', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w11-25-infix-mpsp', desc: 'COMPRA PADARIA CENTRAL', descriptionRaw: 'PADARIAMPSP', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w11-26-ecmp', desc: 'ECMP PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w11-27-posmp', desc: 'POSMP PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w11-28-ecpag', desc: 'ECPAG PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w11-29-ecton', desc: 'ECTON PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w11-30-caixamp', desc: 'CAIXAMP PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w11-31-mpapp', desc: 'MPAPP PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w11-32-mplink', desc: 'MPLINK PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w11-33-mpsp', desc: 'MPSP PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w11-34-mercadopagobr', desc: 'MERCADOPAGOBR PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w11-35-ec01mppay', desc: 'EC01MPPAY PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w11-36-01caixa02mppos', desc: '01CAIXA02MPPOS PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w11-37-bizname-glued', desc: 'COMPRA PADARIA CENTRAL', name: 'PADARIA CENTRAL', businessName: 'MPPADARIA CENTRAL LTDA', mcc: '5411' },
+    { id: 'w11-38-receiver-glued', desc: 'COMPRA PADARIA CENTRAL', name: 'PADARIA CENTRAL', receiver: { name: 'MPPADARIA CENTRAL LTDA', documentNumber: { type: 'CNPJ', value: VALID_CNPJS[0] } }, mcc: '5411' },
+    { id: 'w11-39-merchant-glued-prefix', desc: 'COMPRA MPPADARIA CENTRAL', name: 'MPPADARIA CENTRAL', mcc: '5411' },
+    { id: 'w11-40-merchant-glued-suffix', desc: 'COMPRA PADARIA CENTRALMP', name: 'PADARIA CENTRALMP', mcc: '5411' },
+    // Wave 11 Block 3: N-token splits (2/3/4 tokens)
+    { id: 'w11-41-split-vero', desc: 'V ERO PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w11-42-split-stone', desc: 'S TONE PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w11-43-split-cora', desc: 'COR A PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w11-44-split-pgs', desc: 'P GS PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w11-45-split-r-ede', desc: 'R EDE PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w11-46-split-re-de', desc: 'RE DE PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w11-47-split-4tok-vero', desc: 'V.E.R.O PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w11-48-split-4tok-cora', desc: 'C.O.R.A PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w11-49-split-mercpag', desc: 'MER CPAG PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w11-50-split-picpay', desc: 'PI CPAY PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w11-51-split-uber', desc: 'U BER PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w11-52-split-cielo', desc: 'CI ELO PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    // Wave 11 Block 4: closed-world Unicode homoglyph gaps
+    { id: 'w11-53-lunate-cap-cora', desc: '\u03F9ORA PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w11-54-lunate-low-cora', desc: '\u03F2ORA PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w11-55-latin-iota-pix', desc: 'P\u0196X PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w11-56-click-pix', desc: 'P\u01C0X PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w11-57-ipa-iota-pix', desc: 'P\u0269X PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w11-58-latin-q-r', desc: '\uA7AF\u0280 PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w11-59-cyr-u-payu', desc: 'PA\u04AFU PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' }
   ];
 
   const legitimateCases = [
@@ -1714,7 +1777,7 @@ test('G6-18: wave 8 adversarial bypass classes (truncated k=1/2, dirty TON/PAG, 
     const ev = normalizePluggyEvidence({
       id: c.id,
       status: 'POSTED',
-      type: 'DEBIT',
+      type: c.transactionType || 'DEBIT',
       operationType: c.operationType || 'CARD_PURCHASE',
       paymentData: (c.paymentMethod || c.receiver) ? {
         ...(c.paymentMethod ? { paymentMethod: c.paymentMethod } : {}),
@@ -1723,7 +1786,13 @@ test('G6-18: wave 8 adversarial bypass classes (truncated k=1/2, dirty TON/PAG, 
       description: c.desc,
       ...(c.descriptionRaw ? { descriptionRaw: c.descriptionRaw } : {}),
       category: c.category ?? null,
-      ...(c.name ? { merchant: { name: c.name, cnpj: VALID_CNPJS[0] } } : {}),
+      ...(c.name || c.businessName ? {
+        merchant: {
+          ...(c.name ? { name: c.name } : {}),
+          ...(c.businessName ? { businessName: c.businessName } : {}),
+          cnpj: VALID_CNPJS[0]
+        }
+      } : {}),
       creditCardMetadata: { payeeMCC: c.mcc }
     }, { accountId: ACCOUNT_A });
     const verdict = classifyCandidate({
@@ -1778,15 +1847,16 @@ test('G6-18: wave 8 adversarial bypass classes (truncated k=1/2, dirty TON/PAG, 
       amount: -(50 + i),
       status: 'POSTED',
       category: c.category ?? null,
-      type: 'DEBIT',
+      type: c.transactionType || 'DEBIT',
       operationType: c.operationType || 'CARD_PURCHASE',
       paymentData: (c.paymentMethod || c.receiver) ? {
         ...(c.paymentMethod ? { paymentMethod: c.paymentMethod } : {}),
         ...(c.receiver ? { receiver: c.receiver } : {})
       } : undefined,
-      ...(c.name ? {
+      ...(c.name || c.businessName ? {
         merchant: {
-          name: c.name,
+          ...(c.name ? { name: c.name } : {}),
+          ...(c.businessName ? { businessName: c.businessName } : {}),
           cnpj: c.expectedCat ? VALID_CNPJS[1] : VALID_CNPJS[0]
         }
       } : {}),

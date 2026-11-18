@@ -11,16 +11,20 @@ const CONFUSABLE_HOMOGLYPHS={
  '\u04C0':'i','\u04CF':'i',
  '\u0408':'j','\u0458':'j','\u041A':'k','\u043A':'k','\u041C':'m','\u043C':'m',
  '\u041E':'o','\u043E':'o','\u0420':'p','\u0440':'p','\u0405':'s','\u0455':'s',
- '\u0422':'t','\u0442':'t','\u0423':'y','\u0443':'y','\u0425':'x','\u0445':'x',
- '\u0391':'a','\u03B1':'a','\u0392':'b','\u03B2':'b','\u0395':'e','\u03B5':'e',
- '\u0396':'z','\u03B6':'z','\u0397':'h','\u03B7':'h','\u0399':'i','\u03B9':'i',
- '\u039A':'k','\u03BA':'k','\u039C':'m','\u03BC':'m','\u039D':'n','\u03BD':'v',
- '\u039F':'o','\u03BF':'o','\u03A1':'p','\u03C1':'p','\u03A4':'t','\u03C4':'t',
- '\u03A5':'y','\u03C5':'y','\u03A7':'x','\u03C7':'x',
- '\u0131':'i','\u1D00':'a','\u0299':'b','\u1D04':'c','\u1D05':'d','\u1D07':'e',
+ '\u0422':'t','\u0442':'t','\u04AE':'u','\u04AF':'u','\u0474':'v','\u0475':'v',
+ '\u0423':'y','\u0443':'y','\u0425':'x','\u0445':'x',
+ '\u0391':'a','\u03B1':'a','\u0392':'b','\u03B2':'b','\u03F9':'c','\u03F2':'c',
+ '\u0395':'e','\u03B5':'e','\u0396':'z','\u03B6':'z','\u0397':'h','\u03B7':'h',
+ '\u0399':'i','\u03B9':'i','\u039A':'k','\u03BA':'k','\u039C':'m','\u03BC':'m',
+ '\u039D':'n','\u03BD':'v','\u039F':'o','\u03BF':'o','\u03A1':'p','\u03C1':'p',
+ '\u03A4':'t','\u03C4':'t','\u03A5':'y','\u03C5':'y','\u03A7':'x','\u03C7':'x',
+ '\u0131':'i','\u0196':'i','\u01C0':'i','\u0269':'i','\u024A':'q','\u024B':'q',
+ '\uA7AF':'q','\u1D00':'a','\u0299':'b','\u1D04':'c','\u1D05':'d','\u1D07':'e',
  '\u0261':'g','\u0262':'g','\u026A':'i','\u1D0B':'k','\u029F':'l','\u1D0D':'m',
  '\u0274':'n','\u1D0F':'o','\u1D18':'p','\u0280':'r','\uA731':'s','\u1D1B':'t',
- '\u1D1C':'u','\u1D20':'v','\u1D21':'w','\u028F':'y','\u1D22':'z'
+ '\u1D1C':'u','\u1D20':'v','\u1D21':'w','\u028F':'y','\u1D22':'z',
+ '\u2160':'i','\u2170':'i','\u2164':'v','\u2174':'v','\u2169':'x','\u2179':'x',
+ '\u216C':'l','\u217C':'l','\u216D':'c','\u217D':'c','\u216E':'d','\u217E':'d','\u216F':'m','\u217F':'m'
 };
 function mapAstralAndStripInvisibles(raw){
  let out='';
@@ -40,11 +44,23 @@ function canonicalizeRawText(raw){
  for(const ch of decomposed)mapped+=CONFUSABLE_HOMOGLYPHS[ch]||ch;
  return mapped;
 }
+function hasNonAsciiLetterOrSymbol(raw){
+ const s=String(raw??'');
+ if(!s)return false;
+ const decomposed=mapAstralAndStripInvisibles(s).normalize('NFKD').replace(/[\p{Mn}\p{Me}]+/gu,'');
+ if(!/[^\x00-\x7F]/.test(decomposed))return false;
+ for(const ch of decomposed){
+  const cp=ch.codePointAt(0);
+  if(cp<=0x7F)continue;
+  if(/[\p{L}\p{Nl}\p{So}]/u.test(ch)&&cp!==0x00A9&&cp!==0x00AE)return true;
+ }
+ return false;
+}
 const fold=x=>canonicalizeRawText(x).toLowerCase()
  .replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
 const isPixPaymentMethod=pm=>/\bpix(?!ote)\w*/.test(fold(pm));
-const isNonCardPaymentMethod=pm=>isPixPaymentMethod(pm)||
- /\b(?:boleto|ted|transf|transfer|transferencia|slip|cheque|dinheiro|especie|saque|pagamento_fatura|estorno|cashback)[a-z0-9_]*|\bdoc(?:\d|_|\b)/.test(fold(pm));
+const NON_CARD_RAIL_RE=/\b(?:boleto\w*|ted\w*|doc(?:\d+|\b)|transf\w*|slip\w*|cheque\w*|dinheiro\w*|especie\w*|saque\w*|withdrawal\w*|estorno\w*|cashback\w*|tarifa\w*|fatura\w*|pagamento\s+(?:de\s+)?(?:fatura|boleto)|debito\s+automatico|(?:automatic|direct)\s+debit|qr\s*code\w*)\b/;
+const isNonCardPaymentMethod=pm=>hasNonAsciiLetterOrSymbol(pm)||isPixPaymentMethod(pm)||NON_CARD_RAIL_RE.test(fold(pm));
 const tokens=x=>[...new Set(fold(x).split(' ').filter(w=>w.length>=3&&w.length<=28))].slice(0,32);
 const FULL_INTERMEDIARY_TOKENS=new Set([
  'mercadopago','mercpago','mercpag','mercadopag','mercadolivre','meli',
@@ -82,7 +98,19 @@ const ALNUM_POS_RE=/^(?:\d+)?([a-z]+)\d+[a-z0-9]*$/;
 const ALNUM_DIGIT_LEAD_POS_RE=/^(\d+[a-z]+)\d+[a-z0-9]*$/;
 const ALNUM_PREFIX_POS_RE=/^(?:\d*[a-z]+\d+)+([a-z]+?)(?:br|x)?(?:\d+[a-z0-9]*)?$/;
 const DIGIT_BEARING_INTERMEDIARY_RE=/^(?:[a-z0-9]*?(99pay|99food|c6pay)(?:br|x|[0-9][a-z0-9]*)?)$/;
-const SUFFIXED_INTERMEDIARY_RE=/^(?:mp|pag|ton|pg|pgs|vero|bin|cora|pp|ml|qr|pix|stone|cielo|rede|sumup|getnet|picpay|paypal|ifood|uber|99pay|c6pay|sipag|stelo|mercpag|mercadopag|pagseg|pagbank)(?:br|x|pay|pos|qr|pix|net|ec|tef|pdv)$/;
+const SUFFIXED_INTERMEDIARY_RE=/^(?:mp|pag|ton|pg|pgs|vero|bin|cora|pp|ml|qr|pix|stone|cielo|rede|sumup|getnet|picpay|paypal|ifood|uber|99pay|c6pay|sipag|stelo|mercpag|mercadopag|mercadopago|pagseg|pagseguro|pagbank)(?:br|x|pay|pos|qr|pix|net|ec|tef|pdv|app|link|sp)$/;
+const SAFE_PORTUGUESE_PREFIX_WORDS=/^(?:pag(?:amento|amentos|to|ue|ou|bem|ar|a|o|as|os)|pgto|ton(?:elada|eladas|in|inho|inha|ico|ica)|uber(?:landia|aba)|pix(?:ote|inguinha)|cora(?:cao|coes|lina|l|is)|rede(?:s|iro)?|vero(?:nica|nesa)?|bin(?:ario|aria)|stone(?:henge)?|meli(?:ssa|ndre))$/;
+const POS_WRAP_LEFT='(?:ec|pos|pdv|tef|caixa|cx|filial|fl|lj|loja|aut|term|app|link|web|net|qr|pix|br|\\d+)';
+const POS_WRAP_BASE='mercadopago|mercadopag|mercpago|mercpag|pagseguro|pagseg|pagbank|pagbanks|picpay|paypal|getnet|redecard|sumup|pagarme|infinitepay|cloudwalk|99pay|c6pay|itaupay|safrapay|efipay|bempaggo|magalupay|sipag|stelo|stone|cielo|ifood|aiqfome|rappi|uber|asaas|ebanx|adyen|iugu|vindi|zoop|shipay|bcash|moip|paygo|pags|pgs|vero|bin|cora|mp|pag|ton|pg|pp|ml|qr|pix|rede';
+const POS_WRAP_RIGHT='(?:br|sp|rj|mg|rs|pr|sc|ba|pe|ce|df|go|sul|app|link|pay|pos|pdv|tef|ec|qr|pix|net|web|online|x|\\d+)';
+const POS_WRAPPED_INTERMEDIARY_RE=new RegExp(`^(?:${POS_WRAP_LEFT}+(${POS_WRAP_BASE})${POS_WRAP_RIGHT}*|(${POS_WRAP_BASE})${POS_WRAP_RIGHT}+)$`);
+const COMMON_MERCHANT_STEMS=[
+ 'padaria','panificadora','supermercado','mercado','mercadinho','mercearia',
+ 'drogaria','farmacia','posto','autoposto','auto','bar','restaurante','lanchonete',
+ 'central','sul','norte','brasil','nacional','popular','express','extra',
+ 'ipiranga','raia','panvel','pao','acucar','alimentos','saude','vida',
+ 'estrada','avenida','joao','sao','paulo','maria','ltda','eireli','me','epp'
+];
 const STOPWORD_MERCHANT_TOKENS=new Set(['de','do','da','dos','das','em','no','na','nos','nas','ao','aos','com','por','pra','pro','sem','via','the']);
 const BANK_TX_VERB_TOKENS=new Set([
  'compra','compras','deb','debito','cred','credito','cartao',
@@ -137,6 +165,7 @@ function isNumberedIntermediaryToken(tok,currSpan=null,idx=1,spans=null,merchant
   return !legitimateMetric;
  }
  if(SUFFIXED_INTERMEDIARY_RE.test(tok))return true;
+ if(!SAFE_PORTUGUESE_PREFIX_WORDS.test(tok)&&POS_WRAPPED_INTERMEDIARY_RE.test(tok))return true;
  if(DIGIT_BEARING_INTERMEDIARY_RE.test(tok))return true;
  const trailing=TRAILING_DIGITS_RE.exec(tok);
  if(trailing&&isIntermediaryBase(trailing[1]))return true;
@@ -183,30 +212,23 @@ function isInsideMerchantPrefixOrSubsequence(spans,i,merchantTokens){
  }
  return false;
 }
-function hasSplitIntermediaryBigram(spans,i,merchantTokens=null){
- const curr=spans[i],next=spans[i+1],third=spans[i+2];
- if(!curr||!next)return false;
- const a=curr.token,b=next.token,c=third?.token;
- if(c){
-  const trigram=a+'|'+b+'|'+c;
-  if(trigram==='p|a|g'){
-   if(spans[i+3]?.token==='menos'&&hasTokenPairInTokens(merchantTokens,'pag','menos'))return false;
+function hasSplitIntermediaryWindow(spans,i,merchantTokens=null,inDescriptorResidual=false){
+ const maxW=Math.min(6,spans.length-i);
+ for(let w=2;w<=maxW;w++){
+  let joined='';
+  let allSameJoined=true;
+  for(let k=0;k<w;k++)joined+=spans[i+k].token;
+  if(!(FULL_INTERMEDIARY_TOKENS.has(joined)||ALWAYS_BLOCKED_SHORT_PROCESSORS.has(joined)||
+       joined==='pag'||joined==='cora'||joined==='rede'))continue;
+  if(joined==='pag'){
+   if(!inDescriptorResidual&&spans[i+w]?.token==='menos'&&hasTokenPairInTokens(merchantTokens,'pag','menos'))continue;
    return true;
   }
-  if(trigram==='t|o|n'||trigram==='p|i|x'||trigram==='b|i|n'||trigram==='p|g|s')return true;
- }
- const pair=a+'|'+b;
- if(pair==='m|p'||pair==='p|g'||pair==='p|p'||pair==='m|l'||pair==='q|r')return true;
- if(pair==='p|ix'||pair==='pi|x'||pair==='t|on'||pair==='to|n'||pair==='b|in'||pair==='bi|n')return true;
- if(pair==='ver|o'||pair==='ve|ro'||pair==='st|one'||pair==='sto|ne'||pair==='ston|e')return true;
- if(pair==='p|ag'||pair==='pa|g'){
-  if(third?.token==='menos'&&hasTokenPairInTokens(merchantTokens,'pag','menos'))return false;
-  return true;
- }
- if(pair==='c|ora'||pair==='co|ra'){
-  const prevTok=spans[i-1]?.token;
-  if((i>0&&['dona','tia','santa'].includes(prevTok))||c==='coralina')return false;
-  return true;
+  if(joined==='cora'){
+   if(!inDescriptorResidual&&((i>0&&['dona','tia','santa'].includes(spans[i-1]?.token))||spans[i+w]?.token==='coralina'))continue;
+   return true;
+  }
+  if(allSameJoined)return true;
  }
  return false;
 }
@@ -260,7 +282,7 @@ function scanIntermediarySpans(spans,{inDescriptorResidual=false,merchantTokens=
   const curr=spans[i],tok=curr.token;
   if(FULL_INTERMEDIARY_TOKENS.has(tok)||isNumberedIntermediaryToken(tok,curr,i,spans,merchantTokens))return true;
   if(i+1<spans.length&&BIGRAM_INTERMEDIARY_PAIRS.has(tok+'|'+spans[i+1].token))return true;
-  if(hasSplitIntermediaryBigram(spans,i,merchantTokens))return true;
+  if(hasSplitIntermediaryWindow(spans,i,merchantTokens,inDescriptorResidual))return true;
   if(isRedeProcessorAt(spans,i,{inDescriptorResidual,merchantTokens}))return true;
   if(ALWAYS_BLOCKED_SHORT_PROCESSORS.has(tok))return true;
   if(tok==='cora'&&!isLegitCoraPhrase(spans,i,merchantTokens,inDescriptorResidual))return true;
@@ -269,6 +291,7 @@ function scanIntermediarySpans(spans,{inDescriptorResidual=false,merchantTokens=
  return false;
 }
 function hasIntermediarySignal(raw){
+ if(hasNonAsciiLetterOrSymbol(raw))return true;
  const norm=normalizeForIntermediaryScan(raw);
  if(!norm)return false;
  if(norm.includes('*'))return true;
@@ -335,45 +358,64 @@ function isKnownIntermediaryTokenOrGlued(p,span,idx,spans,merchantTokens){
   FULL_INTERMEDIARY_TOKENS.has(p)||
   isNumberedIntermediaryToken(p,span,idx,spans,merchantTokens);
 }
+const UF_OR_DIGITS_RE=/^(?:br|sp|rj|mg|rs|pr|sc|ba|pe|ce|df|go|\d+)$/;
 function hasDescriptorIntermediarySignal(raw,merchantTokens){
+ if(hasNonAsciiLetterOrSymbol(raw))return true;
  const norm=normalizeForIntermediaryScan(raw);
  if(!norm)return false;
  if(norm.includes('*'))return true;
  const spans=tokenizeWithSeparators(norm);
- if(scanIntermediarySpans(spans,{merchantTokens}))return true;
- if(Array.isArray(merchantTokens)&&merchantTokens.length){
-  const merchantSet=new Set(merchantTokens);
-  const joinedMerchant=merchantTokens.join('');
-  for(let idx=0;idx<spans.length;idx++){
-   const tok=spans[idx].token;
-   if(tok.length<3||merchantSet.has(tok)||BANK_TX_VERB_TOKENS.has(tok)||
-      STATEMENT_CHANNEL_TOKENS.has(tok)||/^\d+$/.test(tok))continue;
-   for(let pLen=2;pLen<tok.length;pLen++){
-    const prefix=tok.slice(0,pLen),rest=tok.slice(pLen);
-    if(!isKnownIntermediaryTokenOrGlued(prefix,spans[idx],idx,spans,merchantTokens))continue;
-    if(rest.length>=2&&merchantTokens.some(m=>m.length>=2&&m.startsWith(rest)))return true;
-    if(rest===merchantTokens[0])return true;
-    if(rest.length>=4&&joinedMerchant.includes(rest))return true;
+ const mTokens=Array.isArray(merchantTokens)?merchantTokens:[];
+ if(scanIntermediarySpans(spans,{merchantTokens:mTokens.length?mTokens:null}))return true;
+ const merchantSet=new Set(mTokens);
+ const joinedMerchant=mTokens.join('');
+ const joinedMerchantNoStop=mTokens.filter(t=>!STOPWORD_MERCHANT_TOKENS.has(t)).join('');
+ for(let idx=0;idx<spans.length;idx++){
+  const tok=spans[idx].token;
+  if(tok.length<3||BANK_TX_VERB_TOKENS.has(tok)||STATEMENT_CHANNEL_TOKENS.has(tok)||
+     /^\d+$/.test(tok)||SAFE_PORTUGUESE_PREFIX_WORDS.test(tok))continue;
+  const inMerchantSet=merchantSet.has(tok);
+  const otherMerch=mTokens.filter(m=>m!==tok&&m.length>=2);
+  for(let pLen=2;pLen<tok.length;pLen++){
+   const prefix=tok.slice(0,pLen),rest=tok.slice(pLen);
+   if(!isKnownIntermediaryTokenOrGlued(prefix,spans[idx],idx,spans,mTokens))continue;
+   if(!inMerchantSet){
+    if(rest.length>=1&&mTokens.some(m=>m.startsWith(rest)||rest.startsWith(m)))return true;
+    if(rest.length>=3&&((joinedMerchant&&joinedMerchant.includes(rest))||
+       (joinedMerchantNoStop&&(joinedMerchantNoStop.includes(rest)||rest.startsWith(joinedMerchantNoStop)))))return true;
    }
-   for(let sLen=2;sLen<=tok.length-3;sLen++){
-    const stem=tok.slice(0,tok.length-sLen),suffix=tok.slice(tok.length-sLen);
-    if(!isKnownIntermediaryTokenOrGlued(suffix,spans[idx],idx,spans,merchantTokens))continue;
-    if(merchantTokens.some(m=>m.length>=3&&m.startsWith(stem))||joinedMerchant.includes(stem))return true;
+   if(rest.length>=3&&COMMON_MERCHANT_STEMS.some(s=>rest.startsWith(s)||s.startsWith(rest)))return true;
+  }
+  for(let sLen=2;sLen<=tok.length-2;sLen++){
+   const stem=tok.slice(0,tok.length-sLen),suffix=tok.slice(tok.length-sLen);
+   if(!isKnownIntermediaryTokenOrGlued(suffix,spans[idx],idx,spans,mTokens))continue;
+   if(!inMerchantSet){
+    if((stem.length>=3&&mTokens.some(m=>m.startsWith(stem)||stem.startsWith(m)))||
+       (stem.length>=2&&mTokens.includes(stem))||
+       (stem.length>=3&&((joinedMerchant&&joinedMerchant.includes(stem))||
+         (joinedMerchantNoStop&&joinedMerchantNoStop.includes(stem)))))return true;
    }
-   for(const mid of ['mp','pg','pag','ton','pix']){
-    let pos=tok.indexOf(mid,3);
-    while(pos!==-1&&pos+mid.length<=tok.length-3){
-     const left=tok.slice(0,pos),right=tok.slice(pos+mid.length);
-     if(merchantTokens.some(m=>m.length>=3&&m.startsWith(left))&&
-        merchantTokens.some(m=>m.length>=3&&m.startsWith(right)))return true;
-     pos=tok.indexOf(mid,pos+1);
-    }
+   if(stem.length>=3&&COMMON_MERCHANT_STEMS.some(s=>stem.startsWith(s)||s.startsWith(stem)))return true;
+   if(otherMerch.some(m=>stem.length>=3&&(m.startsWith(stem)||stem.startsWith(m))))return true;
+  }
+  for(let pos=2;pos<=tok.length-4;pos++){
+   const left=tok.slice(0,pos);
+   const leftMatches=otherMerch.some(m=>m.startsWith(left)||left.startsWith(m))||
+    COMMON_MERCHANT_STEMS.some(s=>left.startsWith(s));
+   if(!leftMatches)continue;
+   for(let midLen=2;midLen<=tok.length-pos-2;midLen++){
+    const mid=tok.slice(pos,pos+midLen),right=tok.slice(pos+midLen);
+    if(!isKnownIntermediaryTokenOrGlued(mid,spans[idx],idx,spans,mTokens))continue;
+    if(otherMerch.some(m=>m.startsWith(right)||right.startsWith(m))||
+       COMMON_MERCHANT_STEMS.some(s=>right.startsWith(s))||
+       UF_OR_DIGITS_RE.test(right))return true;
    }
   }
  }
- const residual=extractResidualOutsideMerchant(spans,merchantTokens);
+ if(!mTokens.length)return false;
+ const residual=extractResidualOutsideMerchant(spans,mTokens);
  if(!residual)return false;
- return scanIntermediarySpans(residual,{inDescriptorResidual:true,merchantTokens});
+ return scanIntermediarySpans(residual,{inDescriptorResidual:true,merchantTokens:mTokens});
 }
 function buildCatalog(catalog=taxonomy){
  if(!catalog||!Array.isArray(catalog.parents))throw Error('CAT-02: catálogo D05 indisponível');
@@ -490,6 +532,8 @@ function classifyCandidate({transaction,evidence={},history=[],rules=[],catalog=
  if(transaction.status!=='POSTED')return result('protected','NOT_POSTED');
  const amount=transaction.amountCents??transaction.amount;
  if(!Number.isSafeInteger(amount)||amount>=0)return result('protected','NOT_POSTED_EXPENSE');
+ if(evidence.transactionType&&evidence.transactionType!=='DEBIT')
+  return result('review','NON_DEBIT_TRANSACTION_TYPE');
  const nature=String(transaction.nature||'auto').toLowerCase();
  if(['income','transfer','ignore'].includes(nature))return result('protected','NON_EXPENSE_NATURE');
  if(transaction.manualOverride===true||transaction.splitCount>0||transaction.linkedManualId||
@@ -528,14 +572,21 @@ function classifyCandidate({transaction,evidence={},history=[],rules=[],catalog=
   return result('review','EVIDENCE_CONFLICT',{evidenceTypes:signals.map(s=>s.type)});
  const target=signals[0]?.target||null;
  const merchantTokens=tokenizeWithSeparators(normalizeForIntermediaryScan(evidence.merchantName||'')).map(s=>s.token);
+ const allowedCardOp=!evidence.operationType||['card purchase','purchase'].includes(fold(evidence.operationType));
  const intermediaryFree=
+  allowedCardOp&&
   !isNonCardPaymentMethod(evidence.paymentMethod)&&
   !isNonCardPaymentMethod(evidence.operationType)&&
   !isNonCardPaymentMethod(evidence.providerCategory)&&
+  !isNonCardPaymentMethod(transaction.description||'')&&
+  !isNonCardPaymentMethod(evidence.description||'')&&
+  !isNonCardPaymentMethod(evidence.descriptionRaw||'')&&
+  !hasIntermediarySignal(evidence.paymentMethod||'')&&
+  !hasIntermediarySignal(evidence.operationType||'')&&
   !hasIntermediarySignal(evidence.providerCategory||'')&&
-  !hasIntermediarySignal(evidence.merchantName||'')&&
-  !hasIntermediarySignal(evidence.merchantBusinessName||'')&&
-  !hasIntermediarySignal(evidence.receiverName||'')&&
+  !hasDescriptorIntermediarySignal(evidence.merchantName||'',merchantTokens)&&
+  !hasDescriptorIntermediarySignal(evidence.merchantBusinessName||'',merchantTokens)&&
+  !hasDescriptorIntermediarySignal(evidence.receiverName||'',merchantTokens)&&
   !hasDescriptorIntermediarySignal(transaction.description||'',merchantTokens)&&
   !hasDescriptorIntermediarySignal(evidence.description||'',merchantTokens)&&
   !hasDescriptorIntermediarySignal(evidence.descriptionRaw||'',merchantTokens);
