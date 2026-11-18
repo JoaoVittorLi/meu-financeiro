@@ -143,6 +143,51 @@ test('experimentalProfileDirectory strictly rejects personal, stable, and defaul
   }
 }));
 
+test('experimentalProfileDirectory rejects Windows trailing-dot/space segments, leading whitespace, and reserved device names', () => withTmp(root => {
+  const appData = path.join(root, 'appData');
+  const localAppData = path.join(root, 'localAppData');
+  const protectedDir = path.join(appData, 'Meu Financeiro');
+  fs.mkdirSync(protectedDir, { recursive: true });
+  fs.mkdirSync(localAppData, { recursive: true });
+  const { DatabaseSync } = require('node:sqlite');
+  const protectedDb = new DatabaseSync(path.join(protectedDir, 'meu-financeiro.sqlite'));
+  try {
+    protectedDb.exec('CREATE TABLE IF NOT EXISTS secret_probe(val TEXT); INSERT INTO secret_probe(val) VALUES (\'REAL_PERSONAL_DATA\');');
+  } finally {
+    protectedDb.close();
+  }
+
+  const app = fakeApp(appData);
+  const trailingDotAndSpaceVariants = [
+    path.join(appData, 'Meu Financeiro.'),
+    path.join(appData, 'meu-financeiro-desktop.'),
+    path.join(appData, 'meu-financeiro-desktop..'),
+    path.join(appData, 'Meu Financeiro..'),
+    path.join(appData, 'Meu Financeiro .'),
+    path.join(appData, `${ISOLATED_DIR}.`),
+    path.join(appData, 'meu-financeiro-desktop.', 'sub'),
+    path.join(appData, 'Meu Financeiro ', 'nested'),
+    path.join(localAppData, 'Programs', 'Meu Financeiro.', 'sub'),
+    `${appData}.`,
+    `${path.join(root, 'safe-dir')} `,
+    path.join(root, ' leading-space', 'sub'),
+    path.join(root, 'CON'),
+    path.join(root, 'PRN', 'sub'),
+    path.join(root, 'AUX'),
+    path.join(root, 'NUL'),
+    path.join(root, 'COM1'),
+    path.join(root, 'LPT9'),
+    path.join(root, 'nul.sqlite')
+  ];
+
+  for (const candidate of trailingDotAndSpaceVariants) {
+    assert.throws(() => experimentalProfileDirectory(app, {
+      env: { MEU_FINANCEIRO_EXPERIMENTAL_USER_DATA_DIR: candidate, LOCALAPPDATA: localAppData },
+      argv: []
+    }), /segmento inválido|extremidades|negada|protegido|instalação/, `Expected rejection for ${JSON.stringify(candidate)}`);
+  }
+}));
+
 test('experimentalProfileDirectory rejects junction/symlink segments anywhere in override path', () => withTmp(root => {
   const appData = path.join(root, 'appData');
   const target = path.join(root, 'real-target');

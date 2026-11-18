@@ -174,8 +174,8 @@ function classifyCandidate({transaction,evidence={},history=[],rules=[],catalog=
  // never counts as merchant identity; Naive Bayes remains review-only.
  const directName=fold(evidence.merchantName);
  const desc=fold(transaction.description||'');
- const unaccent=x=>String(x??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'');
- const rawProcessorPrefix=/\b(mp|pag|pagseg|ton|pg|rede|uber)\s*\*|\b(mp|pag|pagseg|ton|pg)\s+[-–—/]\s+|\b(mp|pag|pagseg|ton|pg)\s*[-–—/]\s*(?=[a-z0-9]{3,})/i;
+ const unaccent=x=>String(x??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[\u2010-\u2015\u2212]/g,'-');
+ const rawProcessorPrefix=/\b(mp|pag|pagseg|ton|pg|rede|uber)\s*\*|\b(mp|pag|pagseg|ton|pg|uber)\s+[-–—\u2011\u2212/]\s+|\b(mp|pag|pagseg|ton|pg|uber)\s*[-–—\u2011\u2212/]\s*(?=[a-z0-9])|\b(?:compra|deb|debito|credito|cartao|pgto|pagto)\s+(?:mp|pag|pagseg|ton|pg|uber)\b/i;
  const processor=/\b(pag ?seguro|pag ?seg|pag ?bank|merc(?:ado)? ?pago|stone|cielo|pay ?pal|pic ?pay|get ?net|rede ?card|sum ?up|pagar ?me|infinite ?pay|ebanx|adyen|asaas|iugu|vindi|zoop|shipay|bcash|moip|wirecard|cloud ?walk|i ?food|rappi|uber ?eats|pix|qr ?code|qrcode)\b|\brede\b(?! de\b(?! pagamentos?\b))|^(mp|pag|ton|pg)\b/i;
  const hasIntermediary=raw=>rawProcessorPrefix.test(unaccent(raw))||processor.test(fold(raw));
  const narrowMcc=['5411','5541','5912'].includes(String(evidence.mcc||''));

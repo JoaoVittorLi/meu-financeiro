@@ -656,7 +656,7 @@ class App extends React.Component<any,State>{
     if(document.querySelector('.d05-overlay'))return;
     if(event.key==='Escape'&&this.state.contextCategory){event.preventDefault();this.closeContextCategory();return;}
     if(event.key==='Escape'&&this.state.quickCategory){event.preventDefault();this.closeQuickCategory();return;}
-    const dialog=document.querySelector('.modal-backdrop [role="dialog"],.mf-detail-drawer,.mf-ai-drawer');
+    const dialog=document.querySelector('.p-editor-backdrop [role="dialog"]')||document.querySelector('.modal-backdrop [role="dialog"]')||document.querySelector('.mf-detail-drawer,.mf-ai-drawer');
    if(event.key==='Tab'&&dialog&&!document.querySelector('[role="listbox"],.mf-period-popover,.mf-single-calendar')){
      const controls=Array.from(dialog.querySelectorAll('button:not([disabled]),input:not([disabled]),textarea:not([disabled]),[tabindex="0"]')) as HTMLElement[];
      if(controls.length){
@@ -672,9 +672,9 @@ class App extends React.Component<any,State>{
    if(document.querySelector('[role="listbox"],.mf-period-popover,.mf-single-calendar'))return;
    if(this.state.quickAddOpen){this.setState({quickAddOpen:false});return;}
    if(this.state.intelligencePanelOpen){this.setState({intelligencePanelOpen:false});return;}
+   if(this.state.planOpen){this.setState({planOpen:false});return;}
    if(this.state.planSelected){this.setState({planSelected:null});return;}
    if(this.state.detail){this.setState({detail:null});return;}
-   if(this.state.planOpen){this.setState({planOpen:false});return;}
    if(this.state.editModal){this.setState({editModal:null});return;}
    if(this.state.page==='budgets'&&this.state.qa84BudgetDrill){event.preventDefault();qa84BudgetReturn(this,!!this.state.qa84BudgetDrill.showChild);return;}
    if(this.state.showEntry)this.setState({showEntry:false});
@@ -1062,7 +1062,7 @@ class App extends React.Component<any,State>{
  async toggleMode(){this.simRequest++;this.setState({simSaved:undefined,simBusy:false});
    if(this.state.busy){this.flash('Aguarde a operação atual.');return;}
    const mode=this.state.mode==='real'?'demo':'real';
-   const resetScope={query:'',bankFilter:'',txSource:'all' as const,txCategoryFilter:'',txKindFilter:'all' as const,txReviewFilter:'all' as const,txReviewOnly:false,txOrganize:false,txSelected:[],qa84TransactionsSpan:null,qa84TransactionsCategory:'',qa84BudgetDrill:null,detail:null,manualDraft:null,quickCategory:null};
+   const resetScope={query:'',bankFilter:'',txSource:'all' as const,txCategoryFilter:'',txKindFilter:'all' as const,txReviewFilter:'all' as const,txReviewOnly:false,txOrganize:false,txSelected:[],qa84TransactionsSpan:null,qa84TransactionsCategory:'',qa84BudgetDrill:null,budgetFocus:null,budgetSearch:'',detail:null,manualDraft:null,quickCategory:null};
    if(!desktop){this.setState({...resetScope,mode,data:load(mode),outcome:null,page:'overview',showEntry:false});return;}
    this.setState({busy:true});
    try{

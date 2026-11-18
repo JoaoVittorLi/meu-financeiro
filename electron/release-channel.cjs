@@ -11,9 +11,26 @@ const STABLE_ID='app.local.meufinanceiro';
 const ISOLATED_DIR='MeuFinanceiro-RC-ALL-01-Experimental';
 const STABLE_CANDIDATES=Object.freeze([STABLE_NAME,'meu-financeiro-desktop']);
 const PROTECTED_SEGMENTS=Object.freeze(['meu-financeiro-desktop','meu financeiro','meufinanceiro-rc-all-01-experimental']);
+const WINDOWS_RESERVED_DEVICE=/^(?:con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\..*)?$/i;
+function canonicalWin32Segment(seg){
+ return String(seg??'').replace(/[. ]+$/,'').toLowerCase();
+}
 function normalizeForCompare(target){
  const resolved=path.resolve(target);
- return process.platform==='win32'?resolved.toLowerCase():resolved;
+ if(process.platform!=='win32')return resolved;
+ const root=path.parse(resolved).root;
+ const rest=resolved.slice(root.length).split(/[\\/]+/).filter(Boolean).map(canonicalWin32Segment);
+ return path.join(root.toLowerCase(),...rest);
+}
+function assertValidOverrideSegments(target,message){
+ const root=path.parse(target).root;
+ const segments=target.slice(root.length).split(/[\\/]+/).filter(Boolean);
+ for(const seg of segments){
+  if(/^\s/.test(seg)||/[.\s]+$/.test(seg))throw Error(message);
+  const canonical=canonicalWin32Segment(seg);
+  if(!canonical||WINDOWS_RESERVED_DEVICE.test(canonical))throw Error(message);
+ }
+ return segments;
 }
 function isSameOrInside(parent,candidate){
  const p=normalizeForCompare(parent),c=normalizeForCompare(candidate);
@@ -69,16 +86,21 @@ function extractExperimentalUserDataOverride({env=process.env,argv=process.argv}
 function validateExperimentalOverridePath(app,rawOverride,{env=process.env}={}){
  if(typeof rawOverride!=='string'||!rawOverride.trim()||rawOverride.includes('\0'))
   throw Error('Caminho isolado experimental inválido. Perfil financeiro bloqueado.');
+ if(rawOverride!==rawOverride.trim())
+  throw Error('Caminho isolado experimental contém espaços nas extremidades. Perfil financeiro bloqueado.');
  const trimmed=rawOverride.trim();
  if(!path.isAbsolute(trimmed))
   throw Error('Caminho isolado experimental precisa ser absoluto. Perfil financeiro bloqueado.');
  if(process.platform==='win32'&&!/^[A-Za-z]:[\\/]/.test(trimmed))
   throw Error('Caminho isolado experimental precisa usar unidade local absoluta. Perfil financeiro bloqueado.');
+ const segError='Caminho isolado experimental contém segmento inválido (ponto final, espaço ou nome reservado). Perfil financeiro bloqueado.';
+ assertValidOverrideSegments(trimmed,segError);
  const resolved=path.resolve(trimmed);
  if(path.dirname(resolved)===resolved)
   throw Error('Caminho isolado experimental não pode ser a raiz do disco. Perfil financeiro bloqueado.');
+ assertValidOverrideSegments(resolved,segError);
  assertNoSymlinkOrJunction(resolved);
- const segments=resolved.split(/[\\/]+/).filter(Boolean).map(s=>s.toLowerCase());
+ const segments=resolved.slice(path.parse(resolved).root.length).split(/[\\/]+/).filter(Boolean).map(canonicalWin32Segment);
  if(segments.some(seg=>PROTECTED_SEGMENTS.includes(seg)))
   throw Error('Caminho isolado experimental não pode referenciar perfis protegidos. Abertura negada.');
  const appData=path.resolve(app.getPath('appData'));

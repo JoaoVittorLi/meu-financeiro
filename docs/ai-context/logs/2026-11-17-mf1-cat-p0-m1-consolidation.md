@@ -93,7 +93,7 @@
 - `npm run provenance:create` && `npm run provenance:verify`: **PASS** (verificado sobre o commit limpo da consolidação; `app/renderer-provenance.json` permanece ignorado em `.gitignore`).
 
 ### 9.2 Nível B (QA Interativo Real no Electron via CDP — `MF_QA_SYNTHETIC=1`, perfil TEMP isolado, `PLUGGY_*` e `MF_REAL_PROFILE` ausentes)
-- Execução final: **14/14 PASS (`FAIL: 0`, `RuntimeIssues: 0`)** — artefatos em `%TEMP%\mf-nivel-b-qa-2026-11-18T02-44-11-947Z` (fora do repositório git).
+- Execução final: **14/14 PASS (`FAIL: 0`, `RuntimeIssues: 0`)** — executado em diretório temporário isolado em `%TEMP%` (removido após inspeção de `report.json` e capturas, fora do repositório git).
 - **Jornadas Positivas (`PJ-01`..`PJ-09`)**:
   - `PJ-01` (**PASS**): Startup `PRIVADO`, mascaramento, troca de fonte/período, gráficos/tabela `<details>`, drilldown `B01` + autorização nativa `D05`.
   - `PJ-02` (**PASS**): Lançamento manual D05 (`Padaria Nova QA`), busca/filtros/agrupamento por dia, edição em gaveta (`Padaria Nova Editada QA`, `150,00`) e picker inline D05 em `demo`.
@@ -109,7 +109,7 @@
   - `NJ-02` (**PASS**): Bloqueio `personal-locked` em categorização pessoal (`real`), recusa `d05PersonalWriteConfirm` (`status: 'denied'`, `changesApplied: false`, `personalWriteAuthorized: false`), e bloqueio de rede experimental (`aiConnect`, `previewQuarantineDemo`, sincronização Pluggy desabilitada).
   - `NJ-03` (**PASS**): Rejeição de BRL inválido (`10,999`, `-50`, `abc`, `0,00`), proteção de vínculo manual (`Valor`/`Data`/`Excluir` desabilitados), divisão bancária divergente (`Salvar divisão` desabilitado) e proteção contra exclusão de categoria em uso (`Pets QA`).
   - `NJ-04` (**PASS**): Estado sem autorização na Inteligência (`Sem leitura pessoal autorizada`, sem saldo fabricado) e desambiguação obrigatória em `D01` para termo ambíguo (`MERCADO`).
-  - `NJ-05` (**PASS**): Rejeição de backup corrompido (texto plano, SQLite sem metadados, SQLite corrompido) e recuperação de `mf_auto_apply_jobs` / `mf_auto_jobs` interrompidos para `INTERRUPTED_ON_RESTART` no restart.
+  - `NJ-05` (**PASS**): Rejeição de backup inválido (texto plano, SQLite sem `app_meta`, SQLite com `schema_version = '99'`) e recuperação de `mf_auto_apply_jobs` / `mf_auto_jobs` interrompidos para `INTERRUPTED_ON_RESTART` no restart.
 
 ### 9.3 Defeitos Reais de UI Corrigidos Durante o Nível B (+ Regressões em `tests/nivel-b-ui-fixes.test.cjs`)
 1. **`src/app.ts` (`App.toggleMode`)**: Alternar entre `real` e `demo` mantinha filtros residuais de `Movimentações`/`Orçamentos` (`txSource: 'bank'`, `bankFilter`, `txCategoryFilter`, `qa84TransactionsSpan`, `qa84TransactionsCategory`, `qa84BudgetDrill`, etc.), ocultando registros manuais no modo `demo`; corrigido com reset completo do escopo transitório em `toggleMode()`.
@@ -132,14 +132,30 @@
 |---|---|
 | 1 | Pré-condições: checar SHA limpo, `provenance:verify` e ausência de artefatos temporários no workspace. |
 | 2 | Gerar instalador experimental NSIS x64 (`--win nsis --x64`, **sem** `portable`) somente após autorização do proprietário. |
-| 3 | Validar assinatura/hash SHA-256 do instalador NSIS gerado e manifesto `app.asar` embutido (`provenance:verify-asar`). |
+| 3 | Validar assinatura/hash SHA-256 do instalador NSIS gerado e manifesto `app.asar` embutido (`npm run provenance:verify` e `npm run test:asar`). |
 | 4 | Instalar em caminho de teste isolado (`C:\Dev\mf-nsis-test-install` ou usuário local dedicado, nunca sobrescrevendo `Meu Financeiro` estável sem aprovação). |
 | 5 | Executar o app instalado com `MEU_FINANCEIRO_EXPERIMENTAL_USER_DATA_DIR=C:\Dev\mf-nsis-test-userdata` e `MF_QA_SYNTHETIC=1`. |
 | 6 | Confirmar via Process Explorer / log seguro que `userData` ativo aponta estritamente para `C:\Dev\mf-nsis-test-userdata` e que `meu-financeiro-desktop` / `Meu Financeiro` não foram tocados (timestamps intactos). |
 | 7 | Confirmar rejeição de override apontando para diretório protegido ou junction, e isolamento total de `stablePackaged` contra `MEU_FINANCEIRO_EXPERIMENTAL_USER_DATA_DIR`. |
 | 8 | Executar fumaça interativa no binário instalado (Visão geral, Movimentações D05, Orçamentos, Planejamento, Simulador, Inteligência B05, Configurações). |
 | 9 | Validar fechamento limpo, `PRAGMA integrity_check === ok` e reabertura do binário instalado preservando alterações na UI DOM. |
-| 10 | Validar desinstalação limpa via `Uninstall Meu Financeiro Experimental.exe` sem afetar instalação estável nem perfis pessoais. |
+| 10 | Validar desinstalação limpa via `Uninstall Meu Financeiro RC Experimental.exe` sem afetar instalação estável nem perfis pessoais. |
 | 11 | Validar fluxo Pluggy/Cloud somente após transição explícita e autorizada para canal estável homologado. |
 | 12 | Conferir integridade pós-teste dos diretórios pessoais/RC em `%APPDATA%` e `%LOCALAPPDATA%`. |
 | 13 | Registrar parecer final GO/NO-GO para release v1.0.0.
+
+
+## 12. Iteração 4 — Correções Wave 3 e Polimento (`release-channel.cjs`, `cat02-classifier.cjs`, `src/app.ts`)
+
+- **`electron/release-channel.cjs` (`validateExperimentalOverridePath`, `normalizeForCompare`)**:
+  - Rejeição explícita de qualquer segmento (na entrada bruta e no caminho resolvido, excluindo a raiz da unidade) que termine com `.` ou whitespace (`/[.\s]+$/`), comece com whitespace (`/^\s/`), contenha espaços nas extremidades do valor bruto ou corresponda a nomes reservados de dispositivo Windows (`CON`, `PRN`, `AUX`, `NUL`, `COM1..9`, `LPT1..9`).
+  - Normalização canônica Win32 (`seg.replace(/[. ]+$/, '').toLowerCase()`) aplicada em `normalizeForCompare` (cobrindo `isSameOrInside` e comparação com `appData`) e na checagem de `PROTECTED_SEGMENTS`, bloqueando todas as variantes de ponto/espaço final (ex.: `Meu Financeiro.`, `meu-financeiro-desktop..`, `Meu Financeiro .`, `Meu Financeiro \nested`, `appData.`).
+  - Regressão adicionada em `tests/release-channel.test.cjs`.
+- **`electron/cat02-classifier.cjs` (`rawProcessorPrefix` & normalização de travessões)**:
+  - Normalização de travessões Unicode (`[\u2010-\u2015\u2212] -> '-'`) em `unaccent` e inclusão explícita de `\u2011` / `\u2212` na classe de separadores.
+  - Redução do lookahead pós-separador compacto de `{3,}` para 1+ caracteres alfanuméricos (`(?=[a-z0-9])`), inclusão de `uber` nos grupos com separadores `[-–—‑−/]` e captura de tokens de processador precedidos por prefixo bancário separado apenas por espaço (`\b(?:compra|deb|debito|credito|cartao|pgto|pagto)\s+(?:mp|pag|pagseg|ton|pg|uber)\b`), preservando comerciantes legítimos (`UBERLANDIA AUTO POSTO`, `TONELADA SUPERMERCADO`, `PAGAMENTO FACIL DROGARIA`, `REDE DE POSTOS IPIRANGA`).
+  - Regressão unitária e E2E (`D05AutoCategorization.plan()`) adicionada em `tests/cat-p0-calibration.test.cjs` (`G6-13`).
+- **`src/app.ts` & `app/app.js` (`onGlobalKeydown`, `toggleMode`)**:
+  - Em `onGlobalKeydown`: `this.state.planOpen` verificado antes de `this.state.planSelected` no tratamento de `Escape`, e `.p-editor-backdrop [role="dialog"]` / `.modal-backdrop [role="dialog"]` priorizado antes de `.mf-detail-drawer` no aprisionamento de foco `Tab`.
+  - Em `toggleMode()`: reset adicional de `budgetFocus: null` e `budgetSearch: ''`.
+  - Recompilado `app/app.js` via `npm run compile` e adicionada verificação em `tests/nivel-b-ui-fixes.test.cjs`.

@@ -1268,7 +1268,7 @@ class App extends React.Component {
                 this.closeQuickCategory();
                 return;
             }
-            const dialog = document.querySelector('.modal-backdrop [role="dialog"],.mf-detail-drawer,.mf-ai-drawer');
+            const dialog = document.querySelector('.p-editor-backdrop [role="dialog"]') || document.querySelector('.modal-backdrop [role="dialog"]') || document.querySelector('.mf-detail-drawer,.mf-ai-drawer');
             if (event.key === 'Tab' && dialog && !document.querySelector('[role="listbox"],.mf-period-popover,.mf-single-calendar')) {
                 const controls = Array.from(dialog.querySelectorAll('button:not([disabled]),input:not([disabled]),textarea:not([disabled]),[tabindex="0"]'));
                 if (controls.length) {
@@ -1301,16 +1301,16 @@ class App extends React.Component {
                 this.setState({ intelligencePanelOpen: false });
                 return;
             }
+            if (this.state.planOpen) {
+                this.setState({ planOpen: false });
+                return;
+            }
             if (this.state.planSelected) {
                 this.setState({ planSelected: null });
                 return;
             }
             if (this.state.detail) {
                 this.setState({ detail: null });
-                return;
-            }
-            if (this.state.planOpen) {
-                this.setState({ planOpen: false });
                 return;
             }
             if (this.state.editModal) {
@@ -1982,7 +1982,7 @@ class App extends React.Component {
             return;
         }
         const mode = this.state.mode === 'real' ? 'demo' : 'real';
-        const resetScope = { query: '', bankFilter: '', txSource: 'all', txCategoryFilter: '', txKindFilter: 'all', txReviewFilter: 'all', txReviewOnly: false, txOrganize: false, txSelected: [], qa84TransactionsSpan: null, qa84TransactionsCategory: '', qa84BudgetDrill: null, detail: null, manualDraft: null, quickCategory: null };
+        const resetScope = { query: '', bankFilter: '', txSource: 'all', txCategoryFilter: '', txKindFilter: 'all', txReviewFilter: 'all', txReviewOnly: false, txOrganize: false, txSelected: [], qa84TransactionsSpan: null, qa84TransactionsCategory: '', qa84BudgetDrill: null, budgetFocus: null, budgetSearch: '', detail: null, manualDraft: null, quickCategory: null };
         if (!desktop) {
             this.setState({ ...resetScope, mode, data: load(mode), outcome: null, page: 'overview', showEntry: false });
             return;

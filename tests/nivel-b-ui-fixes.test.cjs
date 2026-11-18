@@ -22,6 +22,8 @@ test('Nível B UI fix 1 — App.toggleMode resets stale Movimentações & Orçam
   'qa84TransactionsSpan:null',
   "qa84TransactionsCategory:''",
   'qa84BudgetDrill:null',
+  'budgetFocus:null',
+  "budgetSearch:''",
   'detail:null',
   'manualDraft:null',
   'quickCategory:null'
@@ -63,4 +65,22 @@ test('Nível B UI fix 3 — Planning editor modal stacks above Planning detail d
  assert.notEqual(detailCall,-1);
  assert.notEqual(modalCall,-1);
  assert.ok(detailCall<modalCall,'renderPlanDetail() must appear before renderPlanModal() in DOM order');
+});
+
+test('Nível B UI fix 4 — onGlobalKeydown prioritizes planOpen modal over planSelected drawer for Escape and Tab focus trap',()=>{
+ const appTs=read('src/app.ts');
+ const start=appTs.indexOf('onGlobalKeydown=');
+ assert.notEqual(start,-1);
+ const body=appTs.slice(start,start+2200);
+ const editorSelectorIdx=body.indexOf(".p-editor-backdrop [role=\"dialog\"]");
+ const drawerSelectorIdx=body.indexOf('.mf-detail-drawer');
+ assert.notEqual(editorSelectorIdx,-1,'onGlobalKeydown must query .p-editor-backdrop [role="dialog"]');
+ assert.notEqual(drawerSelectorIdx,-1);
+ assert.ok(editorSelectorIdx<drawerSelectorIdx,'onGlobalKeydown must prioritize .p-editor-backdrop [role="dialog"] before .mf-detail-drawer');
+
+ const escOpenIdx=body.indexOf('if(this.state.planOpen)');
+ const escSelectedIdx=body.indexOf('if(this.state.planSelected)');
+ assert.notEqual(escOpenIdx,-1);
+ assert.notEqual(escSelectedIdx,-1);
+ assert.ok(escOpenIdx<escSelectedIdx,'Escape handling must close planOpen before planSelected');
 });
