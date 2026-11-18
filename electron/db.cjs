@@ -141,16 +141,17 @@ function validate(payload) {
 }
 function checkProfile(profile){if(profile!=='real'&&profile!=='demo') throw new Error('Perfil inválido');return profile;}
 class FinanceDB {
- constructor(filename){
+ constructor(filename, options = {}){
    // Capture the original pre-migration state for on-disk legacy databases.
    const existingFile = filename && filename !== ':memory:' && path.resolve(filename);
    const hadLegacyFile = Boolean(existingFile && fs.existsSync(existingFile) && fs.statSync(existingFile).size > 0);
+   const skipPreV7Rescue = Boolean(options?.skipPreV7Rescue);
    if (!filename || filename === ':memory:') { this.filename = filename || ':memory:'; }
    else { this.filename=path.resolve(filename); fs.mkdirSync(path.dirname(this.filename),{recursive:true,mode:0o700}); }
    this.db = new DatabaseSync(this.filename);
-   // Refuse future SQLite revisions BEFORE migrations, triggers or table DDL.
-   // A v8 backup must never be silently rewritten as a v7 database.
    try{
+     // Refuse future SQLite revisions BEFORE migrations, triggers or table DDL.
+     // A v8 backup must never be silently rewritten as a v7 database.
      const hasMeta=this.db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='app_meta'").get();
      if(hasMeta){
        const entry=this.db.prepare("SELECT value FROM app_meta WHERE key='schema_version'").get();
@@ -161,8 +162,7 @@ class FinanceDB {
          if(Number(raw)>7)throw new Error('Versão SQLite futura incompatível; instalação anterior preservada.');
        }
      }
-   }catch(err){this.db.close();throw err;}
-   this.db.exec('PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000;');
+     this.db.exec('PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000;');
    this.db.exec(`
      CREATE TABLE IF NOT EXISTS app_meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
      CREATE TABLE IF NOT EXISTS profiles (
@@ -330,17 +330,21 @@ class FinanceDB {
      this.db.prepare("INSERT INTO app_meta(key,value) VALUES('budget_zero_migration_094','done')").run();
    }
    this.db.prepare('UPDATE app_meta SET value=? WHERE key=?').run('6','schema_version');
-   if (!this.db.prepare("SELECT 1 FROM app_meta WHERE key='d05_hierarchy_e1'").get() && hadLegacyFile) {
-     const rescuePath = this.filename + '.d05-before-v7.sqlite';
-     if (!fs.existsSync(rescuePath)) {
-       // VACUUM INTO includes committed WAL changes. Never overwrite a rescue copy.
-       this.db.prepare('VACUUM INTO ?').run(rescuePath);
-       try { fs.chmodSync(rescuePath, 0o600); } catch (_) { /* Windows ACL is authoritative */ }
+     if (!skipPreV7Rescue && !this.db.prepare("SELECT 1 FROM app_meta WHERE key='d05_hierarchy_e1'").get() && hadLegacyFile) {
+       const rescuePath = this.filename + '.d05-before-v7.sqlite';
+       if (!fs.existsSync(rescuePath)) {
+         // VACUUM INTO includes committed WAL changes. Never overwrite a rescue copy.
+         this.db.prepare('VACUUM INTO ?').run(rescuePath);
+         try { fs.chmodSync(rescuePath, 0o600); } catch (_) { /* Windows ACL is authoritative */ }
+       }
      }
+     migrateHierarchy(this.db);
+     // Additive CAT-01 metadata sidecar. Bank source rows stay unchanged.
+     migrateCat01(this.db);
+   }catch(err){
+     try{this.db.close();}catch(_){}
+     throw err;
    }
-   migrateHierarchy(this.db);
-   // Additive CAT-01 metadata sidecar. Bank source rows stay unchanged.
-   migrateCat01(this.db);
  }
  load(profile){
    checkProfile(profile);

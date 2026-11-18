@@ -171,3 +171,24 @@
   - Regressão unitária e E2E (`D05AutoCategorization.plan()` + `apply()`) adicionada em `tests/cat-p0-calibration.test.cjs` (`G6-14`).
 - **`electron/recovery.cjs` (`restoreBackup` `finally`)**:
   - Limpeza completa dos arquivos auxiliares de staging (`['', '-wal', '-shm']`) no bloco `finally`, espelhando `automaticBackup`, com regressão em `tests/recovery.test.cjs` provando zero sobras `.importacao-*-wal`/`.sqlite-shm` após rejeição de backup WAL corrompido.
+
+## 14. Iteração 6 — Isolamento Cross-Field CAT02, Cleanup Staging WAL/Pre-v7 e Rollback ENOENT
+
+- **`electron/cat02-classifier.cjs` (`hasDescriptorIntermediarySignal`, `extractResidualOutsideMerchant`, `hasTokenSubsequence`, `scanIntermediarySpans`)**:
+  - Remoção de caracteres invisíveis `\p{Cf}` / formatadores (`INVISIBLE_FORMAT_RE`, cobrindo `\u2060`, `\u00AD`, `\u034F`, `\u200B-\u200D`, `\uFEFF`) combinada com normalização `NFKD` em `fold` e `normalizeForIntermediaryScan`, fechando iniciais com separadores/compatibilidade (`M\u2060P *`, `\uFF2D\uFF30 *`, `MP\u00B9*`, `M.P *`) e adicionando `99pay` / `99|pay` e sufixos numerados (`MP1*`, `PAG1*`, `TON1*`, `PG1*`, `99PAY1*`, `REDE1*`).
+  - Substituição do lookback fixo de 1–2 tokens por **Isolamento Cross-Field do Resíduo do Descritor** (`extractResidualOutsideMerchant` + `hasDescriptorIntermediarySignal`) e alinhamento de fronteira de tokens (`hasTokenSubsequence`), tratando qualquer sigla intermediadora (`mp`, `pag`, `ton`, `pg`) fora de `merchantName`, em posição inicial/final ou adjacente a qualquer separador não-espaço (`/\S/`) como sinal de gateway (`review`), ao mesmo tempo preservando comerciantes legítimos com expressão comercial interior como `DROGARIA PAG MENOS` (`COMPRA CARTAO DROGARIA PAG MENOS`), `PAGAMENTO FACIL DROGARIA`, `TONELADA SUPERMERCADO`, `UBERLANDIA AUTO POSTO`, `REDE DE POSTOS IPIRANGA` e `REDE DE FARMACIAS SAO PAULO`.
+  - Regressão unitária (`classifyCandidate`) e E2E (`D05AutoCategorization.plan()` + `apply()`) adicionada em `tests/cat-p0-calibration.test.cjs` (`G6-15`).
+- **`electron/db.cjs` & `electron/recovery.cjs` (`FinanceDB` constructor & `restoreBackup`)**:
+  - Em `electron/db.cjs`: construtor `FinanceDB(filename, options = {})` envolve todo o ciclo de inicialização e migração (linhas 153–344) em `try/catch` que fecha `this.db` com segurança antes de relançar qualquer erro (evitando vazamento de handle SQLite e `EBUSY` no Windows quando o `probe` ou abertura falha após a checagem de `schema_version`), e aceita `{ skipPreV7Rescue: true }` para não duplicar `.d05-before-v7.sqlite` em arquivos temporários de staging.
+  - Em `electron/recovery.cjs`: `restoreBackup` passa `{ skipPreV7Rescue: true }` ao `probe = new FinanceDB(staging, { skipPreV7Rescue: true })`, expande a lista de limpeza no `finally` para `['', '-wal', '-shm', '.d05-before-v7.sqlite', '.d05-before-v7.sqlite-wal', '.d05-before-v7.sqlite-shm']`, e protege cada `fs.rmSync` com `try/catch` individual para não mascarar o erro primário nem interromper a limpeza dos demais sufixos.
+  - 3 regressões adicionadas em `tests/recovery.test.cjs` cobrindo falha de `probe` em WAL após `schema_version` (zero `EBUSY` e zero sobras `.importacao-*`), preservação do erro primário sob `EBUSY` simulado em `fs.rmSync`, e restauração limpa de backup WAL pré-v7 (`schema_version=6`) sem sobras `.importacao-*.d05-before-v7.sqlite` (preservando os testes existentes de criação de `.d05-before-v7.sqlite` em `tests/d05-e1-hierarchy.test.cjs`).
+- **`electron/release-channel.cjs` (`validateExperimentalOverridePath` rollback)**:
+  - Rollback pós-falha em `validateExperimentalOverridePath` atualizado de `catch(_){break;}` para `catch(rmErr){if(rmErr?.code!=='ENOENT')break;}` para concluir a remoção de diretórios pai recém-criados mesmo quando segmentos mais profundos ainda não existiam após falha parcial de `fs.mkdirSync`, com regressão em `tests/release-channel.test.cjs`.
+- **Verificação Iteração 6 (`MF_QA_SYNTHETIC=1`)**:
+  - `npm run test:types`: **PASS**
+  - `node scripts/build-preload.cjs check`: **PASS**
+  - `npm run test:asar`: **PASS** (`1/1`)
+  - `npm run test:db`: **PASS** (`997/997`, `fail 0`, `cancelled 0`, `skipped 0`)
+  - `mobile-push` (`npm test`): **PASS** (`133/133`, `fail 0`)
+  - `npm run test:electron-smoke` + `node scripts/verify-visual-matrix.cjs`: **PASS** (`32/32` PNGs, 8 áreas, 4 presets)
+  - `node scripts/nivel-b-interactive-qa.cjs`: **PASS** (`14/14` PASS, `FAIL: 0`, `RuntimeIssues: 0`)

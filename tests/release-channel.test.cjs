@@ -334,3 +334,34 @@ test('experimentalProfileDirectory creates nested non-existent dirs (new1/new2) 
   assert.equal(fs.existsSync(existingBase), true);
   assert.equal(fs.readFileSync(keepFile, 'utf8'), 'preserve-me');
 }));
+
+test('experimentalProfileDirectory rolls back partial mkdirSync directories even when deeper segments return ENOENT', () => withTmp(root => {
+  const appData = path.join(root, 'appData');
+  const existingBase = path.join(root, 'existing-base');
+  fs.mkdirSync(appData, { recursive: true });
+  fs.mkdirSync(existingBase, { recursive: true });
+  const keepFile = path.join(existingBase, 'keep.txt');
+  fs.writeFileSync(keepFile, 'preserve-me', 'utf8');
+
+  const rollbackTarget = path.join(existingBase, 'rb-partial-1', 'rb-partial-2');
+  const origMkdirSync = fs.mkdirSync;
+  fs.mkdirSync = (targetPath, options) => {
+    if (path.resolve(String(targetPath)) === path.resolve(rollbackTarget)) {
+      origMkdirSync.call(fs, path.join(existingBase, 'rb-partial-1'), { recursive: true, mode: 0o700 });
+      throw Object.assign(new Error('EACCES: simulated mid-mkdir failure'), { code: 'EACCES' });
+    }
+    return origMkdirSync.call(fs, targetPath, options);
+  };
+  try {
+    assert.throws(() => experimentalProfileDirectory(fakeApp(appData), {
+      env: { MEU_FINANCEIRO_EXPERIMENTAL_USER_DATA_DIR: rollbackTarget },
+      argv: []
+    }), /EACCES/);
+  } finally {
+    fs.mkdirSync = origMkdirSync;
+  }
+
+  assert.equal(fs.existsSync(path.join(existingBase, 'rb-partial-1')), false);
+  assert.equal(fs.existsSync(existingBase), true);
+  assert.equal(fs.readFileSync(keepFile, 'utf8'), 'preserve-me');
+}));

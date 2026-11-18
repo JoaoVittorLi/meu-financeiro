@@ -187,7 +187,7 @@ function validateExperimentalOverridePath(app,rawOverride,{env=process.env}={}){
  }catch(err){
   for(let i=nonExistentTail.length;i>=1;i--){
    const createdDir=path.join(existingAncestor,...nonExistentTail.slice(0,i));
-   try{fs.rmdirSync(createdDir);}catch(_){break;}
+   try{fs.rmdirSync(createdDir);}catch(rmErr){if(rmErr?.code!=='ENOENT')break;}
   }
   throw err;
  }

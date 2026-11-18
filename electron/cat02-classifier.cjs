@@ -4,35 +4,49 @@
 // No external API, inference-generated SQL, or personal mutation.
 const taxonomy=require('./d05-taxonomy.json');
 const VERSION='CAT02/CLASSIFIER-V1';
-const fold=x=>String(x??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
- .toLowerCase().replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
+const INVISIBLE_FORMAT_RE=/[\p{Cf}\u034F\u115F\u1160\u17B4\u17B5\u180E\u3164\uFFA0]/gu;
+const fold=x=>String(x??'').replace(INVISIBLE_FORMAT_RE,'').normalize('NFKD')
+ .replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9 ]/g,' ')
+ .replace(/\s+/g,' ').trim();
 const tokens=x=>[...new Set(fold(x).split(' ').filter(w=>w.length>=3&&w.length<=28))].slice(0,32);
 const FULL_INTERMEDIARY_TOKENS=new Set([
  'mercadopago','mercpago','mercadolivre','meli',
  'pagseguro','pagseg','pagbank','stone','cielo','paypal','picpay',
  'getnet','redecard','sumup','pagarme','infinitepay','ebanx','adyen',
  'asaas','iugu','vindi','zoop','shipay','bcash','moip','wirecard',
- 'cloudwalk','ifood','rappi','ubereats','uber','99food','pix','qrcode'
+ 'cloudwalk','ifood','rappi','ubereats','uber','99food','99pay',
+ 'mpago','amedigital','recargapay','paghiper','pagbrasil','pagueveloz',
+ 'nuvempay','cornershop','pix','qrcode'
 ]);
 const BIGRAM_INTERMEDIARY_PAIRS=new Set([
  'mercado|pago','merc|pago','mercado|livre',
  'pag|seguro','pag|seg','pag|bank',
  'pay|pal','pic|pay','get|net','rede|card','sum|up',
  'pagar|me','infinite|pay','cloud|walk',
- 'i|food','uber|eats','99|food','qr|code'
+ 'i|food','uber|eats','99|food','99|pay',
+ 'ame|digital','recarga|pay','pag|hiper','pag|brasil',
+ 'pague|veloz','nuvem|pay','qr|code'
 ]);
 const ABBREV_INTERMEDIARY_TOKENS=new Set(['mp','pag','ton','pg']);
-const BANK_CARD_PREFIX_TOKENS=new Set([
+const TRAILING_DIGITS_RE=/^([a-z0-9]*[a-z])\d{1,3}$/;
+const BANK_TX_VERB_TOKENS=new Set([
  'compra','compras','deb','debito','cred','credito','cartao',
- 'pgto','pagto','pagamento','pagamentos',
+ 'pgto','pagto','pagamento','pagamentos','transacao','lancamento',
+ 'autorizacao','saque','recarga','fatura','transferencia','transf',
  'visa','elo','master','mastercard','hiper','hipercard','amex','maestro','electron'
 ]);
-const CONNECTOR_PREPOSITIONS=new Set(['no','na','em','do','da','de','via','por','com']);
-const INTERMEDIARY_PUNCT_SEP=/[*\-_/.:,+]/;
+const STATEMENT_CHANNEL_TOKENS=new Set([
+ 'online','eletronico','eletronica','digital','app','aplicativo',
+ 'internet','web','site','ecommerce','conta','corrente','poupanca',
+ 'automatico','automatica','nacional','internacional','vista','parcelado','parcelada',
+ 'pos','pdv','tef','link','wallet','carteira',
+ 'no','na','nos','nas','em','do','da','dos','das','de','via','por','com','pelo','pela','para','ao'
+]);
+const NON_SPACE_SEP=/\S/;
 function normalizeForIntermediaryScan(raw){
  return String(raw??'')
-  .replace(/[\u200B-\u200D\uFEFF]/g,'')
-  .normalize('NFD')
+  .replace(INVISIBLE_FORMAT_RE,'')
+  .normalize('NFKD')
   .replace(/[\u0300-\u036f]/g,'')
   .replace(/[\u2010-\u2015\u2212]/g,'-')
   .replace(/\s+/g,' ')
@@ -56,31 +70,104 @@ function tokenizeWithSeparators(norm){
  if(spans.length)spans[spans.length-1].sepAfter=norm.slice(prevEnd);
  return spans;
 }
+function isNumberedIntermediaryToken(tok){
+ const m=TRAILING_DIGITS_RE.exec(tok);
+ if(!m)return false;
+ const base=m[1];
+ return ABBREV_INTERMEDIARY_TOKENS.has(base)||FULL_INTERMEDIARY_TOKENS.has(base)||base==='rede';
+}
+function hasSplitMpBigram(spans,i){
+ return spans[i].token==='m'&&spans[i+1]?.token==='p'&&(
+  NON_SPACE_SEP.test(spans[i].sepBefore)||
+  NON_SPACE_SEP.test(spans[i].sepAfter)||
+  NON_SPACE_SEP.test(spans[i+1].sepAfter)
+ );
+}
+function isRedeProcessorAt(spans,i){
+ const curr=spans[i];
+ if(curr.token!=='rede')return false;
+ const next=spans[i+1],afterNext=spans[i+2];
+ const isLegitRedeDe=Boolean(
+  next&&next.token==='de'&&/^\s+$/.test(curr.sepAfter)&&
+  (!afterNext||!/^pagamentos?$/.test(afterNext.token))
+ );
+ return !isLegitRedeDe;
+}
+function scanIntermediarySpans(spans,{inDescriptorResidual=false}={}){
+ let seenTxVerb=false;
+ for(let i=0;i<spans.length;i++){
+  const curr=spans[i],tok=curr.token;
+  if(FULL_INTERMEDIARY_TOKENS.has(tok)||isNumberedIntermediaryToken(tok))return true;
+  if(i+1<spans.length&&BIGRAM_INTERMEDIARY_PAIRS.has(tok+'|'+spans[i+1].token))return true;
+  if(hasSplitMpBigram(spans,i))return true;
+  if(isRedeProcessorAt(spans,i))return true;
+  if(ABBREV_INTERMEDIARY_TOKENS.has(tok)){
+   if(inDescriptorResidual)return true;
+   if(i===0)return true;
+   if(NON_SPACE_SEP.test(curr.sepBefore)||NON_SPACE_SEP.test(curr.sepAfter))return true;
+   if(spans.slice(i+1).every(s=>/^\d+$/.test(s.token)))return true;
+   const prev=spans[i-1].token;
+   if(seenTxVerb||STATEMENT_CHANNEL_TOKENS.has(prev)){
+    const isInteriorPagMenos=tok==='pag'&&
+     spans[i+1]?.token==='menos'&&
+     i>=2&&
+     !BANK_TX_VERB_TOKENS.has(prev)&&
+     !STATEMENT_CHANNEL_TOKENS.has(prev);
+    if(!isInteriorPagMenos)return true;
+   }
+  }
+  if(BANK_TX_VERB_TOKENS.has(tok))seenTxVerb=true;
+ }
+ return false;
+}
 function hasIntermediarySignal(raw){
  const norm=normalizeForIntermediaryScan(raw);
  if(!norm)return false;
- const spans=tokenizeWithSeparators(norm);
- for(let i=0;i<spans.length;i++){
-  const curr=spans[i],tok=curr.token;
-  if(FULL_INTERMEDIARY_TOKENS.has(tok))return true;
-  if(i+1<spans.length&&BIGRAM_INTERMEDIARY_PAIRS.has(tok+'|'+spans[i+1].token))return true;
-  if(tok==='rede'){
-   const next=spans[i+1],afterNext=spans[i+2];
-   const isLegitRedeDe=Boolean(
-    next&&next.token==='de'&&/^\s+$/.test(curr.sepAfter)&&
-    (!afterNext||!/^pagamentos?$/.test(afterNext.token))
-   );
-   if(!isLegitRedeDe)return true;
+ return scanIntermediarySpans(tokenizeWithSeparators(norm));
+}
+function extractResidualOutsideMerchant(descSpans,merchantTokens){
+ if(!merchantTokens.length||descSpans.length<merchantTokens.length)return null;
+ const residual=[];
+ let matchedAny=false;
+ for(let i=0;i<descSpans.length;){
+  let match=i+merchantTokens.length<=descSpans.length;
+  if(match){
+   for(let j=0;j<merchantTokens.length;j++){
+    if(descSpans[i+j].token!==merchantTokens[j]){match=false;break;}
+   }
   }
-  if(ABBREV_INTERMEDIARY_TOKENS.has(tok)){
-   if(i===0)return true;
-   const prev=spans[i-1].token;
-   if(BANK_CARD_PREFIX_TOKENS.has(prev))return true;
-   if(i>=2&&CONNECTOR_PREPOSITIONS.has(prev)&&BANK_CARD_PREFIX_TOKENS.has(spans[i-2].token))return true;
-   if(INTERMEDIARY_PUNCT_SEP.test(curr.sepAfter)||INTERMEDIARY_PUNCT_SEP.test(curr.sepBefore))return true;
+  if(match){matchedAny=true;i+=merchantTokens.length;}
+  else{residual.push(descSpans[i]);i++;}
+ }
+ return matchedAny?residual:null;
+}
+function hasTokenSubsequence(descSpans,merchantTokens){
+ if(!merchantTokens.length||descSpans.length<merchantTokens.length)return false;
+ for(let i=0;i<=descSpans.length-merchantTokens.length;i++){
+  let ok=true;
+  for(let j=0;j<merchantTokens.length;j++){
+   if(descSpans[i+j].token!==merchantTokens[j]){ok=false;break;}
   }
+  if(ok)return true;
  }
  return false;
+}
+function hasDescriptorIntermediarySignal(raw,merchantTokens){
+ const norm=normalizeForIntermediaryScan(raw);
+ if(!norm)return false;
+ const spans=tokenizeWithSeparators(norm);
+ const residual=extractResidualOutsideMerchant(spans,merchantTokens);
+ if(!residual)return scanIntermediarySpans(spans);
+ for(let i=0;i<spans.length;i++){
+  const curr=spans[i],tok=curr.token;
+  if(FULL_INTERMEDIARY_TOKENS.has(tok)||isNumberedIntermediaryToken(tok))return true;
+  if(i+1<spans.length&&BIGRAM_INTERMEDIARY_PAIRS.has(tok+'|'+spans[i+1].token))return true;
+  if(hasSplitMpBigram(spans,i))return true;
+  if(isRedeProcessorAt(spans,i))return true;
+  if(ABBREV_INTERMEDIARY_TOKENS.has(tok)&&
+     (NON_SPACE_SEP.test(curr.sepBefore)||NON_SPACE_SEP.test(curr.sepAfter)))return true;
+ }
+ return scanIntermediarySpans(residual,{inDescriptorResidual:true});
 }
 function buildCatalog(catalog=taxonomy){
  if(!catalog||!Array.isArray(catalog.parents))throw Error('CAT-02: catálogo D05 indisponível');
@@ -249,6 +336,8 @@ function classifyCandidate({transaction,evidence={},history=[],rules=[],catalog=
  // never counts as merchant identity; Naive Bayes remains review-only.
  const directName=fold(evidence.merchantName);
  const desc=fold(transaction.description||'');
+ const merchantTokens=tokenizeWithSeparators(normalizeForIntermediaryScan(evidence.merchantName||'')).map(s=>s.token);
+ const descSpans=tokenizeWithSeparators(normalizeForIntermediaryScan(transaction.description||''));
  const narrowMcc=['5411','5541','5912'].includes(String(evidence.mcc||''));
  const directCommerce=narrowMcc&&mcc&&!external&&
   evidence.transactionType==='DEBIT'&&
@@ -260,10 +349,11 @@ function classifyCandidate({transaction,evidence={},history=[],rules=[],catalog=
   !hasIntermediarySignal(evidence.merchantName)&&
   !hasIntermediarySignal(evidence.merchantBusinessName||'')&&
   !hasIntermediarySignal(evidence.receiverName||'')&&
-  !hasIntermediarySignal(transaction.description||'')&&
-  !hasIntermediarySignal(evidence.description||'')&&
-  !hasIntermediarySignal(evidence.descriptionRaw||'')&&
-  desc.includes(directName);
+  !hasDescriptorIntermediarySignal(transaction.description||'',merchantTokens)&&
+  !hasDescriptorIntermediarySignal(evidence.description||'',merchantTokens)&&
+  !hasDescriptorIntermediarySignal(evidence.descriptionRaw||'',merchantTokens)&&
+  desc.includes(directName)&&
+  hasTokenSubsequence(descSpans,merchantTokens);
  if(directCommerce){
   return result('apply','VERIFIED_DIRECT_MERCHANT_MCC_PARENT',{
    target:{categoryId:mcc.categoryId,subcategoryId:null},
