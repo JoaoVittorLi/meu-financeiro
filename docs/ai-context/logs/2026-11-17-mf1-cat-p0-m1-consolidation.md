@@ -287,3 +287,25 @@
   - `npm --prefix mobile-push test`: **PASS** (`133/133`, `fail 0`, `duration_ms 7965.64`)
   - `npm run test:electron-smoke` + `node scripts/verify-visual-matrix.cjs`: **PASS** (`32 entradas JSON, 32 PNGs, 8 áreas, 4 presets, arquivos e dimensões conferidos`)
   - `node scripts/nivel-b-interactive-qa.cjs`: **PASS** (`14/14` jornadas `PJ-01..09`, `NJ-01..05`, `FAIL: 0`, `RuntimeIssues: 0`)
+
+## 19. Iteração 11 — Fechamento Wave 10 (`CAT-02`: Homóglifos Pós-NFKD, Splits `2/3`-Tokens, POS Estendido, Colados e Fluxos Não-Cartão)
+
+- **Origem:** Auditoria forense independente Wave 10 devolveu `GO`, porém o Guardião Financeiro Wave 10 (`3ccc7c16`) devolveu `REJECT` no SHA `dc11fad1` apontando `4` classes adversariais extras (preservando `31/31` regressões Wave 8/9 e `33/33` nomes BR legítimos).
+- **`electron/cat02-classifier.cjs`**:
+  - **Unicode pós-NFKD (`mapAstralAndStripInvisibles` + `canonicalizeRawText`)**: remoção de `INVISIBLE_FORMAT_RE` e mapeamento de símbolos envolvidos (`\u{1F130}-\u{1F189}`) e Indicadores Regionais (`\u{1F1E6}-\u{1F1FF}`, ex.: `🇲🇵`) antes de `.normalize('NFKD').replace(/[\p{Mn}\p{Me}]+/gu, '')`, aplicando `CONFUSABLE_HOMOGLYPHS` (cirílico/grego com/sem tonos pré-compostos, `\u0131`, `\u0261`, small-caps `\u1D0D\u1D18`, palochka `\u04C0`) **após** a decomposição.
+  - **Separador `*` e splits `2/3`-tokens (`hasSplitIntermediaryBigram`)**: captura direta de `norm.includes('*')` em `hasIntermediarySignal` e `hasDescriptorIntermediarySignal`, além de splits de `3` tokens (`p|a|g`, `t|o|n`, `p|i|x`, `b|i|n`, `p|g|s`) e `2` tokens (`p|p`, `m|l`, `q|r`, `b|in`, `ver|o`, `st|one`, `pa|g`, `c|ora` preservando `DONA/TIA/SANTA CORA` e `CORA CORALINA`).
+  - **POS estendido & guarda métrica `ml`**: `SUFFIXED_INTERMEDIARY_RE` (`MPBR*`, `MPX*`, `TONBR*`, `PAGBR*`, `VEROBR*`, `C6PAYBR*`, `EC01MPBR*`), `ALNUM_PREFIX_POS_RE` e `DIGIT_BEARING_INTERMEDIARY_RE` suportando prefixos com dígito inicial ou `>8` letras (`01CAIXA02MP*`, `SUPERCAIXA01MP*`, `01CAIXA99PAY*`, `SUPERCAIXA99PAY*`); `/^\d{1,4}ml$/` só é isento quando em posição interna com precedente não-verbo/não-canal/não-numérico e presente em `merchantTokens` (`5ML` e `500ML` passam, `COMPRA 10ML` / `EC 01 10ML` / `10ML*` bloqueiam).
+  - **Prefixos, sufixos e infixos colados (`hasDescriptorIntermediarySignal`)**: suporte a radicais colados de `2+` chars (`EC 01 MPLA`, `MPPA CENT`, `MPDR SAO PAULO`, `MPJO`, `MPDO JOAO`, `PAGBARDOJOAO`, `MPPADARIACENTRAL`), sufixos colados (`PADARIA CENTRALMP`, `PADARIAMP CENTRAL`) e infixos colados (`PADARIAMPCENTRAL`), além de remoção de literal `'mercadopag'` duplicado (mantendo único no `Set`).
+  - **Fluxos não-cartão e `providerCategory` (`classifyCandidate`)**: `isNonCardPaymentMethod` expandido para capturar variantes sem fronteira final (`BOLETO1`, `BOLETOBANCARIO`, `TED01`) e aplicado também sobre `evidence.operationType` (`BOLETO`, `TED`, `DOC`, `TRANSFERENCIA`, `SAQUE`) e `evidence.providerCategory` (ex.: `Transfer - PIX`), fechando tanto `MULTI_SIGNAL_RECONCILED` quanto `VERIFIED_DIRECT_MERCHANT_MCC_PARENT`.
+- **`tests/cat-p0-calibration.test.cjs` (`G6-18`)**:
+  - Adicionados `62` novos vetores adversariais Wave 10 em `G6-18` (unitário + E2E SQLite `FinanceDB` + `D05AutoCategorization` com `limit: 500`).
+- **Verificação Iteração 11 (`MF_QA_SYNTHETIC=1`, Node `v22.23.4`, npm `10.9.9`)**:
+  - `npm run test:types`: **PASS**
+  - `npm run compile`: **PASS**
+  - `node scripts/build-preload.cjs check`: **PASS**
+  - `node scripts/renderer-provenance.cjs check-bundle`: **PASS** (`31 entradas`)
+  - `npm run test:asar`: **PASS** (`1/1`, `duration_ms 245.22`)
+  - `npm run test:db`: **PASS** (`1000/1000`, `fail 0`, `cancelled 0`, `skipped 0`, `duration_ms 128260.42`)
+  - `npm --prefix mobile-push test`: **PASS** (`133/133`, `fail 0`, `duration_ms 7873.94`)
+  - `npm run test:electron-smoke` + `node scripts/verify-visual-matrix.cjs`: **PASS** (`32 entradas JSON, 32 PNGs, 8 áreas, 4 presets, arquivos e dimensões conferidos`)
+  - `node scripts/nivel-b-interactive-qa.cjs`: **PASS** (`14/14` jornadas `PJ-01..09`, `NJ-01..05`, `FAIL: 0`, `RuntimeIssues: 0`)

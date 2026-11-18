@@ -1615,7 +1615,73 @@ test('G6-18: wave 8 adversarial bypass classes (truncated k=1/2, dirty TON/PAG, 
     { id: 'w9-41-aiqfome', desc: 'AIQFOME *PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
     { id: 'w9-42-stripe', desc: 'STRIPE *PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
     { id: 'w9-43-dlocal', desc: 'DLOCAL *PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
-    { id: 'w9-44-payu', desc: 'PAYU *PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' }
+    { id: 'w9-44-payu', desc: 'PAYU *PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    // Wave 10 Block 1: glued short/concatenated stems, suffixes & infixes
+    { id: 'w10-01-ec-mpla', desc: 'COMPRA LA PADARIA CENTRAL', descriptionRaw: 'EC 01 MPLA', name: 'LA PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w10-02-mppa-cent', desc: 'COMPRA PADARIA CENTRAL', descriptionRaw: 'MPPA CENT', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w10-03-mpdr-sao', desc: 'COMPRA DROGARIA SAO PAULO', descriptionRaw: 'MPDR SAO PAULO', name: 'DROGARIA SAO PAULO', mcc: '5912' },
+    { id: 'w10-04-mpjo', desc: 'COMPRA BAR DO JOAO', descriptionRaw: 'MPJO', name: 'BAR DO JOAO', mcc: '5411' },
+    { id: 'w10-05-mpdo-joao', desc: 'COMPRA BAR DO JOAO', descriptionRaw: 'MPDO JOAO', name: 'BAR DO JOAO', mcc: '5411' },
+    { id: 'w10-06-pagbardojoao', desc: 'COMPRA BAR DO JOAO', descriptionRaw: 'PAGBARDOJOAO', name: 'BAR DO JOAO', mcc: '5411' },
+    { id: 'w10-07-mppadariacentral', desc: 'COMPRA PADARIA CENTRAL', descriptionRaw: 'MPPADARIACENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w10-08-centralmp-suf', desc: 'COMPRA PADARIA CENTRAL', descriptionRaw: 'PADARIA CENTRALMP', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w10-09-padariamp-suf', desc: 'COMPRA PADARIA CENTRAL', descriptionRaw: 'PADARIAMP CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w10-10-padariampcentral-infix', desc: 'COMPRA PADARIA CENTRAL', descriptionRaw: 'PADARIAMPCENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    // Wave 10 Block 2: non-card operations, non-boundary paymentMethod & PIX providerCategory
+    { id: 'w10-11-op-boleto-rec', desc: 'BOLETO SUPERMERCADO ALFA SUL', name: 'SUPERMERCADO ALFA SUL', category: 'Groceries', mcc: '5411', operationType: 'BOLETO' },
+    { id: 'w10-12-op-ted-rec', desc: 'TED ENVIADO SUPERMERCADO ALFA SUL', name: 'SUPERMERCADO ALFA SUL', category: 'Groceries', mcc: '5411', operationType: 'TED' },
+    { id: 'w10-13-op-doc-rec', desc: 'DOC ENVIADO SUPERMERCADO ALFA SUL', name: 'SUPERMERCADO ALFA SUL', category: 'Groceries', mcc: '5411', operationType: 'DOC' },
+    { id: 'w10-14-op-transf-rec', desc: 'TRANSF SUPERMERCADO ALFA SUL', name: 'SUPERMERCADO ALFA SUL', category: 'Groceries', mcc: '5411', operationType: 'TRANSFERENCIA' },
+    { id: 'w10-15-op-saque-rec', desc: 'SAQUE SUPERMERCADO ALFA SUL', name: 'SUPERMERCADO ALFA SUL', category: 'Groceries', mcc: '5411', operationType: 'SAQUE' },
+    { id: 'w10-16-pm-boleto1', desc: 'COMPRA SUPERMERCADO ALFA SUL', name: 'SUPERMERCADO ALFA SUL', category: 'Groceries', mcc: '5411', operationType: 'PURCHASE', paymentMethod: 'BOLETO1' },
+    { id: 'w10-17-pm-boletobancario', desc: 'COMPRA SUPERMERCADO ALFA SUL', name: 'SUPERMERCADO ALFA SUL', category: 'Groceries', mcc: '5411', operationType: 'PURCHASE', paymentMethod: 'BOLETOBANCARIO' },
+    { id: 'w10-18-pm-ted01', desc: 'COMPRA SUPERMERCADO ALFA SUL', name: 'SUPERMERCADO ALFA SUL', category: 'Groceries', mcc: '5411', operationType: 'PURCHASE', paymentMethod: 'TED01' },
+    { id: 'w10-19-cat-transfer-pix', desc: 'PADARIA CENTRAL', name: 'PADARIA CENTRAL', category: 'Transfer - PIX', mcc: '5411', operationType: 'CARD_PURCHASE' },
+    // Wave 10 Block 3: extended POS prefixes, alpha-suffixed PSPs & unpunctuated 10ML
+    { id: 'w10-20-01caixa02mp', desc: '01CAIXA02MP*PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w10-21-supercaixa01mp', desc: 'SUPERCAIXA01MP*PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w10-22-01caixa99pay', desc: '01CAIXA99PAY*PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w10-23-supercaixa99pay', desc: 'SUPERCAIXA99PAY*PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w10-24-mpbr', desc: 'MPBR*PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w10-25-mpx', desc: 'MPX*PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w10-26-tonbr', desc: 'TONBR*PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w10-27-pagbr', desc: 'PAGBR*PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w10-28-verobr', desc: 'VEROBR*PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w10-29-c6paybr', desc: 'C6PAYBR*PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w10-30-ec01mpbr', desc: 'EC01MPBR*PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w10-31-mpbr-reconciled', desc: 'COMPRA SUPERMERCADO ALFA SUL', descriptionRaw: 'MPBR*SUPERMERCADO ALFA SUL', name: 'SUPERMERCADO ALFA SUL', category: 'Groceries', mcc: '5411' },
+    { id: 'w10-32-compra-10ml', desc: 'COMPRA 10ML PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w10-33-ec01-10ml', desc: 'EC 01 10ML PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    // Wave 10 Block 4: precomposed NFKD homoglyphs, lookalikes & 2/3-token splits
+    { id: 'w10-34-ton-greek-omicron-tonos', desc: 'T\u038CN *PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w10-35-bin-greek-iota-tonos', desc: 'B\u038AN *PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w10-36-cora-greek-tonos', desc: 'C\u038CRA *PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w10-37-vero-greek-tonos', desc: 'V\u0388RO *PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w10-38-pix-greek-tonos', desc: 'P\u038AX *PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w10-39-stone-greek-tonos', desc: 'ST\u038CNE *PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w10-40-aiqfome-greek-tonos', desc: '\u0386IQFOME *PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w10-41-pix-cyr-yi', desc: 'P\u0407X *PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w10-42-dotless-bin', desc: 'B\u0131N *PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w10-43-greek-nu-vero', desc: '\u03BDERO *PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w10-44-smallcaps-mp', desc: '\u1D0D\u1D18 *PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w10-45-ipa-g-pag', desc: 'PA\u0261 *PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w10-46-palochka-pix', desc: 'P\u04C0X *PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w10-47-regional-mp', desc: '\u{1F1F2}\u{1F1F5} PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w10-48-pm-dotless-pix', desc: 'COMPRA SUPERMERCADO ALFA SUL', name: 'SUPERMERCADO ALFA SUL', category: 'Groceries', mcc: '5411', paymentMethod: 'P\u0131X' },
+    { id: 'w10-49-nbsp-pa-g', desc: 'PA\u00A0G *PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w10-50-nbsp-st-one', desc: 'ST\u00A0ONE *PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w10-51-nbsp-ver-o', desc: 'VER\u00A0O *PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w10-52-nbsp-p-p', desc: 'P\u00A0P *PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w10-53-nbsp-m-l', desc: 'M\u00A0L *PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w10-54-nbsp-q-r', desc: 'Q\u00A0R *PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w10-55-nbsp-b-in', desc: 'B\u00A0IN *PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w10-56-nbsp-c-ora', desc: 'C\u00A0ORA *PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w10-57-dot-pag', desc: 'P.A.G*PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w10-58-dot-ton', desc: 'T.O.N*PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w10-59-dot-pix', desc: 'P.I.X*PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w10-60-space-pag', desc: 'P A G *PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w10-61-space-ton', desc: 'T O N *PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w10-62-space-pix', desc: 'P I X *PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' }
   ];
 
   const legitimateCases = [
@@ -1727,7 +1793,7 @@ test('G6-18: wave 8 adversarial bypass classes (truncated k=1/2, dirty TON/PAG, 
       creditCardMetadata: { payeeMCC: c.mcc }
     })));
     auto.configure({ accountIds: [ACCOUNT_A], ...SPAN }, true);
-    const plan = auto.plan({ limit: 200 });
+    const plan = auto.plan({ limit: 500 });
     assert.equal(plan.candidateCount, legitimateCases.length, `Expected ${legitimateCases.length} legitimate candidates, got: ${plan.candidates.map((x) => x.externalId).join(',')}`);
     assert.equal(plan.reviewCount, bypassCases.length);
     assert.deepEqual(
