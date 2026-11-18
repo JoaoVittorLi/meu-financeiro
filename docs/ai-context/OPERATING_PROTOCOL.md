@@ -1,7 +1,10 @@
-# Protocolo de desenvolvimento por múltiplos chats/Work
+# Protocolo de desenvolvimento multiagente e governança
 
-> **Exceção específica aprovada em 12/11/2026:** Fast Lane R/I segue diretamente a Rodada B focal, porque o proprietário aprovou a repriorização e já houve auditorias anteriores. A metodologia abaixo continua válida para outros escopos ou tarefas não aprovadas. Coordenação em [FAST_LANE_20261112](FAST_LANE_20261112.md), [IC v1](INTELLIGENCE_UI_CONTRACT_V1.md) e [issue #49](https://github.com/JoaoVittorLi/meu-financeiro/issues/49).
-
+> **ATUALIZAÇÃO VINCULANTE (18/11/2026 — Orchestrator Argon / Antigravity `.agents/`):**
+> - **Workspace & Isolamento:** atuar em `C:\Dev\meu-financeiro` (ou worktrees em `C:\Dev\meu-financeiro-worktrees\*`), mantendo intacto `Carbon Meu Financeiro` no OneDrive e perfis pessoais em `%APPDATA%`.
+> - **Modelos e Papéis (sem redundância):** Tier superior (`Argon` / `pro`) para Arquitetura, Inteligência Financeira, Design/Visual, Guardião SQLite e Auditor Adversarial; Tier operacional (`flash`) para implementação delimitada e execução de testes.
+> - **Ciclo de 7 Estágios (`python .agents/scripts/run_workflow.py`):** `Descoberta -> Projeto -> Implementação -> Teste -> Correção -> Auditoria -> Entrega`, com bloqueio automático na etapa de empacotamento NSIS sem autorização do proprietário e validação obrigatória Nível A + Nível B + Nível C.
+> - **Política histórica anterior (12/11/2026):** Fast Lane R/I e papéis antigos abaixo permanecem preservados para referência histórica.
 
 **Objetivo:** permitir concorrência produtiva sem duplicar trabalhos, alterar dados indevidamente ou perder decisões.
 

@@ -1,7 +1,21 @@
 # Rodada A — aprofundamento funcional do benchmark de fintechs
 
-**Data:** 09/11/2026 • **Natureza:** pesquisa e especificação de possibilidades para 2.0; **NÃO AUTORIZA IMPLEMENTAÇÃO**.  
+**Data:** 09/11/2026 (atualizado em **18/11/2026** com pesquisa verificada para o Copiloto Financeiro Marcos 2–5). • **Natureza:** pesquisa e especificação de produto; respeita bloqueios de escrita pessoal e APIs pagas.
 **Relacionados:** [Produto](PRODUCT_BLUEPRINT.md), [Roadmap](../ROADMAP_MF2.md), [Ideias](IDEA_REGISTER.md), [Rodada A publicada](reviews/2026-11-09-MF2-ANALYSIS.md).
+
+## Atualização Verificada de Benchmark Competitivo (18/11/2026 — M2/M3)
+
+Fontes públicas verificadas em `18/11/2026` (zero cópia de código, UI ou textos proprietários; zero acesso a endpoints pagos/privados):
+
+| Referência | Capacidades & Padrões Verificados | Limitações / Riscos (O Que Não Imitar) | Destino no Meu Financeiro |
+|---|---|---|---|
+| **Monarch Money** (`help.monarchmoney.com`: *Flex Budgeting*, *About Monarch's AI Features*) | Flex Budgeting (*Fixed*, *Non-Monthly* com rollover e *Flex* único); regras de limpeza de estabelecimento; calendário de recorrências; Q&A conversacional (*"Why did my net worth change?"*); metas *Save Up* vs *Pay Down*. | Sobrecarga de configuração; histórico armazenado em nuvem; quedas ocasionais de agregadores exigindo reconexão manual. | **M2 (F1/F2/F5):** investigações explicáveis e recomendações locais; **M3:** orçamento em 2 velocidades (*Fixos / Não-Mensais / Flex*). |
+| **YNAB** (`support.ynab.com`: *Handling Credit Cards*, *Credit Card Interest*, *Reconciling Accounts*) | Card Mode de aprovação/fila rápida; trava explícita de conciliação anti-duplicação; separação de gasto no cartão vs juros de cartão; metas de reserva e quitação. | Curva de aprendizado rígida de *zero-based budgeting* para usuários casuais. | **M2 (F2/F4):** separação de compromissos/parcelas vs limite; **M3/M4:** trava de período conferido. |
+| **Copilot Money** (`intercom.help/copilotmoney`, `copilot.money`) | Fila **"To Review"** separada dos itens de alta confiança; badges explicáveis e sugestões alternativas no *Copilot Intelligence*; *Money Assistant* para detecção de reembolsos e mudanças de gasto; Cash Flow tab. | Restrito ao ecossistema Apple; ML caixa-preta pode errar em estabelecimentos multi-categoria ou P2P/Pix ambíguos. | **M1/M2:** `CAT-UX` + `F1/F5` mantendo precedência determinística `manual > rule > auto > bank` e recibos auditáveis. |
+| **Rocket Money** (`rocketmoney.com`, `help.rocketmoney.com`) | Descoberta de assinaturas, custo anualizado, alertas de fim de trial e **alertas de aumento de preço**; alertas preventivos de saldo baixo e *Rowan AI*. | Cobrança de 30%–60% sobre economia negociada, fricção comercial e concierges externos — **não imitar**. | **M2 (F3) / M3:** detector 100% local de recorrências e variações de preço com evidência e atalho para simulação, zero taxas/terceiros. |
+| **Mobills & Organizze** (`mobills.com.br`, `ajuda.mobills.com.br`, `organizze.com.br`) | Ciclo completo de **fatura de cartão BR** (fechamento/vencimento/limite), projeção de **parcelas futuras (*parcelados*)**, tratamento de Pix e alertas de vencimento. | Limitação estrutural verificada do **Open Finance BR**: atraso de sincronização (~24h), expiração frequente de consentimento e **ausência de parcelas futuras de cartão até o fechamento da fatura**. | **M2 (F3/F4) / M3:** projeção determinística local de parcelas futuras + diferenciação explícita entre saldo confirmado e previsão. |
+
+---
 
 ## 1. O objetivo não é clonar fintechs
 

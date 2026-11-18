@@ -1376,3 +1376,142 @@ test('G6-16: wave 6 adversarial bypass vectors (ADV-01..ADV-24, ADV-27), Brazili
     }
   });
 });
+
+
+test('G6-17: wave 7 boundary vectors (NEW-01..23) blocked while COMPRA PAG(-)MENOS DROGARIA and Brazilian merchants apply cleanly (unit + E2E)', async () => {
+  const bypassCases = [
+    // NEW-01..04: Glued prefix when merchantTokens[0].length < 4
+    { id: 'new-01-mpbar', desc: 'COMPRA BAR DO JOAO', descriptionRaw: 'MPBAR DO JOAO', name: 'BAR DO JOAO', mcc: '5411' },
+    { id: 'new-02-pagbar', desc: 'COMPRA BAR DO JOAO', descriptionRaw: 'PAGBAR DO JOAO', name: 'BAR DO JOAO', mcc: '5411' },
+    { id: 'new-03-mptia', desc: 'COMPRA TIA MARIA', descriptionRaw: 'MPTIA MARIA', name: 'TIA MARIA', mcc: '5411' },
+    { id: 'new-04-tonsao', desc: 'COMPRA SAO JOSE', descriptionRaw: 'TONSAO JOSE', name: 'SAO JOSE', mcc: '5411' },
+    // NEW-05..10: Glued numbered or full PSP prefixes in descriptionRaw
+    { id: 'new-05-mp1pad', desc: 'COMPRA PADARIA CENTRAL', descriptionRaw: 'MP1PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'new-06-mp1000pad', desc: 'COMPRA PADARIA CENTRAL', descriptionRaw: 'MP1000PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'new-07-pagspad', desc: 'COMPRA PADARIA CENTRAL', descriptionRaw: 'PAGSPADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'new-08-paygopad', desc: 'COMPRA PADARIA CENTRAL', descriptionRaw: 'PAYGOPADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'new-09-stonepad', desc: 'COMPRA PADARIA CENTRAL', descriptionRaw: 'STONEPADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'new-10-c6paypad', desc: 'COMPRA PADARIA CENTRAL', descriptionRaw: 'C6PAYPADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    // NEW-11..15: Truncated descriptionRaw dropping final merchant token + non-verb/non-channel prefix
+    { id: 'new-11-ec01', desc: 'PADARIA CENTRAL', descriptionRaw: 'EC 01 MP PADARIA', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'new-12-filial02', desc: 'SUPERMERCADO ALFA SUL', descriptionRaw: 'FILIAL 02 MP SUPERMERCADO ALFA', name: 'SUPERMERCADO ALFA SUL', mcc: '5411' },
+    { id: 'new-13-001pag', desc: 'DROGARIA VIDA PLENA', descriptionRaw: '001 PAG DROGARIA VIDA', name: 'DROGARIA VIDA PLENA', mcc: '5912' },
+    { id: 'new-14-aut99', desc: 'PADARIA CENTRAL', descriptionRaw: 'AUT 99 TON PADARIA', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'new-15-term5', desc: 'AUTO POSTO ESTRADA REAL', descriptionRaw: 'TERM 5 MP AUTO POSTO', name: 'AUTO POSTO ESTRADA REAL', mcc: '5541' },
+    // NEW-16..20: Alphanumeric POS prefixes & PGS*
+    { id: 'new-16-mp01a', desc: 'MP01A*PADARIA CENTRAL', descriptionRaw: 'MP01A*PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'new-17-1mp2', desc: '1MP2*PADARIA CENTRAL', descriptionRaw: '1MP2*PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'new-18-pag1a', desc: 'PAG1A*PADARIA CENTRAL', descriptionRaw: 'PAG1A*PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'new-19-pgs-space', desc: 'PGS *PADARIA CENTRAL', descriptionRaw: 'PGS *PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'new-20-pgs-star', desc: 'PGS*PADARIA CENTRAL', descriptionRaw: 'PGS*PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    // NEW-21..22: Dirty merchantName with interior MP and no leading bank verb
+    { id: 'new-21-mp-mid-padaria', desc: 'PADARIA MP CENTRAL', descriptionRaw: 'PADARIA MP CENTRAL', name: 'PADARIA MP CENTRAL', mcc: '5411' },
+    { id: 'new-22-mp-mid-posto', desc: 'AUTO POSTO MP BRASIL', descriptionRaw: 'AUTO POSTO MP BRASIL', name: 'AUTO POSTO MP BRASIL', mcc: '5541' },
+    // NEW-23: REDE DE *
+    { id: 'new-23-rede-de-star', desc: 'REDE DE *PADARIA CENTRAL', descriptionRaw: 'REDE DE *PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    // Negative control for COMPRA PAG MENOS: must still block when merchant is PADARIA CENTRAL
+    { id: 'new-guard-pag-menos-padaria', desc: 'COMPRA PAG MENOS PADARIA CENTRAL', descriptionRaw: 'COMPRA PAG MENOS PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' }
+  ];
+
+  const legitimateCases = [
+    { id: 'leg-01-drog-pag-menos', desc: 'DROGARIA PAG MENOS', name: 'DROGARIA PAG MENOS', mcc: '5912', expectedCat: 'cat:saude' },
+    { id: 'leg-02-compra-drog-pag-menos-h', desc: 'COMPRA DROGARIA PAG-MENOS', name: 'DROGARIA PAG MENOS', mcc: '5912', expectedCat: 'cat:saude' },
+    { id: 'leg-03-raw-drog-pag-menos-h', desc: 'DROGARIA PAG MENOS', descriptionRaw: 'DROGARIA PAG-MENOS 10/10', name: 'DROGARIA PAG MENOS', mcc: '5912', expectedCat: 'cat:saude' },
+    { id: 'leg-04-pag-menos-drog', desc: 'PAG MENOS DROGARIA', name: 'PAG MENOS DROGARIA', mcc: '5912', expectedCat: 'cat:saude' },
+    { id: 'leg-05-tonelada', desc: 'TONELADA SUPERMERCADO', name: 'TONELADA SUPERMERCADO', mcc: '5411', expectedCat: 'cat:alimentacao' },
+    { id: 'leg-06-uberlandia', desc: 'UBERLANDIA AUTO POSTO', name: 'UBERLANDIA AUTO POSTO', mcc: '5541', expectedCat: 'cat:transporte' },
+    { id: 'leg-07-rede-postos', desc: 'REDE DE POSTOS IPIRANGA', name: 'REDE DE POSTOS IPIRANGA', mcc: '5541', expectedCat: 'cat:transporte' },
+    { id: 'leg-08-rede-farmacias', desc: 'REDE DE FARMACIAS SAO PAULO', name: 'REDE DE FARMACIAS SAO PAULO', mcc: '5912', expectedCat: 'cat:saude' },
+    { id: 'leg-09-pagamento-facil', desc: 'PAGAMENTO FACIL DROGARIA', name: 'PAGAMENTO FACIL DROGARIA', mcc: '5912', expectedCat: 'cat:saude' },
+    { id: 'leg-13-compra-pag-menos', desc: 'COMPRA PAG MENOS DROGARIA', descriptionRaw: 'COMPRA PAG MENOS DROGARIA', name: 'PAG MENOS DROGARIA', mcc: '5912', expectedCat: 'cat:saude' },
+    { id: 'leg-14-compra-pag-menos-h', desc: 'COMPRA PAG-MENOS DROGARIA', descriptionRaw: 'COMPRA PAG-MENOS DROGARIA', name: 'PAG MENOS DROGARIA', mcc: '5912', expectedCat: 'cat:saude' },
+    { id: 'leg-15-compra-cartao-drog-pag-menos', desc: 'COMPRA CARTAO DROGARIA PAG-MENOS 10/10', name: 'DROGARIA PAG MENOS', mcc: '5912', expectedCat: 'cat:saude' }
+  ];
+
+  for (const c of bypassCases) {
+    const ev = normalizePluggyEvidence({
+      id: c.id,
+      status: 'POSTED',
+      type: 'DEBIT',
+      operationType: 'CARD_PURCHASE',
+      description: c.desc,
+      ...(c.descriptionRaw ? { descriptionRaw: c.descriptionRaw } : {}),
+      category: null,
+      merchant: { name: c.name, cnpj: VALID_CNPJS[0] },
+      creditCardMetadata: { payeeMCC: c.mcc }
+    }, { accountId: ACCOUNT_A });
+    const verdict = classifyCandidate({
+      transaction: {
+        accountId: ACCOUNT_A,
+        externalId: c.id,
+        accountType: 'BANK',
+        status: 'POSTED',
+        amountCents: -4500,
+        description: c.desc
+      },
+      evidence: ev
+    });
+    assert.equal(verdict.status, 'review', `${c.id} (${c.desc} | raw=${c.descriptionRaw || ''}) must remain review, got ${verdict.status}:${verdict.reason}`);
+  }
+
+  for (const c of legitimateCases) {
+    const ev = normalizePluggyEvidence({
+      id: c.id,
+      status: 'POSTED',
+      type: 'DEBIT',
+      operationType: 'CARD_PURCHASE',
+      description: c.desc,
+      ...(c.descriptionRaw ? { descriptionRaw: c.descriptionRaw } : {}),
+      category: null,
+      merchant: { name: c.name, cnpj: VALID_CNPJS[1] },
+      creditCardMetadata: { payeeMCC: c.mcc }
+    }, { accountId: ACCOUNT_A });
+    const verdict = classifyCandidate({
+      transaction: {
+        accountId: ACCOUNT_A,
+        externalId: c.id,
+        accountType: 'BANK',
+        status: 'POSTED',
+        amountCents: -7500,
+        description: c.desc
+      },
+      evidence: ev
+    });
+    assert.equal(verdict.status, 'apply', `${c.id} (${c.desc} | raw=${c.descriptionRaw || ''}) must apply, got ${verdict.status}:${verdict.reason}`);
+    assert.equal(verdict.reason, 'VERIFIED_DIRECT_MERCHANT_MCC_PARENT');
+    assert.deepEqual(verdict.target, { categoryId: c.expectedCat, subcategoryId: null });
+  }
+
+  await withSandbox(async ({ db, auto }) => {
+    const allCases = [...bypassCases, ...legitimateCases];
+    ingestRows(db, ACCOUNT_A, ITEM_A, allCases.map((c, i) => ({
+      id: c.id,
+      date: new Date(Date.UTC(2026, 9, 1 + i)).toISOString().slice(0, 10),
+      description: c.desc,
+      ...(c.descriptionRaw ? { descriptionRaw: c.descriptionRaw } : {}),
+      amount: -(60 + i),
+      status: 'POSTED',
+      category: null,
+      type: 'DEBIT',
+      operationType: 'CARD_PURCHASE',
+      merchant: {
+        name: c.name,
+        cnpj: c.expectedCat ? VALID_CNPJS[1] : VALID_CNPJS[0]
+      },
+      creditCardMetadata: { payeeMCC: c.mcc }
+    })));
+    auto.configure({ accountIds: [ACCOUNT_A], ...SPAN }, true);
+    const plan = auto.plan({ limit: 100 });
+    assert.equal(plan.candidateCount, legitimateCases.length, `Expected only legitimate candidates, got: ${plan.candidates.map((x) => x.externalId).join(',')}`);
+    assert.equal(plan.reviewCount, bypassCases.length);
+    assert.deepEqual(
+      plan.candidates.map((x) => x.externalId).sort(),
+      legitimateCases.map((x) => x.id).sort()
+    );
+    const res = await auto.apply();
+    assert.equal(res.applied, legitimateCases.length);
+    for (const b of bypassCases) {
+      assert.equal(db.db.prepare('SELECT 1 FROM mf_auto_labels WHERE account_id=? AND external_id=?').get(ACCOUNT_A, b.id), undefined);
+    }
+  });
+});

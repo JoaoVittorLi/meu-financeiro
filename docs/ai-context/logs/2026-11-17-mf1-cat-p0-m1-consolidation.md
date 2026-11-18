@@ -211,3 +211,28 @@
   - `mobile-push` (`npm test`): **PASS** (`133/133`, `fail 0`)
   - `npm run test:electron-smoke` + `node scripts/verify-visual-matrix.cjs`: **PASS** (`32/32` PNGs, 8 áreas, 4 presets)
   - `node scripts/nivel-b-interactive-qa.cjs`: **PASS** (`14/14` PASS, `FAIL: 0`, `RuntimeIssues: 0`)
+
+
+## 16. Iteração 8 — Fechamento Wave 7 CAT02 (`NEW-01..23`, `LEG-13..14`), `.agents/` Persistente e Reexecução Integral Nível A/B
+
+- **`electron/cat02-classifier.cjs`**:
+  - Adicionado `'pgs'` em `FULL_INTERMEDIARY_TOKENS` e `GLUED_INTERMEDIARY_PREFIXES` (`NEW-19..20`), e adicionadas expressões `ALNUM_POS_RE` e `ALNUM_DIGIT_LEAD_POS_RE` em `isNumberedIntermediaryToken` para detectar terminais POS alfanuméricos como `MP01A*`, `1MP2*` e `PAG1A*` (`NEW-16..18`).
+  - Atualizado `isRedeProcessorAt` para exigir separação exclusivamente por espaços após `DE` (`!NON_SPACE_SEP.test(next.sepAfter)` e `!NON_SPACE_SEP.test(curr.sepBefore)`), bloqueando `REDE DE *PADARIA CENTRAL` (`NEW-23`) e preservando `REDE DE POSTOS IPIRANGA` e `REDE DE FARMACIAS SAO PAULO`.
+  - Atualizado `hasDescriptorIntermediarySignal` para remover o piso `firstMerchantTok.length >= 4` (permitindo `>= 3` quando único token ou seguido por `merchantTokens[1]`) e reconhecer prefixos colados de `ABBREV_INTERMEDIARY_TOKENS`, `FULL_INTERMEDIARY_TOKENS` e `isNumberedIntermediaryToken` (`NEW-01..10`, como `MPBAR DO JOAO`, `PAGSPADARIA`, `MP1PADARIA`, `STONEPADARIA`, `C6PAYPADARIA`).
+  - Estendido `extractResidualOutsideMerchant` com recuperação de descritores truncados no final (`descriptionRaw` com prefixo de estabelecimento precedido por códigos de filial/terminal como `EC 01 MP PADARIA`, `FILIAL 02 MP SUPERMERCADO ALFA`, `001 PAG DROGARIA VIDA`, `AUT 99 TON PADARIA`, `TERM 5 MP AUTO POSTO` — `NEW-11..15`).
+  - Bloqueio explícito de tokens isolados `mp` e `pg` em `scanIntermediarySpans` (`NEW-21..22`: `PADARIA MP CENTRAL`, `AUTO POSTO MP BRASIL`) e extensão de `isPagMenosPhrase` com `isInsideTokenSubsequence` para preservar `COMPRA PAG MENOS DROGARIA` e `COMPRA PAG-MENOS DROGARIA` (`LEG-13..14`) mantendo `COMPRA PAG MENOS PADARIA CENTRAL` em `review`.
+- **`tests/cat-p0-calibration.test.cjs` (`G6-17`)**:
+  - Adicionado teste `G6-17` cobrindo unitário (`classifyCandidate`) e E2E SQLite (`D05AutoCategorization.plan()` + `apply()`) para todos os 23 vetores `NEW-01..23`, controle negativo `COMPRA PAG MENOS PADARIA CENTRAL` e todos os 12 casos legítimos `LEG-01..09`, `LEG-13..15`.
+- **Estrutura Persistente `.agents/` & Documentação Canônica**:
+  - Criados `.agents/rules/00..03`, `.agents/skills/{qa-guardian-sqlite,forensic-auditor,electron-nivel-b-c-qa,d05-financial-integrity}/SKILL.md` e `.agents/scripts/run_workflow.py`; atualizados `AGENTS.md`, `docs/ROADMAP_MF2.md` e documentos canônicos em `docs/ai-context/`.
+- **Verificação Iteração 8 (`MF_QA_SYNTHETIC=1`, Node `v22.23.4`, npm `10.9.9`)**:
+  - `python .agents/scripts/run_workflow.py --marco MF1 --stage 01_descoberta`: **PASS**
+  - `npm run test:types`: **PASS**
+  - `npm run compile`: **PASS**
+  - `node scripts/build-preload.cjs check`: **PASS**
+  - `node scripts/renderer-provenance.cjs check-bundle`: **PASS** (`31 entradas`)
+  - `npm run test:asar`: **PASS** (`1/1`)
+  - `npm --prefix mobile-push test`: **PASS** (`133/133`, `fail 0`)
+  - `npm run test:db`: **PASS** (`999/999`, `fail 0`, `cancelled 0`, `skipped 0`, `duration_ms 83400.14`)
+  - `npm run test:electron-smoke` + `node scripts/verify-visual-matrix.cjs`: **PASS** (`32 entradas JSON, 32 PNGs, 8 áreas, 4 presets, arquivos e dimensões conferidos`)
+  - `node scripts/nivel-b-interactive-qa.cjs`: **PASS** (`14/14` jornadas `PJ-01..09`, `NJ-01..05`, `FAIL: 0`, `RuntimeIssues: 0`)

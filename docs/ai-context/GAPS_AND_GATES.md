@@ -1,6 +1,27 @@
 # Registro de lacunas, bloqueios e gates
 
-**Status inicial apurado em 09/11/2026; atualizar após cada marco.** Cada item associa problema, entrega e evidência de saída.
+**Atualizado em 18/11/2026 (Consolidação Marco 1 — PR #105 & Diretriz Permanente NSIS).** Cada item associa problema, marco, evidência exigida e status real (`PASS`, `FAIL`, `PENDENTE`, `NAO_HOMOLOGADO`).
+
+## Estado dos Gates — Marco 1 (PR #105) e Diretriz Permanente
+
+| Gate / ID | Descrição | Estado Atual | Evidência / Condição de Fechamento |
+| --- | --- | --- | --- |
+| **G0** | Freeze de inventário, SHA único PR #105, limpeza NSIS-only (sem Portable) | `EM_FECHAMENTO` | Branch `feat/mf1-cat-p0-consolidation-20261117` publicada até `6e15914`; commit Iteração 8 em validação. |
+| **G1 / Nível A** | Toolchain `Node 22.23.4` / `npm 10.9.9`, `test:types`, `compile`, `build-preload`, `check-bundle`, `test:asar`, `test:db`, `mobile-push` | `PASS (Iter 8)` | `999/999` `test:db`, `133/133` `mobile-push`, `1/1` `test:asar`, `test:types`, `compile`, `build-preload`, `check-bundle` PASS. |
+| **G2** | Integridade SQLite WAL, centavos inteiros, backups com `integrity_check`, limpeza `-wal`/`-shm`/`.d05-before-v7.sqlite`, isolamento Win32 SFN/`realpath` | `PASS (Iter 8)` | Verificado em `test:db` (`999/999` incl. `recovery.test.cjs`, `release-channel.test.cjs` `88/88`). |
+| **G3 / G4 / Nível B** | Electron real (`MF_QA_SYNTHETIC=1`): `test:electron-smoke` (`32/32` PNGs) + `nivel-b-interactive-qa.cjs` (`14/14` jornadas `PJ-01..09`, `NJ-01..05`) | `PASS (Iter 8)` | `32/32` PNGs e `14/14` jornadas interativas PASS (`FAIL: 0`, `RuntimeIssues: 0`) na Iteração 8. |
+| **G5 / Nível C** | **Aplicativo NSIS Windows x64 realmente instalado** (`M1-BASELINE`), verificação prévia de isolamento no Windows 11 Home, jornadas interativas pós-instalação e persistência pós-restart | `EM_EXECUCAO (Pós-Auditoria)` | Nível A e Nível B aprovados; aguardando auditoria independente, `provenance:verify` e push antes de gerar/instalar `M1-BASELINE`. |
+| **G6** | Calibração `CAT-P0` / `cat02-classifier.cjs` (`5 correções / 3 datas`, não-Premium, intermediários `NEW-01..23`, preservação `LEG-01..15`), `approvedForPersonal() === false` | `PASS (Iter 8)` · `AGUARDANDO_AUDITORIA_FINAL` | Coberto por `G6-01`..`G6-17` em `tests/cat-p0-calibration.test.cjs` + `tests/cat-p0-ipc-contract.test.cjs` dentro de `999/999`. |
+| **C11** | Lockfiles e reprodutibilidade de build (`package-lock.json` + `mobile-push/package-lock.json`) | `FECHADO` | Lockfiles versionados e toolchain `22.23.4` / `10.9.9` verificada localmente. |
+| **Marco 2 (`I3-00` / `F1–F5`)** | Copiloto Financeiro (Detetive, Economia, Recorrências, Simulador, Conversa Contextual, Design Adaptativo, Linguagem Permanente) + NSIS cumulativo | `AUTORIZADO_POS_M1` | Aguarda encerramento homologado do Marco 1 (`M1-BASELINE`). |
+| **C03 / C04 / C05** | Paridade desktop ↔ PWA (`U4`), cutover Cloudflare, Pix/reconciliação avançada | `FORA_DO_M1 (M4)` | Bloqueado até autorização posterior; `FINANCE_SYNC_ENABLED` permanece desativado. |
+| **Escrita Pessoal IA** | `D05PersonalWriteGateway.approvedForPersonal()` e escrita assistida multiárea | `BLOQUEADO (M5)` | Proibido liberar genericamente sem gate específico e autorização do proprietário. |
+
+---
+
+## Quadro Histórico Inicial (09/11/2026)
+
+**Status inicial apurado em 09/11/2026; mantido abaixo como referência histórica.** Cada item associa problema, entrega e evidência de saída.
 
 | ID | Lacuna | Marco | Evidência para encerrar |
 | --- | --- | --- | --- |

@@ -1,5 +1,16 @@
 # Registro de frentes ativas e prevenção de conflitos
 
+## Frente Atual — Consolidação Marco 1 (v1.0.0 / PR #105) e Transição Marco 2 (18/11/2026)
+
+- **Coordenação ativa:** Orchestrator **Argon** (`C:\Dev\meu-financeiro`), assumindo com continuidade integral o trabalho consolidado até `6e15914c4c27e0623a7f41cf568175bf6070f735`.
+- **Workspace oficial isolado:** `C:\Dev\meu-financeiro` (branch `feat/mf1-cat-p0-consolidation-20261117`, PR #105). Worktree `C:\Dev\meu-financeiro-worktrees\m1-dev` preservada sem conflitos. Workspace OneDrive original (`Carbon Meu Financeiro`) intacto e intocado.
+- **Ownership / Single-Writer:** apenas um executor por vez em arquivos compartilhados (`src/app.ts`, `app/app.js`, `electron/main.cjs`, `electron/preload.cjs`, `electron/db.cjs`, `shared/*`, `docs/ai-context/CURRENT_STATE.md`). Revisão independente obrigatória (Guardião Financeiro/SQLite + Auditor Adversarial `pro`).
+- **Marco 1 (`feat/mf1-cat-p0-consolidation-20261117`):** fechamento Iteração 8 (`cat02-classifier.cjs` `NEW-01..23`/`LEG-13..14`, `.agents/`, docs canônicos) -> Nível A + Nível B + Auditoria + `git push` -> Nível C NSIS experimental (`M1-BASELINE`).
+- **Marco 2 (`feat/mf2-intelligence-3-0-copilot-20261118` — pós-homologação M1):** Inteligência Financeira 3.0 / Copiloto Financeiro (`I3-00` atualizada, `F1–F5`, Sistema de Design de Respostas Adaptativas, Linguagem Permanente e NSIS cumulativo). **Proibido iniciar implementação M2 antes da conclusão comprovada do Marco 1.**
+- **Frentes históricas abaixo (#48, #49, #54, #60, #63, #73, #19..#31):** superadas pela cadeia integrada `#94 → #96 → #100 → #104 → #105`; mantidas abaixo apenas para rastreabilidade histórica.
+
+---
+
 ## Fast Lane ativa — reserva de ownership (12/11/2026)
 
 **Coordenação documental aprovada; execução R/I ainda não iniciada nesta atualização.** Quadro [#49](https://github.com/JoaoVittorLi/meu-financeiro/issues/49); branch `coord/mf2-premium-intelligence-20261112`, base PR #48/810a2bc. Branch R `feat/mf2-premium-redesign-20261112` (UI/UX: `src/app.ts`, `src/intelligence-view.ts`, `src/intelligence-review.ts`, `app/*.css`) e branch I `feat/mf2-intelligence-operational-20261112` (serviços/IPC/FinanceDB, módulos novos `src/intelligence-operations*`). **Integrador** resolve o renderer gerado, tipos e documentação global. Leia [FAST_LANE](FAST_LANE_20261112.md), [contrato](INTELLIGENCE_UI_CONTRACT_V1.md) e [backlog](FAST_LANE_BACKLOG.md). Nenhum dos executores altera o contrato compartilhado diretamente. Q1 permanece Draft e isolada; não fazer push cruzado nem rebase automático.

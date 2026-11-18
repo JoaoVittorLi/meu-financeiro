@@ -17,7 +17,7 @@ const FULL_INTERMEDIARY_TOKENS=new Set([
  'cloudwalk','ifood','rappi','ubereats','uber','99food','99pay',
  'mpago','amedigital','recargapay','paghiper','pagbrasil','pagueveloz',
  'nuvempay','cornershop','pix','qrcode',
- 'pags','paygo','safrapay','efipay','gerencianet','c6pay','itaupay','bempaggo','magalupay'
+ 'pags','pgs','paygo','safrapay','efipay','gerencianet','c6pay','itaupay','bempaggo','magalupay'
 ]);
 const BIGRAM_INTERMEDIARY_PAIRS=new Set([
  'mercado|pago','merc|pago','mercado|livre',
@@ -30,9 +30,11 @@ const BIGRAM_INTERMEDIARY_PAIRS=new Set([
  'm|pago','pay|go','safra|pay','efi|pay','c6|pay','itau|pay'
 ]);
 const ABBREV_INTERMEDIARY_TOKENS=new Set(['mp','pag','ton','pg']);
-const GLUED_INTERMEDIARY_PREFIXES=['mp','pag','ton','pg','rede','pix'];
+const GLUED_INTERMEDIARY_PREFIXES=['mp','pag','ton','pg','pgs','rede','pix'];
 const TRAILING_DIGITS_RE=/^([a-z0-9]*[a-z])\d+$/;
 const LEADING_DIGITS_RE=/^\d+([a-z]+)$/;
+const ALNUM_POS_RE=/^(?:\d+)?([a-z]+)\d+[a-z0-9]{0,4}$/;
+const ALNUM_DIGIT_LEAD_POS_RE=/^(\d+[a-z]+)\d+[a-z0-9]{0,4}$/;
 const BANK_TX_VERB_TOKENS=new Set([
  'compra','compras','deb','debito','cred','credito','cartao',
  'pgto','pagto','pagamento','pagamentos','transacao','lancamento',
@@ -75,17 +77,18 @@ function tokenizeWithSeparators(norm){
  if(spans.length)spans[spans.length-1].sepAfter=norm.slice(prevEnd);
  return spans;
 }
+function isIntermediaryBase(base){
+ return ABBREV_INTERMEDIARY_TOKENS.has(base)||FULL_INTERMEDIARY_TOKENS.has(base)||base==='rede';
+}
 function isNumberedIntermediaryToken(tok){
  const trailing=TRAILING_DIGITS_RE.exec(tok);
- if(trailing){
-  const base=trailing[1];
-  if(ABBREV_INTERMEDIARY_TOKENS.has(base)||FULL_INTERMEDIARY_TOKENS.has(base)||base==='rede')return true;
- }
+ if(trailing&&isIntermediaryBase(trailing[1]))return true;
  const leading=LEADING_DIGITS_RE.exec(tok);
- if(leading){
-  const base=leading[1];
-  if(ABBREV_INTERMEDIARY_TOKENS.has(base)||FULL_INTERMEDIARY_TOKENS.has(base)||base==='rede')return true;
- }
+ if(leading&&isIntermediaryBase(leading[1]))return true;
+ const alnum=ALNUM_POS_RE.exec(tok);
+ if(alnum&&isIntermediaryBase(alnum[1]))return true;
+ const digitLeadAlnum=ALNUM_DIGIT_LEAD_POS_RE.exec(tok);
+ if(digitLeadAlnum&&isIntermediaryBase(digitLeadAlnum[1]))return true;
  return false;
 }
 function hasSplitMpBigram(spans,i){
@@ -97,11 +100,32 @@ function isRedeProcessorAt(spans,i){
  const next=spans[i+1],afterNext=spans[i+2];
  const isLegitRedeDe=Boolean(
   next&&next.token==='de'&&/^\s+$/.test(curr.sepAfter)&&
+  !NON_SPACE_SEP.test(curr.sepBefore)&&
+  !NON_SPACE_SEP.test(next.sepAfter)&&
   (!afterNext||!/^pagamentos?$/.test(afterNext.token))
  );
  return !isLegitRedeDe;
 }
-function isPagMenosPhrase(spans,i){
+function hasPagMenosInTokens(merchantTokens){
+ if(!Array.isArray(merchantTokens))return false;
+ for(let j=0;j+1<merchantTokens.length;j++){
+  if(merchantTokens[j]==='pag'&&merchantTokens[j+1]==='menos')return true;
+ }
+ return false;
+}
+function isInsideTokenSubsequence(spans,i,merchantTokens){
+ if(!Array.isArray(merchantTokens)||!merchantTokens.length||spans.length<merchantTokens.length)return false;
+ for(let start=0;start<=spans.length-merchantTokens.length;start++){
+  if(i<start||i>=start+merchantTokens.length)continue;
+  let ok=true;
+  for(let j=0;j<merchantTokens.length;j++){
+   if(spans[start+j].token!==merchantTokens[j]){ok=false;break;}
+  }
+  if(ok)return true;
+ }
+ return false;
+}
+function isPagMenosPhrase(spans,i,merchantTokens=null){
  const curr=spans[i];
  const next=spans[i+1];
  if(!curr||curr.token!=='pag'||!next||next.token!=='menos')return false;
@@ -109,9 +133,11 @@ function isPagMenosPhrase(spans,i){
  if(NON_SPACE_SEP.test(curr.sepBefore))return false;
  if(i===0)return true;
  const prev=spans[i-1].token;
- return !BANK_TX_VERB_TOKENS.has(prev)&&!STATEMENT_CHANNEL_TOKENS.has(prev);
+ if(!BANK_TX_VERB_TOKENS.has(prev)&&!STATEMENT_CHANNEL_TOKENS.has(prev))return true;
+ if(hasPagMenosInTokens(merchantTokens)&&isInsideTokenSubsequence(spans,i,merchantTokens))return true;
+ return false;
 }
-function scanIntermediarySpans(spans,{inDescriptorResidual=false}={}){
+function scanIntermediarySpans(spans,{inDescriptorResidual=false,merchantTokens=null}={}){
  let seenTxVerb=false;
  for(let i=0;i<spans.length;i++){
   const curr=spans[i],tok=curr.token;
@@ -121,7 +147,8 @@ function scanIntermediarySpans(spans,{inDescriptorResidual=false}={}){
   if(isRedeProcessorAt(spans,i))return true;
   if(ABBREV_INTERMEDIARY_TOKENS.has(tok)){
    if(inDescriptorResidual)return true;
-   if(!isPagMenosPhrase(spans,i)){
+   if(tok==='mp'||tok==='pg')return true;
+   if(!isPagMenosPhrase(spans,i,merchantTokens)){
     if(i===0)return true;
     if(NON_SPACE_SEP.test(curr.sepBefore)||NON_SPACE_SEP.test(curr.sepAfter))return true;
     if(spans.slice(i+1).every(s=>/^\d+$/.test(s.token)))return true;
@@ -139,28 +166,48 @@ function hasIntermediarySignal(raw){
  return scanIntermediarySpans(tokenizeWithSeparators(norm));
 }
 function extractResidualOutsideMerchant(descSpans,merchantTokens){
- if(!merchantTokens.length||descSpans.length<merchantTokens.length)return null;
- const residual=[];
- let matchedAny=false;
- for(let i=0;i<descSpans.length;){
-  let match=i+merchantTokens.length<=descSpans.length;
-  if(match){
-   const exactPrefixCount=merchantTokens.length>=2?merchantTokens.length-1:merchantTokens.length;
-   for(let j=0;j<exactPrefixCount;j++){
-    if(descSpans[i+j].token!==merchantTokens[j]){match=false;break;}
-   }
-   if(match&&merchantTokens.length>=2){
-    const lastSpanTok=descSpans[i+merchantTokens.length-1].token;
-    const lastMerchTok=merchantTokens[merchantTokens.length-1];
-    if(lastSpanTok!==lastMerchTok&&!(lastSpanTok.length>=3&&lastMerchTok.startsWith(lastSpanTok))){
-     match=false;
+ if(!merchantTokens.length)return null;
+ if(descSpans.length>=merchantTokens.length){
+  const residual=[];
+  let matchedAny=false;
+  for(let i=0;i<descSpans.length;){
+   let match=i+merchantTokens.length<=descSpans.length;
+   if(match){
+    const exactPrefixCount=merchantTokens.length>=2?merchantTokens.length-1:merchantTokens.length;
+    for(let j=0;j<exactPrefixCount;j++){
+     if(descSpans[i+j].token!==merchantTokens[j]){match=false;break;}
+    }
+    if(match&&merchantTokens.length>=2){
+     const lastSpanTok=descSpans[i+merchantTokens.length-1].token;
+     const lastMerchTok=merchantTokens[merchantTokens.length-1];
+     if(lastSpanTok!==lastMerchTok&&!(lastSpanTok.length>=3&&lastMerchTok.startsWith(lastSpanTok))){
+      match=false;
+     }
     }
    }
+   if(match){matchedAny=true;i+=merchantTokens.length;}
+   else{residual.push(descSpans[i]);i++;}
   }
-  if(match){matchedAny=true;i+=merchantTokens.length;}
-  else{residual.push(descSpans[i]);i++;}
+  if(matchedAny)return residual;
  }
- return matchedAny?residual:null;
+ for(let start=1;start<descSpans.length;start++){
+  const k=descSpans.length-start;
+  if(k>=merchantTokens.length)continue;
+  if(k===1&&merchantTokens[0].length<4)continue;
+  let ok=true;
+  for(let j=0;j<k-1;j++){
+   if(descSpans[start+j].token!==merchantTokens[j]){ok=false;break;}
+  }
+  if(ok){
+   const lastSpanTok=descSpans[descSpans.length-1].token;
+   const targetTok=merchantTokens[k-1];
+   if(lastSpanTok!==targetTok&&!(lastSpanTok.length>=3&&targetTok.startsWith(lastSpanTok))){
+    ok=false;
+   }
+  }
+  if(ok)return descSpans.slice(0,start);
+ }
+ return null;
 }
 function hasTokenSubsequence(descSpans,merchantTokens){
  if(!merchantTokens.length||descSpans.length<merchantTokens.length)return false;
@@ -177,11 +224,20 @@ function hasDescriptorIntermediarySignal(raw,merchantTokens){
  const norm=normalizeForIntermediaryScan(raw);
  if(!norm)return false;
  const spans=tokenizeWithSeparators(norm);
- if(scanIntermediarySpans(spans))return true;
+ if(scanIntermediarySpans(spans,{merchantTokens}))return true;
  const firstMerchantTok=merchantTokens[0];
- if(firstMerchantTok&&firstMerchantTok.length>=4){
-  for(const span of spans){
-   if(GLUED_INTERMEDIARY_PREFIXES.some(p=>span.token.startsWith(p+firstMerchantTok)))return true;
+ if(firstMerchantTok&&firstMerchantTok.length>=3){
+  for(let idx=0;idx<spans.length;idx++){
+   const tok=spans[idx].token;
+   if(tok.length<=firstMerchantTok.length||!tok.endsWith(firstMerchantTok))continue;
+   const prefix=tok.slice(0,tok.length-firstMerchantTok.length);
+   const isIntermediaryPrefix=GLUED_INTERMEDIARY_PREFIXES.includes(prefix)||
+    ABBREV_INTERMEDIARY_TOKENS.has(prefix)||
+    FULL_INTERMEDIARY_TOKENS.has(prefix)||
+    isNumberedIntermediaryToken(prefix);
+   if(isIntermediaryPrefix&&(firstMerchantTok.length>=4||merchantTokens.length===1||spans[idx+1]?.token===merchantTokens[1])){
+    return true;
+   }
   }
  }
  const residual=extractResidualOutsideMerchant(spans,merchantTokens);
@@ -192,10 +248,10 @@ function hasDescriptorIntermediarySignal(raw,merchantTokens){
   if(i+1<spans.length&&BIGRAM_INTERMEDIARY_PAIRS.has(tok+'|'+spans[i+1].token))return true;
   if(hasSplitMpBigram(spans,i))return true;
   if(isRedeProcessorAt(spans,i))return true;
-  if(ABBREV_INTERMEDIARY_TOKENS.has(tok)&&!isPagMenosPhrase(spans,i)&&
+  if(ABBREV_INTERMEDIARY_TOKENS.has(tok)&&!isPagMenosPhrase(spans,i,merchantTokens)&&
      (NON_SPACE_SEP.test(curr.sepBefore)||NON_SPACE_SEP.test(curr.sepAfter)))return true;
  }
- return scanIntermediarySpans(residual,{inDescriptorResidual:true});
+ return scanIntermediarySpans(residual,{inDescriptorResidual:true,merchantTokens});
 }
 function buildCatalog(catalog=taxonomy){
  if(!catalog||!Array.isArray(catalog.parents))throw Error('CAT-02: catálogo D05 indisponível');

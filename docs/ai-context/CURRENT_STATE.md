@@ -1,6 +1,31 @@
-# Estado comprovado do projeto — 09/11/2026
+# Estado comprovado do projeto — atualizado em 18/11/2026
 
-**Natureza:** snapshot de auditoria por GitHub, não telemetria ao vivo. Uma execução Work intitulada "Meu Financeiro - Definitivo" pode ter mudanças locais não publicadas; **não foram acessadas** nesta auditoria. Revalidar SHA/PR antes de qualquer execução.
+**Natureza:** registro factual vinculado ao repositório e às execuções verificadas em disco no workspace isolado `C:\Dev\meu-financeiro`. Nunca promove `NOT_RUN` ou `BLOCKED` a `PASS`.
+
+## Estado Consolidado — Marco 1 (v1.0.0 / PR #105)
+
+- **Repositório:** `JoaoVittorLi/meu-financeiro`
+- **Branch ativa do Marco 1:** `feat/mf1-cat-p0-consolidation-20261117` (PR #105, empilhado sobre `#104` / `#100` / `#96` / `#94`)
+- **Baseline preservada no remoto antes da Iteração 8:** `6e15914c4c27e0623a7f41cf568175bf6070f735` (publicada em `origin/feat/mf1-cat-p0-consolidation-20261117`).
+- **Branch `main`:** intacta em `e0d5131ebeda855a792614d9986f40e5bb94af5e` (`v0.9.4`, sem merge nem tags).
+- **Formato único de distribuição:** **Instalador NSIS Windows x64** (`--win nsis --x64`). Versão **Portable** descartada permanentemente.
+- **Estado atual (Iteração 8 — Nível A e Nível B APROVADOS):**
+  - **Baseline `6e15914` publicada** previamente em `origin/feat/mf1-cat-p0-consolidation-20261117`.
+  - **Iteração 8 validada no workspace:** correção cirúrgica em `electron/cat02-classifier.cjs` (`NEW-01..23`, `LEG-13..14` + `G6-17`), implantação da estrutura persistente `.agents/` (`rules`, `skills`, `scripts/run_workflow.py`) e sincronização documental.
+  - **Nível A:** **PASS** (`test:types`, `compile`, `build-preload check`, `check-bundle` 31 entradas, `test:asar` `1/1`, `mobile-push` `133/133`, `test:db` `999/999` com `0` falhas em 83,4s).
+  - **Nível B:** **PASS** (`test:electron-smoke` + `verify-visual-matrix` `32/32` PNGs + `nivel-b-interactive-qa.cjs` `14/14` jornadas interativas `PJ-01..09`/`NJ-01..05` com `FAIL: 0`, `RuntimeIssues: 0`).
+  - **Nível C (Instalador NSIS experimental `M1-BASELINE`):** autorizado condicionalmente mediante conclusão da auditoria independente de SHA, push no GitHub e verificação de isolamento no host Windows 11 Home (próxima etapa imediata).
+  - **Restrições ativas preservadas:** `approvedForPersonal() === false` (`electron/main.cjs`, `electron/d05-personal-gate.cjs`), `financialDataEnabled: false` (`shared/ai-policy.mjs`), dados sintéticos exclusivos (`MF_QA_SYNTHETIC=1`), zero uso de perfis pessoais ou CircleCI pago.
+
+## Próximos Passos Imediatos (Pós-Sync Documental)
+1. Reexecutar integralmente Nível A (`test:types`, `compile`, `build-preload`, `check-bundle`, `test:asar`, `test:db`, `mobile-push`) e Nível B (`test:electron-smoke` + `verify-visual-matrix` + `nivel-b-interactive-qa`) no SHA da Iteração 8.
+2. Conduzir auditoria independente (Guardião SQLite + Auditor Adversarial `pro`) e publicar no PR #105.
+3. Verificar isolamento pré-instalação e executar **Nível C (geração do NSIS x64 `M1-BASELINE` e QA real instalado)**.
+4. Após homologação do Marco 1, iniciar o **Marco 2 — Inteligência Financeira 3.0 / Copiloto Financeiro** começando pela atualização da auditoria `I3-00` contra a `M1-BASELINE`.
+
+---
+
+## Histórico Anterior — Snapshot de Auditoria de 09/11/2026 & Checkpoint 12/11/2026
 
 ## Resumo executivo
 
