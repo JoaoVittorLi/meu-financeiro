@@ -1661,3 +1661,31 @@
 @media(max-width:1450px){.mf-overview-brief{grid-template-columns:1fr;padding:16px;gap:14px}.mf-overview-brief-title{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}.mf-overview-brief-title h2{font-size:19px;margin:0}.mf-overview-priorities button{padding:12px}.mf-overview-priorities{gap:8px}}
 @media(max-width:700px){.mf-overview-priorities{grid-template-columns:1fr}.mf-overview-priorities button{min-height:60px}}
 @media(prefers-reduced-motion:reduce){.mf-overview-priorities button{transition:none}}
+
+/* M1.1 — Visão Geral: grade desktop equilibrada (gráfico ~2/3 + coluna lateral compacta ~1/3, categorias integradas abaixo) */
+.u1-overview .u1-main-grid > .u1-categories {
+  grid-column: 1 / -1;
+}
+@media (min-width: 1181px) {
+  .u1-overview .u1-categories .qa84-distribution-list:has(> :nth-child(2)) {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 24px;
+    row-gap: 4px;
+    align-items: stretch;
+  }
+}
+@media (max-width: 1180px) {
+  .u1-overview .u1-side-stack {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+}
+@media (max-width: 720px) {
+  .u1-overview .u1-side-stack {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.u1-shell > .footer {
+  padding-right: 76px;
+}

@@ -424,3 +424,17 @@
   - **14/14 jornadas reais (`PJ-01`..`PJ-09`, `NJ-01`..`NJ-05`): PASS (`FAIL: 0`, `RuntimeIssues: 0`)**, incluindo fechamento limpo, `PRAGMA integrity_check = ok`, reabertura no mesmo perfil isolado e verificação na UI DOM + `15` capturas PNG + `report-nivel-c.json` em `C:\Dev\releases\M1-BASELINE\screenshots-nivel-c\`.
   - Pastas protegidas do host (`%LOCALAPPDATA%\Programs\Meu Financeiro`, `%APPDATA%\meu-financeiro-desktop`, `%APPDATA%\Meu Financeiro`, `%APPDATA%\MeuFinanceiro-RC-ALL-01-Experimental`) integralmente inalteradas (`LastWriteTime` e contagem idênticos).
   - **Marco 2 permanece suspenso até decisão explícita do proprietário após revisão desta entrega do Marco 1.**
+
+
+## 25. Aceite Formal de `M1-BASELINE` e Patch Visual `M1.1` (`0.9.5-beta.9` — Visão Geral)
+
+- **Decisão do proprietário:** `M1-BASELINE` (`0.9.5-beta.8`, SHA `fe2b3186` / docs `c0351d3`) aprovado formalmente após uso do aplicativo instalado (preservado intacto em `C:\Dev\releases\M1-BASELINE\` e no Google Drive privado `Meu Financeiro/M1-BASELINE`), com autorização restrita para corrigir apenas o layout empilhado/desperdício horizontal da tela **Visão Geral**, gerar novo NSIS experimental (`0.9.5-beta.9`) e publicar no Google Drive privado (`Meu Financeiro/M1.1-VISUAL`), mantendo **Marco 2 suspenso**.
+- **Diagnóstico visual confirmado antes (`before` / `before-demo`):** em `src/app.ts`, `<aside class="u1-side-stack">` (`Na sua agenda` + `Orçamento em foco`) estava fechado acidentalmente dentro de `<div class="u1-left-stack">`, deixando a segunda coluna de `.u1-main-grid` (`minmax(300px, 1fr)`) totalmente vazia e empilhando todos os painéis em uma única coluna (`960px` em `1920x1080` e `676px` em `1366x768`).
+- **Correção cirúrgica (`src/app.ts` + `app/overview.css`):**
+  - Fechado `.u1-left-stack` após `.u1-rhythm` (`Seu ritmo de gastos`, ~2/3 da largura), promovidos `.u1-side-stack` (`Na sua agenda` + `Orçamento em foco`, coluna lateral compacta de altura natural em ~1/3) e `.u1-categories` (`Para onde foi seu dinheiro`) a filhos diretos de `.u1-main-grid`, preservando `.u1-detail-grid` como irmão seguinte no nível raiz.
+  - Em `app/overview.css` (escopo exclusivo `.u1-overview` / `.u1-shell`), `.u1-categories` ocupa `grid-column: 1 / -1` com 2 colunas em `.qa84-distribution-list` apenas em `@media (min-width: 1181px)` (evitando truncamento de rótulos como `Alimentação`/`Assinaturas` em `1024px`); em `@media (max-width: 1180px)`, `.u1-side-stack` adota 2 colunas até `720px` e 1 coluna abaixo, e `.u1-shell > .footer` reserva `padding-right: 76px` para não colidir com o botão flutuante de IA.
+  - Versão experimental atualizada de `0.9.5-beta.8` para `0.9.5-beta.9` em `package.json`, `package-lock.json`, `mobile-push/package.json`, `mobile-push/package-lock.json`, `src/app.ts` / `app/app.js`, mantendo `scripts/nivel-c-nsis-qa.cjs` validando paridade com `repoPkg.version`.
+  - Novo teste contratual `tests/overview-m1-1-layout.test.cjs` adicionado.
+- **Evidências pré-auditoria (`0.9.5-beta.9`):**
+  - **Nível A:** `test:types`, `compile`, `build-preload check`, `check-bundle` (`31` entradas), `test:asar` (`1/1`), `test:db` (**`1002/1002`**, `fail 0`), `mobile-push` (**`133/133`**, `fail 0`).
+  - **Nível B:** `test:electron-smoke` PASS, `nivel-b-interactive-qa.cjs` **`14/14` PASS (`FAIL: 0`, `RuntimeIssues: 0`)**, e capturas comparativas `before` vs `after` (`empty` + `demo`) em `1920x1080`, `1366x768` e `1024x720` nos temas claro e escuro arquivadas em `C:\Dev\releases\M1.1-VISUAL\screenshots-before-after\`.

@@ -106,7 +106,7 @@ async function verifyInstalledAsarAndCatalog(asarPath) {
   assert.equal(subcategories, 61, 'Installed app.asar must carry 61 D05 subcategories');
   assert.equal(svgCount, 67, `Expected 67 D05 SVG glyphs in shared/d05-svg-registry.json inside ASAR, found ${svgCount}`);
   assert.equal(pkg.name, 'meu-financeiro-desktop');
-  assert.equal(pkg.version, '0.9.5-beta.8');
+  assert.equal(pkg.version, repoPkg.version);
   assert.equal(pkg.mfDistributionChannel, undefined, 'Experimental ASAR must never carry stable mfDistributionChannel marker');
   assert.equal(repoPkg.build?.appId, EXPERIMENTAL_ID);
   assert.ok(relChanRaw.includes(`'${EXPERIMENTAL_ID}'`), 'Installed release-channel.cjs must declare experimental appId');
