@@ -12,7 +12,7 @@ const config={
  extraMetadata:{...pkg.build.extraMetadata,
   mfDistributionChannel:'stable',productName:STABLE_NAME}
 };
-const targets=Platform.WINDOWS.createTarget(['portable','nsis'],Arch.x64);
+const targets=Platform.WINDOWS.createTarget(['nsis'],Arch.x64);
 build({targets,config,publish:'never'}).then(()=>{
  console.log('Stable build created with packaged app identity and stable profile continuity; Windows QA still required.');
 }).catch(error=>{console.error('Stable build failed:',String(error?.message||error));process.exitCode=1;});

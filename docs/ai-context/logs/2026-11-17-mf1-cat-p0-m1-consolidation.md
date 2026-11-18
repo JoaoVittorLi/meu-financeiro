@@ -66,3 +66,80 @@
 - **`tests/cat-p0-calibration.test.cjs` (`G6-12`)**:
   - Adicionada regressão unitária (`classifyCandidate`) e E2E (`D05AutoCategorization`) cobrindo os 4 bypasses e os 4 estabelecimentos legítimos não colidentes (`PAGAMENTO FACIL DROGARIA`, `TONELADA SUPERMERCADO`, `UBERLANDIA AUTO POSTO`, `REDE DE POSTOS IPIRANGA`).
   - Verificação direcionada aprovada (`56/56` em `cat-p0-calibration` 12/12, `cat-p0-ipc-contract`, `d05-auto-reconciled.integration`, `d05-auto-categorization`, `intelligence-recovery` e `renderer-asar.integration`).
+
+## 8. Matriz Reconstruída de Funcionalidades v1.0.0 (7 Áreas)
+
+| Área | Cobertura consolidada na v1.0.0 (`feat/mf1-cat-p0-consolidation-20261117`) |
+|---|---|
+| 1. Visão geral (`overview`) | Saldo de referência, receitas/despesas, mascaramento (`Ocultar/Mostrar valores`), fonte `Contas conectadas` vs `Adicionado por você`, `PeriodPicker`, alternância de gráficos (`Acumulado`/`Entradas e saídas`) e tabela `<details>`, distribuição por categorias `B01` e drilldown `Ver movimentações`. |
+| 2. Movimentações D05 (`transactions` / `review` / `categories`) | Lançamentos manuais (`+ Nova movimentação`), busca/filtros (`Origem`, `Ordenação`, `Agrupar por dia`, `A conferir`/`Revisadas`/`Todas`), edição/exclusão protegida quando vinculado, revisão rápida/detalhada, alias de estabelecimento, vínculo manual, divisão bancária com soma exata, picker hierárquico inline D05 (`demo` real SQLite e `real` bloqueado em `personal-locked`), categorias/regras + teste ao vivo e central `CAT-P0` / `CAT-UX` (`bank:auto-*`). |
+| 3. Orçamentos (`budgets`) | Resumos, filtros (`Pedem atenção`, `Sem limite`, `Todas`), busca, drilldown categoria/subcategoria e histórico de subcategoria, edição/remoção de limite no SQLite, aba `Receitas` e separação de transferências/reembolsos. |
+| 4. Planejamento & Simulador (`planning` / `assistant`) | Compromissos únicos/recorrentes/parcelados (até 36x), `Agenda`, `Calendário` (navegação por teclado `End`/`Home`), `Projeção diária` (slider SVG + `Incluir receitas incertas`), edição/status/vínculo com histórico de auditoria (`Criado`, `Editado`), e `Simular compra` (motor diário, guarda de desatualização, referência A vs B). |
+| 5. Inteligência (`intelligence`) | Superfície `B05` (`Hoje`, `Conversar`, `Plano de Ação`), autorização local com `D05RCSecureGate` (`LOCAL_FINANCIAL_READ_V1`), sinais `D03` com gaveta/Escape/retorno de foco, consultas determinísticas `IC2` (`intelligence:ic2-read-query`), desambiguação e prévia sem gravação `D01`, histórico de sessão temporária e `Encerrar leitura`. |
+| 6. Minhas contas & Nuvem (`banks` / `cloud`) | Proteção estrita em canal experimental isolado (`u3-connection-alert`, sincronização desativada, `forbidExperimentalNetwork` bloqueando Pluggy/Cloud/OpenAI externos), além de fluxos de auditoria/paridade para builds estáveis homologados. |
+| 7. Configurações, Tema & Recuperação (`settings`) | `Reserva mínima protegida`, temas `Claro`/`Escuro`/`Sistema`, backups automáticos com `PRAGMA integrity_check`, rejeição de backups corrompidos (`validateBackupFile` / `restoreBackup`) e recuperação de jobs interrompidos no restart (`INTERRUPTED_ON_RESTART`). |
+
+## 9. Resultados Nível A & Nível B (`scripts/nivel-b-interactive-qa.cjs`)
+
+### 9.1 Nível A (Gates Automatizados & Contrato IPC/DB/ASAR/Visual)
+- `npm run test:types`: **PASS** (`tsc --project tsconfig.json --noEmit`)
+- `npm run compile`: **PASS** (`tsc` + `build-finance-ledger.cjs` + `build-preload.cjs build`)
+- `node scripts/build-preload.cjs check`: **PASS** (`preload em arquivo único, compatível com sandbox`)
+- `node scripts/renderer-provenance.cjs check-bundle`: **PASS** (`app.js recompilado virtualmente bate com fontes (31 entradas)`)
+- `npm run test:asar`: **PASS** (`1/1` — integridade ASAR + licença React aninhada)
+- `npm run test:db`: **PASS** (`985/985`, `fail 0`, `cancelled 0`, `skipped 0` — inclui `tests/release-channel.test.cjs` e `tests/nivel-b-ui-fixes.test.cjs`)
+- `npm run test:electron-smoke` + `node scripts/verify-visual-matrix.cjs`: **PASS** (Electron real + `32 entradas JSON, 32 PNGs, 8 áreas, 4 presets, arquivos e dimensões conferidos`)
+- `mobile-push` (`npm test`): **PASS** (`133/133`, `fail 0`)
+- `npm run provenance:create` && `npm run provenance:verify`: **PASS** (verificado sobre o commit limpo da consolidação; `app/renderer-provenance.json` permanece ignorado em `.gitignore`).
+
+### 9.2 Nível B (QA Interativo Real no Electron via CDP — `MF_QA_SYNTHETIC=1`, perfil TEMP isolado, `PLUGGY_*` e `MF_REAL_PROFILE` ausentes)
+- Execução final: **14/14 PASS (`FAIL: 0`, `RuntimeIssues: 0`)** — artefatos em `%TEMP%\mf-nivel-b-qa-2026-11-18T02-44-11-947Z` (fora do repositório git).
+- **Jornadas Positivas (`PJ-01`..`PJ-09`)**:
+  - `PJ-01` (**PASS**): Startup `PRIVADO`, mascaramento, troca de fonte/período, gráficos/tabela `<details>`, drilldown `B01` + autorização nativa `D05`.
+  - `PJ-02` (**PASS**): Lançamento manual D05 (`Padaria Nova QA`), busca/filtros/agrupamento por dia, edição em gaveta (`Padaria Nova Editada QA`, `150,00`) e picker inline D05 em `demo`.
+  - `PJ-03` (**PASS**): Revisão bancária (`A conferir` -> `Marcar como revisada` -> `Revisadas`), metadados + alias (`Cafeteria Expresso VIP` + regra) e conciliação manual (`MERCADO UNICO LINK QA` + `Recibo Mercado Manual QA`).
+  - `PJ-04` (**PASS**): Categoria personalizada (`Pets QA`), regra `PETSHOP AMIGO -> Pets QA` e teste ao vivo no editor de regras.
+  - `PJ-05` (**PASS**): Orçamentos (`Pedem atenção`, busca, drilldown categoria/subcategoria, edição de limite para `R$ 800,00`, aba `Receitas`).
+  - `PJ-06` (**PASS**): Planejamento (`Notebook QA` 3x, navegação teclado no Calendário `End`/`Home`, slider SVG `Projeção diária` + `Incluir receitas incertas`, edição `Notebook QA Editado` e trilha de auditoria `Editado`).
+  - `PJ-07` (**PASS**): Simulador de compra diário, guarda de desatualização e comparação lado a lado `Referência A` vs `Atual B`.
+  - `PJ-08` (**PASS**): Inteligência `B05` + `D01`/`D02`/`D03` (prévia `D01` sem gravação, leitura local, gaveta `Hoje` + Escape + retorno de foco ao opener, consultas `IC2` com totais sintéticos reais, estágios do `Plano de Ação` e `Encerrar leitura`).
+  - `PJ-09` (**PASS**): Configurações (reserva `R$ 1.200,00`, tema Claro/Escuro, backup automático), fechamento limpo do Electron, `PRAGMA integrity_check === ok` no SQLite em disco, e reabertura no **mesmo `userData` temporário** com validação integral na **UI DOM** (`1.200,00`, `800,00`, `Notebook QA Editado`, `Padaria Nova Editada QA`, `150,00`, `Cafeteria Expresso VIP`, `Pets QA`, `SUPERMERCADO ALFA QA` em `Revisadas`).
+- **Jornadas Negativas (`NJ-01`..`NJ-05`)**:
+  - `NJ-01` (**PASS**): Cancelamento seguro com `Escape` em modal manual / etapa `confirm` do picker D05 e `Cancelar` em `window.confirm` de exclusão.
+  - `NJ-02` (**PASS**): Bloqueio `personal-locked` em categorização pessoal (`real`), recusa `d05PersonalWriteConfirm` (`status: 'denied'`, `changesApplied: false`, `personalWriteAuthorized: false`), e bloqueio de rede experimental (`aiConnect`, `previewQuarantineDemo`, sincronização Pluggy desabilitada).
+  - `NJ-03` (**PASS**): Rejeição de BRL inválido (`10,999`, `-50`, `abc`, `0,00`), proteção de vínculo manual (`Valor`/`Data`/`Excluir` desabilitados), divisão bancária divergente (`Salvar divisão` desabilitado) e proteção contra exclusão de categoria em uso (`Pets QA`).
+  - `NJ-04` (**PASS**): Estado sem autorização na Inteligência (`Sem leitura pessoal autorizada`, sem saldo fabricado) e desambiguação obrigatória em `D01` para termo ambíguo (`MERCADO`).
+  - `NJ-05` (**PASS**): Rejeição de backup corrompido (texto plano, SQLite sem metadados, SQLite corrompido) e recuperação de `mf_auto_apply_jobs` / `mf_auto_jobs` interrompidos para `INTERRUPTED_ON_RESTART` no restart.
+
+### 9.3 Defeitos Reais de UI Corrigidos Durante o Nível B (+ Regressões em `tests/nivel-b-ui-fixes.test.cjs`)
+1. **`src/app.ts` (`App.toggleMode`)**: Alternar entre `real` e `demo` mantinha filtros residuais de `Movimentações`/`Orçamentos` (`txSource: 'bank'`, `bankFilter`, `txCategoryFilter`, `qa84TransactionsSpan`, `qa84TransactionsCategory`, `qa84BudgetDrill`, etc.), ocultando registros manuais no modo `demo`; corrigido com reset completo do escopo transitório em `toggleMode()`.
+2. **`src/plan-view.ts` (`pTimeline` `<svg role="slider">`)**: React 16 descarta `tabIndex: 0` em elementos `<svg>` (`tabindex` ausente no DOM, `tabIndex === -1`), impedindo foco e navegação por teclado no gráfico diário; corrigido atribuindo `tabindex="0"` via `ref`, focando no `onPointerDown` e protegendo `setPointerCapture` com `try/catch`.
+3. **`app/design-system.css` & `src/app.ts` (`renderPlanModal` sobre `renderPlanDetail`)**: Ao clicar `Editar` dentro da gaveta do Planejamento (`.mf-drawer-backdrop`, `z-index: 450`), `.p-editor-backdrop` herdava `z-index: 30` de `.modal-backdrop` e ficava oculto atrás da gaveta; corrigido adicionando `z-index: 470` em `.p-editor-backdrop` (abaixo de `--mf-z-select-portal: 600` e `.mf-single-calendar: 610`) e posicionando `renderPlanDetail()` antes de `renderPlanModal()`.
+
+## 10. Empacotamento NSIS-Only e Isolamento Seguro para Testes
+- **Limpeza NSIS-Only (`portable` descartado)**:
+  - `package.json`, `scripts/build-stable-windows.cjs`, `.github/workflows/build-windows.yml` e `scripts/preview-windows-local.ps1` atualizados para gerar **exclusivamente o instalador NSIS x64** (`--win nsis --x64`).
+  - **Nenhum EXE/instalador foi gerado nesta etapa** (`dist:windows` não executado).
+- **Isolamento de `userData` Exclusivo para `experimentalPackaged` (`electron/release-channel.cjs`, `electron/main.cjs`, `tests/release-channel.test.cjs`)**:
+  - `experimentalProfileDirectory(app, options)` aceita `MEU_FINANCEIRO_EXPERIMENTAL_USER_DATA_DIR` ou `--user-data-dir=...` **somente** quando `releaseChannel.channel === 'experimental'`.
+  - Validação rígida rejeita caminhos relativos, vazios, UNC, raiz, `appData`, segmentos com symlink/junction (`lstatSync`), e qualquer caminho igual ou interno aos diretórios protegidos (`meu-financeiro-desktop`, `Meu Financeiro`, `MeuFinanceiro-RC-ALL-01-Experimental`, `STABLE_NAME`).
+  - `stablePackaged` ignora incondicionalmente qualquer variável/argumento de override e sempre usa `stableProfileDirectory(app)` (protegido contra downgrade/corrupção).
+  - **Nota de ambiente host (Windows 11 Home)**: `WindowsSandbox.exe` não está disponível nesta edição; perfis preexistentes `%APPDATA%\meu-financeiro-desktop`, `%APPDATA%\Meu Financeiro` e `%APPDATA%\MeuFinanceiro-RC-ALL-01-Experimental` foram estritamente preservados sem leitura ou escrita.
+
+## 11. Matriz Planejada Nível C (Pendente de Autorização Explícita do Proprietário — Etapas 1–13)
+
+| Etapa | Ação Planejada Nível C (Após Aprovação para `dist:windows`) |
+|---|---|
+| 1 | Pré-condições: checar SHA limpo, `provenance:verify` e ausência de artefatos temporários no workspace. |
+| 2 | Gerar instalador experimental NSIS x64 (`--win nsis --x64`, **sem** `portable`) somente após autorização do proprietário. |
+| 3 | Validar assinatura/hash SHA-256 do instalador NSIS gerado e manifesto `app.asar` embutido (`provenance:verify-asar`). |
+| 4 | Instalar em caminho de teste isolado (`C:\Dev\mf-nsis-test-install` ou usuário local dedicado, nunca sobrescrevendo `Meu Financeiro` estável sem aprovação). |
+| 5 | Executar o app instalado com `MEU_FINANCEIRO_EXPERIMENTAL_USER_DATA_DIR=C:\Dev\mf-nsis-test-userdata` e `MF_QA_SYNTHETIC=1`. |
+| 6 | Confirmar via Process Explorer / log seguro que `userData` ativo aponta estritamente para `C:\Dev\mf-nsis-test-userdata` e que `meu-financeiro-desktop` / `Meu Financeiro` não foram tocados (timestamps intactos). |
+| 7 | Confirmar rejeição de override apontando para diretório protegido ou junction, e isolamento total de `stablePackaged` contra `MEU_FINANCEIRO_EXPERIMENTAL_USER_DATA_DIR`. |
+| 8 | Executar fumaça interativa no binário instalado (Visão geral, Movimentações D05, Orçamentos, Planejamento, Simulador, Inteligência B05, Configurações). |
+| 9 | Validar fechamento limpo, `PRAGMA integrity_check === ok` e reabertura do binário instalado preservando alterações na UI DOM. |
+| 10 | Validar desinstalação limpa via `Uninstall Meu Financeiro Experimental.exe` sem afetar instalação estável nem perfis pessoais. |
+| 11 | Validar fluxo Pluggy/Cloud somente após transição explícita e autorizada para canal estável homologado. |
+| 12 | Conferir integridade pós-teste dos diretórios pessoais/RC em `%APPDATA%` e `%LOCALAPPDATA%`. |
+| 13 | Registrar parecer final GO/NO-GO para release v1.0.0.

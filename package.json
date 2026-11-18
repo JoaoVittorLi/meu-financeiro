@@ -12,7 +12,7 @@
     "test:types": "tsc --project tsconfig.json --noEmit",
     "test": "npm run test:db",
     "start": "npm run compile && electron .",
-    "dist:windows": "npm run test && npm run test:asar && npm run provenance:create && npm run provenance:verify && electron-builder --win portable nsis --x64 --publish never",
+    "dist:windows": "npm run test && npm run test:asar && npm run provenance:create && npm run provenance:verify && electron-builder --win nsis --x64 --publish never",
     "dist:windows:stable": "npm run test && npm run test:asar && npm run provenance:create && npm run provenance:verify && node scripts/build-stable-windows.cjs",
     "provenance:create": "node scripts/renderer-provenance.cjs create",
     "provenance:verify": "node scripts/renderer-provenance.cjs verify"
@@ -39,12 +39,6 @@
     "win": {
       "target": [
         {
-          "target": "portable",
-          "arch": [
-            "x64"
-          ]
-        },
-        {
           "target": "nsis",
           "arch": [
             "x64"
@@ -58,9 +52,6 @@
       "perMachine": false,
       "allowToChangeInstallationDirectory": true,
       "artifactName": "MeuFinanceiro-Instalador-${version}-${arch}.${ext}"
-    },
-    "portable": {
-      "artifactName": "MeuFinanceiro-Portable-${version}-${arch}.${ext}"
     }
   },
   "engines": {

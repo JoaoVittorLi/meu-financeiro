@@ -181,10 +181,11 @@ function forbidExperimentalNetwork(){
   throw Error('RC/smoke isolado: conexão bancária, nuvem e IA externa estão desativadas.');
 }
 if(experimentalPackaged){
+ // Only experimentalPackaged honors MEU_FINANCEIRO_EXPERIMENTAL_USER_DATA_DIR / --user-data-dir.
  const isolated=experimentalProfileDirectory(app);
  app.setPath('userData',isolated);
 }else if(stablePackaged){
- // Continue the previous stable profile IN PLACE; never import RC data.
+ // Continue the previous stable profile IN PLACE; never import RC data or accept overrides.
  const stableDirectory=stableProfileDirectory(app);
  app.setPath('userData',stableDirectory);
 }

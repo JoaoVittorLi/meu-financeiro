@@ -1,4 +1,4 @@
-# Local build / GitHub prerelease, without GitHub-hosted Actions minutes.
+﻿# Local build / GitHub prerelease, without GitHub-hosted Actions minutes.
 # Windows PowerShell: powershell -ExecutionPolicy Bypass -File .\scripts\preview-windows-local.ps1
 # After checking the EXE: add -PublishOnly to upload the exact verified build.
 [CmdletBinding()]
@@ -37,7 +37,7 @@ if($version -notmatch '^\d+\.\d+\.\d+([.-][a-zA-Z0-9.-]+)?$'){throw 'Versão inv
 $major = [int](([string](& node.exe -p 'process.versions.node')).Split('.')[0])
 if($major -lt 22){throw 'Node.js 22 ou mais recente é necessário'}
 $release = Join-Path $root 'release'
-$exeName = "MeuFinanceiro-Portable-$version-x64.exe"
+$exeName = "MeuFinanceiro-Instalador-$version-x64.exe"
 $exe = Join-Path $release $exeName
 $manifest = Join-Path $release 'PREVIEW-SHA256.txt'
 $worker = Join-Path $root 'mobile-push'
@@ -55,7 +55,7 @@ if(-not $PublishOnly){
   Run 'npm.cmd' @('test') $worker
   Run 'npx.cmd' @('wrangler','deploy','--dry-run','--outdir',(Join-Path $root 'release-preview-worker-dry-run')) $worker
   $began = Get-Date
-  Run 'npx.cmd' @('electron-builder','--win','portable','--x64','--publish','never')
+  Run 'npx.cmd' @('electron-builder','--win','nsis','--x64','--publish','never')
   if(-not (Test-Path -LiteralPath $exe)){throw 'Build não gerou o EXE esperado'}
   $file = Get-Item -LiteralPath $exe
   if($file.Length -lt 10000000 -or $file.LastWriteTime -lt $began.AddMinutes(-1)){
