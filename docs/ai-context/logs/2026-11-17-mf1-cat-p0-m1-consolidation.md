@@ -355,3 +355,28 @@
   - `npm --prefix mobile-push test`: **PASS** (`133/133`, `fail 0`, `duration_ms 1965.22`)
   - `npm run test:electron-smoke` + `node scripts/verify-visual-matrix.cjs`: **PASS** (`32 entradas JSON, 32 PNGs, 8 áreas, 4 presets`)
   - `node scripts/nivel-b-interactive-qa.cjs`: **PASS** (`14/14` jornadas `PJ-01..09`, `NJ-01..05`, `FAIL: 0`, `RuntimeIssues: 0`)
+
+
+## 22. Iteração 14 — Fechamento Estrutural das 5 Brechas Wave 13 (`cat01` Não-PII `UNVERIFIED_RECEIVER`, Sincronização Canônica de PSPs/POS/27 UFs e Splits com Borda Colada)
+
+- **Origem:** Auditoria forense Wave 13 (`8a3fa97b`) devolveu `VEREDITO: GO` sobre `ac5f58daffb142a8f62325f0a3a788fc969fb008`, porém o Guardião Financeiro Wave 13 (`d0d7d348`) devolveu `VEREDITO: REJECT` apontando `5` brechas estruturais restantes (todas reproduzidas em `classifyCandidate` + E2E `FinanceDB.ingestBank` -> `D05AutoCategorization.plan()`).
+- **`electron/cat01-pluggy-evidence.cjs`**:
+  - **Invariante de privacidade e mundo fechado (`UNVERIFIED_RECEIVER`)**: qualquer `paymentData.receiver` sem `receiverCnpj` comercial válido (seja `CPF`, CNPJ inválido ou ausência de `documentNumber`, como `receiver: { name: 'JOAO DA SILVA' }` ou `receiver: { name: 'SOL01MPCE' }`) passa a gravar `receiverName: 'UNVERIFIED_RECEIVER'` em vez de expor nome natural ou permitir contorno open-world no campo `receiver`.
+- **`electron/cat02-classifier.cjs`**:
+  - **Fontes canônicas únicas (`ALL_INTERMEDIARY_BASES`, `FULL_INTERMEDIARY_SORTED`, `POS_WRAP_BASE`, `SUFFIXED_INTERMEDIARY_RE`, `POS_CONTROL_WORDS`)**: derivação automática a partir dos `Set`s canônicos (sem listas manuais dessincronizadas), incorporando `meli`, `mercadolivre`, `nuvempay`, `99food`, `cornershop`, `unverifiedreceiver`, `box`, `maq`, `maquina`, `maquineta`, `ponto`, `pto`, `centro`, `unid`, `unidade`, `matriz`, `banca`, `stand`, `estande`, além de guarda `posWrapSafeSuffix` + `afterDigits` contra falso positivo em palavras portuguesas válidas com dígitos (`LOJA01PAGAMENTO`, `FILIAL12`, etc.).
+  - **Fechamento open-world para dígitos à esquerda/meio e caudas POS/UF/alnum (`hasDescriptorIntermediarySignal`)**: avaliação de variantes sem dígitos à esquerda (`^\d+[a-z]{4,}` -> `01DROGASILMP`, `01BOTECOMP`, `01BOTECOPAG`), stems `^[a-z]{3,}\d+$` (`SOL01MPCE`, `BOX01MPBA`, `TOP01PAGSP`, `VIP01MPCE`, `BOTECO01MP`), `UNAMBIGUOUS_WRAPPED_SUFFIX_RE` + `SAFE_OPEN_MP_UF_SUFFIX_RE` (`BOTECOMP01A`, `BOTECOMPSP01`, `BOTECOMPBR01`, `BOTECOMPPOS`, `BOTECOPAGPOS`, `BOTECOTONSP01`, `BOTECOTON01`, `BOTECOTONBR`, `BOTECOVERO01`, `BOTECOSTONEBR`) e infixos POS/PSPs longos (`BOXMPPADARIA`, `MAQMPPADARIA`, `PONTOMPPADARIA`, `CENTROMPBOTECO`).
+  - **Splits com bordas coladas (`hasSplitIntermediaryWindow`)**: suporte a janelas fragmentadas (`2..24` tokens, com `hasShortFragment`) formando identificadores numerados/POS/UF/BR (`M P01`, `EC01M P`, `01M P`, `M PBR`, `M PCE`, `P AG01`, `V ERO01`, `A I Q F O M E01`, `I N F I N I T E P A YBR`, `C 6 P A Y`, `99 F O O D`) enquanto preserva `10/10`, `DONA CORA`, `PAG MENOS` e métricas declaradas (`5ML`/`500ML`).
+  - **Trilhos não-cartão e métricas POS (`NON_CARD_RAIL_RE`, `POS_CONTROL_TOKENS`)**: bloqueio de `AUTO_DEBIT`, `AUTODEBIT`, `AUTODEBITO`, `DEBITO_DIRETO`, `DEBITO_EM_CONTA` sem falso positivo em `AUTO POSTO`, e bloqueio de `TERMINAL 10ML` / `EC 10ML` mesmo quando `merchant.name` é `null` em `MULTI_SIGNAL_RECONCILED`.
+  - **Melhoria conservadora de recall (`isPagMenosPhrase`, `isLegitCoraPhrase`)**: permissão controlada de hífen espaçado pós-frase (`DROGARIA PAG MENOS - FILIAL 01`, `PADARIA DONA CORA - CENTRO`) sem liberar pontuação acoplada (`*`/`/`/`-palavra`).
+- **`tests/cat-p0-calibration.test.cjs` (`G6-18`)**:
+  - Expandida `G6-18` (unitário + E2E SQLite) com `51` vetores Wave 13 (`w13-01..51`), `8` controles legítimos BR (`w13-leg-29..36`, incl. `PAG MENOS - FILIAL 01`, `DONA CORA - CENTRO`, `COMPER`, `IMPERATRIZ`, `CAMPINAS`, `OLIMPO`, `MELISSA`, `REDENTOR`) e asserções de não-armazenamento de PII em `normalizePluggyEvidence` (`ev.receiverName === 'UNVERIFIED_RECEIVER'`).
+- **Verificação Iteração 14 (`MF_QA_SYNTHETIC=1`, Node `v22.23.4`, npm `10.9.9`)**:
+  - `npm run test:types`: **PASS**
+  - `npm run compile`: **PASS**
+  - `node scripts/build-preload.cjs check`: **PASS**
+  - `node scripts/renderer-provenance.cjs check-bundle`: **PASS** (`31 entradas`)
+  - `npm run test:asar`: **PASS** (`1/1`, `duration_ms 221.09`)
+  - `npm run test:db`: **PASS** (`1000/1000`, `fail 0`, `cancelled 0`, `skipped 0`, `duration_ms 138867.30`)
+  - `npm --prefix mobile-push test`: **PASS** (`133/133`, `fail 0`, `duration_ms 1854.61`)
+  - `npm run test:electron-smoke` + `node scripts/verify-visual-matrix.cjs`: **PASS** (`32 entradas JSON, 32 PNGs, 8 áreas, 4 presets`)
+  - `node scripts/nivel-b-interactive-qa.cjs`: **PASS** (`14/14` jornadas `PJ-01..09`, `NJ-01..05`, `FAIL: 0`, `RuntimeIssues: 0`)

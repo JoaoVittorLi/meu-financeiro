@@ -1795,7 +1795,62 @@ test('G6-18: wave 8 adversarial bypass classes (truncated k=1/2, dirty TON/PAG, 
     { id: 'w12-43-boteco01mp', desc: 'BOTECO01MP', name: 'BOTECO01MP', mcc: '5411' },
     { id: 'w12-44-stripebr', desc: 'STRIPEBR PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
     { id: 'w12-45-wirecardce', desc: 'WIRECARDCE PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
-    { id: 'w12-46-terminaladyen', desc: 'TERMINALADYEN PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' }
+    { id: 'w12-46-terminaladyen', desc: 'TERMINALADYEN PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    // Wave 13 Brecha 1: left-digit glued stems, 3-char+digits+PSP+UF, POS/alnum trailing suffixes & extra POS prefixes
+    { id: 'w13-01-01drogasilmp', desc: '01DROGASILMP', name: '01DROGASILMP', mcc: '5912' },
+    { id: 'w13-02-01botecomp', desc: '01BOTECOMP', name: '01BOTECOMP', mcc: '5411' },
+    { id: 'w13-03-01botecopag', desc: '01BOTECOPAG', name: '01BOTECOPAG', mcc: '5411' },
+    { id: 'w13-04-sol01mpce-dir', desc: 'SOL01MPCE', name: 'SOL01MPCE', mcc: '5411' },
+    { id: 'w13-05-sol01mpce-rec', desc: 'SOL01MPCE', name: null, category: 'Groceries', mcc: '5411' },
+    { id: 'w13-06-box01mpba', desc: 'BOX01MPBA', name: 'BOX01MPBA', mcc: '5411' },
+    { id: 'w13-07-top01pagsp', desc: 'TOP01PAGSP', name: 'TOP01PAGSP', mcc: '5411' },
+    { id: 'w13-08-vip01mpce', desc: 'VIP01MPCE', name: 'VIP01MPCE', mcc: '5411' },
+    { id: 'w13-09-botecomp01a', desc: 'BOTECOMP01A', name: 'BOTECOMP01A', mcc: '5411' },
+    { id: 'w13-10-botecompsp01', desc: 'BOTECOMPSP01', name: 'BOTECOMPSP01', mcc: '5411' },
+    { id: 'w13-11-botecompsp01-rec', desc: 'BOTECOMPSP01', name: null, category: 'Groceries', mcc: '5411' },
+    { id: 'w13-12-botecompbr01', desc: 'BOTECOMPBR01', name: 'BOTECOMPBR01', mcc: '5411' },
+    { id: 'w13-13-botecomppos', desc: 'BOTECOMPPOS', name: 'BOTECOMPPOS', mcc: '5411' },
+    { id: 'w13-14-botecopagpos', desc: 'BOTECOPAGPOS', name: 'BOTECOPAGPOS', mcc: '5411' },
+    { id: 'w13-15-botecopag01a', desc: 'BOTECOPAG01A', name: 'BOTECOPAG01A', mcc: '5411' },
+    { id: 'w13-16-botecopagsp01', desc: 'BOTECOPAGSP01', name: 'BOTECOPAGSP01', mcc: '5411' },
+    { id: 'w13-17-botecotonsp01', desc: 'BOTECOTONSP01', name: 'BOTECOTONSP01', mcc: '5411' },
+    { id: 'w13-18-botecoton01', desc: 'BOTECOTON01', name: 'BOTECOTON01', mcc: '5411' },
+    { id: 'w13-19-botecotonbr', desc: 'BOTECOTONBR', name: 'BOTECOTONBR', mcc: '5411' },
+    { id: 'w13-20-botecovero01', desc: 'BOTECOVERO01', name: 'BOTECOVERO01', mcc: '5411' },
+    { id: 'w13-21-botecoverobr', desc: 'BOTECOVEROBR', name: 'BOTECOVEROBR', mcc: '5411' },
+    { id: 'w13-22-botecostonebr', desc: 'BOTECOSTONEBR', name: 'BOTECOSTONEBR', mcc: '5411' },
+    { id: 'w13-23-boxmppadaria', desc: 'BOXMPPADARIA', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w13-24-maqmppadaria', desc: 'MAQMPPADARIA', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w13-25-pontomppadaria', desc: 'PONTOMPPADARIA', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w13-26-centrompboteco', desc: 'CENTROMPBOTECO', name: 'BOTECO CENTRAL', mcc: '5411' },
+    // Wave 13 Brecha 2: FULL_INTERMEDIARY_TOKENS completeness in POS_WRAP_BASE / UFs
+    { id: 'w13-27-terminalmeli', desc: 'TERMINALMELI PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w13-28-melibr', desc: 'MELIBR PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w13-29-melibr-rec', desc: 'MELIBR PADARIA CENTRAL', name: null, category: 'Groceries', mcc: '5411' },
+    { id: 'w13-30-melisp', desc: 'MELISP PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w13-31-mercadolivrebr', desc: 'MERCADOLIVREBR PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w13-32-mercadolivresp', desc: 'MERCADOLIVRESP PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w13-33-nuvempaybr', desc: 'NUVEMPAYBR PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w13-34-nuvempaysp', desc: 'NUVEMPAYSP PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w13-35-99foodsp', desc: '99FOODSP PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w13-36-cornershopsp', desc: 'CORNERSHOPSP PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    // Wave 13 Brecha 3: splits with edge attached to digit/POS/UF/BR
+    { id: 'w13-37-split-m-p01', desc: 'M P01 PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w13-38-split-ec01m-p', desc: 'EC01M P PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w13-39-split-01m-p', desc: '01M P PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w13-40-split-m-pbr', desc: 'M PBR PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w13-41-split-m-pce', desc: 'M PCE PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w13-42-split-p-ag01', desc: 'P AG01 PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w13-43-split-v-ero01', desc: 'V ERO01 PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w13-44-split-aiqfome01', desc: 'A I Q F O M E01 PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w13-45-split-infinitepaybr', desc: 'I N F I N I T E P A YBR PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    // Wave 13 Brecha 4 & 5: AUTO_DEBIT/AUTODEBITO/DEBITO_EM_CONTA, TERMINAL 10ML, unverified natural-person receiver
+    { id: 'w13-46-pm-auto-debit', desc: 'COMPRA SUPERMERCADO ALFA SUL', name: 'SUPERMERCADO ALFA SUL', category: 'Groceries', mcc: '5411', operationType: 'CARD_PAYMENT', paymentMethod: 'AUTO_DEBIT' },
+    { id: 'w13-47-pm-autodebito', desc: 'COMPRA SUPERMERCADO ALFA SUL', name: 'SUPERMERCADO ALFA SUL', category: 'Groceries', mcc: '5411', operationType: 'CARD_PAYMENT', paymentMethod: 'AUTODEBITO' },
+    { id: 'w13-48-pm-deb-em-conta', desc: 'COMPRA SUPERMERCADO ALFA SUL', name: 'SUPERMERCADO ALFA SUL', category: 'Groceries', mcc: '5411', operationType: 'CARD_PAYMENT', paymentMethod: 'DEBITO_EM_CONTA' },
+    { id: 'w13-49-terminal-10ml-rec', desc: 'TERMINAL 10ML PADARIA CENTRAL', name: null, category: 'Groceries', mcc: '5411' },
+    { id: 'w13-50-receiver-person-no-doc', desc: 'COMPRA SUPERMERCADO ALFA SUL', name: 'SUPERMERCADO ALFA SUL', receiver: { name: 'JOAO DA SILVA' }, mcc: '5411' },
+    { id: 'w13-51-receiver-sol01mpce-no-doc', desc: 'COMPRA SUPERMERCADO ALFA SUL', name: 'SUPERMERCADO ALFA SUL', receiver: { name: 'SOL01MPCE' }, mcc: '5411' }
   ];
 
   const legitimateCases = [
@@ -1826,7 +1881,15 @@ test('G6-18: wave 8 adversarial bypass classes (truncated k=1/2, dirty TON/PAG, 
     { id: 'w12-leg-25-milton', desc: 'AUTO POSTO MILTON', name: 'AUTO POSTO MILTON', mcc: '5541', expectedCat: 'cat:transporte' },
     { id: 'w12-leg-26-everton-card-pay', desc: 'DROGARIA EVERTON', name: 'DROGARIA EVERTON', mcc: '5912', operationType: 'CARD_PAYMENT', expectedCat: 'cat:saude' },
     { id: 'w12-leg-27-veronica', desc: 'FARMACIA VERONICA', name: 'FARMACIA VERONICA', mcc: '5912', expectedCat: 'cat:saude' },
-    { id: 'w12-leg-28-estampa-campo', desc: 'EMPORIO ESTAMPA CAMPO GRANDE', name: 'EMPORIO ESTAMPA CAMPO GRANDE', mcc: '5411', expectedCat: 'cat:alimentacao' }
+    { id: 'w12-leg-28-estampa-campo', desc: 'EMPORIO ESTAMPA CAMPO GRANDE', name: 'EMPORIO ESTAMPA CAMPO GRANDE', mcc: '5411', expectedCat: 'cat:alimentacao' },
+    { id: 'w13-leg-29-pag-menos-hyphen-filial', desc: 'DROGARIA PAG MENOS - FILIAL 01', name: 'DROGARIA PAG MENOS', mcc: '5912', expectedCat: 'cat:saude' },
+    { id: 'w13-leg-30-dona-cora-hyphen-centro', desc: 'PADARIA DONA CORA - CENTRO', name: 'PADARIA DONA CORA', mcc: '5411', expectedCat: 'cat:alimentacao' },
+    { id: 'w13-leg-31-comper', desc: 'SUPERMERCADO COMPER', name: 'SUPERMERCADO COMPER', mcc: '5411', expectedCat: 'cat:alimentacao' },
+    { id: 'w13-leg-32-imperatriz', desc: 'SUPERMERCADO IMPERATRIZ', name: 'SUPERMERCADO IMPERATRIZ', mcc: '5411', expectedCat: 'cat:alimentacao' },
+    { id: 'w13-leg-33-campinas', desc: 'AUTO POSTO CAMPINAS', name: 'AUTO POSTO CAMPINAS', mcc: '5541', expectedCat: 'cat:transporte' },
+    { id: 'w13-leg-34-olimpo', desc: 'FARMACIA OLIMPO', name: 'FARMACIA OLIMPO', mcc: '5912', expectedCat: 'cat:saude' },
+    { id: 'w13-leg-35-melissa', desc: 'DROGARIA MELISSA', name: 'DROGARIA MELISSA', mcc: '5912', expectedCat: 'cat:saude' },
+    { id: 'w13-leg-36-redentor', desc: 'AUTO POSTO REDENTOR', name: 'AUTO POSTO REDENTOR', mcc: '5541', expectedCat: 'cat:transporte' }
   ];
 
   for (const c of bypassCases) {
@@ -1962,5 +2025,30 @@ test('G6-18: wave 8 adversarial bypass classes (truncated k=1/2, dirty TON/PAG, 
     assert.equal(verdict.status, 'apply', `${legRec.id} must apply via MULTI_SIGNAL_RECONCILED, got ${verdict.status}:${verdict.reason}`);
     assert.equal(verdict.reason, 'MULTI_SIGNAL_RECONCILED');
     assert.equal(verdict.target.categoryId, legRec.expectedCat);
+  }
+
+  // CAT-01 privacy invariant: unverified receiver without valid commercial CNPJ never stores natural-person PII
+  for (const unverified of [
+    { name: 'JOAO DA SILVA' },
+    { name: 'MERCADO PAGO IP' },
+    { name: 'PESSOA FISICA', documentNumber: { type: 'CPF', value: '12345678900' } },
+    { name: 'PAGSEGURO INTERNET', documentNumber: { type: 'CNPJ', value: '00000000000000' } }
+  ]) {
+    const ev = normalizePluggyEvidence({
+      id: 'w13-pii-guard',
+      status: 'POSTED',
+      type: 'DEBIT',
+      operationType: 'CARD_PURCHASE',
+      description: 'COMPRA SUPERMERCADO ALFA SUL',
+      merchant: { name: 'SUPERMERCADO ALFA SUL', cnpj: VALID_CNPJS[1] },
+      paymentData: { receiver: unverified },
+      creditCardMetadata: { payeeMCC: '5411' }
+    }, { accountId: ACCOUNT_A });
+    assert.equal(ev.receiverCnpj, null);
+    assert.equal(ev.receiverName, 'UNVERIFIED_RECEIVER');
+    assert.equal(classifyCandidate({
+      transaction: { accountId: ACCOUNT_A, externalId: 'w13-pii-guard', accountType: 'BANK', status: 'POSTED', amountCents: -4000, description: 'COMPRA SUPERMERCADO ALFA SUL' },
+      evidence: ev
+    }).status, 'review');
   }
 });

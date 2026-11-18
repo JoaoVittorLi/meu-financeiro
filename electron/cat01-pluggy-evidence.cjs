@@ -26,6 +26,7 @@ function normalizePluggyEvidence(transaction,{accountId,accountType='BANK',obser
  const card=transaction.creditCardMetadata&&typeof transaction.creditCardMetadata==='object'?transaction.creditCardMetadata:{};
  const receiverDocType=String(document.type||'').toUpperCase();
  const receiverCnpj=receiverDocType==='CNPJ'?cnpj(document.value):null;
+ const hasUnverifiedReceiver=!receiverCnpj&&Boolean(clean(receiver.name,120)||clean(document.type,16)||clean(document.value,32));
  const type=clean(transaction.type,16)?.toUpperCase()||null;
  const status=clean(transaction.status,16)?.toUpperCase()||null;
  const out={
@@ -36,7 +37,7 @@ function normalizePluggyEvidence(transaction,{accountId,accountType='BANK',obser
   descriptionRaw:clean(raw,180),
   operationType:clean(transaction.operationType,60),
   paymentMethod:clean(payment.paymentMethod,40),
-  receiverName:receiverDocType==='CPF'?'CPF_RECEIVER':clean(receiver.name,120),
+  receiverName:receiverCnpj?clean(receiver.name,120):(hasUnverifiedReceiver?'UNVERIFIED_RECEIVER':null),
   receiverCnpj,
   mcc:mcc(card.payeeMCC),
   merchantName:clean(merchant.name,120),
