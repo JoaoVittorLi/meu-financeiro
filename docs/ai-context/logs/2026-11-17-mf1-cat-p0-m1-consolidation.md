@@ -56,3 +56,13 @@
   - Adicionados testes regressivos `G6-09`, `G6-10` e `G6-11` cobrindo prefixos de subadquirentes/agregadores, prefixos em `description`, `PIX QR CODE` / `paymentMethod='PIX'` com CNPJ, aceitação legítima de `"REDE DE POSTOS IPIRANGA"` e bloqueio de evidência externa conflitante sobre âncoras humanas duplicadas.
   - Substituído caminho absoluto de worktree em `tests/cat-p0-ipc-contract.test.cjs` (`senderFrame.url`) por `'file:///app/index.html'`.
   - Verificação direcionada aprovada (`54/54` em `cat-p0-calibration`, `cat-p0-ipc-contract`, `d05-auto-reconciled.integration`, `d05-auto-categorization` e `intelligence-recovery`), junto com `npm run compile`, `npm run test:types`, `build-preload.cjs check` e `renderer-provenance.cjs check-bundle`.
+
+## 7. Iteração 3 — Fechamento de Bypasses Restantes (`electron/cat02-classifier.cjs`, `tests/cat-p0-calibration.test.cjs`)
+
+- **`electron/cat02-classifier.cjs` (`VERIFIED_DIRECT_MERCHANT_MCC_PARENT`)**:
+  - Expandida `rawProcessorPrefix` para cobrir prefixos abreviados de processadores após prefixos bancários com separadores não-`*` (`COMPRA MP - ...`, `COMPRA CARTAO MP-...`, `DEB PAG - ...`, `COMPRA TON - ...`, `COMPRA PG - ...`, variantes com travessão/barra) e agregadores com `*` (`uber *`), sem colidir com palavras legítimas (`PAGAMENTO`, `TONELADA`, `UBERLANDIA`, `REDE DE POSTOS`).
+  - Expandida `processor` com descritores truncados do Mercado Pago (`merc(?:ado)? ?pago`, cobrindo `MERCPAGO *` e `MERC PAGO *`) e agregadores de entrega/marketplace (`i ?food`, `rappi`, `uber ?eats`), mantendo `UBERLANDIA AUTO POSTO` elegível.
+  - Adicionada verificação `!hasIntermediary(evidence.merchantBusinessName||'')` em `directCommerce` para bloquear razão social de intermediador/agregador quando `merchantName` estiver limpo.
+- **`tests/cat-p0-calibration.test.cjs` (`G6-12`)**:
+  - Adicionada regressão unitária (`classifyCandidate`) e E2E (`D05AutoCategorization`) cobrindo os 4 bypasses e os 4 estabelecimentos legítimos não colidentes (`PAGAMENTO FACIL DROGARIA`, `TONELADA SUPERMERCADO`, `UBERLANDIA AUTO POSTO`, `REDE DE POSTOS IPIRANGA`).
+  - Verificação direcionada aprovada (`56/56` em `cat-p0-calibration` 12/12, `cat-p0-ipc-contract`, `d05-auto-reconciled.integration`, `d05-auto-categorization`, `intelligence-recovery` e `renderer-asar.integration`).

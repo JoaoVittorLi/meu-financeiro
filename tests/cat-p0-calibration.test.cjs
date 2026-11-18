@@ -734,3 +734,145 @@ test('G6-11: duplicate-pair human overrides block conflicting Pluggy external ev
     assert.equal(db.db.prepare('SELECT COUNT(*) AS n FROM mf_auto_labels').get().n, 0);
   });
 });
+
+test('G6-12: bank-prefixed processor separators, truncated Mercado Pago, aggregators & merchantBusinessName stay review while non-colliding merchants apply (unit + E2E)', async () => {
+  const bypassCases = [
+    // 1. Bank-prefixed non-* abbreviated processor separators
+    { id: 'byp-mp-space-hyphen', desc: 'COMPRA MP - PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'byp-mp-hyphen', desc: 'COMPRA CARTAO MP-PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'byp-mp-endash', desc: 'COMPRA MP \u2013 PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'byp-pag-slash', desc: 'COMPRA PAG/SUPERMERCADO ALFA', name: 'SUPERMERCADO ALFA', mcc: '5411' },
+    { id: 'byp-pag-hyphen', desc: 'DEB PAG - SUPERMERCADO ALFA', name: 'SUPERMERCADO ALFA', mcc: '5411' },
+    { id: 'byp-pagseg-hyphen', desc: 'COMPRA PAGSEG-AUTO POSTO SUL', name: 'AUTO POSTO SUL', mcc: '5541' },
+    { id: 'byp-ton-hyphen', desc: 'COMPRA TON - AUTO POSTO SUL', name: 'AUTO POSTO SUL', mcc: '5541' },
+    { id: 'byp-pg-hyphen', desc: 'COMPRA PG - DROGARIA CENTRAL', name: 'DROGARIA CENTRAL', mcc: '5912' },
+    // 2. Truncated Mercado Pago descriptors
+    { id: 'byp-mercpago', desc: 'MERCPAGO *POSTO IPIRANGA', name: 'POSTO IPIRANGA', mcc: '5541' },
+    { id: 'byp-merc-pago-same', desc: 'MERC PAGO *PADARIA CENTRAL', name: 'MERC PAGO *PADARIA CENTRAL', mcc: '5411' },
+    { id: 'byp-merc-pago-clean', desc: 'MERC PAGO *PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    // 3. Delivery/marketplace aggregators
+    { id: 'byp-ifood-super', desc: 'IFOOD *SUPERMERCADO EXTRA', name: 'IFOOD *SUPERMERCADO EXTRA', mcc: '5411' },
+    { id: 'byp-ifood-pharm', desc: 'IFOOD *FARMACIA SAO PAULO', name: 'FARMACIA SAO PAULO', mcc: '5912' },
+    { id: 'byp-rappi', desc: 'RAPPI *SUPERMERCADO DIA', name: 'RAPPI *SUPERMERCADO DIA', mcc: '5411' },
+    { id: 'byp-uber-star', desc: 'UBER *CORNERSHOP MERCADO', name: 'UBER *CORNERSHOP MERCADO', mcc: '5411' },
+    { id: 'byp-uber-eats', desc: 'UBER EATS *PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'byp-ubereats', desc: 'UBEREATS PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    // 4. evidence.merchantBusinessName intermediary
+    {
+      id: 'byp-bizname-mp',
+      desc: 'PADARIA CENTRAL LTDA',
+      name: 'PADARIA CENTRAL',
+      businessName: 'MERCADO PAGO INSTITUICAO DE PAGAMENTO LTDA',
+      mcc: '5411'
+    },
+    {
+      id: 'byp-bizname-ifood',
+      desc: 'DROGARIA CENTRAL LTDA',
+      name: 'DROGARIA CENTRAL',
+      businessName: 'IFOOD.COM AGENCIA DE RESTAURANTES ONLINE S.A.',
+      mcc: '5912'
+    }
+  ];
+
+  const legitimateCases = [
+    { id: 'legit-pagamento', desc: 'COMPRA CARTAO PAGAMENTO FACIL DROGARIA', name: 'PAGAMENTO FACIL DROGARIA', mcc: '5912', expectedCat: 'cat:saude' },
+    { id: 'legit-tonelada', desc: 'COMPRA CARTAO TONELADA SUPERMERCADO', name: 'TONELADA SUPERMERCADO', mcc: '5411', expectedCat: 'cat:alimentacao' },
+    { id: 'legit-uberlandia', desc: 'COMPRA CARTAO UBERLANDIA AUTO POSTO', name: 'UBERLANDIA AUTO POSTO', mcc: '5541', expectedCat: 'cat:transporte' },
+    { id: 'legit-rede-postos', desc: 'COMPRA CARTAO REDE DE POSTOS IPIRANGA 10/10', name: 'REDE DE POSTOS IPIRANGA', mcc: '5541', expectedCat: 'cat:transporte' }
+  ];
+
+  // Unit classifier checks
+  for (const c of bypassCases) {
+    const ev = normalizePluggyEvidence({
+      id: c.id,
+      status: 'POSTED',
+      type: 'DEBIT',
+      operationType: 'CARD_PURCHASE',
+      description: c.desc,
+      category: null,
+      merchant: {
+        name: c.name,
+        ...(c.businessName ? { businessName: c.businessName } : {}),
+        cnpj: VALID_CNPJS[0]
+      },
+      creditCardMetadata: { payeeMCC: c.mcc }
+    }, { accountId: ACCOUNT_A });
+    const verdict = classifyCandidate({
+      transaction: {
+        accountId: ACCOUNT_A,
+        externalId: c.id,
+        accountType: 'BANK',
+        status: 'POSTED',
+        amountCents: -4500,
+        description: c.desc
+      },
+      evidence: ev
+    });
+    assert.equal(verdict.status, 'review', `${c.id} (${c.desc}) must remain review, got ${verdict.status}:${verdict.reason}`);
+  }
+
+  for (const c of legitimateCases) {
+    const ev = normalizePluggyEvidence({
+      id: c.id,
+      status: 'POSTED',
+      type: 'DEBIT',
+      operationType: 'CARD_PURCHASE',
+      description: c.desc,
+      category: null,
+      merchant: { name: c.name, cnpj: VALID_CNPJS[1] },
+      creditCardMetadata: { payeeMCC: c.mcc }
+    }, { accountId: ACCOUNT_A });
+    const verdict = classifyCandidate({
+      transaction: {
+        accountId: ACCOUNT_A,
+        externalId: c.id,
+        accountType: 'BANK',
+        status: 'POSTED',
+        amountCents: -7500,
+        description: c.desc
+      },
+      evidence: ev
+    });
+    assert.equal(verdict.status, 'apply', `${c.id} (${c.desc}) must apply, got ${verdict.status}:${verdict.reason}`);
+    assert.equal(verdict.reason, 'VERIFIED_DIRECT_MERCHANT_MCC_PARENT');
+    assert.deepEqual(verdict.target, { categoryId: c.expectedCat, subcategoryId: null });
+  }
+
+  // E2E D05AutoCategorization checks
+  await withSandbox(async ({ db, auto }) => {
+    const allCases = [...bypassCases, ...legitimateCases];
+    ingestRows(db, ACCOUNT_A, ITEM_A, allCases.map((c, i) => ({
+      id: c.id,
+      date: `2026-10-${String(1 + i).padStart(2, '0')}`,
+      description: c.desc,
+      amount: -(35 + i),
+      status: 'POSTED',
+      category: null,
+      type: 'DEBIT',
+      operationType: 'CARD_PURCHASE',
+      merchant: {
+        name: c.name,
+        ...(c.businessName ? { businessName: c.businessName } : {}),
+        cnpj: c.expectedCat ? VALID_CNPJS[1] : VALID_CNPJS[0]
+      },
+      creditCardMetadata: { payeeMCC: c.mcc }
+    })));
+    auto.configure({ accountIds: [ACCOUNT_A], ...SPAN }, true);
+    const plan = auto.plan({ limit: 100 });
+    assert.equal(plan.candidateCount, legitimateCases.length, `Expected only legitimate candidates, got: ${plan.candidates.map((x) => x.externalId).join(',')}`);
+    assert.equal(plan.reviewCount, bypassCases.length);
+    assert.deepEqual(
+      plan.candidates.map((x) => x.externalId).sort(),
+      legitimateCases.map((x) => x.id).sort()
+    );
+    for (const c of legitimateCases) {
+      const cand = plan.candidates.find((x) => x.externalId === c.id);
+      assert.deepEqual(cand.target, { categoryId: c.expectedCat, subcategoryId: null });
+    }
+    const res = await auto.apply();
+    assert.equal(res.applied, legitimateCases.length);
+    for (const b of bypassCases) {
+      assert.equal(db.db.prepare('SELECT 1 FROM mf_auto_labels WHERE account_id=? AND external_id=?').get(ACCOUNT_A, b.id), undefined);
+    }
+  });
+});

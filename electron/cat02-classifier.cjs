@@ -175,8 +175,8 @@ function classifyCandidate({transaction,evidence={},history=[],rules=[],catalog=
  const directName=fold(evidence.merchantName);
  const desc=fold(transaction.description||'');
  const unaccent=x=>String(x??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'');
- const rawProcessorPrefix=/\b(mp|pag|pagseg|ton|pg|rede)\s*\*/i;
- const processor=/\b(pag ?seguro|pag ?seg|pag ?bank|mercado ?pago|stone|cielo|pay ?pal|pic ?pay|get ?net|rede ?card|sum ?up|pagar ?me|infinite ?pay|ebanx|adyen|asaas|iugu|vindi|zoop|shipay|bcash|moip|wirecard|cloud ?walk|pix|qr ?code|qrcode)\b|\brede\b(?! de\b(?! pagamentos?\b))|^(mp|pag|ton|pg)\b/i;
+ const rawProcessorPrefix=/\b(mp|pag|pagseg|ton|pg|rede|uber)\s*\*|\b(mp|pag|pagseg|ton|pg)\s+[-–—/]\s+|\b(mp|pag|pagseg|ton|pg)\s*[-–—/]\s*(?=[a-z0-9]{3,})/i;
+ const processor=/\b(pag ?seguro|pag ?seg|pag ?bank|merc(?:ado)? ?pago|stone|cielo|pay ?pal|pic ?pay|get ?net|rede ?card|sum ?up|pagar ?me|infinite ?pay|ebanx|adyen|asaas|iugu|vindi|zoop|shipay|bcash|moip|wirecard|cloud ?walk|i ?food|rappi|uber ?eats|pix|qr ?code|qrcode)\b|\brede\b(?! de\b(?! pagamentos?\b))|^(mp|pag|ton|pg)\b/i;
  const hasIntermediary=raw=>rawProcessorPrefix.test(unaccent(raw))||processor.test(fold(raw));
  const narrowMcc=['5411','5541','5912'].includes(String(evidence.mcc||''));
  const directCommerce=narrowMcc&&mcc&&!external&&
@@ -187,6 +187,7 @@ function classifyCandidate({transaction,evidence={},history=[],rules=[],catalog=
   typeof evidence.merchantCnpj==='string'&&/^\d{14}$/.test(evidence.merchantCnpj)&&
   directName.length>=8&&
   !hasIntermediary(evidence.merchantName)&&
+  !hasIntermediary(evidence.merchantBusinessName||'')&&
   !hasIntermediary(transaction.description||'')&&
   !hasIntermediary(evidence.description||'')&&
   !hasIntermediary(evidence.descriptionRaw||'')&&
