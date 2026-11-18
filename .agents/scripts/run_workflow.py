@@ -150,6 +150,11 @@ def main() -> int:
 
     if args.stage in ("01_descoberta", "all"):
         stage_discovery(args.marco)
+    if args.stage in ("02_projeto", "03_implementacao", "05_correcao", "07_entrega"):
+        raise SystemExit(
+            f"STAGE_AGENTICO: '{args.stage}' é conduzido pelo Orchestrator/equipe via plano e git; "
+            "estágios automatizados disponíveis na CLI: 01_descoberta, 04_teste, 06_auditoria, all."
+        )
     if args.stage in ("04_teste", "all"):
         if not args.synthetic:
             raise SystemExit("REFUSED: passe --synthetic junto com MF_QA_SYNTHETIC=1 para executar 04_teste.")

@@ -9,19 +9,18 @@
 - **Baseline preservada no remoto antes da Iteração 8:** `6e15914c4c27e0623a7f41cf568175bf6070f735` (publicada em `origin/feat/mf1-cat-p0-consolidation-20261117`).
 - **Branch `main`:** intacta em `e0d5131ebeda855a792614d9986f40e5bb94af5e` (`v0.9.4`, sem merge nem tags).
 - **Formato único de distribuição:** **Instalador NSIS Windows x64** (`--win nsis --x64`). Versão **Portable** descartada permanentemente.
-- **Estado atual (Iteração 8 — Nível A e Nível B APROVADOS):**
+- **Estado atual (Iteração 9 — Nível A e Nível B APROVADOS após fechamento adversarial Wave 8):**
   - **Baseline `6e15914` publicada** previamente em `origin/feat/mf1-cat-p0-consolidation-20261117`.
-  - **Iteração 8 validada no workspace:** correção cirúrgica em `electron/cat02-classifier.cjs` (`NEW-01..23`, `LEG-13..14` + `G6-17`), implantação da estrutura persistente `.agents/` (`rules`, `skills`, `scripts/run_workflow.py`) e sincronização documental.
-  - **Nível A:** **PASS** (`test:types`, `compile`, `build-preload check`, `check-bundle` 31 entradas, `test:asar` `1/1`, `mobile-push` `133/133`, `test:db` `999/999` com `0` falhas em 83,4s).
+  - **Iteração 9 validada no workspace:** endurecimento de `electron/cat02-classifier.cjs` fechando todas as 7 classes adversariais apontadas pela auditoria independente Wave 8 (truncamentos `k=1`/`k=2` + UF/parcelas, `TON`/`PAG` em `merchantName` sujo, prefixos alfanuméricos POS + `PAGBANKS`, Unicode invisíveis `\uFE00-\uFE0F`/`\u2800`/`\u180B`/`\p{Mn}`, `paymentMethod` PIX não exato `/\bpix\b/`, e adquirentes/PSPs brasileiros `MERCPAG`/`SIPAG`/`STELO`/`VERO`/`BIN`/`CORA`/`PP`/`ML`/`QR`), além de `G6-18` e `leg-10..12` em `tests/cat-p0-calibration.test.cjs`, ajuste documental em `GAPS_AND_GATES.md`, tratamento de estágios no `.agents/scripts/run_workflow.py` e limpeza NSIS-only em `.circleci/build-windows.ps1`.
+  - **Nível A:** **PASS** (`test:types`, `compile`, `build-preload check`, `check-bundle` 31 entradas, `test:asar` `1/1`, `mobile-push` `133/133` em `8,18s`, `test:db` `1000/1000` com `0` falhas em `127,24s`).
   - **Nível B:** **PASS** (`test:electron-smoke` + `verify-visual-matrix` `32/32` PNGs + `nivel-b-interactive-qa.cjs` `14/14` jornadas interativas `PJ-01..09`/`NJ-01..05` com `FAIL: 0`, `RuntimeIssues: 0`).
-  - **Nível C (Instalador NSIS experimental `M1-BASELINE`):** autorizado condicionalmente mediante conclusão da auditoria independente de SHA, push no GitHub e verificação de isolamento no host Windows 11 Home (próxima etapa imediata).
+  - **Nível C (Instalador NSIS experimental `M1-BASELINE`):** autorizado condicionalmente mediante conclusão da auditoria independente `pro` pós-Iteração 9, `provenance:verify`, push no GitHub e preservação da pasta experimental anterior no host Windows 11 Home (próxima etapa imediata).
   - **Restrições ativas preservadas:** `approvedForPersonal() === false` (`electron/main.cjs`, `electron/d05-personal-gate.cjs`), `financialDataEnabled: false` (`shared/ai-policy.mjs`), dados sintéticos exclusivos (`MF_QA_SYNTHETIC=1`), zero uso de perfis pessoais ou CircleCI pago.
 
-## Próximos Passos Imediatos (Pós-Sync Documental)
-1. Reexecutar integralmente Nível A (`test:types`, `compile`, `build-preload`, `check-bundle`, `test:asar`, `test:db`, `mobile-push`) e Nível B (`test:electron-smoke` + `verify-visual-matrix` + `nivel-b-interactive-qa`) no SHA da Iteração 8.
-2. Conduzir auditoria independente (Guardião SQLite + Auditor Adversarial `pro`) e publicar no PR #105.
-3. Verificar isolamento pré-instalação e executar **Nível C (geração do NSIS x64 `M1-BASELINE` e QA real instalado)**.
-4. Após homologação do Marco 1, iniciar o **Marco 2 — Inteligência Financeira 3.0 / Copiloto Financeiro** começando pela atualização da auditoria `I3-00` contra a `M1-BASELINE`.
+## Próximos Passos Imediatos (Pós-Iteração 9)
+1. Conduzir auditoria independente final do Marco 1 (`pro` Guardião SQLite + `pro` Auditor Forense), validar `provenance:verify` no SHA final e publicar no PR #105.
+2. Preservar pasta binária experimental anterior e executar **Nível C (geração do NSIS x64 `M1-BASELINE`, instalação em `C:\Dev\mf-nsis-test-install`, QA real instalado com `MEU_FINANCEIRO_EXPERIMENTAL_USER_DATA_DIR=C:\Dev\mf-nsis-test-userdata`, persistência pós-restart e verificação de intocabilidade das pastas do host)**.
+3. Após homologação do Marco 1 (`M1-BASELINE`), iniciar o **Marco 2 — Inteligência Financeira 3.0 / Copiloto Financeiro** começando pela atualização da auditoria `I3-00` contra a `M1-BASELINE`.
 
 ---
 

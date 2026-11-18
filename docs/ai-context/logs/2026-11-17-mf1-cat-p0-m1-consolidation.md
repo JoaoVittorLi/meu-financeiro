@@ -236,3 +236,31 @@
   - `npm run test:db`: **PASS** (`999/999`, `fail 0`, `cancelled 0`, `skipped 0`, `duration_ms 83400.14`)
   - `npm run test:electron-smoke` + `node scripts/verify-visual-matrix.cjs`: **PASS** (`32 entradas JSON, 32 PNGs, 8 áreas, 4 presets, arquivos e dimensões conferidos`)
   - `node scripts/nivel-b-interactive-qa.cjs`: **PASS** (`14/14` jornadas `PJ-01..09`, `NJ-01..05`, `FAIL: 0`, `RuntimeIssues: 0`)
+
+## 17. Iteração 9 — Fechamento Adversarial Wave 8 (`CAT-02`), Higiene NSIS/Docs e Reexecução Integral Nível A/B
+
+- **Origem:** Auditorias independentes (`pro`) sobre o SHA `47c95d79` apontaram `7` classes de contorno no `electron/cat02-classifier.cjs` (`REJECT` do Guardião SQLite) e `5` ajustes menores documentais/CI (`GO` condicional do Auditor Forense).
+- **`electron/cat02-classifier.cjs`**:
+  - Expansão de `INVISIBLE_FORMAT_RE` (`\u180B-\u180F`, `\u2060-\u206F`, `\u2800` Braille blank, `\uFE00-\uFE0F`, `\u{E0100}-\u{E01EF}`) e remoção geral de diacríticos/combinantes via `\p{Mn}+` em `fold` e `normalizeForIntermediaryScan`.
+  - Adição de `mercpag`, `pagbanks`, `sipag`, `stelo` em `FULL_INTERMEDIARY_TOKENS`, `mercado|pag` em `BIGRAM_INTERMEDIARY_PAIRS`, `CONTEXTUAL_INTERMEDIARY_TOKENS` (`vero`, `bin`, `cora`, `pp`, `ml`, `qr`) via `isContextualIntermediaryAt` (com guarda contra falso positivo métrico `/^\d{2,}ml$/`, ex.: `DROGARIA SAUDE 500ML`), e ampliação de `GLUED_INTERMEDIARY_PREFIXES`.
+  - Ampliação de `ALNUM_POS_RE` / `ALNUM_DIGIT_LEAD_POS_RE` (`[a-z0-9]*`) e adição de `ALNUM_PREFIX_POS_RE` em `isNumberedIntermediaryToken`, bloqueando `A1MP*`, `EC1MP*` e `MP01ABCDE*`.
+  - Bloqueio incondicional de `ton` e `pag` fora de `isPagMenosPhrase` em `scanIntermediarySpans`, impedindo `PADARIA TON CENTRAL`, `PADARIA PAG CENTRAL` e `MERCADO PAG PADARIA CENTRAL` mesmo em `merchantName` sujo sem verbo bancário inicial.
+  - Refatoração de `extractResidualOutsideMerchant` (`matchTruncatedMerchantAt`, `isSingleLeadingMerchantIdentifiable`) removendo ocorrências truncadas em qualquer posição interna do `descriptionRaw` (inclusive `k=1` para tokens iniciais `>= 3` chars não stopwords/não intermediários como `BAR`/`SAO`/`TIA`, último token truncado com `>= 2` chars e sufixos pós-corte como `<UF>` ou `10/10`), e eliminação do loop redundante em `hasDescriptorIntermediarySignal`.
+  - Substituição da comparação exata `'pix'` por fronteira de palavra `isPixPaymentMethod` (`/\bpix\b/`), bloqueando `paymentMethod: 'PIX QR CODE'` / `'PIX_TRANSFER'` sem afetar `SUPERMERCADO PIXOTE`.
+- **`tests/cat-p0-calibration.test.cjs` (`G6-17` `leg-10..12` + `G6-18`)**:
+  - Enumeração explícita `leg-10..12` na `G6-17` (`leg-01..15` contínuo) e nova suíte `G6-18` (unitário + E2E SQLite) cobrindo todas as `7` classes Wave 8 + guarda negativa e `19` estabelecimentos brasileiros legítimos (`PASS` sem regressão).
+- **Higiene Documental, Workflow & CI NSIS-Only**:
+  - Corrigida contagem em `docs/ai-context/GAPS_AND_GATES.md` (`release-channel.test.cjs` `11/11`, 48 asserções).
+  - Atualizado `.agents/scripts/run_workflow.py` para responder explicitamente em estágios agênticos (`02_projeto`, `03_implementacao`, `05_correcao`, `07_entrega`).
+  - Atualizado `.circleci/build-windows.ps1` para formato exclusivo **NSIS x64** (`1` instalador + `SHA256.txt` = `2` artifacts; preservando contratos de `tests/d1-2-electron-contract.test.cjs` e mantendo `.github/workflows/unified-preview-gate.yml` intacto devido ao contrato de `tests/e1-build-contract.test.cjs`).
+- **Verificação Iteração 9 (`MF_QA_SYNTHETIC=1`, Node `v22.23.4`, npm `10.9.9`)**:
+  - `python .agents/scripts/run_workflow.py --marco MF1 --stage 01_descoberta`: **PASS**
+  - `npm run test:types`: **PASS**
+  - `npm run compile`: **PASS**
+  - `node scripts/build-preload.cjs check`: **PASS**
+  - `node scripts/renderer-provenance.cjs check-bundle`: **PASS** (`31 entradas`)
+  - `npm run test:asar`: **PASS** (`1/1`)
+  - `npm run test:db`: **PASS** (`1000/1000`, `fail 0`, `cancelled 0`, `skipped 0`, `duration_ms 127237.81`)
+  - `npm --prefix mobile-push test`: **PASS** (`133/133`, `fail 0`, `duration_ms 8178.69`)
+  - `npm run test:electron-smoke` + `node scripts/verify-visual-matrix.cjs`: **PASS** (`32 entradas JSON, 32 PNGs, 8 áreas, 4 presets, arquivos e dimensões conferidos`)
+  - `node scripts/nivel-b-interactive-qa.cjs`: **PASS** (`14/14` jornadas `PJ-01..09`, `NJ-01..05`, `FAIL: 0`, `RuntimeIssues: 0`)
