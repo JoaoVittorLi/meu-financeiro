@@ -264,3 +264,26 @@
   - `npm --prefix mobile-push test`: **PASS** (`133/133`, `fail 0`, `duration_ms 8178.69`)
   - `npm run test:electron-smoke` + `node scripts/verify-visual-matrix.cjs`: **PASS** (`32 entradas JSON, 32 PNGs, 8 áreas, 4 presets, arquivos e dimensões conferidos`)
   - `node scripts/nivel-b-interactive-qa.cjs`: **PASS** (`14/14` jornadas `PJ-01..09`, `NJ-01..05`, `FAIL: 0`, `RuntimeIssues: 0`)
+
+## 18. Iteração 10 — Fechamento Estrutural Wave 9 (`CAT-02`), Preservação `DONA CORA`/`5ML` e Higiene Pré-Push
+
+- **Origem:** Auditorias independentes (`pro`) sobre o SHA `0f632f67` reportaram `8` classes de contorno + regressão de `seenTxVerb`/`ml` em `electron/cat02-classifier.cjs` (`REJECT` do Guardião) e `1` caminho pessoal literal em `.agents/rules/02-worktree-isolation-and-github-memory.md:6` (`HOLD` do Auditor Forense).
+- **`electron/cat02-classifier.cjs`**:
+  - **Unicode & homóglifos (`normalizeHomoglyphsAndEnclosed`, `\p{Me}`, `hasSplitIntermediaryBigram`)**: mapeamento determinístico de cirílico/grego confusável (`МР`, `РAG`) e símbolos envolvidos/quadrados (`\u{1F130}-\u{1F189}`, ex.: `🅿🅰🅶`), remoção de marcas `\p{Mn}` + `\p{Me}` (`P\u20DDAG`), detecção de bigramas divididos por espaço/NBSP (`m p`, `p g`, `p ix`/`pi x`, `t on`/`to n`, `p ag` fora de `PAG MENOS`) e captura de junções pós-ZWSP (`REDEPAGAMENTOS`, `STONEPAGAMENTOS`).
+  - **PSPs/adquirentes & prefixos POS/colados**: adicionados `mercadopag`, `redepagamentos`, `stonepagamentos`, `aiqfome`, `stripe`, `dlocal`, `payu` em `FULL_INTERMEDIARY_TOKENS` / `BIGRAM_INTERMEDIARY_PAIRS` / `GLUED_INTERMEDIARY_PREFIXES`; `ALNUM_PREFIX_POS_RE` e `DIGIT_BEARING_INTERMEDIARY_RE` capturando `CAIXA01MP*`, `FILIAL1MP*`, `A1B2MP*`, `C6PAY1A*`, `199PAY*`, `EC99PAY*`; guarda métrica `/^\d{1,4}ml$/` agora só isenta quando não está em `idx === 0` nem adjacente a pontuação (`5ML` / `500ML` passam, `10ML*` bloqueia); varredura geral de prefixos colados com radical de qualquer token de `merchantTokens` (`MPLA`, `PAGLA`, `MPO REI`, `MPBAR JOAO`, `PAGBAR`, `EC 01 MPPAD CENT`, `MPIPIRANGA`, `MERCADOPAGPADARIA`).
+  - **Contextuais & não-regressão (`DONA CORA` / `CORA CORALINA`)**: `vero`/`bin`/`pp`/`ml`/`qr`/`mp`/`pg`/`ton` bloqueados incondicionalmente; `cora` bloqueado exceto dentro de `isLegitCoraPhrase` (`dona|tia|santa cora` ou `cora coralina` dentro de `merchantTokens`), removendo a regressão de `seenTxVerb` pegajoso sobre `COMPRA PADARIA DONA CORA` e `DROGARIA CORA CORALINA`.
+  - **`isPagMenosPhrase`, `isRedeProcessorAt`, PIX/BOLETO e `MULTI_SIGNAL_RECONCILED`**: `isPagMenosPhrase` e `isRedeProcessorAt` passaram a exigir presença real de `pag menos` / `rede de` dentro de `merchantTokens` quando disponível (`isInsideMerchantPrefixOrSubsequence`), fechando `EC 01 PAG MENOS PRECO`, `PAG MENOS PREC` e `REDE DE PADARIA CENTRAL`; `isPixPaymentMethod` (`/\bpix(?!ote)\w*/`) e `isNonCardPaymentMethod` (`BOLETO`/transferências) aplicadas em `directCommerce` e compartilhamento de `intermediaryFree` + guarda anti-PIX/intermediário em `hasExternalPair` (`MULTI_SIGNAL_RECONCILED`).
+- **`tests/cat-p0-calibration.test.cjs` (`G6-18`)**:
+  - Expandida `G6-18` (unitário + E2E SQLite `FinanceDB` + `D05AutoCategorization`) com todos os `44` casos adversariais Wave 9 (incl. `MULTI_SIGNAL_RECONCILED` com PIX+`MERCADO PAGO`) e `23` casos legítimos (incl. `COMPRA PADARIA DONA CORA`, `COMPRA CARTAO PADARIA DONA CORA 10/10`, `COMPRA CARTAO DROGARIA CORA CORALINA` e `COMPRA CARTAO DROGARIA SAUDE 5ML`).
+- **Higiene Documental / Repo**:
+  - Removido caminho pessoal literal de `.agents/rules/02-worktree-isolation-and-github-memory.md:6` e sincronizados `docs/ROADMAP_MF2.md:9`, `docs/ai-context/ACTIVE_WORK.md:8`, `CURRENT_STATE.md` e `GAPS_AND_GATES.md`.
+- **Verificação Iteração 10 (`MF_QA_SYNTHETIC=1`, Node `v22.23.4`, npm `10.9.9`)**:
+  - `npm run test:types`: **PASS**
+  - `npm run compile`: **PASS**
+  - `node scripts/build-preload.cjs check`: **PASS**
+  - `node scripts/renderer-provenance.cjs check-bundle`: **PASS** (`31 entradas`)
+  - `npm run test:asar`: **PASS** (`1/1`, `duration_ms 226.56`)
+  - `npm run test:db`: **PASS** (`1000/1000`, `fail 0`, `cancelled 0`, `skipped 0`, `duration_ms 133805.87`)
+  - `npm --prefix mobile-push test`: **PASS** (`133/133`, `fail 0`, `duration_ms 7965.64`)
+  - `npm run test:electron-smoke` + `node scripts/verify-visual-matrix.cjs`: **PASS** (`32 entradas JSON, 32 PNGs, 8 áreas, 4 presets, arquivos e dimensões conferidos`)
+  - `node scripts/nivel-b-interactive-qa.cjs`: **PASS** (`14/14` jornadas `PJ-01..09`, `NJ-01..05`, `FAIL: 0`, `RuntimeIssues: 0`)

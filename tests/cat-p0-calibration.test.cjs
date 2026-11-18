@@ -1564,7 +1564,58 @@ test('G6-18: wave 8 adversarial bypass classes (truncated k=1/2, dirty TON/PAG, 
     { id: 'adv-w8-29-pp', desc: 'PP *PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
     { id: 'adv-w8-30-ml', desc: 'ML *PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
     { id: 'adv-w8-31-qr', desc: 'QR *PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
-    { id: 'adv-w8-32-vero-num', desc: 'VERO01*PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' }
+    { id: 'adv-w8-32-vero-num', desc: 'VERO01*PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    // Wave 9 Finding 1: glued prefixes with short/truncated/omitted merchant tokens & MERCADOPAG
+    { id: 'w9-01-mpla', desc: 'COMPRA LA PADARIA CENTRAL', descriptionRaw: 'MPLA PADARIA CENTRAL', name: 'LA PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w9-02-pagla', desc: 'COMPRA LA PADARIA CENTRAL', descriptionRaw: 'PAGLA PADARIA CENTRAL', name: 'LA PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w9-03-mpo', desc: 'COMPRA O REI DO PAO', descriptionRaw: 'MPO REI DO PAO', name: 'O REI DO PAO', mcc: '5411' },
+    { id: 'w9-04-mpbar-joao', desc: 'COMPRA BAR DO JOAO', descriptionRaw: 'EC 01 MPBAR JOAO', name: 'BAR DO JOAO', mcc: '5411' },
+    { id: 'w9-05-pagbar-only', desc: 'COMPRA BAR DO JOAO', descriptionRaw: 'PAGBAR', name: 'BAR DO JOAO', mcc: '5411' },
+    { id: 'w9-06-mppad-cent', desc: 'COMPRA PADARIA CENTRAL', descriptionRaw: 'EC 01 MPPAD CENT', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w9-07-mpipiranga', desc: 'COMPRA AUTO POSTO IPIRANGA', descriptionRaw: 'MPIPIRANGA', name: 'AUTO POSTO IPIRANGA', mcc: '5541' },
+    { id: 'w9-08-mercadopag-glued', desc: 'COMPRA PADARIA CENTRAL', descriptionRaw: 'MERCADOPAGPADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    // Wave 9 Finding 2: contextual processors in dirty merchantName or truncated descriptionRaw
+    { id: 'w9-09-dirty-ec-vero', desc: 'EC 01 VERO PADARIA CENTRAL', name: 'EC 01 VERO PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w9-10-dirty-mid-vero', desc: 'PADARIA VERO CENTRAL', name: 'PADARIA VERO CENTRAL', mcc: '5411' },
+    { id: 'w9-11-dirty-mid-pp', desc: 'PADARIA PP CENTRAL', name: 'PADARIA PP CENTRAL', mcc: '5411' },
+    { id: 'w9-12-dirty-mid-ml', desc: 'SUPERMERCADO ML SUL', name: 'SUPERMERCADO ML SUL', mcc: '5411' },
+    { id: 'w9-13-dirty-mid-bin', desc: 'AUTO POSTO BIN BRASIL', name: 'AUTO POSTO BIN BRASIL', mcc: '5541' },
+    { id: 'w9-14-raw-vero-sp', desc: 'COMPRA PADARIA CENTRAL', descriptionRaw: 'EC 01 VERO CENTRAL SP', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w9-15-raw-vero-pad-parc', desc: 'COMPRA PADARIA CENTRAL', descriptionRaw: 'EC 01 VERO PAD 10/10', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w9-16-raw-vero-la-sp', desc: 'COMPRA LA PADARIA CENTRAL', descriptionRaw: 'EC 01 VERO LA SP', name: 'LA PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w9-17-raw-cora-o-sp', desc: 'COMPRA O REI DO PAO', descriptionRaw: 'FILIAL 02 CORA O SP', name: 'O REI DO PAO', mcc: '5411' },
+    { id: 'w9-18-raw-bin-city-sp', desc: 'AUTO POSTO ESTRADA REAL', descriptionRaw: '001 BIN ESTRADA CAMPINAS SP', name: 'AUTO POSTO ESTRADA REAL', mcc: '5541' },
+    { id: 'w9-19-raw-ml-a', desc: 'COMPRA A DROGARIA CENTRAL', descriptionRaw: 'EC 01 ML A', name: 'A DROGARIA CENTRAL', mcc: '5912' },
+    // Wave 9 Finding 4: extended alphanumeric & digit-bearing POS prefixes & 10ML*
+    { id: 'w9-20-caixa01mp', desc: 'CAIXA01MP*PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w9-21-filial1mp', desc: 'FILIAL1MP*PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w9-22-a1b2mp', desc: 'A1B2MP*PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w9-23-c6pay1a', desc: 'C6PAY1A*PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w9-24-199pay', desc: '199PAY*PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w9-25-ec99pay', desc: 'EC99PAY*PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w9-26-10ml-star', desc: '10ML*PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    // Wave 9 Finding 5: isPagMenosPhrase & isRedeProcessorAt bypasses
+    { id: 'w9-27-pag-menos-alimentos', desc: 'COMPRA ALIMENTOS MENOS PRECO', descriptionRaw: 'EC 01 PAG MENOS PRECO', name: 'ALIMENTOS MENOS PRECO', mcc: '5411' },
+    { id: 'w9-28-pag-menos-prec', desc: 'COMPRA DROGARIA MENOS PRECO', descriptionRaw: 'PAG MENOS PREC', name: 'DROGARIA MENOS PRECO', mcc: '5912' },
+    { id: 'w9-29-rede-de-padaria', desc: 'REDE DE PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w9-30-raw-rede-de-pad', desc: 'COMPRA PADARIA CENTRAL', descriptionRaw: 'REDE DE PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    // Wave 9 Finding 6: glued PIX, BOLETO on PURCHASE & PIX+MP MULTI_SIGNAL_RECONCILED
+    { id: 'w9-31-pixqr', desc: 'COMPRA SUPERMERCADO ALFA SUL', name: 'SUPERMERCADO ALFA SUL', mcc: '5411', paymentMethod: 'PIXQR' },
+    { id: 'w9-32-pixtransfer', desc: 'COMPRA SUPERMERCADO ALFA SUL', name: 'SUPERMERCADO ALFA SUL', mcc: '5411', paymentMethod: 'PIXTRANSFER' },
+    { id: 'w9-33-boleto', desc: 'COMPRA SUPERMERCADO ALFA SUL', name: 'SUPERMERCADO ALFA SUL', mcc: '5411', operationType: 'PURCHASE', paymentMethod: 'BOLETO' },
+    { id: 'w9-34-pix-reconciled-mp', desc: 'PIX MERCADO PAGO', name: null, receiver: { name: 'MERCADO PAGO', documentNumber: { type: 'CNPJ', value: VALID_CNPJS[0] } }, category: 'Groceries', mcc: '5411', operationType: 'PIX', paymentMethod: 'PIX' },
+    // Wave 9 Finding 7: homoglyphs, \p{Me}, NBSP & ZWSP merge
+    { id: 'w9-35-cyr-mp', desc: '\u041C\u0420 *PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w9-36-cyr-pag', desc: '\u0420AG *PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w9-37-me-pag', desc: 'P\u20DDAG *PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w9-38-nbsp-pag', desc: 'P\u00A0AG *PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w9-39-squared-pag', desc: '\u{1F17F}\u{1F170}\u{1F176} PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w9-40-zwsp-rede', desc: 'COMPRA PADARIA CENTRAL', descriptionRaw: 'REDE\u200BPAGAMENTOS PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    // Wave 9 Finding 8: additional aggregators/PSPs
+    { id: 'w9-41-aiqfome', desc: 'AIQFOME *PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w9-42-stripe', desc: 'STRIPE *PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w9-43-dlocal', desc: 'DLOCAL *PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w9-44-payu', desc: 'PAYU *PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' }
   ];
 
   const legitimateCases = [
@@ -1586,7 +1637,11 @@ test('G6-18: wave 8 adversarial bypass classes (truncated k=1/2, dirty TON/PAG, 
     { id: 'w8-leg-16-pagou-levou', desc: 'MERCADINHO PAGOU LEVOU', name: 'MERCADINHO PAGOU LEVOU', mcc: '5411', expectedCat: 'cat:alimentacao' },
     { id: 'w8-leg-17-pagbem', desc: 'DROGARIA PAGBEM', name: 'DROGARIA PAGBEM', mcc: '5912', expectedCat: 'cat:saude' },
     { id: 'w8-leg-18-500ml', desc: 'DROGARIA SAUDE 500ML', name: 'DROGARIA SAUDE 500ML', mcc: '5912', expectedCat: 'cat:saude' },
-    { id: 'w8-leg-19-dona-cora', desc: 'PADARIA DONA CORA', name: 'PADARIA DONA CORA', mcc: '5411', expectedCat: 'cat:alimentacao' }
+    { id: 'w8-leg-19-dona-cora', desc: 'PADARIA DONA CORA', name: 'PADARIA DONA CORA', mcc: '5411', expectedCat: 'cat:alimentacao' },
+    { id: 'w9-leg-20-compra-dona-cora', desc: 'COMPRA PADARIA DONA CORA', name: 'PADARIA DONA CORA', mcc: '5411', expectedCat: 'cat:alimentacao' },
+    { id: 'w9-leg-21-cartao-dona-cora', desc: 'COMPRA CARTAO PADARIA DONA CORA 10/10', name: 'PADARIA DONA CORA', mcc: '5411', expectedCat: 'cat:alimentacao' },
+    { id: 'w9-leg-22-cora-coralina', desc: 'COMPRA CARTAO DROGARIA CORA CORALINA', name: 'DROGARIA CORA CORALINA', mcc: '5912', expectedCat: 'cat:saude' },
+    { id: 'w9-leg-23-5ml', desc: 'COMPRA CARTAO DROGARIA SAUDE 5ML', name: 'DROGARIA SAUDE 5ML', mcc: '5912', expectedCat: 'cat:saude' }
   ];
 
   for (const c of bypassCases) {
@@ -1594,12 +1649,15 @@ test('G6-18: wave 8 adversarial bypass classes (truncated k=1/2, dirty TON/PAG, 
       id: c.id,
       status: 'POSTED',
       type: 'DEBIT',
-      operationType: 'CARD_PURCHASE',
-      paymentData: c.paymentMethod ? { paymentMethod: c.paymentMethod } : undefined,
+      operationType: c.operationType || 'CARD_PURCHASE',
+      paymentData: (c.paymentMethod || c.receiver) ? {
+        ...(c.paymentMethod ? { paymentMethod: c.paymentMethod } : {}),
+        ...(c.receiver ? { receiver: c.receiver } : {})
+      } : undefined,
       description: c.desc,
       ...(c.descriptionRaw ? { descriptionRaw: c.descriptionRaw } : {}),
-      category: null,
-      merchant: { name: c.name, cnpj: VALID_CNPJS[0] },
+      category: c.category ?? null,
+      ...(c.name ? { merchant: { name: c.name, cnpj: VALID_CNPJS[0] } } : {}),
       creditCardMetadata: { payeeMCC: c.mcc }
     }, { accountId: ACCOUNT_A });
     const verdict = classifyCandidate({
@@ -1653,14 +1711,19 @@ test('G6-18: wave 8 adversarial bypass classes (truncated k=1/2, dirty TON/PAG, 
       ...(c.descriptionRaw ? { descriptionRaw: c.descriptionRaw } : {}),
       amount: -(50 + i),
       status: 'POSTED',
-      category: null,
+      category: c.category ?? null,
       type: 'DEBIT',
-      operationType: 'CARD_PURCHASE',
-      paymentData: c.paymentMethod ? { paymentMethod: c.paymentMethod } : undefined,
-      merchant: {
-        name: c.name,
-        cnpj: c.expectedCat ? VALID_CNPJS[1] : VALID_CNPJS[0]
-      },
+      operationType: c.operationType || 'CARD_PURCHASE',
+      paymentData: (c.paymentMethod || c.receiver) ? {
+        ...(c.paymentMethod ? { paymentMethod: c.paymentMethod } : {}),
+        ...(c.receiver ? { receiver: c.receiver } : {})
+      } : undefined,
+      ...(c.name ? {
+        merchant: {
+          name: c.name,
+          cnpj: c.expectedCat ? VALID_CNPJS[1] : VALID_CNPJS[0]
+        }
+      } : {}),
       creditCardMetadata: { payeeMCC: c.mcc }
     })));
     auto.configure({ accountIds: [ACCOUNT_A], ...SPAN }, true);

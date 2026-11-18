@@ -3,7 +3,7 @@
 ## 1. Workspaces e Worktrees
 
 - **Workspace de engenharia oficial:** `C:\Dev\meu-financeiro` (fora do OneDrive).
-- **Workspace original do proprietário (`c:\Users\joaov\OneDrive\Área de Trabalho\Carbon Meu Financeiro`):** **INTOCÁVEL** — nunca mover, editar ou excluir arquivos nele.
+- **Workspace original do proprietário no OneDrive (`Carbon Meu Financeiro`):** **INTOCÁVEL** — nunca mover, editar ou excluir arquivos nele.
 - Utilize branches dedicadas e worktrees isoladas em `C:\Dev\meu-financeiro-worktrees\<frente>` para isolar frentes concorrentes quando necessário.
 - **Regra de escritor único (*single-writer*):** apenas um executor por vez pode alterar arquivos compartilhados de integração (`src/app.ts`, `app/app.js`, `electron/main.cjs`, `electron/preload.cjs`, `electron/db.cjs`, `shared/*`, `docs/ai-context/CURRENT_STATE.md`).
 
