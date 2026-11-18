@@ -1436,7 +1436,7 @@ test('G6-17: wave 7 boundary vectors (NEW-01..23) blocked while COMPRA PAG(-)MEN
       id: c.id,
       status: 'POSTED',
       type: 'DEBIT',
-      operationType: 'CARD_PURCHASE',
+      operationType: c.operationType || 'CARD_PURCHASE',
       description: c.desc,
       ...(c.descriptionRaw ? { descriptionRaw: c.descriptionRaw } : {}),
       category: null,
@@ -1462,7 +1462,7 @@ test('G6-17: wave 7 boundary vectors (NEW-01..23) blocked while COMPRA PAG(-)MEN
       id: c.id,
       status: 'POSTED',
       type: 'DEBIT',
-      operationType: 'CARD_PURCHASE',
+      operationType: c.operationType || 'CARD_PURCHASE',
       description: c.desc,
       ...(c.descriptionRaw ? { descriptionRaw: c.descriptionRaw } : {}),
       category: null,
@@ -1744,7 +1744,58 @@ test('G6-18: wave 8 adversarial bypass classes (truncated k=1/2, dirty TON/PAG, 
     { id: 'w11-56-click-pix', desc: 'P\u01C0X PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
     { id: 'w11-57-ipa-iota-pix', desc: 'P\u0269X PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
     { id: 'w11-58-latin-q-r', desc: '\uA7AF\u0280 PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
-    { id: 'w11-59-cyr-u-payu', desc: 'PA\u04AFU PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' }
+    { id: 'w11-59-cyr-u-payu', desc: 'PA\u04AFU PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    // Wave 12 Block 1: open-world glued prefixes/suffixes/infixes (mirrored or null merchant, abbreviated stems)
+    { id: 'w12-01-mpdrogasil-mirror', desc: 'MPDROGASIL', name: 'MPDROGASIL', mcc: '5912' },
+    { id: 'w12-02-mpcarrefour-mirror', desc: 'MPCARREFOUR', name: 'MPCARREFOUR', mcc: '5411' },
+    { id: 'w12-03-carrefourmp-mirror', desc: 'CARREFOURMP', name: 'CARREFOURMP', mcc: '5411' },
+    { id: 'w12-04-drogasilmp-mirror', desc: 'DROGASILMP', name: 'DROGASILMP', mcc: '5912' },
+    { id: 'w12-05-pagcarrefour-mirror', desc: 'PAGCARREFOUR', name: 'PAGCARREFOUR', mcc: '5411' },
+    { id: 'w12-06-tonassai-mirror', desc: 'TONASSAI', name: 'TONASSAI', mcc: '5411' },
+    { id: 'w12-07-drogasilmpce-infix', desc: 'DROGASILMPCE', name: 'DROGASILMPCE', mcc: '5912' },
+    { id: 'w12-08-mpdrogasil-reconciled', desc: 'MPDROGASIL', name: null, category: 'Pharmacy', mcc: '5912' },
+    { id: 'w12-09-carrefourpag-reconciled', desc: 'CARREFOURPAG', name: null, category: 'Groceries', mcc: '5411' },
+    { id: 'w12-10-mplojashell-reconciled', desc: 'MPLOJA SHELL', name: null, category: 'Fuel', mcc: '5541' },
+    { id: 'w12-11-mppadcent-raw', desc: 'COMPRA PADARIA CENTRAL', descriptionRaw: 'MPPADCENT', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w12-12-mpfarmsaopaulo-raw', desc: 'FARMACIA SAO PAULO', descriptionRaw: 'MPFARMSAOPAULO', name: 'FARMACIA SAO PAULO', mcc: '5912' },
+    { id: 'w12-13-mpdrogasp-raw', desc: 'DROGARIA SAO PAULO', descriptionRaw: 'MPDROGASP', name: 'DROGARIA SAO PAULO', mcc: '5912' },
+    // Wave 12 Block 2: remaining Brazilian UFs + terminal/balcao/totem/quiosque/venda POS wrappers
+    { id: 'w12-14-mprn', desc: 'MPRN PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w12-15-mpes', desc: 'MPES PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w12-16-padariampes', desc: 'COMPRA PADARIA CENTRAL', descriptionRaw: 'PADARIAMPES', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w12-17-centralmprn', desc: 'COMPRA PADARIA CENTRAL', descriptionRaw: 'PADARIA CENTRALMPRN', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w12-18-terminalmp', desc: 'TERMINALMP PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w12-19-balcaomp', desc: 'BALCAOMP PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w12-20-totemmp', desc: 'TOTEMMP PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w12-21-quiosquemp', desc: 'QUIOSQUEMP PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w12-22-vendamp', desc: 'VENDAMP PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w12-23-terminalton', desc: 'TERMINALTON PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    // Wave 12 Block 3: >6 token single-char split intermediaries
+    { id: 'w12-24-split-aiqfome', desc: 'A I Q F O M E PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w12-25-split-wirecard', desc: 'W.I.R.E.C.A.R.D PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w12-26-split-cloudwalk', desc: 'C L O U D W A L K PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w12-27-split-safrapay', desc: 'S A F R A P A Y PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w12-28-split-infinitepay', desc: 'I N F I N I T E P A Y PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w12-29-split-gerencianet', desc: 'G E R E N C I A N E T PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w12-30-split-mercadolivre', desc: 'M E R C A D O L I V R E PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    // Wave 12 Block 4: receiver.name without valid receiver CNPJ
+    { id: 'w12-31-receiver-no-doc', desc: 'COMPRA SUPERMERCADO ALFA SUL', name: 'SUPERMERCADO ALFA SUL', receiver: { name: 'MERCADO PAGO IP' }, mcc: '5411' },
+    { id: 'w12-32-receiver-bad-cnpj', desc: 'COMPRA SUPERMERCADO ALFA SUL', name: 'SUPERMERCADO ALFA SUL', receiver: { name: 'PAGSEGURO INTERNET', documentNumber: { type: 'CNPJ', value: '00000000000000' } }, mcc: '5411' },
+    { id: 'w12-33-receiver-cpf-direct', desc: 'COMPRA SUPERMERCADO ALFA SUL', name: 'SUPERMERCADO ALFA SUL', receiver: { name: 'PESSOA FISICA', documentNumber: { type: 'CPF', value: '12345678900' } }, mcc: '5411' },
+    // Wave 12 Block 5: glued non-card rails + unanchored REDE DE in MULTI_SIGNAL_RECONCILED
+    { id: 'w12-34-op-directdebit', desc: 'COMPRA SUPERMERCADO ALFA SUL', name: 'SUPERMERCADO ALFA SUL', category: 'Groceries', mcc: '5411', operationType: 'DIRECTDEBIT' },
+    { id: 'w12-35-op-automaticdebit', desc: 'COMPRA SUPERMERCADO ALFA SUL', name: 'SUPERMERCADO ALFA SUL', category: 'Groceries', mcc: '5411', operationType: 'AUTOMATICDEBIT' },
+    { id: 'w12-36-pm-deb-auto', desc: 'COMPRA SUPERMERCADO ALFA SUL', name: 'SUPERMERCADO ALFA SUL', category: 'Groceries', mcc: '5411', operationType: 'PURCHASE', paymentMethod: 'DEB_AUTOMATICO' },
+    { id: 'w12-37-pm-debitoauto', desc: 'COMPRA SUPERMERCADO ALFA SUL', name: 'SUPERMERCADO ALFA SUL', category: 'Groceries', mcc: '5411', operationType: 'PURCHASE', paymentMethod: 'DEBITOAUTOMATICO' },
+    { id: 'w12-38-pm-pagfatura', desc: 'COMPRA SUPERMERCADO ALFA SUL', name: 'SUPERMERCADO ALFA SUL', category: 'Groceries', mcc: '5411', operationType: 'PURCHASE', paymentMethod: 'PAGFATURA' },
+    { id: 'w12-39-rede-de-padaria-null', desc: 'REDE DE PADARIA CENTRAL', name: null, category: 'Groceries', mcc: '5411' },
+    { id: 'w12-40-pix-rede-card-rec', desc: 'COMPRA SUPERMERCADO ALFA SUL', name: 'SUPERMERCADO ALFA SUL', category: 'Groceries', mcc: '5411', operationType: 'CARD_PAYMENT', paymentMethod: 'PAGTO_FATURA' },
+    { id: 'w12-41-mppad01-raw', desc: 'COMPRA PADARIA CENTRAL', descriptionRaw: 'MPPAD01', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w12-42-botecomp01', desc: 'BOTECOMP01', name: 'BOTECOMP01', mcc: '5411' },
+    { id: 'w12-43-boteco01mp', desc: 'BOTECO01MP', name: 'BOTECO01MP', mcc: '5411' },
+    { id: 'w12-44-stripebr', desc: 'STRIPEBR PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w12-45-wirecardce', desc: 'WIRECARDCE PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' },
+    { id: 'w12-46-terminaladyen', desc: 'TERMINALADYEN PADARIA CENTRAL', name: 'PADARIA CENTRAL', mcc: '5411' }
   ];
 
   const legitimateCases = [
@@ -1770,7 +1821,12 @@ test('G6-18: wave 8 adversarial bypass classes (truncated k=1/2, dirty TON/PAG, 
     { id: 'w9-leg-20-compra-dona-cora', desc: 'COMPRA PADARIA DONA CORA', name: 'PADARIA DONA CORA', mcc: '5411', expectedCat: 'cat:alimentacao' },
     { id: 'w9-leg-21-cartao-dona-cora', desc: 'COMPRA CARTAO PADARIA DONA CORA 10/10', name: 'PADARIA DONA CORA', mcc: '5411', expectedCat: 'cat:alimentacao' },
     { id: 'w9-leg-22-cora-coralina', desc: 'COMPRA CARTAO DROGARIA CORA CORALINA', name: 'DROGARIA CORA CORALINA', mcc: '5912', expectedCat: 'cat:saude' },
-    { id: 'w9-leg-23-5ml', desc: 'COMPRA CARTAO DROGARIA SAUDE 5ML', name: 'DROGARIA SAUDE 5ML', mcc: '5912', expectedCat: 'cat:saude' }
+    { id: 'w9-leg-23-5ml', desc: 'COMPRA CARTAO DROGARIA SAUDE 5ML', name: 'DROGARIA SAUDE 5ML', mcc: '5912', expectedCat: 'cat:saude' },
+    { id: 'w12-leg-24-gladstone', desc: 'MERCADINHO GLADSTONE', name: 'MERCADINHO GLADSTONE', mcc: '5411', expectedCat: 'cat:alimentacao' },
+    { id: 'w12-leg-25-milton', desc: 'AUTO POSTO MILTON', name: 'AUTO POSTO MILTON', mcc: '5541', expectedCat: 'cat:transporte' },
+    { id: 'w12-leg-26-everton-card-pay', desc: 'DROGARIA EVERTON', name: 'DROGARIA EVERTON', mcc: '5912', operationType: 'CARD_PAYMENT', expectedCat: 'cat:saude' },
+    { id: 'w12-leg-27-veronica', desc: 'FARMACIA VERONICA', name: 'FARMACIA VERONICA', mcc: '5912', expectedCat: 'cat:saude' },
+    { id: 'w12-leg-28-estampa-campo', desc: 'EMPORIO ESTAMPA CAMPO GRANDE', name: 'EMPORIO ESTAMPA CAMPO GRANDE', mcc: '5411', expectedCat: 'cat:alimentacao' }
   ];
 
   for (const c of bypassCases) {
@@ -1814,7 +1870,7 @@ test('G6-18: wave 8 adversarial bypass classes (truncated k=1/2, dirty TON/PAG, 
       id: c.id,
       status: 'POSTED',
       type: 'DEBIT',
-      operationType: 'CARD_PURCHASE',
+      operationType: c.operationType || 'CARD_PURCHASE',
       description: c.desc,
       ...(c.descriptionRaw ? { descriptionRaw: c.descriptionRaw } : {}),
       category: null,
@@ -1876,4 +1932,35 @@ test('G6-18: wave 8 adversarial bypass classes (truncated k=1/2, dirty TON/PAG, 
       assert.equal(db.db.prepare('SELECT 1 FROM mf_auto_labels WHERE account_id=? AND external_id=?').get(ACCOUNT_A, b.id), undefined);
     }
   });
+
+  // Legitimate MULTI_SIGNAL_RECONCILED controls when merchant.name is omitted
+  for (const legRec of [
+    { id: 'w12-rec-rede-postos', desc: 'REDE DE POSTOS IPIRANGA', category: 'Fuel', mcc: '5541', op: 'CARD_PAYMENT', expectedCat: 'cat:transporte' },
+    { id: 'w12-rec-rede-farmacias', desc: 'REDE DE FARMACIAS SAO PAULO', category: 'Pharmacy', mcc: '5912', op: 'CARD_PURCHASE', expectedCat: 'cat:saude' },
+    { id: 'w12-rec-rede-super', desc: 'REDE DE SUPERMERCADOS EXTRA', category: 'Groceries', mcc: '5411', op: 'PURCHASE', expectedCat: 'cat:alimentacao' }
+  ]) {
+    const ev = normalizePluggyEvidence({
+      id: legRec.id,
+      status: 'POSTED',
+      type: 'DEBIT',
+      operationType: legRec.op,
+      description: legRec.desc,
+      category: legRec.category,
+      creditCardMetadata: { payeeMCC: legRec.mcc }
+    }, { accountId: ACCOUNT_A });
+    const verdict = classifyCandidate({
+      transaction: {
+        accountId: ACCOUNT_A,
+        externalId: legRec.id,
+        accountType: 'BANK',
+        status: 'POSTED',
+        amountCents: -7500,
+        description: legRec.desc
+      },
+      evidence: ev
+    });
+    assert.equal(verdict.status, 'apply', `${legRec.id} must apply via MULTI_SIGNAL_RECONCILED, got ${verdict.status}:${verdict.reason}`);
+    assert.equal(verdict.reason, 'MULTI_SIGNAL_RECONCILED');
+    assert.equal(verdict.target.categoryId, legRec.expectedCat);
+  }
 });

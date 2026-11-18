@@ -330,3 +330,28 @@
   - `npm --prefix mobile-push test`: **PASS** (`133/133`, `fail 0`, `duration_ms 7991.27`)
   - `npm run test:electron-smoke` + `node scripts/verify-visual-matrix.cjs`: **PASS** (`32 entradas JSON, 32 PNGs, 8 áreas, 4 presets, arquivos e dimensões conferidos`)
   - `node scripts/nivel-b-interactive-qa.cjs`: **PASS** (`14/14` jornadas `PJ-01..09`, `NJ-01..05`, `FAIL: 0`, `RuntimeIssues: 0`)
+
+
+## 21. Iteração 13 — Fechamento dos 5 Blocos Wave 12 (`cat01-pluggy-evidence.cjs`, `cat02-classifier.cjs` Open-World, 27 UFs e Splits até 24 Tokens)
+
+- **Origem:** Auditoria forense Wave 12 (`52309bf0`) devolveu `GO` sobre o SHA `9833525f`, porém o Guardião Financeiro Wave 12 (`8c7ce4a0`) devolveu `REJECT` apontando `5` classes de contorno restantes (com `202/202` vetores Wave 8–11 bloqueados e `64/64` nomes BR legítimos aprovados).
+- **`electron/cat01-pluggy-evidence.cjs`**:
+  - Preservação de `receiverName: receiverDocType==='CPF' ? 'CPF_RECEIVER' : clean(receiver.name, 120)` mesmo quando `receiverCnpj` está ausente ou inválido (evitando perda silenciosa de sinais como `{ paymentData: { receiver: { name: 'MERCADO PAGO IP' } } }` sem expor nome de pessoa física com `CPF`), e atualização de `presence.paymentData`.
+- **`electron/cat02-classifier.cjs`**:
+  - **Open-world para colados (`UNAMBIGUOUS_OPEN_PREFIXES`, `UNAMBIGUOUS_OPEN_SUFFIXES`, `MP_UF_SUFFIX_RE`, `ALPHA_WORD_OR_NUM_TAIL_RE`, `ALPHA_PREFIX_DIGITS_RE`)**: detecção universal sem depender de lista fechada de radicais comerciais mesmo quando `merchant.name` espelha o token sujo (`MPDROGASIL`, `MPCARREFOUR`, `CARREFOURMP`, `DROGASILMP`, `PAGCARREFOUR`, `TONASSAI`, `DROGASILMPCE`, `MPPAD01`, `BOTECOMP01`, `BOTECO01MP`) ou é `null` em `MULTI_SIGNAL_RECONCILED` (`MPLOJA SHELL`, `CARREFOURPAG`), mantendo proteção contra palavras portuguesas válidas via `SAFE_PORTUGUESE_PREFIX_WORDS` expandida (`whatsa`/`supera` excluídos, `ton` fora dos sufixos open-world para preservar `MILTON`/`EVERTON`/`GLADSTONE`).
+  - **Todas as 27 UFs BR & POS wrappers completos (`BR_ALL_UFS`, `POS_WRAP_LEFT`, `POS_WRAP_RIGHT`, `POS_WRAP_BASE`, `SUFFIXED_INTERMEDIARY_RE`, `UF_OR_DIGITS_RE`)**: inclusão das 27 UFs em sufixos/direitos (`MPRN`, `MPES`, `PADARIAMPES`, `PADARIA CENTRALMPRN`), wrappers `terminal|balcao|totem|quiosque|venda|vendas|cob|cobranca|gtw|gateway|checkout|chk|sub|ag|agencia` (`TERMINALMP`, `BALCAOMP`, `TOTEMMP`, `QUIOSQUEMP`, `VENDAMP`, `TERMINALTON`), e todos os PSPs completos em `POS_WRAP_BASE` (`STRIPEBR`, `WIRECARDCE`, `TERMINALADYEN`).
+  - **Janela deslizante ampliada (`hasSplitIntermediaryWindow`)**: `maxW = Math.min(24, spans.length - i)` (capturando `A I Q F O M E`, `W.I.R.E.C.A.R.D`, `C L O U D W A L K`, `S A F R A P A Y`, `I N F I N I T E P A Y`, `G E R E N C I A N E T`, `M E R C A D O L I V R E`) e remoção de variável redundante `allSameJoined`.
+  - **Blindagem de `receiverName` e histórico humano (`verifiedMerchantLabel`, `FULL_INTERMEDIARY_TOKENS`)**: inclusão de `'cpfreceiver'` / `'cpf|receiver'` e exigência de `receiverCnpj` para `receiverName` contar positivamente no histórico humano; unificação de `hasIntermediarySignal` sobre `hasDescriptorIntermediarySignal(raw, [])`.
+  - **Trilhos não-cartão colados & `REDE DE` não-ancorado (`NON_CARD_RAIL_RE`, `isRedeProcessorAt`, `allowedCardOp`)**: espaços opcionais em `NON_CARD_RAIL_RE` (`DIRECTDEBIT`, `AUTOMATICDEBIT`, `DEB_AUTOMATICO`, `DEBITOAUTOMATICO`, `PAGFATURA`), exigência de substantivo comercial explícito de rede (`LEGIT_REDE_DE_CHAIN_NOUNS`) quando `merchantTokens` está ausente (bloqueando `REDE DE PADARIA CENTRAL` em `MULTI_SIGNAL_RECONCILED` e preservando `REDE DE POSTOS/FARMACIAS/SUPERMERCADOS`), e alinhamento de `allowedCardOp` com `'card payment'`.
+- **`tests/cat-p0-calibration.test.cjs` (`G6-18`)**:
+  - Expandida `G6-18` (unitário + E2E SQLite) com `46` novos vetores adversariais (`w12-01..46`), `5` controles legítimos BR (`w12-leg-24..28`, incl. `GLADSTONE`, `MILTON`, `EVERTON` com `CARD_PAYMENT`, `VERONICA`, `EMPORIO ESTAMPA CAMPO GRANDE`) e `3` controles `MULTI_SIGNAL_RECONCILED` sem `merchant.name`.
+- **Verificação Iteração 13 (`MF_QA_SYNTHETIC=1`, Node `v22.23.4`, npm `10.9.9`)**:
+  - `npm run test:types`: **PASS**
+  - `npm run compile`: **PASS**
+  - `node scripts/build-preload.cjs check`: **PASS**
+  - `node scripts/renderer-provenance.cjs check-bundle`: **PASS** (`31 entradas`)
+  - `npm run test:asar`: **PASS** (`1/1`, `duration_ms 223.44`)
+  - `npm run test:db`: **PASS** (`1000/1000`, `fail 0`, `cancelled 0`, `skipped 0`, `duration_ms 121294.00`)
+  - `npm --prefix mobile-push test`: **PASS** (`133/133`, `fail 0`, `duration_ms 1965.22`)
+  - `npm run test:electron-smoke` + `node scripts/verify-visual-matrix.cjs`: **PASS** (`32 entradas JSON, 32 PNGs, 8 áreas, 4 presets`)
+  - `node scripts/nivel-b-interactive-qa.cjs`: **PASS** (`14/14` jornadas `PJ-01..09`, `NJ-01..05`, `FAIL: 0`, `RuntimeIssues: 0`)

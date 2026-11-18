@@ -24,7 +24,8 @@ function normalizePluggyEvidence(transaction,{accountId,accountType='BANK',obser
  const document=receiver.documentNumber&&typeof receiver.documentNumber==='object'?receiver.documentNumber:{};
  const merchant=transaction.merchant&&typeof transaction.merchant==='object'?transaction.merchant:{};
  const card=transaction.creditCardMetadata&&typeof transaction.creditCardMetadata==='object'?transaction.creditCardMetadata:{};
- const receiverCnpj=String(document.type||'').toUpperCase()==='CNPJ'?cnpj(document.value):null;
+ const receiverDocType=String(document.type||'').toUpperCase();
+ const receiverCnpj=receiverDocType==='CNPJ'?cnpj(document.value):null;
  const type=clean(transaction.type,16)?.toUpperCase()||null;
  const status=clean(transaction.status,16)?.toUpperCase()||null;
  const out={
@@ -35,7 +36,7 @@ function normalizePluggyEvidence(transaction,{accountId,accountType='BANK',obser
   descriptionRaw:clean(raw,180),
   operationType:clean(transaction.operationType,60),
   paymentMethod:clean(payment.paymentMethod,40),
-  receiverName:receiverCnpj?clean(receiver.name,120):null,
+  receiverName:receiverDocType==='CPF'?'CPF_RECEIVER':clean(receiver.name,120),
   receiverCnpj,
   mcc:mcc(card.payeeMCC),
   merchantName:clean(merchant.name,120),
@@ -49,7 +50,7 @@ function normalizePluggyEvidence(transaction,{accountId,accountType='BANK',obser
  };
  if(!out.observedAt)throw Error('CAT-01: observação temporal inválida');
  const presence={rawDescription:!!out.descriptionRaw,operationType:!!out.operationType,
-  paymentData:!!(out.receiverCnpj||out.paymentMethod),receiverCnpj:!!out.receiverCnpj,
+  paymentData:!!(out.receiverCnpj||out.receiverName||out.paymentMethod),receiverCnpj:!!out.receiverCnpj,
   mcc:!!out.mcc,merchant:!!out.merchantName,merchantCnpj:!!out.merchantCnpj,
   merchantCnae:!!out.merchantCnae,providerCategory:!!out.providerCategory,
   providerCategoryId:!!out.providerCategoryId};
