@@ -333,9 +333,45 @@ function createRichSyntheticProfile(profile) {
   return dates;
 }
 
-async function ensureWindowFocus(cdp, _pid) {
+async function ensureWindowFocus(cdp, pid) {
   try { await cdp.send('Page.bringToFront'); } catch {}
-  await delay(80);
+  if (process.platform === 'win32' && Number.isInteger(Number(pid)) && Number(pid) > 0) {
+    try {
+      const { execFileSync } = require('node:child_process');
+      execFileSync('powershell.exe', ['-NoProfile', '-Command', `
+        Add-Type @"
+        using System;
+        using System.Runtime.InteropServices;
+        public class MFFocus {
+          [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
+          [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint pid);
+          [DllImport("kernel32.dll")] public static extern uint GetCurrentThreadId();
+          [DllImport("user32.dll")] public static extern bool AttachThreadInput(uint idAttach, uint idAttachTo, bool fAttach);
+          [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr hWnd);
+          [DllImport("user32.dll")] public static extern bool BringWindowToTop(IntPtr hWnd);
+          [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+        }
+"@
+        $p = Get-Process -Id ${Number(pid)} -ErrorAction SilentlyContinue
+        if ($p -and $p.MainWindowHandle -ne [IntPtr]::Zero) {
+          $hwnd = $p.MainWindowHandle
+          $fg = [MFFocus]::GetForegroundWindow()
+          $dummy = 0
+          $fgTid = if ($fg -ne [IntPtr]::Zero) { [MFFocus]::GetWindowThreadProcessId($fg, [ref]$dummy) } else { 0 }
+          $myTid = [MFFocus]::GetCurrentThreadId()
+          $tTid = [MFFocus]::GetWindowThreadProcessId($hwnd, [ref]$dummy)
+          if ($fgTid -ne 0) { [MFFocus]::AttachThreadInput($myTid, $fgTid, $true) | Out-Null }
+          if ($tTid -ne 0) { [MFFocus]::AttachThreadInput($myTid, $tTid, $true) | Out-Null }
+          [MFFocus]::ShowWindow($hwnd, 5) | Out-Null
+          [MFFocus]::BringWindowToTop($hwnd) | Out-Null
+          [MFFocus]::SetForegroundWindow($hwnd) | Out-Null
+          if ($tTid -ne 0) { [MFFocus]::AttachThreadInput($myTid, $tTid, $false) | Out-Null }
+          if ($fgTid -ne 0) { [MFFocus]::AttachThreadInput($myTid, $fgTid, $false) | Out-Null }
+        }
+      `], { windowsHide: true, stdio: 'ignore' });
+    } catch {}
+  }
+  await delay(100);
   try { return await evaluate(cdp, 'return document.hasFocus();'); } catch { return true; }
 }
 
@@ -358,11 +394,20 @@ $root = [System.Windows.Automation.AutomationElement]::RootElement
 $targets = @(${labelsArray})
 $deadline = [DateTime]::UtcNow.AddMilliseconds(${Number(timeoutMs)})
 $pidFilter = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ProcessIdProperty, ${Number(pid)})
+$dlgCond = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ClassNameProperty, '#32770')
 while ([DateTime]::UtcNow -lt $deadline) {
   $wins = $root.FindAll([System.Windows.Automation.TreeScope]::Children, $pidFilter)
+  $dialogs = New-Object System.Collections.Generic.List[System.Windows.Automation.AutomationElement]
   foreach ($w in $wins) {
-    if ($w.Current.ClassName -ne '#32770') { continue }
-    $all = $w.FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.Condition]::TrueCondition)
+    if ($w.Current.ClassName -eq '#32770') {
+      $dialogs.Add($w)
+    } else {
+      $nested = $w.FindAll([System.Windows.Automation.TreeScope]::Descendants, $dlgCond)
+      foreach ($nd in $nested) { $dialogs.Add($nd) }
+    }
+  }
+  foreach ($d in $dialogs) {
+    $all = $d.FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.Condition]::TrueCondition)
     foreach ($b in $all) {
       $name = ([string]$b.Current.Name).Replace('&','')
       foreach ($t in $targets) {
@@ -788,9 +833,9 @@ async function runNivelB(options = {}) {
       await ui.waitFor(`return document.querySelector('.d05-picker');`, 'Picker open');
       await ui.clickElement(`return [...document.querySelectorAll('.d05-picker .d05-catalog-choice')].find(b => b.textContent.includes('Transporte'));`, 'Parent Transporte');
       await ui.clickElement(`return [...document.querySelectorAll('.d05-picker .d05-child')].find(b => b.textContent.includes('Somente Transporte'));`, 'Somente Transporte');
-      await ui.clickButtonText('Conferir prévia antes de salvar', 'document.querySelector(".d05-picker")');
-      await delay(250);
+      await ensureWindowFocus(running.cdp, running.child.pid);
       const acctClicker = startNativeDialogClicker(running.child.pid, ['Autorizar esta conta']);
+      await ui.clickButtonText('Conferir prévia antes de salvar', 'document.querySelector(".d05-picker")');
       await acctClicker.done;
       await ui.waitFor(`return document.querySelector('.d05-picker')?.textContent?.includes('Gravação pessoal ainda não autorizada; nenhum dado foi alterado');`, 'personal-locked message');
       await ui.screenshot('nj02-personal-locked');
