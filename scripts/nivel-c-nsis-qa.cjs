@@ -13,6 +13,7 @@ const {
   validateExperimentalOverridePath,
   STABLE_NAME,
   EXPERIMENTAL_NAME,
+  EXPERIMENTAL_ID,
   ISOLATED_DIR
 } = require('../electron/release-channel.cjs');
 const { verifyArchive } = require('./renderer-provenance.cjs');
@@ -45,6 +46,7 @@ function protectedHostPaths() {
     localAppData ? path.join(localAppData, 'Programs', STABLE_NAME) : null,
     localAppData ? path.join(localAppData, 'Programs', EXPERIMENTAL_NAME) : null,
     appData ? path.join(appData, 'meu-financeiro-desktop') : null,
+    appData ? path.join(appData, STABLE_NAME) : null,
     appData ? path.join(appData, ISOLATED_DIR) : null
   ].filter(Boolean);
 }
@@ -90,21 +92,28 @@ function verifyIsolationGuards(allowedTarget) {
 async function verifyInstalledAsarAndCatalog(asarPath) {
   await verifyArchive(REPO_ROOT, asarPath);
   const asar = await import('@electron/asar');
-  const entries = asar.listPackage(asarPath);
   const d05TaxRaw = Buffer.from(asar.extractFile(asarPath, path.normalize('electron/d05-taxonomy.json'))).toString('utf8');
   const d05Tax = JSON.parse(d05TaxRaw);
   const parents = Array.isArray(d05Tax.parents) ? d05Tax.parents : [];
   const subcategories = parents.reduce((acc, p) => acc + (Array.isArray(p.subcategories) ? p.subcategories.length : 0), 0);
-  const svgCount = entries.filter(e => /[\\/]d05[\\/].*\.svg$/i.test(e) || /^\/?app\/icons\/.*\.svg$/i.test(e)).length;
+  const svgRegRaw = Buffer.from(asar.extractFile(asarPath, path.normalize('shared/d05-svg-registry.json'))).toString('utf8');
+  const svgReg = JSON.parse(svgRegRaw);
+  const svgCount = Object.keys(svgReg.glyphs || {}).length;
+  const relChanRaw = Buffer.from(asar.extractFile(asarPath, path.normalize('electron/release-channel.cjs'))).toString('utf8');
   const pkg = JSON.parse(Buffer.from(asar.extractFile(asarPath, 'package.json')).toString('utf8'));
+  const repoPkg = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'package.json'), 'utf8'));
   assert.equal(parents.length, 14, 'Installed app.asar must carry 14 D05 parent categories');
   assert.equal(subcategories, 61, 'Installed app.asar must carry 61 D05 subcategories');
-  assert.ok(svgCount >= 67, `Expected >= 67 SVGs in ASAR, found ${svgCount}`);
+  assert.equal(svgCount, 67, `Expected 67 D05 SVG glyphs in shared/d05-svg-registry.json inside ASAR, found ${svgCount}`);
+  assert.equal(pkg.name, 'meu-financeiro-desktop');
   assert.equal(pkg.version, '0.9.5-beta.8');
-  assert.equal(pkg.build?.appId, 'app.local.meufinanceiro.rcall01');
+  assert.equal(pkg.mfDistributionChannel, undefined, 'Experimental ASAR must never carry stable mfDistributionChannel marker');
+  assert.equal(repoPkg.build?.appId, EXPERIMENTAL_ID);
+  assert.ok(relChanRaw.includes(`'${EXPERIMENTAL_ID}'`), 'Installed release-channel.cjs must declare experimental appId');
   return {
+    name: pkg.name,
     version: pkg.version,
-    appId: pkg.build?.appId,
+    appId: EXPERIMENTAL_ID,
     d05Parents: parents.length,
     d05Subcategories: subcategories,
     svgCount
@@ -336,4 +345,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { runNivelC };
+module.exports = { runNivelC, verifyInstalledAsarAndCatalog, protectedHostPaths };
