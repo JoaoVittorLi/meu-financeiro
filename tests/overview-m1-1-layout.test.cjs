@@ -48,6 +48,32 @@ test('M1.1 — Visão Geral mantém .u1-left-stack, .u1-side-stack e .u1-categor
   assert.deepEqual(sideChildren, ['mf-plan-shortcut', 'u1-panel u1-budget']);
 });
 
+test('M1.1 — Últimas movimentações resolve ícones D05 por categoria/subcategoria sem usar seta genérica', () => {
+  const source = read('src/app.ts');
+  const overviewSlice = source.slice(source.indexOf('renderOverview()'), source.indexOf('renderTransactions()'));
+  assert.match(overviewSlice, /resolveCategoryVisualIdentity\(\{categoryId:t\.categoryId,subcategoryId:t\.subcategoryId,categoryName:t\.category,catalog:state\.qa84VisualCatalog\|\|\[\]\}\)/);
+  assert.match(overviewSlice, /h\(CategoryVisualGlyph,\{identity:txIdentity,size:18\}\)/);
+  assert.doesNotMatch(overviewSlice, /u1-transaction-icon/);
+
+  const assetsSrc = read('src/d05-visual-assets.ts');
+  const js = ts.transpileModule(assetsSrc, {
+    compilerOptions: { target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.None }
+  }).outputText;
+  const { resolveCategoryVisualIdentity } = new Function(
+    'const React={createElement:()=>null};const h=()=>null;' + js + ';return {resolveCategoryVisualIdentity};'
+  )();
+
+  assert.equal(resolveCategoryVisualIdentity({ categoryName: 'Assinaturas' }).iconKey, 'repeat-2');
+  assert.equal(resolveCategoryVisualIdentity({ categoryName: 'Contas' }).iconKey, 'receipt-text');
+  assert.equal(resolveCategoryVisualIdentity({ categoryName: 'Transporte' }).iconKey, 'car-front');
+  assert.equal(resolveCategoryVisualIdentity({ categoryName: 'Alimentação' }).iconKey, 'utensils');
+  assert.equal(resolveCategoryVisualIdentity({ categoryName: 'Moradia' }).iconKey, 'house');
+  assert.equal(
+    resolveCategoryVisualIdentity({ categoryId: 'cat:alimentacao', subcategoryId: 'sub:alimentacao/supermercados' }).iconKey,
+    'shopping-basket'
+  );
+});
+
 test('M1.1 — overview.css integra categorias em largura total, 2 colunas apenas >=1181px e libera espaço da FAB no rodapé', () => {
   const css = read('app/overview.css');
   assert.match(css, /\.u1-overview \.u1-main-grid > \.u1-categories\s*\{\s*grid-column:\s*1 \/ -1;/);
@@ -55,4 +81,5 @@ test('M1.1 — overview.css integra categorias em largura total, 2 colunas apena
   assert.match(css, /@media \(max-width: 1180px\)\s*\{[\s\S]*?\.u1-overview \.u1-side-stack\s*\{\s*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/);
   assert.match(css, /@media \(max-width: 720px\)\s*\{[\s\S]*?\.u1-overview \.u1-side-stack\s*\{\s*grid-template-columns:\s*minmax\(0, 1fr\)/);
   assert.match(css, /\.u1-shell > \.footer\s*\{\s*padding-right:\s*76px;/);
+  assert.match(css, /\.u1-overview \.u1-source-stats\s*\{/);
 });

@@ -456,3 +456,16 @@
     - `MeuFinanceiro-Instalador-0.9.5-beta.9-x64.exe` (`ID: 1IoRKpYkUt2YwzI-agqC6N7OO4oe_nUQ_`, `115.740.284` bytes, conferência de download remoto com `DRIVE_HASH_MATCH: True`)
     - `SHA256.txt` (`ID: 1CZxYvk9BdqT_3N7BGKtw-EQoIaRIY61j`) e `renderer-provenance.json` (`ID: 121SyY7WYFRnDKxqb0PqFWj5PmQNnCtCp`)
 - **Marco 2 permanece suspenso até decisão explícita do proprietário.**
+
+
+## 26. Rodada Final de Refinamento Visual `M1.1` e Correção de Ícones (`Últimas movimentações` / `0.9.5-beta.9`)
+
+- **Diagnóstico obrigatório dos ícones em `Últimas movimentações`:**
+  - **Dados `demoData()` (`src/app.ts:266–280`):** verificados como corretos (`Aluguel` → `Moradia`, `Supermercado` → `Alimentação`, `Transporte` → `Transporte`, `Internet e telefone` → `Contas`, `Assinaturas` → `Assinaturas`).
+  - **Mapeamento D05 (`src/d05-visual-assets.ts`):** `resolveCategoryVisualIdentity` já resolve corretamente cada categoria pai e subcategoria para `repeat-2` (`282`), `receipt-text` (`193`), `car-front` (`205`), `utensils` (`26`) e `house` (`264`).
+  - **Causa real identificada no componente (`src/app.ts`):** `recent` não encaminhava `categoryId`/`subcategoryId` da transação, e `renderOverview()` renderizava uma seta estática `h('span',{className:'u1-transaction-icon '+t.kind},h(Icon,{name:t.kind==='income'?'trend':'down',size:17}))` para todas as linhas, ignorando completamente o resolvedor visual D05 usado em `Movimentações` e `Para onde foi seu dinheiro`.
+- **Correções cirúrgicas aplicadas:**
+  - **`src/app.ts` / `app/app.js`:** `recent` passa `categoryId` e `subcategoryId`; cada item de `Últimas movimentações` usa `resolveCategoryVisualIdentity({ categoryId: t.categoryId, subcategoryId: t.subcategoryId, categoryName: t.category, catalog: state.qa84VisualCatalog || [] })` + `CategoryVisualGlyph` (`size: 18`); ramo manual/demo de `Fonte dos seus indicadores` estruturado com `.u1-source-stats` + `.u1-source-note` (sem inventar dados nem criar novos módulos).
+  - **`app/overview.css`:** raios de todos os cards da Visão Geral unificados em `16px`; primeira linha (`Seu ritmo de gastos`) alinhada exatamente à base da coluna lateral (`.u1-side-stack` sem altura artificial em `>=1181px`); linhas de `Para onde foi seu dinheiro` e `Últimas movimentações` padronizadas em subcards consistentes (`border-radius: 12px`, `surface2` / borda sutil); metade inferior (`Últimas movimentações` + `Fonte dos seus indicadores`) equilibrada e sem vazio estrutural.
+  - **`tests/overview-m1-1-layout.test.cjs`:** ampliado com asserção AST + execução real de `resolveCategoryVisualIdentity` comprovando os ícones D05 em `Últimas movimentações` e ausência de `.u1-transaction-icon`.
+- **Restrições preservadas:** versão mantida em `0.9.5-beta.9`, zero alteração em outras áreas funcionais, zero início de Marco 2 e nenhum novo EXE gerado automaticamente antes do aceite visual desta rodada.
