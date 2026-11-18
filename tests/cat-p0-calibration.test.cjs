@@ -515,3 +515,222 @@ test('G6-08: End-to-end Gate G6 calibration matrix measures precision=1.0 and fa
     }
   });
 });
+
+test('G6-09: sub-acquirer/aggregator abbreviations, processor desc prefixes & PIX QR CODE with CNPJ stay review (unit + E2E)', async () => {
+  const unitRejections = [
+    { label: 'MP *PADARIA', desc: 'MP *PADARIA', name: 'MP *PADARIA', mcc: '5411' },
+    { label: 'MP*SUPERMERCADO', desc: 'MP*SUPERMERCADO', name: 'MP*SUPERMERCADO', mcc: '5411' },
+    { label: 'PAG*LOJA', desc: 'PAG*LOJA', name: 'PAG*LOJA', mcc: '5411' },
+    { label: 'PAG *LOJA', desc: 'PAG *LOJA', name: 'PAG *LOJA', mcc: '5411' },
+    { label: 'PAGSEG*POSTO', desc: 'PAGSEG*POSTO', name: 'PAGSEG*POSTO', mcc: '5541' },
+    { label: 'TON *SUPERMERCADO', desc: 'TON *SUPERMERCADO', name: 'TON *SUPERMERCADO', mcc: '5411' },
+    { label: 'TON*SUPERMERCADO', desc: 'TON*SUPERMERCADO', name: 'TON*SUPERMERCADO', mcc: '5411' },
+    { label: 'PG *LOJA', desc: 'PG *LOJA', name: 'PG *LOJA', mcc: '5411' },
+    { label: 'EBANX*LOJA', desc: 'EBANX*LOJA', name: 'EBANX*LOJA', mcc: '5411' },
+    { label: 'ADYEN*LOJA', desc: 'ADYEN*LOJA', name: 'ADYEN*LOJA', mcc: '5411' },
+    { label: 'ASAAS*CLINICA', desc: 'ASAAS*CLINICA', name: 'ASAAS*CLINICA', mcc: '5912' },
+    { label: 'IUGU*CLINICA', desc: 'IUGU*CLINICA', name: 'IUGU*CLINICA', mcc: '5912' },
+    { label: 'VINDI*ACADEMIA', desc: 'VINDI*ACADEMIA', name: 'VINDI*ACADEMIA', mcc: '5411' },
+    { label: 'ZOOP*MERCADO', desc: 'ZOOP*MERCADO', name: 'ZOOP*MERCADO', mcc: '5411' },
+    { label: 'SHIPAY*PADARIA', desc: 'SHIPAY*PADARIA', name: 'SHIPAY*PADARIA', mcc: '5411' },
+    { label: 'BCASH*LOJA', desc: 'BCASH*LOJA', name: 'BCASH*LOJA', mcc: '5411' },
+    { label: 'MOIP*LOJA', desc: 'MOIP*LOJA', name: 'MOIP*LOJA', mcc: '5411' },
+    { label: 'WIRECARD*LOJA', desc: 'WIRECARD*LOJA', name: 'WIRECARD*LOJA', mcc: '5411' },
+    { label: 'CLOUDWALK*LOJA', desc: 'CLOUDWALK*LOJA', name: 'CLOUDWALK*LOJA', mcc: '5411' },
+    { label: 'REDE exact', desc: 'COMPRA REDE', name: 'REDE', mcc: '5411' },
+    { label: 'REDECARD', desc: 'COMPRA REDECARD', name: 'REDECARD', mcc: '5411' },
+    { label: 'REDE *LOJA', desc: 'REDE *LOJA', name: 'REDE *LOJA', mcc: '5411' },
+    { label: 'REDE PAGAMENTOS', desc: 'REDE PAGAMENTOS', name: 'REDE PAGAMENTOS', mcc: '5411' },
+    { label: 'desc MERCADOPAGO with clean merchantName', desc: 'MERCADOPAGO *POSTO IPIRANGA', name: 'POSTO IPIRANGA', mcc: '5541' },
+    { label: 'desc PAGSEGURO with clean merchantName', desc: 'PAGSEGURO *SUPERMERCADO SAO JOAO', name: 'SUPERMERCADO SAO JOAO', mcc: '5411' },
+    { label: 'desc PIX QR CODE with clean merchantName', desc: 'PIX QR CODE DROGASIL', name: 'DROGASIL', mcc: '5912' },
+    { label: 'PIX QR CODE with CNPJ', desc: 'PIX QR CODE', name: 'PIX QR CODE', mcc: '5411' },
+    { label: 'paymentMethod PIX with CNPJ and CARD_PURCHASE', desc: 'COMPRA SUPERMERCADO ALFA SUL', name: 'SUPERMERCADO ALFA SUL', mcc: '5411', paymentMethod: 'PIX' }
+  ];
+
+  for (let i = 0; i < unitRejections.length; i++) {
+    const c = unitRejections[i];
+    const id = `g609-${i}`;
+    const ev = normalizePluggyEvidence({
+      id,
+      status: 'POSTED',
+      type: 'DEBIT',
+      operationType: 'CARD_PURCHASE',
+      paymentData: c.paymentMethod ? { paymentMethod: c.paymentMethod } : undefined,
+      description: c.desc,
+      category: null,
+      merchant: { name: c.name, cnpj: VALID_CNPJS[0] },
+      creditCardMetadata: { payeeMCC: c.mcc }
+    }, { accountId: ACCOUNT_A });
+    const verdict = classifyCandidate({
+      transaction: {
+        accountId: ACCOUNT_A,
+        externalId: id,
+        accountType: 'BANK',
+        status: 'POSTED',
+        amountCents: -4200,
+        description: c.desc
+      },
+      evidence: ev
+    });
+    assert.equal(verdict.status, 'review', `${c.label} must remain review (got ${verdict.status}:${verdict.reason})`);
+  }
+
+  await withSandbox(async ({ db, auto }) => {
+    const e2eTraps = [
+      { id: 'e2e-mp', desc: 'MP *PADARIA', name: 'MP *PADARIA', mcc: '5411' },
+      { id: 'e2e-mp-nospace', desc: 'MP*SUPERMERCADO', name: 'MP*SUPERMERCADO', mcc: '5411' },
+      { id: 'e2e-pag', desc: 'PAG*LOJA', name: 'PAG*LOJA', mcc: '5411' },
+      { id: 'e2e-pagseg', desc: 'PAGSEG*POSTO', name: 'PAGSEG*POSTO', mcc: '5541' },
+      { id: 'e2e-ton', desc: 'TON *SUPERMERCADO', name: 'TON *SUPERMERCADO', mcc: '5411' },
+      { id: 'e2e-pg', desc: 'PG *LOJA', name: 'PG *LOJA', mcc: '5411' },
+      { id: 'e2e-asaas', desc: 'ASAAS*CLINICA', name: 'ASAAS*CLINICA', mcc: '5912' },
+      { id: 'e2e-desc-mp', desc: 'MERCADOPAGO *POSTO IPIRANGA', name: 'POSTO IPIRANGA', mcc: '5541' },
+      { id: 'e2e-desc-pagseg', desc: 'PAGSEGURO *SUPERMERCADO SAO JOAO', name: 'SUPERMERCADO SAO JOAO', mcc: '5411' },
+      { id: 'e2e-desc-pixqr', desc: 'PIX QR CODE DROGASIL', name: 'DROGASIL', mcc: '5912' },
+      { id: 'e2e-pix-method', desc: 'COMPRA SUPERMERCADO ALFA SUL', name: 'SUPERMERCADO ALFA SUL', mcc: '5411', paymentMethod: 'PIX' }
+    ];
+    ingestRows(db, ACCOUNT_A, ITEM_A, e2eTraps.map((c, i) => ({
+      id: c.id,
+      date: `2026-10-${String(10 + i).padStart(2, '0')}`,
+      description: c.desc,
+      amount: -(30 + i),
+      status: 'POSTED',
+      category: null,
+      type: 'DEBIT',
+      operationType: 'CARD_PURCHASE',
+      paymentData: c.paymentMethod ? { paymentMethod: c.paymentMethod } : undefined,
+      merchant: { name: c.name, cnpj: VALID_CNPJS[0] },
+      creditCardMetadata: { payeeMCC: c.mcc }
+    })));
+    auto.configure({ accountIds: [ACCOUNT_A], ...SPAN }, true);
+    const plan = auto.plan({ limit: 100 });
+    assert.equal(plan.candidateCount, 0, `Expected 0 candidates, got: ${plan.candidates.map((x) => x.externalId).join(',')}`);
+    assert.equal((await auto.apply()).applied, 0);
+  });
+});
+
+test('G6-10: legitimate "REDE DE POSTOS IPIRANGA" applies parent-only while REDE processor strings stay review', async () => {
+  const legitName = 'REDE DE POSTOS IPIRANGA';
+  const legitEv = normalizePluggyEvidence({
+    id: 'rede-legit',
+    status: 'POSTED',
+    type: 'DEBIT',
+    operationType: 'CARD_PURCHASE',
+    description: `COMPRA CARTAO ${legitName} 10/10`,
+    category: null,
+    merchant: { name: legitName, cnpj: VALID_CNPJS[1] },
+    creditCardMetadata: { payeeMCC: '5541' }
+  }, { accountId: ACCOUNT_A });
+  const legitVerdict = classifyCandidate({
+    transaction: {
+      accountId: ACCOUNT_A,
+      externalId: 'rede-legit',
+      accountType: 'BANK',
+      status: 'POSTED',
+      amountCents: -15000,
+      description: `COMPRA CARTAO ${legitName} 10/10`
+    },
+    evidence: legitEv
+  });
+  assert.equal(legitVerdict.status, 'apply');
+  assert.equal(legitVerdict.reason, 'VERIFIED_DIRECT_MERCHANT_MCC_PARENT');
+  assert.deepEqual(legitVerdict.target, { categoryId: 'cat:transporte', subcategoryId: null });
+
+  await withSandbox(async ({ db, auto }) => {
+    ingestRows(db, ACCOUNT_A, ITEM_A, [
+      {
+        id: 'e2e-rede-legit',
+        date: '2026-10-12',
+        description: `COMPRA CARTAO ${legitName} 10/10`,
+        amount: -150,
+        status: 'POSTED',
+        category: null,
+        type: 'DEBIT',
+        operationType: 'CARD_PURCHASE',
+        merchant: { name: legitName, cnpj: VALID_CNPJS[1] },
+        creditCardMetadata: { payeeMCC: '5541' }
+      },
+      {
+        id: 'e2e-rede-card',
+        date: '2026-10-13',
+        description: 'COMPRA REDECARD',
+        amount: -80,
+        status: 'POSTED',
+        category: null,
+        type: 'DEBIT',
+        operationType: 'CARD_PURCHASE',
+        merchant: { name: 'REDECARD', cnpj: VALID_CNPJS[1] },
+        creditCardMetadata: { payeeMCC: '5541' }
+      },
+      {
+        id: 'e2e-rede-star',
+        date: '2026-10-14',
+        description: 'REDE *POSTO CENTRAL',
+        amount: -90,
+        status: 'POSTED',
+        category: null,
+        type: 'DEBIT',
+        operationType: 'CARD_PURCHASE',
+        merchant: { name: 'REDE *POSTO CENTRAL', cnpj: VALID_CNPJS[1] },
+        creditCardMetadata: { payeeMCC: '5541' }
+      },
+      {
+        id: 'e2e-rede-pag',
+        date: '2026-10-15',
+        description: 'REDE PAGAMENTOS',
+        amount: -95,
+        status: 'POSTED',
+        category: null,
+        type: 'DEBIT',
+        operationType: 'CARD_PURCHASE',
+        merchant: { name: 'REDE PAGAMENTOS', cnpj: VALID_CNPJS[1] },
+        creditCardMetadata: { payeeMCC: '5541' }
+      }
+    ]);
+    auto.configure({ accountIds: [ACCOUNT_A], ...SPAN }, true);
+    const plan = auto.plan({ limit: 100 });
+    assert.equal(plan.candidateCount, 1);
+    assert.equal(plan.candidates[0].externalId, 'e2e-rede-legit');
+    assert.deepEqual(plan.candidates[0].target, { categoryId: 'cat:transporte', subcategoryId: null });
+    assert.equal(plan.reviewCount, 3);
+    assert.equal((await auto.apply()).applied, 1);
+  });
+});
+
+test('G6-11: duplicate-pair human overrides block conflicting Pluggy external evidence from auto-applying', async () => {
+  await withSandbox(async ({ db, d05, auto }) => {
+    const overrides = [
+      { id: 'dup-a1', date: '2026-10-01', amount: -50 },
+      { id: 'dup-a2', date: '2026-10-01', amount: -50 },
+      { id: 'dup-b1', date: '2026-10-02', amount: -60 },
+      { id: 'dup-b2', date: '2026-10-02', amount: -60 }
+    ].map((x) => ({
+      ...x,
+      description: 'POSTO CONFLITANTE SUL',
+      status: 'POSTED',
+      category: 'Uncategorized'
+    }));
+    const candidate = {
+      id: 'cand-conflict',
+      date: '2026-10-15',
+      description: 'POSTO CONFLITANTE SUL',
+      amount: -75,
+      status: 'POSTED',
+      category: 'Groceries',
+      creditCardMetadata: { payeeMCC: '5411' }
+    };
+    ingestRows(db, ACCOUNT_A, ITEM_A, [...overrides, candidate]);
+    for (const o of overrides) {
+      d05.assignBank({ accountId: ACCOUNT_A, externalId: o.id, target: TARGET_FUEL });
+    }
+
+    auto.configure({ accountIds: [ACCOUNT_A], ...SPAN }, true);
+    const plan = auto.plan({ limit: 100 });
+    assert.equal(plan.candidateCount, 0);
+    assert.equal(plan.reviewCount, 1);
+    assert.equal(plan.review[0].reason, 'Evidência insuficiente');
+    assert.equal((await auto.apply()).applied, 0);
+    assert.equal(db.db.prepare('SELECT COUNT(*) AS n FROM mf_auto_labels').get().n, 0);
+  });
+});

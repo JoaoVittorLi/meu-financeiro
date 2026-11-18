@@ -264,7 +264,7 @@ async function bootMainHarness({
 
   const validEvent = {
     sender: mainWindowInstance.webContents,
-    senderFrame: { url: 'file:///C:/Dev/meu-financeiro-worktrees/m1-dev/app/index.html' }
+    senderFrame: { url: 'file:///app/index.html' }
   };
 
   for (let i = 0; i < 50; i++) {

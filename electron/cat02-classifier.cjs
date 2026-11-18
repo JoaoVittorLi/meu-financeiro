@@ -174,14 +174,23 @@ function classifyCandidate({transaction,evidence={},history=[],rules=[],catalog=
  // never counts as merchant identity; Naive Bayes remains review-only.
  const directName=fold(evidence.merchantName);
  const desc=fold(transaction.description||'');
- const processor=/\b(pag ?seguro|pag ?bank|mercado ?pago|stone|cielo|pay ?pal|pic ?pay|get ?net|rede|sum ?up|pagar ?me|infinite ?pay)\b/i;
+ const unaccent=x=>String(x??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+ const rawProcessorPrefix=/\b(mp|pag|pagseg|ton|pg|rede)\s*\*/i;
+ const processor=/\b(pag ?seguro|pag ?seg|pag ?bank|mercado ?pago|stone|cielo|pay ?pal|pic ?pay|get ?net|rede ?card|sum ?up|pagar ?me|infinite ?pay|ebanx|adyen|asaas|iugu|vindi|zoop|shipay|bcash|moip|wirecard|cloud ?walk|pix|qr ?code|qrcode)\b|\brede\b(?! de\b(?! pagamentos?\b))|^(mp|pag|ton|pg)\b/i;
+ const hasIntermediary=raw=>rawProcessorPrefix.test(unaccent(raw))||processor.test(fold(raw));
  const narrowMcc=['5411','5541','5912'].includes(String(evidence.mcc||''));
  const directCommerce=narrowMcc&&mcc&&!external&&
   evidence.transactionType==='DEBIT'&&
   ['CARD_PURCHASE','CARD PAYMENT','CARD_PAYMENT','PURCHASE'].includes(
    String(evidence.operationType||'').trim().toUpperCase())&&
+  fold(evidence.paymentMethod)!=='pix'&&
   typeof evidence.merchantCnpj==='string'&&/^\d{14}$/.test(evidence.merchantCnpj)&&
-  directName.length>=8&&!processor.test(directName)&&desc.includes(directName);
+  directName.length>=8&&
+  !hasIntermediary(evidence.merchantName)&&
+  !hasIntermediary(transaction.description||'')&&
+  !hasIntermediary(evidence.description||'')&&
+  !hasIntermediary(evidence.descriptionRaw||'')&&
+  desc.includes(directName);
  if(directCommerce){
   return result('apply','VERIFIED_DIRECT_MERCHANT_MCC_PARENT',{
    target:{categoryId:mcc.categoryId,subcategoryId:null},

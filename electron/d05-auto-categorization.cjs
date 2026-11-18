@@ -407,7 +407,7 @@ class D05AutoCategorization{
      external.target?.subcategoryId===null&&
      external.evidenceTypes.includes('verified_commercial_cnpj');
     if(external?.status==='apply'&&(corroborated||directParent)&&
-       (!verified.length||sameTarget(verified[0],external.target))){
+       (!anchors.length||sameTarget(anchors[0],external.target))){
      const resolved=resolveBuiltInTarget(external.target);
      if(resolved&&
         ['both',kind(row)].includes(resolved.parent.kind)&&

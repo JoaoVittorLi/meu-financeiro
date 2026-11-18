@@ -42,3 +42,17 @@
   - `build_windows` (job `#82`) foi **cancelado manualmente** (`status: "canceled"`, `4m43s`), que o GitHub mapeia como commit status `error` (`Your CircleCI tests were canceled`), não tratando-se de falha de compilação.
   - Risco latente mitigado: antes da otimização do `plan()`, o estresse `A01` (20.001 candidatos) levava ~9,2 min sem stdout sob `no_output_timeout: 25m`; com a otimização, conclui em ~59–80s.
 - Pré-requisitos de empacotamento local Windows (`electron-builder` `26.0.0`, `build/icon.ico`, `app/icon.png`, `app/icon.svg`, `app/vendor/LICENSE_REACT.txt`, `electron/preload-bundled.cjs`, `app/app.js`) verificados em ambiente limpo. Nenhum EXE/instalador gerado nesta etapa (aguarda validação integral dos gates e autorização explícita do proprietário).
+
+## 6. Iteração 2 — Correções Adversariais e Regressões (`electron/cat02-classifier.cjs`, `electron/d05-auto-categorization.cjs`, `tests/`)
+
+- **`electron/cat02-classifier.cjs` (`VERIFIED_DIRECT_MERCHANT_MCC_PARENT`)**:
+  - Expandida a detecção de subadquirentes, agregadores e prefixos abreviados (`MP *` / `MP*`, `PAG*` / `PAG *`, `PAGSEG*`, `TON *` / `TON*`, `PG *`, `EBANX`, `ADYEN`, `ASAAS`, `IUGU`, `VINDI`, `ZOOP`, `SHIPAY`, `BCASH`, `MOIP`, `WIRECARD`, `CLOUDWALK`), além da lista existente de processadores.
+  - Verificação aplicada tanto em `evidence.merchantName` quanto em `transaction.description`, `evidence.description` e `evidence.descriptionRaw`, bloqueando casos como `desc="MERCADOPAGO *POSTO IPIRANGA"` com `merchantName` limpo.
+  - Bloqueio explícito em `directCommerce` para `paymentMethod === 'pix'` (case-insensitive) e ocorrências de `PIX` / `QR CODE` / `QRCODE` mesmo quando `merchantCnpj` está presente.
+  - Estreitada a correspondência de `REDE` (`\brede\s*\*`, `\brede ?card\b`, `\brede\b(?! de\b(?! pagamentos?\b))`) para preservar estabelecimentos legítimos como `"REDE DE POSTOS IPIRANGA"`, mantendo o bloqueio sobre `REDE`, `REDECARD`, `REDE *LOJA`, `REDE PAGAMENTOS` e `REDE DE PAGAMENTOS`.
+- **`electron/d05-auto-categorization.cjs` (`plan()`)**:
+  - Corrigida a checagem de conflito com evidência externa na linha 410 para `(!anchors.length || sameTarget(anchors[0], external.target))`, impedindo que âncoras humanas formadas apenas por pares duplicados (`anchors.length > 0`, `verified.length === 0`) sejam sobrescritas por sugestão externa conflitante.
+- **`tests/cat-p0-calibration.test.cjs` & `tests/cat-p0-ipc-contract.test.cjs`**:
+  - Adicionados testes regressivos `G6-09`, `G6-10` e `G6-11` cobrindo prefixos de subadquirentes/agregadores, prefixos em `description`, `PIX QR CODE` / `paymentMethod='PIX'` com CNPJ, aceitação legítima de `"REDE DE POSTOS IPIRANGA"` e bloqueio de evidência externa conflitante sobre âncoras humanas duplicadas.
+  - Substituído caminho absoluto de worktree em `tests/cat-p0-ipc-contract.test.cjs` (`senderFrame.url`) por `'file:///app/index.html'`.
+  - Verificação direcionada aprovada (`54/54` em `cat-p0-calibration`, `cat-p0-ipc-contract`, `d05-auto-reconciled.integration`, `d05-auto-categorization` e `intelligence-recovery`), junto com `npm run compile`, `npm run test:types`, `build-preload.cjs check` e `renderer-provenance.cjs check-bundle`.
