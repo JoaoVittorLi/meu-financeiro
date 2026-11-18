@@ -438,3 +438,21 @@
 - **Evidências pré-auditoria (`0.9.5-beta.9`):**
   - **Nível A:** `test:types`, `compile`, `build-preload check`, `check-bundle` (`31` entradas), `test:asar` (`1/1`), `test:db` (**`1002/1002`**, `fail 0`), `mobile-push` (**`133/133`**, `fail 0`).
   - **Nível B:** `test:electron-smoke` PASS, `nivel-b-interactive-qa.cjs` **`14/14` PASS (`FAIL: 0`, `RuntimeIssues: 0`)**, e capturas comparativas `before` vs `after` (`empty` + `demo`) em `1920x1080`, `1366x768` e `1024x720` nos temas claro e escuro arquivadas em `C:\Dev\releases\M1.1-VISUAL\screenshots-before-after\`.
+- **Validação formal pós-commit (`f60f319f089e4672b9e15590e72ff967107132ab`):**
+  - `python -B .agents/scripts/run_workflow.py --marco MF1 --stage 04_teste --synthetic --run-nivel-b`: **PASS** (`1002/1002` `test:db`, `1/1` `test:asar`, `test:electron-smoke` + `verify-visual-matrix` **`32/32` PNGs**, `nivel-b-interactive-qa.cjs` **`14/14`**).
+  - `run_workflow.py --stage 06_auditoria` + `--check-nsis-gate --sha f60f319f089e4672b9e15590e72ff967107132ab`: **PASS** (`provenance:verify` em `f60f319f089e4672b9e15590e72ff967107132ab v0.9.5-beta.9; 23 arquivos`).
+  - Auditoria independente `pro` pré-build (`d7ed5781`): **`VEREDITO: APPROVE`** (`18/18` testes direcionados de layout/U1/QA84 + `1/1` ASAR + inspeção visual `before-demo` vs `after-demo` + `M1-BASELINE` intocado).
+- **Empacotamento, Nível C Instalado & Google Drive Privado (`M1.1-VISUAL` / `0.9.5-beta.9`):**
+  - Gerado localmente (`npx electron-builder --win nsis --x64 --publish never`, NSIS-only, zero Portable, zero CI pago) e arquivado em `C:\Dev\releases\M1.1-VISUAL\`:
+    - `MeuFinanceiro-Instalador-0.9.5-beta.9-x64.exe` (**`115.740.284` bytes**) — **versão experimental `0.9.5-beta.9`, não `1.0.0` estável**
+    - `SHA-256`: `934690ca13b18b433ee62175070937ec53e9d741403b6faded6db7cbcb9e3a47` (`SHA256.txt`)
+    - `renderer-provenance.json` (`sourceCommit: f60f319f089e4672b9e15590e72ff967107132ab`)
+    - `node scripts/renderer-provenance.cjs verify-asar release/win-unpacked/resources/app.asar`: **PASS** byte a byte. Pasta `release/` removida após arquivamento.
+  - Instalado silenciosamente (`/S /D=C:\Dev\mf-nsis-test-install`) e executado em `C:\Dev\mf-nsis-test-userdata` (`MF_QA_SYNTHETIC=1`, `MF_DESKTOP_SMOKE_DIR` ausente):
+    - `ASAR`: `version: 0.9.5-beta.9`, `appId: app.local.meufinanceiro.rcall01`, D05 `14` pais / `61` subcategorias / `67` SVGs.
+    - **`14/14` jornadas reais (`PJ-01`..`PJ-09`, `NJ-01`..`NJ-05`): PASS (`FAIL: 0`, `RuntimeIssues: 0`)**, `PRAGMA integrity_check = ok`, centavos inteiros (`min=2450`, `max=850000`), **`HOST_FOLDERS_UNTOUCHED: true`**.
+    - Evidências e capturas `report-nivel-c.json` / `12` PNGs em `C:\Dev\releases\M1.1-VISUAL\screenshots-nivel-c\` + capturas atualizadas `v0.9.5-beta.9` `before`/`after` em `C:\Dev\releases\M1.1-VISUAL\screenshots-before-after\`.
+  - **Google Drive privado (`joaovitor.limasiman@gmail.com`):** enviado para `Meu Financeiro/M1.1-VISUAL` (`ID: 1XTT-ebnBTkmFr0tfBxG0cv3_EbRA8igI`), permissão restrita exclusivamente ao proprietário (`role: owner`), mantendo `M1-BASELINE/MeuFinanceiro-Instalador-0.9.5-beta.8-x64.exe` (`1jcVCGg90iJdfapdj0SAB0Qanhwah68zM`) intacto:
+    - `MeuFinanceiro-Instalador-0.9.5-beta.9-x64.exe` (`ID: 1IoRKpYkUt2YwzI-agqC6N7OO4oe_nUQ_`, `115.740.284` bytes, conferência de download remoto com `DRIVE_HASH_MATCH: True`)
+    - `SHA256.txt` (`ID: 1CZxYvk9BdqT_3N7BGKtw-EQoIaRIY61j`) e `renderer-provenance.json` (`ID: 121SyY7WYFRnDKxqb0PqFWj5PmQNnCtCp`)
+- **Marco 2 permanece suspenso até decisão explícita do proprietário.**
