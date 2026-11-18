@@ -400,3 +400,27 @@
     - `npm --prefix mobile-push test`: **PASS** (`133/133`, `fail 0`, `duration_ms 2142.72`)
     - `npm run test:electron-smoke` + `node scripts/verify-visual-matrix.cjs`: **PASS** (`32/32` PNGs, `8` áreas, `4` presets)
     - `node scripts/nivel-b-interactive-qa.cjs`: **PASS** (`14/14` jornadas `PJ-01..09`, `NJ-01..05`, `FAIL: 0`, `RuntimeIssues: 0`)
+
+## 24. Homologação Real Nível C — Instalador NSIS Experimental `M1-BASELINE` (`fe2b3186`)
+
+- **Pareceres pré-build & rastreabilidade Git:**
+  - `VEREDITO: APPROVE` (`c4d9fbd9`) sobre `d2204265c49703b9f6698d53da02ab8f5f6475d7` (`88/88` suíte focal, `74/74` casos Wave 14 + varredura das `76` bases PSP, `12/12` armadilhas E2E SQLite em `review`, `40/40+4` legítimos BR em `apply`, hard locks verificados).
+  - `VEREDITO: GO` (`77d9d152`) sobre `d0fe4139172963b18aa5eb6c868710ebf987fa53` (publicado no PR #105 antes do build).
+  - Ajuste pontual no helper de QA (`scripts/nivel-b-interactive-qa.cjs`, SHA **`fe2b31861c3c1f9860a026e68e4ca02294e55065`**): ativação de janela Win32 (`SetForegroundWindow`) em `ensureWindowFocus` e suporte a diálogos `#32770` aninhados em `Chrome_WidgetWin_1` (`TaskDialog`/`CCPushButton`) no binário empacotado dentro de `startNativeDialogClicker`, mantendo intacta a trava de segurança `mainWindow.isFocused()` de `electron/main.cjs`. Revalidado em desenvolvimento (`node scripts/nivel-b-interactive-qa.cjs`: `14/14` PASS, `0` RuntimeIssues).
+- **Backup, Empacotamento NSIS Local e Integridade ASAR (`M1-BASELINE`):**
+  - Backup da instalação experimental anterior preservado em `C:\Dev\backups\Meu-Financeiro-RC-Experimental-pre-M1-bin`.
+  - Gate pré-build (`python -B .agents/scripts/run_workflow.py --marco MF1 --check-nsis-gate --sha fe2b31861c3c1f9860a026e68e4ca02294e55065 --owner-approved-nsis --approval-ref owner-directive-20261118-m1-nivel-c`) **PASS**.
+  - Compilado localmente com `npx electron-builder --win nsis --x64 --publish never` (NSIS-only, zero Portable, zero CI pago; ajuste operacional local apenas do cache `winCodeSign-2.6.0` cujos symlinks macOS não se extraem sem privilégio de symlink no Windows 11).
+  - `node scripts/renderer-provenance.cjs verify-asar release/win-unpacked/resources/app.asar`: **PASS** byte a byte.
+  - Artefatos arquivados em `C:\Dev\releases\M1-BASELINE\`:
+    - `MeuFinanceiro-Instalador-0.9.5-beta.8-x64.exe` (`115.740.233` bytes) — **versão experimental `0.9.5-beta.8`, não `1.0.0` estável**
+    - `SHA-256`: `e96e0604c931d063509e673372552f2a35010f137bb4f88735297c0f1dac6110` (`SHA256.txt`)
+    - `renderer-provenance.json` (`sourceCommit: fe2b31861c3c1f9860a026e68e4ca02294e55065`)
+    - Pasta `release/` removida da árvore de trabalho após arquivamento.
+- **Execução Real Instalada (`scripts/nivel-c-nsis-qa.cjs`, `MF_QA_SYNTHETIC=1`, `MF_DESKTOP_SMOKE_DIR` ausente):**
+  - Instalado silenciosamente (`/S /D=C:\Dev\mf-nsis-test-install`) em `C:\Dev\mf-nsis-test-install\Meu Financeiro RC Experimental.exe` com perfil sintético em `MEU_FINANCEIRO_EXPERIMENTAL_USER_DATA_DIR=C:\Dev\mf-nsis-test-userdata`.
+  - ASAR instalado verificado (`verifyArchive` PASS, `version: 0.9.5-beta.8`, `appId: app.local.meufinanceiro.rcall01`, D05 `14` categorias-pai, `61` subcategorias, `67` SVGs).
+  - Runtime confirmado no executável instalado (`channel: experimental`, `isolated: true`, `connectionEnabled: false`, SQLite exatamente em `C:\Dev\mf-nsis-test-userdata\meu-financeiro.sqlite`).
+  - **14/14 jornadas reais (`PJ-01`..`PJ-09`, `NJ-01`..`NJ-05`): PASS (`FAIL: 0`, `RuntimeIssues: 0`)**, incluindo fechamento limpo, `PRAGMA integrity_check = ok`, reabertura no mesmo perfil isolado e verificação na UI DOM + `15` capturas PNG + `report-nivel-c.json` em `C:\Dev\releases\M1-BASELINE\screenshots-nivel-c\`.
+  - Pastas protegidas do host (`%LOCALAPPDATA%\Programs\Meu Financeiro`, `%APPDATA%\meu-financeiro-desktop`, `%APPDATA%\Meu Financeiro`, `%APPDATA%\MeuFinanceiro-RC-ALL-01-Experimental`) integralmente inalteradas (`LastWriteTime` e contagem idênticos).
+  - **Marco 2 permanece suspenso até decisão explícita do proprietário após revisão desta entrega do Marco 1.**
