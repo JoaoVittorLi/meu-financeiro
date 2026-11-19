@@ -205,7 +205,15 @@ async function localFinancialSubmit(app:any,question:string){
   if(app.__ic2Conversation?.id===ic2.conversationId)app.__ic2Conversation.answerId=answer.id;
  }else mfLocalBindMessage(answer,access,signature,month);
  intelligenceSyncThreadMessages(app,[...messages,user,answer],scope);
- app.setState({localFinancialBusy:false});
+ app.setState({localFinancialBusy:false},()=>{
+  if(typeof document!=='undefined'){
+   const scroll=()=>{
+    for(const el of Array.from(document.querySelectorAll('.mf-b05-chat-thread, .mf-ai-drawer-body')))
+     (el as HTMLElement).scrollTop=(el as HTMLElement).scrollHeight;
+   };
+   if(typeof requestAnimationFrame==='function')requestAnimationFrame(scroll);else scroll();
+  }
+ });
 }
 function renderLocalFinancialAccess(app:any){
  const s=app.state,access:LocalFinancialAccess=s.localFinancialAccess,active=access?.token&&access.expiresAt>Date.now();

@@ -8726,7 +8726,18 @@ async function localFinancialSubmit(app, question) {
     else
         mfLocalBindMessage(answer, access, signature, month);
     intelligenceSyncThreadMessages(app, [...messages, user, answer], scope);
-    app.setState({ localFinancialBusy: false });
+    app.setState({ localFinancialBusy: false }, () => {
+        if (typeof document !== 'undefined') {
+            const scroll = () => {
+                for (const el of Array.from(document.querySelectorAll('.mf-b05-chat-thread, .mf-ai-drawer-body')))
+                    el.scrollTop = el.scrollHeight;
+            };
+            if (typeof requestAnimationFrame === 'function')
+                requestAnimationFrame(scroll);
+            else
+                scroll();
+        }
+    });
 }
 function renderLocalFinancialAccess(app) {
     const s = app.state, access = s.localFinancialAccess, active = (access === null || access === void 0 ? void 0 : access.token) && access.expiresAt > Date.now();

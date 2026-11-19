@@ -21,7 +21,7 @@
 
 ## Próximo Passo
 - `M1.1` (`b7a3d8a`, `0.9.5-beta.9`) encontra-se tecnicamente homologado em Nível A + B + C (`TECHNICALLY_HOMOLOGATED — OWNER_VISUAL_ACCEPTANCE_PENDING`) com entrega privada verificada no Google Drive para avaliação visual do proprietário.
-- Conforme autorização do proprietário (`OPERAÇÃO CONTINUIDADE TOTAL — 18/11/2026`), iniciar **Marco 2 (`feat/mf2-intelligence-3-0-copilot-20261118`)** em worktree isolada (`C:\Dev\meu-financeiro-worktrees\m2-copilot`), reconciliando specs `I3-00` (`PR #91`/`PR #93`) e código vivo (`PR #95` / `HEAD`) antes da implementação em fatias verticais.
+- Conforme autorização do proprietário (`OPERAÇÃO CONTINUIDADE TOTAL — 18/11/2026`), **Marco 2 (`feat/mf2-intelligence-3-0-copilot-20261118`)** na worktree isolada `C:\Dev\meu-financeiro-worktrees\m2-copilot` está **IMPLEMENTADO EM FATIAS F1–F5 — EM HOMOLOGAÇÃO CUMULATIVA NÍVEL A+B E AUDITORIA PRO** (Fatias 1–4 com Guia Permanente `M2-GUIDE-V1`, `F1–F5`, Sistema Adaptativo, `WeakMap`, jornada `PJ-10`, aguardando verificação cumulativa final pós-commit, auditorias independentes `pro` e revisão de plano antes do Nível C).
 
 ---
 

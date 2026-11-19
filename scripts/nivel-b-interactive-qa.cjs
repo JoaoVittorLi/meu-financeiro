@@ -1319,6 +1319,135 @@ async function runNivelB(options = {}) {
       return 'D01 preview, B05 local read auth, D03 Escape focus return, IC2 queries, Plano de Ação, and session clear verified';
     });
 
+    // PJ-10: Marco 2 Copiloto Financeiro F1-F5, Sistema Adaptativo, Drawer Compacto e Limpeza Pós-Revogação
+    await recordJourney('PJ-10', 'Marco 2 Copiloto F1-F5: Radar Proativo Hoje -> Conversar -> Adaptativo -> Drawer Compacto -> Revogação', async () => {
+      if (!(await ui.eval(`return !!document.querySelector('.mf-b05-permissions')?.open;`))) {
+        await ui.clickElement(`return document.querySelector('.mf-b05-permissions summary');`, 'Open B05 permissions');
+      }
+      if (await ui.eval(`return !!document.querySelector('.mf-chat-access') && !document.querySelector('.mf-chat-access').open;`)) {
+        await ui.clickElement(`return document.querySelector('.mf-chat-access summary');`, 'Open nested chat access');
+      }
+      await ui.selectNative(`return [...document.querySelectorAll('.mf-ai-access-field')].find(l => l.textContent.includes('Fonte'))?.querySelector('select');`, 'bank', 'PJ-10 source bank');
+      if (await ui.eval(`const cb = document.querySelector('.mf-ai-access-planning input[type="checkbox"]'); return !!cb && !cb.checked;`)) {
+        await ui.clickElement(`return document.querySelector('.mf-ai-access-planning input[type="checkbox"]');`, 'Enable planning checkbox');
+      }
+      await ui.clickButtonText('Autorizar leitura local', 'document.querySelector(".mf-b05-permissions")');
+      await ui.waitFor(`return document.querySelector('.mf-b05-status')?.textContent?.includes('Leitura local autorizada');`, 'PJ-10 local read authorized');
+
+      // 1. Hoje V6 -> Radar Proativo <= 3 cards -> Investiga no Copiloto
+      await ui.clickElement(`return document.getElementById('mf-b05-tab-today');`, 'PJ-10 Tab Hoje');
+      const cardCount = await ui.waitFor(`
+        const cards = document.querySelectorAll('.mf-copilot-proactive-card');
+        return cards.length > 0 && cards.length <= 3 ? cards.length : null;
+      `, 'Proactive insights strip rendered');
+      assert(cardCount >= 1 && cardCount <= 3);
+      await ui.eval(`document.querySelector('.mf-copilot-proactive')?.scrollIntoView({ block: 'center' });`);
+      await delay(120);
+      await ui.screenshot('pj10-m2-today-proactive-1366x768-light');
+
+      await ui.clickElement(`return document.querySelector('.mf-copilot-proactive-card .mf-b05-link');`, 'Investigar no Copiloto CTA');
+      await ui.waitFor(`return document.getElementById('mf-b05-tab-chat')?.getAttribute('aria-selected') === 'true' && !!document.querySelector('.mf-ic2-adaptive') && !document.querySelector('.mf-b05-chat-thinking');`, 'Cross-surface Hoje -> Conversar adaptive card');
+      await ui.waitFor(`return !!document.querySelector('.mf-ic2-evidence-disclosure');`, 'Verified evidence disclosure present');
+
+      // 2. F1 + Expansão Adaptativa (analysis density)
+      await ui.fillText(`return document.getElementById('mf-ai-draft');`, 'Por que minhas despesas aumentaram?', 'PJ-10 F1 prompt');
+      await ui.clickButtonText('Enviar', 'document.querySelector(".mf-b05-chat-composer")');
+      await ui.waitFor(`return [...document.querySelectorAll('.mf-ic2-adaptive')].length >= 2 && !document.querySelector('.mf-b05-chat-thinking');`, 'PJ-10 F1 reply');
+      await ui.clickElement(`const cards = [...document.querySelectorAll('.mf-ic2-adaptive')]; return cards[cards.length - 1]?.querySelector('.mf-ic2-toggle-btn');`, 'Explorar análise F1');
+      await ui.waitFor(`return !!document.querySelector('.mf-ic2-density-analysis');`, 'PJ-10 analysis density active');
+      await ui.eval(`const t = document.querySelector('.mf-b05-chat-thread'); if (t) t.scrollTop = t.scrollHeight;`);
+      await delay(120);
+      assert.equal(await ui.eval(`return document.documentElement.scrollWidth <= window.innerWidth;`), true, 'No overflow in F1 analysis');
+      await ui.screenshot('pj10-m2-f1-adaptive-1366x768-light');
+
+      // 3. F2 Consultor de Economia anti-dupla-contagem
+      await ui.fillText(`return document.getElementById('mf-ai-draft');`, 'Quero economizar R$ 300 por mês sem dupla contagem', 'PJ-10 F2 prompt');
+      await ui.clickButtonText('Enviar', 'document.querySelector(".mf-b05-chat-composer")');
+      await ui.waitFor(`return !!document.querySelector('.mf-ic2-scenario-grid') && document.querySelector('.mf-b05-chat-thread')?.textContent?.includes('Conservador') && !document.querySelector('.mf-b05-chat-thinking');`, 'PJ-10 F2 scenarios rendered');
+      await ui.eval(`const cards = [...document.querySelectorAll('.mf-ic2-adaptive')]; cards[cards.length - 1]?.scrollIntoView({ block: 'end' });`);
+      await delay(120);
+      await ui.screenshot('pj10-m2-f2-savings-1366x768-light');
+
+      // 4. F3 Recorrências + recusa de cancelamento externo C36
+      await ui.fillText(`return document.getElementById('mf-ai-draft');`, 'Quais cobranças recorrentes e assinaturas existem no meu histórico?', 'PJ-10 F3 prompt');
+      await ui.clickButtonText('Enviar', 'document.querySelector(".mf-b05-chat-composer")');
+      await ui.waitFor(`return document.querySelector('.mf-b05-chat-thread')?.textContent?.includes('Candidatos recorrentes') && !document.querySelector('.mf-b05-chat-thinking');`, 'PJ-10 F3 recurring check');
+
+      await ui.fillText(`return document.getElementById('mf-ai-draft');`, 'Cancele minha assinatura', 'PJ-10 C36 cancel prompt');
+      await ui.clickButtonText('Enviar', 'document.querySelector(".mf-b05-chat-composer")');
+      await ui.waitFor(`return document.querySelector('.mf-b05-chat-thread')?.textContent?.includes('Não realizo cancelamentos externos') && !document.querySelector('.mf-b05-chat-thinking');`, 'PJ-10 C36 cancel refusal');
+
+      // 5. F4 Simulador conversacional + matriz visual 1920x1080 dark & 1366x768 light
+      await ui.fillText(`return document.getElementById('mf-ai-draft');`, 'Posso comprar um notebook de R$ 2.400 em 6x sem juros?', 'PJ-10 F4 prompt');
+      await ui.clickButtonText('Enviar', 'document.querySelector(".mf-b05-chat-composer")');
+      await ui.waitFor(`
+        const txt = document.querySelector('.mf-b05-chat-thread')?.textContent || '';
+        return txt.includes('2.400,00') && txt.includes('6x simulado') && txt.includes('Abrir Simular Compra') && !document.querySelector('.mf-b05-chat-thinking');
+      `, 'PJ-10 F4 simulator reply');
+      await ui.eval(`const cards = [...document.querySelectorAll('.mf-ic2-adaptive')]; cards[cards.length - 1]?.scrollIntoView({ block: 'end' });`);
+      await delay(120);
+      assert.equal(await ui.eval(`return document.documentElement.scrollWidth <= window.innerWidth;`), true, 'No overflow at 1366x768');
+      await ui.screenshot('pj10-m2-f4-simulator-1366x768-light');
+
+      const origTheme = await ui.eval(`return document.documentElement.dataset.theme || '';`);
+      try {
+        await ui.cdp.send('Emulation.setDeviceMetricsOverride', { width: 1920, height: 1080, deviceScaleFactor: 1, mobile: false });
+        await ui.eval(`document.documentElement.dataset.theme = 'dark';`);
+        await delay(150);
+        await ui.eval(`const cards = [...document.querySelectorAll('.mf-ic2-adaptive')]; cards[cards.length - 1]?.scrollIntoView({ block: 'end' });`);
+        await delay(120);
+        assert.equal(await ui.eval(`return document.documentElement.scrollWidth <= window.innerWidth;`), true, 'No overflow at 1920x1080 dark');
+        await ui.screenshot('pj10-m2-f4-simulator-1920x1080-dark');
+        await ui.clickElement(`return document.getElementById('mf-b05-tab-today');`, 'PJ-10 Hoje dark 1920x1080');
+        await ui.waitFor(`return document.querySelectorAll('.mf-copilot-proactive-card').length > 0;`, 'Hoje dark proactive cards');
+        await ui.eval(`document.querySelector('.mf-copilot-proactive')?.scrollIntoView({ block: 'center' });`);
+        await delay(120);
+        await ui.screenshot('pj10-m2-today-proactive-1920x1080-dark');
+      } finally {
+        await ui.eval(`document.documentElement.dataset.theme = ${JSON.stringify(origTheme)};`);
+        await ui.cdp.send('Emulation.clearDeviceMetricsOverride');
+        await delay(100);
+      }
+
+      // 6. Contextual Drawer (compact density) em Orçamentos
+      await ui.navigate('Orçamentos');
+      await ui.clickElement(`return document.querySelector('.mf-ai-fab');`, 'Open contextual FAB drawer');
+      await ui.waitFor(`return !!document.getElementById('mf-ai-drawer-input');`, 'Contextual drawer open');
+      await ui.fillText(`return document.getElementById('mf-ai-drawer-input');`, 'Onde posso economizar?', 'Drawer compact query');
+      await ui.clickButtonText('Enviar', 'document.querySelector(".mf-ai-drawer-composer")');
+      await ui.waitFor(`return [...document.querySelectorAll('.mf-ai-drawer .mf-ic2-density-compact')].some(c => c.textContent.includes('Oportunidades de economia')) && !document.querySelector('.mf-ai-drawer .mf-ai-msg.is-streaming');`, 'Drawer compact adaptive card');
+      await ui.eval(`const cards = [...document.querySelectorAll('.mf-ai-drawer .mf-ic2-adaptive')]; cards[cards.length - 1]?.scrollIntoView({ block: 'end' });`);
+      await delay(120);
+      assert.equal(await ui.eval(`return document.documentElement.scrollWidth <= window.innerWidth;`), true, 'No overflow with compact drawer');
+      await ui.screenshot('pj10-m2-drawer-compact-1366x768-light');
+      await ui.clickElement(`return document.querySelector('.mf-ai-drawer .close-button');`, 'Close contextual drawer');
+      await ui.waitFor(`return !document.querySelector('.mf-ai-drawer');`, 'Drawer closed');
+
+      // 7. Revogar sessão -> WeakMap / limpeza imediata em Conversar e Hoje
+      await ui.navigate('Inteligência');
+      if (!(await ui.eval(`return !!document.querySelector('.mf-b05-permissions')?.open;`))) {
+        await ui.clickElement(`return document.querySelector('.mf-b05-permissions summary');`, 'Open permissions to revoke');
+      }
+      if (await ui.eval(`return !!document.querySelector('.mf-chat-access') && !document.querySelector('.mf-chat-access').open;`)) {
+        await ui.clickElement(`return document.querySelector('.mf-chat-access summary');`, 'Open nested chat access to revoke');
+      }
+      await ui.eval(`
+        const root = document.querySelector('.mf-b05-permissions');
+        const btn = [...root.querySelectorAll('button')].find(b => !b.disabled && b.textContent.includes('Encerrar leitura'));
+        btn?.scrollIntoView({ block: 'center' });
+      `);
+      await delay(100);
+      await ui.clickElement(`
+        const root = document.querySelector('.mf-b05-permissions');
+        return [...root.querySelectorAll('button')].find(b => !b.disabled && b.textContent.includes('Encerrar leitura'));
+      `, 'PJ-10 revoke read grant');
+      await ui.waitFor(`return document.querySelector('.mf-b05-status')?.textContent?.includes('Sem leitura pessoal autorizada');`, 'PJ-10 revoked');
+      assert.equal(await ui.eval(`return document.querySelectorAll('.mf-ic2-adaptive').length;`), 0);
+      await ui.clickElement(`return document.getElementById('mf-b05-tab-today');`, 'Verify Hoje proactive cleared');
+      assert.equal(await ui.eval(`return document.querySelectorAll('.mf-copilot-proactive-card').length;`), 0);
+      return `M2 F1-F5 + ${cardCount} proactive Hoje cards + adaptive densities + compact drawer + post-revoke wipe verified`;
+    });
+
     // PJ-09 (part 1): Settings (reserve, Light/Dark theme, auto-backup) -> Close cleanly -> Restart -> UI DOM persistence
     await recordJourney('PJ-09', 'Configurações e persistência integral pós-fechar/reabrir na UI DOM e SQLite', async () => {
       await ui.navigate('Configurações');
