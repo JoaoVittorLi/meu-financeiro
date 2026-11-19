@@ -57,6 +57,8 @@ type IntelligenceChatMessage = {
   structuredCard?:IntelligenceStructuredCard|null;
   visual?:MfVisualSnapshot|null;
   visualV3?:MfV3Card|null;
+  ic2Reply?:any;
+  ic2FollowUps?:Array<{intent:string;label:string;question?:string}>;
 };
 type IntelligenceThread = {
   id:string;
@@ -206,7 +208,9 @@ function renderIntelligenceMessageItem(app:any,msg:IntelligenceChatMessage){
       h('span',{},msg.scopeLabel+' · '+msg.periodLabel+' · '+msg.createdAt),
       badge),
     h('div',{className:'mf-ai-msg-body mf-ai-markdown'},...aiMarkdownNodes(msg.text)),
-    msg.structuredCard&&!msg.visual&&!msg.visualV3?renderIntelligenceStructuredCard(msg.structuredCard):null,
+    msg.id.startsWith('ic2-a-')&&msg.ic2Reply&&typeof renderMfIC2Adaptive==='function'
+      ?(renderMfIC2Adaptive(app,msg)||(msg.structuredCard&&!msg.visual&&!msg.visualV3?renderIntelligenceStructuredCard(msg.structuredCard):null))
+      :(msg.structuredCard&&!msg.visual&&!msg.visualV3?renderIntelligenceStructuredCard(msg.structuredCard):null),
     msg.visualV3?mfV3Render(app,msg):msg.visual?renderMfVisual(app,msg):null,
     msg.operationalEvidence?h('small',{className:'mf-premium-evidence'},msg.operationalEvidence):null,
     Array.isArray(msg.operationalActions)&&msg.operationalActions.length?h('div',{className:'mf-premium-tile-actions'},...msg.operationalActions.map((action:any)=>intelligencePremiumButton(app,null,action))):null,

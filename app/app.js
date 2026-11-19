@@ -4472,7 +4472,9 @@ function renderIntelligenceMessageItem(app, msg) {
         msg.status === 'unsupported' ? h('span', { className: 'mf-ai-msg-badge is-info' }, 'Consulta não reconhecida') :
             msg.status === 'unimplemented' ? h('span', { className: 'mf-ai-msg-badge is-info' }, 'Aguarda I2-A') :
                 msg.status === 'error' ? h('span', { className: 'mf-ai-msg-badge is-error' }, 'Serviço indisponível') : null;
-    return h('article', { key: msg.id, className: 'mf-ai-msg ' + (isUser ? 'is-user' : 'is-assistant') + ' is-' + msg.status }, h('header', { className: 'mf-ai-msg-meta' }, h('strong', {}, isUser ? 'Você' : 'Assistente MF'), h('span', {}, msg.scopeLabel + ' · ' + msg.periodLabel + ' · ' + msg.createdAt), badge), h('div', { className: 'mf-ai-msg-body mf-ai-markdown' }, ...aiMarkdownNodes(msg.text)), msg.structuredCard && !msg.visual && !msg.visualV3 ? renderIntelligenceStructuredCard(msg.structuredCard) : null, msg.visualV3 ? mfV3Render(app, msg) : msg.visual ? renderMfVisual(app, msg) : null, msg.operationalEvidence ? h('small', { className: 'mf-premium-evidence' }, msg.operationalEvidence) : null, Array.isArray(msg.operationalActions) && msg.operationalActions.length ? h('div', { className: 'mf-premium-tile-actions' }, ...msg.operationalActions.map((action) => intelligencePremiumButton(app, null, action))) : null, msg.proposal ? renderIntelligenceActionProposalCard(app, msg.proposal) : null, msg.id.startsWith('review-answer-') ? h('button', { type: 'button', className: 'primary-button', onClick: () => void categoryReviewOpen(app) }, 'Abrir Central de Revisão') : null, msg.details ? h('details', { className: 'mf-ai-msg-details' }, h('summary', {}, 'Ver contexto e diagnóstico'), h('p', {}, msg.details)) : null);
+    return h('article', { key: msg.id, className: 'mf-ai-msg ' + (isUser ? 'is-user' : 'is-assistant') + ' is-' + msg.status }, h('header', { className: 'mf-ai-msg-meta' }, h('strong', {}, isUser ? 'Você' : 'Assistente MF'), h('span', {}, msg.scopeLabel + ' · ' + msg.periodLabel + ' · ' + msg.createdAt), badge), h('div', { className: 'mf-ai-msg-body mf-ai-markdown' }, ...aiMarkdownNodes(msg.text)), msg.id.startsWith('ic2-a-') && msg.ic2Reply && typeof renderMfIC2Adaptive === 'function'
+        ? (renderMfIC2Adaptive(app, msg) || (msg.structuredCard && !msg.visual && !msg.visualV3 ? renderIntelligenceStructuredCard(msg.structuredCard) : null))
+        : (msg.structuredCard && !msg.visual && !msg.visualV3 ? renderIntelligenceStructuredCard(msg.structuredCard) : null), msg.visualV3 ? mfV3Render(app, msg) : msg.visual ? renderMfVisual(app, msg) : null, msg.operationalEvidence ? h('small', { className: 'mf-premium-evidence' }, msg.operationalEvidence) : null, Array.isArray(msg.operationalActions) && msg.operationalActions.length ? h('div', { className: 'mf-premium-tile-actions' }, ...msg.operationalActions.map((action) => intelligencePremiumButton(app, null, action))) : null, msg.proposal ? renderIntelligenceActionProposalCard(app, msg.proposal) : null, msg.id.startsWith('review-answer-') ? h('button', { type: 'button', className: 'primary-button', onClick: () => void categoryReviewOpen(app) }, 'Abrir Central de Revisão') : null, msg.details ? h('details', { className: 'mf-ai-msg-details' }, h('summary', {}, 'Ver contexto e diagnóstico'), h('p', {}, msg.details)) : null);
 }
 function intelligenceExampleCard(app, id, title, description, icon, question) {
     return h('div', { className: 'mf-ai-example-card', key: id }, h('span', { className: 'mf-ai-example-icon' }, h(Icon, { name: icon, size: 20 })), h('div', { className: 'mf-ai-example-copy' }, h('strong', {}, title), h('p', {}, description), h('button', { type: 'button', className: 'mf-ai-link', onClick: () => intelligencePrepare(app, question) }, 'Preparar análise', h(Icon, { name: 'arrow', size: 15 }))));
@@ -8119,7 +8121,7 @@ function mfIC2Valid(r, access, month) {
         (b.factRef === null || ids.has(b.factRef)));
 }
 function mfIC2Card(r) {
-    var _a;
+    var _a, _b, _c;
     if (!['ready', 'partial'].includes(r.status) || !r.facts.length)
         return null;
     const money = (v) => Number.isSafeInteger(v) ?
@@ -8195,6 +8197,42 @@ function mfIC2Card(r) {
             if (Number.isSafeInteger(f.loaded))
                 metrics.push({ label: 'Registros carregados', value: String(f.loaded) });
         }
+        else if (fact.tool === 'recommend_savings') {
+            title = 'Oportunidades de economia (sem dupla contagem)';
+            if (Number.isSafeInteger(f.targetCents))
+                metrics.push({ label: 'Meta informada', value: money(f.targetCents) });
+            if (Number.isSafeInteger(f.maxIndependentSavingsCents))
+                metrics.push({ label: 'Espaço independente', value: money(f.maxIndependentSavingsCents), tone: f.targetVerified ? 'positive' : 'warning' });
+            headers = ['Grupo / categoria', 'Gasto atual', 'Redução sugerida'];
+            for (const opp of (Array.isArray(f.opportunities) ? f.opportunities : []).slice(0, 12))
+                if (typeof opp.categoryLabel === 'string')
+                    rows.push({ col1: opp.categoryLabel.slice(0, 100), col2: money(opp.currentCents), col3: money(opp.minSaveCents) + ' – ' + money(opp.maxSaveCents) });
+        }
+        else if (fact.tool === 'detect_recurring_candidates') {
+            title = 'Candidatos recorrentes e hábitos';
+            if (Number.isSafeInteger(f.estimatedMonthlyTotalCents))
+                metrics.push({ label: 'Faixa mensal observada', value: money(f.estimatedMonthlyTotalCents) });
+            if (Number.isSafeInteger(f.priceHikeCount) && f.priceHikeCount > 0)
+                metrics.push({ label: 'Reajustes detectados', value: String(f.priceHikeCount), tone: 'warning' });
+            headers = ['Descrição', 'Meses / certeza', 'Último valor'];
+            for (const c of (Array.isArray(f.candidates) ? f.candidates : []).slice(0, 12))
+                if (typeof c.merchant === 'string')
+                    rows.push({ col1: c.merchant.slice(0, 100),
+                        col2: (((_b = c.observedMonths) === null || _b === void 0 ? void 0 : _b.length) || 0) + ' meses · ' + (c.certainty === 'strong_candidate' ? 'forte' : 'candidato'),
+                        col3: money(c.latestCents) });
+        }
+        else if (fact.tool === 'simulate_purchase') {
+            title = 'Simulação de decisão · somente leitura';
+            if (Number.isSafeInteger(f.principalCents))
+                metrics.push({ label: 'Principal', value: money(f.principalCents) });
+            if (Number.isSafeInteger(f.totalCents))
+                metrics.push({ label: 'Total simulado', value: money(f.totalCents) });
+            if (Number.isSafeInteger(f.minimumAfterPurchaseCents))
+                metrics.push({ label: 'Saldo mínimo após', value: money(f.minimumAfterPurchaseCents), tone: f.risk === 'risk' ? 'warning' : 'positive' });
+            headers = ['Parcela / data', 'Valor', 'Cenário'];
+            for (const s of (Array.isArray(f.schedule) ? f.schedule : []).slice(0, 12))
+                rows.push({ col1: String(s.date || ''), col2: money((_c = s.amountCents) !== null && _c !== void 0 ? _c : s.amount), col3: (f.installments || 1) + 'x' });
+        }
     }
     const warnings = r.alerts.filter(x => typeof x === 'string').slice(0, 3).map(x => x.slice(0, 220));
     const notice = r.status === 'partial' ? 'Cobertura parcial; os valores não representam o histórico integral.' : 'Fatos calculados localmente a partir da origem autorizada.';
@@ -8216,6 +8254,206 @@ function mfIC2MessageLive(app, msg) {
         b.month === (app.state.localFinancialMonth || app.state.month) &&
         (access === null || access === void 0 ? void 0 : access.profile) === (app.state.mode === 'demo' ? 'demo' : 'real') &&
         Number.isFinite(access.expiresAt) && access.expiresAt > Date.now();
+}
+function mfIC2AdaptiveDensity(app, msg) {
+    var _a, _b;
+    if (((_a = app === null || app === void 0 ? void 0 : app.state) === null || _a === void 0 ? void 0 : _a.mfV3AnalysisMessageId) === (msg === null || msg === void 0 ? void 0 : msg.id))
+        return 'analysis';
+    if ((_b = app === null || app === void 0 ? void 0 : app.state) === null || _b === void 0 ? void 0 : _b.intelligencePanelOpen)
+        return 'compact';
+    if (typeof window !== 'undefined' && window.innerWidth < 720)
+        return 'mobile';
+    return 'standard';
+}
+function mfIC2Money(cents) {
+    return Number.isSafeInteger(cents) ?
+        new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(cents / 100) : 'Sem evidência';
+}
+function mfIC2AdaptiveModel(r, density = 'standard') {
+    var _a, _b, _c, _d, _e, _f, _g, _h;
+    if (!r || !['ready', 'partial'].includes(r.status) || !Array.isArray(r.facts) || !r.facts.length)
+        return null;
+    const card = mfIC2Card(r);
+    if (!card)
+        return null;
+    const primary = r.facts[0], val = (primary === null || primary === void 0 ? void 0 : primary.value) || {}, tool = String((primary === null || primary === void 0 ? void 0 : primary.tool) || '');
+    const maxMetrics = density === 'compact' ? 2 : 4;
+    const maxRows = density === 'analysis' ? 25 : density === 'compact' ? 5 : 10;
+    const epistemic = r.status === 'partial' ? { tone: 'partial', label: 'Fato · cobertura parcial' } :
+        tool === 'simulate_purchase' || tool === 'simulate' ? { tone: 'simulation', label: 'Simulação hipotética' } :
+            tool === 'recommend_savings' ? { tone: 'estimate', label: 'Estimativa anti-dupla-contagem' } :
+                tool === 'detect_recurring_candidates' ? { tone: 'estimate', label: 'Hipótese · confirmar assinatura' } :
+                    { tone: 'fact', label: 'Fato verificado' };
+    const visualRows = [];
+    const supplementary = [];
+    if (tool === 'compare_spending_breakdown') {
+        const contribs = Array.isArray(val.contributions) ? val.contributions : [];
+        const maxAbs = Math.max(1, ...contribs.map((c) => Math.abs(c.deltaCents || 0)));
+        for (const c of contribs.slice(0, maxRows)) {
+            const d = Number.isSafeInteger(c.deltaCents) ? c.deltaCents : 0;
+            visualRows.push({
+                label: String(c.label || 'Categoria').slice(0, 100),
+                categoryId: c.categoryId || null, subcategoryId: c.subcategoryId || null,
+                col2: mfIC2Money(c.previousCents) + ' / ' + mfIC2Money(c.currentCents),
+                col3: (d > 0 ? '+' : '') + mfIC2Money(d),
+                barPct: Math.min(100, Math.round(Math.abs(d) / maxAbs * 100)),
+                barUp: d > 0
+            });
+        }
+        if (density === 'analysis' && Array.isArray(val.merchants) && val.merchants.length) {
+            supplementary.push({
+                kind: 'merchants',
+                title: 'Estabelecimentos normalizados no período',
+                items: val.merchants.slice(0, 8).map((m) => ({
+                    label: String(m.merchant || 'Não identificado').slice(0, 90),
+                    col2: mfIC2Money(m.previousCents) + ' → ' + mfIC2Money(m.currentCents),
+                    col3: String(m.previousCount || 0) + ' → ' + String(m.currentCount || 0) + 'x'
+                }))
+            });
+        }
+    }
+    else if (tool === 'recommend_savings') {
+        const opps = Array.isArray(val.opportunities) ? val.opportunities : [];
+        const maxSave = Math.max(1, ...opps.map((o) => o.maxSaveCents || 0));
+        for (const o of opps.slice(0, maxRows)) {
+            visualRows.push({
+                label: String(o.categoryLabel || 'Grupo').slice(0, 100),
+                categoryId: o.categoryId || null, subcategoryId: o.subcategoryId || null,
+                col2: mfIC2Money(o.currentCents),
+                col3: mfIC2Money(o.minSaveCents) + ' – ' + mfIC2Money(o.maxSaveCents),
+                barPct: Math.min(100, Math.round((o.maxSaveCents || 0) / maxSave * 100)),
+                barUp: false,
+                pill: o.independentIncluded ? 'Independente' : 'Sobreposição evitada'
+            });
+        }
+        if (Array.isArray(val.scenarios) && val.scenarios.length) {
+            supplementary.push({
+                kind: 'scenarios',
+                title: 'Cenários graduais (grupos independentes)',
+                items: val.scenarios.slice(0, 3)
+            });
+        }
+    }
+    else if (tool === 'detect_recurring_candidates') {
+        const cands = Array.isArray(val.candidates) ? val.candidates : [];
+        const maxEst = Math.max(1, ...cands.map((c) => c.estimatedMonthlyCents || 0));
+        for (const c of cands.slice(0, maxRows)) {
+            visualRows.push({
+                label: String(c.merchant || 'Recorrente').slice(0, 100),
+                categoryId: c.categoryId || null, subcategoryId: c.subcategoryId || null,
+                col2: (((_a = c.observedMonths) === null || _a === void 0 ? void 0 : _a.length) || 0) + ' meses · anual ' + mfIC2Money(c.estimatedAnnualMinCents) + '–' + mfIC2Money(c.estimatedAnnualMaxCents),
+                col3: mfIC2Money(c.latestCents) + '/mês',
+                barPct: Math.min(100, Math.round((c.estimatedMonthlyCents || 0) / maxEst * 100)),
+                barUp: !!c.priceIncreased,
+                pill: c.priceIncreased ? 'Reajuste +' + (mfIC2Money(c.priceDeltaCents)) : c.certainty === 'strong_candidate' ? 'Forte' : null
+            });
+        }
+        if (Array.isArray(val.habits) && val.habits.length) {
+            supplementary.push({
+                kind: 'habits',
+                title: 'Hábitos frequentes observados',
+                items: val.habits.slice(0, 5)
+            });
+        }
+    }
+    else if (tool === 'simulate_purchase') {
+        for (const r0 of (card.rows || []).slice(0, maxRows)) {
+            visualRows.push({ label: r0.col1, col2: r0.col2, col3: r0.col3, barPct: null, barUp: false });
+        }
+        if (val.cashComparison || val.risk) {
+            supplementary.push({
+                kind: 'decision',
+                title: 'Comparativo à vista vs parcelado e limites do fluxo',
+                items: [{
+                        cashTotalCents: (_c = (_b = val.cashComparison) === null || _b === void 0 ? void 0 : _b.totalCents) !== null && _c !== void 0 ? _c : val.principalCents,
+                        installmentsTotalCents: val.totalCents,
+                        interestCents: (_d = val.interestCents) !== null && _d !== void 0 ? _d : 0,
+                        installments: (_e = val.installments) !== null && _e !== void 0 ? _e : 1,
+                        minimumAfterPurchaseCents: (_f = val.minimumAfterPurchaseCents) !== null && _f !== void 0 ? _f : null,
+                        worstDay: val.worstDay || null,
+                        risk: val.risk || 'unknown',
+                        cashflowVerified: !!val.cashflowVerified
+                    }]
+            });
+        }
+    }
+    else {
+        for (const r0 of (card.rows || []).slice(0, maxRows)) {
+            visualRows.push({ label: r0.col1, col2: r0.col2, col3: r0.col3, barPct: null, barUp: false });
+        }
+    }
+    const evList = Array.isArray(r.evidence) ? r.evidence : [];
+    const rawIds = new Set();
+    for (const ev of evList)
+        if (Array.isArray(ev === null || ev === void 0 ? void 0 : ev.sourceIds))
+            for (const id of ev.sourceIds)
+                if (typeof id === 'string' && id)
+                    rawIds.add(id);
+    for (const c of (Array.isArray(val.contributions) ? val.contributions : []))
+        if (Array.isArray(c === null || c === void 0 ? void 0 : c.evidenceIds))
+            for (const id of c.evidenceIds)
+                if (typeof id === 'string' && id)
+                    rawIds.add(id);
+    for (const o of (Array.isArray(val.opportunities) ? val.opportunities : []))
+        if (Array.isArray(o === null || o === void 0 ? void 0 : o.evidenceIds))
+            for (const id of o.evidenceIds)
+                if (typeof id === 'string' && id)
+                    rawIds.add(id);
+    for (const c of (Array.isArray(val.candidates) ? val.candidates : []))
+        if (Array.isArray(c === null || c === void 0 ? void 0 : c.evidenceIds))
+            for (const id of c.evidenceIds)
+                if (typeof id === 'string' && id)
+                    rawIds.add(id);
+    const sampleIds = [...rawIds].slice(0, 5);
+    return {
+        density, tool, card, epistemic,
+        metrics: (card.metrics || []).slice(0, maxMetrics),
+        rows: visualRows,
+        supplementary: supplementary.slice(0, 2),
+        blocks: (Array.isArray(r.blocks) ? r.blocks : []).slice(0, 3),
+        followUps: (Array.isArray(r.followUps) ? r.followUps : []).slice(0, 3),
+        evidenceSummary: {
+            dataVersion: String(val.dataVersion || ((_g = evList[0]) === null || _g === void 0 ? void 0 : _g.dataVersion) || 'local').slice(0, 16),
+            method: String(val.method || ((_h = evList[0]) === null || _h === void 0 ? void 0 : _h.method) || 'shared/finance-period-ledger.mjs'),
+            count: rawIds.size,
+            sampleIds
+        }
+    };
+}
+function renderMfIC2Adaptive(app, msg) {
+    if (typeof h !== 'function')
+        return null;
+    const r = msg === null || msg === void 0 ? void 0 : msg.ic2Reply;
+    if (!r || !mfIC2MessageLive(app, msg))
+        return null;
+    const density = mfIC2AdaptiveDensity(app, msg);
+    const model = mfIC2AdaptiveModel(r, density);
+    if (!model)
+        return null;
+    const expanded = density === 'analysis';
+    const catGlyph = (label, categoryId, subcategoryId) => {
+        if (typeof resolveCategoryVisualIdentity !== 'function' || typeof CategoryVisualGlyph !== 'function')
+            return null;
+        const identity = resolveCategoryVisualIdentity({ categoryId: categoryId || null, subcategoryId: subcategoryId || null, categoryName: label, aggregate: !subcategoryId });
+        return h(CategoryVisualGlyph, { identity, size: density === 'compact' ? 16 : 18 });
+    };
+    const navAction = model.tool === 'simulate_purchase' && typeof (app === null || app === void 0 ? void 0 : app.navigate) === 'function' ?
+        h('button', { type: 'button', className: 'mf-ic2-toggle-btn', onClick: () => app.navigate('simulator') }, 'Abrir Simular Compra') : null;
+    return h('div', { className: 'mf-ai-structured-card mf-ic2-adaptive mf-ic2-density-' + density, role: 'region', 'aria-label': model.card.title }, h('div', { className: 'mf-ic2-adaptive-head' }, h('div', { className: 'mf-ic2-adaptive-title' }, h('strong', {}, model.card.title), model.card.subtitle ? h('small', {}, model.card.subtitle) : null), h('div', { className: 'mf-ic2-adaptive-controls' }, h('span', { className: 'mf-ic2-epistemic-badge is-' + model.epistemic.tone }, model.epistemic.label), h('button', { type: 'button', className: 'mf-ic2-toggle-btn',
+        onClick: () => app.setState({ mfV3AnalysisMessageId: expanded ? null : msg.id }) }, expanded ? 'Recolher análise' : 'Explorar análise'))), model.metrics.length ? h('div', { className: 'mf-ai-structured-metrics' }, ...model.metrics.map((m, idx) => h('div', { key: idx, className: 'mf-ai-structured-metric is-' + (m.tone || 'neutral') }, h('small', {}, m.label), h('strong', {}, m.value)))) : null, model.rows.length ? h('div', { className: 'mf-ai-table-wrap' }, h('table', {}, model.card.headers ? h('thead', {}, h('tr', {}, h('th', {}, model.card.headers[0]), h('th', {}, model.card.headers[1]), model.card.headers[2] ? h('th', {}, model.card.headers[2]) : null)) : null, h('tbody', {}, ...model.rows.map((row, idx) => h('tr', { key: idx }, h('td', {}, h('span', { className: 'mf-ic2-cat-cell' }, row.categoryId || row.subcategoryId ? catGlyph(row.label, row.categoryId, row.subcategoryId) : null, h('span', {}, row.label), row.pill ? h('span', { className: 'mf-ic2-pill' + (row.barUp ? ' is-hike' : '') }, row.pill) : null)), h('td', {}, row.barPct === null ? row.col2 : h('div', { className: 'mf-ic2-bar-cell' }, h('span', {}, row.col2), h('div', { className: 'mf-ic2-bar-track', 'aria-hidden': 'true' }, h('span', { className: row.barUp ? 'is-up' : '', style: { width: Math.max(4, row.barPct) + '%' } })))), row.col3 !== undefined ? h('td', {}, row.col3) : null))))) : null, ...model.supplementary.map((blk, bIdx) => {
+        if (blk.kind === 'scenarios') {
+            return h('div', { key: bIdx, className: 'mf-ic2-subblock' }, h('span', { className: 'mf-ic2-subblock-title' }, blk.title), h('div', { className: 'mf-ic2-scenario-grid' }, ...blk.items.map((sc, i) => h('div', { key: i, className: 'mf-ic2-scenario-card' + (sc.goalReached ? ' is-target-met' : '') }, h('small', {}, sc.label || sc.id || 'Cenário'), h('strong', {}, mfIC2Money(sc.saveCents)), h('span', {}, sc.goalReached === true ? 'Atinge a meta' : sc.goalReached === false ? 'Abaixo da meta' : 'Redução estimada')))));
+        }
+        if (blk.kind === 'merchants' || blk.kind === 'habits') {
+            return h('div', { key: bIdx, className: 'mf-ic2-subblock' }, h('span', { className: 'mf-ic2-subblock-title' }, blk.title), h('div', { className: 'mf-ai-table-wrap' }, h('table', {}, h('tbody', {}, ...blk.items.map((it, i) => h('tr', { key: i }, h('td', {}, String(it.label || it.merchant || 'Item')), h('td', {}, String(it.col2 || (it.monthlyCountAvg ? it.monthlyCountAvg + 'x/mês' : ''))), h('td', {}, String(it.col3 || (it.avgTicketCents !== undefined ? mfIC2Money(it.avgTicketCents) : '')))))))));
+        }
+        if (blk.kind === 'decision' && blk.items[0]) {
+            const d = blk.items[0];
+            return h('div', { key: bIdx, className: 'mf-ic2-subblock' }, h('span', { className: 'mf-ic2-subblock-title' }, blk.title), h('div', { className: 'mf-ic2-scenario-grid' }, h('div', { className: 'mf-ic2-scenario-card' }, h('small', {}, 'À vista'), h('strong', {}, mfIC2Money(d.cashTotalCents)), h('span', {}, 'Sem parcelamento')), h('div', { className: 'mf-ic2-scenario-card' }, h('small', {}, d.installments + 'x simulado'), h('strong', {}, mfIC2Money(d.installmentsTotalCents)), h('span', {}, 'Juros: ' + mfIC2Money(d.interestCents))), h('div', { className: 'mf-ic2-scenario-card' }, h('small', {}, d.cashflowVerified ? 'Menor saldo' : 'Projeção'), h('strong', {}, d.cashflowVerified ? mfIC2Money(d.minimumAfterPurchaseCents) : 'Requer planejamento'), h('span', {}, d.worstDay ? 'Data: ' + d.worstDay : 'Somente cálculo de parcelas'))), navAction);
+        }
+        return null;
+    }), h('details', { className: 'mf-ic2-evidence-disclosure' }, h('summary', {}, 'Evidências verificadas (' + model.evidenceSummary.count + ' registros citados · versão ' + model.evidenceSummary.dataVersion + ')'), h('div', { className: 'mf-ic2-evidence-meta' }, h('span', {}, 'Motor: ' + model.evidenceSummary.method + ' · Densidade: ' + density), model.evidenceSummary.sampleIds.length ? h('span', {}, 'Amostra de IDs: ' + model.evidenceSummary.sampleIds.join(', ')) : null)), model.followUps.length && typeof intelligenceSubmitQuestion === 'function' ? h('div', { className: 'mf-ic2-followups', 'aria-label': 'Próximas investigações' }, ...model.followUps.map((fu, i) => h('button', { key: i, type: 'button', className: 'mf-ic2-followup-chip',
+        onClick: () => void intelligenceSubmitQuestion(app, fu.question || fu.label) }, String(fu.label || fu.question || 'Aprofundar')))) : null, model.card.footnote ? h('small', { className: 'mf-ai-structured-foot' }, model.card.footnote) : null);
 }
 const MF_LOCAL_MESSAGE_GRANTS = new WeakMap();
 function mfLocalBindMessage(msg, access, signature, month) {
@@ -8363,8 +8601,10 @@ async function localFinancialSubmit(app, question) {
             const previous = app.__ic2Conversation;
             const conversationId = (previous === null || previous === void 0 ? void 0 : previous.access) === access && (previous === null || previous === void 0 ? void 0 : previous.signature) === signature &&
                 (previous === null || previous === void 0 ? void 0 : previous.answerId) && messages.some((m) => m.id === previous.answerId) ? previous.id : null;
+            const density = app.state.intelligencePanelOpen ? 'compact' :
+                (typeof window !== 'undefined' && window.innerWidth < 720 ? 'mobile' : 'standard');
             ic2 = await api.intelligenceIC2ReadQuery({ token: access.token,
-                source: access.source, profile: access.profile, month, question: q, density: 'standard',
+                source: access.source, profile: access.profile, month, question: q, density,
                 ...(conversationId ? { conversationId } : {}) });
             if (!mfIC2Valid(ic2, access, month))
                 throw Error('Resposta IC2 não verificada.');
@@ -8436,6 +8676,8 @@ async function localFinancialSubmit(app, question) {
         createdAt: intelligenceNowTime(), scopeLabel: scope.label, periodLabel: month,
         structuredCard: ic2 ? mfIC2Card(ic2) : factsValid && operational.card ? operational.card : (reply === null || reply === void 0 ? void 0 : reply.card) || null,
         visual, visualV3,
+        ic2Reply: ic2 || undefined,
+        ic2FollowUps: ic2 && Array.isArray(ic2.followUps) ? ic2.followUps.slice(0, 3) : undefined,
         operationalActions: factsValid && !visualV3 && Array.isArray(operational.actions) ? operational.actions : [],
         operationalEvidence: evidence,
         details: ic2 ? 'IC2-READ-QUERY · ' + (ic2.status === 'partial' ? 'Cobertura parcial. ' : '') +

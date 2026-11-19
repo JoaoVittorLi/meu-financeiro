@@ -120,8 +120,10 @@ async function localFinancialSubmit(app:any,question:string){
    const previous=app.__ic2Conversation;
    const conversationId=previous?.access===access&&previous?.signature===signature&&
      previous?.answerId&&messages.some((m:any)=>m.id===previous.answerId)?previous.id:null;
+   const density=app.state.intelligencePanelOpen?'compact':
+     (typeof window!=='undefined'&&window.innerWidth<720?'mobile':'standard');
    ic2=await api.intelligenceIC2ReadQuery({token:access.token,
-      source:access.source,profile:access.profile,month,question:q,density:'standard',
+      source:access.source,profile:access.profile,month,question:q,density,
       ...(conversationId?{conversationId}:{})});
    if(!mfIC2Valid(ic2,access,month))throw Error('Resposta IC2 não verificada.');
   }else if(typeof api?.intelligenceOperationalAsk==='function'){
@@ -182,6 +184,8 @@ async function localFinancialSubmit(app:any,question:string){
   createdAt:intelligenceNowTime(),scopeLabel:scope.label,periodLabel:month,
   structuredCard:ic2?mfIC2Card(ic2):factsValid&&operational.card?operational.card:reply?.card||null,
   visual,visualV3,
+  ic2Reply:ic2||undefined,
+  ic2FollowUps:ic2&&Array.isArray(ic2.followUps)?ic2.followUps.slice(0,3):undefined,
   operationalActions:factsValid&&!visualV3&&Array.isArray(operational.actions)?operational.actions:[],
   operationalEvidence:evidence,
   details:ic2?'IC2-READ-QUERY · '+(ic2.status==='partial'?'Cobertura parcial. ':'')+

@@ -4,6 +4,7 @@
 const {createHash}=require('node:crypto');
 const {aggregateFinancePeriod}=require('../shared/finance-period-ledger.mjs');
 const {period}=require('./financial-intelligence.cjs');
+const {COPILOT_GUIDE_VERSION,GUARDRAIL_COPY}=require('../shared/copilot-language.cjs');
 const taxonomy=require('./d05-taxonomy.json');
 const fold=value=>String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
 const money=cents=>new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(cents/100);
@@ -33,9 +34,12 @@ function parseIntent(question,context={},selectedMonth=''){
  const mentions=months.map((name,i)=>q.match(new RegExp('(?:^|[^a-z])'+name+'(?:$|[^a-z])'))?i+1:0).filter(Boolean);
  // Generic amount/summary questions belong to existing IC2; do not turn
  // "Quanto gastei?" into a two-period investigation with fabricated coverage.
+ const focusIncome=!/para onde|fluxo|sankey/.test(q)&&(
+  /\b(?:por que|porque|como|investig|analis|compar|vari|mud|subi|caiu|aument|diminui).*\b(?:receit|renda|entrad)/.test(q)||
+  /\b(?:receit|renda|entrad).*(?:variou|mudou|caiu|aument|diminui|subiu)/.test(q));
  const userWants=/por que|porque|investig|analis|aument|variac|compar|cresc|contribu|mudou|subi|caiu|diferenca|recorrent|isolado|pontual|gastando mais|onde .*gastando|estabelec|comerciante/.test(q)||
-  (mentions.length>=2&&/mostre|mostrar|liste|exiba|gastei/.test(q));
- const financial=/despes|gast|categoria|estabelec|comerciante|supermercad|mercado|alimentac|transporte|seguro|assinatur|cobranca|mes/.test(q)||mentions.length>=2;
+  (mentions.length>=2&&/mostre|mostrar|liste|exiba|gastei/.test(q))||focusIncome;
+ const financial=/despes|gast|categoria|estabelec|comerciante|supermercad|mercado|alimentac|transporte|seguro|assinatur|cobranca|mes/.test(q)||mentions.length>=2||focusIncome;
  const followup=!!context?.lastInvestigation&&(/^(e |esse |essa |na |no |e quanto |quanto |me mostre|mostre |onde )/.test(q)||/recorrente|isolado|pontual/.test(q));
  if(!((userWants&&financial)||followup))return null;
  const anchor=String(selectedMonth||'');
@@ -53,7 +57,7 @@ function parseIntent(question,context={},selectedMonth=''){
  }
  const seekMerchant=/estabelec|comerciante|loja|supermercad|mercado/.test(q);
  const seekRecurring=/recorrent|isolado|pontual|repetid|assinatura/.test(q);
- return {previous,current,seekMerchant,seekRecurring,question:q,followup};
+ return {previous,current,seekMerchant,seekRecurring,focusIncome,question:q,followup};
 }
 function authorized(local,scope){
  const r=local.query({token:scope.token,month:scope.month,intent:'radar'},scope.owner);
@@ -187,12 +191,17 @@ function compareSpendingBreakdown({local,scope,intention,clock=Date.now}){
     b.end===period(scope.month).end&&!first.duplicates&&
     after.expenseCents!==access.facts.expenseCents)
   return {status:'stale',message:'O total não reconciliou com o IC-READ autorizado.'};
+ const incomePreviousCents=before.incomeCents,incomeCurrentCents=after.incomeCents,incomeDeltaCents=incomeCurrentCents-incomePreviousCents;
+ if(![incomePreviousCents,incomeCurrentCents,incomeDeltaCents].every(safeCents))
+  throw Error('STALE: receitas não reconciliadas.');
  const status=warning.length?'partial':'ready';
- if(before.expenseCents===0&&after.expenseCents===0)
-  return {status:'no_data',message:'Não há despesas confirmadas nos dois períodos autorizados.'};
- return {status,previousPeriod:a,currentPeriod:b,previousCents:before.expenseCents,
-  currentCents:after.expenseCents,deltaCents:delta,
+ if(before.expenseCents===0&&after.expenseCents===0&&(!intention.focusIncome||(incomePreviousCents===0&&incomeCurrentCents===0)))
+  return {status:'no_data',message:'Não há movimentações confirmadas nos dois períodos autorizados.'};
+ const incomePercentChange=incomePreviousCents===0?null:Math.round(incomeDeltaCents*100/incomePreviousCents);
+ return {status,guideVersion:COPILOT_GUIDE_VERSION,previousPeriod:a,currentPeriod:b,
+  previousCents:before.expenseCents,currentCents:after.expenseCents,deltaCents:delta,
   percentChange:before.expenseCents===0?null:Math.round(delta*100/before.expenseCents),
+  incomePreviousCents,incomeCurrentCents,incomeDeltaCents,incomePercentChange,
   contributions,merchants:merchantResults.slice(0,25),merchantTotal:merchantResults.length,
   coverage:{state:status==='ready'?'complete':'partial',loaded:first.rows.length,
    totalTransactions:first.totalTransactions,truncated:first.truncated,
@@ -200,6 +209,10 @@ function compareSpendingBreakdown({local,scope,intention,clock=Date.now}){
   source:scope.source,profile:scope.profile,asOf:new Date(clock()).toISOString(),
   dataVersion:first.signature,exclusions:['PENDING','TRANSFER','IGNORED'],
   warnings:warning,method:'shared/finance-period-ledger.mjs',
+  epistemicSections:{
+   facts:['Fonte '+(scope.source==='bank'?'bancária':'manual')+', janela '+a.start+' a '+b.end],
+   limitations:[...warning]
+  },
   references:contributions.map(x=>({categoryId:x.categoryId,subcategoryId:x.subcategoryId,label:x.label}))
  };
 }
@@ -230,6 +243,11 @@ function describeInvestigation(info,intent,focus){
  }else if(focus?.category){
   const c=focus.category;lines.push('Em '+c.label+', o total passou de '+money(c.previousCents)+' para '+money(c.currentCents)+
    ' (variação de '+money(c.deltaCents)+').');
+ }else if(intent.focusIncome){
+  lines.push('Entre '+info.previousPeriod.start.slice(0,7)+' e '+info.currentPeriod.start.slice(0,7)+
+   ', as receitas confirmadas carregadas passaram de '+money(info.incomePreviousCents)+' para '+money(info.incomeCurrentCents)+
+   ' (variação de '+money(info.incomeDeltaCents)+(info.incomePercentChange===null?', percentual indefinido (base zero)':', '+info.incomePercentChange+'%')+') .');
+  lines.push(GUARDRAIL_COPY.NOT_AVAILABLE_BALANCE);
  }else if(intent.seekMerchant){
   const top=info.merchants.filter(m=>m.deltaCents!==0).slice(0,4);
   if(!top.length)lines.push('Não há variação confirmada por estabelecimento nos períodos carregados.');
@@ -252,7 +270,7 @@ function describeInvestigation(info,intent,focus){
  lines.push('Fonte '+(info.source==='bank'?'bancária':'manual')+', período '+info.previousPeriod.start+' a '+info.currentPeriod.end+
   ', motor local determinístico; não é saldo disponível.');
  if(info.warnings.length)lines.push('Limitações: '+info.warnings.join(' '));
- lines.push('Os valores mostram contribuições aritméticas, não a causa pessoal das compras.');
+ lines.push(GUARDRAIL_COPY.ARITHMETIC_CONTRIBUTION);
  return lines.join('\n\n');
 }
 module.exports={parseIntent,classifyCategory,compareSpendingBreakdown,focusResult,describeInvestigation};

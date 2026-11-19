@@ -141,8 +141,8 @@ class IntelligenceOrchestrator{
       facts:[fact],
       blocks:[{id:id+':0',kind:'rank',factRef:id,density:replyBase.density}],
       alerts:info.warnings,
-      followUps:[{intent:'investigate_merchants',label:'Investigar estabelecimentos'},
-       {intent:'investigate_categories',label:'Detalhar outra categoria'}],
+      followUps:[{intent:'investigate_merchants',label:'Investigar estabelecimentos',question:'Mostre os estabelecimentos com maior variação'},
+       {intent:'investigate_categories',label:'Detalhar outra categoria',question:'Quais categorias contribuíram para a variação?'}],
       evidence:[{queryId:id,sourceIds:info.contributions.flatMap(c=>c.evidenceIds||[]),
        period:{start:info.previousPeriod.start,end:info.currentPeriod.end,
         timezone:'America/Sao_Paulo'},asOf:info.asOf,quality:info.status,
@@ -212,8 +212,8 @@ class IntelligenceOrchestrator{
   if(notReady)alerts.push('Pelo menos uma ferramenta está indisponível; nenhuma cifra foi estimada.');
   const answer=outputs.map(description).join(' ');
   const followUps=outputs.some(o=>o.tool==='compare')?
-   [{intent:'investigate_merchants',label:'Investigar estabelecimentos'}]:
-   outputs.some(o=>o.tool==='summary')?[{intent:'compare',label:'Comparar com o mês anterior'}]:[];
+   [{intent:'investigate_merchants',label:'Investigar estabelecimentos',question:'Quais estabelecimentos mais pesaram neste mês?'}]:
+   outputs.some(o=>o.tool==='summary')?[{intent:'compare',label:'Comparar com o mês anterior',question:'Compare minhas despesas com o mês anterior'}]:[];
   return result(state,answer,{facts,blocks,alerts,followUps,
    evidence:outputs.map(o=>({queryId:o.factRef,sourceIds:[o.reference.source],
     period:{...o.reference.period,timezone:'America/Sao_Paulo'},
