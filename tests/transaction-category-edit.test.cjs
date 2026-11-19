@@ -96,8 +96,8 @@ test('B02 category entry points use supervised D05 rather than legacy direct sel
 });
 
 test('B02 renderer labels match the current candidate version and exclude prior releases',()=>{
- assert.match(pkg.version,/^\d+\.\d+\.\d+-beta\.\d+$/);
- const labels=src.match(/\bv\d+\.\d+\.\d+-beta\.\d+\b/g)||[];
+ assert.match(pkg.version,/^\d+\.\d+\.\d+(?:-(?:beta|rc)\.\d+)?$/);
+ const labels=src.match(/\bv\d+\.\d+\.\d+(?:-(?:beta|rc)\.\d+)?\b/g)||[];
  assert.equal(labels.length,3);
  assert.deepEqual([...new Set(labels)],['v'+pkg.version]);
  assert.match(pkg.scripts['dist:windows'],/provenance:verify/);
