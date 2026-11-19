@@ -6,8 +6,10 @@ function mfB05ChangeMode(app,mode) {
   intelligenceHistoryOpen:false,mfB05DrawerKind:null},()=>{
   if(mode==='today'&&previous!==mode&&typeof intelligencePremiumLoad==='function'&&
     !app.state.intelligencePremiumLoading&&(!app.state.intelligencePremiumReport||
-    app.state.intelligencePremiumSignature!==intelligencePremiumSignature(app)))
+    app.state.intelligencePremiumSignature!==intelligencePremiumSignature(app))){
    void intelligencePremiumLoad(app);
+   if(typeof intelligenceCopilotInsightsLoad==='function')void intelligenceCopilotInsightsLoad(app);
+  }
  });
 }
 function mfB05Tabs(app,selected) {

@@ -18,6 +18,8 @@ const {PlanningStore}=require('./planning.cjs');
 const {LocalFinancialIntelligence}=require('./financial-intelligence.cjs');
 const {IntelligenceOperational}=require('./intelligence-operational.cjs');
 const {IC2ReadQueryGateway}=require('./intelligence-ic2-adapter.cjs');
+const {scopeOf}=require('./intelligence-context.cjs');
+const {scanProactiveInsights}=require('./intelligence-proactive.cjs');
 const {RCCategoryGateway}=require('./intelligence-category-rc.cjs');
 const {installD05Ipc}=require('./d05-ipc-adapter.cjs');
 const {D05RCSecureGate}=require('./d05-rc-gate.cjs');
@@ -330,6 +332,11 @@ app.whenReady().then(async()=>{
  });
  ipcMain.handle('intelligence:ic2-read-query',(event,input)=>{
   requireAppSender(event);return ic2ReadQuery.ask(input,event.sender.id);
+ });
+ ipcMain.handle('intelligence:copilot-insights',(event,input)=>{
+  requireAppSender(event);
+  const scope=scopeOf({token:input?.token,source:input?.source,profile:input?.profile,month:input?.month},event.sender.id);
+  return scanProactiveInsights({local:localFinancial,scope});
  });
  // I2-B/C: explicitly scoped IPCs. Renderer cannot supply owner, environment,
  // a synthetic IC-READ token, verifiedGesture, or a SQLite filename.

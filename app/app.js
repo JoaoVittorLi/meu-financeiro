@@ -4879,8 +4879,11 @@ function mfB05ChangeMode(app, mode) {
         intelligenceHistoryOpen: false, mfB05DrawerKind: null }, () => {
         if (mode === 'today' && previous !== mode && typeof intelligencePremiumLoad === 'function' &&
             !app.state.intelligencePremiumLoading && (!app.state.intelligencePremiumReport ||
-            app.state.intelligencePremiumSignature !== intelligencePremiumSignature(app)))
+            app.state.intelligencePremiumSignature !== intelligencePremiumSignature(app))) {
             void intelligencePremiumLoad(app);
+            if (typeof intelligenceCopilotInsightsLoad === 'function')
+                void intelligenceCopilotInsightsLoad(app);
+        }
     });
 }
 function mfB05Tabs(app, selected) {
@@ -5124,8 +5127,11 @@ function renderMfB05Today(app, explicitVerifiedInput) {
         'Conecte uma fonte autorizada para transformar registros em decisões com evidência.')), h('article', { className: 'mf-b05-hero' }, h('div', { className: 'mf-b05-hero-copy' }, h('small', {}, projection.available ? 'PULSO FINANCEIRO · PROJEÇÃO VERIFICADA' : 'PULSO FINANCEIRO · DADOS A CONCILIAR'), h('h3', {}, projection.available ? 'Seu dinheiro, com espaço para respirar.' : 'Um panorama claro, sem saldos inventados.'), h('p', {}, projection.available ? 'Selecione os marcos para acompanhar compromissos, margem e folga no mesmo cenário.' :
         'Temos prioridades e orçamento quando autorizados. A projeção de saldo depende de uma fonte que ainda não está disponível no serviço atual.'), projection.available && projection.reserveSuggestionCents !== null ?
         h('div', { className: 'mf-b05-reserve-note' }, h('span', {}, 'Reserva sugerida neste cenário'), h('strong', {}, mfB05Money(projection.reserveSuggestionCents)), h('small', {}, 'Simulação · nada foi transferido')) : null, h('div', { className: 'mf-b05-hero-actions' }, h('button', { type: 'button', className: 'primary-button', onClick: () => mfB05ChangeMode(app, 'chat') }, 'Conversar sobre meu cenário'), projection.available ? h('button', { id: 'mf-b05-adjust', type: 'button', className: 'ghost-button',
-        onClick: () => mfB05OpenDrawer(app, 'scenario', 'mf-b05-adjust') }, 'Ajustar cenário') : null, h('button', { type: 'button', className: 'ghost-button', onClick: () => void intelligencePremiumLoad(app),
-        disabled: !!s.intelligencePremiumLoading }, s.intelligencePremiumLoading ? 'Atualizando…' : 'Atualizar sinais'))), mfB05Ring(app, projection, selected)), mfB05Timeline(app, projection, selected), s.intelligencePremiumError ? h('p', { role: 'alert', className: 'mf-ai-error' }, s.intelligencePremiumError) : null, h('div', { className: 'mf-b05-signals-head' }, h('h3', {}, 'Sinais que merecem atenção'), h('small', {}, live ? 'Somente fatos da fonte autorizada' : 'Aguardando consulta e autorização')), h('div', { className: 'mf-b05-signals' }, ...(function () {
+        onClick: () => mfB05OpenDrawer(app, 'scenario', 'mf-b05-adjust') }, 'Ajustar cenário') : null, h('button', { type: 'button', className: 'ghost-button', onClick: () => {
+            void intelligencePremiumLoad(app);
+            if (typeof intelligenceCopilotInsightsLoad === 'function')
+                void intelligenceCopilotInsightsLoad(app);
+        }, disabled: !!s.intelligencePremiumLoading }, s.intelligencePremiumLoading ? 'Atualizando…' : 'Atualizar sinais'))), mfB05Ring(app, projection, selected)), mfB05Timeline(app, projection, selected), s.intelligencePremiumError ? h('p', { role: 'alert', className: 'mf-ai-error' }, s.intelligencePremiumError) : null, h('div', { className: 'mf-b05-signals-head' }, h('h3', {}, 'Sinais que merecem atenção'), h('small', {}, live ? 'Somente fatos da fonte autorizada' : 'Aguardando consulta e autorização')), h('div', { className: 'mf-b05-signals' }, ...(function () {
         var _a, _b, _c, _d;
         const shown = [];
         if ((explicitVerifiedInput === null || explicitVerifiedInput === void 0 ? void 0 : explicitVerifiedInput.coverage) === 'verified' &&
@@ -5145,7 +5151,19 @@ function renderMfB05Today(app, explicitVerifiedInput) {
     })(), !signals.length && !mfB05DeliveryEvidence(explicitVerifiedInput) &&
         !(((_a = explicitVerifiedInput === null || explicitVerifiedInput === void 0 ? void 0 : explicitVerifiedInput.currentExpenses) === null || _a === void 0 ? void 0 : _a.coverage) === 'verified' &&
             ((_b = explicitVerifiedInput === null || explicitVerifiedInput === void 0 ? void 0 : explicitVerifiedInput.budgets) === null || _b === void 0 ? void 0 : _b.coverage) === 'verified') ? h('div', { className: 'mf-b05-empty' }, h('strong', {}, live ? 'Nenhum alerta confirmado neste recorte.' : 'Ainda não há sinais disponíveis.'), h('p', {}, live ? 'Ausência de alerta não garante ausência de despesas futuras.' :
-        'Use Permissões de consulta acima e atualize os dados para começar.'), h('button', { type: 'button', className: 'ghost-button', onClick: () => app.navigate('budgets') }, 'Ver Orçamentos')) : null), h('footer', { className: 'mf-b05-footer' }, h('span', {}, 'Da informação à decisão — sempre sob seu controle.'), h('button', { type: 'button', className: 'mf-b05-link', onClick: () => mfB05ChangeMode(app, 'actions') }, 'Explorar Plano de Ação')), mfB05ContextDrawer(app, projection, selected, explicitVerifiedInput), mfD03ContextDrawer(app));
+        'Use Permissões de consulta acima e atualize os dados para começar.'), h('button', { type: 'button', className: 'ghost-button', onClick: () => app.navigate('budgets') }, 'Ver Orçamentos')) : null), (function () {
+        const env = typeof mfCopilotInsightsLive === 'function' ? mfCopilotInsightsLive(app) : null;
+        const list = Array.isArray(env === null || env === void 0 ? void 0 : env.insights) ? env.insights.slice(0, 3) : [];
+        if (!list.length)
+            return null;
+        return h('section', { className: 'mf-copilot-proactive', 'aria-label': 'Radar proativo do Copiloto' }, h('div', { className: 'mf-b05-signals-head' }, h('h3', {}, 'Radar proativo do Copiloto'), h('small', {}, 'Até 3 sinais sem sobreposição · versão ' + String(env.dataVersion || '').slice(0, 12))), h('div', { className: 'mf-copilot-proactive-grid' }, ...list.map((ins) => h('article', { key: ins.insightId, className: 'mf-copilot-proactive-card' }, h('header', {}, mfB05CategoryBadge(ins.categoryId || null, ins.subcategoryId || null, ins.categoryLabel || 'Geral'), h('div', {}, h('small', {}, ins.importance === 'high' ? 'ALTA PRIORIDADE' : 'OPORTUNIDADE'), h('h4', {}, ins.title))), h('p', {}, ins.summary), Number.isSafeInteger(ins.impactCentsMax) ? h('strong', { className: 'mf-copilot-impact' }, ins.impactCentsMin === ins.impactCentsMax ? mfB05Money(ins.impactCentsMax) : mfB05Money(ins.impactCentsMin) + ' – ' + mfB05Money(ins.impactCentsMax)) : null, h('small', { className: 'mf-copilot-uncertainty' }, ins.uncertainty), h('div', { className: 'mf-copilot-proactive-actions' }, h('button', { type: 'button', className: 'mf-b05-link', onClick: () => {
+                mfB05ChangeMode(app, 'chat');
+                if (typeof localFinancialSubmit === 'function')
+                    void localFinancialSubmit(app, ins.recommendedQuestion);
+                else
+                    app.setState({ intelligenceDraft: ins.recommendedQuestion });
+            } }, 'Investigar no Copiloto'), h('button', { type: 'button', className: 'ghost-button', onClick: () => mfB05ChangeMode(app, 'actions') }, 'Plano'))))));
+    })(), h('footer', { className: 'mf-b05-footer' }, h('span', {}, 'Da informação à decisão — sempre sob seu controle.'), h('button', { type: 'button', className: 'mf-b05-link', onClick: () => mfB05ChangeMode(app, 'actions') }, 'Explorar Plano de Ação')), mfB05ContextDrawer(app, projection, selected, explicitVerifiedInput), mfD03ContextDrawer(app));
 }
 function mfB05CloseHistory(app) {
     app.setState({ intelligenceHistoryOpen: false }, () => {
@@ -8530,8 +8548,8 @@ async function localFinancialEnable(app) {
         app.__ic2Conversation = null;
         app.__ic2InvestigationActive = false;
         const backup = ((_b = s.localFinancialAccess) === null || _b === void 0 ? void 0 : _b.backup) || { intelligenceThreads: s.intelligenceThreads, intelligenceMessages: s.intelligenceMessages, intelligenceActiveThreadId: s.intelligenceActiveThreadId, intelligenceHydratedMode: s.intelligenceHydratedMode };
-        app.setState({ localFinancialAccess: { ...grant, backup }, localFinancialBusy: false, localFinancialRadar: null, intelligenceThreads: [], intelligenceMessages: [], intelligenceActiveThreadId: null, intelligenceDraft: '', intelligencePreparedQuestion: '', workIntelligenceDemo: s.workIntelligenceDemo ? { ...s.workIntelligenceDemo, enabled: false } : undefined }, () => { void localFinancialRadar(app); if (typeof intelligencePremiumLoad === 'function')
-            void intelligencePremiumLoad(app); });
+        app.setState({ localFinancialAccess: { ...grant, backup }, localFinancialBusy: false, localFinancialRadar: null, intelligenceCopilotInsights: null, intelligenceThreads: [], intelligenceMessages: [], intelligenceActiveThreadId: null, intelligenceDraft: '', intelligencePreparedQuestion: '', workIntelligenceDemo: s.workIntelligenceDemo ? { ...s.workIntelligenceDemo, enabled: false } : undefined }, () => { void localFinancialRadar(app); if (typeof intelligencePremiumLoad === 'function')
+            void intelligencePremiumLoad(app); void intelligenceCopilotInsightsLoad(app); });
     }
     catch {
         app.setState({ localFinancialBusy: false, localFinancialError: 'Não foi possível autorizar a leitura local. Nenhum dado foi consultado por esta solicitação.' });
@@ -8542,9 +8560,10 @@ function localFinancialDisable(app) {
     app.__ic2Conversation = null;
     app.__ic2InvestigationActive = false;
     app.__localRadarRequest = (app.__localRadarRequest || 0) + 1;
+    app.__copilotInsightsRequest = (app.__copilotInsightsRequest || 0) + 1;
     const access = app.state.localFinancialAccess;
     app.__localReadGeneration = (app.__localReadGeneration || 0) + 1;
-    app.setState({ ...access === null || access === void 0 ? void 0 : access.backup, localFinancialAccess: null, localFinancialRadar: null, localFinancialBusy: false, localFinancialError: '', intelligenceDraft: '' }, () => { if (typeof intelligencePremiumLoad === 'function')
+    app.setState({ ...access === null || access === void 0 ? void 0 : access.backup, localFinancialAccess: null, localFinancialRadar: null, intelligenceCopilotInsights: null, localFinancialBusy: false, localFinancialError: '', intelligenceDraft: '' }, () => { if (typeof intelligencePremiumLoad === 'function')
         void intelligencePremiumLoad(app); });
     if (access === null || access === void 0 ? void 0 : access.token)
         void ((_b = (_a = localFinancialAPI()) === null || _a === void 0 ? void 0 : _a.localFinancialRevoke) === null || _b === void 0 ? void 0 : _b.call(_a, access.token).catch(() => app.setState({ localFinancialError: 'A interface encerrou a leitura. A autorização do processo expira em até 15 minutos.' })));
@@ -8595,7 +8614,7 @@ async function localFinancialSubmit(app, question) {
         /^(e |esse |essa |no |na |quanto |me mostre|mostre |onde )|recorrente|isolado|pontual/.test(foldedQuestion);
     const i3Requested = financialInvestigation || i3Followup;
     const copilotIntentRequested = i3Requested ||
-        /(economiz|poupar|guardar|cortar gastos|reduzir gastos|reduzir despesas|plano de economia|meta de econom|recorrenc|assinatur|cobrancas? repetid|reajuste|habitos?|simular compra|posso comprar|comprar .* em \d+x|\b\d+\s*x\b)/.test(foldedQuestion);
+        /(economiz|poupar|guardar|cortar gastos|reduzir gastos|reduzir despesas|plano de economia|meta de econom|recorrenc|assinatur|cobrancas? repetid|reajuste|habitos?|simular compra|posso comprar|comprar .* em \d+x|\b\d+\s*x\b|parcelar|proximos \d{1,2} meses)/.test(foldedQuestion);
     const v3Requested = mfV3Requested(q);
     const v3Kind = !copilotIntentRequested && typeof (api === null || api === void 0 ? void 0 : api.intelligenceOperationalAsk) === 'function' &&
         v3Requested && v3Requested !== 'proposal' && v3Requested !== 'approval' ? v3Requested : null;
@@ -8613,8 +8632,11 @@ async function localFinancialSubmit(app, question) {
                 (previous === null || previous === void 0 ? void 0 : previous.answerId) && messages.some((m) => m.id === previous.answerId) ? previous.id : null;
             const density = app.state.intelligencePanelOpen ? 'compact' :
                 (typeof window !== 'undefined' && window.innerWidth < 720 ? 'mobile' : 'standard');
+            const safePage = ['overview', 'transactions', 'planning', 'budgets', 'assistant', 'simulator', 'banks', 'settings', 'intelligence'].includes(app.state.page) ? app.state.page : 'intelligence';
+            const pageContext = { page: safePage,
+                ...(app.state.txCategoryFilter && typeof app.state.txCategoryFilter === 'string' ? { category: app.state.txCategoryFilter.slice(0, 80) } : {}) };
             ic2 = await api.intelligenceIC2ReadQuery({ token: access.token,
-                source: access.source, profile: access.profile, month, question: q, density,
+                source: access.source, profile: access.profile, month, question: q, density, pageContext,
                 ...(conversationId ? { conversationId } : {}) });
             if (!mfIC2Valid(ic2, access, month))
                 throw Error('Resposta IC2 não verificada.');
@@ -8710,12 +8732,54 @@ function renderLocalFinancialAccess(app) {
     const s = app.state, access = s.localFinancialAccess, active = (access === null || access === void 0 ? void 0 : access.token) && access.expiresAt > Date.now();
     if (s.categoryReviewGrant)
         return h('section', { className: 'mf-ai-explainer' }, h('div', {}, h('strong', {}, 'Revisão sintética autorizada · conversa temporária'), h('p', {}, 'Mensagens e prévias ficam apenas nesta sessão. Regras e decisões confirmadas são auditadas no SQLite de teste.'), h('button', { type: 'button', className: 'ghost-button', onClick: () => categoryReviewDisable(app) }, 'Encerrar revisão e limpar respostas da sessão')));
-    return h('section', { className: 'mf-ai-explainer mf-ai-local-access', 'aria-label': 'Permissão de leitura financeira local' }, h('div', {}, h('strong', {}, active ? 'Leitura local autorizada · sem IA externa' : 'Consultar seus registros locais'), h('p', {}, 'Ao autorizar, movimentos e limites da fonte escolhida serão lidos neste computador. Respostas ficam apenas na memória desta sessão. Consultas usam o mês e a fonte abaixo, sem herdar filtros da tabela.'), access ? h('p', {}, 'Fonte: ' + access.source + ' · perfil ' + access.profile + ' · autorização por até 15 minutos.') : null, h('div', { className: 'mf-ai-access-fields' }, !access ? h('label', { className: 'mf-ai-access-field' }, 'Fonte', h('select', { value: s.mode === 'demo' ? 'manual' : s.localFinancialSource || 'bank', disabled: s.mode === 'demo', onChange: (e) => app.setState({ localFinancialSource: e.target.value }) }, h('option', { value: 'bank' }, 'Contas conectadas'), h('option', { value: 'manual' }, 'Lançamentos manuais'))) : null, h('label', { className: 'mf-ai-access-field' }, 'Mês da consulta', h('input', { type: 'month', value: s.localFinancialMonth || s.month, onChange: (e) => app.setState({ localFinancialMonth: e.target.value, localFinancialRadar: null }, () => { if (typeof intelligencePremiumLoad === 'function')
-            void intelligencePremiumLoad(app); }) })), !access && s.mode !== 'demo' ? h('label', { className: 'mf-ai-access-planning' }, h('input', { type: 'checkbox', checked: s.localFinancialPlanning === true, onChange: (e) => app.setState({ localFinancialPlanning: e.target.checked }) }), h('span', {}, 'Permitir também leitura do Planejamento')) : null), h('div', { className: 'mf-ai-proposal-actions' }, h('button', { type: 'button', className: 'primary-button', disabled: s.localFinancialBusy, onClick: () => active ? (void localFinancialRadar(app), void intelligencePremiumLoad(app)) : void localFinancialEnable(app) }, active ? 'Atualizar radar' : 'Autorizar leitura local'), access ? h('button', { type: 'button', className: 'ghost-button', onClick: () => localFinancialDisable(app) }, 'Encerrar leitura e limpar respostas da sessão') : null), s.localFinancialError ? h('p', { role: 'alert' }, s.localFinancialError) : null));
+    return h('section', { className: 'mf-ai-explainer mf-ai-local-access', 'aria-label': 'Permissão de leitura financeira local' }, h('div', {}, h('strong', {}, active ? 'Leitura local autorizada · sem IA externa' : 'Consultar seus registros locais'), h('p', {}, 'Ao autorizar, movimentos e limites da fonte escolhida serão lidos neste computador. Respostas ficam apenas na memória desta sessão. Consultas usam o mês e a fonte abaixo, sem herdar filtros da tabela.'), access ? h('p', {}, 'Fonte: ' + access.source + ' · perfil ' + access.profile + ' · autorização por até 15 minutos.') : null, h('div', { className: 'mf-ai-access-fields' }, !access ? h('label', { className: 'mf-ai-access-field' }, 'Fonte', h('select', { value: s.mode === 'demo' ? 'manual' : s.localFinancialSource || 'bank', disabled: s.mode === 'demo', onChange: (e) => app.setState({ localFinancialSource: e.target.value }) }, h('option', { value: 'bank' }, 'Contas conectadas'), h('option', { value: 'manual' }, 'Lançamentos manuais'))) : null, h('label', { className: 'mf-ai-access-field' }, 'Mês da consulta', h('input', { type: 'month', value: s.localFinancialMonth || s.month, onChange: (e) => app.setState({ localFinancialMonth: e.target.value, localFinancialRadar: null, intelligenceCopilotInsights: null }, () => { if (typeof intelligencePremiumLoad === 'function')
+            void intelligencePremiumLoad(app); void intelligenceCopilotInsightsLoad(app); }) })), !access && s.mode !== 'demo' ? h('label', { className: 'mf-ai-access-planning' }, h('input', { type: 'checkbox', checked: s.localFinancialPlanning === true, onChange: (e) => app.setState({ localFinancialPlanning: e.target.checked }) }), h('span', {}, 'Permitir também leitura do Planejamento')) : null), h('div', { className: 'mf-ai-proposal-actions' }, h('button', { type: 'button', className: 'primary-button', disabled: s.localFinancialBusy, onClick: () => active ? (void localFinancialRadar(app), void intelligencePremiumLoad(app), void intelligenceCopilotInsightsLoad(app)) : void localFinancialEnable(app) }, active ? 'Atualizar radar' : 'Autorizar leitura local'), access ? h('button', { type: 'button', className: 'ghost-button', onClick: () => localFinancialDisable(app) }, 'Encerrar leitura e limpar respostas da sessão') : null), s.localFinancialError ? h('p', { role: 'alert' }, s.localFinancialError) : null));
 }
 function renderLocalFinancialRadar(app) {
     const report = app.state.localFinancialRadar;
     return h('div', { className: 'mf-ai-today' }, h('h2', {}, 'O que seus registros mostram hoje'), report ? renderIntelligenceStructuredCard(report.card) : h('p', { role: 'status' }, 'Atualize o radar para consultar o mês escolhido.'), h('div', { className: 'mf-ai-starter-grid' }, ...['Quanto gastei com alimentação neste mês?', 'Quais foram minhas maiores despesas?', 'Quais categorias ultrapassaram o orçamento?', 'Quanto tenho comprometido para o próximo mês?', 'Quais despesas aumentaram?', 'Que movimentações preciso revisar?', 'Quanto gastei em assinaturas?', 'Quais dados faltam para avaliar uma compra?'].map(q => h('button', { type: 'button', className: 'mf-ai-context-prompt', key: q, onClick: () => { app.setState({ intelligenceTab: 'chat', intelligenceMainMode: 'chat' }); void localFinancialSubmit(app, q); } }, q))));
+}
+const MF_COPILOT_INSIGHTS_GRANTS = new WeakMap();
+function mfCopilotInsightsLive(app) {
+    var _a;
+    const env = (_a = app === null || app === void 0 ? void 0 : app.state) === null || _a === void 0 ? void 0 : _a.intelligenceCopilotInsights;
+    if (!env || env.contract !== 'MF2-PROACTIVE-V1')
+        return null;
+    const b = MF_COPILOT_INSIGHTS_GRANTS.get(env);
+    const access = app.state.localFinancialAccess;
+    const month = app.state.localFinancialMonth || app.state.month;
+    return !!b && b.access === access && b.token === (access === null || access === void 0 ? void 0 : access.token) &&
+        b.signature === intelligencePremiumSignature(app) && b.month === month &&
+        (access === null || access === void 0 ? void 0 : access.profile) === (app.state.mode === 'demo' ? 'demo' : 'real') &&
+        Number.isFinite(access === null || access === void 0 ? void 0 : access.expiresAt) && access.expiresAt > Date.now() ? env : null;
+}
+async function intelligenceCopilotInsightsLoad(app) {
+    var _a;
+    const api = localFinancialAPI();
+    const s = app === null || app === void 0 ? void 0 : app.state, access = s === null || s === void 0 ? void 0 : s.localFinancialAccess;
+    const request = (app.__copilotInsightsRequest || 0) + 1;
+    app.__copilotInsightsRequest = request;
+    if (!(access === null || access === void 0 ? void 0 : access.token) || access.expiresAt <= Date.now() || typeof (api === null || api === void 0 ? void 0 : api.intelligenceCopilotInsights) !== 'function') {
+        if (s)
+            app.setState({ intelligenceCopilotInsights: null });
+        return;
+    }
+    const month = s.localFinancialMonth || s.month, signature = intelligencePremiumSignature(app);
+    try {
+        const env = await api.intelligenceCopilotInsights({ token: access.token, source: access.source, profile: access.profile, month });
+        if (request !== app.__copilotInsightsRequest || app.state.localFinancialAccess !== access ||
+            ((_a = app.state.localFinancialAccess) === null || _a === void 0 ? void 0 : _a.token) !== access.token ||
+            signature !== intelligencePremiumSignature(app))
+            return;
+        if ((env === null || env === void 0 ? void 0 : env.contract) !== 'MF2-PROACTIVE-V1' || env.readOnly !== true || env.changesApplied !== false)
+            return;
+        MF_COPILOT_INSIGHTS_GRANTS.set(env, { access, token: access.token, signature, month });
+        app.setState({ intelligenceCopilotInsights: env });
+    }
+    catch {
+        if (request === app.__copilotInsightsRequest)
+            app.setState({ intelligenceCopilotInsights: null });
+    }
 }
 function categoryReviewAPI() { return desktop; }
 const categoryReviewKey = (r) => JSON.stringify([r.accountId, r.externalId]);

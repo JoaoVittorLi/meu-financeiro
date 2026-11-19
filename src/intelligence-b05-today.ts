@@ -247,8 +247,10 @@ function renderMfB05Today(app,explicitVerifiedInput?:any) {
      h('button',{type:'button',className:'primary-button',onClick:()=>mfB05ChangeMode(app,'chat')},'Conversar sobre meu cenário'),
      projection.available?h('button',{id:'mf-b05-adjust',type:'button',className:'ghost-button',
       onClick:()=>mfB05OpenDrawer(app,'scenario','mf-b05-adjust')},'Ajustar cenário'):null,
-     h('button',{type:'button',className:'ghost-button',onClick:()=>void intelligencePremiumLoad(app),
-      disabled:!!s.intelligencePremiumLoading},s.intelligencePremiumLoading?'Atualizando…':'Atualizar sinais'))),
+     h('button',{type:'button',className:'ghost-button',onClick:()=>{
+       void intelligencePremiumLoad(app);
+       if(typeof intelligenceCopilotInsightsLoad==='function')void intelligenceCopilotInsightsLoad(app);
+      },disabled:!!s.intelligencePremiumLoading},s.intelligencePremiumLoading?'Atualizando…':'Atualizar sinais'))),
    mfB05Ring(app,projection,selected)),
   mfB05Timeline(app,projection,selected),
   s.intelligencePremiumError?h('p',{role:'alert',className:'mf-ai-error'},s.intelligencePremiumError):null,
@@ -279,6 +281,31 @@ function renderMfB05Today(app,explicitVerifiedInput?:any) {
     h('p',{},live?'Ausência de alerta não garante ausência de despesas futuras.':
      'Use Permissões de consulta acima e atualize os dados para começar.'),
     h('button',{type:'button',className:'ghost-button',onClick:()=>app.navigate('budgets')},'Ver Orçamentos')):null),
+  (function(){
+   const env=typeof mfCopilotInsightsLive==='function'?mfCopilotInsightsLive(app):null;
+   const list=Array.isArray(env?.insights)?env.insights.slice(0,3):[];
+   if(!list.length)return null;
+   return h('section',{className:'mf-copilot-proactive','aria-label':'Radar proativo do Copiloto'},
+    h('div',{className:'mf-b05-signals-head'},
+     h('h3',{},'Radar proativo do Copiloto'),
+     h('small',{},'Até 3 sinais sem sobreposição · versão '+String(env.dataVersion||'').slice(0,12))),
+    h('div',{className:'mf-copilot-proactive-grid'},
+     ...list.map((ins:any)=>h('article',{key:ins.insightId,className:'mf-copilot-proactive-card'},
+      h('header',{},
+       mfB05CategoryBadge(ins.categoryId||null,ins.subcategoryId||null,ins.categoryLabel||'Geral'),
+       h('div',{},h('small',{},ins.importance==='high'?'ALTA PRIORIDADE':'OPORTUNIDADE'),h('h4',{},ins.title))),
+      h('p',{},ins.summary),
+      Number.isSafeInteger(ins.impactCentsMax)?h('strong',{className:'mf-copilot-impact'},
+       ins.impactCentsMin===ins.impactCentsMax?mfB05Money(ins.impactCentsMax):mfB05Money(ins.impactCentsMin)+' – '+mfB05Money(ins.impactCentsMax)):null,
+      h('small',{className:'mf-copilot-uncertainty'},ins.uncertainty),
+      h('div',{className:'mf-copilot-proactive-actions'},
+       h('button',{type:'button',className:'mf-b05-link',onClick:()=>{
+        mfB05ChangeMode(app,'chat');
+        if(typeof localFinancialSubmit==='function')void localFinancialSubmit(app,ins.recommendedQuestion);
+        else app.setState({intelligenceDraft:ins.recommendedQuestion});
+       }},'Investigar no Copiloto'),
+       h('button',{type:'button',className:'ghost-button',onClick:()=>mfB05ChangeMode(app,'actions')},'Plano'))))));
+  })(),
   h('footer',{className:'mf-b05-footer'},
    h('span',{},'Da informação à decisão — sempre sob seu controle.'),
    h('button',{type:'button',className:'mf-b05-link',onClick:()=>mfB05ChangeMode(app,'actions')},'Explorar Plano de Ação')),

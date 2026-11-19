@@ -2,7 +2,8 @@
 // RC-ALL-01: versioned IC2-READ-QUERY gateway, kept separate from the IC-v1
 // renderer and the existing D01-D04 operational/visual surface.
 const {IntelligenceOrchestrator}=require('./intelligence-orchestrator.cjs');
-const REQUEST_FIELDS=new Set(['token','source','profile','month','question','conversationId','density']);
+const REQUEST_FIELDS=new Set(['token','source','profile','month','question','conversationId','density','pageContext']);
+const ALLOWED_PAGES=new Set(['overview','transactions','planning','budgets','assistant','simulator','banks','settings','intelligence']);
 const STATUSES=new Set(['ready','partial','denied','stale','unavailable','needs_clarification','unsupported']);
 function assertIC2(response,input){
  if(!response||response.version!==2||response.contract!=='I2-A/D02-V3'||
@@ -39,6 +40,14 @@ class IC2ReadQueryGateway{
   if(!input||typeof input!=='object'||Array.isArray(input)||
      Object.keys(input).some(k=>!REQUEST_FIELDS.has(k))||
      !Number.isInteger(owner))throw Error('Consulta IC2 inválida.');
+  if(input.pageContext!==undefined){
+   const pc=input.pageContext;
+   if(!pc||typeof pc!=='object'||Array.isArray(pc)||
+      Object.keys(pc).some(k=>k!=='page'&&k!=='category')||
+      (pc.page!==undefined&&!ALLOWED_PAGES.has(pc.page))||
+      (pc.category!==undefined&&(typeof pc.category!=='string'||pc.category.length>80)))
+    throw Error('Consulta IC2 inválida.');
+  }
   // The existing authoritative grant is checked before and after asynchronous work.
   const check=()=>{
    const r=this.local.query({token:input.token,month:input.month,intent:'radar'},owner);

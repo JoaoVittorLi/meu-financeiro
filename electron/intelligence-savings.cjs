@@ -19,7 +19,7 @@ const ESSENTIAL_PARENT_IDS = new Set(['cat:moradia', 'cat:saude', 'cat:contas'])
 function parseBrlCents(rawQuestion) {
  const q = String(rawQuestion || '');
  const match = q.match(
-  /(?:r\$\s*(\d{1,3}(?:\.\d{3})*|\d+)(?:,(\d{1,2}))?|\b(\d{1,3}(?:\.\d{3})*|\d+)(?:,(\d{1,2}))?\s*reais\b|\b(?:economizar|poupar|guardar|reduzir)\s+(?:ate\s+|ao menos\s+|cerca de\s+)?(?:r\$\s*)?(\d{1,3}(?:\.\d{3})*|\d+)(?:,(\d{1,2}))?)/i
+  /(?:r\$\s*(\d{1,3}(?:\.\d{3})+|\d+)(?:,(\d{1,2}))?(?!\d)|\b(\d{1,3}(?:\.\d{3})+|\d+)(?:,(\d{1,2}))?\s*reais\b|\b(?:economizar|poupar|guardar|reduzir|comprar|compra|gastar|gasto|parcelar|pagar|custa|custando|de|por)\s+(?:r\$\s*)?(\d{1,3}(?:\.\d{3})+|\d+)(?:,(\d{1,2}))?(?!\d)(?!\s*(?:x\b|%|vezes|parcelas?|mes(?:es)?|dias?|anos?)\b))/i
  );
  if (!match) return null;
  const intStr = match[1] ?? match[3] ?? match[5];

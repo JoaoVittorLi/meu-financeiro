@@ -13,6 +13,7 @@ contextBridge.exposeInMainWorld('financeDesktop', Object.freeze({
   intelligenceOperationalOverview: input => ipcRenderer.invoke('intelligence:operational-overview',input),
   intelligenceOperationalAsk: input => ipcRenderer.invoke('intelligence:operational-ask',input),
   intelligenceIC2ReadQuery: input => ipcRenderer.invoke('intelligence:ic2-read-query',input),
+  intelligenceCopilotInsights: input => ipcRenderer.invoke('intelligence:copilot-insights',input),
   intelligenceCategoryPersonal: input => ipcRenderer.invoke('intelligence:category-personal',input),
   intelligenceCategorySandboxStart: month => ipcRenderer.invoke('intelligence:category-sandbox-start',month),
   intelligenceCategorySandboxCommand: input => ipcRenderer.invoke('intelligence:category-sandbox-command',input),

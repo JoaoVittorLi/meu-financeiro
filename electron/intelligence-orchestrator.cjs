@@ -9,6 +9,7 @@ const {period}=require('./financial-intelligence.cjs');
 const {parseIntent,compareSpendingBreakdown,focusResult,describeInvestigation}=require('./intelligence-investigation.cjs');
 const {parseSavingsIntent,recommendSavings,describeSavings}=require('./intelligence-savings.cjs');
 const {parseRecurringIntent,detectRecurringCandidates,describeRecurring}=require('./intelligence-recurring.cjs');
+const {parseSimulatorIntent,simulateDecisionForCopilot,describeDecisionSimulation}=require('./intelligence-simulator-copilot.cjs');
 const fold=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
 const money=n=>new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(n/100);
 const DENSITIES=['compact','standard','analysis','mobile'];
@@ -116,7 +117,8 @@ class IntelligenceOrchestrator{
   const investigationIntent=parseIntent(question,ctx,scope.month);
   const savingsIntent=investigationIntent?.followup?null:parseSavingsIntent(question);
   const recurringIntent=(investigationIntent?.followup||savingsIntent)?null:parseRecurringIntent(question);
-  if(savingsIntent||recurringIntent){
+  const simulatorIntent=(investigationIntent?.followup||savingsIntent||recurringIntent)?null:parseSimulatorIntent(question);
+  if(savingsIntent||recurringIntent||simulatorIntent){
    try{
     if(savingsIntent){
      const info=recommendSavings({local:this.tools.local,scope,intention:savingsIntent,clock:this.clock});
@@ -131,17 +133,31 @@ class IntelligenceOrchestrator{
       contextPatch:{lastInvestigation:null,lastPlan:null,exclusions:[],
        categoryNames:(info.opportunities||[]).map(o=>o.categoryLabel).filter(n=>typeof n==='string').slice(0,40)}});
     }
-    const info=detectRecurringCandidates({local:this.tools.local,scope,intention:recurringIntent,clock:this.clock});
-    const text=describeRecurring(info);
+    if(recurringIntent){
+     const info=detectRecurringCandidates({local:this.tools.local,scope,intention:recurringIntent,clock:this.clock});
+     const text=describeRecurring(info);
+     return this._finishVertical({ctx,opened,owner,scope,replyBase,result,question,
+      tool:'detect_recurring_candidates',blockKind:'recurring',info,text,
+      sourceIds:(info.candidates||[]).flatMap(c=>c.evidenceIds||[]),
+      followUps:[
+       {intent:'recommend_savings',label:'Buscar economia',question:'Onde posso economizar sem dupla contagem?'},
+       {intent:'investigate_spending',label:'Comparar gastos',question:'Por que meus gastos mudaram neste mês?'}
+      ],
+      contextPatch:{lastInvestigation:null,lastPlan:null,exclusions:[],
+       categoryNames:(info.candidates||[]).map(c=>c.categoryLabel).filter(n=>typeof n==='string').slice(0,40)}});
+    }
+    const info=await simulateDecisionForCopilot({local:this.tools.local,scope,intention:simulatorIntent,clock:this.clock});
+    const text=describeDecisionSimulation(info);
     return this._finishVertical({ctx,opened,owner,scope,replyBase,result,question,
-     tool:'detect_recurring_candidates',blockKind:'recurring',info,text,
-     sourceIds:(info.candidates||[]).flatMap(c=>c.evidenceIds||[]),
-     followUps:[
-      {intent:'recommend_savings',label:'Buscar economia',question:'Onde posso economizar sem dupla contagem?'},
-      {intent:'investigate_spending',label:'Comparar gastos',question:'Por que meus gastos mudaram neste mês?'}
-     ],
-     contextPatch:{lastInvestigation:null,lastPlan:null,exclusions:[],
-      categoryNames:(info.candidates||[]).map(c=>c.categoryLabel).filter(n=>typeof n==='string').slice(0,40)}});
+     tool:'simulate_purchase',blockKind:'whatif',info,text,
+     sourceIds:(info.schedule||[]).map(s=>s.id).filter(Boolean),
+     followUps:input?.pageContext?.page==='budgets'
+      ?[{intent:'recommend_savings',label:'Ajustar orçamentos',question:'Onde posso economizar para abrir folga no mês?'}]
+      :[
+       {intent:'recommend_savings',label:'Buscar economia',question:'Onde posso economizar sem dupla contagem?'},
+       {intent:'commitments_horizon',label:'Compromissos de 3 meses',question:'Quais compromissos tenho nos próximos 3 meses?'}
+      ],
+     contextPatch:{lastInvestigation:null,lastPlan:null,exclusions:[]}});
    }catch(e){return verticalError(e);}
   }
   // I3-01 vertical investigation. Reuses the existing IC2 MAIN/preload grant and

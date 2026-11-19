@@ -3297,3 +3297,22 @@
 @media(prefers-reduced-motion:reduce){
  .mf-ic2-bar-track>span{transition:none!important}
 }
+
+
+/* ==========================================================================
+   MARCO 2 — RADAR PROATIVO DO COPILOTO (HOJE V6 CROSS-SURFACE)
+   ========================================================================== */
+.mf-copilot-proactive{display:grid;gap:12px;margin-top:8px;min-width:0}
+.mf-copilot-proactive-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;min-width:0}
+.mf-copilot-proactive-card{display:flex;flex-direction:column;gap:8px;padding:16px;border-radius:16px;
+ border:1px solid var(--border);background:var(--surface);color:var(--text);min-width:0}
+.mf-copilot-proactive-card>header{display:flex;align-items:center;gap:10px;min-width:0}
+.mf-copilot-proactive-card>header small{font-size:10px;font-weight:750;letter-spacing:.08em;color:var(--green)}
+.mf-copilot-proactive-card>header h4{margin:2px 0 0;font-size:14.5px;line-height:1.35}
+.mf-copilot-proactive-card>p{margin:0;font-size:12.5px;line-height:1.5;color:var(--muted)}
+.mf-copilot-impact{font-size:16px;font-variant-numeric:tabular-nums;color:var(--text)}
+.mf-copilot-uncertainty{font-size:11px;line-height:1.45;color:var(--muted)}
+.mf-copilot-proactive-actions{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:auto;padding-top:6px}
+@media(max-width:980px){
+ .mf-copilot-proactive-grid{grid-template-columns:1fr}
+}

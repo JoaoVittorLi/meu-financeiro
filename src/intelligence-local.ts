@@ -53,15 +53,16 @@ async function localFinancialEnable(app:any){
   if(app.__localReadGeneration!==generation||app.state.mode!==s.mode){void api.localFinancialRevoke?.(grant.token);return;}
   app.__ic2Conversation=null;app.__ic2InvestigationActive=false; // Invalidate I2-A when renewing read grant.
   const backup=s.localFinancialAccess?.backup||{intelligenceThreads:s.intelligenceThreads,intelligenceMessages:s.intelligenceMessages,intelligenceActiveThreadId:s.intelligenceActiveThreadId,intelligenceHydratedMode:s.intelligenceHydratedMode};
-  app.setState({localFinancialAccess:{...grant,backup},localFinancialBusy:false,localFinancialRadar:null,intelligenceThreads:[],intelligenceMessages:[],intelligenceActiveThreadId:null,intelligenceDraft:'',intelligencePreparedQuestion:'',workIntelligenceDemo:s.workIntelligenceDemo?{...s.workIntelligenceDemo,enabled:false}:undefined},()=>{void localFinancialRadar(app);if(typeof intelligencePremiumLoad==='function')void intelligencePremiumLoad(app);});
+  app.setState({localFinancialAccess:{...grant,backup},localFinancialBusy:false,localFinancialRadar:null,intelligenceCopilotInsights:null,intelligenceThreads:[],intelligenceMessages:[],intelligenceActiveThreadId:null,intelligenceDraft:'',intelligencePreparedQuestion:'',workIntelligenceDemo:s.workIntelligenceDemo?{...s.workIntelligenceDemo,enabled:false}:undefined},()=>{void localFinancialRadar(app);if(typeof intelligencePremiumLoad==='function')void intelligencePremiumLoad(app);void intelligenceCopilotInsightsLoad(app);});
  }catch{app.setState({localFinancialBusy:false,localFinancialError:'Não foi possível autorizar a leitura local. Nenhum dado foi consultado por esta solicitação.'});}
 }
 function localFinancialDisable(app:any){
  app.__ic2Conversation=null;
  app.__ic2InvestigationActive=false;
  app.__localRadarRequest=(app.__localRadarRequest||0)+1;
+ app.__copilotInsightsRequest=(app.__copilotInsightsRequest||0)+1;
  const access:LocalFinancialAccess=app.state.localFinancialAccess;app.__localReadGeneration=(app.__localReadGeneration||0)+1;
- app.setState({...access?.backup,localFinancialAccess:null,localFinancialRadar:null,localFinancialBusy:false,localFinancialError:'',intelligenceDraft:''},()=>{if(typeof intelligencePremiumLoad==='function')void intelligencePremiumLoad(app);});
+ app.setState({...access?.backup,localFinancialAccess:null,localFinancialRadar:null,intelligenceCopilotInsights:null,localFinancialBusy:false,localFinancialError:'',intelligenceDraft:''},()=>{if(typeof intelligencePremiumLoad==='function')void intelligencePremiumLoad(app);});
  if(access?.token)void localFinancialAPI()?.localFinancialRevoke?.(access.token).catch(()=>app.setState({localFinancialError:'A interface encerrou a leitura. A autorização do processo expira em até 15 minutos.'}));
 }
 async function localFinancialQuery(app:any,intent:{intent:LocalFinancialIntent;category?:string}):Promise<LocalFinancialReply>{
@@ -102,7 +103,7 @@ async function localFinancialSubmit(app:any,question:string){
     /^(e |esse |essa |no |na |quanto |me mostre|mostre |onde )|recorrente|isolado|pontual/.test(foldedQuestion);
  const i3Requested=financialInvestigation||i3Followup;
  const copilotIntentRequested=i3Requested||
-  /(economiz|poupar|guardar|cortar gastos|reduzir gastos|reduzir despesas|plano de economia|meta de econom|recorrenc|assinatur|cobrancas? repetid|reajuste|habitos?|simular compra|posso comprar|comprar .* em \d+x|\b\d+\s*x\b)/.test(foldedQuestion);
+  /(economiz|poupar|guardar|cortar gastos|reduzir gastos|reduzir despesas|plano de economia|meta de econom|recorrenc|assinatur|cobrancas? repetid|reajuste|habitos?|simular compra|posso comprar|comprar .* em \d+x|\b\d+\s*x\b|parcelar|proximos \d{1,2} meses)/.test(foldedQuestion);
  const v3Requested=mfV3Requested(q);
  // A V3 visual requires the operational data endpoint. In the legacy local
  // SQLite adapter without that endpoint, do NOT replace a valid R$42,15
@@ -124,8 +125,11 @@ async function localFinancialSubmit(app:any,question:string){
      previous?.answerId&&messages.some((m:any)=>m.id===previous.answerId)?previous.id:null;
    const density=app.state.intelligencePanelOpen?'compact':
      (typeof window!=='undefined'&&window.innerWidth<720?'mobile':'standard');
+   const safePage=['overview','transactions','planning','budgets','assistant','simulator','banks','settings','intelligence'].includes(app.state.page)?app.state.page:'intelligence';
+   const pageContext={page:safePage,
+     ...(app.state.txCategoryFilter&&typeof app.state.txCategoryFilter==='string'?{category:app.state.txCategoryFilter.slice(0,80)}:{})};
    ic2=await api.intelligenceIC2ReadQuery({token:access.token,
-      source:access.source,profile:access.profile,month,question:q,density,
+      source:access.source,profile:access.profile,month,question:q,density,pageContext,
       ...(conversationId?{conversationId}:{})});
    if(!mfIC2Valid(ic2,access,month))throw Error('Resposta IC2 não verificada.');
   }else if(typeof api?.intelligenceOperationalAsk==='function'){
@@ -212,13 +216,47 @@ function renderLocalFinancialAccess(app:any){
   access?h('p',{},'Fonte: '+access.source+' · perfil '+access.profile+' · autorização por até 15 minutos.'):null,
   h('div',{className:'mf-ai-access-fields'},
    !access?h('label',{className:'mf-ai-access-field'},'Fonte',h('select',{value:s.mode==='demo'?'manual':s.localFinancialSource||'bank',disabled:s.mode==='demo',onChange:(e:any)=>app.setState({localFinancialSource:e.target.value})},h('option',{value:'bank'},'Contas conectadas'),h('option',{value:'manual'},'Lançamentos manuais'))):null,
-   h('label',{className:'mf-ai-access-field'},'Mês da consulta',h('input',{type:'month',value:s.localFinancialMonth||s.month,onChange:(e:any)=>app.setState({localFinancialMonth:e.target.value,localFinancialRadar:null},()=>{if(typeof intelligencePremiumLoad==='function')void intelligencePremiumLoad(app);})})),
+   h('label',{className:'mf-ai-access-field'},'Mês da consulta',h('input',{type:'month',value:s.localFinancialMonth||s.month,onChange:(e:any)=>app.setState({localFinancialMonth:e.target.value,localFinancialRadar:null,intelligenceCopilotInsights:null},()=>{if(typeof intelligencePremiumLoad==='function')void intelligencePremiumLoad(app);void intelligenceCopilotInsightsLoad(app);})})),
    !access&&s.mode!=='demo'?h('label',{className:'mf-ai-access-planning'},h('input',{type:'checkbox',checked:s.localFinancialPlanning===true,onChange:(e:any)=>app.setState({localFinancialPlanning:e.target.checked})}),h('span',{},'Permitir também leitura do Planejamento')):null),
-  h('div',{className:'mf-ai-proposal-actions'},h('button',{type:'button',className:'primary-button',disabled:s.localFinancialBusy,onClick:()=>active?(void localFinancialRadar(app),void intelligencePremiumLoad(app)):void localFinancialEnable(app)},active?'Atualizar radar':'Autorizar leitura local'),access?h('button',{type:'button',className:'ghost-button',onClick:()=>localFinancialDisable(app)},'Encerrar leitura e limpar respostas da sessão'):null),
+  h('div',{className:'mf-ai-proposal-actions'},h('button',{type:'button',className:'primary-button',disabled:s.localFinancialBusy,onClick:()=>active?(void localFinancialRadar(app),void intelligencePremiumLoad(app),void intelligenceCopilotInsightsLoad(app)):void localFinancialEnable(app)},active?'Atualizar radar':'Autorizar leitura local'),access?h('button',{type:'button',className:'ghost-button',onClick:()=>localFinancialDisable(app)},'Encerrar leitura e limpar respostas da sessão'):null),
   s.localFinancialError?h('p',{role:'alert'},s.localFinancialError):null));
 }
 function renderLocalFinancialRadar(app:any){
  const report:LocalFinancialReply=app.state.localFinancialRadar;
  return h('div',{className:'mf-ai-today'},h('h2',{},'O que seus registros mostram hoje'),report?renderIntelligenceStructuredCard(report.card):h('p',{role:'status'},'Atualize o radar para consultar o mês escolhido.'),
  h('div',{className:'mf-ai-starter-grid'},...['Quanto gastei com alimentação neste mês?','Quais foram minhas maiores despesas?','Quais categorias ultrapassaram o orçamento?','Quanto tenho comprometido para o próximo mês?','Quais despesas aumentaram?','Que movimentações preciso revisar?','Quanto gastei em assinaturas?','Quais dados faltam para avaliar uma compra?'].map(q=>h('button',{type:'button',className:'mf-ai-context-prompt',key:q,onClick:()=>{app.setState({intelligenceTab:'chat',intelligenceMainMode:'chat'});void localFinancialSubmit(app,q);}},q))));
+}
+
+const MF_COPILOT_INSIGHTS_GRANTS=new WeakMap<any,{access:LocalFinancialAccess;token:string;signature:string;month:string}>();
+function mfCopilotInsightsLive(app:any){
+ const env=app?.state?.intelligenceCopilotInsights;
+ if(!env||env.contract!=='MF2-PROACTIVE-V1')return null;
+ const b=MF_COPILOT_INSIGHTS_GRANTS.get(env);
+ const access:LocalFinancialAccess=app.state.localFinancialAccess;
+ const month=app.state.localFinancialMonth||app.state.month;
+ return !!b&&b.access===access&&b.token===access?.token&&
+  b.signature===intelligencePremiumSignature(app)&&b.month===month&&
+  access?.profile===(app.state.mode==='demo'?'demo':'real')&&
+  Number.isFinite(access?.expiresAt)&&access.expiresAt>Date.now()?env:null;
+}
+async function intelligenceCopilotInsightsLoad(app:any){
+ const api=localFinancialAPI() as any;
+ const s=app?.state,access:LocalFinancialAccess=s?.localFinancialAccess;
+ const request=(app.__copilotInsightsRequest||0)+1;app.__copilotInsightsRequest=request;
+ if(!access?.token||access.expiresAt<=Date.now()||typeof api?.intelligenceCopilotInsights!=='function'){
+  if(s)app.setState({intelligenceCopilotInsights:null});
+  return;
+ }
+ const month=s.localFinancialMonth||s.month,signature=intelligencePremiumSignature(app);
+ try{
+  const env=await api.intelligenceCopilotInsights({token:access.token,source:access.source,profile:access.profile,month});
+  if(request!==app.__copilotInsightsRequest||app.state.localFinancialAccess!==access||
+     app.state.localFinancialAccess?.token!==access.token||
+     signature!==intelligencePremiumSignature(app))return;
+  if(env?.contract!=='MF2-PROACTIVE-V1'||env.readOnly!==true||env.changesApplied!==false)return;
+  MF_COPILOT_INSIGHTS_GRANTS.set(env,{access,token:access.token,signature,month});
+  app.setState({intelligenceCopilotInsights:env});
+ }catch{
+  if(request===app.__copilotInsightsRequest)app.setState({intelligenceCopilotInsights:null});
+ }
 }
