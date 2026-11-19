@@ -7,6 +7,8 @@ const {validatePlan}=require('./intelligence-provider.cjs');
 const {createHash}=require('node:crypto');
 const {period}=require('./financial-intelligence.cjs');
 const {parseIntent,compareSpendingBreakdown,focusResult,describeInvestigation}=require('./intelligence-investigation.cjs');
+const {parseSavingsIntent,recommendSavings,describeSavings}=require('./intelligence-savings.cjs');
+const {parseRecurringIntent,detectRecurringCandidates,describeRecurring}=require('./intelligence-recurring.cjs');
 const fold=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
 const money=n=>new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(n/100);
 const DENSITIES=['compact','standard','analysis','mobile'];
@@ -102,9 +104,48 @@ class IntelligenceOrchestrator{
   const db=this.tools.local?.db;
   const categories=typeof db?.listCategories==='function'?
    (db.listCategories()?.categories||[]).map(c=>c.name).filter(n=>typeof n==='string'):[];
+  const verticalError=e=>{
+   const msg=String(e?.message||'');
+   if(/autoriza|denied|expirad|perfil|escopo|consent|planejamento/i.test(msg))
+    return result('denied','Permissão inválida ou expirada. Autorize novamente para consultar.');
+   if(/stale|alterad|reconcilia/i.test(msg))
+    return result('stale','Os dados não foram reconciliados ou mudaram. Refaça a consulta.');
+   return result('unavailable','Não foi possível concluir a consulta com dados verificáveis.',
+    {alerts:['Nenhum cálculo foi substituído por estimativa ou texto gerado.']});
+  };
+  const investigationIntent=parseIntent(question,ctx,scope.month);
+  const savingsIntent=investigationIntent?.followup?null:parseSavingsIntent(question);
+  const recurringIntent=(investigationIntent?.followup||savingsIntent)?null:parseRecurringIntent(question);
+  if(savingsIntent||recurringIntent){
+   try{
+    if(savingsIntent){
+     const info=recommendSavings({local:this.tools.local,scope,intention:savingsIntent,clock:this.clock});
+     const text=describeSavings(info);
+     return this._finishVertical({ctx,opened,owner,scope,replyBase,result,question,
+      tool:'recommend_savings',blockKind:'insight',info,text,
+      sourceIds:(info.opportunities||[]).flatMap(o=>o.evidenceIds||[]),
+      followUps:[
+       {intent:'investigate_spending',label:'Investigar despesas',question:'Por que minhas despesas variaram neste mês?'},
+       {intent:'detect_recurring',label:'Ver recorrências',question:'Quais cobranças recorrentes existem no histórico?'}
+      ],
+      contextPatch:{lastInvestigation:null,lastPlan:null,exclusions:[],
+       categoryNames:(info.opportunities||[]).map(o=>o.categoryLabel).filter(n=>typeof n==='string').slice(0,40)}});
+    }
+    const info=detectRecurringCandidates({local:this.tools.local,scope,intention:recurringIntent,clock:this.clock});
+    const text=describeRecurring(info);
+    return this._finishVertical({ctx,opened,owner,scope,replyBase,result,question,
+     tool:'detect_recurring_candidates',blockKind:'recurring',info,text,
+     sourceIds:(info.candidates||[]).flatMap(c=>c.evidenceIds||[]),
+     followUps:[
+      {intent:'recommend_savings',label:'Buscar economia',question:'Onde posso economizar sem dupla contagem?'},
+      {intent:'investigate_spending',label:'Comparar gastos',question:'Por que meus gastos mudaram neste mês?'}
+     ],
+     contextPatch:{lastInvestigation:null,lastPlan:null,exclusions:[],
+      categoryNames:(info.candidates||[]).map(c=>c.categoryLabel).filter(n=>typeof n==='string').slice(0,40)}});
+   }catch(e){return verticalError(e);}
+  }
   // I3-01 vertical investigation. Reuses the existing IC2 MAIN/preload grant and
   // B05 Conversar; no new IPC, personal write, model call or copied financial DB.
-  const investigationIntent=parseIntent(question,ctx,scope.month);
   if(investigationIntent){
    try{
     const info=compareSpendingBreakdown({local:this.tools.local,scope,
@@ -148,15 +189,7 @@ class IntelligenceOrchestrator{
         timezone:'America/Sao_Paulo'},asOf:info.asOf,quality:info.status,
        dataVersion:info.dataVersion,method:info.method}]
     });
-   }catch(e){
-    const msg=String(e?.message||'');
-    if(/autoriza|denied|expirad|perfil|escopo/i.test(msg))
-     return result('denied','Permissão inválida ou expirada. Autorize novamente para investigar.');
-    if(/stale|alterad|reconcilia/i.test(msg))
-     return result('stale','Os dados não foram reconciliados ou mudaram. Refaça a consulta.');
-    return result('unavailable','Não foi possível concluir a investigação com dados verificáveis.',
-     {alerts:['Nenhum cálculo foi substituído por estimativa ou texto gerado.']});
-   }
+   }catch(e){return verticalError(e);}
   }
   let decided=localPlan(question,ctx,categories),plannerWarning=null;
   if(scope.profile==='demo'&&scope.source==='manual'&&this.planner&&typeof this.planner.propose==='function'){
@@ -218,6 +251,30 @@ class IntelligenceOrchestrator{
    evidence:outputs.map(o=>({queryId:o.factRef,sourceIds:[o.reference.source],
     period:{...o.reference.period,timezone:'America/Sao_Paulo'},
     asOf:o.reference.asOf,quality:o.status==='ready'?'verified':o.status}))});
+ }
+ _finishVertical({ctx,opened,owner,scope,replyBase,result,question,tool,blockKind,info,text,sourceIds,followUps,contextPatch}){
+  if(info.status==='stale')return result('stale',info.message);
+  if(info.status==='unsupported')return result('unsupported',info.message,{alerts:[info.message]});
+  if(info.status==='no_data')return result('unavailable',info.message);
+  const p=period(scope.month);
+  const id='i2a:'+createHash('sha256').update([
+   scope.owner,scope.source,scope.profile,scope.month,tool,info.dataVersion||'',question
+  ].join('|')).digest('hex').slice(0,20);
+  if(!this.contexts.update(opened.id,owner,ctx,{
+   lastQuestion:question,lastFactRefs:[id],...(contextPatch||{})
+  }))return result('stale','O contexto mudou durante a consulta.');
+  const fact={id,kind:blockKind,tool,value:info,
+   source:scope.source,profile:scope.profile,period:p,
+   asOf:info.asOf,coverage:info.coverage?.state||'partial',version:2};
+  return result(info.status,text,{
+   facts:[fact],
+   blocks:[{id:id+':0',kind:blockKind,factRef:id,density:replyBase.density}],
+   alerts:info.warnings||[],
+   followUps:followUps||[],
+   evidence:[{queryId:id,sourceIds:[...new Set(sourceIds||[])].slice(0,50),
+    period:{start:p.start,end:p.end,timezone:'America/Sao_Paulo'},
+    asOf:info.asOf,quality:info.status,dataVersion:info.dataVersion,method:info.method}]
+  });
  }
 }
 module.exports={IntelligenceOrchestrator,localPlan,visualFor};

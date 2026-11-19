@@ -273,4 +273,4 @@ function describeInvestigation(info,intent,focus){
  lines.push(GUARDRAIL_COPY.ARITHMETIC_CONTRIBUTION);
  return lines.join('\n\n');
 }
-module.exports={parseIntent,classifyCategory,compareSpendingBreakdown,focusResult,describeInvestigation};
+module.exports={parseIntent,classifyCategory,compareSpendingBreakdown,focusResult,describeInvestigation,authorized,snapshot};

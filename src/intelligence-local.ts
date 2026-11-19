@@ -101,12 +101,14 @@ async function localFinancialSubmit(app:any,question:string){
  const i3Followup=sameThread&&!!app.__ic2InvestigationActive&&
     /^(e |esse |essa |no |na |quanto |me mostre|mostre |onde )|recorrente|isolado|pontual/.test(foldedQuestion);
  const i3Requested=financialInvestigation||i3Followup;
+ const copilotIntentRequested=i3Requested||
+  /(economiz|poupar|guardar|cortar gastos|reduzir gastos|reduzir despesas|plano de economia|meta de econom|recorrenc|assinatur|cobrancas? repetid|reajuste|habitos?|simular compra|posso comprar|comprar .* em \d+x|\b\d+\s*x\b)/.test(foldedQuestion);
  const v3Requested=mfV3Requested(q);
  // A V3 visual requires the operational data endpoint. In the legacy local
  // SQLite adapter without that endpoint, do NOT replace a valid R$42,15
  // response with a misleading "no evidence" visual failure.
  // D01 supervised proposals and synthetic receipts cannot be hijacked.
- const v3Kind=!i3Requested&&typeof api?.intelligenceOperationalAsk==='function'&&
+ const v3Kind=!copilotIntentRequested&&typeof api?.intelligenceOperationalAsk==='function'&&
   v3Requested&&v3Requested!=='proposal'&&v3Requested!=='approval'?v3Requested:null;
  let previousOperational:any=null;
  const request=(app.__localChatRequest||0)+1;app.__localChatRequest=request;

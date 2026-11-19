@@ -93,7 +93,14 @@ function renderMfB05Actions(app,proposals) {
    h(Icon,{name:'shield',size:28}),
    h('h3',{},'Nenhuma oportunidade verificável disponível.'),
    h('p',{},'Autorize a leitura, atualize o período ou converse sobre organização financeira. Não criamos recomendações pessoais sem fatos.'),
-   h('button',{type:'button',className:'primary-button',onClick:()=>mfB05ChangeMode(app,'chat')},'Abrir Conversar')):null,
+   h('div',{className:'mf-b05-hero-actions'},
+    h('button',{type:'button',className:'primary-button',onClick:()=>mfB05ChangeMode(app,'chat')},'Abrir Conversar'),
+    h('button',{type:'button',className:'ghost-button',onClick:()=>{
+     const q='Onde posso economizar neste mês sem dupla contagem?';
+     mfB05ChangeMode(app,'chat');
+     if(typeof localFinancialSubmit==='function'&&app.state.localFinancialAccess?.token)void localFinancialSubmit(app,q);
+     else app.setState({intelligenceDraft:q});
+    }},'Analisar oportunidades de economia'))):null,
   selected?h('div',{className:'mf-b05-plan-layout'},
    h('article',{className:'mf-b05-plan-feature'},
     h('div',{className:'mf-b05-plan-feature-head'},

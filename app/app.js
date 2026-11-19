@@ -5243,7 +5243,15 @@ function renderMfB05Actions(app, proposals) {
         'Desativada. Habilite explicitamente as contas no módulo Movimentações quando o canal estável estiver homologado.'), h('p', {}, 'Motor local de evidências históricas, não inferência de um modelo. Regras e correções humanas prevalecem.'), h('button', { type: 'button', className: 'ghost-button', onClick: () => {
             app.setState({ txSource: 'bank', txReviewOnly: true });
             app.navigate('transactions');
-        } }, 'Abrir Movimentações e A conferir')) : null, !selected && !items.length ? h('div', { className: 'mf-b05-plan-empty', role: 'status' }, h(Icon, { name: 'shield', size: 28 }), h('h3', {}, 'Nenhuma oportunidade verificável disponível.'), h('p', {}, 'Autorize a leitura, atualize o período ou converse sobre organização financeira. Não criamos recomendações pessoais sem fatos.'), h('button', { type: 'button', className: 'primary-button', onClick: () => mfB05ChangeMode(app, 'chat') }, 'Abrir Conversar')) : null, selected ? h('div', { className: 'mf-b05-plan-layout' }, h('article', { className: 'mf-b05-plan-feature' }, h('div', { className: 'mf-b05-plan-feature-head' }, h('span', {}, 'FOCO PRINCIPAL · ' + (selected.kind === 'budget' ? 'ORÇAMENTO' :
+        } }, 'Abrir Movimentações e A conferir')) : null, !selected && !items.length ? h('div', { className: 'mf-b05-plan-empty', role: 'status' }, h(Icon, { name: 'shield', size: 28 }), h('h3', {}, 'Nenhuma oportunidade verificável disponível.'), h('p', {}, 'Autorize a leitura, atualize o período ou converse sobre organização financeira. Não criamos recomendações pessoais sem fatos.'), h('div', { className: 'mf-b05-hero-actions' }, h('button', { type: 'button', className: 'primary-button', onClick: () => mfB05ChangeMode(app, 'chat') }, 'Abrir Conversar'), h('button', { type: 'button', className: 'ghost-button', onClick: () => {
+            var _a;
+            const q = 'Onde posso economizar neste mês sem dupla contagem?';
+            mfB05ChangeMode(app, 'chat');
+            if (typeof localFinancialSubmit === 'function' && ((_a = app.state.localFinancialAccess) === null || _a === void 0 ? void 0 : _a.token))
+                void localFinancialSubmit(app, q);
+            else
+                app.setState({ intelligenceDraft: q });
+        } }, 'Analisar oportunidades de economia'))) : null, selected ? h('div', { className: 'mf-b05-plan-layout' }, h('article', { className: 'mf-b05-plan-feature' }, h('div', { className: 'mf-b05-plan-feature-head' }, h('span', {}, 'FOCO PRINCIPAL · ' + (selected.kind === 'budget' ? 'ORÇAMENTO' :
         selected.kind === 'commitment' ? 'AGENDA' : selected.kind === 'review' ? 'REVISÃO' : 'REGRAS')), h('span', { className: 'mf-b05-plan-chip' }, 'Dado autorizado')), h('h3', {}, selected.title), h('p', {}, selected.detail), mfB05ActionVisual(app, selected, budget, signature), h('div', { className: 'mf-b05-steps', role: 'tablist', 'aria-label': 'Etapas da decisão' }, ...[{ id: 'understand', label: 'Entender' }, { id: 'simulate', label: 'Simular' }, { id: 'review', label: 'Revisar' }]
         .map(x => h('button', { key: x.id, type: 'button', role: 'tab', 'aria-selected': stage === x.id,
         className: stage === x.id ? 'is-active' : '', onClick: () => mfB05ActionStage(app, x.id) }, x.label))), h('div', { className: 'mf-b05-stage', role: 'tabpanel', 'aria-live': 'polite' }, stage === 'understand' ? h('div', {}, h('h4', {}, 'O que os registros mostram'), scenarioStale ? h('p', { className: 'mf-b05-warning', role: 'alert' }, 'Os dados do cenário mudaram. A prévia foi invalidada; faça uma nova simulação.') : null, h('p', {}, selected.meaning + ' · ' + selected.detail), intelligencePremiumEvidence(selected.sourceCard), h('button', { type: 'button', className: 'primary-button', onClick: () => mfB05ActionStage(app, 'simulate') }, 'Explorar cenário')) : null, stage === 'simulate' ? h('div', {}, h('h4', {}, 'Experimente sem alterar seus dados'), budget ? h('div', { className: 'mf-b05-simulator' }, h('label', { htmlFor: 'mf-b05-budget-slider' }, 'Limite hipotético de ' + budget.category), h('input', { id: 'mf-b05-budget-slider', type: 'range', min: 0,
@@ -8586,8 +8594,10 @@ async function localFinancialSubmit(app, question) {
     const i3Followup = sameThread && !!app.__ic2InvestigationActive &&
         /^(e |esse |essa |no |na |quanto |me mostre|mostre |onde )|recorrente|isolado|pontual/.test(foldedQuestion);
     const i3Requested = financialInvestigation || i3Followup;
+    const copilotIntentRequested = i3Requested ||
+        /(economiz|poupar|guardar|cortar gastos|reduzir gastos|reduzir despesas|plano de economia|meta de econom|recorrenc|assinatur|cobrancas? repetid|reajuste|habitos?|simular compra|posso comprar|comprar .* em \d+x|\b\d+\s*x\b)/.test(foldedQuestion);
     const v3Requested = mfV3Requested(q);
-    const v3Kind = !i3Requested && typeof (api === null || api === void 0 ? void 0 : api.intelligenceOperationalAsk) === 'function' &&
+    const v3Kind = !copilotIntentRequested && typeof (api === null || api === void 0 ? void 0 : api.intelligenceOperationalAsk) === 'function' &&
         v3Requested && v3Requested !== 'proposal' && v3Requested !== 'approval' ? v3Requested : null;
     let previousOperational = null;
     const request = (app.__localChatRequest || 0) + 1;
