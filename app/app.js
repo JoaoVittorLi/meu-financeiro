@@ -8727,7 +8727,7 @@ async function localFinancialSubmit(app, question) {
         mfLocalBindMessage(answer, access, signature, month);
     intelligenceSyncThreadMessages(app, [...messages, user, answer], scope);
     app.setState({ localFinancialBusy: false }, () => {
-        if (typeof document !== 'undefined') {
+        if (typeof document !== 'undefined' && typeof document.querySelectorAll === 'function') {
             const scroll = () => {
                 for (const el of Array.from(document.querySelectorAll('.mf-b05-chat-thread, .mf-ai-drawer-body')))
                     el.scrollTop = el.scrollHeight;
