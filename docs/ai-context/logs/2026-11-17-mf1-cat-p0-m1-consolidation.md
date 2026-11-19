@@ -469,3 +469,31 @@
   - **`app/overview.css`:** raios de todos os cards da Visão Geral unificados em `16px`; primeira linha (`Seu ritmo de gastos`) alinhada exatamente à base da coluna lateral (`.u1-side-stack` sem altura artificial em `>=1181px`); linhas de `Para onde foi seu dinheiro` e `Últimas movimentações` padronizadas em subcards consistentes (`border-radius: 12px`, `surface2` / borda sutil); metade inferior (`Últimas movimentações` + `Fonte dos seus indicadores`) equilibrada e sem vazio estrutural.
   - **`tests/overview-m1-1-layout.test.cjs`:** ampliado com asserção AST + execução real de `resolveCategoryVisualIdentity` comprovando os ícones D05 em `Últimas movimentações` e ausência de `.u1-transaction-icon`.
 - **Restrições preservadas:** versão mantida em `0.9.5-beta.9`, zero alteração em outras áreas funcionais, zero início de Marco 2 e nenhum novo EXE gerado automaticamente antes do aceite visual desta rodada.
+
+
+## 27. Fechamento Técnico M1.1 (`b7a3d8a`, `0.9.5-beta.9`), Nível C, Entrega Privada Drive e Transição Autorizada para Marco 2
+
+- **Status final registrado em M1.1:** `TECHNICALLY_HOMOLOGATED — OWNER_VISUAL_ACCEPTANCE_PENDING`.
+- **Recuperação Git & Backup verificável:**
+  - Resolvido o bloqueio interativo do PortableGit (`credential.helper=helper-selector`) com override local não interativo em `.git/config` (`wincred`).
+  - Criado e validado bundle de backup `C:\Dev\backups\mf1-1-b7a3d8a-backup.bundle` (`c0351d3eb775541b95be55c26d04c37d9e1b1270..feat/mf1-cat-p0-consolidation-20261117`, `git bundle verify`: `okay`) e concluído push fast-forward de `b7a3d8afcb00b4e0ef84148169fa010bcd156175` no PR #105.
+- **Pareceres independentes pré-build (`pro`):**
+  - **Auditor Visual & Design (`3438b05d`, `pro`):** inspeção de `screenshots-round2` (`1920x1080`, `1366x768`, `1024x720` light/dark) + `geometry-report.json` (`horizontalOverflow: false`, alinhamento exato de base esquerda/direita, raios `16px`, glifos D05 `282`/`193`/`205`/`26`/`264`) -> `VEREDITO: APPROVE`.
+  - **Auditor Financeiro & Forense Adversarial (`b455da1a`, `pro`):** inspeção `c0351d3..b7a3d8a`, gates `approvedForPersonal: () => false`, `financialDataEnabled: false`, NSIS-only `appId: app.local.meufinanceiro.rcall01`, suites focais (`26/26`), `build-preload check`, `check-bundle` (`31` entradas), `provenance:verify`, `1003/1003` `test:db`, `133/133` `mobile-push`, `1/1` `test:asar`, `32/32` PNGs, `14/14` Nível B -> `VEREDITO: APPROVE`.
+- **Build NSIS e Arquivamento Separado (`b7a3d8a`, preservando `M1-BASELINE` e `M1.1-VISUAL`):**
+  - `run_workflow.py --marco MF1 --check-nsis-gate --sha b7a3d8afcb00b4e0ef84148169fa010bcd156175 --owner-approved-nsis --approval-ref owner-directive-20261118-continuity-m1.1` -> OK.
+  - `npx.cmd electron-builder --win nsis --x64 --publish never` + `verify-asar` -> `PASS: ASAR corresponde byte a byte ao renderer compilado e testado.`
+  - Artefatos arquivados em `C:\Dev\releases\M1.1-VISUAL-b7a3d8a\`:
+    - `MeuFinanceiro-Instalador-0.9.5-beta.9-x64.exe` (`115.740.811` bytes, SHA-256 `9d515411a8ef362c8f01ce58d95759fdcbd892e9af3e425c0292f9ddd7606be1`)
+    - `SHA256.txt` (`112` bytes) e `renderer-provenance.json` (`5.867` bytes, `sourceCommit: b7a3d8afcb00b4e0ef84148169fa010bcd156175`).
+- **Homologação Nível C no EXE instalado (`C:\Dev\mf-nsis-test-install`, perfil sintético isolado):**
+  - `scripts/nivel-c-nsis-qa.cjs`: `14/14` jornadas `PASS` (`FAIL: 0`, `RuntimeIssues: 0`), `ASAR version: 0.9.5-beta.9`, `d05Parents: 14`, `d05Subcategories: 61`, `svgCount: 67`, `DB integrity: ok`, `integerCentsOnly: true`, `HOST_FOLDERS_UNTOUCHED: True`.
+  - Verificação visual direta no EXE instalado (`installed-overview-verification.json`): `hitCheck.same === true` em `.mf-source-panel`, ícones D05 dos 5 itens demo (`Assinaturas:282`, `Internet e telefone:193`, `Transporte:205`, `Supermercado:26`, `Aluguel:264`), `overflow: false`, `versionText: "Meu Financeiro · v0.9.5-beta.9"`, `HOST_FOLDERS_UNTOUCHED_VISUAL: True`, capturas `1920x1080-light`, `1366x768-dark` e `1024x720-light` inspecionadas.
+  - Parecer independente pós-Nível C (`b455da1a`, `pro`): `VEREDITO: GO`.
+- **Entrega Privada no Google Drive (acesso restrito ao proprietário):**
+  - Pasta privada `Meu Financeiro/M1.1-VISUAL-b7a3d8a` (`1QPHFjnhNk7hH6b7JVZKK7R7fiirav0eY`, URL `https://drive.google.com/drive/folders/1QPHFjnhNk7hH6b7JVZKK7R7fiirav0eY`), contendo exclusivamente:
+    - `MeuFinanceiro-Instalador-0.9.5-beta.9-x64.exe` (`1HjUAbskvcTXEuvDIBBEDvl-EOPfyaJvX`, URL `https://drive.google.com/file/d/1HjUAbskvcTXEuvDIBBEDvl-EOPfyaJvX/view?usp=drivesdk`, `115.740.811` bytes, verificação pós-download `DRIVE_HASH_MATCH: True`)
+    - `SHA256.txt` (`1reRmmmqvjBKuFhGx81BBTwHM7g0ype4w`, `112` bytes)
+    - `renderer-provenance.json` (`1JKJovYsr0vNMLtO9I2rNg2yzXHBz-RC0`, `5.867` bytes)
+  - Permissões confirmadas `owner`-only (`joaovitor.limasiman@gmail.com`) na pasta e nos 3 arquivos; pastas anteriores `M1-BASELINE` e `M1.1-VISUAL` preservadas intactas.
+- **Transição para Marco 2:** iniciada na sequência em worktree isolada (`C:\Dev\meu-financeiro-worktrees\m2-copilot`, branch `feat/mf2-intelligence-3-0-copilot-20261118`) com reconciliação `I3-00` e retorno ao planejamento para fatias verticais (`F1`–`F5`), mantendo `approvedForPersonal() === false` e `financialDataEnabled: false`.
