@@ -1,5 +1,15 @@
 # STATUS ATUAL — Meu Financeiro / preparação 1.0.0
 
+> **RECONCILIAÇÃO DE MARCOS E CANDIDATA `v1.0.0-rc.1` (19/11/2026):**
+> - **Estados oficiais separados:** `M1_IMPLEMENTATION_COMPLETE` · `M1_TECHNICALLY_HOMOLOGATED` (experimental `0.9.5-beta.9`, Nível C `15/15` em `b7a3d8a`, docs em `ffc70f2` no [PR #105](https://github.com/JoaoVittorLi/meu-financeiro/pull/105)) · `V1_STABLE_RELEASE_PENDING` · `M2_IN_PROGRESS`. **O Marco 2 não é dependência obrigatória da v1.0.0.**
+> - **Candidata estável `1.0.0-rc.1` preparada:** branch isolada `release/v1.0.0-rc.1-candidate-20261119` (`1a22181e6adcb52cca214922821b9f265b76c753`) sobre a base `ffc70f2` do PR `#105`, com CAT-P0 Opção A, CAT-UX 01–06, D05 `14×61`, B01–B05, I2/I3-01 e RC2.2/2.3 integrados e verificados (`test:types`, `compile`, `build-preload check`, `check-bundle`, `1006/1006` SQLite em `test:db`, `133/133` `mobile-push`, `test:asar`, `provenance:verify` em 23 arquivos, `test:electron-smoke`, `dist:windows:stable` + `verify-asar` + `asar-stable-verification.json`: `mfDistributionChannel="stable"`, `productName="Meu Financeiro"`, `approvedForPersonal=false`, `financialDataEnabled=false`, `paidApiFallback=false`). Instalador arquivado em `C:\Dev\releases\V1-STABLE-RC1\MeuFinanceiro-Instalador-1.0.0-rc.1-x64.exe` (`115.734.512` bytes, `SHA-256`: `7dd641f380ee38c34859593af31bb9d336d36793c7a0b320deeba18fb0e352e`), sem instalação/execução local para preservar `%APPDATA%\meu-financeiro-desktop`.
+> - **Bloqueios remanescentes para lançamento definitivo `1.0.0`:** Nível C do instalador `stable` em Windows limpo / VM isolada e decisão formal do proprietário na [issue #71](https://github.com/JoaoVittorLi/meu-financeiro/issues/71).
+> - **Trilha paralela Marco 2:** `feat/mf2-intelligence-3-0-copilot-20261118` (`e3c153cb00b3bc9c5bc4f7e8e53f296ba98214a6`, F1–F5 / Inteligência 3.0), não bloqueante para a v1.0.0.
+
+---
+
+## Snapshot histórico anterior à integração do PR #105 (17/11/2026 — preservado)
+
 > **DECISÃO P0/OPÇÃO A (17/11/2026):** o proprietário tornou a **categorização automática pessoal por conta** obrigatória para v1.0.0. Código em [PR #100](https://github.com/JoaoVittorLi/meu-financeiro/pull/100) **Draft sobre #96**; consentimento persistente e revogável, D05 14×61, I2-E, backups, recibos e reversão. **Não homologada:** 19 regressões sintéticas versionadas, Node oficial/SQLite integral/TypeScript/Electron Windows/QA visual **NOT_RUN**; v1.0.0 NO-GO. A escrita pessoal da IA para outras ações permanece desativada.
 
 **Cadeia funcional em preparação:** #94 → #96 → [#100](https://github.com/JoaoVittorLi/meu-financeiro/pull/100) (P0 ainda **não integrado ao #96/main**). Documentação #98 descreve três branches e depende do merge controlado do P0. Não contar o código em #100 como QA ou disponibilidade da #96.

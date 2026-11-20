@@ -1,4 +1,13 @@
-# Plano de release — Meu Financeiro 1.0.0 (NÃO APROVADO)
+# Plano de release — Meu Financeiro 1.0.0 (CANDIDATA `v1.0.0-rc.1` PREPARADA — GO FINAL PENDENTE)
+
+> **RECONCILIAÇÃO DE MARCOS E CANDIDATA `v1.0.0-rc.1` (19/11/2026):**
+> - **Estados oficiais:** `M1_IMPLEMENTATION_COMPLETE` · `M1_TECHNICALLY_HOMOLOGATED` (experimental `0.9.5-beta.9`, Nível C `15/15` em `b7a3d8a` / `ffc70f2` no [PR #105](https://github.com/JoaoVittorLi/meu-financeiro/pull/105)) · `V1_STABLE_RELEASE_PENDING` · `M2_IN_PROGRESS`. **O Marco 2 não bloqueia a promoção do Marco 1 para `1.0.0`.**
+> - **Candidata estável `1.0.0-rc.1`:** construída em `release/v1.0.0-rc.1-candidate-20261119` (`1a22181e6adcb52cca214922821b9f265b76c753`) sobre o `HEAD` `ffc70f2` do PR `#105`, com `package.json`, `package-lock.json`, `mobile-push` e runtime alinhados em `1.0.0-rc.1`, `provenance:verify` PASS (`23 arquivos`), `1006/1006` (`test:db`), `133/133` (`mobile-push`), `dist:windows:stable` (`verify-asar` + `asar-stable-verification.json`), EXE `MeuFinanceiro-Instalador-1.0.0-rc.1-x64.exe` (`115.734.512` bytes, `SHA-256`: `7dd641f380ee38c34859593af31bb9d336d36793c7a0b320deeba18fb0e352e`) arquivado em `C:\Dev\releases\V1-STABLE-RC1\`.
+> - **Gates restantes para `v1.0.0` definitiva:** (1) executar Nível C do pacote `stable` em Windows limpo / VM isolada (impedido neste host para proteger `%APPDATA%\meu-financeiro-desktop`); (2) aprovação expressa do proprietário na [issue #71](https://github.com/JoaoVittorLi/meu-financeiro/issues/71) antes de merge na `main`, tag `v1.0.0` ou GitHub Release. Trilha paralela do Marco 2: `feat/mf2-intelligence-3-0-copilot-20261118` (`e3c153cb00b3bc9c5bc4f7e8e53f296ba98214a6`).
+
+---
+
+## Snapshot histórico anterior à integração do PR #105 (17/11/2026 — preservado)
 
 > **DECISÃO P0/OPÇÃO A (17/11/2026):** o proprietário tornou a **categorização automática pessoal por conta** obrigatória para v1.0.0. Código em [PR #100](https://github.com/JoaoVittorLi/meu-financeiro/pull/100) **Draft sobre #96**; consentimento persistente e revogável, D05 14×61, I2-E, backups, recibos e reversão. **Não homologada:** 19 regressões sintéticas versionadas, Node oficial/SQLite integral/TypeScript/Electron Windows/QA visual **NOT_RUN**; v1.0.0 NO-GO. A escrita pessoal da IA para outras ações permanece desativada.
 

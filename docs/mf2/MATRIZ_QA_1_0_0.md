@@ -1,5 +1,18 @@
 # Matriz QA — gates da candidata 1.0.0
 
+> **RECONCILIAÇÃO E EVIDÊNCIA ATUAL `1.0.0-rc.1` (19/11/2026):**
+> - **M1 homologado tecnicamente (experimental):** [PR #105](https://github.com/JoaoVittorLi/meu-financeiro/pull/105) (`b7a3d8a` Nível C `15/15` em `0.9.5-beta.9`, docs `ffc70f2`). Estado oficial: `M1_IMPLEMENTATION_COMPLETE` · `M1_TECHNICALLY_HOMOLOGATED` · `V1_STABLE_RELEASE_PENDING` · `M2_IN_PROGRESS` (Marco 2 em `feat/mf2-intelligence-3-0-copilot-20261118` @ `e3c153cb00b3bc9c5bc4f7e8e53f296ba98214a6`, não bloqueante para `1.0.0`).
+> - **Evidência verificada na candidata estável `release/v1.0.0-rc.1-candidate-20261119` (`1a22181e6adcb52cca214922821b9f265b76c753`, `v1.0.0-rc.1`):**
+>   - `npm run test:types`, `npm run compile`, `node scripts/build-preload.cjs check`, `check-bundle` (`31` entradas): **PASS**.
+>   - `npm run test:db` (inclui CAT-P0, D05 `14×61`, RC2.2/2.3, `V1-STABLE-01..03`): **1006/1006 PASS** (`0` fail, `0` skipped).
+>   - `mobile-push` testes: **133/133 PASS** · `npm run test:asar`: **1/1 PASS** · `npm run provenance:verify`: **PASS** (`23` arquivos) · `npm run test:electron-smoke`: **PASS**.
+>   - `dist:windows:stable` + `verify-asar` + `asar-stable-verification.json`: **PASS** (`mfDistributionChannel="stable"`, `productName="Meu Financeiro"`, `d05Parents=14`, `d05Subcategories=61`, `svgGlyphs=67`, `approvedForPersonal=false`, `financialDataEnabled=false`, `paidApiFallback=false`; `MeuFinanceiro-Instalador-1.0.0-rc.1-x64.exe`, `115.734.512` bytes, `SHA-256` `7dd641f380ee38c34859593af31bb9d336d36793c7a0b320deeba18fb0e352e`).
+>   - **Nível C do pacote `stable` no Windows:** **PENDING_ISOLATED_VM** (bloqueado intencionalmente neste host para não colidir com `%LOCALAPPDATA%\Programs\Meu Financeiro` e `%APPDATA%\meu-financeiro-desktop`). Decisão humana GO/NO-GO na [issue #71](https://github.com/JoaoVittorLi/meu-financeiro/issues/71).
+
+---
+
+## Snapshot histórico anterior à integração do PR #105 (17/11/2026 — preservado)
+
 > **DECISÃO P0/OPÇÃO A (17/11/2026):** o proprietário tornou a **categorização automática pessoal por conta** obrigatória para v1.0.0. Código em [PR #100](https://github.com/JoaoVittorLi/meu-financeiro/pull/100) **Draft sobre #96**; consentimento persistente e revogável, D05 14×61, I2-E, backups, recibos e reversão. **Não homologada:** 19 regressões sintéticas versionadas, Node oficial/SQLite integral/TypeScript/Electron Windows/QA visual **NOT_RUN**; v1.0.0 NO-GO. A escrita pessoal da IA para outras ações permanece desativada.
 
 **Atenção:** SHA #96 `2ce62fe...` tem regressões RC2.3, enquanto o código P0 vive em #100, sobre #96. Após integração, **novo SHA** exigirá reexecutar todos os gates pertinentes; não herdar PASS do #94 nem os checks isolados do PR #100.
