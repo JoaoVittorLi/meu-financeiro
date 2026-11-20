@@ -10,20 +10,21 @@ const {ChatGPTSignIn}=require('../electron/ai-auth.cjs');
 const {ChatGPTDemoClient,readSSE}=require('../electron/ai-client.cjs');
 const {AI_MODEL,buildDemoRequest,publicCapabilities,selectEffort}=require('../shared/ai-policy.mjs');
 
-test('mesma política de Sol Low/Medium para todos os clientes, sem fallback',()=>{
+test('mesma política de GPT-6.2 Sol Low/Medium/High para todos os clientes, sem fallback e rejeitando none',()=>{
   const caps=publicCapabilities();
-  assert.equal(AI_MODEL,'gpt-6.1-sol');
-  assert.deepEqual(caps.efforts,['low','medium']);
+  assert.equal(AI_MODEL,'gpt-6.2-sol');
+  assert.deepEqual(caps.efforts,['low','medium','high']);
   assert.equal(caps.pwaInferenceEnabled,false);
   assert.equal(caps.paidApiFallback,false);
   assert.equal(caps.financialDataEnabled,false);
   assert.equal(selectEffort('categorize'),'low');
   assert.equal(selectEffort('planning'),'medium');
-  assert.throws(()=>selectEffort('planning','high'),/não permitido/);
+  assert.equal(selectEffort('planning','high'),'high');
+  assert.throws(()=>selectEffort('planning','none'),/não permitido/);
   assert.throws(()=>buildDemoRequest('real-bank-balance'),/não permitido/);
   const payload=buildDemoRequest('budget','medium');
-  assert.equal(payload.model,'gpt-6.1-sol');
-  assert.deepEqual(payload.reasoning,{mode:'standard',effort:'medium'});
+  assert.equal(payload.model,'gpt-6.2-sol');
+  assert.deepEqual(payload.reasoning,{effort:'medium'});
   assert.equal(payload.store,false);assert.equal(payload.stream,true);
   for(const forbidden of ['user','metadata','max_output_tokens','temperature','previous_response_id'])
     assert.equal(Object.hasOwn(payload,forbidden),false);
@@ -97,7 +98,7 @@ test('cliente envia apenas cenário fictício sem consulta obrigatória ao catá
  assert.equal(client.tests,0,'Confirmação ausente não pode consumir a cota de testes.');
  assert.equal(client.busy,false,'O cliente deve permanecer livre após a recusa.');
  const result=await client.testDemo({caseId:'budget',effort:'medium',creditsDisabledConfirmed:true});
- assert.equal(result.model,'gpt-6.1-sol');assert.equal(result.text,'Análise fictícia.');
+ assert.equal(result.model,'gpt-6.2-sol');assert.equal(result.text,'Análise fictícia.');
  assert.deepEqual(calls.map(c=>c.url),['https://api.openai.com/v1/responses']);
  const payload=JSON.parse(calls[0].opts.body);
  assert.equal(payload.store,false);assert.equal(payload.stream,true);

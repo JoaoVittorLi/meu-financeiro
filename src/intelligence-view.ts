@@ -59,6 +59,7 @@ type IntelligenceChatMessage = {
   visualV3?:MfV3Card|null;
   ic2Reply?:any;
   ic2FollowUps?:Array<{intent:string;label:string;question?:string}>;
+  m3ActionDraft?:any;
 };
 type IntelligenceThread = {
   id:string;
@@ -197,6 +198,9 @@ function renderIntelligenceMessageItem(app:any,msg:IntelligenceChatMessage){
   if(msg.id.startsWith('ic2-a-')&&!mfIC2MessageLive(app,msg))
     return h('article',{className:'mf-ai-msg is-assistant is-unavailable'},
       h('p',{role:'status'},'Consulta anterior bloqueada: a autorização mudou ou expirou. Autorize e consulte novamente.'));
+  if(msg.id.startsWith('m3a-')&&typeof copilotActionMessageLive==='function'&&!copilotActionMessageLive(app,msg))
+    return h('article',{className:'mf-ai-msg is-assistant is-unavailable'},
+      h('p',{role:'status'},'Prévia de ação anterior bloqueada: a autorização ou o período mudou. Solicite novamente.'));
   const isUser=msg.role==='user';
   const badge=msg.status==='unavailable'?h('span',{className:'mf-ai-msg-badge is-warn'},'Consulta não autorizada'):
     msg.status==='unsupported'?h('span',{className:'mf-ai-msg-badge is-info'},'Consulta não reconhecida'):
@@ -215,6 +219,7 @@ function renderIntelligenceMessageItem(app:any,msg:IntelligenceChatMessage){
     msg.operationalEvidence?h('small',{className:'mf-premium-evidence'},msg.operationalEvidence):null,
     Array.isArray(msg.operationalActions)&&msg.operationalActions.length?h('div',{className:'mf-premium-tile-actions'},...msg.operationalActions.map((action:any)=>intelligencePremiumButton(app,null,action))):null,
     msg.proposal?renderIntelligenceActionProposalCard(app,msg.proposal):null,
+    msg.m3ActionDraft&&typeof renderCopilotActionCard==='function'?renderCopilotActionCard(app,msg):null,
     msg.id.startsWith('review-answer-')?h('button',{type:'button',className:'primary-button',onClick:()=>void categoryReviewOpen(app)},'Abrir Central de Revisão'):null,
     msg.details?h('details',{className:'mf-ai-msg-details'},
       h('summary',{},'Ver contexto e diagnóstico'),
@@ -592,8 +597,8 @@ function renderIntelligenceSettings(app:any){
   return h(Card,{className:'settings-card mf-ai-settings'},
     h('div',{className:'card-heading'},h('div',{},h('h2',{},'Inteligência artificial'),h('p',{},'Autenticação local e testes fictícios · Entrega 2'))),
     h('div',{className:'mf-ai-setting-line'},h('span',{},'Estado'),h('strong',{},app.state.aiStatus.connected?'Conectada':'Não conectada')),
-    h('div',{className:'mf-ai-setting-line'},h('span',{},'Modelo previsto'),h('strong',{},'GPT-6.1 Sol')),
-    h('div',{className:'mf-ai-setting-line'},h('span',{},'Raciocínio'),h('strong',{},'Low / Medium automático')),
+    h('div',{className:'mf-ai-setting-line'},h('span',{},'Modelo previsto'),h('strong',{},'GPT-6.2 Sol')),
+    h('div',{className:'mf-ai-setting-line'},h('span',{},'Raciocínio'),h('strong',{},'Low / Medium / High adaptativo')),
     h('div',{className:'mf-ai-setting-line'},h('span',{},'Economia de tokens'),h('strong',{},'Contexto mínimo + aprovação por teste')),
     h('p',{className:'muted-desc'},'OAuth e memórias aprovadas são protegidos localmente no Windows. Nenhuma memória é enviada sem consentimento por teste. Dados bancários e sincronização de memórias no PWA continuam indisponíveis para a IA.'),
     h('details',{className:'mf-ai-advanced-settings'},

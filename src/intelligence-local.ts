@@ -101,6 +101,7 @@ async function localFinancialSubmit(app:any,question:string){
  // I3-01 investigations use the already-authorized IC2 read pipeline, not a
  // V3 decorative card. Follow-ups retain IC2 context without copying money.
  const foldedQuestion=intelligenceFoldText(q);
+ const m3ActionIntent=/\b(coloque|coloquem|categoriz|recategoriz|classifiqu|reclassifiqu|mova|mover|alter[ea]r?\s+(?:a\s+)?categoria|mud[ea]r?\s+(?:a\s+)?categoria)\b/.test(foldedQuestion);
  const financialInvestigation=/por que.*(despes|gast)|investig|categorias?.*contribu|estabelec.*(cresc|aument)|mostre.*estabelec|despes.*(aument|subi)|gast.*(aument|mais)|onde.*gastando|o que aumentou|compar.*(janeiro|fevereiro|marco|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro|mes)/.test(foldedQuestion);
  const sameThread=!!app.__ic2Conversation?.answerId&&messages.some((m:any)=>m.id===app.__ic2Conversation.answerId);
  const i3Followup=sameThread&&!!app.__ic2InvestigationActive&&
@@ -113,16 +114,23 @@ async function localFinancialSubmit(app:any,question:string){
  // SQLite adapter without that endpoint, do NOT replace a valid R$42,15
  // response with a misleading "no evidence" visual failure.
  // D01 supervised proposals and synthetic receipts cannot be hijacked.
- const v3Kind=!copilotIntentRequested&&typeof api?.intelligenceOperationalAsk==='function'&&
+ const v3Kind=!copilotIntentRequested&&!m3ActionIntent&&typeof api?.intelligenceOperationalAsk==='function'&&
   v3Requested&&v3Requested!=='proposal'&&v3Requested!=='approval'?v3Requested:null;
  let previousOperational:any=null;
  const request=(app.__localChatRequest||0)+1;app.__localChatRequest=request;
  const user:IntelligenceChatMessage={id:'local-u-'+Date.now(),role:'user',text:q,status:'sent',
   createdAt:intelligenceNowTime(),scopeLabel:scope.label,periodLabel:month};
  app.setState({localFinancialBusy:true,intelligenceDraft:''});
- let reply:LocalFinancialReply=null,operational:any=null,ic2:MfIC2Reply|null=null,error='';
+ let reply:LocalFinancialReply=null,operational:any=null,ic2:MfIC2Reply|null=null,m3Draft:any=null,error='';
  try{
-  if(!v3Kind&&typeof api?.intelligenceIC2ReadQuery==='function'){
+  if(m3ActionIntent&&typeof api?.copilotActionInterpret==='function'){
+   const draft=await api.copilotActionInterpret({token:access.token,source:access.source,profile:access.profile,month,question:q});
+   if(draft?.matched===true){
+    const cap=typeof api?.copilotActionCapabilityStatus==='function'?await api.copilotActionCapabilityStatus().catch(()=>null):null;
+    m3Draft={...draft,capability:cap?{available:!!cap.available,enabled:!!cap.enabled}:null};
+   }
+  }
+  if(!m3Draft&&!v3Kind&&typeof api?.intelligenceIC2ReadQuery==='function'){
    // The conversational read path is isolated from explicit V3 visual requests.
    const previous=app.__ic2Conversation;
    const conversationId=previous?.access===access&&previous?.signature===signature&&
@@ -168,43 +176,50 @@ async function localFinancialSubmit(app:any,question:string){
  if(ic2&&['ready','partial','needs_clarification','unsupported'].includes(ic2.status))
    app.__ic2Conversation={access,signature,id:ic2.conversationId};
  const state=operational?.uiState;
- let answerText=ic2?.answer||operational?.answer||reply?.text||error||'Consulta indisponível.';
- const finalStatus:IntelligenceChatMessage['status']=ic2?
+ let answerText=m3Draft?.answer||ic2?.answer||operational?.answer||reply?.text||error||'Consulta indisponível.';
+ const finalStatus:IntelligenceChatMessage['status']=m3Draft?
+  (m3Draft.status==='ready'?'done':'unsupported'):ic2?
   (['ready','partial'].includes(ic2.status)?'done':ic2.status==='unsupported'||ic2.status==='needs_clarification'?'unsupported':
    ic2.status==='denied'||ic2.status==='stale'?'unavailable':'error'):operational?
   (state==='ready'||state==='empty'?'done':state==='unsupported'?'unsupported':state==='denied'||state==='expired'?'unavailable':'error'):
   reply?'done':'error';
  const factsValid=operational&&(state==='ready'||state==='empty');
- const evidence=ic2&&['ready','partial'].includes(ic2.status)?
+ const evidence=m3Draft?
+  'Ação supervisionada · '+(m3Draft.source==='bank'?'Fonte bancária':'Fonte manual')+' · '+month:
+  ic2&&['ready','partial'].includes(ic2.status)?
   'Consulta local · '+(ic2.source==='bank'?'Fonte bancária':'Fonte manual')+' · '+month:
   factsValid?(operational.profile==='synthetic'?'Ambiente sintético':'Fonte '+(operational.source==='bank'?'bancária':'manual'))+
   ' · '+intelligencePremiumCoverage(operational.coverage)+' · '+month:'';
- const visualV3=v3Kind&&factsValid?mfV3BindGrant(
+ const visualV3=!m3Draft&&v3Kind&&factsValid?mfV3BindGrant(
    mfV3FromOperational(operational,v3Kind,previousOperational),access,signature):null;
- if(v3Kind){
+ if(v3Kind&&!m3Draft){
   answerText=!visualV3?'Não há evidência suficiente para apresentar esta análise com segurança. Nenhum valor foi estimado.':
     visualV3.quality==='unavailable'?'Esta família visual não tem serviço financeiro operacional compatível neste momento.':
     visualV3.quality==='partial'?'Os registros são parciais ou não permitem uma comparação completa. Veja as limitações a seguir.':
     'Consulte a visualização calculada a partir dos registros locais autorizados.';
  }
- const visualKind=!v3Kind&&factsValid?mfVisualRequested(q):null;
+ const visualKind=!m3Draft&&!v3Kind&&factsValid?mfVisualRequested(q):null;
  const visual=visualKind?mfVisualFromOperational(operational,visualKind):null;
  const answer:IntelligenceChatMessage={
-  id:(ic2?'ic2-a-':'local-a-')+Date.now(),role:'assistant',text:answerText,status:finalStatus,
+  id:(m3Draft?'m3a-':ic2?'ic2-a-':'local-a-')+Date.now(),role:'assistant',text:answerText,status:finalStatus,
   createdAt:intelligenceNowTime(),scopeLabel:scope.label,periodLabel:month,
-  structuredCard:ic2?mfIC2Card(ic2):factsValid&&operational.card?operational.card:reply?.card||null,
+  structuredCard:m3Draft?null:ic2?mfIC2Card(ic2):factsValid&&operational.card?operational.card:reply?.card||null,
   visual,visualV3,
   ic2Reply:ic2||undefined,
   ic2FollowUps:ic2&&Array.isArray(ic2.followUps)?ic2.followUps.slice(0,3):undefined,
+  m3ActionDraft:m3Draft||undefined,
   operationalActions:factsValid&&!visualV3&&Array.isArray(operational.actions)?operational.actions:[],
   operationalEvidence:evidence,
-  details:ic2?'Leitura local verificada · '+(ic2.status==='partial'?'Cobertura parcial. ':'')+
+  details:m3Draft?'Prévia supervisionada M3 · confirmação nativa e backup SQLite antes de qualquer escrita.':
+    ic2?'Leitura local verificada · '+(ic2.status==='partial'?'Cobertura parcial. ':'')+
     'Fatos locais verificáveis, sem escrita financeira ou modelo externo.':v3Kind&&!visualV3?'Os fatos autorizados não permitem esta visualização; nenhuma informação foi estimada.':
     visualKind&&!visual?'Não há evidências suficientes para desenhar o gráfico com totais reconciliados. Confira fonte e cobertura.':
     factsValid?'Consulta local determinística, sem IA externa. Não foi executada qualquer alteração.':
     reply?JSON.stringify(reply.references):'Nenhuma alteração financeira nem envio externo.'
  };
- if(ic2){
+ if(m3Draft){
+  if(typeof copilotBindActionMessage==='function')copilotBindActionMessage(answer,access,signature,month);
+ }else if(ic2){
   mfIC2BindMessage(answer,access,signature,month);
   if(app.__ic2Conversation?.id===ic2.conversationId)app.__ic2Conversation.answerId=answer.id;
  }else mfLocalBindMessage(answer,access,signature,month);
