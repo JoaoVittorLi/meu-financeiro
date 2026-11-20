@@ -1,4 +1,10 @@
-# Estado comprovado do projeto — atualizado em 18/11/2026
+# Estado comprovado do projeto — atualizado em 19/11/2026
+
+> **Reconciliação oficial de marcos (19/11/2026):**
+> - `M1_IMPLEMENTATION_COMPLETE` — escopo funcional do Marco 1 (`CAT-P0 Opção A`, `CAT-UX 01–06`, `D05 14×61`, `B01–B05`, `I2/I3-01`, `RC2.2/2.3` e `M1.1` Visão Geral) integrado nesta branch (`PR #105`).
+> - `M1_TECHNICALLY_HOMOLOGATED` — patch experimental `M1.1` (`0.9.5-beta.9`) homologado em Nível A + B + C (`15/15` PASS) em `b7a3d8a` (docs consolidados em `ffc70f2`).
+> - `V1_STABLE_RELEASE_PENDING` — candidata estável preparada em branch isolada `release/v1.0.0-rc.1-candidate-20261119` (`1a22181e6adcb52cca214922821b9f265b76c753`, `v1.0.0-rc.1`), com `test:types`, `compile`, `build-preload check`, `check-bundle` (`31`), `test:db` (`1006/1006` PASS, `0` skipped), `mobile-push` (`133/133`), `test:asar` (`1/1`), `provenance:verify` (`23` arquivos), `test:electron-smoke` e `dist:windows:stable` (`verify-asar` + `asar-stable-verification.json`: `mfDistributionChannel="stable"`, `productName="Meu Financeiro"`, `d05Parents=14`, `d05Subcategories=61`, `svgGlyphs=67`, `approvedForPersonal=false`, `financialDataEnabled=false`, `paidApiFallback=false`); instalador `C:\Dev\releases\V1-STABLE-RC1\MeuFinanceiro-Instalador-1.0.0-rc.1-x64.exe` (`115.734.512` bytes, `SHA-256` `7dd641f380ee38c34859593af31bb9d336d36793c7a0b320deeba18fb0e352e`), sem instalação/execução local para proteger `%APPDATA%\meu-financeiro-desktop`. Bloqueios para GO definitivo `1.0.0`: Nível C do pacote `stable` em Windows limpo/VM isolada e decisão humana na issue `#71`.
+> - `M2_IN_PROGRESS` — trilha paralela do Copiloto Financeiro F1–F5 (`feat/mf2-intelligence-3-0-copilot-20261118` @ `e3c153cb00b3bc9c5bc4f7e8e53f296ba98214a6`); **o Marco 2 não bloqueia a promoção da v1.0.0**.
 
 **Natureza:** registro factual vinculado ao repositório e às execuções verificadas em disco no workspace isolado `C:\Dev\meu-financeiro`. Nunca promove `NOT_RUN` ou `BLOCKED` a `PASS`.
 
@@ -20,8 +26,8 @@
   - **Restrições ativas preservadas:** `approvedForPersonal() === false` (`electron/main.cjs`, `electron/d05-personal-gate.cjs`), `financialDataEnabled: false` (`shared/ai-policy.mjs`), dados sintéticos exclusivos (`MF_QA_SYNTHETIC=1`), `main` intacta em `v0.9.4` sem merge/tags.
 
 ## Próximo Passo
-- `M1.1` (`b7a3d8a`, `0.9.5-beta.9`) encontra-se tecnicamente homologado em Nível A + B + C (`TECHNICALLY_HOMOLOGATED — OWNER_VISUAL_ACCEPTANCE_PENDING`) com entrega privada verificada no Google Drive para avaliação visual do proprietário.
-- Conforme autorização do proprietário (`OPERAÇÃO CONTINUIDADE TOTAL — 18/11/2026`), iniciar **Marco 2 (`feat/mf2-intelligence-3-0-copilot-20261118`)** em worktree isolada (`C:\Dev\meu-financeiro-worktrees\m2-copilot`), reconciliando specs `I3-00` (`PR #91`/`PR #93`) e código vivo (`PR #95` / `HEAD`) antes da implementação em fatias verticais.
+- **Frente v1.0.0 (`V1_STABLE_RELEASE_PENDING`):** validar o instalador estável `C:\Dev\releases\V1-STABLE-RC1\MeuFinanceiro-Instalador-1.0.0-rc.1-x64.exe` (`release/v1.0.0-rc.1-candidate-20261119` @ `1a22181e6adcb52cca214922821b9f265b76c753`, `SHA-256` `7dd641f380ee38c34859593af31bb9d336d36793c7a0b320deeba18fb0e352e`) em VM Windows limpa (Nível C `stable`) e colher aprovação expressa do proprietário na issue `#71` antes de merge na `main` ou tag `v1.0.0`.
+- **Frente Marco 2 (`M2_IN_PROGRESS`, não bloqueante para 1.0.0):** concluída a implementação integrada das fatias F1–F5 na worktree `C:\Dev\meu-financeiro-worktrees\m2-copilot` (`feat/mf2-intelligence-3-0-copilot-20261118` @ `e3c153cb00b3bc9c5bc4f7e8e53f296ba98214a6`) com `APPROVE` duplo dos auditores `pro` (Visual e Forense/Financeiro), seguindo para empacotamento/Nível C experimental isolado.
 
 ---
 
