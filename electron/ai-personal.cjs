@@ -68,8 +68,8 @@ class AIPersonalStore{
     const input=Number(entry?.inputTokens)||0,output=Number(entry?.outputTokens)||0,reasoning=Number(entry?.reasoningTokens)||0;
     if(![input,output,reasoning].every(x=>Number.isSafeInteger(x)&&x>=0&&x<2000000))
       throw new Error('Métrica de tokens inválida.');
-    if(!['low','medium'].includes(entry?.effort))throw new Error('Modo de raciocínio inválido.');
-    if(!['budget','categorize','planning'].includes(entry?.caseId))throw new Error('Cenário inválido para registro.');
+    if(!['low','medium','high'].includes(entry?.effort))throw new Error('Modo de raciocínio inválido.');
+    if(!['budget','categorize','planning','copilot'].includes(entry?.caseId))throw new Error('Cenário inválido para registro.');
     state.usage.push({
       when:new Date().toISOString(),caseId:entry.caseId,effort:entry.effort,
       inputTokens:input,outputTokens:output,reasoningTokens:reasoning,

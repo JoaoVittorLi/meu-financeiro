@@ -3327,3 +3327,58 @@
 @media(max-width:980px){
  .mf-copilot-proactive-grid{grid-template-columns:1fr}
 }
+
+/* ==========================================================================
+   MARCO 3 — AÇÕES SUPERVISIONADAS DO COPILOTO (S1..S4)
+   ========================================================================== */
+.mf-m3-action-card{display:grid;gap:11px;margin-top:8px;padding:14px 15px;border-radius:14px;
+ border:1px solid color-mix(in srgb,var(--green) 24%,var(--border));
+ background:var(--surface2);color:var(--text);min-width:0}
+.mf-m3-action-card.is-info{border-color:var(--border)}
+.mf-m3-action-card.is-dismissed{padding:10px 13px;font-size:12px;color:var(--muted)}
+.mf-m3-action-head{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.mf-m3-action-badges{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.mf-m3-action-target{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:10px;
+ padding:10px 12px;border-radius:11px;border:1px solid var(--border);background:var(--surface)}
+.mf-m3-action-target-copy{display:grid;gap:2px;min-width:0}
+.mf-m3-action-target-copy small,.mf-m3-action-target-total small{font-size:11px;color:var(--muted)}
+.mf-m3-action-target-copy strong{font-size:13.5px;overflow-wrap:anywhere}
+.mf-m3-action-target-total{display:grid;gap:2px;text-align:right;font-variant-numeric:tabular-nums}
+.mf-m3-action-target-total strong{font-size:14px}
+.mf-m3-action-warnings{display:grid;gap:6px}
+.mf-m3-action-notice{margin:0;padding:8px 10px;border-radius:9px;font-size:12px;line-height:1.45;
+ background:rgba(217,119,6,.1);border:1px solid rgba(217,119,6,.28);color:var(--text)}
+.mf-m3-action-notice.is-rule-note{background:rgba(3,105,161,.09);border-color:rgba(3,105,161,.26)}
+[data-theme="dark"] .mf-m3-action-notice{color:#fde68a}
+[data-theme="dark"] .mf-m3-action-notice.is-rule-note{color:#bae6fd}
+.mf-m3-action-account-picker label{display:grid;gap:5px;font-size:11.5px;font-weight:600;color:var(--muted)}
+.mf-m3-action-account-picker select{min-height:34px;padding:6px 10px;border-radius:9px;border:1px solid var(--border);
+ background:var(--surface);color:var(--text)}
+.mf-m3-action-items{display:grid;gap:6px;max-height:240px;overflow-y:auto;padding-right:2px}
+.mf-m3-action-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:9px;
+ padding:8px 10px;border-radius:10px;border:1px solid var(--border);background:var(--surface);cursor:pointer;
+ transition:border-color 140ms ease,background-color 140ms ease}
+.mf-m3-action-row.is-selected{border-color:color-mix(in srgb,var(--green) 45%,var(--border))}
+.mf-m3-action-row-copy{display:grid;gap:2px;min-width:0}
+.mf-m3-action-row-copy strong{font-size:12.5px;overflow-wrap:anywhere}
+.mf-m3-action-row-copy small{font-size:11px;color:var(--muted);overflow-wrap:anywhere}
+.mf-m3-action-row-amount{font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.mf-m3-action-excluded{font-size:11.5px;color:var(--muted)}
+.mf-m3-action-excluded>summary{cursor:pointer;font-weight:600}
+.mf-m3-action-excluded ul{margin:6px 0 0;padding-left:18px;display:grid;gap:3px}
+.mf-m3-action-optin{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
+ padding:10px 12px;border-radius:10px;border:1px dashed var(--border);background:var(--surface)}
+.mf-m3-action-optin p{margin:0;font-size:12px;color:var(--muted);flex:1 1 220px}
+.mf-m3-action-receipt{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
+ padding:10px 12px;border-radius:10px;border:1px solid color-mix(in srgb,var(--green) 36%,var(--border));
+ background:color-mix(in srgb,var(--green) 8%,var(--surface))}
+.mf-m3-action-receipt-info{display:grid;gap:2px}
+.mf-m3-action-receipt-info strong{font-size:12.5px;color:var(--text)}
+.mf-m3-action-receipt-info small{font-size:11px;color:var(--muted)}
+.mf-m3-action-footer{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.mf-m3-action-error{margin:0;font-size:12px;color:#dc2626}
+[data-theme="dark"] .mf-m3-action-error{color:#fca5a5}
+.mf-m3-action-muted{font-size:11.5px;color:var(--muted)}
+@media(prefers-reduced-motion:reduce){
+ .mf-m3-action-row{transition:none!important}
+}

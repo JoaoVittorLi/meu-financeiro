@@ -20,6 +20,7 @@ const {IntelligenceOperational}=require('./intelligence-operational.cjs');
 const {IC2ReadQueryGateway}=require('./intelligence-ic2-adapter.cjs');
 const {scopeOf}=require('./intelligence-context.cjs');
 const {scanProactiveInsights}=require('./intelligence-proactive.cjs');
+const {interpretCopilotAction}=require('./copilot-actions.cjs');
 const {RCCategoryGateway}=require('./intelligence-category-rc.cjs');
 const {installD05Ipc}=require('./d05-ipc-adapter.cjs');
 const {D05RCSecureGate}=require('./d05-rc-gate.cjs');
@@ -261,21 +262,38 @@ app.whenReady().then(async()=>{
    return dialogResult.response===1&&!mainWindow.isDestroyed();
   }
  });
- // Dedicated personal supervision adapter; write flag is permanently false
- // in this experimental SHA until owner authorizes a separate QA-gated change.
+ // Dedicated personal supervision adapter; global personal write flag stays false,
+ // and M3 supervised execution requires an explicit owner opt-in persisted in app_meta.
+ const isM3CapabilityEnabled=()=>{
+  if(!(stablePackaged||smokeProfileActive||experimentalPackaged))return false;
+  try{
+   return db?.db?.prepare("SELECT value FROM app_meta WHERE key='m3_supervised_actions_enabled'").get()?.value==='1';
+  }catch{return false;}
+ };
  d05PersonalGate=new D05PersonalWriteGateway({
   finance:()=>db,readSession:(event,input)=>d05Gate.require(event,input),
   backupDirectory:()=>path.join(app.getPath('userData'),'d05-personal-write-backups'),
   approvedForPersonal:()=>false,
+  m3CapabilityCheck:()=>isM3CapabilityEnabled(),
   confirm:async details=>{
    if(!mainWindow||mainWindow.isDestroyed()||!mainWindow.isFocused())return false;
+   const m3Active=isM3CapabilityEnabled();
+   const isUndo=details.kind==='undo';
+   const targetText=details.after?
+    details.after.category+(details.after.subcategory?' › '+details.after.subcategory:''):
+    String(details.action||'operação');
    const result=await dialog.showMessageBox(mainWindow,{
-    type:'warning',buttons:['Cancelar','Confirmar somente após homologação'],
+    type:'warning',
+    buttons:isUndo?['Cancelar','Confirmar reversão']:
+     (m3Active||details.syntheticOnly)?['Cancelar','Confirmar e aplicar']:['Cancelar','Confirmar somente após homologação'],
     defaultId:0,cancelId:0,noLink:true,
-    title:'Escrita financeira supervisionada',
-    message:'Confirmar '+String(details.action)+' no contexto autorizado?',
-    detail:'Antes da confirmação o sistema revalidará IDs, conta, perfil, prévia e backup. '+
-     'A execução pessoal permanece desativada nesta candidata.'
+    title:isUndo?'Reverter alteração supervisionada':'Escrita financeira supervisionada',
+    message:isUndo?
+     'Desfazer alteração aplicada em '+String(details.count||1)+' lançamento(s)?':
+     'Confirmar '+targetText+' em '+String(details.count||1)+' lançamento(s)?',
+    detail:isUndo?
+     'Restaura a classificação anterior salva no recibo '+String(details.proposalId||'')+' após backup SQLite verificado.':
+     'Antes da confirmação o sistema revalidará IDs, conta, perfil, prévia e criará backup SQLite com recibo reversível.'
    });
    return result.response===1&&!mainWindow.isDestroyed();
   }
@@ -291,6 +309,69 @@ app.whenReady().then(async()=>{
  });
  ipcMain.handle('d05:personal-write-receipt',(event,input)=>{
   requireAppSender(event);return d05PersonalGate.receipt(event,input);
+ });
+ ipcMain.handle('copilot:action-capability-status',event=>{
+  requireAppSender(event);
+  return {
+   available:stablePackaged||smokeProfileActive||experimentalPackaged,
+   enabled:isM3CapabilityEnabled(),
+   personalWriteApproved:false
+  };
+ });
+ ipcMain.handle('copilot:action-capability-enable',async event=>{
+  requireAppSender(event);
+  if(!(stablePackaged||smokeProfileActive||experimentalPackaged))
+   throw Error('Copilot: ações supervisionadas disponíveis apenas na distribuição homologada ou ambiente de QA.');
+  if(restoring||syncing||autoBackupBusy)throw Error('Copilot: operação financeira em andamento.');
+  if(!mainWindow||mainWindow.isDestroyed()||!mainWindow.isFocused())
+   throw Error('Copilot: ativação exige janela ativa.');
+  const answer=await dialog.showMessageBox(mainWindow,{
+   type:'warning',
+   buttons:['Cancelar','Ativar ações supervisionadas'],
+   defaultId:0,cancelId:0,noLink:true,
+   title:'Ativar ações supervisionadas do Copiloto',
+   message:'Permitir que o Copiloto proponha e execute alterações locais após confirmação nativa?',
+   detail:'Cada alteração continuará exigindo prévia antes/depois, confirmação explícita, backup SQLite verificado e gerará recibo reversível. Nunca realiza pagamentos, transferências ou escrita silenciosa; revogável a qualquer momento.'
+  });
+  requireAppSender(event);
+  if(answer.response!==1||!mainWindow||mainWindow.isDestroyed())return {cancelled:true,enabled:isM3CapabilityEnabled()};
+  db.db.prepare("INSERT OR REPLACE INTO app_meta(key,value) VALUES('m3_supervised_actions_enabled','1')").run();
+  return {cancelled:false,enabled:true};
+ });
+ ipcMain.handle('copilot:action-capability-revoke',event=>{
+  requireAppSender(event);
+  if(restoring||syncing||autoBackupBusy)throw Error('Copilot: operação financeira em andamento.');
+  db.db.prepare("DELETE FROM app_meta WHERE key='m3_supervised_actions_enabled'").run();
+  if(d05PersonalGate)d05PersonalGate.stopAll();
+  return {enabled:false};
+ });
+ ipcMain.handle('copilot:action-interpret',(event,input)=>{
+  requireAppSender(event);
+  if(!input||typeof input!=='object'||Array.isArray(input)||
+     Object.keys(input).some(k=>!['token','source','profile','month','question'].includes(k))||
+     typeof input.question!=='string')
+   throw Error('Copilot: solicitação de ação inválida.');
+  const scope=scopeOf({token:input.token,source:input.source,profile:input.profile,month:input.month},event.sender.id);
+  return interpretCopilotAction({local:localFinancial,scope,owner:event.sender.id,question:input.question});
+ });
+ ipcMain.handle('copilot:action-prepare',(event,input)=>{
+  requireAppSender(event);if(restoring||syncing||autoBackupBusy)throw Error('D05: operação concorrente');
+  return d05PersonalGate.prepare(event,input);
+ });
+ ipcMain.handle('copilot:action-confirm',async(event,input)=>{
+  requireAppSender(event);if(restoring||syncing||autoBackupBusy)throw Error('D05: operação concorrente');
+  autoBackupBusy=true;
+  try{return await d05PersonalGate.confirmPreview(event,input);}
+  finally{autoBackupBusy=false;}
+ });
+ ipcMain.handle('copilot:action-undo',async(event,input)=>{
+  requireAppSender(event);if(restoring||syncing||autoBackupBusy)throw Error('D05: operação concorrente');
+  autoBackupBusy=true;
+  try{return await d05PersonalGate.undoReceipt(event,input);}
+  finally{autoBackupBusy=false;}
+ });
+ ipcMain.handle('copilot:action-receipts',(event,input)=>{
+  requireAppSender(event);return d05PersonalGate.listReceipts(event,input||{});
  });
  // Registered only once; dynamic finance() rebinds after backup/restore.
  installD05Ipc({ipcMain,finance:()=>db,requireAppSender,
@@ -856,17 +937,18 @@ app.whenReady().then(async()=>{
    requireAppSender(event);
    forbidExperimentalNetwork();
    if(!input||typeof input!=='object'||typeof input.caseId!=='string'||
-     !['auto','low','medium'].includes(input.effort)||typeof input.useSavedMemories!=='boolean')
+     !['auto','low','medium','high'].includes(input.effort)||typeof input.useSavedMemories!=='boolean')
      throw new Error('Parâmetros de prévia de contexto inválidos.');
    return aiDemo.contextPreview(input);
  });
  ipcMain.handle('ai:connect',(event)=>{requireAppSender(event);forbidExperimentalNetwork();return aiAuth.connect();});
  ipcMain.handle('ai:disconnect',(event)=>{requireAppSender(event);return aiAuth.disconnect();});
  ipcMain.handle('ai:model-available',(event)=>{requireAppSender(event);forbidExperimentalNetwork();return aiDemo.modelAvailable();});
+ ipcMain.handle('ai:cancel',(event)=>{requireAppSender(event);return aiDemo.cancelActive();});
  ipcMain.handle('ai:run-demo',(event,input)=>{
    requireAppSender(event);
    forbidExperimentalNetwork();
-   if(!input||typeof input!=='object'||typeof input.caseId!=='string'||input.caseId.length>36||!['auto','low','medium'].includes(input.effort)||input.creditsDisabledConfirmed!==true||typeof input.useSavedMemories!=='boolean')
+   if(!input||typeof input!=='object'||typeof input.caseId!=='string'||input.caseId.length>36||!['auto','low','medium','high'].includes(input.effort)||input.creditsDisabledConfirmed!==true||typeof input.useSavedMemories!=='boolean')
      throw new Error('Confirmação e parâmetros de teste inválidos.');
    return aiDemo.testDemo({caseId:input.caseId,effort:input.effort,creditsDisabledConfirmed:true,useSavedMemories:input.useSavedMemories,
      onDelta:delta=>{if(mainWindow&&!mainWindow.isDestroyed())mainWindow.webContents.send('ai:delta',{delta});}});

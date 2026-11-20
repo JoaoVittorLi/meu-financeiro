@@ -39,6 +39,7 @@
     "src/intelligence-staging.ts",
     "src/intelligence-ic2.ts",
     "src/intelligence-local.ts",
+    "src/copilot-supervised-actions.ts",
     "src/intelligence-review.ts"
   ]
 }

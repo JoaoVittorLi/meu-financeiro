@@ -42,7 +42,7 @@ test('Painel contextual oferece perguntas para todas as seis áreas',()=>{
 test('Configurações não coletam segredos no renderer',()=>{
  const view=source('src/intelligence-view.ts');
  assert.match(view,/Não conectada/);
- assert.match(view,/GPT-6\.1 Sol/);
+ assert.match(view,/GPT-6\.2 Sol/);
  assert.match(view,/OAuth e memórias aprovadas são protegidos localmente no Windows/);
  assert.match(source('src/intelligence-integration.ts'),/desktop\.aiConnect/);
 });
