@@ -3246,6 +3246,14 @@
 .mf-ic2-adaptive{display:grid;gap:12px;margin-top:8px;padding:16px;border-radius:16px;
  border:1px solid var(--border);background:var(--surface);color:var(--text);min-width:0}
 .mf-ic2-adaptive.mf-ic2-density-compact{padding:12px;gap:9px;border-radius:13px}
+.mf-ic2-adaptive.mf-ic2-density-compact .qa84-category-glyph{width:24px;height:24px;border-radius:7px}
+.mf-ic2-adaptive .mf-ai-table-wrap th:not(:first-child),.mf-ic2-adaptive .mf-ai-table-wrap td:not(:first-child){text-align:right}
+.mf-ic2-adaptive .mf-ai-table-wrap td .mf-ic2-bar-cell{text-align:left}
+.mf-ai-structured-metric.is-warning{border-color:rgba(217,119,6,.36)}
+.mf-ai-structured-metric.is-warning strong{color:#b45309}
+[data-theme="dark"] .mf-ai-structured-metric.is-warning strong{color:#fbbf24}
+.mf-ai-structured-metric.is-positive{border-color:color-mix(in srgb,var(--green) 36%,var(--border))}
+.mf-ai-structured-metric.is-positive strong{color:var(--green)}
 .mf-ic2-adaptive.mf-ic2-density-analysis{border-color:color-mix(in srgb,var(--green) 36%,var(--border))}
 .mf-ic2-adaptive-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap}
 .mf-ic2-adaptive-title{display:grid;gap:3px;min-width:0}
@@ -3272,6 +3280,7 @@
  transition:width 280ms cubic-bezier(.22,1,.36,1)}
 .mf-ic2-bar-track>span.is-up{background:#e11d48}
 .mf-ic2-subblock{display:grid;gap:8px;padding-top:10px;border-top:1px solid var(--border);min-width:0}
+.mf-ic2-subblock>.mf-ic2-toggle-btn{justify-self:start}
 .mf-ic2-subblock-title{font-size:11.5px;font-weight:700;color:var(--muted);letter-spacing:.04em;text-transform:uppercase}
 .mf-ic2-scenario-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .mf-ic2-scenario-card{display:grid;gap:3px;padding:10px 11px;border-radius:12px;border:1px solid var(--border);background:var(--surface2)}
@@ -3309,6 +3318,7 @@
  border:1px solid var(--border);background:var(--surface);color:var(--text);min-width:0}
 .mf-copilot-proactive-card>header{display:flex;align-items:center;gap:10px;min-width:0}
 .mf-copilot-proactive-card>header small{font-size:10px;font-weight:750;letter-spacing:.08em;color:var(--green)}
+.mf-copilot-proactive-card>header small.is-commitment{color:var(--muted)}
 .mf-copilot-proactive-card>header h4{margin:2px 0 0;font-size:14.5px;line-height:1.35}
 .mf-copilot-proactive-card>p{margin:0;font-size:12.5px;line-height:1.5;color:var(--muted)}
 .mf-copilot-impact{font-size:16px;font-variant-numeric:tabular-nums;color:var(--text)}

@@ -335,7 +335,10 @@ app.whenReady().then(async()=>{
  });
  ipcMain.handle('intelligence:copilot-insights',(event,input)=>{
   requireAppSender(event);
-  const scope=scopeOf({token:input?.token,source:input?.source,profile:input?.profile,month:input?.month},event.sender.id);
+  if(!input||typeof input!=='object'||Array.isArray(input)||
+     Object.keys(input).some(k=>!['token','source','profile','month'].includes(k)))
+   throw Error('Solicitação de sinais proativos inválida.');
+  const scope=scopeOf({token:input.token,source:input.source,profile:input.profile,month:input.month},event.sender.id);
   return scanProactiveInsights({local:localFinancial,scope});
  });
  // I2-B/C: explicitly scoped IPCs. Renderer cannot supply owner, environment,

@@ -5156,7 +5156,7 @@ function renderMfB05Today(app, explicitVerifiedInput) {
         const list = Array.isArray(env === null || env === void 0 ? void 0 : env.insights) ? env.insights.slice(0, 3) : [];
         if (!list.length)
             return null;
-        return h('section', { className: 'mf-copilot-proactive', 'aria-label': 'Radar proativo do Copiloto' }, h('div', { className: 'mf-b05-signals-head' }, h('h3', {}, 'Radar proativo do Copiloto'), h('small', {}, 'Até 3 sinais sem sobreposição · versão ' + String(env.dataVersion || '').slice(0, 12))), h('div', { className: 'mf-copilot-proactive-grid' }, ...list.map((ins) => h('article', { key: ins.insightId, className: 'mf-copilot-proactive-card' }, h('header', {}, mfB05CategoryBadge(ins.categoryId || null, ins.subcategoryId || null, ins.categoryLabel || 'Geral'), h('div', {}, h('small', {}, ins.importance === 'high' ? 'ALTA PRIORIDADE' : 'OPORTUNIDADE'), h('h4', {}, ins.title))), h('p', {}, ins.summary), Number.isSafeInteger(ins.impactCentsMax) ? h('strong', { className: 'mf-copilot-impact' }, ins.impactCentsMin === ins.impactCentsMax ? mfB05Money(ins.impactCentsMax) : mfB05Money(ins.impactCentsMin) + ' – ' + mfB05Money(ins.impactCentsMax)) : null, h('small', { className: 'mf-copilot-uncertainty' }, ins.uncertainty), h('div', { className: 'mf-copilot-proactive-actions' }, h('button', { type: 'button', className: 'mf-b05-link', onClick: () => {
+        return h('section', { className: 'mf-copilot-proactive', 'aria-label': 'Radar proativo do Copiloto' }, h('div', { className: 'mf-b05-signals-head' }, h('h3', {}, 'Radar proativo do Copiloto'), h('small', {}, 'Até 3 sinais prioritários sem sobreposição')), h('div', { className: 'mf-copilot-proactive-grid' }, ...list.map((ins) => h('article', { key: ins.insightId, className: 'mf-copilot-proactive-card' }, h('header', {}, mfB05CategoryBadge(ins.categoryId || null, ins.subcategoryId || null, ins.categoryLabel || 'Geral'), h('div', {}, h('small', { className: ins.type === 'upcoming_commitment' ? 'is-commitment' : ins.importance === 'high' ? 'is-high' : '' }, ins.type === 'upcoming_commitment' ? 'COMPROMISSO' : ins.importance === 'high' ? 'ALTA PRIORIDADE' : 'OPORTUNIDADE'), h('h4', {}, ins.title))), h('p', {}, ins.summary), Number.isSafeInteger(ins.impactCentsMax) ? h('strong', { className: 'mf-copilot-impact' }, ins.impactCentsMin === ins.impactCentsMax ? mfB05Money(ins.impactCentsMax) : mfB05Money(ins.impactCentsMin) + ' – ' + mfB05Money(ins.impactCentsMax)) : null, h('small', { className: 'mf-copilot-uncertainty' }, ins.uncertainty), h('div', { className: 'mf-copilot-proactive-actions' }, h('button', { type: 'button', className: 'mf-b05-link', onClick: () => {
                 mfB05ChangeMode(app, 'chat');
                 if (typeof localFinancialSubmit === 'function')
                     void localFinancialSubmit(app, ins.recommendedQuestion);
@@ -8146,8 +8146,12 @@ function mfIC2Valid(r, access, month) {
     return r.blocks.every((b) => b && typeof b.kind === 'string' &&
         (b.factRef === null || ids.has(b.factRef)));
 }
+function mfIC2FormatDateBr(raw) {
+    const s = String(raw || '');
+    return /^\d{4}-\d{2}-\d{2}/.test(s) ? s.slice(8, 10) + '/' + s.slice(5, 7) + '/' + s.slice(0, 4) : s;
+}
 function mfIC2Card(r) {
-    var _a, _b, _c;
+    var _a, _b, _c, _d;
     if (!['ready', 'partial'].includes(r.status) || !r.facts.length)
         return null;
     const money = (v) => Number.isSafeInteger(v) ?
@@ -8171,19 +8175,31 @@ function mfIC2Card(r) {
                     rows.push({ col1: c.name.slice(0, 100), col2: money(c.amountCents) });
         }
         else if (fact.tool === 'compare_spending_breakdown') {
-            title = 'Investigação das despesas';
-            if (Number.isSafeInteger(f.previousCents))
-                metrics.push({ label: 'Anterior', value: money(f.previousCents) });
-            if (Number.isSafeInteger(f.currentCents))
-                metrics.push({ label: 'Atual', value: money(f.currentCents) });
-            if (Number.isSafeInteger(f.deltaCents))
-                metrics.push({ label: 'Variação', value: money(f.deltaCents),
-                    tone: f.deltaCents > 0 ? 'warning' : 'neutral' });
-            headers = ['Categoria', 'Anterior / atual', 'Variação'];
-            for (const x of (Array.isArray(f.contributions) ? f.contributions : []).slice(0, 12))
-                if (typeof x.label === 'string' && Number.isSafeInteger(x.deltaCents))
-                    rows.push({ col1: x.label.slice(0, 100),
-                        col2: money(x.previousCents) + ' / ' + money(x.currentCents), col3: money(x.deltaCents) });
+            if (f.focusIncome) {
+                title = 'Investigação das receitas';
+                if (Number.isSafeInteger(f.incomePreviousCents))
+                    metrics.push({ label: 'Receita anterior', value: money(f.incomePreviousCents) });
+                if (Number.isSafeInteger(f.incomeCurrentCents))
+                    metrics.push({ label: 'Receita atual', value: money(f.incomeCurrentCents) });
+                if (Number.isSafeInteger(f.incomeDeltaCents))
+                    metrics.push({ label: 'Variação', value: money(f.incomeDeltaCents),
+                        tone: f.incomeDeltaCents >= 0 ? 'positive' : 'warning' });
+            }
+            else {
+                title = 'Investigação das despesas';
+                if (Number.isSafeInteger(f.previousCents))
+                    metrics.push({ label: 'Anterior', value: money(f.previousCents) });
+                if (Number.isSafeInteger(f.currentCents))
+                    metrics.push({ label: 'Atual', value: money(f.currentCents) });
+                if (Number.isSafeInteger(f.deltaCents))
+                    metrics.push({ label: 'Variação', value: money(f.deltaCents),
+                        tone: f.deltaCents > 0 ? 'warning' : 'neutral' });
+                headers = ['Categoria', 'Anterior / atual', 'Variação'];
+                for (const x of (Array.isArray(f.contributions) ? f.contributions : []).slice(0, 12))
+                    if (typeof x.label === 'string' && Number.isSafeInteger(x.deltaCents))
+                        rows.push({ col1: x.label.slice(0, 100),
+                            col2: money(x.previousCents) + ' / ' + money(x.currentCents), col3: money(x.deltaCents) });
+            }
         }
         else if (fact.tool === 'compare') {
             title = 'Comparação com o mês anterior';
@@ -8257,11 +8273,15 @@ function mfIC2Card(r) {
                 metrics.push({ label: 'Saldo mínimo após', value: money(f.minimumAfterPurchaseCents), tone: f.risk === 'risk' ? 'warning' : 'positive' });
             headers = ['Parcela / data', 'Valor', 'Cenário'];
             for (const s of (Array.isArray(f.schedule) ? f.schedule : []).slice(0, 12))
-                rows.push({ col1: String(s.date || ''), col2: money((_c = s.amountCents) !== null && _c !== void 0 ? _c : s.amount), col3: (f.installments || 1) + 'x' });
+                rows.push({ col1: mfIC2FormatDateBr(s.date), col2: money((_c = s.amountCents) !== null && _c !== void 0 ? _c : s.amount), col3: (f.installments || 1) + 'x' });
         }
     }
     const warnings = r.alerts.filter(x => typeof x === 'string').slice(0, 3).map(x => x.slice(0, 220));
-    const notice = r.status === 'partial' ? 'Cobertura parcial; os valores não representam o histórico integral.' : 'Fatos calculados localmente a partir da origem autorizada.';
+    const primaryTool = String(((_d = r.facts[0]) === null || _d === void 0 ? void 0 : _d.tool) || '');
+    const notice = r.status === 'partial' ? 'Cobertura parcial; os valores não representam o histórico integral.' :
+        (primaryTool === 'simulate' || primaryTool === 'simulate_purchase') ? 'Simulação determinística local, sem alterações financeiras.' :
+            (primaryTool === 'recommend_savings' || primaryTool === 'detect_recurring_candidates') ? 'Estimativa determinística sobre seus registros autorizados; revise antes de agir.' :
+                'Fatos calculados localmente a partir da origem autorizada.';
     return { title, subtitle: r.period + ' · ' + (r.source === 'bank' ? 'Banco' : 'Manual') +
             ' · ' + (r.profile === 'demo' ? 'Demonstração' : 'Pessoal'),
         metrics: metrics.slice(0, 4), rows: rows.slice(0, 12), headers,
@@ -8313,29 +8333,31 @@ function mfIC2AdaptiveModel(r, density = 'standard') {
     const visualRows = [];
     const supplementary = [];
     if (tool === 'compare_spending_breakdown') {
-        const contribs = Array.isArray(val.contributions) ? val.contributions : [];
-        const maxAbs = Math.max(1, ...contribs.map((c) => Math.abs(c.deltaCents || 0)));
-        for (const c of contribs.slice(0, maxRows)) {
-            const d = Number.isSafeInteger(c.deltaCents) ? c.deltaCents : 0;
-            visualRows.push({
-                label: String(c.label || 'Categoria').slice(0, 100),
-                categoryId: c.categoryId || null, subcategoryId: c.subcategoryId || null,
-                col2: mfIC2Money(c.previousCents) + ' / ' + mfIC2Money(c.currentCents),
-                col3: (d > 0 ? '+' : '') + mfIC2Money(d),
-                barPct: Math.min(100, Math.round(Math.abs(d) / maxAbs * 100)),
-                barUp: d > 0
-            });
-        }
-        if (density === 'analysis' && Array.isArray(val.merchants) && val.merchants.length) {
-            supplementary.push({
-                kind: 'merchants',
-                title: 'Estabelecimentos normalizados no período',
-                items: val.merchants.slice(0, 8).map((m) => ({
-                    label: String(m.merchant || 'Não identificado').slice(0, 90),
-                    col2: mfIC2Money(m.previousCents) + ' → ' + mfIC2Money(m.currentCents),
-                    col3: String(m.previousCount || 0) + ' → ' + String(m.currentCount || 0) + 'x'
-                }))
-            });
+        if (!val.focusIncome) {
+            const contribs = Array.isArray(val.contributions) ? val.contributions : [];
+            const maxAbs = Math.max(1, ...contribs.map((c) => Math.abs(c.deltaCents || 0)));
+            for (const c of contribs.slice(0, maxRows)) {
+                const d = Number.isSafeInteger(c.deltaCents) ? c.deltaCents : 0;
+                visualRows.push({
+                    label: String(c.label || 'Categoria').slice(0, 100),
+                    categoryId: c.categoryId || null, subcategoryId: c.subcategoryId || null,
+                    col2: mfIC2Money(c.previousCents) + ' / ' + mfIC2Money(c.currentCents),
+                    col3: (d > 0 ? '+' : '') + mfIC2Money(d),
+                    barPct: Math.min(100, Math.round(Math.abs(d) / maxAbs * 100)),
+                    barUp: d > 0
+                });
+            }
+            if (density === 'analysis' && Array.isArray(val.merchants) && val.merchants.length) {
+                supplementary.push({
+                    kind: 'merchants',
+                    title: 'Estabelecimentos normalizados no período',
+                    items: val.merchants.slice(0, 8).map((m) => ({
+                        label: String(m.merchant || 'Não identificado').slice(0, 90),
+                        col2: mfIC2Money(m.previousCents) + ' → ' + mfIC2Money(m.currentCents),
+                        col3: String(m.previousCount || 0) + ' → ' + String(m.currentCount || 0) + 'x'
+                    }))
+                });
+            }
         }
     }
     else if (tool === 'recommend_savings') {
@@ -8461,24 +8483,29 @@ function renderMfIC2Adaptive(app, msg) {
         if (typeof resolveCategoryVisualIdentity !== 'function' || typeof CategoryVisualGlyph !== 'function')
             return null;
         const identity = resolveCategoryVisualIdentity({ categoryId: categoryId || null, subcategoryId: subcategoryId || null, categoryName: label, aggregate: !subcategoryId });
-        return h(CategoryVisualGlyph, { identity, size: density === 'compact' ? 16 : 18 });
+        return h(CategoryVisualGlyph, { identity, size: density === 'compact' ? 14 : 18 });
     };
     const navAction = model.tool === 'simulate_purchase' && typeof (app === null || app === void 0 ? void 0 : app.navigate) === 'function' ?
         h('button', { type: 'button', className: 'mf-ic2-toggle-btn', onClick: () => app.navigate('simulator') }, 'Abrir Simular Compra') : null;
     return h('div', { className: 'mf-ai-structured-card mf-ic2-adaptive mf-ic2-density-' + density, role: 'region', 'aria-label': model.card.title }, h('div', { className: 'mf-ic2-adaptive-head' }, h('div', { className: 'mf-ic2-adaptive-title' }, h('strong', {}, model.card.title), model.card.subtitle ? h('small', {}, model.card.subtitle) : null), h('div', { className: 'mf-ic2-adaptive-controls' }, h('span', { className: 'mf-ic2-epistemic-badge is-' + model.epistemic.tone }, model.epistemic.label), h('button', { type: 'button', className: 'mf-ic2-toggle-btn',
-        onClick: () => app.setState({ mfV3AnalysisMessageId: expanded ? null : msg.id }) }, expanded ? 'Recolher análise' : 'Explorar análise'))), model.metrics.length ? h('div', { className: 'mf-ai-structured-metrics' }, ...model.metrics.map((m, idx) => h('div', { key: idx, className: 'mf-ai-structured-metric is-' + (m.tone || 'neutral') }, h('small', {}, m.label), h('strong', {}, m.value)))) : null, model.rows.length ? h('div', { className: 'mf-ai-table-wrap' }, h('table', {}, model.card.headers ? h('thead', {}, h('tr', {}, h('th', {}, model.card.headers[0]), h('th', {}, model.card.headers[1]), model.card.headers[2] ? h('th', {}, model.card.headers[2]) : null)) : null, h('tbody', {}, ...model.rows.map((row, idx) => h('tr', { key: idx }, h('td', {}, h('span', { className: 'mf-ic2-cat-cell' }, row.categoryId || row.subcategoryId ? catGlyph(row.label, row.categoryId, row.subcategoryId) : null, h('span', {}, row.label), row.pill ? h('span', { className: 'mf-ic2-pill' + (row.barUp ? ' is-hike' : '') }, row.pill) : null)), h('td', {}, row.barPct === null ? row.col2 : h('div', { className: 'mf-ic2-bar-cell' }, h('span', {}, row.col2), h('div', { className: 'mf-ic2-bar-track', 'aria-hidden': 'true' }, h('span', { className: row.barUp ? 'is-up' : '', style: { width: Math.max(4, row.barPct) + '%' } })))), row.col3 !== undefined ? h('td', {}, row.col3) : null))))) : null, ...model.supplementary.map((blk, bIdx) => {
+        onClick: () => app.setState({ mfV3AnalysisMessageId: expanded ? null : msg.id }) }, expanded ? 'Recolher análise' : 'Explorar análise'))), model.metrics.length ? h('div', { className: 'mf-ai-structured-metrics' }, ...model.metrics.map((m, idx) => h('div', { key: idx, className: 'mf-ai-structured-metric is-' + (m.tone || 'neutral') }, h('small', {}, m.label), h('strong', {}, m.value)))) : null, model.rows.length ? h('div', { className: 'mf-ai-table-wrap' }, h('table', {}, model.card.headers ? h('thead', {}, h('tr', {}, h('th', {}, model.card.headers[0]), h('th', {}, model.card.headers[1]), model.card.headers[2] ? h('th', {}, model.card.headers[2]) : null)) : null, h('tbody', {}, ...model.rows.map((row, idx) => h('tr', { key: idx }, h('td', {}, h('span', { className: 'mf-ic2-cat-cell' }, model.tool !== 'simulate_purchase' && (row.categoryId || row.subcategoryId || row.label) ? catGlyph(row.label, row.categoryId, row.subcategoryId) : null, h('span', {}, row.label), row.pill ? h('span', { className: 'mf-ic2-pill' + (row.barUp ? ' is-hike' : row.pill === 'Independente' ? ' is-strong' : '') }, row.pill) : null)), h('td', {}, row.barPct === null ? row.col2 : h('div', { className: 'mf-ic2-bar-cell' }, h('span', {}, row.col2), h('div', { className: 'mf-ic2-bar-track', 'aria-hidden': 'true' }, h('span', { className: row.barUp ? 'is-up' : '', style: { width: Math.max(4, row.barPct) + '%' } })))), row.col3 !== undefined ? h('td', {}, row.col3) : null))))) : null, ...model.supplementary.map((blk, bIdx) => {
         if (blk.kind === 'scenarios') {
             return h('div', { key: bIdx, className: 'mf-ic2-subblock' }, h('span', { className: 'mf-ic2-subblock-title' }, blk.title), h('div', { className: 'mf-ic2-scenario-grid' }, ...blk.items.map((sc, i) => h('div', { key: i, className: 'mf-ic2-scenario-card' + (sc.goalReached ? ' is-target-met' : '') }, h('small', {}, sc.label || sc.id || 'Cenário'), h('strong', {}, mfIC2Money(sc.saveCents)), h('span', {}, sc.goalReached === true ? 'Atinge a meta' : sc.goalReached === false ? 'Abaixo da meta' : 'Redução estimada')))));
         }
         if (blk.kind === 'merchants' || blk.kind === 'habits') {
-            return h('div', { key: bIdx, className: 'mf-ic2-subblock' }, h('span', { className: 'mf-ic2-subblock-title' }, blk.title), h('div', { className: 'mf-ai-table-wrap' }, h('table', {}, h('tbody', {}, ...blk.items.map((it, i) => h('tr', { key: i }, h('td', {}, String(it.label || it.merchant || 'Item')), h('td', {}, String(it.col2 || (it.monthlyCountAvg ? it.monthlyCountAvg + 'x/mês' : ''))), h('td', {}, String(it.col3 || (it.avgTicketCents !== undefined ? mfIC2Money(it.avgTicketCents) : '')))))))));
+            const subHeaders = blk.kind === 'merchants'
+                ? ['Estabelecimento', 'Anterior → atual', 'Frequência']
+                : ['Descrição', 'Frequência', 'Ticket médio'];
+            return h('div', { key: bIdx, className: 'mf-ic2-subblock' }, h('span', { className: 'mf-ic2-subblock-title' }, blk.title), h('div', { className: 'mf-ai-table-wrap' }, h('table', {}, h('thead', {}, h('tr', {}, h('th', {}, subHeaders[0]), h('th', {}, subHeaders[1]), h('th', {}, subHeaders[2]))), h('tbody', {}, ...blk.items.map((it, i) => h('tr', { key: i }, h('td', {}, String(it.label || it.merchant || 'Item')), h('td', {}, String(it.col2 || (it.monthlyCountAvg ? it.monthlyCountAvg + 'x/mês' : ''))), h('td', {}, String(it.col3 || (it.avgTicketCents !== undefined ? mfIC2Money(it.avgTicketCents) : '')))))))));
         }
         if (blk.kind === 'decision' && blk.items[0]) {
             const d = blk.items[0];
-            return h('div', { key: bIdx, className: 'mf-ic2-subblock' }, h('span', { className: 'mf-ic2-subblock-title' }, blk.title), h('div', { className: 'mf-ic2-scenario-grid' }, h('div', { className: 'mf-ic2-scenario-card' }, h('small', {}, 'À vista'), h('strong', {}, mfIC2Money(d.cashTotalCents)), h('span', {}, 'Sem parcelamento')), h('div', { className: 'mf-ic2-scenario-card' }, h('small', {}, d.installments + 'x simulado'), h('strong', {}, mfIC2Money(d.installmentsTotalCents)), h('span', {}, 'Juros: ' + mfIC2Money(d.interestCents))), h('div', { className: 'mf-ic2-scenario-card' }, h('small', {}, d.cashflowVerified ? 'Menor saldo' : 'Projeção'), h('strong', {}, d.cashflowVerified ? mfIC2Money(d.minimumAfterPurchaseCents) : 'Requer planejamento'), h('span', {}, d.worstDay ? 'Data: ' + d.worstDay : 'Somente cálculo de parcelas'))), navAction);
+            return h('div', { key: bIdx, className: 'mf-ic2-subblock' }, h('span', { className: 'mf-ic2-subblock-title' }, blk.title), h('div', { className: 'mf-ic2-scenario-grid' }, h('div', { className: 'mf-ic2-scenario-card' }, h('small', {}, 'À vista'), h('strong', {}, mfIC2Money(d.cashTotalCents)), h('span', {}, 'Sem parcelamento')), h('div', { className: 'mf-ic2-scenario-card' }, h('small', {}, d.installments + 'x simulado'), h('strong', {}, mfIC2Money(d.installmentsTotalCents)), h('span', {}, 'Juros: ' + mfIC2Money(d.interestCents))), h('div', { className: 'mf-ic2-scenario-card' }, h('small', {}, d.cashflowVerified ? 'Menor saldo' : 'Projeção'), h('strong', {}, d.cashflowVerified ? mfIC2Money(d.minimumAfterPurchaseCents) : 'Requer planejamento'), h('span', {}, d.worstDay ? 'Data: ' + mfIC2FormatDateBr(d.worstDay) : 'Somente cálculo de parcelas'))), navAction);
         }
         return null;
-    }), h('details', { className: 'mf-ic2-evidence-disclosure' }, h('summary', {}, 'Evidências verificadas (' + model.evidenceSummary.count + ' registros citados · versão ' + model.evidenceSummary.dataVersion + ')'), h('div', { className: 'mf-ic2-evidence-meta' }, h('span', {}, 'Motor: ' + model.evidenceSummary.method + ' · Densidade: ' + density), model.evidenceSummary.sampleIds.length ? h('span', {}, 'Amostra de IDs: ' + model.evidenceSummary.sampleIds.join(', ')) : null)), model.followUps.length && typeof intelligenceSubmitQuestion === 'function' ? h('div', { className: 'mf-ic2-followups', 'aria-label': 'Próximas investigações' }, ...model.followUps.map((fu, i) => h('button', { key: i, type: 'button', className: 'mf-ic2-followup-chip',
+    }), h('details', { className: 'mf-ic2-evidence-disclosure' }, h('summary', {}, model.evidenceSummary.count > 0
+        ? 'Evidências verificadas (' + model.evidenceSummary.count + ' registros)'
+        : 'Detalhes e versão da leitura'), h('div', { className: 'mf-ic2-evidence-meta' }, h('span', {}, 'Origem: ' + model.evidenceSummary.method + ' · versão ' + model.evidenceSummary.dataVersion + ' · modo ' + density), model.evidenceSummary.sampleIds.length ? h('span', {}, 'Referências verificadas: ' + model.evidenceSummary.sampleIds.join(', ')) : null)), model.followUps.length && typeof intelligenceSubmitQuestion === 'function' ? h('div', { className: 'mf-ic2-followups', 'aria-label': 'Próximas investigações' }, ...model.followUps.map((fu, i) => h('button', { key: i, type: 'button', className: 'mf-ic2-followup-chip',
         onClick: () => void intelligenceSubmitQuestion(app, fu.question || fu.label) }, String(fu.label || fu.question || 'Aprofundar')))) : null, model.card.footnote ? h('small', { className: 'mf-ai-structured-foot' }, model.card.footnote) : null);
 }
 const MF_LOCAL_MESSAGE_GRANTS = new WeakMap();
@@ -8603,6 +8630,10 @@ async function localFinancialSubmit(app, question) {
     if (app.state.localFinancialBusy || !String(question || '').trim())
         return;
     const access = app.state.localFinancialAccess;
+    if (access && access.profile !== (app.state.mode === 'demo' ? 'demo' : 'real')) {
+        app.setState({ localFinancialError: 'Autorização atual pertence ao outro modo. Autorize novamente no modo atual.' });
+        return;
+    }
     const q = String(question).trim().slice(0, 700), scope = intelligencePageScope(app), messages = [...intelligenceHistoryList(app)];
     const threadAtStart = app.state.intelligenceActiveThreadId || null;
     const api = localFinancialAPI();
@@ -8691,7 +8722,7 @@ async function localFinancialSubmit(app, question) {
         reply ? 'done' : 'error';
     const factsValid = operational && (state === 'ready' || state === 'empty');
     const evidence = ic2 && ['ready', 'partial'].includes(ic2.status) ?
-        'IC2 · ' + (ic2.source === 'bank' ? 'Fonte bancária' : 'Fonte manual') + ' · ' + month + ' · leitura local' :
+        'Consulta local · ' + (ic2.source === 'bank' ? 'Fonte bancária' : 'Fonte manual') + ' · ' + month :
         factsValid ? (operational.profile === 'synthetic' ? 'Ambiente sintético' : 'Fonte ' + (operational.source === 'bank' ? 'bancária' : 'manual')) +
             ' · ' + intelligencePremiumCoverage(operational.coverage) + ' · ' + month : '';
     const visualV3 = v3Kind && factsValid ? mfV3BindGrant(mfV3FromOperational(operational, v3Kind, previousOperational), access, signature) : null;
@@ -8712,7 +8743,7 @@ async function localFinancialSubmit(app, question) {
         ic2FollowUps: ic2 && Array.isArray(ic2.followUps) ? ic2.followUps.slice(0, 3) : undefined,
         operationalActions: factsValid && !visualV3 && Array.isArray(operational.actions) ? operational.actions : [],
         operationalEvidence: evidence,
-        details: ic2 ? 'IC2-READ-QUERY · ' + (ic2.status === 'partial' ? 'Cobertura parcial. ' : '') +
+        details: ic2 ? 'Leitura local verificada · ' + (ic2.status === 'partial' ? 'Cobertura parcial. ' : '') +
             'Fatos locais verificáveis, sem escrita financeira ou modelo externo.' : v3Kind && !visualV3 ? 'Os fatos autorizados não permitem esta visualização; nenhuma informação foi estimada.' :
             visualKind && !visual ? 'Não há evidências suficientes para desenhar o gráfico com totais reconciliados. Confira fonte e cobertura.' :
                 factsValid ? 'Consulta local determinística, sem IA externa. Não foi executada qualquer alteração.' :
@@ -8770,7 +8801,7 @@ async function intelligenceCopilotInsightsLoad(app) {
     const s = app === null || app === void 0 ? void 0 : app.state, access = s === null || s === void 0 ? void 0 : s.localFinancialAccess;
     const request = (app.__copilotInsightsRequest || 0) + 1;
     app.__copilotInsightsRequest = request;
-    if (!(access === null || access === void 0 ? void 0 : access.token) || access.expiresAt <= Date.now() || typeof (api === null || api === void 0 ? void 0 : api.intelligenceCopilotInsights) !== 'function') {
+    if (!(access === null || access === void 0 ? void 0 : access.token) || access.expiresAt <= Date.now() || access.profile !== (s.mode === 'demo' ? 'demo' : 'real') || typeof (api === null || api === void 0 ? void 0 : api.intelligenceCopilotInsights) !== 'function') {
         if (s)
             app.setState({ intelligenceCopilotInsights: null });
         return;

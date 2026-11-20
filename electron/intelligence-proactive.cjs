@@ -111,8 +111,8 @@ function scanProactiveInsights({ local, scope, clock = Date.now }) {
      categoryLabel: cand.categoryLabel,
      title: hike ? 'Reajuste observado em ' + cand.merchant : 'Recorrência observada: ' + cand.merchant,
      summary: hike
-      ? 'Subiu ' + formatMoneyBRL(cand.priceDeltaCents) + ' na última cobrança observada (' + formatMoneyBRL(cand.latestCents) + ').'
-      : 'Presente em ' + cand.observedMonths.length + ' meses (~' + formatMoneyBRL(cand.estimatedMonthlyCents) + '/mês).',
+      ? 'Aumento recente de ' + formatMoneyBRL(cand.priceDeltaCents) + ' na última cobrança frente à média anterior.'
+      : 'Presente em ' + cand.observedMonths.length + ' meses distintos no histórico recente.',
      impactCentsMin: hike ? cand.priceDeltaCents : cand.amountMinCents,
      impactCentsMax: hike ? cand.latestCents : cand.amountMaxCents,
      epistemicKind: 'hypothesis',
@@ -164,8 +164,8 @@ function scanProactiveInsights({ local, scope, clock = Date.now }) {
     categoryId: 'cat:contas',
     subcategoryId: null,
     categoryLabel: 'Contas',
-    title: c.count + ' compromisso(s) no próximo mês',
-    summary: 'Total confirmado a pagar: ' + formatMoneyBRL(c.totalCents) + '.',
+    title: c.count === 1 ? '1 compromisso no próximo mês' : c.count + ' compromissos no próximo mês',
+    summary: 'Valor confirmado previsto no planejamento para o período.',
     impactCentsMin: c.totalCents,
     impactCentsMax: c.totalCents,
     epistemicKind: 'fact',

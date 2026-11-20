@@ -74,13 +74,20 @@ test('M2-S1/F1: investigação de variação de receita sem sequestrar Sankey ne
  const env=setupF1();
  const info=compareSpendingBreakdown({local:env.local,scope:env.scope,intention:incIntent,clock:NOW});
  assert.equal(info.guideVersion,'M2-GUIDE-V1');
+ assert.equal(info.focusIncome,true);
  assert.equal(info.incomePreviousCents,250000);
  assert.equal(info.incomeCurrentCents,320000);
  assert.equal(info.incomeDeltaCents,70000);
  assert.equal(info.incomePercentChange,28);
+ assert.doesNotMatch(info.warnings.join(' '),/\b(?:IC2|D05|IC-READ)\b/);
  const text=describeInvestigation(info,incIntent,{});
  assert.match(text,/receitas confirmadas/i);
  assert.match(text,/não equivale a saldo bancário disponível/i);
+
+ const incReq={token:TOKEN,source:'bank',profile:'real',month:'2026-11',question:'Por que minha receita aumentou?'};
+ const incReply=await env.gateway.ask(incReq,OWNER);
+ assertIC2(incReply,incReq);
+ assert.equal(incReply.facts[0].value.focusIncome,true);
 
  const req={token:TOKEN,source:'bank',profile:'real',month:'2026-11',question:'Por que meus gastos aumentaram?'};
  const reply=await env.gateway.ask(req,OWNER);
@@ -101,7 +108,7 @@ test('M2-S1/adaptive: densidade adaptativa, blocos suplementares, D05 e proteç�
  const fakeGlyph=(p)=>h('span',{className:'qa84-category-glyph','data-cat':p?.identity?.categoryId||'none'});
  const fakeResolve=({categoryId,categoryName})=>({categoryId:categoryId||'cat:outros',iconKey:'utensils',hue:150,label:categoryName||'Categoria'});
  const client=new Function('h','intelligencePremiumSignature','resolveCategoryVisualIdentity','CategoryVisualGlyph','intelligenceSubmitQuestion',js+
-  ';return {mfIC2BindMessage,mfIC2MessageLive,mfIC2AdaptiveDensity,mfIC2AdaptiveModel,renderMfIC2Adaptive};')(
+  ';return {mfIC2BindMessage,mfIC2MessageLive,mfIC2AdaptiveDensity,mfIC2AdaptiveModel,mfIC2Card,renderMfIC2Adaptive};')(
   h,()=>'sig-1',fakeResolve,fakeGlyph,(_app,q)=>calls.push(q));
 
  const grant={token:TOKEN,source:'bank',profile:'real',expiresAt:Date.now()+600000};
@@ -133,4 +140,11 @@ test('M2-S1/adaptive: densidade adaptativa, blocos suplementares, D05 e proteç�
  // Expiry / replaced grant immediately blocks rendering
  app.state.localFinancialAccess={...grant,expiresAt:Date.now()-5};
  assert.equal(client.renderMfIC2Adaptive(app,msg),null);
+
+ // FocusIncome reply must show income header/metrics without expense rows
+ const incReply=await env.gateway.ask({token:TOKEN,source:'bank',profile:'real',month:'2026-11',question:'Por que minha receita aumentou?'},OWNER);
+ const incCard=client.mfIC2Card(incReply);
+ assert.equal(incCard.title,'Investigação das receitas');
+ assert.equal(incCard.rows.length,0);
+ assert.equal(client.mfIC2AdaptiveModel(incReply,'analysis').rows.length,0);
 });

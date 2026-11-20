@@ -183,8 +183,8 @@ function compareSpendingBreakdown({local,scope,intention,clock=Date.now}){
  if(before.transactionsIncluded===0||after.transactionsIncluded===0)
   warning.push('Um dos períodos não possui lançamentos confirmados carregados; a cobertura pode ser insuficiente.');
  if(contributions.some(x=>!x.categoryId||x.ambiguous))
-  warning.push('Há categorias legadas sem correspondência D05 inequívoca; os IDs não foram presumidos.');
- if(access.references?.partial)warning.push('O IC-READ indicou cobertura parcial.');
+  warning.push('Algumas categorias antigas não puderam ser associadas automaticamente ao catálogo atual; nenhuma classificação foi presumida.');
+ if(access.references?.partial)warning.push('Os registros autorizados indicaram cobertura parcial neste período.');
  if(scope.source==='bank'&&first.lastSyncAt&&first.lastSyncAt.slice(0,10)<b.end)
   warning.push('Sincronização bancária anterior ao fim do período analisado; podem faltar movimentos.');
  if(access.facts&&safeCents(access.facts.expenseCents)&&b.start===period(scope.month).start&&
@@ -198,7 +198,7 @@ function compareSpendingBreakdown({local,scope,intention,clock=Date.now}){
  if(before.expenseCents===0&&after.expenseCents===0&&(!intention.focusIncome||(incomePreviousCents===0&&incomeCurrentCents===0)))
   return {status:'no_data',message:'Não há movimentações confirmadas nos dois períodos autorizados.'};
  const incomePercentChange=incomePreviousCents===0?null:Math.round(incomeDeltaCents*100/incomePreviousCents);
- return {status,guideVersion:COPILOT_GUIDE_VERSION,previousPeriod:a,currentPeriod:b,
+ return {status,guideVersion:COPILOT_GUIDE_VERSION,focusIncome:Boolean(intention.focusIncome),previousPeriod:a,currentPeriod:b,
   previousCents:before.expenseCents,currentCents:after.expenseCents,deltaCents:delta,
   percentChange:before.expenseCents===0?null:Math.round(delta*100/before.expenseCents),
   incomePreviousCents,incomeCurrentCents,incomeDeltaCents,incomePercentChange,

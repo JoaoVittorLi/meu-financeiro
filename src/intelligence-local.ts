@@ -90,6 +90,10 @@ async function localFinancialRadar(app:any){
 async function localFinancialSubmit(app:any,question:string){
  if(app.state.localFinancialBusy||!String(question||'').trim())return;
  const access:LocalFinancialAccess=app.state.localFinancialAccess;
+ if(access&&access.profile!==(app.state.mode==='demo'?'demo':'real')){
+  app.setState({localFinancialError:'Autorização atual pertence ao outro modo. Autorize novamente no modo atual.'});
+  return;
+ }
  const q=String(question).trim().slice(0,700),scope=intelligencePageScope(app),messages=[...intelligenceHistoryList(app)];
  const threadAtStart=app.state.intelligenceActiveThreadId||null;
  const api=localFinancialAPI() as any;
@@ -172,7 +176,7 @@ async function localFinancialSubmit(app:any,question:string){
   reply?'done':'error';
  const factsValid=operational&&(state==='ready'||state==='empty');
  const evidence=ic2&&['ready','partial'].includes(ic2.status)?
-  'IC2 · '+(ic2.source==='bank'?'Fonte bancária':'Fonte manual')+' · '+month+' · leitura local':
+  'Consulta local · '+(ic2.source==='bank'?'Fonte bancária':'Fonte manual')+' · '+month:
   factsValid?(operational.profile==='synthetic'?'Ambiente sintético':'Fonte '+(operational.source==='bank'?'bancária':'manual'))+
   ' · '+intelligencePremiumCoverage(operational.coverage)+' · '+month:'';
  const visualV3=v3Kind&&factsValid?mfV3BindGrant(
@@ -194,7 +198,7 @@ async function localFinancialSubmit(app:any,question:string){
   ic2FollowUps:ic2&&Array.isArray(ic2.followUps)?ic2.followUps.slice(0,3):undefined,
   operationalActions:factsValid&&!visualV3&&Array.isArray(operational.actions)?operational.actions:[],
   operationalEvidence:evidence,
-  details:ic2?'IC2-READ-QUERY · '+(ic2.status==='partial'?'Cobertura parcial. ':'')+
+  details:ic2?'Leitura local verificada · '+(ic2.status==='partial'?'Cobertura parcial. ':'')+
     'Fatos locais verificáveis, sem escrita financeira ou modelo externo.':v3Kind&&!visualV3?'Os fatos autorizados não permitem esta visualização; nenhuma informação foi estimada.':
     visualKind&&!visual?'Não há evidências suficientes para desenhar o gráfico com totais reconciliados. Confira fonte e cobertura.':
     factsValid?'Consulta local determinística, sem IA externa. Não foi executada qualquer alteração.':
@@ -251,7 +255,7 @@ async function intelligenceCopilotInsightsLoad(app:any){
  const api=localFinancialAPI() as any;
  const s=app?.state,access:LocalFinancialAccess=s?.localFinancialAccess;
  const request=(app.__copilotInsightsRequest||0)+1;app.__copilotInsightsRequest=request;
- if(!access?.token||access.expiresAt<=Date.now()||typeof api?.intelligenceCopilotInsights!=='function'){
+ if(!access?.token||access.expiresAt<=Date.now()||access.profile!==(s.mode==='demo'?'demo':'real')||typeof api?.intelligenceCopilotInsights!=='function'){
   if(s)app.setState({intelligenceCopilotInsights:null});
   return;
  }

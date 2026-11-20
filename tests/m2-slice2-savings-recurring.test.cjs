@@ -186,5 +186,19 @@ test('M2-S2/routing: preserva categories Assinaturas, simulate % e T25 followup 
   assert.equal(sav.status,'partial');
   const rec=await f2.gateway.ask({...f2.scope,question:'Quais assinaturas recorrentes tenho?'},OWNER);
   assert.equal(rec.status,'partial');
+
+  // Forensic fix: partial coverage where maxIndependentSavings >= targetCents must NEVER say "faltam R$ 0,00"
+  const goalPartial=await f2.gateway.ask({...f2.scope,question:'Quero economizar R$ 100 por mês'},OWNER);
+  assert.equal(goalPartial.facts[0].value.targetVerified,false);
+  assert.equal(goalPartial.facts[0].value.shortfallCents,0);
+  assert.doesNotMatch(goalPartial.answer,/faltam\s+R\$\s*0,00/i);
+
+  // Forensic fix: multi-turn F1 -> F2 and F1 -> F3 in the same conversationId must not be hijacked by F1 followup
+  const f1Turn=await f2.gateway.ask({...f2.scope,question:'Por que meus gastos aumentaram?'},OWNER);
+  assert.equal(f1Turn.facts[0].tool,'compare_spending_breakdown');
+  const f2AfterF1=await f2.gateway.ask({...f2.scope,conversationId:f1Turn.conversationId,question:'Onde posso economizar neste mês sem dupla contagem?'},OWNER);
+  assert.equal(f2AfterF1.facts[0].tool,'recommend_savings');
+  const f3AfterF1=await f2.gateway.ask({...f2.scope,conversationId:f1Turn.conversationId,question:'Quais cobranças recorrentes existem no histórico?'},OWNER);
+  assert.equal(f3AfterF1.facts[0].tool,'detect_recurring_candidates');
  }finally{f2.db.close();}
 });

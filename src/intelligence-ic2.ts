@@ -27,6 +27,10 @@ function mfIC2Valid(r:any,access:LocalFinancialAccess,month:string):r is MfIC2Re
  return r.blocks.every((b:any)=>b&&typeof b.kind==='string'&&
    (b.factRef===null||ids.has(b.factRef)));
 }
+function mfIC2FormatDateBr(raw:any):string{
+ const s=String(raw||'');
+ return /^\d{4}-\d{2}-\d{2}/.test(s)?s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice(0,4):s;
+}
 function mfIC2Card(r:MfIC2Reply):IntelligenceStructuredCard|null{
  if(!['ready','partial'].includes(r.status)||!r.facts.length)return null;
  const money=(v:any)=>Number.isSafeInteger(v)?
@@ -47,16 +51,24 @@ function mfIC2Card(r:MfIC2Reply):IntelligenceStructuredCard|null{
     if(typeof c.name==='string'&&Number.isSafeInteger(c.amountCents))
      rows.push({col1:c.name.slice(0,100),col2:money(c.amountCents)});
   }else if(fact.tool==='compare_spending_breakdown'){
-   title='Investigação das despesas';
-   if(Number.isSafeInteger(f.previousCents))metrics.push({label:'Anterior',value:money(f.previousCents)});
-   if(Number.isSafeInteger(f.currentCents))metrics.push({label:'Atual',value:money(f.currentCents)});
-   if(Number.isSafeInteger(f.deltaCents))metrics.push({label:'Variação',value:money(f.deltaCents),
-     tone:f.deltaCents>0?'warning':'neutral'});
-   headers=['Categoria','Anterior / atual','Variação'];
-   for(const x of (Array.isArray(f.contributions)?f.contributions:[]).slice(0,12))
-    if(typeof x.label==='string'&&Number.isSafeInteger(x.deltaCents))
-     rows.push({col1:x.label.slice(0,100),
-       col2:money(x.previousCents)+' / '+money(x.currentCents),col3:money(x.deltaCents)});
+   if(f.focusIncome){
+    title='Investigação das receitas';
+    if(Number.isSafeInteger(f.incomePreviousCents))metrics.push({label:'Receita anterior',value:money(f.incomePreviousCents)});
+    if(Number.isSafeInteger(f.incomeCurrentCents))metrics.push({label:'Receita atual',value:money(f.incomeCurrentCents)});
+    if(Number.isSafeInteger(f.incomeDeltaCents))metrics.push({label:'Variação',value:money(f.incomeDeltaCents),
+      tone:f.incomeDeltaCents>=0?'positive':'warning'});
+   }else{
+    title='Investigação das despesas';
+    if(Number.isSafeInteger(f.previousCents))metrics.push({label:'Anterior',value:money(f.previousCents)});
+    if(Number.isSafeInteger(f.currentCents))metrics.push({label:'Atual',value:money(f.currentCents)});
+    if(Number.isSafeInteger(f.deltaCents))metrics.push({label:'Variação',value:money(f.deltaCents),
+      tone:f.deltaCents>0?'warning':'neutral'});
+    headers=['Categoria','Anterior / atual','Variação'];
+    for(const x of (Array.isArray(f.contributions)?f.contributions:[]).slice(0,12))
+     if(typeof x.label==='string'&&Number.isSafeInteger(x.deltaCents))
+      rows.push({col1:x.label.slice(0,100),
+        col2:money(x.previousCents)+' / '+money(x.currentCents),col3:money(x.deltaCents)});
+   }
   }else if(fact.tool==='compare'){
    title='Comparação com o mês anterior';
    if(Number.isSafeInteger(f.deltaExpenseCents))
@@ -117,11 +129,15 @@ function mfIC2Card(r:MfIC2Reply):IntelligenceStructuredCard|null{
     metrics.push({label:'Saldo mínimo após',value:money(f.minimumAfterPurchaseCents),tone:f.risk==='risk'?'warning':'positive'});
    headers=['Parcela / data','Valor','Cenário'];
    for(const s of (Array.isArray(f.schedule)?f.schedule:[]).slice(0,12))
-    rows.push({col1:String(s.date||''),col2:money(s.amountCents??s.amount),col3:(f.installments||1)+'x'});
+    rows.push({col1:mfIC2FormatDateBr(s.date),col2:money(s.amountCents??s.amount),col3:(f.installments||1)+'x'});
   }
  }
  const warnings=r.alerts.filter(x=>typeof x==='string').slice(0,3).map(x=>x.slice(0,220));
- const notice=r.status==='partial'?'Cobertura parcial; os valores não representam o histórico integral.':'Fatos calculados localmente a partir da origem autorizada.';
+ const primaryTool=String(r.facts[0]?.tool||'');
+ const notice=r.status==='partial'?'Cobertura parcial; os valores não representam o histórico integral.':
+  (primaryTool==='simulate'||primaryTool==='simulate_purchase')?'Simulação determinística local, sem alterações financeiras.':
+  (primaryTool==='recommend_savings'||primaryTool==='detect_recurring_candidates')?'Estimativa determinística sobre seus registros autorizados; revise antes de agir.':
+  'Fatos calculados localmente a partir da origem autorizada.';
  return {title,subtitle:r.period+' · '+(r.source==='bank'?'Banco':'Manual')+
    ' · '+(r.profile==='demo'?'Demonstração':'Pessoal'),
    metrics:metrics.slice(0,4),rows:rows.slice(0,12),headers,
@@ -172,29 +188,31 @@ function mfIC2AdaptiveModel(r:MfIC2Reply,density:string='standard'){
  const visualRows:Array<{label:string;categoryId?:string|null;subcategoryId?:string|null;col2:string;col3?:string;barPct:number|null;barUp:boolean;pill?:string|null}>=[];
  const supplementary:Array<{kind:string;title:string;items:any[];note?:string}>=[];
  if(tool==='compare_spending_breakdown'){
-  const contribs=Array.isArray(val.contributions)?val.contributions:[];
-  const maxAbs=Math.max(1,...contribs.map((c:any)=>Math.abs(c.deltaCents||0)));
-  for(const c of contribs.slice(0,maxRows)){
-   const d=Number.isSafeInteger(c.deltaCents)?c.deltaCents:0;
-   visualRows.push({
-    label:String(c.label||'Categoria').slice(0,100),
-    categoryId:c.categoryId||null,subcategoryId:c.subcategoryId||null,
-    col2:mfIC2Money(c.previousCents)+' / '+mfIC2Money(c.currentCents),
-    col3:(d>0?'+':'')+mfIC2Money(d),
-    barPct:Math.min(100,Math.round(Math.abs(d)/maxAbs*100)),
-    barUp:d>0
-   });
-  }
-  if(density==='analysis'&&Array.isArray(val.merchants)&&val.merchants.length){
-   supplementary.push({
-    kind:'merchants',
-    title:'Estabelecimentos normalizados no período',
-    items:val.merchants.slice(0,8).map((m:any)=>({
-     label:String(m.merchant||'Não identificado').slice(0,90),
-     col2:mfIC2Money(m.previousCents)+' → '+mfIC2Money(m.currentCents),
-     col3:String(m.previousCount||0)+' → '+String(m.currentCount||0)+'x'
-    }))
-   });
+  if(!val.focusIncome){
+   const contribs=Array.isArray(val.contributions)?val.contributions:[];
+   const maxAbs=Math.max(1,...contribs.map((c:any)=>Math.abs(c.deltaCents||0)));
+   for(const c of contribs.slice(0,maxRows)){
+    const d=Number.isSafeInteger(c.deltaCents)?c.deltaCents:0;
+    visualRows.push({
+     label:String(c.label||'Categoria').slice(0,100),
+     categoryId:c.categoryId||null,subcategoryId:c.subcategoryId||null,
+     col2:mfIC2Money(c.previousCents)+' / '+mfIC2Money(c.currentCents),
+     col3:(d>0?'+':'')+mfIC2Money(d),
+     barPct:Math.min(100,Math.round(Math.abs(d)/maxAbs*100)),
+     barUp:d>0
+    });
+   }
+   if(density==='analysis'&&Array.isArray(val.merchants)&&val.merchants.length){
+    supplementary.push({
+     kind:'merchants',
+     title:'Estabelecimentos normalizados no período',
+     items:val.merchants.slice(0,8).map((m:any)=>({
+      label:String(m.merchant||'Não identificado').slice(0,90),
+      col2:mfIC2Money(m.previousCents)+' → '+mfIC2Money(m.currentCents),
+      col3:String(m.previousCount||0)+' → '+String(m.currentCount||0)+'x'
+     }))
+    });
+   }
   }
  }else if(tool==='recommend_savings'){
   const opps=Array.isArray(val.opportunities)?val.opportunities:[];
@@ -296,7 +314,7 @@ function renderMfIC2Adaptive(app:any,msg:any){
  const catGlyph=(label:string,categoryId?:string|null,subcategoryId?:string|null)=>{
   if(typeof resolveCategoryVisualIdentity!=='function'||typeof CategoryVisualGlyph!=='function')return null;
   const identity=resolveCategoryVisualIdentity({categoryId:categoryId||null,subcategoryId:subcategoryId||null,categoryName:label,aggregate:!subcategoryId});
-  return h(CategoryVisualGlyph,{identity,size:density==='compact'?16:18});
+  return h(CategoryVisualGlyph,{identity,size:density==='compact'?14:18});
  };
  const navAction=model.tool==='simulate_purchase'&&typeof app?.navigate==='function'?
   h('button',{type:'button',className:'mf-ic2-toggle-btn',onClick:()=>app.navigate('simulator')},'Abrir Simular Compra'):null;
@@ -322,9 +340,9 @@ function renderMfIC2Adaptive(app:any,msg:any){
     h('tbody',{},
      ...model.rows.map((row,idx)=>h('tr',{key:idx},
       h('td',{},h('span',{className:'mf-ic2-cat-cell'},
-       row.categoryId||row.subcategoryId?catGlyph(row.label,row.categoryId,row.subcategoryId):null,
+       model.tool!=='simulate_purchase'&&(row.categoryId||row.subcategoryId||row.label)?catGlyph(row.label,row.categoryId,row.subcategoryId):null,
        h('span',{},row.label),
-       row.pill?h('span',{className:'mf-ic2-pill'+(row.barUp?' is-hike':'')},row.pill):null)),
+       row.pill?h('span',{className:'mf-ic2-pill'+(row.barUp?' is-hike':row.pill==='Independente'?' is-strong':'')},row.pill):null)),
       h('td',{},row.barPct===null?row.col2:h('div',{className:'mf-ic2-bar-cell'},
        h('span',{},row.col2),
        h('div',{className:'mf-ic2-bar-track','aria-hidden':'true'},
@@ -341,16 +359,22 @@ function renderMfIC2Adaptive(app:any,msg:any){
        h('span',{},sc.goalReached===true?'Atinge a meta':sc.goalReached===false?'Abaixo da meta':'Redução estimada')))));
    }
    if(blk.kind==='merchants'||blk.kind==='habits'){
+    const subHeaders=blk.kind==='merchants'
+     ?['Estabelecimento','Anterior → atual','Frequência']
+     :['Descrição','Frequência','Ticket médio'];
     return h('div',{key:bIdx,className:'mf-ic2-subblock'},
      h('span',{className:'mf-ic2-subblock-title'},blk.title),
      h('div',{className:'mf-ai-table-wrap'},
-      h('table',{},h('tbody',{},
-       ...blk.items.map((it:any,i:number)=>h('tr',{key:i},
-        h('td',{},String(it.label||it.merchant||'Item')),
-        h('td',{},String(it.col2||(it.monthlyCountAvg?it.monthlyCountAvg+'x/mês':''))),
-        h('td',{},String(it.col3||(it.avgTicketCents!==undefined?mfIC2Money(it.avgTicketCents):'')))
-       ))
-      ))
+      h('table',{},
+       h('thead',{},h('tr',{},h('th',{},subHeaders[0]),h('th',{},subHeaders[1]),h('th',{},subHeaders[2]))),
+       h('tbody',{},
+        ...blk.items.map((it:any,i:number)=>h('tr',{key:i},
+         h('td',{},String(it.label||it.merchant||'Item')),
+         h('td',{},String(it.col2||(it.monthlyCountAvg?it.monthlyCountAvg+'x/mês':''))),
+         h('td',{},String(it.col3||(it.avgTicketCents!==undefined?mfIC2Money(it.avgTicketCents):'')))
+        ))
+       )
+      )
      )
     );
    }
@@ -361,16 +385,18 @@ function renderMfIC2Adaptive(app:any,msg:any){
      h('div',{className:'mf-ic2-scenario-grid'},
       h('div',{className:'mf-ic2-scenario-card'},h('small',{},'À vista'),h('strong',{},mfIC2Money(d.cashTotalCents)),h('span',{},'Sem parcelamento')),
       h('div',{className:'mf-ic2-scenario-card'},h('small',{},d.installments+'x simulado'),h('strong',{},mfIC2Money(d.installmentsTotalCents)),h('span',{},'Juros: '+mfIC2Money(d.interestCents))),
-      h('div',{className:'mf-ic2-scenario-card'},h('small',{},d.cashflowVerified?'Menor saldo':'Projeção'),h('strong',{},d.cashflowVerified?mfIC2Money(d.minimumAfterPurchaseCents):'Requer planejamento'),h('span',{},d.worstDay?'Data: '+d.worstDay:'Somente cálculo de parcelas'))),
+      h('div',{className:'mf-ic2-scenario-card'},h('small',{},d.cashflowVerified?'Menor saldo':'Projeção'),h('strong',{},d.cashflowVerified?mfIC2Money(d.minimumAfterPurchaseCents):'Requer planejamento'),h('span',{},d.worstDay?'Data: '+mfIC2FormatDateBr(d.worstDay):'Somente cálculo de parcelas'))),
      navAction);
    }
    return null;
   }),
   h('details',{className:'mf-ic2-evidence-disclosure'},
-   h('summary',{},'Evidências verificadas ('+model.evidenceSummary.count+' registros citados · versão '+model.evidenceSummary.dataVersion+')'),
+   h('summary',{},model.evidenceSummary.count>0
+    ?'Evidências verificadas ('+model.evidenceSummary.count+' registros)'
+    :'Detalhes e versão da leitura'),
    h('div',{className:'mf-ic2-evidence-meta'},
-    h('span',{},'Motor: '+model.evidenceSummary.method+' · Densidade: '+density),
-    model.evidenceSummary.sampleIds.length?h('span',{},'Amostra de IDs: '+model.evidenceSummary.sampleIds.join(', ')):null)),
+    h('span',{},'Origem: '+model.evidenceSummary.method+' · versão '+model.evidenceSummary.dataVersion+' · modo '+density),
+    model.evidenceSummary.sampleIds.length?h('span',{},'Referências verificadas: '+model.evidenceSummary.sampleIds.join(', ')):null)),
   model.followUps.length&&typeof intelligenceSubmitQuestion==='function'?h('div',{className:'mf-ic2-followups','aria-label':'Próximas investigações'},
    ...model.followUps.map((fu:any,i:number)=>h('button',{key:i,type:'button',className:'mf-ic2-followup-chip',
     onClick:()=>void intelligenceSubmitQuestion(app,fu.question||fu.label)},

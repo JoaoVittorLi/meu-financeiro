@@ -148,9 +148,9 @@
  flex-shrink:0;min-height:36px}
 .mf-b05-chat>.mf-chat-followups{width:min(900px,100%);margin:0 auto 10px;
  padding:0;position:relative;z-index:2}
-@media(max-height:680px){
+@media(max-height:780px){
  .mf-b05-chat{min-height:0}
- .mf-b05-chat-thread{min-height:135px;max-height:42dvh;padding-top:6px;padding-bottom:8px}
+ .mf-b05-chat-thread{min-height:135px;max-height:35dvh;padding-top:6px;padding-bottom:8px}
  .mf-b05-chat-welcome{margin:14px auto}
  .mf-b05-chat-head{padding-bottom:8px}
  .mf-b05-chat-composer>.mf-chat-composer textarea{min-height:38px;max-height:82px}

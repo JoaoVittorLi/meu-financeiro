@@ -22,7 +22,7 @@ function parseRecurringIntent(question) {
   /quanto\s+(?:gast|paguei).*\bassinatur/.test(q)) {
   return null;
  }
- const wantsRecurring = /(recorrenc|assinatur|cobrancas? repetid|gastos? fixos?|reajuste|subiu o preco|aumentou a mensalidade|habitos? de gasto|frequencia de gasto|habitos?)/.test(q);
+ const wantsRecurring = /(recorrenc|(?:quais|liste|mostre|identifi|detect).*recorrent|(?:cobrancas?|assinaturas?|despesas?|gastos?)\s+recorrent|assinatur|cobrancas? repetid|gastos? fixos?|reajuste|subiu o preco|aumentou a mensalidade|habitos? de gasto|frequencia de gasto|habitos?)/.test(q);
  if (!wantsRecurring) return null;
  return {
   cancelAttempt: /\b(cancelar|cancele|encerrar|encerre|desativar|desative)\b/.test(q),

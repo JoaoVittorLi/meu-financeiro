@@ -9,9 +9,11 @@ const {FinanceDB}=require('../electron/db.cjs');
 const {PlanningStore}=require('../electron/planning.cjs');
 const {LocalFinancialIntelligence,CONSENT}=require('../electron/financial-intelligence.cjs');
 const {IC2ReadQueryGateway,assertIC2}=require('../electron/intelligence-ic2-adapter.cjs');
+const {parseBrlCents}=require('../electron/intelligence-savings.cjs');
 const {scanProactiveInsights}=require('../electron/intelligence-proactive.cjs');
 
-const TODAY_ISO=new Date().toISOString().slice(0,10);
+const TODAY_PARTS=new Intl.DateTimeFormat('en-GB',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());
+const TODAY_ISO=TODAY_PARTS.find(p=>p.type==='year').value+'-'+TODAY_PARTS.find(p=>p.type==='month').value+'-'+TODAY_PARTS.find(p=>p.type==='day').value;
 const MONTH=TODAY_ISO.slice(0,7);
 const NOW=()=>Date.now();
 const OWNER=42,ACC='acc-sim-1',ITEM='item-sim-1';
@@ -103,7 +105,23 @@ test('M2-S3/F4-purchase: à vista vs 6x sem juros, centavos residuais, juros exp
   assert.equal(rNoRate.facts[0].value.monthlyRate,0);
   assert.equal(rNoRate.facts[0].value.interestCents,0);
 
-  // 4) Zero SQLite writes
+  // 4) Forensic fixes: reject >60x and >30%/month instead of silent coercion, and preserve .50 dot-decimal cents
+  const rDotCents=await f.gateway.ask({token:f.grant.token,source:'bank',profile:'real',month:MONTH,
+   question:'Comprar monitor de 2400.50 em 2x sem juros'},OWNER);
+  assert.equal(rDotCents.facts[0].value.principalCents,240050);
+  assert.equal(parseBrlCents('R$ 10,999'),null);
+
+  const rTooManyInst=await f.gateway.ask({token:f.grant.token,source:'bank',profile:'real',month:MONTH,
+   question:'Posso comprar item de R$ 2.000 em 72x?'},OWNER);
+  assert.equal(rTooManyInst.status,'unsupported');
+  assert.equal(rTooManyInst.facts.length,0);
+
+  const rTooHighRate=await f.gateway.ask({token:f.grant.token,source:'bank',profile:'real',month:MONTH,
+   question:'Comprar item de R$ 2.000 em 12x com 35% ao mês?'},OWNER);
+  assert.equal(rTooHighRate.status,'unsupported');
+  assert.equal(rTooHighRate.facts.length,0);
+
+  // 5) Zero SQLite writes
   assert.equal(f.db.db.prepare('SELECT total_changes() n').get().n,beforeWrites);
  }finally{f.db.close();}
 });

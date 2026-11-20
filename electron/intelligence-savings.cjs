@@ -19,7 +19,7 @@ const ESSENTIAL_PARENT_IDS = new Set(['cat:moradia', 'cat:saude', 'cat:contas'])
 function parseBrlCents(rawQuestion) {
  const q = String(rawQuestion || '');
  const match = q.match(
-  /(?:r\$\s*(\d{1,3}(?:\.\d{3})+|\d+)(?:,(\d{1,2}))?(?!\d)|\b(\d{1,3}(?:\.\d{3})+|\d+)(?:,(\d{1,2}))?\s*reais\b|\b(?:economizar|poupar|guardar|reduzir|comprar|compra|gastar|gasto|parcelar|pagar|custa|custando|de|por)\s+(?:r\$\s*)?(\d{1,3}(?:\.\d{3})+|\d+)(?:,(\d{1,2}))?(?!\d)(?!\s*(?:x\b|%|vezes|parcelas?|mes(?:es)?|dias?|anos?)\b))/i
+  /(?:r\$\s*(\d{1,3}(?:\.\d{3})+|\d+)(?:[,.](\d{1,2}))?(?![\d.,])|\b(\d{1,3}(?:\.\d{3})+|\d+)(?:[,.](\d{1,2}))?\s*reais\b|\b(?:economizar|poupar|guardar|reduzir|comprar|compra|gastar|gasto|parcelar|pagar|custa|custando|de|por)\s+(?:r\$\s*)?(\d{1,3}(?:\.\d{3})+|\d+)(?:[,.](\d{1,2}))?(?![\d.,])(?!\s*(?:x\b|%|vezes|parcelas?|mes(?:es)?|dias?|anos?)\b))/i
  );
  if (!match) return null;
  const intStr = match[1] ?? match[3] ?? match[5];
@@ -292,8 +292,10 @@ function describeSavings(result) {
  if (result.targetCents !== null) {
   if (result.targetVerified) {
    facts.push('Meta informada de ' + formatMoneyBRL(result.targetCents) + ': coberta no cenário otimista considerando apenas grupos independentes.');
-  } else {
+  } else if (result.shortfallCents > 0) {
    facts.push('Meta informada de ' + formatMoneyBRL(result.targetCents) + ' não é totalmente comprovada pelas evidências atuais: faltam ' + formatMoneyBRL(result.shortfallCents) + ' além do espaço independente (' + formatMoneyBRL(result.maxIndependentSavingsCents) + ').');
+  } else {
+   facts.push('Meta informada de ' + formatMoneyBRL(result.targetCents) + ' cabe no espaço independente estimado (' + formatMoneyBRL(result.maxIndependentSavingsCents) + '), porém com cobertura parcial dos registros; revise as limitações antes de agir.');
   }
  }
 

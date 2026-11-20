@@ -115,9 +115,10 @@ class IntelligenceOrchestrator{
     {alerts:['Nenhum cálculo foi substituído por estimativa ou texto gerado.']});
   };
   const investigationIntent=parseIntent(question,ctx,scope.month);
-  const savingsIntent=investigationIntent?.followup?null:parseSavingsIntent(question);
-  const recurringIntent=(investigationIntent?.followup||savingsIntent)?null:parseRecurringIntent(question);
-  const simulatorIntent=(investigationIntent?.followup||savingsIntent||recurringIntent)?null:parseSimulatorIntent(question);
+  const savingsIntent=parseSavingsIntent(question);
+  const recurringIntent=savingsIntent?null:parseRecurringIntent(question);
+  const simulatorIntent=(savingsIntent||recurringIntent)?null:parseSimulatorIntent(question);
+  const ctxCat=typeof input?.pageContext?.category==='string'&&input.pageContext.category.trim()?input.pageContext.category.trim().slice(0,60):null;
   if(savingsIntent||recurringIntent||simulatorIntent){
    try{
     if(savingsIntent){
@@ -152,9 +153,11 @@ class IntelligenceOrchestrator{
      tool:'simulate_purchase',blockKind:'whatif',info,text,
      sourceIds:(info.schedule||[]).map(s=>s.id).filter(Boolean),
      followUps:input?.pageContext?.page==='budgets'
-      ?[{intent:'recommend_savings',label:'Ajustar orçamentos',question:'Onde posso economizar para abrir folga no mês?'}]
+      ?[ctxCat?{intent:'recommend_savings',label:'Revisar '+ctxCat,question:'Onde posso economizar sem cortar '+ctxCat+'?'}:
+         {intent:'recommend_savings',label:'Ajustar orçamentos',question:'Onde posso economizar para abrir folga no mês?'}]
       :[
-       {intent:'recommend_savings',label:'Buscar economia',question:'Onde posso economizar sem dupla contagem?'},
+       ctxCat?{intent:'investigate_categories',label:'Ver '+ctxCat,question:'Quanto gastei em '+ctxCat+'?'}:
+        {intent:'recommend_savings',label:'Buscar economia',question:'Onde posso economizar sem dupla contagem?'},
        {intent:'commitments_horizon',label:'Compromissos de 3 meses',question:'Quais compromissos tenho nos próximos 3 meses?'}
       ],
      contextPatch:{lastInvestigation:null,lastPlan:null,exclusions:[]}});

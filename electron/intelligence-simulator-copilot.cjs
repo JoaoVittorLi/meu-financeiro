@@ -43,20 +43,29 @@ function parseSimulatorIntent(question) {
  const amountCents = wantsPurchase ? parseBrlCents(question) : null;
  if (!wantsPurchase || !amountCents) return null;
 
- const instMatch = q.match(/\b(\d{1,2})\s*(?:x\b|vezes|parcelas?)/);
+ const instMatch = q.match(/\b(\d{1,3})\s*(?:x\b|vezes|parcelas?)/);
  let installments = instMatch ? Number(instMatch[1]) : 1;
- if (!Number.isInteger(installments) || installments < 1 || installments > 60) installments = 1;
+ if (instMatch && (!Number.isInteger(installments) || installments < 1 || installments > 60)) {
+  return {
+   kind: 'purchase',
+   invalidReason: 'O simulador aceita parcelamentos entre 1x e 60x. Informe uma quantidade válida.'
+  };
+ }
 
  const explicitZeroRate = /sem juros/.test(q);
- const rateMatch = q.match(/(\d+(?:[.,]\d+)?)\s*%/);
+ const rateMatch = q.match(/(-?\d+(?:[.,]\d+)?)\s*%/);
  let monthlyRate = 0;
  let hasExplicitRate = explicitZeroRate;
  if (!explicitZeroRate && rateMatch) {
   const parsed = Number(rateMatch[1].replace(',', '.'));
-  if (Number.isFinite(parsed) && parsed >= 0 && parsed <= 30) {
-   monthlyRate = parsed;
-   hasExplicitRate = true;
+  if (!Number.isFinite(parsed) || parsed < 0 || parsed > 30) {
+   return {
+    kind: 'purchase',
+    invalidReason: 'A taxa mensal informada está fora da faixa suportada (0% a 30% ao mês).'
+   };
   }
+  monthlyRate = parsed;
+  hasExplicitRate = true;
  }
 
  return {
@@ -81,6 +90,9 @@ function checkPlanningConsent(local, scope) {
 }
 
 async function simulateDecisionForCopilot({ local, scope, intention = {}, clock = Date.now }) {
+ if (intention.invalidReason) {
+  return { status: 'unsupported', code: 'OUT_OF_RANGE', message: intention.invalidReason };
+ }
  const access = authorized(local, scope);
  const first = snapshot(local, scope);
  const today = isoLocalDate(clock);
@@ -102,8 +114,7 @@ async function simulateDecisionForCopilot({ local, scope, intention = {}, clock 
   const endPeriod = period(scope.month, intention.horizonMonths - 1);
   const items = local.planner.list({ today, start: p.start, end: endPeriod.end }) || [];
   const confirmed = items
-   .filter(x => x.kind === 'expense' && x.status === 'planned' && x.certainty === 'confirmed' && safeCents(x.remaining) && x.remaining > 0)
-   .slice(0, 100);
+   .filter(x => x.kind === 'expense' && x.status === 'planned' && x.certainty === 'confirmed' && safeCents(x.remaining) && x.remaining > 0);
   const totalCents = confirmed.reduce((s, x) => s + x.remaining, 0);
   if (!safeCents(totalCents)) throw Error('STALE: soma de compromissos inválida.');
 

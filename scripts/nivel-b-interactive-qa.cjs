@@ -1355,7 +1355,7 @@ async function runNivelB(options = {}) {
       await ui.waitFor(`return [...document.querySelectorAll('.mf-ic2-adaptive')].length >= 2 && !document.querySelector('.mf-b05-chat-thinking');`, 'PJ-10 F1 reply');
       await ui.clickElement(`const cards = [...document.querySelectorAll('.mf-ic2-adaptive')]; return cards[cards.length - 1]?.querySelector('.mf-ic2-toggle-btn');`, 'Explorar análise F1');
       await ui.waitFor(`return !!document.querySelector('.mf-ic2-density-analysis');`, 'PJ-10 analysis density active');
-      await ui.eval(`const t = document.querySelector('.mf-b05-chat-thread'); if (t) t.scrollTop = t.scrollHeight;`);
+      await ui.eval(`const t = document.querySelector('.mf-b05-chat-thread'); if (t) t.scrollTop = t.scrollHeight; document.querySelector('.mf-b05-chat-composer')?.scrollIntoView({ block: 'end' });`);
       await delay(120);
       assert.equal(await ui.eval(`return document.documentElement.scrollWidth <= window.innerWidth;`), true, 'No overflow in F1 analysis');
       await ui.screenshot('pj10-m2-f1-adaptive-1366x768-light');
