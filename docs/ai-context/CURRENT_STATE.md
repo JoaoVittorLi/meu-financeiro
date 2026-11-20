@@ -1,6 +1,6 @@
 # Estado comprovado do projeto — atualizado em 19/11/2026
 
-> **Reconciliação de marcos (19/11/2026):** `M1_IMPLEMENTATION_COMPLETE` · `M1_TECHNICALLY_HOMOLOGATED` (`b7a3d8a`, experimental `0.9.5-beta.9`) · `V1_STABLE_RELEASE_PENDING` (`release/v1.0.0-rc.1-candidate-20261119` @ `1a22181e6adcb52cca214922821b9f265b76c753`, `SHA-256` `7dd641f380ee38c34859593af31bb9d336d36793c7a0b320deeba18fb0e352e`, aguardando Nível C `stable` em VM Windows limpa e GO na issue `#71`) · `M2_IN_PROGRESS` (experimental homologado em Nível C em `e3c153c`; **Marco 2 não bloqueia a v1.0.0**).
+> **Reconciliação de marcos (19/11/2026):** `M1_IMPLEMENTATION_COMPLETE` · `M1_TECHNICALLY_HOMOLOGATED` (`b7a3d8a`, experimental `0.9.5-beta.9`) · `V1_STABLE_RELEASE_PENDING` (`release/v1.0.0-rc.1-candidate-20261119` @ `1a22181e6adcb52cca214922821b9f265b76c753`, `SHA-256` `7dd641f3680ee38c34859593af31bb9d336d36793c7a0b320deeba18fb0e352e`, aguardando Nível C `stable` em VM Windows limpa e GO na issue `#71`) · `M2_IN_PROGRESS` (experimental homologado em Nível C em `e3c153c`; **Marco 2 não bloqueia a v1.0.0**).
 
 **Natureza:** registro factual vinculado ao repositório e às execuções verificadas em disco no workspace isolado `C:\Dev\meu-financeiro`. Nunca promove `NOT_RUN` ou `BLOCKED` a `PASS`.
 
