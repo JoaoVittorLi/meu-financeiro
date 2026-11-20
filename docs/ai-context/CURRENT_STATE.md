@@ -1,4 +1,6 @@
-# Estado comprovado do projeto — atualizado em 18/11/2026
+# Estado comprovado do projeto — atualizado em 19/11/2026
+
+> **Reconciliação de marcos (19/11/2026):** `M1_IMPLEMENTATION_COMPLETE` · `M1_TECHNICALLY_HOMOLOGATED` (`b7a3d8a`, experimental `0.9.5-beta.9`) · `V1_STABLE_RELEASE_PENDING` (`release/v1.0.0-rc.1-candidate-20261119` @ `1a22181e6adcb52cca214922821b9f265b76c753`, `SHA-256` `7dd641f380ee38c34859593af31bb9d336d36793c7a0b320deeba18fb0e352e`, aguardando Nível C `stable` em VM Windows limpa e GO na issue `#71`) · `M2_IN_PROGRESS` (experimental homologado em Nível C em `e3c153c`; **Marco 2 não bloqueia a v1.0.0**).
 
 **Natureza:** registro factual vinculado ao repositório e às execuções verificadas em disco no workspace isolado `C:\Dev\meu-financeiro`. Nunca promove `NOT_RUN` ou `BLOCKED` a `PASS`.
 
@@ -20,8 +22,8 @@
   - **Restrições ativas preservadas:** `approvedForPersonal() === false` (`electron/main.cjs`, `electron/d05-personal-gate.cjs`), `financialDataEnabled: false` (`shared/ai-policy.mjs`), dados sintéticos exclusivos (`MF_QA_SYNTHETIC=1`), `main` intacta em `v0.9.4` sem merge/tags.
 
 ## Próximo Passo
-- `M1.1` (`b7a3d8a`, `0.9.5-beta.9`) encontra-se tecnicamente homologado em Nível A + B + C (`TECHNICALLY_HOMOLOGATED — OWNER_VISUAL_ACCEPTANCE_PENDING`) com entrega privada verificada no Google Drive para avaliação visual do proprietário.
-- Conforme autorização do proprietário (`OPERAÇÃO CONTINUIDADE TOTAL — 18/11/2026`), **Marco 2 (`feat/mf2-intelligence-3-0-copilot-20261118`)** na worktree isolada `C:\Dev\meu-financeiro-worktrees\m2-copilot` está **IMPLEMENTADO EM FATIAS F1–F5 — EM HOMOLOGAÇÃO CUMULATIVA NÍVEL A+B E AUDITORIA PRO** (Fatias 1–4 com Guia Permanente `M2-GUIDE-V1`, `F1–F5`, Sistema Adaptativo, `WeakMap`, jornada `PJ-10`, aguardando verificação cumulativa final pós-commit, auditorias independentes `pro` e revisão de plano antes do Nível C).
+- **Marco 1 / Release 1.0.0 (`V1_STABLE_RELEASE_PENDING`):** validar o instalador estável `C:\Dev\releases\V1-STABLE-RC1\MeuFinanceiro-Instalador-1.0.0-rc.1-x64.exe` (`1a22181e`) em VM Windows limpa (Nível C `stable`) e colher decisão na issue `#71`.
+- **Marco 2 (`feat/mf2-intelligence-3-0-copilot-20261118`):** **HOMOLOGADO TECNICAMENTE NO CANAL EXPERIMENTAL `0.9.5-beta.9` EM NÍVEL A + B + C (`e3c153cb00b3bc9c5bc4f7e8e53f296ba98214a6`)** — `1013/1013` `test:db`, `133/133` `mobile-push`, `15/15` Nível B, `APPROVE` duplo `pro` (Visual `ec88d31d` + Forense `bd91a757`), NSIS `115.758.882` bytes (`SHA-256`: `f94e1b16d0f52882f0b885d0929019a49d19f88d8f8ca8ad12a1ac3367b37159`), Nível C `15/15` PASS (`HOST_FOLDERS_UNTOUCHED: true`) e `VEREDITO: GO` pós-Nível C (`bd91a757`, `pro`). Ver inventário honesto F1–F5 (Completo / Parcial / Pendente) em `docs/ai-context/logs/2026-11-18-mf2-copilot-implementation.md`. Aguarda avaliação do proprietário no PR Draft do M2; mantém `approvedForPersonal: () => false` e `financialDataEnabled: false`.
 
 ---
 
