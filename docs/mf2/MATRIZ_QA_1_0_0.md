@@ -6,7 +6,7 @@
 >   - `npm run test:types`, `npm run compile`, `node scripts/build-preload.cjs check`, `check-bundle` (`31` entradas): **PASS**.
 >   - `npm run test:db` (inclui CAT-P0, D05 `14×61`, RC2.2/2.3, `V1-STABLE-01..03`): **1006/1006 PASS** (`0` fail, `0` skipped).
 >   - `mobile-push` testes: **133/133 PASS** · `npm run test:asar`: **1/1 PASS** · `npm run provenance:verify`: **PASS** (`23` arquivos) · `npm run test:electron-smoke`: **PASS**.
->   - `dist:windows:stable` + `verify-asar` + `asar-stable-verification.json`: **PASS** (`mfDistributionChannel="stable"`, `productName="Meu Financeiro"`, `d05Parents=14`, `d05Subcategories=61`, `svgGlyphs=67`, `approvedForPersonal=false`, `financialDataEnabled=false`, `paidApiFallback=false`; `MeuFinanceiro-Instalador-1.0.0-rc.1-x64.exe`, `115.734.512` bytes, `SHA-256` `7dd641f380ee38c34859593af31bb9d336d36793c7a0b320deeba18fb0e352e`).
+>   - `dist:windows:stable` + `verify-asar` + `asar-stable-verification.json`: **PASS** (`mfDistributionChannel="stable"`, `productName="Meu Financeiro"`, `d05Parents=14`, `d05Subcategories=61`, `svgGlyphs=67`, `approvedForPersonal=false`, `financialDataEnabled=false`, `paidApiFallback=false`; `MeuFinanceiro-Instalador-1.0.0-rc.1-x64.exe`, `115.734.512` bytes, `SHA-256` `7dd641f3680ee38c34859593af31bb9d336d36793c7a0b320deeba18fb0e352e`).
 >   - **Nível C do pacote `stable` no Windows:** **PENDING_ISOLATED_VM** (bloqueado intencionalmente neste host para não colidir com `%LOCALAPPDATA%\Programs\Meu Financeiro` e `%APPDATA%\meu-financeiro-desktop`). Decisão humana GO/NO-GO na [issue #71](https://github.com/JoaoVittorLi/meu-financeiro/issues/71).
 
 ---
