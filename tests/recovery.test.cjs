@@ -173,3 +173,130 @@ test('Preflight v7 — backup with broken foreign keys rejected while valid snap
   assert.equal(db.load('real').transactions[0].id,'t-validado');
  }finally{db.close();fs.rmSync(f.root,{recursive:true,force:true});}
 });
+
+test('restoreBackup remove auxiliares .importacao-*-wal e -shm após rejeitar cópia WAL corrompida',async()=>{
+ const f=fixture();const db=new FinanceDB(f.file);
+ try{
+  db.save('real',dataset('wal-ativo'));
+  const walCorrupt=path.join(f.root,'wal-corrupt.sqlite');
+  const {DatabaseSync}=require('node:sqlite');
+  const seed=new DatabaseSync(walCorrupt);
+  seed.exec('PRAGMA journal_mode=WAL; CREATE TABLE profiles(id TEXT PRIMARY KEY); CREATE TABLE transactions(id TEXT PRIMARY KEY, profile TEXT REFERENCES profiles(id)); CREATE TABLE budgets(id TEXT PRIMARY KEY); CREATE TABLE financial_settings(id TEXT PRIMARY KEY); CREATE TABLE app_meta(key TEXT PRIMARY KEY, value TEXT);');
+  seed.exec("INSERT INTO app_meta(key,value) VALUES ('schema_version','7');");
+  seed.exec('PRAGMA foreign_keys=OFF; INSERT INTO transactions(id,profile) VALUES (\'orphan\',\'missing-profile\');');
+  seed.close();
+  // Ensure header flags stay in WAL mode (bytes 18-19 = 2,2) so readOnly open creates -shm/-wal
+  const raw=fs.readFileSync(walCorrupt);
+  raw[18]=2;raw[19]=2;
+  fs.writeFileSync(walCorrupt,raw);
+
+  await assert.rejects(()=>restoreBackup(db,walCorrupt,f.file,f.backups),/referências financeiras inválidas/);
+  const leftovers=fs.readdirSync(path.dirname(f.file)).filter(n=>n.startsWith('.importacao-'));
+  assert.deepEqual(leftovers,[]);
+  assert.equal(db.load('real').transactions[0].id,'t-wal-ativo');
+ }finally{db.close();fs.rmSync(f.root,{recursive:true,force:true});}
+});
+
+test('FinanceDB e restoreBackup liberam handle SQLite e removem auxiliares .importacao-* quando probe falha após schema_version em WAL',async()=>{
+ const f=fixture();const db=new FinanceDB(f.file);
+ try{
+  db.save('real',dataset('ativo-wal'));
+  const walTriggerBkp=path.join(f.root,'wal-trigger-fail.sqlite');
+  await db.backupTo(walTriggerBkp);
+  const {DatabaseSync}=require('node:sqlite');
+  const seeded=new DatabaseSync(walTriggerBkp);
+  seeded.exec("PRAGMA journal_mode=WAL; CREATE TRIGGER abort_probe BEFORE INSERT ON app_meta BEGIN SELECT RAISE(ABORT, 'PROBE_FAIL_WAL'); END;");
+  seeded.close();
+  const raw=fs.readFileSync(walTriggerBkp);
+  raw[18]=2;raw[19]=2;
+  fs.writeFileSync(walTriggerBkp,raw);
+
+  const directProbe=path.join(f.root,'direct-probe.sqlite');
+  fs.copyFileSync(walTriggerBkp,directProbe);
+  assert.throws(()=>new FinanceDB(directProbe),/PROBE_FAIL_WAL/);
+  fs.unlinkSync(directProbe);
+  fs.rmSync(directProbe+'-wal',{force:true});
+  fs.rmSync(directProbe+'-shm',{force:true});
+
+  await assert.rejects(()=>restoreBackup(db,walTriggerBkp,f.file,f.backups),/PROBE_FAIL_WAL/);
+  const leftovers=fs.readdirSync(path.dirname(f.file)).filter(n=>n.startsWith('.importacao-'));
+  assert.deepEqual(leftovers,[]);
+  assert.equal(db.load('real').transactions[0].id,'t-ativo-wal');
+  assert.deepEqual(db.integrity(),['ok']);
+ }finally{db.close();fs.rmSync(f.root,{recursive:true,force:true});}
+});
+
+test('restoreBackup preserva erro primário e continua limpeza de sufixos se fs.rmSync de staging lançar EBUSY',async()=>{
+ const f=fixture();const db=new FinanceDB(f.file);
+ const origRmSync=fs.rmSync;
+ const attempted=[];
+ try{
+  db.save('real',dataset('primario-preservado'));
+  const walCorrupt=path.join(f.root,'wal-broken-fk.sqlite');
+  const {DatabaseSync}=require('node:sqlite');
+  const seed=new DatabaseSync(walCorrupt);
+  seed.exec('PRAGMA journal_mode=WAL; CREATE TABLE profiles(id TEXT PRIMARY KEY); CREATE TABLE transactions(id TEXT PRIMARY KEY, profile TEXT REFERENCES profiles(id)); CREATE TABLE budgets(id TEXT PRIMARY KEY); CREATE TABLE financial_settings(id TEXT PRIMARY KEY); CREATE TABLE app_meta(key TEXT PRIMARY KEY, value TEXT);');
+  seed.exec("INSERT INTO app_meta(key,value) VALUES ('schema_version','7');");
+  seed.exec("PRAGMA foreign_keys=OFF; INSERT INTO transactions(id,profile) VALUES ('orphan','missing-profile');");
+  seed.close();
+  const raw=fs.readFileSync(walCorrupt);
+  raw[18]=2;raw[19]=2;
+  fs.writeFileSync(walCorrupt,raw);
+
+  fs.rmSync=(targetPath,options)=>{
+   const str=String(targetPath||'');
+   if(str.includes('.importacao-')){
+    attempted.push(str);
+    if(str.endsWith('.sqlite')){
+     throw Object.assign(new Error('EBUSY: simulated lock'),{code:'EBUSY'});
+    }
+   }
+   return origRmSync.call(fs,targetPath,options);
+  };
+
+  await assert.rejects(()=>restoreBackup(db,walCorrupt,f.file,f.backups),/referências financeiras inválidas/);
+  assert.equal(attempted.some(p=>p.endsWith('-wal')),true);
+  assert.equal(attempted.some(p=>p.endsWith('-shm')),true);
+  assert.equal(db.load('real').transactions[0].id,'t-primario-preservado');
+ }finally{
+  fs.rmSync=origRmSync;
+  for(const name of fs.readdirSync(path.dirname(f.file)).filter(n=>n.startsWith('.importacao-'))){
+   origRmSync.call(fs,path.join(path.dirname(f.file),name),{force:true});
+  }
+  db.close();
+  origRmSync.call(fs,f.root,{recursive:true,force:true});
+ }
+});
+
+test('restoreBackup restaura cópia WAL pré-v7 (schema_version=6) sem deixar .importacao-*.d05-before-v7.sqlite na pasta ativa',async()=>{
+ const f=fixture();let db=new FinanceDB(f.file);
+ try{
+  db.save('real',dataset('legado-v6'));
+  const v6Backup=path.join(f.root,'legacy-v6.sqlite');
+  await db.backupTo(v6Backup);
+  const {DatabaseSync}=require('node:sqlite');
+  const downgraded=new DatabaseSync(v6Backup);
+  downgraded.exec("PRAGMA journal_mode=WAL; DELETE FROM app_meta WHERE key='d05_hierarchy_e1'; UPDATE app_meta SET value='6' WHERE key='schema_version';");
+  downgraded.close();
+  const raw=fs.readFileSync(v6Backup);
+  raw[18]=2;raw[19]=2;
+  fs.writeFileSync(v6Backup,raw);
+
+  db.save('real',dataset('atual-v7'));
+  const restored=await restoreBackup(db,v6Backup,f.file,f.backups);
+  db=restored.db;
+
+  const leftovers=fs.readdirSync(path.dirname(f.file)).filter(n=>n.startsWith('.importacao-'));
+  assert.deepEqual(leftovers,[]);
+  assert.equal(db.load('real').transactions[0].id,'t-legado-v6');
+  assert.equal(db.db.prepare("SELECT value FROM app_meta WHERE key='schema_version'").get().value,'7');
+  assert.equal(db.db.prepare("SELECT value FROM app_meta WHERE key='d05_hierarchy_e1'").get().value,'1');
+  assert.deepEqual(db.integrity(),['ok']);
+  assert.equal(validateBackupFile(restored.recovery).ok,true);
+
+  const checkSource=new DatabaseSync(v6Backup,{readOnly:true});
+  try{
+   assert.equal(checkSource.prepare("SELECT value FROM app_meta WHERE key='schema_version'").get().value,'6');
+  }finally{checkSource.close();}
+ }finally{db.close();fs.rmSync(f.root,{recursive:true,force:true});}
+});

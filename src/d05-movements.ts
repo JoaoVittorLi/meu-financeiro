@@ -79,13 +79,27 @@ class D05Movements extends React.Component<any,any> {
  const [notice,setNotice]=useState('');
  const [confirmedIdentity,setConfirmedIdentity]=useState(null as any);
  const [autoInfo,setAutoInfo]=useState(null as any);
+ const [autoPreview,setAutoPreview]=useState(null as any);
+ const [autoView,setAutoView]=useState('activation');
+ const [autoHistoryEnabled,setAutoHistoryEnabled]=useState(true);
+ const [autoNewEnabled,setAutoNewEnabled]=useState(true);
+ const [autoReceipts,setAutoReceipts]=useState([] as any[]);
+ const [autoReceiptCursor,setAutoReceiptCursor]=useState(null as string|null);
+ const [autoReceiptTotal,setAutoReceiptTotal]=useState(0);
+ const [autoReceiptFilter,setAutoReceiptFilter]=useState('all');
+ const [autoReceiptBusy,setAutoReceiptBusy]=useState(false);
+ const [autoReceiptDetail,setAutoReceiptDetail]=useState(null as any);
+ const [autoProgress,setAutoProgress]=useState(null as any);
+ const [autoWriteJob,setAutoWriteJob]=useState(null as any);
  const [autoSelected,setAutoSelected]=useState(new Set<string>());
  const [autoStart,setAutoStart]=useState('2000-01-01');
  const [autoEnd,setAutoEnd]=useState('2099-12-31');
- const [autoPanel,setAutoPanel]=useState(false);
+ const [autoPanel,setAutoPanel]=useState(true);
  const [autoBusy,setAutoBusy]=useState(false);
  const [autoMessage,setAutoMessage]=useState('');
  const [autoRules,setAutoRules]=useState([] as any[]);
+ const autoScanRef=useRef({jobId:null as string|null,stop:false});
+ const autoWriteRef=useRef({jobId:null as string|null,stop:false});
  const activeTrigger=useRef(null as any);
  const modalRef=useRef(null as any);
  const refreshId=useRef(0);
@@ -149,7 +163,18 @@ class D05Movements extends React.Component<any,any> {
    void bridge.bankAutoStatus().then((status:any)=>{
     if(status?.contract==='D05/AUTO-CATEGORY-V1'){
      setAutoInfo(status);
-     if(autoInfo===null)setAutoSelected(new Set((status.permissions||[]).filter((p:any)=>p.enabled).map((p:any)=>p.accountId)));
+     if(status.applyJob&&autoWriteJob===null)setAutoWriteJob(status.applyJob);
+     if(autoInfo===null){
+      const enabled=(status.permissions||[]).filter((p:any)=>p.enabled&&p.expiresAt>new Date().toISOString());
+      setAutoSelected(new Set(enabled.map((p:any)=>p.accountId)));
+      if(enabled.length){
+       setAutoHistoryEnabled(enabled[0].historyEnabled!==0);
+       setAutoNewEnabled(enabled[0].newEnabled!==0);
+       setAutoStart(enabled[0].startDate||'2000-01-01');
+       setAutoEnd(enabled[0].endDate||'2099-12-31');
+       setAutoView('center');
+      }
+     }
     }
    }).catch((e:any)=>setAutoMessage(String(e?.message||e)));
   }
@@ -159,20 +184,181 @@ class D05Movements extends React.Component<any,any> {
    const result=await bridge.bankAutoStatus();setAutoInfo(result);
   }
  };
+ // The renderer never receives the whole history: each MAIN call advances
+ // at most 250 real SQLite rows, and progress survives process restarts.
+ const scanAutoPages=async(jobId:string)=>{
+  autoScanRef.current.jobId=jobId;
+  autoScanRef.current.stop=false;
+  while(!autoScanRef.current.stop){
+   let next:any;
+   try{next=await bridge.bankAutoPreviewNext(jobId);}
+   catch(e:any){
+    // A pause/cancel can race with an in-flight page IPC. The owner action
+    // wins; do not display a false integrity error after intentional stop.
+    if(autoScanRef.current.stop)break;
+    throw e;
+   }
+   if(autoScanRef.current.stop)break;
+   setAutoProgress(next);
+   if(next.state==='ready'){
+    setAutoPreview(next.preview);
+    setAutoMessage('Análise de todo o histórico concluída sem categorizar. Revise a prévia antes de confirmar.');
+    break;
+   }
+   if(next.state!=='scanning')break;
+   // Yield so the UI can display progress and accept pause/cancel interactions.
+   await new Promise<void>(resolve=>setTimeout(resolve,0));
+  }
+ };
+ const pauseAutoScan=async()=>{
+  const id=autoScanRef.current.jobId;
+  if(!id||!bridge?.bankAutoPreviewPause)return;
+  autoScanRef.current.stop=true;
+  try{setAutoProgress(await bridge.bankAutoPreviewPause(id));
+   setAutoMessage('Análise pausada; nenhuma categoria foi aplicada.');}
+  catch(e:any){setAutoMessage(String(e?.message||e));}
+ };
+ const resumeAutoScan=async()=>{
+  const id=autoScanRef.current.jobId;
+  if(!id||!bridge?.bankAutoPreviewResume)return;
+  setAutoBusy(true);setAutoMessage('');
+  try{setAutoProgress(await bridge.bankAutoPreviewResume(id));await scanAutoPages(id);}
+  catch(e:any){setAutoMessage(String(e?.message||e));}
+  finally{setAutoBusy(false);}
+ };
+ const cancelAutoScan=async()=>{
+  const id=autoScanRef.current.jobId;
+  if(!id||!bridge?.bankAutoPreviewCancel)return;
+  autoScanRef.current.stop=true;
+  try{await bridge.bankAutoPreviewCancel(id);autoScanRef.current.jobId=null;
+   setAutoProgress(null);setAutoPreview(null);
+   setAutoMessage('Análise cancelada; nenhuma classificação aplicada.');}
+  catch(e:any){setAutoMessage(String(e?.message||e));}
+ };
+ const loadAutoReceipts=async(filter:string='all',cursor:string|null=null)=>{
+  if(!bridge?.bankAutoReceipts||state.mode!=='real')return;
+  setAutoReceiptBusy(true);
+  try{
+   const page=await bridge.bankAutoReceipts({action:filter,cursor,limit:20});
+   setAutoReceipts((prev:any[])=>cursor?[...prev,...(page.items||[])]:page.items||[]);
+   setAutoReceiptCursor(page.nextCursor||null);
+   setAutoReceiptTotal(page.total||0);
+  }catch(e:any){setAutoMessage('Falha na consulta de recibos: '+String(e?.message||e));}
+  finally{setAutoReceiptBusy(false);}
+ };
+ const openAutoView=(view:string)=>{
+  setAutoView(view);
+  if(view==='receipts')void loadAutoReceipts(autoReceiptFilter);
+ };
+ const undoAutoReceipt=async(item:any)=>{
+  if(!bridge?.bankAutoUndo||autoBusy||!item?.active)return;
+  setAutoBusy(true);setAutoMessage('');
+  try{
+   const result=await bridge.bankAutoUndo({accountId:item.accountId,externalId:item.externalId});
+   if(result?.cancelled){setAutoMessage('Desfazer cancelado; classificação preservada.');return;}
+   if(!result?.undone)throw Error('O recibo não está mais associado a um rótulo ativo.');
+   await host.refreshBank();await refreshAuto();await loadAutoReceipts(autoReceiptFilter);
+   setAutoReceiptDetail(null);
+   setAutoMessage('Classificação revertida e protegida contra reaplicação automática.');
+  }catch(e:any){setAutoMessage('A reversão não foi confirmada: '+String(e?.message||e));}
+  finally{setAutoBusy(false);}
+ };
+ const runWritePages=async(jobId:string)=>{
+  if(!bridge?.bankAutoBatchNext)throw Error('Aplicação paginada indisponível no preload.');
+  autoWriteRef.current={jobId,stop:false};
+  let last:any=null;
+  while(!autoWriteRef.current.stop){
+   try{last=await bridge.bankAutoBatchNext(jobId);}
+   catch(e:any){if(autoWriteRef.current.stop)break;throw e;}
+   setAutoWriteJob(last);
+   if(last.state!=='running')break;
+   await new Promise<void>(resolve=>setTimeout(resolve,0));
+  }
+  if(last&&!autoWriteRef.current.stop){
+   await host.refreshBank();await refreshAuto();
+   if(last.state==='completed')
+    setAutoMessage('Aplicação concluída: '+String(last.committed)+' classificações com recibo confirmado.');
+   else if(last.state==='stale')
+    setAutoMessage('Prévia desatualizada. '+String(last.committed)+' categorias gravadas permanecem válidas; não houve nova escrita depois da divergência.');
+   else if(last.state==='failed')
+    setAutoMessage('Falha protegida. '+String(last.committed)+' categorias já confirmadas permanecem; lote seguinte bloqueado até revisão.');
+  }
+ };
+ const pauseWrite=async()=>{
+  const id=autoWriteRef.current.jobId||autoWriteJob?.jobId;
+  if(!id||!bridge?.bankAutoBatchPause)return;
+  autoWriteRef.current.stop=true;
+  try{const job=await bridge.bankAutoBatchPause(id);setAutoWriteJob(job);
+   setAutoMessage('Aplicação pausada após '+String(job.committed)+' confirmações. Nenhuma categoria será reprocessada.');}
+  catch(e:any){setAutoMessage(String(e?.message||e));}
+ };
+ const resumeWrite=async()=>{
+  const id=autoWriteJob?.jobId;
+  if(!id||!bridge?.bankAutoBatchResume)return;
+  setAutoBusy(true);setAutoMessage('');
+  try{const job=await bridge.bankAutoBatchResume(id);
+   setAutoWriteJob(job);await runWritePages(id);}
+  catch(e:any){setAutoMessage('Retomada bloqueada: '+String(e?.message||e));}
+  finally{setAutoBusy(false);}
+ };
+ const cancelWrite=async()=>{
+  const id=autoWriteJob?.jobId;
+  if(!id||!bridge?.bankAutoBatchCancel)return;
+  autoWriteRef.current.stop=true;
+  try{const job=await bridge.bankAutoBatchCancel(id);setAutoWriteJob(job);
+   await host.refreshBank();await refreshAuto();
+   setAutoMessage('Lote cancelado. '+String(job.committed)+' classificações confirmadas foram preservadas; nenhuma reversão em massa foi executada.');}
+  catch(e:any){setAutoMessage(String(e?.message||e));}
+ };
  const runAutoAction=async(action:string,accountId:string|null=null)=>{
   if(!bridge||autoBusy||state.mode!=='real')return;
   setAutoBusy(true);setAutoMessage('');
   try{
    let result:any;
-   if(action==='enable')result=await bridge.bankAutoConfigure({accountIds:Array.from(autoSelected),startDate:autoStart,endDate:autoEnd});
-   else if(action==='revoke')result=await bridge.bankAutoRevoke(accountId);
-   else if(action==='run')result=await bridge.bankAutoApply({limit:20000});
+   if(action==='enable'){
+    result=await bridge.bankAutoConfigure({accountIds:Array.from(autoSelected),startDate:autoStart,endDate:autoEnd,
+     historyEnabled:autoHistoryEnabled,newEnabled:autoNewEnabled,insufficientAction:'review'});
+    autoScanRef.current.stop=true;autoScanRef.current.jobId=null;
+    setAutoProgress(null);setAutoPreview(null);setAutoView('preview');
+   }else if(action==='revoke'){
+    result=await bridge.bankAutoRevoke(accountId);autoScanRef.current.stop=true;
+    setAutoProgress(null);setAutoPreview(null);
+   }else if(action==='pause')result=await bridge.bankAutoPause();
+   else if(action==='resume')result=await bridge.bankAutoResume();
+   else if(action==='preview'){
+    if(!bridge.bankAutoPreviewStart||!bridge.bankAutoPreviewNext)
+     throw Error('Serviço de prévia paginada indisponível no preload.');
+    const started=await bridge.bankAutoPreviewStart();
+    autoScanRef.current.jobId=started.jobId;
+    setAutoProgress(started);
+    setAutoPreview(null);
+    if(started.state==='ready'){
+     setAutoPreview(started.preview);
+     setAutoMessage('Análise anterior concluída e revalidada; nenhuma categoria aplicada.');
+    }else if(started.state==='paused'){
+     setAutoMessage('Análise anterior pausada. Use Retomar.');
+    }else await scanAutoPages(started.jobId);
+    return;
+   }else if(action==='confirm'){
+    if(!autoPreview?.previewVersion)throw Error('Analise o histórico antes de confirmar.');
+    result=await bridge.bankAutoApply({previewVersion:autoPreview.previewVersion,limit:20000});
+    if(!result?.cancelled){setAutoPreview(null);setAutoView('center');}
+   }else if(action==='run')result=await bridge.bankAutoApply({limit:20000});
    else if(action==='suggest')result=await bridge.bankAutoRuleSuggestions({limit:5});
    if(action==='suggest'){setAutoRules(result?.rules||[]);setAutoMessage('Sugestões somente para prévia; nenhuma regra foi criada.');return;}
-   if(result?.cancelled){setAutoMessage('Autorização cancelada.');return;}
+   if(result?.cancelled){setAutoMessage('Operação cancelada; nenhuma classificação aplicada.');return;}
+   if(result?.batch){
+    setAutoWriteJob(result.batch);setAutoView('center');
+    await runWritePages(result.batch.jobId);
+    return;
+   }
+   if(['failed','busy','paused','awaiting_explicit_consent_or_first_confirmation','initial_batch_requires_resolution'].includes(result?.state))
+    throw Error('A aplicação NÃO foi concluída: '+String(result.state)+'. Confira os backups e o estado dos jobs antes de tentar novamente.');
    await host.refreshBank();await refreshHierarchy();await refreshAuto();
-   setAutoMessage(action==='enable'?'Contas autorizadas no MAIN; classificação concluída conforme evidências.':
+   setAutoMessage(action==='enable'?'Contas autorizadas, mas nenhuma classificação aplicada. Confira a prévia inicial.':
     action==='revoke'?'Permissão revogada; recibos e rótulos anteriores preservados.':
+    action==='pause'?'Próximas verificações automáticas pausadas. Uma aplicação já em curso não é cancelada.':
+    action==='resume'?'Verificações locais reativadas, limitadas às contas já autorizadas.':
     'Verificação concluída. Movimentos incertos permanecem para revisão.');
   }catch(e:any){setAutoMessage(String(e?.message||e));}
   finally{setAutoBusy(false);}
@@ -600,52 +786,329 @@ class D05Movements extends React.Component<any,any> {
    confirmedIdentity?h(D05VectorIcon,{iconKey:confirmedIdentity.iconKey,
     hue:confirmedIdentity.hue,size:17}):null,
    confirmedIdentity?confirmedIdentity.label+' · ':null,notice):null,
-  state.mode==='real'&&bridge?.bankAutoStatus?h('section',{className:'d05-auto-box','aria-label':'Categorização automática'},
-   h('div',{className:'d05-auto-head'},
-    h('div',{},h('strong',{},'Categorização automática'),
-     h('p',{},'Somente evidência verificável; suas correções e regras aprovadas prevalecem.')),
-    h('button',{type:'button',className:'d05-ghost','aria-expanded':autoPanel,
-     onClick:()=>setAutoPanel(!autoPanel)},autoPanel?'Fechar':'Gerenciar')),
-   h('div',{className:'d05-auto-stats',role:'status'},
-    h('span',{},autoInfo?.enabled?'Ativada em '+String((autoInfo.permissions||[]).filter((p:any)=>p.enabled).length)+' conta(s)':'Desativada'),
-    h('span',{},String(autoInfo?.counts?.classified||0)+' categorizada(s) automaticamente'),
-    h('span',{},String(autoInfo?.counts?.awaitingReview||0)+' aguardando revisão'),
-    h('button',{type:'button',onClick:()=>{setTab('pending');setSource('bank');}},'Abrir A conferir')),
-   !autoInfo?.available?h('p',{className:'d05-notice',role:'status'},
-    'Autorização pessoal disponível somente na distribuição estável homologada. A RC experimental não altera categorias bancárias.'):null,
-   autoPanel?h('div',{className:'d05-auto-settings'},
-    h('p',{},'Escolha contas e período. A autorização é persistente, revogável e distinta do token IC-READ.'),
-    h('div',{className:'d05-auto-accounts'},(state.bank.data.accounts||[]).map((bank:any)=>
-     h('button',{type:'button',key:bank.id,'aria-pressed':autoSelected.has(bank.id),
-      className:autoSelected.has(bank.id)?'selected':'',
-      disabled:autoBusy||!autoInfo?.available,onClick:()=>{
-       const next=new Set(autoSelected);if(next.has(bank.id))next.delete(bank.id);else next.add(bank.id);
-       setAutoSelected(next);}},bank.name,
-      (autoInfo?.permissions||[]).some((perm:any)=>perm.accountId===bank.id&&perm.enabled)?' · autorizada':''))),
-    h('div',{className:'d05-auto-period'},
-     h('label',{},'Início',h('input',{type:'date',value:autoStart,onChange:(e:any)=>setAutoStart(e.target.value)})),
-     h('label',{},'Fim',h('input',{type:'date',value:autoEnd,onChange:(e:any)=>setAutoEnd(e.target.value)}))),
-    h('div',{className:'d05-auto-buttons'},
-     h('button',{type:'button',className:'d05-confirm',disabled:autoBusy||!autoInfo?.available||autoSelected.size===0,
-      onClick:()=>void runAutoAction('enable')},'Autorizar contas selecionadas'),
-     h('button',{type:'button',disabled:autoBusy||!autoInfo?.available||!autoInfo?.enabled,
-      onClick:()=>void runAutoAction('run')},'Analisar novamente'),
-     h('button',{type:'button',disabled:autoBusy||!autoInfo?.available||!autoInfo?.enabled,
-      onClick:()=>void runAutoAction('suggest')},'Sugerir regras para semelhantes'),
-     ...(autoInfo?.permissions||[]).filter((perm:any)=>perm.enabled).map((perm:any)=>
-      h('button',{type:'button',key:perm.accountId,disabled:autoBusy||!autoInfo?.available,
-       onClick:()=>void runAutoAction('revoke',perm.accountId)},'Revogar '+perm.name))),
-    autoRules.length?h('div',{className:'d05-auto-rule-suggestions'},
-     h('strong',{},'Sugestões não aplicadas — revisão humana obrigatória'),
-     autoRules.map((rule:any)=>h('p',{key:rule.accountId+'|'+rule.pattern},
-      'Conta: '+String((state.bank.data.accounts||[]).find((a:any)=>a.id===rule.accountId)?.name||'Conta autorizada')+
-      ' · '+rule.pattern+' · '+rule.suggestedFor+' ocorrências identificadas · até '+
-      rule.possibleMatches+' possíveis correspondências. Conflitos de precedência: '+rule.possiblePrecedenceConflicts+'.')),
-     h('button',{type:'button',onClick:()=>host.setState({txOrganize:true})},
-      'Abrir Categorias e regras para revisar a criação')):null,
-    h('p',{},'Regras amplas e reclassificações em massa exigem aprovação separada. Sem modelo externo nem porcentagens inventadas.')
-   ):null,
-   autoMessage?h('p',{className:'d05-notice',role:'status'},autoMessage):null
+  state.mode==='real'&&bridge?.bankAutoStatus?h('section',{
+   className:'d05-auto-box mf-cat-shell','aria-label':'Central de categorização automática'},
+   h('header',{className:'mf-cat-hero'},
+    h('div',{className:'mf-cat-identity'},
+     h('span',{className:'mf-cat-eyebrow'},'INTELIGÊNCIA FINANCEIRA  ·  CAT-UX'),
+     h('h2',{},'Categorização inteligente'),
+     h('p',{},'Evidências locais verificáveis, sempre sob o seu controle.')),
+    h('div',{className:'mf-cat-header-actions'},
+     h('span',{className:'mf-cat-state','data-state':!autoInfo?.available?'unavailable':
+      autoInfo?.jobs?.paused?'paused':autoInfo?.enabled?'active':'inactive'},
+      !autoInfo?.available?'Aguardando homologação':autoInfo?.jobs?.paused?'Pausada':
+       autoInfo?.enabled?'Contas autorizadas':'Não ativada'),
+     h('button',{type:'button',className:'d05-ghost','aria-expanded':autoPanel,
+      onClick:()=>setAutoPanel(!autoPanel)},autoPanel?'Recolher':'Abrir central'))),
+   h('div',{className:'mf-cat-glance',role:'status','aria-label':'Resumo da automação'},
+    h('div',{},h('small',{},'Aplicadas no momento'),h('strong',{},String(autoInfo?.counts?.classified??0))),
+    h('div',{},h('small',{},'Precisam de revisão'),h('strong',{},String(autoInfo?.counts?.awaitingReview??0))),
+    h('div',{},h('small',{},'Contas autorizadas'),h('strong',{},String((autoInfo?.permissions||[]).filter((p:any)=>p.enabled&&p.expiresAt>new Date().toISOString()).length)))),
+   autoPanel?h('div',{className:'mf-cat-content'},
+    h('nav',{className:'mf-cat-nav',role:'tablist','aria-label':'Etapas e recursos da categorização'},
+     [{id:'activation',name:'Ativação',number:'01'},
+      {id:'preview',name:'Análise',number:'02'},
+      {id:'center',name:'Central',number:'03'},
+      {id:'rules',name:'Regras',number:'04'},
+      {id:'receipts',name:'Recibos',number:'05'},
+      {id:'security',name:'Segurança',number:'06'}].map((v:any)=>
+      h('button',{key:v.id,id:'mf-cat-tab-'+v.id,type:'button',role:'tab',
+       'aria-selected':autoView===v.id,'aria-controls':'mf-cat-panel-'+v.id,
+       className:autoView===v.id?'is-current':'',
+       onClick:()=>openAutoView(v.id)},h('small',{},v.number),v.name))),
+    autoWriteJob?h('div',{className:'mf-cat-write-state',role:'status','aria-live':'polite'},
+     h('div',{className:'mf-cat-progress-label'},
+      h('strong',{},'Aplicação em lotes · '+(autoWriteJob.state==='completed'?'Concluída':
+       autoWriteJob.state==='running'?'Gravando recibos':autoWriteJob.state==='paused'?'Pausada':
+       autoWriteJob.state==='cancelled'?'Cancelada':autoWriteJob.state==='stale'?'Prévia desatualizada':'Falha protegida')),
+      h('span',{},String(autoWriteJob.committed||0)+' / '+String(autoWriteJob.proposedTotal||0)+' commits')),
+     h('progress',{max:Math.max(1,autoWriteJob.proposedTotal||0),
+      value:Math.min(autoWriteJob.committed||0,Math.max(1,autoWriteJob.proposedTotal||0)),
+      'aria-label':'Classificações efetivamente confirmadas no SQLite'}),
+     h('p',{className:'mf-cat-footnote'},autoWriteJob.state==='completed'?
+      'Todas as propostas válidas foram processadas; confira os recibos.':
+      autoWriteJob.state==='stale'?'Dados ou autorizações mudaram. O lote está bloqueado até nova prévia.':
+      autoWriteJob.state==='failed'?'Erro de backup ou COMMIT. O que já foi confirmado possui recibo; nenhuma conclusão foi declarada.':
+      autoWriteJob.state==='cancelled'?'As classificações confirmadas permanecem. Não foi feito desfazer em massa.':
+      'A contagem só avança depois do COMMIT SQLite.'),
+     ['running','paused','failed'].includes(autoWriteJob.state)?h('div',{className:'mf-cat-toolbar'},
+      autoWriteJob.state==='running'?h('button',{type:'button',onClick:()=>void pauseWrite()},'Pausar aplicação'):
+       h('button',{type:'button',onClick:()=>void resumeWrite()},'Retomar com revalidação'),
+      h('button',{type:'button',onClick:()=>void cancelWrite()},'Cancelar novas aplicações')):null
+    ):null,
+    h('div',{id:'mf-cat-panel-'+autoView,role:'tabpanel','aria-labelledby':'mf-cat-tab-'+autoView,
+     className:'mf-cat-stage',tabIndex:0},
+     autoView==='activation'?h('div',{className:'mf-cat-grid-layout'},
+      h('section',{className:'mf-cat-surface'},
+       h('div',{className:'mf-cat-section-top'},h('span',{className:'mf-cat-step'},'01 / CONFIGURAÇÃO'),
+        h('h3',{},'Escolha onde a automação pode atuar'),
+        h('p',{},'Nenhuma conta é escolhida automaticamente. O consentimento será solicitado no aplicativo.')),
+       !(state.bank.data.accounts||[]).length?h('p',{className:'mf-cat-empty',role:'status'},
+        'Nenhuma conta bancária disponível. Conecte uma conta e sincronize seus dados antes de autorizar.'):null,
+       h('div',{className:'mf-cat-account-list'},
+        (state.bank.data.accounts||[]).map((account:any)=>{
+         const permission=(autoInfo?.permissions||[]).find((p:any)=>p.accountId===account.id);
+         const expired=!!permission&&permission.expiresAt<=new Date().toISOString();
+         return h('button',{key:account.id,type:'button',
+          className:'mf-cat-account '+(autoSelected.has(account.id)?'is-selected':''),
+          disabled:autoBusy||!autoInfo?.available,
+          'aria-pressed':autoSelected.has(account.id),
+          onClick:()=>{const next=new Set(autoSelected);
+           if(next.has(account.id))next.delete(account.id);else next.add(account.id);setAutoSelected(next);}},
+          h('span',{className:'mf-cat-account-mark','aria-hidden':'true'},autoSelected.has(account.id)?'✓':''),
+          h('span',{className:'mf-cat-account-text'},h('strong',{},account.name),
+           h('small',{},expired?'Autorização expirada · renove para continuar':
+            permission?.enabled?'Autorização existente · alterável':'Não autorizada')),
+          h('span',{className:'mf-cat-account-tail','aria-hidden':'true'},autoSelected.has(account.id)?'Selecionada':'Selecionar'));
+        })),
+       h('div',{className:'d05-auto-period mf-cat-period'},
+        h('label',{},'Histórico desde',h('input',{type:'date',value:autoStart,
+         disabled:autoBusy||!autoHistoryEnabled,onChange:(e:any)=>setAutoStart(e.target.value)})),
+        h('label',{},'Até',h('input',{type:'date',value:autoEnd,disabled:autoBusy,
+         onChange:(e:any)=>setAutoEnd(e.target.value)}))),
+       h('p',{className:'mf-cat-footnote'},'Alterar contas ou período exige novo consentimento e invalida a prévia anterior.')),
+      h('aside',{className:'mf-cat-surface mf-cat-preferences'},
+       h('span',{className:'mf-cat-step'},'PREFERÊNCIAS'),
+       h('h3',{},'Como a classificação deve funcionar?'),
+       h('button',{type:'button',className:'mf-cat-policy '+(autoHistoryEnabled?'is-selected':''),
+        disabled:autoBusy||!autoInfo?.available,'aria-pressed':autoHistoryEnabled,
+        onClick:()=>setAutoHistoryEnabled(!autoHistoryEnabled)},
+        h('span',{},h('strong',{},'Analisar meu histórico disponível'),
+         h('small',{},'Prévia de registros anteriores, sem alterar os originais')),
+        h('span',{className:'mf-cat-switch','aria-hidden':'true'})),
+       h('button',{type:'button',className:'mf-cat-policy '+(autoNewEnabled?'is-selected':''),
+        disabled:autoBusy||!autoInfo?.available,'aria-pressed':autoNewEnabled,
+        onClick:()=>setAutoNewEnabled(!autoNewEnabled)},
+        h('span',{},h('strong',{},'Categorizar novas movimentações'),
+         h('small',{},'Verificações locais após sync e durante o uso do app')),
+        h('span',{className:'mf-cat-switch','aria-hidden':'true'})),
+       h('div',{className:'mf-cat-policy is-fixed'},
+        h('span',{},h('strong',{},'Quando não houver evidência suficiente'),
+         h('small',{},'Enviar à revisão. Nunca adivinhar categorias.')),
+        h('span',{className:'mf-cat-fixed'},'Sempre revisar')),
+       h('div',{className:'mf-cat-guarantee'},
+        h('strong',{},'O que permanece protegido'),
+        h('p',{},'Valores, datas, extratos originais, classificações manuais, splits, transferências e regras aprovadas.')),
+       h('button',{type:'button',className:'d05-confirm mf-cat-main-action',
+        disabled:autoBusy||!autoInfo?.available||autoSelected.size===0||(!autoHistoryEnabled&&!autoNewEnabled),
+        onClick:()=>void runAutoAction('enable')},autoBusy?'Aguardando confirmação…':'Autorizar contas e avançar'),
+       h('p',{className:'mf-cat-footnote'},'As opções acima são sugestões. Só a confirmação nativa concede permissão; nenhuma categoria será aplicada nesta etapa.'))
+     ):null,
+     autoView==='preview'?h('section',{className:'mf-cat-surface'},
+      h('div',{className:'mf-cat-section-top'},h('span',{className:'mf-cat-step'},'02 / EVIDENCE FLOW'),
+       h('h3',{},'Análise e prévia verificável'),
+       h('p',{},'O histórico é lido no SQLite em lotes de até 250; nenhum resultado é gravado antes de sua confirmação.')),
+      h('div',{className:'mf-cat-toolbar'},
+       h('button',{type:'button',className:'d05-confirm',
+        disabled:autoBusy||!autoInfo?.available||!autoInfo?.enabled||autoProgress?.state==='scanning',
+        onClick:()=>void runAutoAction('preview')},autoBusy?'Analisando…':'Analisar histórico autorizado'),
+       autoProgress?.state==='scanning'?h('button',{type:'button',
+        onClick:()=>void pauseAutoScan()},'Pausar'):null,
+       autoProgress?.state==='paused'?h('button',{type:'button',
+        onClick:()=>void resumeAutoScan()},'Retomar'):null,
+       ['scanning','paused'].includes(autoProgress?.state)?h('button',{type:'button',
+        onClick:()=>void cancelAutoScan()},'Cancelar leitura'):null),
+      autoProgress?h('div',{className:'mf-cat-progress',role:'status','aria-live':'polite'},
+       h('div',{className:'mf-cat-progress-label'},h('strong',{},autoProgress.state==='ready'?'Leitura concluída':
+         autoProgress.state==='paused'?'Leitura pausada':'Lendo movimentações'),
+         h('span',{},String(autoProgress.processed||0)+' / '+String(autoProgress.total||0))),
+       h('progress',{value:autoProgress.processed||0,max:Math.max(1,autoProgress.total||0),
+        'aria-label':'Movimentações efetivamente lidas'})):null,
+      autoInfo?.applyJob?.state==='stale'?h('p',{className:'d05-notice',role:'alert'},
+       'O lote anterior ficou desatualizado. Uma nova leitura e confirmação são obrigatórias; os recibos já gravados serão preservados.'):null,
+      autoPreview?h('div',{},
+       h('div',{className:'mf-cat-metric-grid'},
+        [{title:'Aplicáveis',value:autoPreview.candidateCount||0},
+         {title:'A revisar',value:autoPreview.reviewCount||0},
+         {title:'Protegidas',value:autoPreview.protectedCount||0},
+         {title:'Indisponíveis',value:autoPreview.unavailableCount||0}].map((m:any)=>
+          h('div',{key:m.title,className:'mf-cat-mini-stat'},h('small',{},m.title),h('strong',{},String(m.value))))),
+       h('p',{className:'mf-cat-caption'},'Total analisado no escopo: '+String(autoPreview.analyzedCount??'—')+
+        '. As contagens acima não incluem registros fora do consentimento.'),
+       h('div',{className:'mf-cat-section-top'},h('h3',{},'Amostras de propostas D05'),
+        h('p',{},'Mostrando '+Math.min(12,(autoPreview.candidates||[]).length)+' de '+
+          String(autoPreview.candidateCount||0)+' aplicáveis. Nenhuma categoria foi aplicada.')),
+       h('div',{className:'mf-cat-proposal-list'},
+        (autoPreview.candidates||[]).slice(0,12).map((item:any)=>{
+         const parent=byId(item.target?.categoryId);
+         const child=(parent?.subcategories||[]).find((c:any)=>c.id===item.target?.subcategoryId);
+         return h('article',{className:'mf-cat-proposal',key:item.accountId+'|'+item.externalId},
+          h('div',{className:'mf-cat-proposal-icon'},parent?h(D05VectorIcon,{iconKey:parent.iconKey,hue:parent.hue,size:20}):null),
+          h('div',{},h('strong',{},item.merchant||'Identificação comercial'),
+           h('small',{},item.explanation||'Evidência local')),
+          h('span',{className:'mf-cat-proposal-target'},(parent?.name||item.target?.categoryId||'Categoria')+
+           (child?' · '+child.name:'')));
+        })),
+       h('div',{className:'mf-cat-confirm-strip'},
+        h('div',{},h('strong',{},'Pronto para confirmar?'),
+         h('p',{},'A confirmação nativa revalidará o manifesto e criará backups e recibos antes de gravar.')),
+        h('button',{type:'button',className:'d05-confirm',
+         disabled:autoBusy||!autoInfo?.available||autoProgress?.state!=='ready'||
+          !autoPreview.previewVersion||(autoInfo?.initialConfirmed&&!!autoInfo?.applyJob&&autoInfo?.applyJob?.state!=='stale'),
+         onClick:()=>void runAutoAction('confirm')},'Conferi; aplicar propostas elegíveis')),
+       autoPreview.candidateCount>20000?h('p',{className:'mf-cat-caption'},
+        'Volume elevado: o motor fará commits atômicos de até 250 propostas, com progresso e recuperação persistentes.'):null
+      ):h('p',{className:'mf-cat-empty'},'Nenhuma prévia confirmável nesta sessão. Autorize suas contas e execute a análise somente leitura.'),
+      !autoInfo?.available?h('p',{className:'d05-notice'},'A RC experimental não possui permissão para escrita pessoal.'):null
+     ):null,
+     autoView==='center'?h('div',{className:'mf-cat-grid-layout'},
+      h('section',{className:'mf-cat-surface'},
+       h('span',{className:'mf-cat-step'},'03 / RASTRO VIVO'),
+       h('h3',{},'Central da automação'),
+       h('p',{className:'mf-cat-caption'},'Eventos reais de sincronização, verificações locais e classificações confirmadas.'),
+       h('div',{className:'mf-cat-metric-grid'},
+        [{title:'Aplicadas atualmente',value:autoInfo?.counts?.classified||0},
+         {title:'Encaminhadas à revisão',value:autoInfo?.counts?.awaitingReview||0},
+         {title:'Protegidas',value:autoInfo?.counts?.protected||0}].map((m:any)=>
+         h('div',{key:m.title,className:'mf-cat-mini-stat'},h('small',{},m.title),h('strong',{},String(m.value))))),
+       h('h4',{},'Atividade recente'),
+       (autoInfo?.jobs?.jobs||[]).length?
+        h('div',{className:'mf-cat-timeline'},(autoInfo.jobs.jobs||[]).slice(0,8).map((j:any)=>
+         h('div',{key:j.jobKey,className:'mf-cat-timeline-row'},
+          h('span',{className:'mf-cat-timeline-dot','data-state':j.state,'aria-hidden':'true'}),
+          h('div',{},h('strong',{},j.trigger==='sync'?'Após sincronização':
+           j.trigger==='daily'?'Verificação diária':'Ação manual'),
+           h('small',{},j.startedAt?new Date(j.startedAt).toLocaleString('pt-BR'):'Horário indisponível')),
+          h('span',{},j.state==='completed'?String(j.applied||0)+' aplicadas':
+           j.state==='running'?'Interrompida / em andamento':'Falha protegida')))):
+        h('p',{className:'mf-cat-empty'},'Ainda não há execução registrada.'),
+       h('div',{className:'mf-cat-toolbar'},
+        h('button',{type:'button',disabled:autoBusy||!autoInfo?.enabled||!autoInfo?.available||autoInfo?.jobs?.paused,
+         onClick:()=>void runAutoAction('run')},'Verificar movimentações'),
+        h('button',{type:'button',onClick:()=>openAutoView('receipts')},'Ver recibos'),
+        h('button',{type:'button',onClick:()=>{setTab('pending');setSource('bank');setAutoPanel(false);}},
+         'Abrir A conferir (D05)'),
+        h('button',{type:'button',onClick:()=>void categoryReviewOpen(host)},
+         'Central de Revisão D04')),
+       h('p',{className:'mf-cat-footnote'},'O histórico financeiro completo permanece em Movimentações; a Central não duplica seus lançamentos.')),
+      h('aside',{className:'mf-cat-surface'},
+       h('span',{className:'mf-cat-step'},'CONTROLE POR CONTA'),
+       h('h3',{},'Permissões e execução'),
+       (autoInfo?.permissions||[]).length?h('div',{className:'mf-cat-permissions'},
+        (autoInfo.permissions||[]).map((p:any)=>{
+         const expired=p.expiresAt<=new Date().toISOString();
+         return h('div',{key:p.accountId,className:'mf-cat-permission-row'},
+          h('div',{},h('strong',{},p.name),h('small',{},expired?'Expirada':
+           p.enabled?autoInfo?.jobs?.paused?'Ativa · automação pausada':'Ativa':'Revogada')),
+          p.enabled?h('button',{type:'button',disabled:autoBusy||!autoInfo?.available,
+           onClick:()=>void runAutoAction('revoke',p.accountId)},'Revogar'):null);
+        })):h('p',{className:'mf-cat-empty'},'Nenhuma conta autorizada.'),
+       h('div',{className:'mf-cat-toolbar'},
+        autoInfo?.enabled?h('button',{type:'button',disabled:autoBusy||!autoInfo?.available,
+         onClick:()=>void runAutoAction(autoInfo?.jobs?.paused?'resume':'pause')},
+         autoInfo?.jobs?.paused?'Reativar automação':'Pausar automação'):null,
+        h('button',{type:'button',onClick:()=>openAutoView('activation')},'Gerenciar contas')),
+       h('p',{className:'mf-cat-footnote'},'Pausar mantém o consentimento; revogar impede novas classificações automáticas.'))
+     ):null,
+     autoView==='rules'?h('section',{className:'mf-cat-surface'},
+      h('span',{className:'mf-cat-step'},'04 / REGRAS E EVIDÊNCIAS'),
+      h('h3',{},'Laboratório de padrões'),
+      h('p',{},'Sugestões são somente leitura. Aprovar ou editar regras exige o fluxo protegido do catálogo D05.'),
+      h('div',{className:'mf-cat-toolbar'},
+       h('button',{type:'button',className:'d05-confirm',disabled:autoBusy||!autoInfo?.available||!autoInfo?.enabled,
+        onClick:()=>void runAutoAction('suggest')},'Buscar padrões verificáveis'),
+       h('button',{type:'button',onClick:()=>host.setState({txOrganize:true})},'Abrir editor D05')),
+      autoRules.length?h('div',{className:'mf-cat-rule-grid'},autoRules.map((r:any)=>
+       h('article',{key:r.accountId+'|'+r.pattern,className:'mf-cat-rule'},
+        h('small',{className:'mf-cat-step'},'SUGESTÃO · NÃO APLICADA'),
+        h('h4',{},r.pattern),
+        h('p',{},'Conta: '+String((state.bank.data.accounts||[]).find((x:any)=>x.id===r.accountId)?.name||'Conta autorizada')),
+        h('div',{className:'mf-cat-rule-facts'},
+         h('span',{},String(r.suggestedFor||0)+' ocorrências verificadas'),
+         h('span',{},String(r.possibleMatches||0)+' possíveis correspondências'),
+         h('span',{},String(r.possiblePrecedenceConflicts||0)+' conflitos de precedência')),
+        h('p',{className:'mf-cat-caption'},r.possiblePrecedenceConflicts?
+         'Revisar conflitos antes de considerar qualquer regra.':'Nenhuma regra foi criada. Confira o alcance no editor D05.'),
+        h('button',{type:'button',onClick:()=>host.setState({txOrganize:true})},'Revisar no D05')))):
+       h('p',{className:'mf-cat-empty'},'Nenhuma sugestão consultada ou com evidência suficiente. Isso não significa que uma regra foi aprovada.'),
+      h('h4',{},'Regras já ativas no D05'),
+      (state.rules||[]).filter((r:any)=>r.enabled&&(r.scope==='bank'||r.scope==='both')).length?
+       h('div',{className:'mf-cat-rule-grid'},
+        (state.rules||[]).filter((r:any)=>r.enabled&&(r.scope==='bank'||r.scope==='both'))
+        .slice(0,8).map((r:any)=>h('article',{key:r.id,className:'mf-cat-rule'},
+         h('span',{className:'mf-cat-step'},'REGRA ATIVA DO D05'),
+         h('h4',{},r.pattern),
+         h('p',{},'Destino: '+r.category+' · Correspondência: '+r.matchMode+
+          ' · Prioridade: '+r.priority),
+         h('button',{type:'button',onClick:()=>host.setState({txOrganize:true})},
+          'Gerenciar no catálogo')))):
+       h('p',{className:'mf-cat-empty'},'Nenhuma regra bancária ativa disponível no catálogo D05.'),
+      h('p',{className:'mf-cat-footnote'},'Âncoras humanas duplicadas e classificação probabilística não calibrada não autorizam regras.'))
+      :null,
+     autoView==='receipts'?h('section',{className:'mf-cat-surface'},
+      h('span',{className:'mf-cat-step'},'05 / AUDITORIA E REVERSÃO'),
+      h('h3',{},'Histórico de recibos confirmados'),
+      h('p',{},'Cada recibo é um registro persistido pelo SQLite. Reversões são individuais e exigem confirmação nativa.'),
+      h('div',{className:'mf-cat-toolbar',role:'group','aria-label':'Filtrar recibos'},
+       [{id:'all',label:'Todas'}, {id:'apply',label:'Aplicações'},
+        {id:'correct',label:'Correções'}, {id:'undo',label:'Reversões'}].map((v:any)=>
+         h('button',{key:v.id,type:'button','aria-pressed':autoReceiptFilter===v.id,
+          className:autoReceiptFilter===v.id?'is-selected':'',
+          disabled:autoReceiptBusy,onClick:()=>{
+           setAutoReceiptFilter(v.id);setAutoReceiptDetail(null);
+           void loadAutoReceipts(v.id);}},v.label))),
+      h('p',{className:'mf-cat-caption'},String(autoReceiptTotal)+' recibo(s) neste filtro. '+
+       'A listagem não altera movimentações.'),
+      autoReceipts.length?h('div',{className:'mf-cat-receipt-list'},
+       autoReceipts.map((r:any)=>
+        h('article',{key:r.receiptId,className:'mf-cat-receipt'},
+         h('div',{className:'mf-cat-receipt-top'},
+          h('span',{className:'mf-cat-step'},r.action==='apply'?'CATEGORIZAÇÃO':
+           r.action==='undo'?'REVERSÃO':'CORREÇÃO HUMANA'),
+          h('small',{},r.at?new Date(r.at).toLocaleString('pt-BR'):'Sem data confirmada')),
+         h('strong',{},r.description||'Movimentação bancária'),
+         h('p',{},(r.accountName||'Conta do histórico')+' · '+
+          String(byId(r.afterCategoryId)?.name||r.afterCategoryId||'Sem categoria após operação')),
+         h('div',{className:'mf-cat-toolbar'},
+          h('button',{type:'button','aria-expanded':autoReceiptDetail?.receiptId===r.receiptId,
+           onClick:()=>setAutoReceiptDetail(autoReceiptDetail?.receiptId===r.receiptId?null:r)},'Detalhes'),
+          r.action==='apply'&&r.active&&!r.reversed?h('button',{type:'button',
+           disabled:autoBusy||!autoInfo?.available,onClick:()=>void undoAutoReceipt(r)},'Desfazer classificação'):null,
+          h('button',{type:'button',onClick:()=>{
+           setSearch(r.description||'');setSource('bank');setTab('all');setAutoPanel(false);
+          }},'Localizar em Movimentações')),
+         autoReceiptDetail?.receiptId===r.receiptId?h('div',{className:'mf-cat-receipt-detail'},
+          h('p',{},'ID do recibo: '+r.receiptId),
+          h('p',{},'Movimentação: '+r.accountId+' / '+r.externalId),
+          h('p',{},'Antes: '+(byId(r.beforeCategoryId)?.name||r.beforeCategoryId||'Sem classificação D05')),
+          h('p',{},'Depois: '+(byId(r.afterCategoryId)?.name||r.afterCategoryId||'Sem classificação D05')),
+          h('p',{},'Evidência: '+(r.explanation||'Hash registrado no recibo (detalhes não preservados neste registro).')),
+          h('p',{},'Commit SQLite confirmado · '+(r.reversed?'Revertida':r.active?'Ativa':'Não ativa'))):null
+        ))):h('p',{className:'mf-cat-empty'},autoReceiptBusy?'Consultando recibos…':'Nenhum recibo encontrado neste filtro.'),
+      autoReceiptCursor?h('button',{type:'button',disabled:autoReceiptBusy,
+       onClick:()=>void loadAutoReceipts(autoReceiptFilter,autoReceiptCursor)},
+       autoReceiptBusy?'Carregando…':'Carregar mais recibos'):null
+     ):null,
+     autoView==='security'?h('div',{className:'mf-cat-grid-layout'},
+      h('section',{className:'mf-cat-surface'},
+       h('span',{className:'mf-cat-step'},'06 / RESILIÊNCIA'),
+       h('h3',{},'Segurança e recuperação'),
+       h('p',{},'Esta área informa estados existentes. Não faz reparos destrutivos ou sincronizações adicionais.'),
+       h('div',{className:'mf-cat-security-list'},
+        [{title:'Disponibilidade',value:autoInfo?.available?'Distribuição estável habilitada':'Somente após homologação'},
+         {title:'Autorização',value:autoInfo?.enabled?'Contas no período de validade':'Sem contas válidas autorizadas'},
+         {title:'Primeiro lote',value:autoInfo?.initialConfirmed?'Confirmado no MAIN':'Aguardando prévia e confirmação'},
+         {title:'Verificações',value:autoInfo?.jobs?.paused?'Pausadas explicitamente':'Automação local não pausada'},
+         {title:'Último job',value:(autoInfo?.jobs?.jobs||[])[0]?.state||'Nenhuma execução'}].map((v:any)=>
+         h('div',{key:v.title,className:'mf-cat-security-row'},
+          h('strong',{},v.title),h('span',{},v.value)))),
+       (autoInfo?.jobs?.jobs||[]).some((x:any)=>x.state==='failed'||x.state==='running')?
+        h('p',{className:'d05-notice',role:'alert'},'Há job falho ou interrompido. Consulte os recibos; uma nova tentativa só deve ocorrer com consentimento válido e estado íntegro.'):null,
+       autoMessage?h('p',{className:'d05-notice',role:'alert'},autoMessage):null),
+      h('aside',{className:'mf-cat-surface'},
+       h('span',{className:'mf-cat-step'},'GARANTIAS'),
+       h('h3',{},'O que nunca muda sem sua decisão'),
+       h('p',{},'A categorização utiliza overlay separado. O extrato bancário e os valores originais não são substituídos.'),
+       h('p',{},'Um backup verificado é necessário antes da escrita. Falhas de aplicação bloqueiam novas tentativas automáticas.'),
+       h('div',{className:'mf-cat-toolbar'},
+        h('button',{type:'button',onClick:()=>openAutoView('receipts')},'Consultar recibos'),
+        h('button',{type:'button',onClick:()=>openAutoView('activation')},'Revisar autorizações')),
+       !autoInfo?.available?h('p',{className:'mf-cat-empty'},'Disponível após homologação Windows. Nenhuma escrita pessoal será habilitada na RC experimental.'):null
+      )
+     ):null
+    ),
+    autoView!=='security'&&autoMessage?h('p',{className:'d05-notice',role:'status','aria-live':'polite'},autoMessage):null
+   ):null
   ):null,
   h('div',{className:'d05-metrics'},
    [{name:'Entradas confirmadas',value:format(income),tone:'positive',note:'No escopo selecionado'},

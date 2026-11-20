@@ -92,8 +92,9 @@ async function restoreBackup(currentDb,source,activeFile,folder){
     if(path.resolve(source)===path.resolve(activeFile))throw new Error('Escolha uma cópia diferente do arquivo ativo.');
     fs.copyFileSync(source,staging,fs.constants.COPYFILE_EXCL);
     validateBackupFile(staging);
-    // Testa upgrade em cópia isolada; nunca modifica o arquivo escolhido.
-    const probe=new FinanceDB(staging);
+    // Testa upgrade em cópia isolada sem duplicar .d05-before-v7.sqlite na pasta ativa;
+    // a cópia escolhida permanece intacta e `rescue` protege o banco atual.
+    const probe=new FinanceDB(staging,{skipPreV7Rescue:true});
     try{
       if(probe.integrity().join(',')!=='ok')throw new Error('A cópia não passou na verificação de integridade.');
       probe.load('real');
@@ -128,7 +129,9 @@ async function restoreBackup(currentDb,source,activeFile,folder){
     }
     throw error;
   }finally{
-    fs.rmSync(staging,{force:true});
+    for(const suffix of ['','-wal','-shm','.d05-before-v7.sqlite','.d05-before-v7.sqlite-wal','.d05-before-v7.sqlite-shm']){
+      try{fs.rmSync(staging+suffix,{force:true});}catch(_){}
+    }
   }
 }
 module.exports={validateBackupFile,listAutoBackups,automaticBackup,restoreBackup};

@@ -23,6 +23,8 @@ const {installD05Ipc}=require('./d05-ipc-adapter.cjs');
 const {D05RCSecureGate}=require('./d05-rc-gate.cjs');
 const {D05PersonalWriteGateway}=require('./d05-personal-gate.cjs');
 const {D05AutoCategorization}=require('./d05-auto-categorization.cjs');
+const {D05AutoLocalScheduler}=require('./d05-auto-local-scheduler.cjs');
+const {D05AutoPreview}=require('./d05-auto-preview.cjs');
 const {CategoryReviewService}=require('./category-review.cjs');
 const {CategoryReviewBackupGate}=require('./category-review-backup.cjs');
 const {automaticBackup,restoreBackup,listAutoBackups,validateBackupFile}=require('./recovery.cjs');
@@ -33,7 +35,7 @@ const {AIPersonalStore}=require('./ai-personal.cjs');
 const {ChatGPTSignIn}=require('./ai-auth.cjs');
 const {ChatGPTDemoClient}=require('./ai-client.cjs');
 const {buildSyntheticFinancialContext}=require('../shared/ai-financial-context.mjs');
-let planner=null, db=null, mainWindow=null, vault=null, categoryRC=null, d05Gate=null, d05PersonalGate=null, autoCategory=null, syncing=false, restoring=false, autoBackupBusy=false, cloudPreparationBusy=false, backupTimer=null, cloudPersonalTimer=null, cloudPersonalBusy=false, cloudAuthPromise=null,cloudAccessAssertion=null;
+let planner=null, db=null, mainWindow=null, vault=null, categoryRC=null, d05Gate=null, d05PersonalGate=null, autoCategory=null, autoScheduler=null, autoPreviewService=null, autoDailyTimer=null, syncing=false, restoring=false, autoBackupBusy=false, cloudPreparationBusy=false, backupTimer=null, cloudPersonalTimer=null, cloudPersonalBusy=false, cloudAuthPromise=null,cloudAccessAssertion=null;
 function backupsDirectory(){return path.join(app.getPath('userData'),'copias-de-seguranca');}
 async function ensureAutomaticBackup(){
   if(!db||restoring||syncing||autoBackupBusy)return;
@@ -179,10 +181,11 @@ function forbidExperimentalNetwork(){
   throw Error('RC/smoke isolado: conexão bancária, nuvem e IA externa estão desativadas.');
 }
 if(experimentalPackaged){
+ // Only experimentalPackaged honors MEU_FINANCEIRO_EXPERIMENTAL_USER_DATA_DIR / --user-data-dir.
  const isolated=experimentalProfileDirectory(app);
  app.setPath('userData',isolated);
 }else if(stablePackaged){
- // Continue the previous stable profile IN PLACE; never import RC data.
+ // Continue the previous stable profile IN PLACE; never import RC data or accept overrides.
  const stableDirectory=stableProfileDirectory(app);
  app.setPath('userData',stableDirectory);
 }
@@ -228,6 +231,8 @@ app.whenReady().then(async()=>{
   // Dedicated per-account opt-in; no elevation of the general AI personal writer.
   autoCategory=new D05AutoCategorization({finance:()=>db,
    backupDirectory:()=>path.join(app.getPath('userData'),'d05-auto-classification-backups')});
+  autoScheduler=new D05AutoLocalScheduler({finance:()=>db,engine:()=>autoCategory});
+  autoPreviewService=new D05AutoPreview({finance:()=>db,engine:()=>autoCategory});
  }
  bindLocalFinancialServices();
  d05Gate=new D05RCSecureGate({
@@ -532,11 +537,17 @@ app.whenReady().then(async()=>{
  const autoIdle=()=>{if(syncing||restoring||autoBackupBusy||cloudPreparationBusy)
   throw Error('Classificação automática: aguarde a operação financeira em andamento.');};
  ipcMain.handle('bank:auto-status',event=>{
-  requireAppSender(event);return {...autoCategory.status(),available:stablePackaged};
+  requireAppSender(event);return {...autoCategory.status(),available:stablePackaged,
+   jobs:autoScheduler.status({limit:10}),applyJob:autoCategory.batchStatus()};
  });
  ipcMain.handle('bank:auto-configure',async(event,input)=>{
   requireAppSender(event);autoAllowed();autoIdle();
   const ids=input?.accountIds,from=input?.startDate,to=input?.endDate;
+  const historyEnabled=input?.historyEnabled===undefined?true:input.historyEnabled;
+  const newEnabled=input?.newEnabled===undefined?true:input.newEnabled;
+  if(typeof historyEnabled!=='boolean'||typeof newEnabled!=='boolean'||
+     (!historyEnabled&&!newEnabled)||input?.insufficientAction&&input.insufficientAction!=='review')
+   throw Error('Selecione histórico ou novas movimentações; casos incertos vão para revisão.');
   if(!Array.isArray(ids)||ids.length<1||ids.length>40||new Set(ids).size!==ids.length)
    throw Error('Selecione contas válidas.');
   const known=new Map(db.bankOverview().accounts.map(a=>[a.id,a.name]));
@@ -548,25 +559,112 @@ app.whenReady().then(async()=>{
    defaultId:0,cancelId:0,noLink:true,title:'Autorizar automação por conta',
    message:'Permitir classificação automática somente nas contas selecionadas?',
    detail:ids.map(id=>'• '+known.get(id)).join('\n')+'\nPeríodo: '+String(from||'')+' a '+String(to||'')+
-    '\nUsa somente correções manuais concordantes e aliases explícitos. Alterações incertas vão para revisão. '+
+    '\nHistórico: '+(historyEnabled?'sim':'não')+'; novas movimentações: '+(newEnabled?'sim':'não')+
+    '\nEvidências fortes poderão incluir campos Pluggy independentes; casos incertos vão para revisão. '+
     'Sem LLM externo, sem modificar valores, status ou saldo; revogável nas Movimentações.'});
   requireAppSender(event);autoIdle();
   if(answer.response!==1||!mainWindow||mainWindow.isDestroyed())return {cancelled:true};
-  const authorization=autoCategory.configure({accountIds:ids,startDate:from,endDate:to},true);
-  autoBackupBusy=true;
-  try{
-   const outcome=await autoCategory.apply();
-   return {authorization,outcome,data:titledBankData()};
-  }finally{autoBackupBusy=false;}
+  // Native approval grants only the scoped category capability. It NEVER
+  // silently applies the first batch; the owner must inspect its preview.
+  const authorization=autoCategory.configure({accountIds:ids,startDate:from,endDate:to,
+   historyEnabled,newEnabled,insufficientAction:'review'},true);
+  return {authorization,changesApplied:false,previewRequired:true};
  });
  ipcMain.handle('bank:auto-revoke',(event,accountId)=>{
   requireAppSender(event);autoAllowed();autoIdle();return autoCategory.revoke(accountId);
  });
+ ipcMain.handle('bank:auto-pause',event=>{
+  requireAppSender(event);autoAllowed();return autoScheduler.pause();
+ });
+ ipcMain.handle('bank:auto-resume',async event=>{
+  requireAppSender(event);autoAllowed();autoIdle();
+  if(!mainWindow||mainWindow.isDestroyed()||!mainWindow.isFocused())
+   throw Error('Reativação exige aplicativo em primeiro plano.');
+  const answer=await dialog.showMessageBox(mainWindow,{type:'question',
+   buttons:['Manter pausado','Reativar verificações locais'],
+   defaultId:0,cancelId:0,noLink:true,title:'Reativar categorização',
+   message:'Retomar as verificações automáticas das contas já autorizadas?',
+   detail:'Não altera o consentimento. Não sincroniza contas ou executa com o aplicativo fechado.'});
+  requireAppSender(event);autoIdle();
+  if(answer.response!==1)return {cancelled:true};
+  return autoScheduler.resume();
+ });
+ // Separate read-only, resumable analysis. Every page is produced in MAIN,
+ // never from the renderer's 2,500-row projection.
+ ipcMain.handle('bank:auto-preview-start',event=>{
+  requireAppSender(event);autoAllowed();autoIdle();return autoPreviewService.start();
+ });
+ ipcMain.handle('bank:auto-preview-next',(event,id)=>{
+  requireAppSender(event);autoAllowed();autoIdle();return autoPreviewService.next(id,{limit:250});
+ });
+ ipcMain.handle('bank:auto-preview-pause',(event,id)=>{
+  requireAppSender(event);autoAllowed();return autoPreviewService.pause(id);
+ });
+ ipcMain.handle('bank:auto-preview-resume',(event,id)=>{
+  requireAppSender(event);autoAllowed();autoIdle();return autoPreviewService.resume(id);
+ });
+ ipcMain.handle('bank:auto-preview-cancel',(event,id)=>{
+  requireAppSender(event);autoAllowed();return autoPreviewService.cancel(id);
+ });
  ipcMain.handle('bank:auto-apply',async(event,input)=>{
   requireAppSender(event);autoAllowed();autoIdle();
+  // Even if the approval receipt survived a crash before startBatch, a
+  // missing batch journal must not permit an unpreviewed first application.
+  const lastBatch=autoCategory.batchStatus();
+  const initial=!autoCategory.initialReady()||!lastBatch;
+  const staleBatch=lastBatch?.state==='stale';
+  // An interrupted stale manifest is never silently renewed by a manual
+  // action; it requires a completely fresh scan and another native decision.
+  if(initial||staleBatch){
+   autoPreviewService.assertReady(input?.previewVersion);
+   const preview=autoCategory.plan({limit:20000});
+   if(!input?.previewVersion||input.previewVersion!==preview.previewVersion)
+    throw Error('Prévia inicial ausente, alterada ou muito grande. Refaça a análise antes de confirmar.');
+   if(!mainWindow||mainWindow.isDestroyed()||!mainWindow.isFocused())
+    throw Error('Confirmação inicial exige janela em primeiro plano.');
+   const answer=await dialog.showMessageBox(mainWindow,{type:'warning',
+    buttons:['Cancelar','Aplicar lote seguro'],defaultId:0,cancelId:0,noLink:true,
+    title:'Confirmar primeira categorização automática',
+    message:'Aplicar '+preview.candidateCount+' classificações verificadas?',
+    detail:'Analisadas todas as movimentações do período autorizado. '+
+     preview.reviewCount+' exigem revisão; nenhuma movimentação original será sobrescrita. '+
+     'Backup obrigatório, revalidação do manifesto e recibos SQLite antes de confirmar.'});
+   requireAppSender(event);autoIdle();
+   if(answer.response!==1)return {cancelled:true,changesApplied:false};
+  }
   autoBackupBusy=true;
-  try{return {...await autoCategory.apply(input||{}),data:titledBankData(),status:autoCategory.status()};}
+  try{
+   // First activation and stale recovery require the separate native preview.
+   // Later manual checks belong to the SAME recurring scheduler and must
+   // process only post-authorization movements via its persistent journal.
+   if(initial||staleBatch){
+    if(initial)await autoCategory.confirmInitialPreview(input.previewVersion);
+    const current=autoCategory.plan({limit:100});
+    const batch=autoCategory.startBatch({previewVersion:current.previewVersion});
+    return {batch,status:autoCategory.status(),changesApplied:false};
+   }
+   return {...await autoScheduler.run('manual'),status:autoCategory.status(),
+    data:titledBankData()};
+  }finally{autoBackupBusy=false;}
+ });
+ // Canonical D05 batch journal; status/progress reflect COMMITTED receipts only.
+ ipcMain.handle('bank:auto-batch-status',(event,id)=>{
+  requireAppSender(event);return autoCategory.batchStatus(id||null);
+ });
+ ipcMain.handle('bank:auto-batch-next',async(event,id)=>{
+  requireAppSender(event);autoAllowed();autoIdle();
+  autoBackupBusy=true;
+  try{return await autoCategory.nextBatch(id,{limit:250});}
   finally{autoBackupBusy=false;}
+ });
+ ipcMain.handle('bank:auto-batch-pause',(event,id)=>{
+  requireAppSender(event);autoAllowed();return autoCategory.pauseBatch(id);
+ });
+ ipcMain.handle('bank:auto-batch-resume',(event,id)=>{
+  requireAppSender(event);autoAllowed();autoIdle();return autoCategory.resumeBatch(id);
+ });
+ ipcMain.handle('bank:auto-batch-cancel',(event,id)=>{
+  requireAppSender(event);autoAllowed();return autoCategory.cancelBatch(id);
  });
  ipcMain.handle('bank:auto-correct',async(event,input)=>{
   requireAppSender(event);autoAllowed();autoIdle();
@@ -600,6 +698,9 @@ app.whenReady().then(async()=>{
  });
  ipcMain.handle('bank:auto-receipt',(event,id)=>{
   requireAppSender(event);return autoCategory.receipt(id);
+ });
+ ipcMain.handle('bank:auto-receipts',(event,input)=>{
+  requireAppSender(event);return autoCategory.listReceipts(input||{});
  });
  ipcMain.handle('bank:auto-undo',async(event,input)=>{
   requireAppSender(event);autoAllowed();autoIdle();
@@ -649,9 +750,9 @@ app.whenReady().then(async()=>{
        newCount+=added.newCount;totalCount+=added.totalCount;
      }
      let autoResult={state:'disabled_or_no_evidence',applied:0};
-     if(stablePackaged&&autoCategory.status().enabled){
+     if(stablePackaged&&autoCategory.status().enabled&&autoCategory.initialReady()){
       autoBackupBusy=true;
-      try{autoResult=await autoCategory.apply();}
+      try{autoResult=await autoScheduler.run('sync',{syncId:db.db.prepare('SELECT MAX(id) AS id FROM bank_sync_history').get().id});}
       catch(_){autoResult={state:'failed_safely',error:'Sincronização salva; a automação não foi aplicada. Confira os backups e tente novamente.'};}
       finally{autoBackupBusy=false;}
      }
@@ -766,6 +867,17 @@ app.whenReady().then(async()=>{
  createWindow();
  void ensureAutomaticBackup();
  backupTimer=setInterval(()=>void ensureAutomaticBackup(),60*60*1000);
+ // Local-only: first opening of the day and extended sessions while app is open.
+ // Never starts a new Pluggy sync or operates in the isolated/experimental RC.
+ const tickAutoDaily=async()=>{
+  if(!stablePackaged||!autoScheduler||!db||syncing||restoring||autoBackupBusy||cloudPreparationBusy)return;
+  autoBackupBusy=true;
+  try{await autoScheduler.run('daily');}
+  catch(_){console.warn('Verificação diária de categorias indisponível; nenhuma sincronização bancária adicional foi feita.');}
+  finally{autoBackupBusy=false;}
+ };
+ autoDailyTimer=setInterval(()=>void tickAutoDaily(),15*60*1000);
+ void tickAutoDaily();
  if(!experimentalPackaged&&!smokeProfileActive){
   cloudPersonalTimer=setInterval(()=>void tickCloudPersonal(),60*1000);
   void tickCloudPersonal();
@@ -773,4 +885,4 @@ app.whenReady().then(async()=>{
  app.on('activate',()=>{if(BrowserWindow.getAllWindows().length===0)createWindow();});
 }).catch(error=>{dialog.showErrorBox('Erro ao iniciar Meu Financeiro','Não foi possível abrir o banco de dados: '+error.message);app.quit();});
 app.on('window-all-closed',()=>{if(process.platform!=='darwin')app.quit();});
-app.on('before-quit',()=>{if(d05PersonalGate)d05PersonalGate.stopAll();if(d05Gate)d05Gate.stopAll();if(categoryRC)categoryRC.stopAll();if(backupTimer)clearInterval(backupTimer);if(cloudPersonalTimer)clearInterval(cloudPersonalTimer);cancelBrowserPairing();if(db){db.close();db=null;}});
+app.on('before-quit',()=>{if(d05PersonalGate)d05PersonalGate.stopAll();if(d05Gate)d05Gate.stopAll();if(categoryRC)categoryRC.stopAll();if(backupTimer)clearInterval(backupTimer);if(autoDailyTimer)clearInterval(autoDailyTimer);if(cloudPersonalTimer)clearInterval(cloudPersonalTimer);cancelBrowserPairing();if(db){db.close();db=null;}});

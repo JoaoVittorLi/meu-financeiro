@@ -1,4 +1,4 @@
-# Meu Financeiro — CircleCI Windows x64.
+﻿# Meu Financeiro — CircleCI Windows x64.
 param([switch]$Stable)
 # Dependências e runtime instalados apenas na VM; nenhum setup no PC do usuário.
 # Não faz deploy e não toca em dados locais, Cloudflare ou releases do GitHub.
@@ -103,7 +103,7 @@ if (!(Test-Path -LiteralPath (Join-Path $env:MF_SMOKE_OUTPUT_DIR 'visual-matrix.
 Assert-Success 'Matriz Electron de 32 capturas e manifesto JSON'
 
 Write-Host 'Executando comando oficial: npm run dist:windows...'
-# dist:windows executa compilação TypeScript, testes Node/SQLite e electron-builder NSIS + portable.
+# dist:windows executa compilação TypeScript, testes Node/SQLite e electron-builder NSIS x64.
 # Nunca bypassar os testes em caso de erro.
 $buildScript = if ($Stable) { 'dist:windows:stable' } else { 'dist:windows' }
 & $npmExecutable run $buildScript
@@ -128,24 +128,20 @@ $asarHash = (Get-FileHash -LiteralPath $asarPath -Algorithm SHA256).Hash.ToLower
 
 $releaseDir = Join-Path $root 'release'
 $installerName = "MeuFinanceiro-Instalador-$version-x64.exe"
-$portableName = "MeuFinanceiro-Portable-$version-x64.exe"
 $installerPath = Join-Path $releaseDir $installerName
-$portablePath = Join-Path $releaseDir $portableName
 $executables = @(Get-ChildItem -LiteralPath $releaseDir -File -Filter '*.exe' -ErrorAction Stop)
-if ($executables.Count -ne 2) {
-  throw "Esperados exatamente 2 arquivos EXE; encontrados $($executables.Count)."
+if ($executables.Count -ne 1) {
+  throw "Esperado exatamente 1 instalador NSIS EXE; encontrados $($executables.Count)."
 }
-foreach ($path in @($installerPath,$portablePath)) {
-  if (!(Test-Path -LiteralPath $path)) {
-    throw "O executável esperado não foi encontrado: $(Split-Path $path -Leaf)"
-  }
-  $file = Get-Item -LiteralPath $path
-  if ($file.Length -lt 10000000) {
-    throw "Executável possivelmente incompleto: $($file.Name)"
-  }
+if (!(Test-Path -LiteralPath $installerPath)) {
+  throw "O instalador esperado não foi encontrado: $(Split-Path $installerPath -Leaf)"
+}
+$file = Get-Item -LiteralPath $installerPath
+if ($file.Length -lt 10000000) {
+  throw "Executável possivelmente incompleto: $($file.Name)"
 }
 
-# A pasta publicada contém APENAS 2 executáveis e SHA256.txt.
+# A pasta publicada contém APENAS o instalador NSIS e SHA256.txt.
 # Os demais arquivos intermediários do electron-builder não são distribuídos.
 $artifactDir = Join-Path $root 'circleci-artifacts'
 if (Test-Path -LiteralPath $artifactDir) {
@@ -153,10 +149,9 @@ if (Test-Path -LiteralPath $artifactDir) {
 }
 New-Item -ItemType Directory -Path $artifactDir | Out-Null
 Copy-Item -LiteralPath $installerPath -Destination $artifactDir
-Copy-Item -LiteralPath $portablePath -Destination $artifactDir
 
 $hashLines = @(
-  "# Meu Financeiro | Compilacao Windows x64 | CircleCI",
+  "# Meu Financeiro | Compilacao Windows x64 NSIS | CircleCI",
   "# Branch: $branch",
   "# Commit: $sha",
   "# Versao: $version",
@@ -164,14 +159,13 @@ $hashLines = @(
   "# Renderer manifest SHA256: $rendererManifestHash",
   "# Renderer bundle SHA256: $($rendererManifest.assets.'app/app.js')",
   "# ASAR SHA256: $asarHash",
-  "$((Get-FileHash -LiteralPath $installerPath -Algorithm SHA256).Hash.ToLowerInvariant())  $installerName",
-  "$((Get-FileHash -LiteralPath $portablePath -Algorithm SHA256).Hash.ToLowerInvariant())  $portableName"
+  "$((Get-FileHash -LiteralPath $installerPath -Algorithm SHA256).Hash.ToLowerInvariant())  $installerName"
 )
 $utf8 = [System.Text.UTF8Encoding]::new($false)
 [System.IO.File]::WriteAllLines((Join-Path $artifactDir 'SHA256.txt'), $hashLines, $utf8)
 $publishedFiles = @(Get-ChildItem -LiteralPath $artifactDir -File)
-if ($publishedFiles.Count -ne 3) { throw 'Devem ser publicados exatamente três artifacts.' }
-Write-Host 'SUCESSO: testes concluídos e três artifacts preparados para download.'
+if ($publishedFiles.Count -ne 2) { throw 'Devem ser publicados exatamente dois artifacts (NSIS EXE e SHA256.txt).' }
+Write-Host 'SUCESSO: testes concluídos e instalador NSIS preparado para download.'
 foreach ($file in $publishedFiles) { Write-Host ("ARTIFACT: " + $file.Name + " (" + $file.Length + " bytes)") }
 Write-Host "Branch=$branch; Commit=$sha; Versão=$version"
 Write-Host 'Abra o job no CircleCI > Artifacts. Nenhum GitHub Release foi alterado.'

@@ -1,17 +1,21 @@
-# AGENTS.md — Meu Financeiro 2.0
+# AGENTS.md — Meu Financeiro
 
-> **ATUALIZAÇÃO VINCULANTE — FAST LANE 12/11/2026:** para as duas frentes **já autorizadas** (Redesign Premium e Inteligência Operacional), execute diretamente a Rodada B após checagem focal da baseline e leitura de [FAST_LANE_20261112](docs/ai-context/FAST_LANE_20261112.md) + [contrato IC v1](docs/ai-context/INTELLIGENCE_UI_CONTRACT_V1.md) + [issue #49](https://github.com/JoaoVittorLi/meu-financeiro/issues/49). A Rodada A geral abaixo é histórica e NÃO deve ser repetida nesta missão. Segurança, isolamento, testes e documentação continuam obrigatórios. Não iniciar outras frentes sem autorização.
-
+> **ATUALIZAÇÃO VINCULANTE — GOVERNANÇA ANTIGRAVITY & HOMOLOGAÇÃO NSIS (18/11/2026):**
+> - **Toolchain oficial:** `Node v22.23.4`, `npm 10.9.9`, `Electron 45.2.3`, `TypeScript 5.8.3`, `Python >= 3.8`.
+> - **Workspace oficial:** `C:\Dev\meu-financeiro` (worktrees em `C:\Dev\meu-financeiro-worktrees\*`). Preservar intacto o workspace OneDrive (`Carbon Meu Financeiro`) e os perfis pessoais/estáveis do Windows.
+> - **Estrutura persistente Antigravity:** ler obrigatoriamente [.agents/rules/](.agents/rules/00-permanent-nsis-homologation.md), [.agents/skills/](.agents/skills/qa-guardian-sqlite/SKILL.md) e utilizar `python .agents/scripts/run_workflow.py` para o ciclo de 7 estágios (`Descoberta → Projeto → Implementação → Teste → Correção → Auditoria → Entrega`).
+> - **Diretriz Permanente — Homologação por Marco:** o único formato de distribuição é **Instalador NSIS Windows x64** (`--win nsis --x64`). Versão **Portable** está permanentemente fora de escopo. Todo marco com mudança funcional só é concluído após **Nível A (técnico) + Nível B (Electron interativo real) + autorização + Nível C (aplicativo NSIS realmente instalado em ambiente isolado)** e revisão independente (`pro` para Arquitetura/Guardião SQLite/Auditor Forense; `flash` para execução/testes).
+> - **Memória permanente no GitHub:** atualizar documentos canônicos existentes no mesmo PR sem duplicar documentação.
 
 **Instruções obrigatórias para qualquer agente/IA com acesso ao repositório.**
 
 ## Antes de trabalhar
 
-1. Ler [docs/ai-context/README.md](docs/ai-context/README.md) e [docs/ai-context/CURRENT_STATE.md](docs/ai-context/CURRENT_STATE.md).
+1. Ler [docs/ai-context/README.md](docs/ai-context/README.md), [docs/ai-context/CURRENT_STATE.md](docs/ai-context/CURRENT_STATE.md) e todas as regras em [.agents/rules/](.agents/rules/00-permanent-nsis-homologation.md).
 2. Consultar [docs/ai-context/ACTIVE_WORK.md](docs/ai-context/ACTIVE_WORK.md) para identificar PRs e ownership; conferir branch e SHA atuais.
 3. Ler [docs/ROADMAP_MF2.md](docs/ROADMAP_MF2.md), [docs/ai-context/ARCHITECTURE.md](docs/ai-context/ARCHITECTURE.md) e [docs/ai-context/GAPS_AND_GATES.md](docs/ai-context/GAPS_AND_GATES.md).
-4. **Rodada A é ANÁLISE**: seguir [docs/ai-context/ANALYSIS_PLAYBOOK.md](docs/ai-context/ANALYSIS_PLAYBOOK.md), inspecionar, pesquisar, propor e documentar; **não iniciar implementação por conta própria**.
-5. **Rodada B é EXECUÇÃO**: só após autorização de escopo, seguir gates e prompts delimitados. Ver [docs/ai-context/WORK_PROMPT.md](docs/ai-context/WORK_PROMPT.md).
+4. **Análise antes de execução em frentes não aprovadas:** inspecionar, pesquisar, propor e documentar; **não iniciar implementação de marcos futuros sem autorização explícita do proprietário**.
+5. **Execução autorizada:** seguir gates, regras de escritor único e prompts delimitados. Ver [docs/ai-context/WORK_PROMPT.md](docs/ai-context/WORK_PROMPT.md).
 
 ## Regra inegociável de documentação
 

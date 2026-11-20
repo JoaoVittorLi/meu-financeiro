@@ -1,7 +1,6 @@
-# Prompts oficiais para múltiplos chats e Work — Meu Financeiro 2.0
+# Diretrizes e Prompts Operacionais — Meu Financeiro
 
-> **Missões atualizadas, 12/11/2026:** para os executores de Redesign Premium e Inteligência Operacional, NÃO utilizar os prompts antigos de auditoria como primeira etapa. Ler [Fast Lane](FAST_LANE_20261112.md), [contrato IC v1](INTELLIGENCE_UI_CONTRACT_V1.md), [backlog](FAST_LANE_BACKLOG.md) e acompanhar [issue #49](https://github.com/JoaoVittorLi/meu-financeiro/issues/49). Esta alteração autoriza código em escopos R/I aprovados, não release nem escrita pessoal pela IA.
-
+> **Atualização Antigravity / Argon (18/11/2026):** Utilize [.agents/rules/](../../.agents/rules/00-permanent-nsis-homologation.md), [.agents/skills/](../../.agents/skills/qa-guardian-sqlite/SKILL.md) e `python .agents/scripts/run_workflow.py` para coordenar subagentes (`pro` para Arquitetura/IA/Design/Guardião SQLite/Auditor Forense; `flash` para execução/testes). Mantenha `MF_QA_SYNTHETIC=1`, formato único NSIS x64, e atualização contínua dos docs canônicos sem criar duplicatas. Os prompts históricos do ChatGPT/Work abaixo permanecem apenas como referência de legado.
 
 O proprietário utiliza ChatGPT Plus e prefere usar Work com eficiência. **Chat arquiteto** prepara roadmap, pesquisa, especificação e auditoria; **Work** executa inspeção em software, código, testes, alterações e PR. Não gastar sessão Work com discussão que pode ser feita no Chat. Estas recomendações são operacionais: limites e consumo variam; não há economia porcentual garantida.
 
