@@ -1,6 +1,37 @@
-# Estado comprovado do projeto — 09/11/2026
+# Estado comprovado do projeto — atualizado em 19/11/2026
 
-**Natureza:** snapshot de auditoria por GitHub, não telemetria ao vivo. Uma execução Work intitulada "Meu Financeiro - Definitivo" pode ter mudanças locais não publicadas; **não foram acessadas** nesta auditoria. Revalidar SHA/PR antes de qualquer execução.
+> **Reconciliação oficial de marcos (19/11/2026):**
+> - `M1_IMPLEMENTATION_COMPLETE` — escopo funcional do Marco 1 (`CAT-P0 Opção A`, `CAT-UX 01–06`, `D05 14×61`, `B01–B05`, `I2/I3-01`, `RC2.2/2.3` e `M1.1` Visão Geral) integrado nesta branch (`PR #105`).
+> - `M1_TECHNICALLY_HOMOLOGATED` — patch experimental `M1.1` (`0.9.5-beta.9`) homologado em Nível A + B + C (`15/15` PASS) em `b7a3d8a` (docs consolidados em `ffc70f2`).
+> - `V1_STABLE_RELEASE_PENDING` — candidata estável preparada em branch isolada `release/v1.0.0-rc.1-candidate-20261119` (`1a22181e6adcb52cca214922821b9f265b76c753`, `v1.0.0-rc.1`), com `test:types`, `compile`, `build-preload check`, `check-bundle` (`31`), `test:db` (`1006/1006` PASS, `0` skipped), `mobile-push` (`133/133`), `test:asar` (`1/1`), `provenance:verify` (`23` arquivos), `test:electron-smoke` e `dist:windows:stable` (`verify-asar` + `asar-stable-verification.json`: `mfDistributionChannel="stable"`, `productName="Meu Financeiro"`, `d05Parents=14`, `d05Subcategories=61`, `svgGlyphs=67`, `approvedForPersonal=false`, `financialDataEnabled=false`, `paidApiFallback=false`); instalador `C:\Dev\releases\V1-STABLE-RC1\MeuFinanceiro-Instalador-1.0.0-rc.1-x64.exe` (`115.734.512` bytes, `SHA-256` `7dd641f3680ee38c34859593af31bb9d336d36793c7a0b320deeba18fb0e352e`), sem instalação/execução local para proteger `%APPDATA%\meu-financeiro-desktop`. Bloqueios para GO definitivo `1.0.0`: Nível C do pacote `stable` em Windows limpo/VM isolada e decisão humana na issue `#71`.
+> - `M2_IN_PROGRESS` — trilha paralela do Copiloto Financeiro F1–F5 (`feat/mf2-intelligence-3-0-copilot-20261118` @ `e3c153cb00b3bc9c5bc4f7e8e53f296ba98214a6`); **o Marco 2 não bloqueia a promoção da v1.0.0**.
+
+**Natureza:** registro factual vinculado ao repositório e às execuções verificadas em disco no workspace isolado `C:\Dev\meu-financeiro`. Nunca promove `NOT_RUN` ou `BLOCKED` a `PASS`.
+
+## Estado Consolidado — Marco 1 (v1.0.0 / PR #105)
+
+- **Repositório:** `JoaoVittorLi/meu-financeiro`
+- **Branch ativa do Marco 1:** `feat/mf1-cat-p0-consolidation-20261117` (PR #105, empilhado sobre `#104` / `#100` / `#96` / `#94`)
+- **Baseline preservada no remoto antes da Iteração 8:** `6e15914c4c27e0623a7f41cf568175bf6070f735` (publicada em `origin/feat/mf1-cat-p0-consolidation-20261117`).
+- **Branch `main`:** intacta em `e0d5131ebeda855a792614d9986f40e5bb94af5e` (`v0.9.4`, sem merge nem tags).
+- **Formato único de distribuição:** **Instalador NSIS Windows x64** (`--win nsis --x64`). Versão **Portable** descartada permanentemente.
+  - **Estado atual (Marco 1 aprovado em `M1-BASELINE` + Patch Visual `M1.1` Rodada Final `0.9.5-beta.9` [`b7a3d8a`]: `TECHNICALLY_HOMOLOGATED — OWNER_VISUAL_ACCEPTANCE_PENDING`):**
+    - **Aprovação formal de M1-BASELINE (preservado):** o proprietário aprovou formalmente o Marco 1 experimental (`0.9.5-beta.8`, `fe2b3186` / docs `c0351d3`, SHA-256 `e96e0604c931d063509e673372552f2a35010f137bb4f88735297c0f1dac6110`), preservado intacto em `C:\Dev\releases\M1-BASELINE\` e no Google Drive privado (`Meu Financeiro/M1-BASELINE`).
+    - **Instalador NSIS anterior (`M1.1` pré-refinamento, `f60f319f`):** `MeuFinanceiro-Instalador-0.9.5-beta.9-x64.exe` (`115.740.284` bytes, SHA-256 `934690ca...3a47`) permanece arquivado intacto em `C:\Dev\releases\M1.1-VISUAL\` e no Google Drive privado.
+    - **Homologação técnica completa da rodada final `M1.1` (`b7a3d8afcb00b4e0ef84148169fa010bcd156175`, `0.9.5-beta.9`):**
+      - **Build NSIS & Proveniência:** `MeuFinanceiro-Instalador-0.9.5-beta.9-x64.exe` (`115.740.811` bytes, SHA-256 `9d515411a8ef362c8f01ce58d95759fdcbd892e9af3e425c0292f9ddd7606be1`), `SHA256.txt` (`112` bytes) e `renderer-provenance.json` (`5.867` bytes) arquivados em `C:\Dev\releases\M1.1-VISUAL-b7a3d8a\`; `verify-asar` PASS (`PASS: ASAR corresponde byte a byte ao renderer compilado e testado.`).
+      - **Nível C no EXE instalado (`C:\Dev\mf-nsis-test-install`, perfil sintético isolado):** `14/14` jornadas `PASS` (`FAIL: 0`, `RuntimeIssues: 0`), `d05Parents: 14`, `d05Subcategories: 61`, `svgCount: 67`, `DB integrity: ok`, `integerCentsOnly: true`, `HOST_FOLDERS_UNTOUCHED: True`. Verificação visual direta no EXE instalado (`installed-overview-verification.json` + PNGs `1920x1080-light`, `1366x768-dark`, `1024x720-light`): `hitCheck.same === true` em `.mf-source-panel`, ícones D05 exatos nos 5 itens demo (`Assinaturas:282`, `Internet e telefone:193`, `Transporte:205`, `Supermercado:26`, `Aluguel:264`), `overflow: false`, `HOST_FOLDERS_UNTOUCHED_VISUAL: True`.
+      - **Pareceres independentes (`pro`):** pré-build Visual (`APPROVE`, `3438b05d`) + pré-build Forense (`APPROVE`, `b455da1a`) + pós-Nível C Forense (`GO`, `b455da1a`).
+      - **Entrega privada no Google Drive (acesso restrito ao proprietário):** pasta `Meu Financeiro/M1.1-VISUAL-b7a3d8a` (ID `1QPHFjnhNk7hH6b7JVZKK7R7fiirav0eY`), contendo `MeuFinanceiro-Instalador-0.9.5-beta.9-x64.exe` (ID `1HjUAbskvcTXEuvDIBBEDvl-EOPfyaJvX`, `DRIVE_HASH_MATCH: True`), `SHA256.txt` (ID `1reRmmmqvjBKuFhGx81BBTwHM7g0ype4w`) e `renderer-provenance.json` (ID `1JKJovYsr0vNMLtO9I2rNg2yzXHBz-RC0`).
+  - **Restrições ativas preservadas:** `approvedForPersonal() === false` (`electron/main.cjs`, `electron/d05-personal-gate.cjs`), `financialDataEnabled: false` (`shared/ai-policy.mjs`), dados sintéticos exclusivos (`MF_QA_SYNTHETIC=1`), `main` intacta em `v0.9.4` sem merge/tags.
+
+## Próximo Passo
+- **Frente v1.0.0 (`V1_STABLE_RELEASE_PENDING`):** validar o instalador estável `C:\Dev\releases\V1-STABLE-RC1\MeuFinanceiro-Instalador-1.0.0-rc.1-x64.exe` (`release/v1.0.0-rc.1-candidate-20261119` @ `1a22181e6adcb52cca214922821b9f265b76c753`, `SHA-256` `7dd641f3680ee38c34859593af31bb9d336d36793c7a0b320deeba18fb0e352e`) em VM Windows limpa (Nível C `stable`) e colher aprovação expressa do proprietário na issue `#71` antes de merge na `main` ou tag `v1.0.0`.
+- **Frente Marco 2 (`M2_IN_PROGRESS`, não bloqueante para 1.0.0):** concluída a implementação integrada das fatias F1–F5 na worktree `C:\Dev\meu-financeiro-worktrees\m2-copilot` (`feat/mf2-intelligence-3-0-copilot-20261118` @ `e3c153cb00b3bc9c5bc4f7e8e53f296ba98214a6`) com `APPROVE` duplo dos auditores `pro` (Visual e Forense/Financeiro), seguindo para empacotamento/Nível C experimental isolado.
+
+---
+
+## Histórico Anterior — Snapshot de Auditoria de 09/11/2026 & Checkpoint 12/11/2026
 
 ## Resumo executivo
 

@@ -35,7 +35,7 @@ function boot(){
  let fault=null;
  const auto=new D05AutoCategorization({finance:()=>db,backupDirectory:()=>path.join(root,'backups'),
   fault:(where,count)=>{if(typeof fault==='function')fault(where,count);}});
- return {root,file,db,auto,rowsA,d05,fail:fn=>fault=fn,close:()=>{db.close();fs.rmSync(root,{recursive:true,force:true});}};
+ return {root,file,db,auto,rowsA,d05,fail:fn=>fault=fn,close:()=>{if(db.db?.isOpen)db.close();fs.rmSync(root,{recursive:true,force:true});}};
 }
 const sandbox=async fn=>{const e=boot();try{return await fn(e);}finally{e.close();}};
 test('P0 consent is off by default and requires MAIN owner approval, scoped account and dates',()=>sandbox(async e=>{
@@ -81,7 +81,8 @@ test('P0 idempotent replay and incremental sync never duplicate labels or receip
  assert.equal(e.db.db.prepare("SELECT COUNT(*) AS n FROM mf_auto_receipts WHERE action='apply'").get().n,625);
  e.db.ingestBank(ITEM_A,{item:{status:'UPDATED'},data:[{account:{
   id:ACCOUNT_A,name:'CONTA FICTÍCIA A',type:'CHECKING',currencyCode:'BRL'},transactions:[
-   gen('a-25','MERCADO BOA PRACA REF 25',25),gen('incremental-1','MERCADO BOA PRACA NOVA COMPRA',13)
+   gen('a-25','MERCADO BOA PRACA REF 25',25),
+   {...gen('incremental-1','MERCADO BOA PRACA NOVA COMPRA',13),amount:-177.77}
   ]}]});
  const next=await e.auto.apply();
  assert.equal(next.applied,1);assert.equal(e.auto.status().counts.classified,626);

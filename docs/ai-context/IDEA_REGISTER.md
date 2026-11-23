@@ -35,7 +35,21 @@ Status permitidos: PROPOSTA, EM_ANALISE, RECOMENDADA, ADOTADA, SUBSTITUIR_EXISTE
 
 A IA responsável pela análise deverá adicionar ou substituir propostas **após observar o produto**; não deve apenas reempacotar esta tabela. Para cada ideia relevante: descrição do fluxo antes/depois, telas, contratos, testes necessários, valor percebido, custo relativo, risco, dependência, fonte de referência e alternativas. Produzir três propostas de maior impacto e três de maior criatividade, identificando sobreposição para simplificar o escopo.
 
-## Decisões ainda não tomadas
+## Decisões e Oportunidades Priorizadas (Atualização 18/11/2026 — Pesquisa Competitiva M2–M5)
+
+*(Sem adição de abas gratuitas; todo cálculo financeiro deriva do `shared/finance-period-ledger.mjs` e SQLite local em centavos inteiros. Nenhuma gravação pessoal pela IA é habilitada antes do Marco 5.)*
+
+| ID | Oportunidade de Inovação | Origem Competitiva | Destino no Roadmap | Status |
+|---|---|---|---|---|
+| **INOV-01** | **Detetive Financeiro Verificável (`F1`) + Evidências Consultáveis**: decomposição de variação por período/D05/estabelecimento com IDs rastreáveis e `dataVersion`. | Monarch AI + Copilot Cash Flow | **Marco 2 (`F1`)** | **AUTORIZADA_POS_M1** |
+| **INOV-02** | **Consultor de Economia Anti-Dupla-Contagem (`F2`)**: metas de economia com cenários graduais e oportunidades não sobrepostas (evita somar categoria + subcategoria + estabelecimento). | YNAB Targets + Origin/Cleo | **Marco 2 (`F2`)** | **AUTORIZADA_POS_M1** |
+| **INOV-03** | **Radar Local de Recorrências, Hábitos & Delta de Preço (`F3`)**: custo anual, hábitos frequentes e variação silenciosa de assinatura 100% local (sem comissão de 30–60%). | Rocket Money Subscriptions | **Marco 2 (`F3`) / M3** | **AUTORIZADA_POS_M1** |
+| **INOV-04** | **Simulador Conversacional com Saldo Confirmado vs Previsão (`F4`)**: simulação à vista/parcelado até 36x e ajuste orçamentário preservando reserva mínima. | Simplifi Projected Cash Flow + Laboratório | **Marco 2 (`F4`)** | **AUTORIZADA_POS_M1** |
+| **INOV-05** | **Reconstrutor Determinístico de Parcelas Futuras & Faturas BR**: projeta parcelas restantes (*parcelado*) que o Open Finance BR omite até fechar a fatura. | Lacuna verificada Mobills/Organizze BR | **Marco 3** | **RECOMENDADA (Pós-M2)** |
+| **INOV-06** | **Orçamento Flexível em 2 Velocidades + Isolamento de Juros de Cartão**: modo simples + camada opcional *Fixos / Não-Mensais / Flex*. | Monarch Flex + YNAB Credit Interest | **Marco 3** | **RECOMENDADA (Pós-M2)** |
+| **INOV-07** | **Pareamento Inteligente de Pix Próprio & Reembolsos + Copiloto Diff/Backup/Recibo**: anti-dupla contagem + escrita assistida reversível. | Copilot + `D05PersonalWriteGateway` | **Marco 4 / Marco 5** | **BLOQUEADA_ESCRITA_M5** |
+
+## Decisões ainda não tomadas (Histórico 09/11/2026)
 
 - Quais ideias entram no 2.0 além do escopo essencial e quais devem esperar 2.1?
 - Qual a melhor arquitetura de personalização do dashboard com mínimo de fragilidade?

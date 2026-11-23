@@ -19,14 +19,14 @@ jobs:
       - name: Instalar dependências
         shell: pwsh
         run: npm install --no-audit --no-fund
-      - name: Testar banco SQLite e compilar executáveis
+      - name: Testar banco SQLite e compilar instalador NSIS
         shell: pwsh
         run: npm run dist:windows
-      - name: Conferir os dois EXEs e criar hashes SHA256
+      - name: Conferir o instalador NSIS e criar hash SHA256
         shell: pwsh
         run: |
           $executables = @(Get-ChildItem -Path release -Filter '*.exe' -File)
-          if ($executables.Count -ne 2) { throw "Esperados 2 EXEs (portátil e instalador); encontrados $($executables.Count)" }
+          if ($executables.Count -ne 1) { throw "Esperado 1 EXE instalador NSIS; encontrados $($executables.Count)" }
           $executables | Get-FileHash -Algorithm SHA256 |
             ForEach-Object { "$($_.Hash)  $(Split-Path $_.Path -Leaf)" } |
             Set-Content -Path release/SHA256.txt -Encoding utf8

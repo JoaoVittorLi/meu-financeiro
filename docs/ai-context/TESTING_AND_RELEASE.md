@@ -1,5 +1,15 @@
 # Plano verificável de testes, builds e releases
 
+**Atualização obrigatória de política (18/11/2026 — NSIS-Only & Níveis A/B/C):**
+- **Formato único de distribuição Windows:** **Instalador NSIS Windows x64** (`--win nsis --x64`, `MeuFinanceiro-Instalador-<versão>-x64.exe`). A versão **Portable** foi removida permanentemente de `package.json`, `.github/workflows/build-windows.yml`, `scripts/build-stable-windows.cjs` e `scripts/preview-windows-local.ps1`.
+- **Três níveis independentes (nenhum substitui o outro):**
+  1. **Nível A (Técnico):** `npm run test:types`, `npm run compile`, `node scripts/build-preload.cjs check`, `node scripts/renderer-provenance.cjs check-bundle`, `npm run test:asar`, `MF_QA_SYNTHETIC=1 npm run test:db`, `npm --prefix mobile-push test`, `npm run provenance:create`, `npm run provenance:verify`.
+  2. **Nível B (Electron em desenvolvimento):** com `MF_QA_SYNTHETIC=1` e `MF_REAL_PROFILE`/`PLUGGY_*` ausentes, executar `npm run test:electron-smoke` + `node scripts/verify-visual-matrix.cjs` (32 PNGs) e `node scripts/nivel-b-interactive-qa.cjs` (`PJ-01..09`, `NJ-01..05` pela UI real com fechar/reabrir e conferência UI + SQLite).
+  3. **Nível C (Aplicativo NSIS realmente instalado):** somente após aprovação do proprietário e verificação prévia de isolamento no host Windows (ou VM descartável). Gerar NSIS (`npx electron-builder --win nsis --x64 --publish never`), registrar SHA-256, instalar em diretório isolado (ex.: `C:\Dev\mf-nsis-test-install`), executar o binário instalado com `MEU_FINANCEIRO_EXPERIMENTAL_USER_DATA_DIR=C:\Dev\mf-nsis-test-userdata` e `MF_QA_SYNTHETIC=1`, comprovar processo e SQLite isolados, executar jornadas interativas reais com restart, testar rejeição de overrides protegidos e confirmar preservação total da instalação estável e perfis pessoais. Preservar cada baseline homologada separada (`C:\Dev\releases\M1-BASELINE\`, etc.).
+- **Orquestrador de estágios:** `python .agents/scripts/run_workflow.py --marco MF1 --stage all --synthetic --run-nivel-b` (bloqueia Nível C sem `--owner-approved-nsis --approval-ref <id>`).
+
+---
+
 Este arquivo especifica comandos **presentes no repo** e a diferença entre evidência de código, de CI e de uso real. Não afirma que foram executados durante a criação da documentação.
 
 ## Desktop — Node 22 / TypeScript 5.8.3

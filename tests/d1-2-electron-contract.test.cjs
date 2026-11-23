@@ -23,7 +23,8 @@ test('D1.2 — Windows pipeline executes the real Electron smoke without bypassi
  const smoke=win.indexOf('run test:electron-smoke'),dist=win.indexOf('run dist:windows');
  assert(smoke>0&&dist>smoke);
  assert.match(win,/Assert-Success 'Smoke Electron D1\.2 real e isolado'/);
- assert.match(win,/Assert-Success 'npm run dist:windows'/);
+ assert.match(win,/\$buildScript = if \(\$Stable\) \{ 'dist:windows:stable' \} else \{ 'dist:windows' \}/);
+ assert.match(win,/& \$npmExecutable run \$buildScript\s*\nAssert-Success \$buildScript/);
  assert.match(win,/renderer-provenance\.cjs verify-asar/);
  assert.match(win,/SHA256\.txt/);
 });

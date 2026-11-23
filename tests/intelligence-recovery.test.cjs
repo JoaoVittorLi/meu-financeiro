@@ -3,6 +3,9 @@ const test=require('node:test'),assert=require('node:assert/strict'),fs=require(
 const {FinanceDB}=require('../electron/db.cjs'),{PlanningStore}=require('../electron/planning.cjs');
 const {LocalFinancialIntelligence}=require('../electron/financial-intelligence.cjs'),{CategoryReviewService}=require('../electron/category-review.cjs'),{CategoryReviewBackupGate}=require('../electron/category-review-backup.cjs');
 const {restoreBackup}=require('../electron/recovery.cjs'),{seedQ1}=require('../scripts/q1-fixture.cjs');
+const {D05AutoCategorization}=require('../electron/d05-auto-categorization.cjs');
+const {D05AutoLocalScheduler}=require('../electron/d05-auto-local-scheduler.cjs');
+const {D05AutoPreview}=require('../electron/d05-auto-preview.cjs');
 for(const synthetic of [false,true])for(const recovered of [false,true])test('restored SQLite rebinds intelligence and invalidates old grants; synthetic='+synthetic+', recovered='+recovered,async()=>{
  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'mf-recovery-service-'));seedQ1(dir);
  const file=path.join(dir,'meu-financeiro.sqlite');let db=new FinanceDB(file);
@@ -20,10 +23,12 @@ for(const synthetic of [false,true])for(const recovered of [false,true])test('re
    IntelligenceOperational:require('../electron/intelligence-operational.cjs').IntelligenceOperational,
    IC2ReadQueryGateway:require('../electron/intelligence-ic2-adapter.cjs').IC2ReadQueryGateway,
    RCCategoryGateway:require('../electron/intelligence-category-rc.cjs').RCCategoryGateway,
+   D05AutoCategorization,D05AutoLocalScheduler,D05AutoPreview,
+   autoCategory:null,autoScheduler:null,autoPreviewService:null,
    d05PersonalGate:null,d05Gate:null,categoryRC:null,
    smokeProfileActive:synthetic,path,app:{getPath:()=>dir}});
   vm.runInContext(source.slice(start,bindEnd+'\n bindLocalFinancialServices();'.length)+
-   ';this.services=()=>({localFinancial,categoryReview,reviewBackupGate,operationalIntelligence,ic2ReadQuery,categoryRC});this.rebind=bindLocalFinancialServices;',c);
+   ';this.services=()=>({localFinancial,categoryReview,reviewBackupGate,operationalIntelligence,ic2ReadQuery,categoryRC,autoCategory,autoScheduler,autoPreviewService});this.rebind=bindLocalFinancialServices;',c);
   const before=c.services(),read=before.localFinancial.authorize({consent:'LOCAL_FINANCIAL_READ_V1',source:'bank',profile:'real',planning:true},1);
   assert(before.ic2ReadQuery instanceof require('../electron/intelligence-ic2-adapter.cjs').IC2ReadQueryGateway);
   assert.equal(before.ic2ReadQuery.local,before.localFinancial);
@@ -40,7 +45,13 @@ for(const synthetic of [false,true])for(const recovered of [false,true])test('re
   if(synthetic){before.reviewBackupGate.pending.set('in-flight',Promise.resolve());await assert.rejects(handler({sender:{id:1}}),/Conclua/);before.reviewBackupGate.pending.clear();}
   if(recovered)await assert.rejects(handler({sender:{id:1}}),/Synthetic recovered failure/);else await handler({sender:{id:1}});
   db=c.db;assert.equal(reloads,recovered?0:1);
-  const after=c.services();assert.notEqual(after.ic2ReadQuery,before.ic2ReadQuery);
+  const after=c.services();
+  assert.notEqual(after.autoCategory,before.autoCategory,'Restoration must invalidate previous D05 writer binding');
+  assert.notEqual(after.autoScheduler,before.autoScheduler,'Restoration must replace recurring scheduler');
+  assert.notEqual(after.autoPreviewService,before.autoPreviewService,'Restoration must discard old previews');
+  assert.equal(after.autoScheduler.engine(),after.autoCategory,'Scheduler must use restored D05 engine');
+  assert.equal(after.autoPreviewService.engine(),after.autoCategory,'Preview must use restored D05 engine');
+  assert.notEqual(after.ic2ReadQuery,before.ic2ReadQuery);
   assert.equal(after.ic2ReadQuery.local,after.localFinancial);
   assert.equal(after.categoryRC,before.categoryRC);
   assert.equal(after.categoryRC.finance,db);
