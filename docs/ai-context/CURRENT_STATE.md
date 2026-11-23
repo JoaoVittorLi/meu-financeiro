@@ -1,10 +1,13 @@
-# Estado comprovado do projeto — atualizado em 19/11/2026 (Início do Marco 3)
+# Estado comprovado do projeto — atualizado em 23/11/2026 (Marco 3 Integral + Candidata Estável 1.0.0)
 
-> **Roadmap Oficial Revisado (19/11/2026):**
+> **Roadmap Oficial Atualizado (23/11/2026):**
 > - **M1 — Fundação Financeira:** implementação concluída e homologação técnica registrada (`PR #105` `61d9b81`, `M1.1` `b7a3d8a`, candidata `v1.0.0-rc.1` `1a22181e`, `SHA-256` `7dd641f3680ee38c34859593af31bb9d336d36793c7a0b320deeba18fb0e352e`).
-> - **M2 — Inteligência Financeira 3.0:** homologação experimental concluída (`e3c153c` / docs `6b9c9ad`, `PR Draft #107`, Nível C `15/15` + `VEREDITO: GO`); aceite funcional final do proprietário separado.
-> - **M3 — Copiloto com Ações Financeiras Supervisionadas (NOVA PRIORIDADE — AUTORIZADO PARA IMPLEMENTAÇÃO S0→S5):** escrita supervisionada (`D05PersonalWriteGateway`), `GPT-6.2 Sol` (`gpt-6.2-sol`), **`M3-SALARY`** (orçamento inteligente por salário), regras por conta (`rule.save`), Planejamento/Orçamentos por conversa e entrega consolidada **M1 + M2 + M3 na versão estável 1.0.0** na worktree isolada `C:\Dev\meu-financeiro-worktrees\m3-supervised-copilot` (`feat/mf3-supervised-copilot-1-0-0-20261119`).
-> - **M4 — Planejamento Preditivo e Conciliação:** backlog pós-M3. **Multidispositivo / PWA / Cloudflare:** desenvolvimento congelado para descontinuação futura (sem remoção de código/testes compartilhados sem inventário/autorização; **Pluggy/Open Finance desktop mantido ativo**).
+> - **M2 — Inteligência Financeira 3.0:** homologação experimental concluída (`e3c153c` / docs `6b9c9ad`, `PR Draft #107`, Nível C `15/15` + `VEREDITO: GO`); integrado na linha `1.0.0`.
+> - **M3 — Copiloto com Ações Financeiras Supervisionadas (`feat/mf3-supervised-copilot-1-0-0-20261119`, versão `1.0.0`):** fatias **S0–S5** implementadas e integradas (`D05PersonalWriteGateway` estendido com recibos/desfazer em S1..S4, **`M3-SALARY`** completo com `monthly_budgets`, 6m/3m, outliers, travas e redistribuições, regras futuras por conta com `afterRowid`, estrutura D05, Planejamento/Orçamentos/F4→Planejamento, continuidade multi-turno em memória `CopilotSessionContext`, e serviço **`gpt-6.2-sol`** `CopilotInferenceService` com contexto mínimo agregado via OAuth e zero fallback pago). Coexistência verificada com **CAT-P0** no canal `stable`.
+> - **Checkpoints dependentes do proprietário (honestidade explícita):**
+>   - **Nível C (instalador estável `1.0.0` instalado no Windows isolado):** `BLOCKED_NEEDS_ISOLATED_WINDOWS_ENV` — a sessão automatizada não executa o instalador estável sob a conta `joaov` para proteger o `%APPDATA%\Meu Financeiro` pessoal real.
+>   - **J7 (`gpt-6.2-sol` ao vivo com assinatura ChatGPT):** `NEEDS_OWNER_CHATGPT_LOGIN` — testado com mock determinístico (`TESTADO_COM_MOCK`), sem login OAuth interativo ao vivo do proprietário nesta máquina.
+> - **M4 — Planejamento Preditivo e Conciliação:** backlog pós-1.0.0 (fora de escopo). **Multidispositivo / PWA / Cloudflare:** congelado; **Pluggy/Open Finance desktop ativo.**
 
 **Natureza:** registro factual vinculado ao repositório e às execuções verificadas em disco no workspace isolado `C:\Dev\meu-financeiro`. Nunca promove `NOT_RUN` ou `BLOCKED` a `PASS`.
 

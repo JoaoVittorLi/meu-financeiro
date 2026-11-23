@@ -425,4 +425,209 @@ test('V1-STABLE-03: AI policy locks and build-stable-windows contract match v1.0
   assert.equal(pkg.build.appId, EXPERIMENTAL_ID, 'package.json must keep experimental appId by default');
   assert.equal(STABLE_ID, 'app.local.meufinanceiro');
   assert.equal(STABLE_NAME, 'Meu Financeiro');
+  assert.equal(pkg.version, '1.0.0');
+});
+
+test('V1-STABLE-04: M3 S1-S5 supervised IPC lifecycle, F4-to-plan, GPT-6.2 Sol opt-in gate, and undo coexist with CAT-P0 on stablePackaged=true', async () => {
+  const h = await bootStableMainHarness({ seedCurrentDir: true });
+  try {
+    h.setMessageBox(async () => ({ response: 1 }));
+    const enabled = await h.invoke('copilot:action-capability-enable');
+    assert.equal(enabled.enabled, true);
+
+    const readGrant = await h.invoke('finance:read-authorize', {
+      source: 'bank',
+      profile: 'real',
+      planning: true,
+      consent: 'LOCAL_FINANCIAL_READ_V1'
+    });
+    const month = '2026-11';
+
+    // S2 + S5: Multi-turn salary budget proposal -> refinement -> prepare -> confirm (month-only) -> undo
+    const d1 = await h.invoke('copilot:action-interpret', {
+      token: readGrant.token,
+      source: 'bank',
+      profile: 'real',
+      month,
+      question: 'Meu salário este mês é R$ 7.000, reorganize meus orçamentos.'
+    });
+    assert.equal(d1.contract, 'MF3/SALARY-BUDGET-PROPOSAL-V1');
+    assert.equal(d1.status, 'ready');
+    assert.equal(d1.revision, 1);
+
+    const d2 = await h.invoke('copilot:action-interpret', {
+      token: readGrant.token,
+      source: 'bank',
+      profile: 'real',
+      month,
+      question: 'Gostei, mas quero guardar R$ 200 a mais.'
+    });
+    assert.equal(d2.status, 'ready');
+    assert.equal(d2.revision, 2);
+
+    const d05Sess = await h.invoke('d05:session-authorize', { profile: 'real' });
+    await h.invoke('d05:account-authorize', { sessionToken: d05Sess.token, accountId: ACCOUNT_A });
+
+    const salPrep = await h.invoke('copilot:action-prepare', {
+      sessionToken: d05Sess.token,
+      action: 'budgets.reorganize',
+      profile: 'real',
+      month,
+      applyRecurring: false,
+      budgets: d2.items.map((x) => ({ category: x.category, amountCents: x.proposedLimitCents }))
+    });
+    assert.equal(salPrep.personalWriteAuthorized, true);
+    const salApp = await h.invoke('copilot:action-confirm', {
+      sessionToken: d05Sess.token,
+      proposalId: salPrep.proposalId,
+      nonce: salPrep.nonce
+    });
+    assert.equal(salApp.status, 'applied');
+    assert.equal(salApp.changesApplied, true);
+
+    // Verify replay idempotency
+    const salReplay = await h.invoke('copilot:action-confirm', {
+      sessionToken: d05Sess.token,
+      proposalId: salPrep.proposalId,
+      nonce: salPrep.nonce
+    });
+    assert.equal(salReplay.status, 'applied');
+    assert.equal(salReplay.replayed, true);
+
+    const salUndo = await h.invoke('copilot:action-undo', {
+      sessionToken: d05Sess.token,
+      proposalId: salApp.receipt.proposalId
+    });
+    assert.equal(salUndo.status, 'undone');
+
+    // S3: Account-scoped future-only rule -> confirm -> undo
+    const rDraft = await h.invoke('copilot:action-interpret', {
+      token: readGrant.token,
+      source: 'bank',
+      profile: 'real',
+      month,
+      question: 'Sempre que aparecer rev-0000, coloque em Transporte'
+    });
+    assert.equal(rDraft.contract, 'MF3/RULE-DRAFT-V1');
+    assert.equal(rDraft.status, 'ready');
+    const rPrep = await h.invoke('copilot:action-prepare', {
+      sessionToken: d05Sess.token,
+      action: 'rule.save',
+      profile: 'real',
+      accountId: ACCOUNT_A,
+      pattern: rDraft.pattern,
+      matchMode: rDraft.matchMode,
+      priority: 100,
+      target: rDraft.target,
+      constraint: { accountId: ACCOUNT_A, nature: rDraft.nature, afterRowid: rDraft.afterRowid }
+    });
+    const rApp = await h.invoke('copilot:action-confirm', {
+      sessionToken: d05Sess.token,
+      proposalId: rPrep.proposalId,
+      nonce: rPrep.nonce,
+      accountId: ACCOUNT_A
+    });
+    assert.equal(rApp.status, 'applied');
+    const rUndo = await h.invoke('copilot:action-undo', {
+      sessionToken: d05Sess.token,
+      proposalId: rApp.receipt.proposalId,
+      accountId: ACCOUNT_A
+    });
+    assert.equal(rUndo.status, 'undone');
+
+    // S4 + F4 continuity: IC2 purchase simulation -> planning.create -> confirm -> undo
+    const simReply = await h.invoke('intelligence:ic2-read-query', {
+      token: readGrant.token,
+      source: 'bank',
+      profile: 'real',
+      month,
+      question: 'Se eu comprar algo de R$ 1.200 em 4x sem juros?'
+    });
+    assert.ok(['ready', 'partial'].includes(simReply.status));
+    const planFromSim = await h.invoke('copilot:action-interpret', {
+      token: readGrant.token,
+      source: 'bank',
+      profile: 'real',
+      month,
+      question: 'Adicione ao planejamento a compra parcelada que acabamos de simular.'
+    });
+    assert.equal(planFromSim.contract, 'MF3/PLANNING-DRAFT-V1');
+    assert.equal(planFromSim.status, 'ready');
+    assert.equal(planFromSim.fromSimulation, true);
+    assert.equal(planFromSim.count, 4);
+
+    const pPrep = await h.invoke('copilot:action-prepare', {
+      sessionToken: d05Sess.token,
+      action: 'planning.create',
+      profile: 'real',
+      ...planFromSim.payload
+    });
+    const pApp = await h.invoke('copilot:action-confirm', {
+      sessionToken: d05Sess.token,
+      proposalId: pPrep.proposalId,
+      nonce: pPrep.nonce
+    });
+    assert.equal(pApp.status, 'applied');
+    assert.equal(pApp.receipt.result.createdIds.length, 4);
+    const pUndo = await h.invoke('copilot:action-undo', {
+      sessionToken: d05Sess.token,
+      proposalId: pApp.receipt.proposalId
+    });
+    assert.equal(pUndo.status, 'undone');
+
+    // GPT-6.2 Sol Copilot capability opt-in & revoke gate
+    const aiBefore = await h.invoke('ai:copilot-capability-status');
+    assert.equal(aiBefore.enabled, false);
+    assert.equal(aiBefore.model, 'gpt-6.2-sol');
+    assert.equal(aiBefore.paidApiFallback, false);
+    await assert.rejects(
+      () => h.invoke('ai:copilot-ask', { token: readGrant.token, source: 'bank', profile: 'real', month, question: 'Resumo?' }),
+      /Ative a inferência GPT-6\.2 Sol/
+    );
+    const aiOn = await h.invoke('ai:copilot-capability-enable');
+    assert.equal(aiOn.enabled, true);
+    const aiOff = await h.invoke('ai:copilot-capability-revoke');
+    assert.equal(aiOff.enabled, false);
+  } finally {
+    await h.close();
+  }
+});
+
+test('V1-STABLE-05: M3 native cancel and invalid nonce leave SQLite completely unchanged', async () => {
+  const h = await bootStableMainHarness({ seedCurrentDir: true });
+  try {
+    h.setMessageBox(async () => ({ response: 1 }));
+    await h.invoke('copilot:action-capability-enable');
+    const d05Sess = await h.invoke('d05:session-authorize', { profile: 'real' });
+    const prep = await h.invoke('copilot:action-prepare', {
+      sessionToken: d05Sess.token,
+      action: 'category.create',
+      profile: 'real',
+      name: 'Categoria Cancelada'
+    });
+
+    // Wrong nonce rejected safely
+    const bad = await h.invoke('copilot:action-confirm', {
+      sessionToken: d05Sess.token,
+      proposalId: prep.proposalId,
+      nonce: 'invalid-nonce'
+    });
+    assert.equal(bad.status, 'stale');
+    assert.equal(bad.changesApplied, false);
+
+    // Owner cancels native confirmation dialog
+    h.setMessageBox(async () => ({ response: 0 }));
+    const denied = await h.invoke('copilot:action-confirm', {
+      sessionToken: d05Sess.token,
+      proposalId: prep.proposalId,
+      nonce: prep.nonce
+    });
+    assert.equal(denied.status, 'denied');
+    assert.equal(denied.changesApplied, false);
+
+    const cats = await h.invoke('categories:status');
+    assert.equal(cats.categories.some((c) => c.name === 'Categoria Cancelada'), false);
+  } finally {
+    await h.close();
+  }
 });

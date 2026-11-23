@@ -23,7 +23,7 @@ test('Windows and PWA beta versions are intentionally identical',()=>{
   const win=JSON.parse(read('package.json'));
   const pwa=JSON.parse(read('mobile-push/package.json'));
   assert.equal(win.version,pwa.version);
-  assert.match(win.version,/^\d+\.\d+\.\d+-beta\.\d+$/);
+  assert.match(win.version,/^\d+\.\d+\.\d+(?:-(?:beta|rc)\.\d+)?$/);
 });
 
 test('Actions only run on opt-in marker while quota is limited',()=>{

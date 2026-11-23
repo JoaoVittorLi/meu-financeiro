@@ -1,13 +1,13 @@
 # Registro de frentes ativas e prevenção de conflitos
 
-## Frente Atual — Marco 3: Copiloto Supervisionado, GPT-6.2 Sol, M3-SALARY e Consolidação Estável 1.0.0 (19/11/2026)
+## Frente Atual — Marco 3 Integral & Candidata Estável 1.0.0 (23/11/2026)
 
-- **Coordenação ativa:** Orchestrator **Argon** (`C:\Dev\meu-financeiro-worktrees\m3-supervised-copilot`, branch `feat/mf3-supervised-copilot-1-0-0-20261119`), ancorado sobre a linha M2 homologada (`6b9c9ad`).
-- **Workspaces isolados:** `C:\Dev\meu-financeiro` (`PR #105`, `61d9b81`); `C:\Dev\meu-financeiro-worktrees\v1-stable-rc` (`release/v1.0.0-rc.1-candidate-20261119` @ `1a22181e`); `C:\Dev\meu-financeiro-worktrees\m2-copilot` (`PR Draft #107`, `6b9c9ad`); `C:\Dev\meu-financeiro-worktrees\m3-supervised-copilot` (`feat/mf3-supervised-copilot-1-0-0-20261119`, frente ativa M3). Workspace OneDrive original (`Carbon Meu Financeiro`) intacto e intocado.
+- **Coordenação ativa:** Orchestrator **Neon** (`C:\Dev\meu-financeiro-worktrees\m3-supervised-copilot`, branch `feat/mf3-supervised-copilot-1-0-0-20261119`), consolidação M1 + M2 + M3 + CAT-P0 na versão **`1.0.0`** (canal **`stable`**).
+- **Workspaces isolados:** `C:\Dev\meu-financeiro` (`PR #105`, `61d9b81`); `C:\Dev\meu-financeiro-worktrees\v1-stable-rc` (`release/v1.0.0-rc.1-candidate-20261119` @ `1a22181e`); `C:\Dev\meu-financeiro-worktrees\m2-copilot` (`PR Draft #107`, `6b9c9ad`); `C:\Dev\meu-financeiro-worktrees\m3-supervised-copilot` (`feat/mf3-supervised-copilot-1-0-0-20261119`, candidata estável `1.0.0`). Workspace OneDrive original (`Carbon Meu Financeiro`) intacto e intocado.
 - **Ownership / Single-Writer:** apenas um executor por vez em arquivos compartilhados (`src/app.ts`, `app/app.js`, `electron/main.cjs`, `electron/preload.cjs`, `electron/db.cjs`, `shared/*`, `docs/ai-context/CURRENT_STATE.md`). Revisão independente obrigatória (Guardião Financeiro/SQLite + Auditor Adversarial `pro`).
-- **Marco 1 (`M1` — Fundação Financeira):** implementação concluída e homologação técnica registrada (`M1.1` `b7a3d8a`, `v1.0.0-rc.1` `1a22181e`, `SHA-256` `7dd641f3680ee38c34859593af31bb9d336d36793c7a0b320deeba18fb0e352e`).
-- **Marco 2 (`M2` — Inteligência Financeira 3.0):** homologação experimental concluída (`e3c153c`, `15/15` Nível B/C, `APPROVE` duplo `pro`, `GO` pós-instalação); aceite funcional final do proprietário separado (`PR Draft #107`).
-- **Marco 3 (`M3` — NOVA PRIORIDADE):** implementação ativa das fatias **S0 → S5** (`D05PersonalWriteGateway` com opt-in M3 explícito/recibo/desfazer sem relaxar `approvedForPersonal: () => false`, `gpt-6.2-sol`, `S1` categorização supervisionada, `S2` `M3-SALARY`, `S3` regras futuras por conta, `S4` Planejamento/Orçamentos, `S5` continuidade + consolidação `M1 + M2 + M3` no canal estável `1.0.0`).
+- **Marco 1 (`M1`):** implementação concluída e integrada (`CAT-P0` + `CAT-UX` + `D05` + Pluggy + SQLite v7).
+- **Marco 2 (`M2`):** Inteligência 3.0 (`F1–F5`, radar proativo, simulador) integrada na candidata `1.0.0`.
+- **Marco 3 (`M3`):** S0–S5 implementados integralmente com consentimento explícito em `app_meta` (`m3_supervised_actions_enabled` e `ai_copilot_inference_enabled`), preservando `approvedForPersonal: () => false`, `financialDataEnabled: false` e `paidApiFallback: false`; entrega NSIS x64 `1.0.0` em `C:\Dev\releases\v1.0.0-stable\`. Ver log `docs/ai-context/logs/2026-11-23-m3-v1-0-0-consolidation.md`.
 - **Multidispositivo / PWA / Cloudflare:** congelado para descontinuação futura (sem remoção sem inventário/autorização). **Pluggy desktop ativo.**
 - **Frentes históricas abaixo (#48, #49, #54, #60, #63, #73, #19..#31):** superadas pela cadeia integrada `#94 → #96 → #100 → #104 → #105`; mantidas abaixo apenas para rastreabilidade histórica.
 
