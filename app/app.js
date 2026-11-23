@@ -1265,6 +1265,7 @@ class App extends React.Component {
         this.autoSyncTimer = null;
         this.unsubscribePersonalCloud = null;
         this.unsubscribeAI = null;
+        this.unsubscribeAICopilot = null;
         this.lastSyncAttempt = 0;
         this.focusReturn = null;
         this.focusCategoryOnDetailOpen = false;
@@ -1364,10 +1365,10 @@ class App extends React.Component {
             this.closeQuickCategory(false);
         };
         const mode = 'real';
-        this.state = { mode, data: desktop ? starter() : load(mode), page: 'overview', month: nowYM, showEntry: false, entry: { date: iso(new Date()), description: '', kind: 'expense', category: 'Outros', value: '' }, sim: { value: '', installments: '6', interest: '0' }, outcome: null, simCalculatedInput: null, simResultStale: false, simError: '', query: '', toast: '', budgetEdit: '', busy: !!desktop, booting: !!desktop, editModal: null, bank: EMPTY_BANK, bankForm: { clientId: '', clientSecret: '', itemIds: '' }, bankBusy: false, bankMessage: '', bankFilter: '', txSource: 'all', txReviewOnly: false, txOrganize: false, txAdvancedOpen: false, txCategoryFilter: '', txKindFilter: 'all', txReviewFilter: 'all', txSort: 'date_desc', quickCategory: null, quickCategoryQuery: '', quickCategoryIndex: 0, quickCategoryBusy: false, quickCategoryError: '', categoryMoreEmojis: false, quickAddOpen: false, dashboardSource: 'bank', sourceDetailsOpen: false, budgetTab: 'expense', showAllBudgetCategories: false, categories: DEFAULT_CATEGORY_INFOS, rules: [], categoryEditor: { previousName: '', name: '', color: '#3e9a85', emoji: '✨', kind: 'expense' }, ruleEditor: emptyRule(), ruleTest: 'IFOOD', categoryMessage: '', entryCategoryTouched: false, bankConfigOpen: false, overviewPeriod: 'month', customStart: iso(new Date()), customEnd: iso(new Date()), backupInfo: { copies: 0, last: null }, detail: null, detailDraft: { merchant: '', note: '', nature: 'auto', reviewed: false, aliasPattern: '', splitParts: [] }, manualDraft: null, detailBusy: false, categorySaving: [], txSelected: [], txBatchCategory: 'Alimentação', planning: EMPTY_PLANNING, planMonth: nowYM, planDay: iso(new Date()), planSelected: null, planOpen: false, planForm: freshPlanForm(), planBusy: false, planView: 'all', planTerm: '', planIncludeEstimated: false, planBankTitle: '', planMatchQuery: '', planHistory: [], cloudStage: 'not_started', cloudBusy: false, cloudMessage: '', cloudIdentityConnected: false, cloudQuarantineVerified: false, cloudPersonalTransferred: false, cloudParityBusy: false, cloudParityMessage: '', cloudE1Report: null, intelligenceTab: 'today', intelligenceDraft: '', intelligencePreparedQuestion: '', intelligencePanelOpen: false, intelligenceContext: 'overview', intelligenceExpandedAction: null, aiStatus: { connected: false, secure: false }, aiBusy: false, aiError: '', aiDemoCase: 'budget', aiEffort: 'auto', aiCreditsConfirmed: false, aiResult: null, aiStreaming: '', aiCapabilities: null, aiMemories: [], aiMemoryDraft: '', aiMemoryKind: 'preference', aiMemoryBusy: false, aiMemoryError: '', aiUseMemories: false, aiPreview: null, aiUsageStats: null, aiFinancialDemoSource: 'bank', aiFinancialDemo: null, aiFinancialDemoBusy: false, aiFinancialDemoError: '' };
+        this.state = { mode, data: desktop ? starter() : load(mode), page: 'overview', month: nowYM, showEntry: false, entry: { date: iso(new Date()), description: '', kind: 'expense', category: 'Outros', value: '' }, sim: { value: '', installments: '6', interest: '0' }, outcome: null, simCalculatedInput: null, simResultStale: false, simError: '', query: '', toast: '', budgetEdit: '', busy: !!desktop, booting: !!desktop, editModal: null, bank: EMPTY_BANK, bankForm: { clientId: '', clientSecret: '', itemIds: '' }, bankBusy: false, bankMessage: '', bankFilter: '', txSource: 'all', txReviewOnly: false, txOrganize: false, txAdvancedOpen: false, txCategoryFilter: '', txKindFilter: 'all', txReviewFilter: 'all', txSort: 'date_desc', quickCategory: null, quickCategoryQuery: '', quickCategoryIndex: 0, quickCategoryBusy: false, quickCategoryError: '', categoryMoreEmojis: false, quickAddOpen: false, dashboardSource: 'bank', sourceDetailsOpen: false, budgetTab: 'expense', showAllBudgetCategories: false, categories: DEFAULT_CATEGORY_INFOS, rules: [], categoryEditor: { previousName: '', name: '', color: '#3e9a85', emoji: '✨', kind: 'expense' }, ruleEditor: emptyRule(), ruleTest: 'IFOOD', categoryMessage: '', entryCategoryTouched: false, bankConfigOpen: false, overviewPeriod: 'month', customStart: iso(new Date()), customEnd: iso(new Date()), backupInfo: { copies: 0, last: null }, detail: null, detailDraft: { merchant: '', note: '', nature: 'auto', reviewed: false, aliasPattern: '', splitParts: [] }, manualDraft: null, detailBusy: false, categorySaving: [], txSelected: [], txBatchCategory: 'Alimentação', planning: EMPTY_PLANNING, planMonth: nowYM, planDay: iso(new Date()), planSelected: null, planOpen: false, planForm: freshPlanForm(), planBusy: false, planView: 'all', planTerm: '', planIncludeEstimated: false, planBankTitle: '', planMatchQuery: '', planHistory: [], cloudStage: 'not_started', cloudBusy: false, cloudMessage: '', cloudIdentityConnected: false, cloudQuarantineVerified: false, cloudPersonalTransferred: false, cloudParityBusy: false, cloudParityMessage: '', cloudE1Report: null, intelligenceTab: 'today', intelligenceDraft: '', intelligencePreparedQuestion: '', intelligencePanelOpen: false, intelligenceContext: 'overview', intelligenceExpandedAction: null, aiStatus: { connected: false, secure: false }, aiBusy: false, aiError: '', aiDemoCase: 'budget', aiEffort: 'auto', aiCreditsConfirmed: false, aiResult: null, aiStreaming: '', aiCapabilities: null, aiMemories: [], aiMemoryDraft: '', aiMemoryKind: 'preference', aiMemoryBusy: false, aiMemoryError: '', aiUseMemories: false, aiPreview: null, aiUsageStats: null, aiFinancialDemoSource: 'bank', aiFinancialDemo: null, aiFinancialDemoBusy: false, aiFinancialDemoError: '', aiCopilotCap: null, m3ActionCap: null, aiCopilotStreaming: '', aiCopilotBusy: false, aiCopilotRequestId: null };
     }
     async componentDidMount() {
-        var _a, _b, _c, _d, _e;
+        var _a, _b, _c, _d, _e, _f;
         window.addEventListener('keydown', this.onGlobalKeydown);
         window.addEventListener('resize', this.onQuickCategoryViewportChange);
         window.addEventListener('scroll', this.onQuickCategoryViewportChange, true);
@@ -1375,6 +1376,8 @@ class App extends React.Component {
         if (!desktop)
             return;
         this.unsubscribeAI = ((_a = desktop.onAIDelta) === null || _a === void 0 ? void 0 : _a.call(desktop, (delta) => this.setState((previous) => ({ aiStreaming: (previous.aiStreaming + delta).slice(0, 12000) })))) || null;
+        this.unsubscribeAICopilot = ((_b = desktop.onAICopilotDelta) === null || _b === void 0 ? void 0 : _b.call(desktop, (payload) => this.setState((previous) => { if (!(payload === null || payload === void 0 ? void 0 : payload.delta) || previous.aiCopilotRequestId !== payload.requestId)
+            return {}; return { aiCopilotStreaming: (String(previous.aiCopilotStreaming || '') + payload.delta).slice(0, 12000) }; }))) || null;
         void intelligenceRefresh(this);
         try {
             const persisted = await desktop.load('real');
@@ -1383,24 +1386,24 @@ class App extends React.Component {
             void this.loadQA84VisualCatalog();
             const currentBank = await this.refreshBank();
             await this.refreshPlanning();
-            this.unsubscribePersonalCloud = ((_b = desktop.onCloudPersonalUpdated) === null || _b === void 0 ? void 0 : _b.call(desktop, (event) => {
+            this.unsubscribePersonalCloud = ((_c = desktop.onCloudPersonalUpdated) === null || _c === void 0 ? void 0 : _c.call(desktop, (event) => {
                 if ((event === null || event === void 0 ? void 0 : event.inbound) > 0 && this.state.mode === 'real')
                     void this.refreshCloudPersonalUI();
             })) || null;
             try {
-                const backupInfo = await ((_c = desktop.backupStatus) === null || _c === void 0 ? void 0 : _c.call(desktop));
+                const backupInfo = await ((_d = desktop.backupStatus) === null || _d === void 0 ? void 0 : _d.call(desktop));
                 if (backupInfo)
                     this.setState({ backupInfo });
             }
             catch (_) { }
             try {
-                const cloud = await ((_d = desktop.cloudMigrationStatus) === null || _d === void 0 ? void 0 : _d.call(desktop));
+                const cloud = await ((_e = desktop.cloudMigrationStatus) === null || _e === void 0 ? void 0 : _e.call(desktop));
                 if (cloud)
                     this.setState({ cloudStage: cloud.stage });
             }
             catch (_) { }
             try {
-                const identity = await ((_e = desktop.cloudAccessStatus) === null || _e === void 0 ? void 0 : _e.call(desktop));
+                const identity = await ((_f = desktop.cloudAccessStatus) === null || _f === void 0 ? void 0 : _f.call(desktop));
                 if (identity)
                     this.setState({ cloudIdentityConnected: !!identity.connected });
             }
@@ -1465,7 +1468,7 @@ class App extends React.Component {
             this.setState({ bankMessage: 'Não foi possível consultar a integração: ' + String((e === null || e === void 0 ? void 0 : e.message) || e) });
         }
     }
-    componentWillUnmount() { var _a, _b; window.removeEventListener('keydown', this.onGlobalKeydown); window.removeEventListener('resize', this.onQuickCategoryViewportChange); window.removeEventListener('scroll', this.onQuickCategoryViewportChange, true); document.removeEventListener('pointerdown', this.onQuickCategoryOutside, true); (_a = this.unsubscribePersonalCloud) === null || _a === void 0 ? void 0 : _a.call(this); (_b = this.unsubscribeAI) === null || _b === void 0 ? void 0 : _b.call(this); if (this.autoSyncTimer)
+    componentWillUnmount() { var _a, _b, _c; window.removeEventListener('keydown', this.onGlobalKeydown); window.removeEventListener('resize', this.onQuickCategoryViewportChange); window.removeEventListener('scroll', this.onQuickCategoryViewportChange, true); document.removeEventListener('pointerdown', this.onQuickCategoryOutside, true); (_a = this.unsubscribePersonalCloud) === null || _a === void 0 ? void 0 : _a.call(this); (_b = this.unsubscribeAI) === null || _b === void 0 ? void 0 : _b.call(this); (_c = this.unsubscribeAICopilot) === null || _c === void 0 ? void 0 : _c.call(this); if (this.autoSyncTimer)
         clearInterval(this.autoSyncTimer); if (this.timeout)
         clearTimeout(this.timeout); }
     maybeAutoSync(bank = this.state.bank) {
@@ -4762,7 +4765,7 @@ function renderIntelligenceViewLegacy(app) {
     if (tab === 'chat')
         section = h('div', { className: 'mf-ai-workbench' + (s.intelligenceHistoryOpen ? '' : ' is-history-closed') }, s.intelligenceHistoryOpen ? renderIntelligenceHistorySidebar(app) : null, h('div', { className: 'mf-ai-chat-main mf-ai-workbench-main' }, h('div', { className: 'mf-ai-workbench-header' }, h('button', { type: 'button', className: 'ghost-button mf-ai-v3-history-toggle',
             'aria-expanded': !!s.intelligenceHistoryOpen, onClick: () => app.setState({ intelligenceHistoryOpen: !s.intelligenceHistoryOpen }) }, s.intelligenceHistoryOpen ? 'Recolher histórico' : 'Histórico de conversas'), h('div', { className: 'mf-ai-chat-hero' }, h('span', { className: 'mf-ai-orb' }, h(Icon, { name: 'spark', size: 25 })), h('h2', {}, 'Uma conversa, mais clareza.'), h('p', {}, (s.categoryReviewGrant || ((_b = s.localFinancialAccess) === null || _b === void 0 ? void 0 : _b.token)) ? 'Conversa temporária compartilhada com o chat lateral. Prévia e confirmação continuam disponíveis na Central.' : 'Histórico compartilhado com o chat lateral, salvo localmente quando disponível. Não cole credenciais.')), h('div', { className: 'mf-ai-workbench-badges' }, h('span', { className: 'mf-ai-conn-pill ' + convState.css }, ((_c = s.localFinancialAccess) === null || _c === void 0 ? void 0 : _c.token) ? 'Leitura local autorizada' : convState.pill), h('span', { className: 'mf-ai-scope-badge' }, 'Contexto: ' + activeScope.label + ' · ' + activeScope.period))), s.intelligenceDraftScope ? h('div', { className: 'mf-ai-context-meta' }, h('span', {}, 'Rascunho de ' + s.intelligenceDraftScope.label), h('span', {}, s.intelligenceDraftScope.period)) : null, s.intelligencePreparedQuestion ? h('div', { className: 'mf-ai-prepared', role: 'status' }, h('span', { className: 'micro-label' }, 'PERGUNTA PREPARADA · NÃO ENVIADA'), h('p', {}, s.intelligencePreparedQuestion), h('small', {}, 'Este rascunho não é enviado ao Sol. Use os casos fictícios autorizados abaixo; nenhuma chamada ocorreu aqui.')) : null, messages.length === 0 ? h('div', { className: 'mf-ai-empty-thread' }, h('h3', {}, 'Comece uma análise ou prepare uma categorização supervisionada'), h('p', {}, 'Escolha um ponto de partida. A mesma conversa acompanha você no chat lateral; consultas financeiras autorizadas ficam apenas nesta sessão.'), h('div', { className: 'mf-ai-starter-grid' }, ['Quais foram meus maiores gastos deste mês?', 'Compare minhas despesas com o mês anterior.', 'Quais orçamentos merecem atenção?', 'Quais compromissos tenho para o próximo mês?'].map((q, i) => h('button', { type: 'button', className: 'mf-ai-context-prompt', key: i, onClick: () => intelligenceSubmitQuestion(app, q) }, h('span', {}, q), h(Icon, { name: 'arrow', size: 14 }))))) :
-            h('div', { className: 'mf-ai-thread', role: 'log', 'aria-live': 'polite' }, ...messages.map(m => renderIntelligenceMessageItem(app, m)), (s.aiBusy || s.localFinancialBusy) ? h('div', { className: 'mf-ai-msg is-assistant is-streaming', role: 'status' }, h('strong', {}, 'Assistente MF'), h('p', {}, 'Processando solicitação…')) : null), s.aiError ? h('p', { className: 'mf-ai-error', role: 'alert' }, s.aiError) : null, renderIntelligenceFollowups(app), renderIntelligenceComposer(app)));
+            h('div', { className: 'mf-ai-thread', role: 'log', 'aria-live': 'polite' }, ...messages.map(m => renderIntelligenceMessageItem(app, m)), (s.aiBusy || s.localFinancialBusy || s.aiCopilotBusy) ? h('div', { className: 'mf-ai-msg is-assistant is-streaming', role: 'status' }, h('strong', {}, s.aiCopilotBusy ? 'Copiloto GPT-6.2 Sol' : 'Assistente MF'), h('p', {}, s.aiCopilotBusy && s.aiCopilotStreaming ? s.aiCopilotStreaming : 'Processando solicitação…'), s.aiCopilotBusy && typeof (desktop === null || desktop === void 0 ? void 0 : desktop.aiCopilotCancel) === 'function' ? h('button', { type: 'button', className: 'ghost-button mf-ai-stream-cancel', onClick: () => void desktop.aiCopilotCancel() }, 'Cancelar solicitação') : null) : null), s.aiError ? h('p', { className: 'mf-ai-error', role: 'alert' }, s.aiError) : null, renderIntelligenceFollowups(app), renderIntelligenceComposer(app)));
     else if (tab === 'actions')
         section = h('div', { className: 'mf-ai-actions' }, h('div', { className: 'mf-ai-welcome' }, h('span', { className: 'micro-label' }, 'AÇÕES SUPERVISIONADAS E EXEMPLOS · SEM GRAVAÇÃO AUTOMÁTICA'), h('h2', {}, 'Sugestões e prévias para revisar, nunca automáticas.'), h('p', {}, 'As propostas preparadas nas suas conversas aparecem abaixo mantendo a prévia sem gravação até a entrega I2-B.')), allProposals.length ? h('div', { className: 'mf-ai-proposals-list', 'aria-label': 'Propostas supervisionadas da sessão' }, ...allProposals.map(p => renderIntelligenceActionProposalCard(app, p))) :
             h('div', { className: 'mf-ai-empty-actions' }, h('p', {}, 'Nenhuma proposta supervisionada pendente nesta conversa. Peça no chat, por exemplo: “Categorize minha compra do mercado como Alimentação”.')), [{ id: 'limits', title: 'Revisar limites de categorias', description: 'Compare médias, compromissos e uma margem de segurança.', question: 'Prepare uma proposta de limites por categoria para o próximo mês.' },
@@ -4791,10 +4794,14 @@ function renderIntelligencePanel(app) {
     const draft = String(app.state.intelligenceDraft || '');
     return h('div', { className: 'mf-ai-backdrop', role: 'presentation', onMouseDown: (e) => { if (e.target === e.currentTarget)
             app.setState({ intelligencePanelOpen: false }); } }, h('aside', { className: 'mf-ai-drawer mf-ai-drawer-compact mf-d01', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Assistente contextual de ' + info.label }, h('div', { className: 'mf-ai-drawer-head' }, h('div', { className: 'mf-ai-drawer-title-wrap' }, h('div', { className: 'mf-ai-drawer-kicker-row' }, h('span', { className: 'mf-d01-spark', 'aria-hidden': 'true' }, '✦'), h('span', { className: 'micro-label' }, 'SEU ASSISTENTE')), h('h2', {}, 'Assistente Financeiro'), h('small', { className: 'mf-d01-context-subtitle' }, 'Ajudando em ' + info.label)), h('div', { className: 'mf-ai-drawer-head-actions' }, h('button', { type: 'button', className: 'ghost-button mf-ai-expand-btn', 'aria-label': 'Nova conversa', title: 'Iniciar nova conversa', onClick: () => intelligenceCreateThread(app) }, 'Nova'), h('button', { type: 'button', className: 'ghost-button mf-ai-expand-btn', 'aria-label': 'Expandir na aba Inteligência', title: 'Abrir na aba Inteligência mantendo a conversa ativa', onClick: () => intelligenceOpenFullChat(app) }, 'Expandir'), h('button', { type: 'button', className: 'close-button', 'aria-label': 'Fechar assistente', onClick: () => app.setState({ intelligencePanelOpen: false }) }, '×'))), h('details', { className: 'mf-d01-context-disclosure' }, h('summary', {}, 'Contexto da conversa', h(Icon, { name: 'chevron-down', size: 14 })), h('div', { className: 'mf-ai-context-meta mf-ai-drawer-scope' }, h('span', {}, scope.label), h('span', {}, scope.period), h('span', {}, scope.mode), ...scope.filters.map((filter) => h('span', { key: filter }, filter)), h('span', {}, ((_b = app.state.localFinancialAccess) === null || _b === void 0 ? void 0 : _b.token) ? 'Leitura local autorizada' : convState.pill)), threads.length > 1 ? h('select', { className: 'mf-ai-drawer-thread-select', 'aria-label': 'Alternar conversa ativa', value: activeThreadId, onChange: (e) => intelligenceSelectThread(app, e.target.value) }, ...threads.map((t) => h('option', { key: t.id, value: t.id }, t.title + ' (' + t.messages.length + ')'))) : null), h('details', { className: 'mf-d01-access' }, h('summary', {}, 'Permissões de consulta'), renderIntelligenceAccess(app)), app.state.categoryReviewPreview ? h('div', { className: 'mf-review-drawer-pending' }, h('p', {}, 'Uma prévia de categorização aguarda sua decisão.'), h('button', { type: 'button', className: 'primary-button', onClick: () => void categoryReviewOpen(app) }, 'Revisar prévia na Central')) : null, h('div', { className: 'mf-ai-drawer-body' }, messages.length === 0 ? h('div', { className: 'mf-ai-drawer-empty' }, h('p', { className: 'muted-desc' }, info.description), h('div', { className: 'mf-ai-drawer-suggestions', 'aria-label': 'Sugestões rápidas para ' + info.label }, ...info.questions.filter(q => !intelligenceHistoryList(app).some(m => m.role === 'user' && m.text === q)).slice(0, 2).map((q, i) => h('button', { type: 'button', className: 'mf-ai-context-prompt', key: i, onClick: () => intelligenceSubmitQuestion(app, q) }, h('span', {}, q), h(Icon, { name: 'arrow', size: 15 }))))) :
-        h('div', { className: 'mf-ai-drawer-messages', role: 'log', 'aria-live': 'polite' }, ...messages.map(m => renderIntelligenceMessageItem(app, m)), busy ? h('div', { className: 'mf-ai-msg is-assistant is-streaming', role: 'status' }, h('strong', {}, 'Assistente MF'), h('p', {}, 'Processando solicitação no contexto de ' + scope.label + '…')) : null), app.state.intelligenceStorageError ? h('p', { className: 'mf-ai-error', role: 'alert' }, app.state.intelligenceStorageError) : null, app.state.aiError ? h('p', { className: 'mf-ai-error', role: 'alert' }, app.state.aiError) : null), renderIntelligenceFollowups(app), renderIntelligenceComposer(app, true)));
+        h('div', { className: 'mf-ai-drawer-messages', role: 'log', 'aria-live': 'polite' }, ...messages.map(m => renderIntelligenceMessageItem(app, m)), busy ? h('div', { className: 'mf-ai-msg is-assistant is-streaming', role: 'status' }, h('strong', {}, app.state.aiCopilotBusy ? 'Copiloto GPT-6.2 Sol' : 'Assistente MF'), h('p', {}, app.state.aiCopilotBusy && app.state.aiCopilotStreaming ? app.state.aiCopilotStreaming : 'Processando solicitação no contexto de ' + scope.label + '…'), app.state.aiCopilotBusy && typeof (desktop === null || desktop === void 0 ? void 0 : desktop.aiCopilotCancel) === 'function' ? h('button', { type: 'button', className: 'ghost-button mf-ai-stream-cancel', onClick: () => void desktop.aiCopilotCancel() }, 'Cancelar') : null) : null), app.state.intelligenceStorageError ? h('p', { className: 'mf-ai-error', role: 'alert' }, app.state.intelligenceStorageError) : null, app.state.aiError ? h('p', { className: 'mf-ai-error', role: 'alert' }, app.state.aiError) : null), renderIntelligenceFollowups(app), renderIntelligenceComposer(app, true)));
 }
 function renderIntelligenceSettings(app) {
-    return h(Card, { className: 'settings-card mf-ai-settings' }, h('div', { className: 'card-heading' }, h('div', {}, h('h2', {}, 'Inteligência artificial'), h('p', {}, 'Autenticação local e testes fictícios · Entrega 2'))), h('div', { className: 'mf-ai-setting-line' }, h('span', {}, 'Estado'), h('strong', {}, app.state.aiStatus.connected ? 'Conectada' : 'Não conectada')), h('div', { className: 'mf-ai-setting-line' }, h('span', {}, 'Modelo previsto'), h('strong', {}, 'GPT-6.2 Sol')), h('div', { className: 'mf-ai-setting-line' }, h('span', {}, 'Raciocínio'), h('strong', {}, 'Low / Medium / High adaptativo')), h('div', { className: 'mf-ai-setting-line' }, h('span', {}, 'Economia de tokens'), h('strong', {}, 'Contexto mínimo + aprovação por teste')), h('p', { className: 'muted-desc' }, 'OAuth e memórias aprovadas são protegidos localmente no Windows. Nenhuma memória é enviada sem consentimento por teste. Dados bancários e sincronização de memórias no PWA continuam indisponíveis para a IA.'), h('details', { className: 'mf-ai-advanced-settings' }, h('summary', {}, 'Inteligência · configurações avançadas'), renderIntelligenceConnection(app), renderIntelligencePrivacy(app), renderIntelligenceFinancialContext(app)), h('button', { type: 'button', className: 'outlined-action full', onClick: () => app.navigate('intelligence') }, h(Icon, { name: 'spark', size: 17 }), 'Abrir Inteligência'));
+    const s = app.state;
+    const aiCap = s.aiCopilotCap || null;
+    const m3Cap = s.m3ActionCap || null;
+    const inferenceLabel = (aiCap === null || aiCap === void 0 ? void 0 : aiCap.inferenceStatus) || 'CONFIGURADO';
+    return h(Card, { className: 'settings-card mf-ai-settings' }, h('div', { className: 'card-heading' }, h('div', {}, h('h2', {}, 'Inteligência artificial'), h('p', {}, 'Autenticação OAuth, Copiloto M3 e GPT-6.2 Sol'))), h('div', { className: 'mf-ai-setting-line' }, h('span', {}, 'Conexão OAuth ChatGPT'), h('strong', {}, s.aiStatus.connected ? 'Conectada' : 'Não conectada')), h('div', { className: 'mf-ai-setting-line' }, h('span', {}, 'Modelo'), h('strong', {}, 'GPT-6.2 Sol (' + inferenceLabel + ')')), h('div', { className: 'mf-ai-setting-line' }, h('span', {}, 'Raciocínio'), h('strong', {}, 'Low / Medium / High adaptativo')), h('div', { className: 'mf-ai-setting-line' }, h('span', {}, 'Economia e privacidade'), h('strong', {}, 'Somente agregados autorizados · zero fallback pago')), (desktop === null || desktop === void 0 ? void 0 : desktop.copilotActionCapabilityStatus) ? h('div', { className: 'mf-ai-setting-line mf-ai-settings-toggle' }, h('span', {}, 'Ações supervisionadas no Copiloto (M3)'), h('div', { className: 'mf-ai-settings-toggle-actions' }, h('strong', {}, (m3Cap === null || m3Cap === void 0 ? void 0 : m3Cap.enabled) ? 'Ativadas' : 'Desativadas'), (m3Cap === null || m3Cap === void 0 ? void 0 : m3Cap.available) ? h('button', { type: 'button', className: 'ghost-button', onClick: () => { var _a, _b, _c, _d; return void (m3Cap.enabled ? (_b = (_a = desktop).copilotActionCapabilityRevoke) === null || _b === void 0 ? void 0 : _b.call(_a) : (_d = (_c = desktop).copilotActionCapabilityEnable) === null || _d === void 0 ? void 0 : _d.call(_c)).then(() => intelligenceRefresh(app)); } }, m3Cap.enabled ? 'Revogar' : 'Ativar') : null)) : null, (desktop === null || desktop === void 0 ? void 0 : desktop.aiCopilotCapabilityStatus) ? h('div', { className: 'mf-ai-setting-line mf-ai-settings-toggle' }, h('span', {}, 'Inferência GPT-6.2 Sol com contexto mínimo'), h('div', { className: 'mf-ai-settings-toggle-actions' }, h('strong', {}, (aiCap === null || aiCap === void 0 ? void 0 : aiCap.enabled) ? 'Ativada' : 'Desativada'), (aiCap === null || aiCap === void 0 ? void 0 : aiCap.available) ? h('button', { type: 'button', className: 'ghost-button', onClick: () => { var _a, _b, _c, _d; return void (aiCap.enabled ? (_b = (_a = desktop).aiCopilotCapabilityRevoke) === null || _b === void 0 ? void 0 : _b.call(_a) : (_d = (_c = desktop).aiCopilotCapabilityEnable) === null || _d === void 0 ? void 0 : _d.call(_c)).then(() => intelligenceRefresh(app)); } }, aiCap.enabled ? 'Revogar' : 'Ativar') : null)) : null, h('p', { className: 'muted-desc' }, 'OAuth e permissões ficam isolados no processo principal do Windows. Ações financeiras exigem prévia, confirmação nativa, backup SQLite e geram recibo reversível em 1 clique.'), h('details', { className: 'mf-ai-advanced-settings' }, h('summary', {}, 'Inteligência · configurações avançadas'), renderIntelligenceConnection(app), renderIntelligencePrivacy(app), renderIntelligenceFinancialContext(app)), h('button', { type: 'button', className: 'outlined-action full', onClick: () => app.navigate('intelligence') }, h(Icon, { name: 'spark', size: 17 }), 'Abrir Inteligência'));
 }
 function mfB05Money(cents) {
     return Number.isSafeInteger(cents) ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(cents / 100) : '—';
@@ -6793,12 +6800,17 @@ function aiMarkdownNodes(input) {
     return out;
 }
 async function intelligenceRefresh(app) {
-    var _a;
+    var _a, _b, _c;
     if (!(desktop === null || desktop === void 0 ? void 0 : desktop.aiStatus))
         return;
     try {
-        const [status, capabilities] = await Promise.all([desktop.aiStatus(), ((_a = desktop.aiCapabilities) === null || _a === void 0 ? void 0 : _a.call(desktop)) || Promise.resolve(null)]);
-        app.setState({ aiStatus: status, aiCapabilities: capabilities, aiError: '' });
+        const [status, capabilities, aiCopilotCap, m3ActionCap] = await Promise.all([
+            desktop.aiStatus(),
+            ((_a = desktop.aiCapabilities) === null || _a === void 0 ? void 0 : _a.call(desktop)) || Promise.resolve(null),
+            ((_b = desktop.aiCopilotCapabilityStatus) === null || _b === void 0 ? void 0 : _b.call(desktop).catch(() => null)) || Promise.resolve(null),
+            ((_c = desktop.copilotActionCapabilityStatus) === null || _c === void 0 ? void 0 : _c.call(desktop).catch(() => null)) || Promise.resolve(null)
+        ]);
+        app.setState({ aiStatus: status, aiCapabilities: capabilities, aiCopilotCap, m3ActionCap, aiError: '' });
         if (status.connected)
             void intelligenceLoadPersonal(app);
         else
@@ -8669,7 +8681,7 @@ async function localFinancialRadar(app) {
     }
 }
 async function localFinancialSubmit(app, question) {
-    var _a, _b, _c, _d;
+    var _a, _b, _c, _d, _e, _f;
     if (app.state.localFinancialBusy || !String(question || '').trim())
         return;
     const access = app.state.localFinancialAccess;
@@ -8683,7 +8695,14 @@ async function localFinancialSubmit(app, question) {
     const month = app.state.localFinancialMonth || app.state.month, signature = intelligencePremiumSignature(app);
     const foldedQuestion = intelligenceFoldText(q);
     const m3ActionIntent = /\b(coloque|coloquem|categoriz|recategoriz|classifiqu|reclassifiqu|mova|mover|alter[ea]r?\s+(?:a\s+)?categoria|mud[ea]r?\s+(?:a\s+)?categoria)\b/.test(foldedQuestion) ||
-        /(salario|salarios|renda|remuneracao|holerite|recebi|ganho).*(orcament|limite|reorganiz|organiz|distribu|redistribu|ajust|guardar|poupar|reservar)|(?:reorganiz|redistribu|recalcul|equilibr)\w*\s+(?:os?\s+|meus?\s+)?orcament/.test(foldedQuestion);
+        /(salario|salarios|renda|remuneracao|holerite|recebi|ganho).*(orcament|limite|reorganiz|organiz|distribu|redistribu|ajust|guardar|poupar|reservar)|(?:reorganiz|redistribu|recalcul|equilibr)\w*\s+(?:os?\s+|meus?\s+)?orcament/.test(foldedQuestion) ||
+        /^(?:por favor,?\s*)?(?:sempre que|toda vez que)\b/.test(foldedQuestion) ||
+        /\b(?:regra(?:\s+futura|\s+automatica)?\s+(?:para|quando)|(?:desativ|paus|desabilit|ativ|reabilit|habilit)\w*\s+(?:a\s+)?regra)\b/.test(foldedQuestion) ||
+        /\b(?:crie|criar|adicione|adicionar|inclua|incluir|nova|renomei\w*|mud\w*\s+o\s+nome|alter\w*\s+o\s+nome)\s+(?:a\s+)?(?:subcategoria|categoria)\b/.test(foldedQuestion) ||
+        /^(?:por favor,?\s*)?(?:deixe|defin\w*|ajust\w*|mud\w*|alter\w*|coloque|fique com)\s+(?:o\s+|meu\s+)?(?:limite|orcamento|teto)\b/.test(foldedQuestion) ||
+        /\b(?:despesa prevista|receita prevista|conta prevista|compromisso|parcela prevista|planejamento)\b.*\b(?:registr|adicion|crie|criar|agend|cancel|reativ|acabamos de simular|simul)\b|\b(?:registr|adicion|crie|criar|agend|cancel|reativ)\w*.*\b(?:despesa prevista|receita prevista|conta prevista|compromisso|parcela prevista|planejamento)\b/.test(foldedQuestion) ||
+        /^(?:por favor,?\s*)?(?:alter|mud|atualiz|ajust|remarqu)\w*\s+(?:o\s+|a\s+)?(?:vencimento|data|valor)\b/.test(foldedQuestion) ||
+        /\b(?:gostei.*mais|guardar.*a mais|poupar.*a mais|aument\w*.*reserva|trave |fixe |destrave|desbloque|reduza mais|use o valor que voce sugeriu|economia sugerida|reducao sugerida)\b/.test(foldedQuestion);
     const financialInvestigation = /por que.*(despes|gast)|investig|categorias?.*contribu|estabelec.*(cresc|aument)|mostre.*estabelec|despes.*(aument|subi)|gast.*(aument|mais)|onde.*gastando|o que aumentou|compar.*(janeiro|fevereiro|marco|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro|mes)/.test(foldedQuestion);
     const sameThread = !!((_a = app.__ic2Conversation) === null || _a === void 0 ? void 0 : _a.answerId) && messages.some((m) => m.id === app.__ic2Conversation.answerId);
     const i3Followup = sameThread && !!app.__ic2InvestigationActive &&
@@ -8700,7 +8719,7 @@ async function localFinancialSubmit(app, question) {
     const user = { id: 'local-u-' + Date.now(), role: 'user', text: q, status: 'sent',
         createdAt: intelligenceNowTime(), scopeLabel: scope.label, periodLabel: month };
     app.setState({ localFinancialBusy: true, intelligenceDraft: '' });
-    let reply = null, operational = null, ic2 = null, m3Draft = null, error = '';
+    let reply = null, operational = null, ic2 = null, m3Draft = null, solReply = null, error = '';
     try {
         if (m3ActionIntent && typeof (api === null || api === void 0 ? void 0 : api.copilotActionInterpret) === 'function') {
             const draft = await api.copilotActionInterpret({ token: access.token, source: access.source, profile: access.profile, month, question: q });
@@ -8723,6 +8742,22 @@ async function localFinancialSubmit(app, question) {
                 ...(conversationId ? { conversationId } : {}) });
             if (!mfIC2Valid(ic2, access, month))
                 throw Error('Resposta IC2 não verificada.');
+            if (ic2.status === 'unsupported' && ((_b = app.state.aiStatus) === null || _b === void 0 ? void 0 : _b.connected) && ((_c = app.state.aiCopilotCap) === null || _c === void 0 ? void 0 : _c.enabled) && typeof (api === null || api === void 0 ? void 0 : api.aiCopilotAsk) === 'function') {
+                const requestId = 'sol-' + Date.now();
+                app.setState({ aiCopilotBusy: true, aiCopilotStreaming: '', aiCopilotRequestId: requestId });
+                try {
+                    solReply = await api.aiCopilotAsk({ token: access.token, source: access.source, profile: access.profile, month, question: q, effortOverride: 'auto', requestId });
+                    if ((solReply === null || solReply === void 0 ? void 0 : solReply.inferenceStatus) && app.state.aiCopilotCap) {
+                        app.setState({ aiCopilotCap: { ...app.state.aiCopilotCap, inferenceStatus: solReply.inferenceStatus } });
+                    }
+                }
+                catch (solErr) {
+                    error = String((solErr === null || solErr === void 0 ? void 0 : solErr.message) || '');
+                }
+                finally {
+                    app.setState({ aiCopilotBusy: false, aiCopilotStreaming: '', aiCopilotRequestId: null });
+                }
+            }
         }
         else if (typeof (api === null || api === void 0 ? void 0 : api.intelligenceOperationalAsk) === 'function') {
             operational = await api.intelligenceOperationalAsk({ token: access.token, month,
@@ -8755,20 +8790,22 @@ async function localFinancialSubmit(app, question) {
     }
     if (request !== app.__localChatRequest || (app.state.intelligenceActiveThreadId || null) !== threadAtStart ||
         app.state.localFinancialAccess !== access ||
-        ((_b = app.state.localFinancialAccess) === null || _b === void 0 ? void 0 : _b.token) !== (access === null || access === void 0 ? void 0 : access.token) ||
+        ((_d = app.state.localFinancialAccess) === null || _d === void 0 ? void 0 : _d.token) !== (access === null || access === void 0 ? void 0 : access.token) ||
         signature !== intelligencePremiumSignature(app)) {
         if (request === app.__localChatRequest)
             app.setState({ localFinancialBusy: false });
         return;
     }
     app.__ic2InvestigationActive = !!(ic2 && ['ready', 'partial'].includes(ic2.status) &&
-        ((_c = ic2.facts) === null || _c === void 0 ? void 0 : _c.some((fact) => fact.tool === 'compare_spending_breakdown')));
+        ((_e = ic2.facts) === null || _e === void 0 ? void 0 : _e.some((fact) => fact.tool === 'compare_spending_breakdown')));
     if (ic2 && ['ready', 'partial', 'needs_clarification', 'unsupported'].includes(ic2.status))
         app.__ic2Conversation = { access, signature, id: ic2.conversationId };
     const state = operational === null || operational === void 0 ? void 0 : operational.uiState;
-    let answerText = (m3Draft === null || m3Draft === void 0 ? void 0 : m3Draft.answer) || (ic2 === null || ic2 === void 0 ? void 0 : ic2.answer) || (operational === null || operational === void 0 ? void 0 : operational.answer) || (reply === null || reply === void 0 ? void 0 : reply.text) || error || 'Consulta indisponível.';
+    let answerText = (m3Draft === null || m3Draft === void 0 ? void 0 : m3Draft.answer) || (solReply === null || solReply === void 0 ? void 0 : solReply.text) || error || (ic2 === null || ic2 === void 0 ? void 0 : ic2.answer) || (operational === null || operational === void 0 ? void 0 : operational.answer) || (reply === null || reply === void 0 ? void 0 : reply.text) || 'Consulta indisponível.';
     const finalStatus = m3Draft ?
-        (m3Draft.status === 'ready' ? 'done' : 'unsupported') : ic2 ?
+        (m3Draft.status === 'ready' ? 'done' : 'unsupported') : (solReply === null || solReply === void 0 ? void 0 : solReply.text) ?
+        'done' : error && (ic2 === null || ic2 === void 0 ? void 0 : ic2.status) === 'unsupported' ?
+        'unavailable' : ic2 ?
         (['ready', 'partial'].includes(ic2.status) ? 'done' : ic2.status === 'unsupported' || ic2.status === 'needs_clarification' ? 'unsupported' :
             ic2.status === 'denied' || ic2.status === 'stale' ? 'unavailable' : 'error') : operational ?
         (state === 'ready' || state === 'empty' ? 'done' : state === 'unsupported' ? 'unsupported' : state === 'denied' || state === 'expired' ? 'unavailable' : 'error') :
@@ -8776,10 +8813,12 @@ async function localFinancialSubmit(app, question) {
     const factsValid = operational && (state === 'ready' || state === 'empty');
     const evidence = m3Draft ?
         'Ação supervisionada · ' + (m3Draft.source === 'bank' ? 'Fonte bancária' : 'Fonte manual') + ' · ' + month :
-        ic2 && ['ready', 'partial'].includes(ic2.status) ?
-            'Consulta local · ' + (ic2.source === 'bank' ? 'Fonte bancária' : 'Fonte manual') + ' · ' + month :
-            factsValid ? (operational.profile === 'synthetic' ? 'Ambiente sintético' : 'Fonte ' + (operational.source === 'bank' ? 'bancária' : 'manual')) +
-                ' · ' + intelligencePremiumCoverage(operational.coverage) + ' · ' + month : '';
+        (solReply === null || solReply === void 0 ? void 0 : solReply.text) ?
+            'GPT-6.2 Sol · Esforço ' + (solReply.effort === 'high' ? 'Alto' : solReply.effort === 'medium' ? 'Médio' : 'Baixo') + ' · Apenas agregados autorizados · ' + month :
+            ic2 && ['ready', 'partial'].includes(ic2.status) ?
+                'Consulta local · ' + (ic2.source === 'bank' ? 'Fonte bancária' : 'Fonte manual') + ' · ' + month :
+                factsValid ? (operational.profile === 'synthetic' ? 'Ambiente sintético' : 'Fonte ' + (operational.source === 'bank' ? 'bancária' : 'manual')) +
+                    ' · ' + intelligencePremiumCoverage(operational.coverage) + ' · ' + month : '';
     const visualV3 = !m3Draft && v3Kind && factsValid ? mfV3BindGrant(mfV3FromOperational(operational, v3Kind, previousOperational), access, signature) : null;
     if (v3Kind && !m3Draft) {
         answerText = !visualV3 ? 'Não há evidência suficiente para apresentar esta análise com segurança. Nenhum valor foi estimado.' :
@@ -8800,11 +8839,12 @@ async function localFinancialSubmit(app, question) {
         operationalActions: factsValid && !visualV3 && Array.isArray(operational.actions) ? operational.actions : [],
         operationalEvidence: evidence,
         details: m3Draft ? 'Prévia supervisionada M3 · confirmação nativa e backup SQLite antes de qualquer escrita.' :
-            ic2 ? 'Leitura local verificada · ' + (ic2.status === 'partial' ? 'Cobertura parcial. ' : '') +
-                'Fatos locais verificáveis, sem escrita financeira ou modelo externo.' : v3Kind && !visualV3 ? 'Os fatos autorizados não permitem esta visualização; nenhuma informação foi estimada.' :
-                visualKind && !visual ? 'Não há evidências suficientes para desenhar o gráfico com totais reconciliados. Confira fonte e cobertura.' :
-                    factsValid ? 'Consulta local determinística, sem IA externa. Não foi executada qualquer alteração.' :
-                        reply ? JSON.stringify(reply.references) : 'Nenhuma alteração financeira nem envio externo.'
+            (solReply === null || solReply === void 0 ? void 0 : solReply.text) ? 'GPT-6.2 Sol via OAuth · somente totais agregados enviados · zero fallback pago · não grava no SQLite.' :
+                ic2 ? 'Leitura local verificada · ' + (ic2.status === 'partial' ? 'Cobertura parcial. ' : '') +
+                    'Fatos locais verificáveis, sem escrita financeira ou modelo externo.' : v3Kind && !visualV3 ? 'Os fatos autorizados não permitem esta visualização; nenhuma informação foi estimada.' :
+                    visualKind && !visual ? 'Não há evidências suficientes para desenhar o gráfico com totais reconciliados. Confira fonte e cobertura.' :
+                        factsValid ? 'Consulta local determinística, sem IA externa. Não foi executada qualquer alteração.' :
+                            reply ? JSON.stringify(reply.references) : 'Nenhuma alteração financeira nem envio externo.'
     };
     if (m3Draft) {
         if (typeof copilotBindActionMessage === 'function')
@@ -8812,7 +8852,7 @@ async function localFinancialSubmit(app, question) {
     }
     else if (ic2) {
         mfIC2BindMessage(answer, access, signature, month);
-        if (((_d = app.__ic2Conversation) === null || _d === void 0 ? void 0 : _d.id) === ic2.conversationId)
+        if (((_f = app.__ic2Conversation) === null || _f === void 0 ? void 0 : _f.id) === ic2.conversationId)
             app.__ic2Conversation.answerId = answer.id;
     }
     else
@@ -8924,6 +8964,13 @@ async function copilotRefreshAppData(app, profile) {
     try {
         if (typeof app.refreshBank === 'function')
             await app.refreshBank();
+    }
+    catch { }
+    try {
+        if (typeof app.refreshCategories === 'function')
+            await app.refreshCategories();
+        if (typeof app.loadQA84VisualCatalog === 'function')
+            void app.loadQA84VisualCatalog();
     }
     catch { }
     try {
@@ -9057,7 +9104,7 @@ function copilotCollectLocksPayload(st) {
     return lockedCategories;
 }
 async function copilotRecalcSalaryDraft(app, keyObj, draft, mode, onReplaceDraft) {
-    var _a;
+    var _a, _b, _c;
     const api = desktop;
     const st = copilotGetSalaryUiState(keyObj, draft);
     if (!(api === null || api === void 0 ? void 0 : api.copilotSalaryBudgetPropose) || st.busy || st.receipt)
@@ -9066,12 +9113,14 @@ async function copilotRecalcSalaryDraft(app, keyObj, draft, mode, onReplaceDraft
     st.error = '';
     copilotForceRender(app);
     try {
+        const accessToken = (_b = (_a = app === null || app === void 0 ? void 0 : app.state) === null || _a === void 0 ? void 0 : _a.localFinancialAccess) === null || _b === void 0 ? void 0 : _b.token;
         const nextDraft = await api.copilotSalaryBudgetPropose({
+            ...(typeof accessToken === 'string' && accessToken ? { token: accessToken } : {}),
             profile: draft.profile,
             source: draft.source,
             month: draft.month,
             salaryCents: draft.salaryCents,
-            reserveGoalCents: (_a = draft.requestedReserveCents) !== null && _a !== void 0 ? _a : null,
+            reserveGoalCents: (_c = draft.requestedReserveCents) !== null && _c !== void 0 ? _c : null,
             profileMode: mode,
             lockedCategories: copilotCollectLocksPayload(st),
             updateIncomeSetting: st.updateIncome,
@@ -9268,7 +9317,11 @@ function renderSalaryBudgetProposalBox(app, keyObj, draft, opts = {}) {
         ? `Salário detectado nas entradas (${fmt(draft.observedSalaryCents || draft.observedIncomeCents || 0)}) · sem duplicação`
         : `Referência prevista para ${draft.month}` + (draft.plannedIncomeCents > 0 ? ` · Previsto aberto ${fmt(draft.plannedIncomeCents)}` : '');
     return h('div', { className: 'mf-m3-action-card mf-m3-salary-card', role: 'region', 'aria-label': 'Reorganização de orçamentos por salário' }, h('div', { className: 'mf-m3-action-head' }, h('span', { className: 'micro-label' }, `M3-SALARY · ${draft.source === 'bank' ? 'CONTAS CONECTADAS' : 'MANUAL'} · ${draft.month} · ` +
-        (st.applyRecurring ? 'MÊS + RECORRENTE' : 'VÁLIDO NESTE MÊS')), h('div', { className: 'mf-m3-action-badges' }, h('span', { className: 'mf-ic2-pill' }, confidenceLabel), h('span', { className: statusClass }, statusText))), h('p', { className: 'mf-m3-salary-submeta' }, salaryProvenanceLabel + (draft.incomeVsBalanceNote ? ' · ' + draft.incomeVsBalanceNote : '')), h('div', { className: 'mf-m3-salary-kpis' }, h('div', { className: 'mf-m3-salary-kpi' }, h('small', {}, 'Salário informado'), h('strong', {}, fmt(draft.salaryCents))), h('div', { className: 'mf-m3-salary-kpi' }, h('small', {}, `Limites selecionados (${selectedCount})`), h('strong', {}, fmt(selectedTotalCents))), h('div', { className: 'mf-m3-salary-kpi ' + (marginAfterEdits < 0 ? 'is-deficit' : 'is-surplus') }, h('small', {}, marginAfterEdits < 0 ? 'Déficit sobre salário' : 'Margem / Reserva'), h('strong', {}, (marginAfterEdits < 0 ? '−' : '') + fmt(Math.abs(marginAfterEdits))))), Array.isArray(draft.redistributions) && draft.redistributions.length > 0
+        (st.applyRecurring ? 'MÊS + RECORRENTE' : 'VÁLIDO NESTE MÊS')), h('div', { className: 'mf-m3-action-badges' }, draft.revision && draft.revision > 1
+        ? h('span', { className: 'mf-ic2-pill is-strong' }, `Revisão v${draft.revision}`)
+        : null, h('span', { className: 'mf-ic2-pill' }, confidenceLabel), h('span', { className: statusClass }, statusText))), Array.isArray(draft.revisionDiff) && draft.revisionDiff.length > 0
+        ? h('div', { className: 'mf-m3-salary-revision-diff', role: 'note' }, h('strong', {}, `Alterações na revisão v${draft.revision}: `), ...draft.revisionDiff.slice(0, 5).map((d, idx) => h('span', { key: idx, className: 'mf-ic2-pill' }, `${d.category}: ${d.deltaCents > 0 ? '+' : '−'}${fmt(Math.abs(d.deltaCents))}`)))
+        : null, h('p', { className: 'mf-m3-salary-submeta' }, salaryProvenanceLabel + (draft.incomeVsBalanceNote ? ' · ' + draft.incomeVsBalanceNote : '')), h('div', { className: 'mf-m3-salary-kpis' }, h('div', { className: 'mf-m3-salary-kpi' }, h('small', {}, 'Salário informado'), h('strong', {}, fmt(draft.salaryCents))), h('div', { className: 'mf-m3-salary-kpi' }, h('small', {}, `Limites selecionados (${selectedCount})`), h('strong', {}, fmt(selectedTotalCents))), h('div', { className: 'mf-m3-salary-kpi ' + (marginAfterEdits < 0 ? 'is-deficit' : 'is-surplus') }, h('small', {}, marginAfterEdits < 0 ? 'Déficit sobre salário' : 'Margem / Reserva'), h('strong', {}, (marginAfterEdits < 0 ? '−' : '') + fmt(Math.abs(marginAfterEdits))))), Array.isArray(draft.redistributions) && draft.redistributions.length > 0
         ? h('div', { className: 'mf-m3-salary-redistributions', role: 'region', 'aria-label': 'Redistribuições propostas' }, h('strong', {}, `Redistribuições recomendadas (${draft.redistributions.length})`), h('ul', {}, ...draft.redistributions.slice(0, 6).map((rd, idx) => h('li', { key: idx }, h('b', {}, `${rd.fromCategory} → ${rd.toCategory} (${fmt(rd.amountCents)})`), h('span', {}, ` — ${rd.reason}`)))))
         : null, !st.receipt && typeof (desktop === null || desktop === void 0 ? void 0 : desktop.copilotSalaryBudgetPropose) === 'function' && opts.onReplaceDraft
         ? h('div', { className: 'mf-m3-salary-modes', role: 'group', 'aria-label': 'Perfil de distribuição' }, [
@@ -9709,6 +9762,248 @@ async function copilotUndoSupervisedAction(app, msg, draft) {
         copilotForceRender(app);
     }
 }
+function copilotGetGenericDraftUiState(msg, draft) {
+    let st = MF_M3_ACTION_UI_STATE.get(msg);
+    if (st)
+        return st;
+    const accounts = Array.isArray(draft === null || draft === void 0 ? void 0 : draft.accountIds) ? draft.accountIds : [];
+    const defaultAccountId = accounts.length > 0 ? accounts[0] : null;
+    st = {
+        selectedKeys: new Set((draft === null || draft === void 0 ? void 0 : draft.proposedLimitCents) !== undefined ? [String(draft.proposedLimitCents)] : []),
+        accountId: defaultAccountId,
+        busy: false,
+        capability: (draft === null || draft === void 0 ? void 0 : draft.capability) || null,
+        receipt: null,
+        undoState: null,
+        error: '',
+        dismissed: false
+    };
+    st.applyRecurring = !!(draft === null || draft === void 0 ? void 0 : draft.applyRecurring);
+    st.editedLimitText =
+        Number.isSafeInteger(draft === null || draft === void 0 ? void 0 : draft.proposedLimitCents) ? copilotFormatEditCents(draft.proposedLimitCents) : '';
+    MF_M3_ACTION_UI_STATE.set(msg, st);
+    return st;
+}
+async function copilotEnableGenericCapability(app, msg, draft) {
+    return copilotEnableSupervisedCapability(app, msg, draft);
+}
+async function copilotGenericExecute(app, msg, draft, preparePayload, accountId = null) {
+    const api = desktop;
+    const st = copilotGetGenericDraftUiState(msg, draft);
+    if (!api || st.busy || st.receipt)
+        return;
+    if (!api.d05SessionAuthorize || !api.copilotActionPrepare || !api.copilotActionConfirm) {
+        st.error = 'Bridge desktop de ações supervisionadas indisponível nesta sessão.';
+        copilotForceRender(app);
+        return;
+    }
+    st.busy = true;
+    st.error = '';
+    copilotForceRender(app);
+    try {
+        await api.d05SessionAuthorize({ profile: draft.profile });
+        if (accountId && typeof api.d05BankAccountAuthorize === 'function') {
+            await api.d05BankAccountAuthorize({ accountId });
+        }
+        const prepared = await api.copilotActionPrepare(preparePayload);
+        if (!prepared || prepared.contract !== 'D05/PERSONAL-SUPERVISED-PREVIEW-V1') {
+            throw Error('Prévia oficial D05 não confirmada.');
+        }
+        if (prepared.personalWriteAuthorized === false) {
+            if (typeof api.copilotActionCapabilityStatus === 'function') {
+                const cap = await api.copilotActionCapabilityStatus().catch(() => null);
+                if (cap)
+                    st.capability = { available: !!cap.available, enabled: !!cap.enabled };
+            }
+            st.error = 'Ative primeiro "Ações supervisionadas do Copiloto" para autorizar gravações locais com confirmação nativa.';
+            return;
+        }
+        const confirmed = await api.copilotActionConfirm({
+            proposalId: prepared.proposalId,
+            nonce: prepared.nonce,
+            ...(accountId ? { accountId } : {})
+        });
+        if ((confirmed === null || confirmed === void 0 ? void 0 : confirmed.status) === 'applied' && confirmed.changesApplied === true) {
+            st.receipt = confirmed.receipt;
+            st.undoState = confirmed.undoState || 'available';
+            await copilotRefreshAppData(app, draft.profile);
+        }
+        else if ((confirmed === null || confirmed === void 0 ? void 0 : confirmed.status) === 'denied') {
+            st.error = confirmed.reason || 'Confirmação cancelada ou negada. Nenhuma alteração foi gravada.';
+        }
+        else {
+            st.error = (confirmed === null || confirmed === void 0 ? void 0 : confirmed.reason) || 'Os registros mudaram antes da confirmação; solicite uma nova prévia.';
+        }
+    }
+    catch (e) {
+        st.error = String((e === null || e === void 0 ? void 0 : e.message) || 'Não foi possível concluir a ação supervisionada.');
+    }
+    finally {
+        st.busy = false;
+        copilotForceRender(app);
+    }
+}
+async function copilotGenericUndo(app, msg, draft) {
+    return copilotUndoSupervisedAction(app, msg, draft);
+}
+function renderRuleDraftCard(app, msg, draft) {
+    var _a, _b, _c;
+    if (draft.status === 'needs_clarification' || draft.status === 'unavailable') {
+        return h('div', { className: 'mf-m3-action-card is-info', role: 'region', 'aria-label': 'Regra supervisionada' }, h('div', { className: 'mf-m3-action-head' }, h('span', { className: 'micro-label' }, 'REGRA SUPERVISIONADA · M3-S3'), h('span', { className: 'mf-ic2-epistemic-badge is-estimate' }, 'Somente leitura')));
+    }
+    const st = copilotGetGenericDraftUiState(msg, draft);
+    if (st.dismissed) {
+        return h('div', { className: 'mf-m3-action-card is-dismissed', role: 'status' }, 'Proposta de regra descartada · nenhuma regra foi gravada.');
+    }
+    const needOptIn = !st.receipt && st.capability && st.capability.available && !st.capability.enabled;
+    const isToggle = draft.action === 'rule.toggle';
+    const accounts = Array.isArray(draft.accounts) ? draft.accounts : [];
+    const selectedAccountId = st.accountId || ((_a = accounts[0]) === null || _a === void 0 ? void 0 : _a.id) || null;
+    const statusText = st.receipt
+        ? (st.undoState === 'undone' ? 'Revertida com backup' : 'Aplicada · com recibo')
+        : 'Prévia · nada gravado';
+    const statusClass = st.receipt
+        ? (st.undoState === 'undone' ? 'mf-ic2-epistemic-badge is-estimate' : 'mf-ic2-epistemic-badge is-fact')
+        : 'mf-ic2-epistemic-badge is-simulation';
+    return h('div', { className: 'mf-m3-action-card', role: 'region', 'aria-label': 'Prévia de regra supervisionada' }, h('div', { className: 'mf-m3-action-head' }, h('span', { className: 'micro-label' }, isToggle ? 'ALTERNAR REGRA · M3-S3' : 'REGRA AUTOMÁTICA FUTURA · M3-S3'), h('div', { className: 'mf-m3-action-badges' }, !isToggle ? h('span', { className: 'mf-ic2-pill is-strong mf-m3-badge-future' }, `Somente futuras (> #${(_b = draft.afterRowid) !== null && _b !== void 0 ? _b : 0})`) : null, h('span', { className: statusClass }, statusText))), h('div', { className: 'mf-m3-action-target' }, h('div', { className: 'mf-m3-action-target-copy' }, h('small', {}, isToggle ? (draft.enabled ? 'Ativar regra existente' : 'Desativar regra existente') : `Quando descrição contiver “${draft.pattern}”`), h('strong', {}, `${draft.pattern} → ${draft.targetLabel}`)), h('div', { className: 'mf-m3-action-target-total' }, h('small', {}, 'Natureza'), h('strong', {}, draft.nature === 'income' ? 'Entrada' : 'Saída'))), Array.isArray(draft.warnings) && draft.warnings.length > 0
+        ? h('div', { className: 'mf-m3-action-warnings' }, ...draft.warnings.map((w, i) => h('p', { key: i, className: 'mf-m3-action-notice is-rule-note' }, w)))
+        : null, !isToggle && accounts.length > 1 && !st.receipt
+        ? h('div', { className: 'mf-m3-action-account-picker' }, h('label', {}, 'Conta vinculada à regra', h('select', {
+            value: selectedAccountId || '',
+            disabled: st.busy,
+            onChange: (e) => { st.accountId = String(e.target.value); copilotForceRender(app); }
+        }, ...accounts.map((a) => h('option', { key: a.id, value: a.id }, a.name)))))
+        : null, !isToggle && Array.isArray(draft.sampleMatches) && draft.sampleMatches.length > 0
+        ? h('details', { className: 'mf-m3-action-excluded' }, h('summary', {}, `${draft.sampleMatches.length} exemplo(s) recente(s) compatível(is) — apenas visualização, histórico não será alterado`), h('ul', {}, ...draft.sampleMatches.slice(0, 10).map((m) => h('li', { key: m.accountId + '|' + m.externalId }, `${m.date} · ${m.description} (${fmt(m.amountCents)}) · Atual: ${m.currentCategory}`))))
+        : null, needOptIn
+        ? h('div', { className: 'mf-m3-action-optin' }, h('p', {}, 'Ative as ações supervisionadas para salvar regras automáticas com confirmação nativa e reversão em 1 clique.'), h('button', { type: 'button', className: 'secondary-button', disabled: st.busy, onClick: () => void copilotEnableGenericCapability(app, msg, draft) }, st.busy ? 'Ativando…' : 'Ativar ações supervisionadas'))
+        : null, st.receipt
+        ? h('div', { className: 'mf-m3-action-receipt', role: 'status' }, h('div', { className: 'mf-m3-action-receipt-info' }, h('strong', {}, st.undoState === 'undone' ? 'Regra revertida ao estado anterior' : isToggle ? 'Status da regra atualizado' : `Regra futura criada (#${((_c = st.receipt.result) === null || _c === void 0 ? void 0 : _c.ruleId) || ''})`), h('small', {}, `Recibo ${String(st.receipt.proposalId || '').slice(0, 8)} · Backup SQLite verificado`)), st.undoState === 'available'
+            ? h('button', { type: 'button', className: 'ghost-button', disabled: st.busy, onClick: () => void copilotGenericUndo(app, msg, draft) }, st.busy ? 'Revertendo…' : 'Desfazer')
+            : h('span', { className: 'mf-ic2-pill' }, 'Desfeito'))
+        : h('div', { className: 'mf-m3-action-footer' }, h('button', {
+            type: 'button',
+            className: 'primary-button',
+            disabled: st.busy || !!needOptIn || (!isToggle && !selectedAccountId),
+            onClick: () => {
+                var _a;
+                const payload = isToggle
+                    ? { action: 'rule.toggle', profile: draft.profile, id: draft.ruleId, enabled: draft.enabled, ...(selectedAccountId ? { accountId: selectedAccountId } : {}) }
+                    : {
+                        action: 'rule.save',
+                        profile: draft.profile,
+                        accountId: selectedAccountId,
+                        pattern: draft.pattern,
+                        matchMode: draft.matchMode || 'contains',
+                        priority: draft.priority || 100,
+                        target: draft.target,
+                        constraint: { accountId: selectedAccountId, nature: draft.nature || 'expense', afterRowid: (_a = draft.afterRowid) !== null && _a !== void 0 ? _a : 0 }
+                    };
+                void copilotGenericExecute(app, msg, draft, payload, selectedAccountId);
+            }
+        }, st.busy ? 'Aguardando confirmação…' : isToggle ? (draft.enabled ? 'Confirmar ativação' : 'Confirmar desativação') : 'Confirmar e criar regra futura'), h('button', { type: 'button', className: 'ghost-button', disabled: st.busy, onClick: () => { st.dismissed = true; st.error = ''; copilotForceRender(app); } }, 'Descartar')), st.error ? h('p', { className: 'mf-m3-action-error', role: 'alert' }, st.error) : null);
+}
+function renderCategoryDraftCard(app, msg, draft) {
+    if (draft.status === 'needs_clarification' || draft.status === 'unavailable') {
+        return h('div', { className: 'mf-m3-action-card is-info', role: 'region', 'aria-label': 'Estrutura de categorias' }, h('div', { className: 'mf-m3-action-head' }, h('span', { className: 'micro-label' }, 'CATEGORIAS · M3-S3'), h('span', { className: 'mf-ic2-epistemic-badge is-estimate' }, 'Sem gravação')));
+    }
+    const st = copilotGetGenericDraftUiState(msg, draft);
+    if (st.dismissed) {
+        return h('div', { className: 'mf-m3-action-card is-dismissed', role: 'status' }, 'Proposta descartada · catálogo mantido sem alterações.');
+    }
+    const needOptIn = !st.receipt && st.capability && st.capability.available && !st.capability.enabled;
+    const statusText = st.receipt ? (st.undoState === 'undone' ? 'Revertida com backup' : 'Aplicada · com recibo') : 'Prévia · nada gravado';
+    const statusClass = st.receipt ? (st.undoState === 'undone' ? 'mf-ic2-epistemic-badge is-estimate' : 'mf-ic2-epistemic-badge is-fact') : 'mf-ic2-epistemic-badge is-simulation';
+    const headline = draft.action === 'category.create' ? `Nova categoria: ${draft.name}` :
+        draft.action === 'category.rename' ? `${draft.currentName} → ${draft.newName}` :
+            draft.action === 'subcategory.create' ? `${draft.parentName} › ${draft.name}` :
+                `${draft.parentName} › ${draft.currentName} → ${draft.newName}`;
+    return h('div', { className: 'mf-m3-action-card', role: 'region', 'aria-label': 'Prévia de categoria supervisionada' }, h('div', { className: 'mf-m3-action-head' }, h('span', { className: 'micro-label' }, 'ESTRUTURA D05 · M3-S3'), h('span', { className: statusClass }, statusText)), h('div', { className: 'mf-m3-action-target' }, h('div', { className: 'mf-m3-action-target-copy' }, h('small', {}, draft.action.replace('.', ' · ').toUpperCase()), h('strong', {}, headline))), needOptIn
+        ? h('div', { className: 'mf-m3-action-optin' }, h('p', {}, 'Ative as ações supervisionadas para confirmar alterações no catálogo D05.'), h('button', { type: 'button', className: 'secondary-button', disabled: st.busy, onClick: () => void copilotEnableGenericCapability(app, msg, draft) }, st.busy ? 'Ativando…' : 'Ativar ações supervisionadas'))
+        : null, st.receipt
+        ? h('div', { className: 'mf-m3-action-receipt', role: 'status' }, h('div', { className: 'mf-m3-action-receipt-info' }, h('strong', {}, st.undoState === 'undone' ? 'Catálogo restaurado ao estado anterior' : 'Catálogo atualizado com sucesso'), h('small', {}, `Recibo ${String(st.receipt.proposalId || '').slice(0, 8)} · Backup SQLite verificado`)), st.undoState === 'available'
+            ? h('button', { type: 'button', className: 'ghost-button', disabled: st.busy, onClick: () => void copilotGenericUndo(app, msg, draft) }, st.busy ? 'Revertendo…' : 'Desfazer')
+            : h('span', { className: 'mf-ic2-pill' }, 'Desfeito'))
+        : h('div', { className: 'mf-m3-action-footer' }, h('button', {
+            type: 'button',
+            className: 'primary-button',
+            disabled: st.busy || !!needOptIn,
+            onClick: () => void copilotGenericExecute(app, msg, draft, { action: draft.action, profile: draft.profile, ...(draft.payload || {}) })
+        }, st.busy ? 'Aguardando confirmação…' : 'Confirmar e aplicar'), h('button', { type: 'button', className: 'ghost-button', disabled: st.busy, onClick: () => { st.dismissed = true; st.error = ''; copilotForceRender(app); } }, 'Descartar')), st.error ? h('p', { className: 'mf-m3-action-error', role: 'alert' }, st.error) : null);
+}
+function renderBudgetEditDraftCard(app, msg, draft) {
+    if (draft.status === 'needs_clarification' || draft.status === 'unavailable') {
+        return h('div', { className: 'mf-m3-action-card is-info', role: 'region', 'aria-label': 'Ajuste de orçamento' }, h('div', { className: 'mf-m3-action-head' }, h('span', { className: 'micro-label' }, 'ORÇAMENTO MENSAL · M3-S4'), h('span', { className: 'mf-ic2-epistemic-badge is-estimate' }, 'Sem gravação')));
+    }
+    const st = copilotGetGenericDraftUiState(msg, draft);
+    if (st.dismissed) {
+        return h('div', { className: 'mf-m3-action-card is-dismissed', role: 'status' }, 'Ajuste descartado · orçamento mantido.');
+    }
+    const needOptIn = !st.receipt && st.capability && st.capability.available && !st.capability.enabled;
+    const parsedVal = copilotParseBrlCents(st.editedLimitText);
+    const amountCents = parsedVal !== null ? parsedVal : draft.proposedLimitCents;
+    const statusText = st.receipt ? (st.undoState === 'undone' ? 'Revertida com backup' : 'Aplicada · com recibo') : 'Prévia · nada gravado';
+    const statusClass = st.receipt ? (st.undoState === 'undone' ? 'mf-ic2-epistemic-badge is-estimate' : 'mf-ic2-epistemic-badge is-fact') : 'mf-ic2-epistemic-badge is-simulation';
+    return h('div', { className: 'mf-m3-action-card', role: 'region', 'aria-label': 'Prévia de ajuste de orçamento' }, h('div', { className: 'mf-m3-action-head' }, h('span', { className: 'micro-label' }, `ORÇAMENTO · ${draft.month} · ` + (st.applyRecurring ? 'MÊS + RECORRENTE' : 'SOMENTE NESTE MÊS')), h('span', { className: statusClass }, statusText)), h('div', { className: 'mf-m3-action-target' }, h('div', { className: 'mf-m3-action-target-copy' }, h('small', {}, `Atual: ${draft.currentLimitCents !== null ? fmt(draft.currentLimitCents) : 'Sem limite'} · Gasto no mês: ${fmt(draft.currentSpentCents || 0)}`), h('strong', {}, `${draft.category} → ${fmt(amountCents)}`)), !st.receipt
+        ? h('label', { className: 'mf-m3-salary-input-wrap' }, h('span', {}, 'Limite R$'), h('input', {
+            type: 'text',
+            inputMode: 'decimal',
+            disabled: st.busy,
+            value: st.editedLimitText,
+            onChange: (e) => { st.editedLimitText = String(e.target.value); copilotForceRender(app); }
+        }))
+        : null), !st.receipt
+        ? h('label', { className: 'mf-m3-salary-income-opt' }, h('input', { type: 'checkbox', checked: !!st.applyRecurring, disabled: st.busy, onChange: (e) => { st.applyRecurring = !!e.target.checked; copilotForceRender(app); } }), h('span', {}, `Aplicar também como limite recorrente para os próximos meses (padrão: somente ${draft.month})`))
+        : null, Array.isArray(draft.warnings) && draft.warnings.length > 0
+        ? h('div', { className: 'mf-m3-action-warnings' }, ...draft.warnings.map((w, i) => h('p', { key: i, className: 'mf-m3-action-notice' }, w)))
+        : null, needOptIn
+        ? h('div', { className: 'mf-m3-action-optin' }, h('p', {}, 'Ative as ações supervisionadas para atualizar seu orçamento com backup SQLite.'), h('button', { type: 'button', className: 'secondary-button', disabled: st.busy, onClick: () => void copilotEnableGenericCapability(app, msg, draft) }, st.busy ? 'Ativando…' : 'Ativar ações supervisionadas'))
+        : null, st.receipt
+        ? h('div', { className: 'mf-m3-action-receipt', role: 'status' }, h('div', { className: 'mf-m3-action-receipt-info' }, h('strong', {}, st.undoState === 'undone' ? 'Limite anterior restaurado' : `Limite de ${draft.category} atualizado`), h('small', {}, `Recibo ${String(st.receipt.proposalId || '').slice(0, 8)} · Backup SQLite verificado`)), st.undoState === 'available'
+            ? h('button', { type: 'button', className: 'ghost-button', disabled: st.busy, onClick: () => void copilotGenericUndo(app, msg, draft) }, st.busy ? 'Revertendo…' : 'Desfazer')
+            : h('span', { className: 'mf-ic2-pill' }, 'Desfeito'))
+        : h('div', { className: 'mf-m3-action-footer' }, h('button', {
+            type: 'button',
+            className: 'primary-button',
+            disabled: st.busy || parsedVal === null || !!needOptIn,
+            onClick: () => void copilotGenericExecute(app, msg, draft, {
+                action: 'budgets.reorganize',
+                profile: draft.profile,
+                month: draft.month,
+                applyRecurring: !!st.applyRecurring,
+                budgets: [{ category: draft.category, amountCents }]
+            })
+        }, st.busy ? 'Aguardando confirmação…' : 'Confirmar novo limite'), h('button', { type: 'button', className: 'ghost-button', disabled: st.busy, onClick: () => { st.dismissed = true; st.error = ''; copilotForceRender(app); } }, 'Descartar')), st.error ? h('p', { className: 'mf-m3-action-error', role: 'alert' }, st.error) : null);
+}
+function renderPlanningDraftCard(app, msg, draft) {
+    var _a, _b;
+    if (draft.status === 'needs_clarification' || draft.status === 'unavailable') {
+        return h('div', { className: 'mf-m3-action-card is-info', role: 'region', 'aria-label': 'Planejamento supervisionado' }, h('div', { className: 'mf-m3-action-head' }, h('span', { className: 'micro-label' }, 'PLANEJAMENTO · M3-S4'), h('span', { className: 'mf-ic2-epistemic-badge is-estimate' }, 'Sem gravação')));
+    }
+    const st = copilotGetGenericDraftUiState(msg, draft);
+    if (st.dismissed) {
+        return h('div', { className: 'mf-m3-action-card is-dismissed', role: 'status' }, 'Prévia de planejamento descartada · nenhum item criado ou alterado.');
+    }
+    const needOptIn = !st.receipt && st.capability && st.capability.available && !st.capability.enabled;
+    const statusText = st.receipt ? (st.undoState === 'undone' ? 'Revertida com backup' : 'Aplicada · com recibo') : 'Prévia · nada gravado';
+    const statusClass = st.receipt ? (st.undoState === 'undone' ? 'mf-ic2-epistemic-badge is-estimate' : 'mf-ic2-epistemic-badge is-fact') : 'mf-ic2-epistemic-badge is-simulation';
+    return h('div', { className: 'mf-m3-action-card', role: 'region', 'aria-label': 'Prévia de planejamento supervisionado' }, h('div', { className: 'mf-m3-action-head' }, h('span', { className: 'micro-label' }, draft.fromSimulation ? 'SIMULAÇÃO F4 → PLANEJAMENTO · M3-S4' : 'PLANEJAMENTO LOCAL · M3-S4'), h('div', { className: 'mf-m3-action-badges' }, h('span', { className: 'mf-ic2-pill mf-m3-badge-no-payment' }, 'Não realiza pagamento bancário'), h('span', { className: statusClass }, statusText))), h('div', { className: 'mf-m3-action-target' }, h('div', { className: 'mf-m3-action-target-copy' }, h('small', {}, draft.action === 'planning.create' ? `${draft.kind === 'income' ? 'Receita prevista' : 'Despesa prevista'} · ${draft.targetLabel || 'Outros'} · Vencimento ${draft.dueDate}` : draft.changeLabel || draft.afterSummary || draft.dueDate), h('strong', {}, draft.title)), h('div', { className: 'mf-m3-action-target-total' }, h('small', {}, draft.count > 1 ? `${draft.count}x` : 'Valor'), h('strong', {}, fmt((_b = (_a = draft.totalAmountCents) !== null && _a !== void 0 ? _a : draft.amountCents) !== null && _b !== void 0 ? _b : 0)))), draft.noBankPaymentNotice
+        ? h('p', { className: 'mf-m3-action-notice is-rule-note', role: 'note' }, draft.noBankPaymentNotice)
+        : null, Array.isArray(draft.warnings) && draft.warnings.length > 0
+        ? h('div', { className: 'mf-m3-action-warnings' }, ...draft.warnings.map((w, i) => h('p', { key: i, className: 'mf-m3-action-notice' }, w)))
+        : null, needOptIn
+        ? h('div', { className: 'mf-m3-action-optin' }, h('p', {}, 'Ative as ações supervisionadas para salvar itens no Planejamento local com backup SQLite.'), h('button', { type: 'button', className: 'secondary-button', disabled: st.busy, onClick: () => void copilotEnableGenericCapability(app, msg, draft) }, st.busy ? 'Ativando…' : 'Ativar ações supervisionadas'))
+        : null, st.receipt
+        ? h('div', { className: 'mf-m3-action-receipt', role: 'status' }, h('div', { className: 'mf-m3-action-receipt-info' }, h('strong', {}, st.undoState === 'undone' ? 'Planejamento restaurado ao estado anterior' : 'Planejamento atualizado com sucesso'), h('small', {}, `Recibo ${String(st.receipt.proposalId || '').slice(0, 8)} · Backup SQLite verificado`)), st.undoState === 'available'
+            ? h('button', { type: 'button', className: 'ghost-button', disabled: st.busy, onClick: () => void copilotGenericUndo(app, msg, draft) }, st.busy ? 'Revertendo…' : 'Desfazer')
+            : h('span', { className: 'mf-ic2-pill' }, 'Desfeito'))
+        : h('div', { className: 'mf-m3-action-footer' }, h('button', {
+            type: 'button',
+            className: 'primary-button',
+            disabled: st.busy || !!needOptIn,
+            onClick: () => void copilotGenericExecute(app, msg, draft, { action: draft.action, profile: draft.profile, ...(draft.payload || {}) })
+        }, st.busy ? 'Aguardando confirmação…' : 'Confirmar no Planejamento'), h('button', { type: 'button', className: 'ghost-button', disabled: st.busy, onClick: () => { st.dismissed = true; st.error = ''; copilotForceRender(app); } }, 'Descartar')), st.error ? h('p', { className: 'mf-m3-action-error', role: 'alert' }, st.error) : null);
+}
 function renderCopilotActionCard(app, msg) {
     var _a, _b, _c;
     const draft = msg === null || msg === void 0 ? void 0 : msg.m3ActionDraft;
@@ -9722,6 +10017,14 @@ function renderCopilotActionCard(app, msg) {
             }
         });
     }
+    if (draft.contract === 'MF3/RULE-DRAFT-V1')
+        return renderRuleDraftCard(app, msg, draft);
+    if (draft.contract === 'MF3/CATEGORY-DRAFT-V1')
+        return renderCategoryDraftCard(app, msg, draft);
+    if (draft.contract === 'MF3/BUDGET-EDIT-DRAFT-V1')
+        return renderBudgetEditDraftCard(app, msg, draft);
+    if (draft.contract === 'MF3/PLANNING-DRAFT-V1')
+        return renderPlanningDraftCard(app, msg, draft);
     if (draft.contract !== 'MF3/ACTION-DRAFT-V1')
         return null;
     if (draft.status === 'needs_clarification' || draft.status === 'unavailable') {

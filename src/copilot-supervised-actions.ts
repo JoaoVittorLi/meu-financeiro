@@ -49,6 +49,10 @@ async function copilotRefreshAppData(app: any, profile: string) {
     if (typeof app.refreshBank === 'function') await app.refreshBank();
   } catch { /* ignore */ }
   try {
+    if (typeof app.refreshCategories === 'function') await app.refreshCategories();
+    if (typeof app.loadQA84VisualCatalog === 'function') void app.loadQA84VisualCatalog();
+  } catch { /* ignore */ }
+  try {
     if (typeof app.refreshPlanning === 'function') await app.refreshPlanning();
   } catch { /* ignore */ }
   try {
@@ -192,7 +196,9 @@ async function copilotRecalcSalaryDraft(
   st.error = '';
   copilotForceRender(app);
   try {
+    const accessToken = app?.state?.localFinancialAccess?.token;
     const nextDraft = await api.copilotSalaryBudgetPropose({
+      ...(typeof accessToken === 'string' && accessToken ? { token: accessToken } : {}),
       profile: draft.profile,
       source: draft.source,
       month: draft.month,
@@ -384,8 +390,20 @@ function renderSalaryBudgetProposalBox(
         `M3-SALARY · ${draft.source === 'bank' ? 'CONTAS CONECTADAS' : 'MANUAL'} · ${draft.month} · ` +
         (st.applyRecurring ? 'MÊS + RECORRENTE' : 'VÁLIDO NESTE MÊS')),
       h('div', { className: 'mf-m3-action-badges' },
+        draft.revision && draft.revision > 1
+          ? h('span', { className: 'mf-ic2-pill is-strong' }, `Revisão v${draft.revision}`)
+          : null,
         h('span', { className: 'mf-ic2-pill' }, confidenceLabel),
         h('span', { className: statusClass }, statusText))),
+
+    Array.isArray(draft.revisionDiff) && draft.revisionDiff.length > 0
+      ? h('div', { className: 'mf-m3-salary-revision-diff', role: 'note' },
+          h('strong', {}, `Alterações na revisão v${draft.revision}: `),
+          ...draft.revisionDiff.slice(0, 5).map((d: any, idx: number) =>
+            h('span', { key: idx, className: 'mf-ic2-pill' },
+              `${d.category}: ${d.deltaCents > 0 ? '+' : '−'}${fmt(Math.abs(d.deltaCents))}`)
+          ))
+      : null,
 
     h('p', { className: 'mf-m3-salary-submeta' },
       salaryProvenanceLabel + (draft.incomeVsBalanceNote ? ' · ' + draft.incomeVsBalanceNote : '')),
@@ -897,6 +915,379 @@ async function copilotUndoSupervisedAction(app: any, msg: any, draft: any) {
   }
 }
 
+function copilotGetGenericDraftUiState(msg: any, draft: any) {
+  let st = MF_M3_ACTION_UI_STATE.get(msg);
+  if (st) return st;
+  const accounts: string[] = Array.isArray(draft?.accountIds) ? draft.accountIds : [];
+  const defaultAccountId = accounts.length > 0 ? accounts[0] : null;
+  st = {
+    selectedKeys: new Set<string>(draft?.proposedLimitCents !== undefined ? [String(draft.proposedLimitCents)] : []),
+    accountId: defaultAccountId,
+    busy: false,
+    capability: draft?.capability || null,
+    receipt: null,
+    undoState: null,
+    error: '',
+    dismissed: false
+  };
+  (st as any).applyRecurring = !!draft?.applyRecurring;
+  (st as any).editedLimitText =
+    Number.isSafeInteger(draft?.proposedLimitCents) ? copilotFormatEditCents(draft.proposedLimitCents) : '';
+  MF_M3_ACTION_UI_STATE.set(msg, st);
+  return st;
+}
+
+async function copilotEnableGenericCapability(app: any, msg: any, draft: any) {
+  return copilotEnableSupervisedCapability(app, msg, draft);
+}
+
+async function copilotGenericExecute(app: any, msg: any, draft: any, preparePayload: any, accountId: string | null = null) {
+  const api = desktop as any;
+  const st = copilotGetGenericDraftUiState(msg, draft);
+  if (!api || st.busy || st.receipt) return;
+  if (!api.d05SessionAuthorize || !api.copilotActionPrepare || !api.copilotActionConfirm) {
+    st.error = 'Bridge desktop de ações supervisionadas indisponível nesta sessão.';
+    copilotForceRender(app);
+    return;
+  }
+  st.busy = true;
+  st.error = '';
+  copilotForceRender(app);
+  try {
+    await api.d05SessionAuthorize({ profile: draft.profile });
+    if (accountId && typeof api.d05BankAccountAuthorize === 'function') {
+      await api.d05BankAccountAuthorize({ accountId });
+    }
+    const prepared = await api.copilotActionPrepare(preparePayload);
+    if (!prepared || prepared.contract !== 'D05/PERSONAL-SUPERVISED-PREVIEW-V1') {
+      throw Error('Prévia oficial D05 não confirmada.');
+    }
+    if (prepared.personalWriteAuthorized === false) {
+      if (typeof api.copilotActionCapabilityStatus === 'function') {
+        const cap = await api.copilotActionCapabilityStatus().catch(() => null);
+        if (cap) st.capability = { available: !!cap.available, enabled: !!cap.enabled };
+      }
+      st.error = 'Ative primeiro "Ações supervisionadas do Copiloto" para autorizar gravações locais com confirmação nativa.';
+      return;
+    }
+    const confirmed = await api.copilotActionConfirm({
+      proposalId: prepared.proposalId,
+      nonce: prepared.nonce,
+      ...(accountId ? { accountId } : {})
+    });
+    if (confirmed?.status === 'applied' && confirmed.changesApplied === true) {
+      st.receipt = confirmed.receipt;
+      st.undoState = confirmed.undoState || 'available';
+      await copilotRefreshAppData(app, draft.profile);
+    } else if (confirmed?.status === 'denied') {
+      st.error = confirmed.reason || 'Confirmação cancelada ou negada. Nenhuma alteração foi gravada.';
+    } else {
+      st.error = confirmed?.reason || 'Os registros mudaram antes da confirmação; solicite uma nova prévia.';
+    }
+  } catch (e: any) {
+    st.error = String(e?.message || 'Não foi possível concluir a ação supervisionada.');
+  } finally {
+    st.busy = false;
+    copilotForceRender(app);
+  }
+}
+
+async function copilotGenericUndo(app: any, msg: any, draft: any) {
+  return copilotUndoSupervisedAction(app, msg, draft);
+}
+
+function renderRuleDraftCard(app: any, msg: any, draft: any) {
+  if (draft.status === 'needs_clarification' || draft.status === 'unavailable') {
+    return h('div', { className: 'mf-m3-action-card is-info', role: 'region', 'aria-label': 'Regra supervisionada' },
+      h('div', { className: 'mf-m3-action-head' },
+        h('span', { className: 'micro-label' }, 'REGRA SUPERVISIONADA · M3-S3'),
+        h('span', { className: 'mf-ic2-epistemic-badge is-estimate' }, 'Somente leitura')));
+  }
+  const st = copilotGetGenericDraftUiState(msg, draft);
+  if (st.dismissed) {
+    return h('div', { className: 'mf-m3-action-card is-dismissed', role: 'status' },
+      'Proposta de regra descartada · nenhuma regra foi gravada.');
+  }
+  const needOptIn = !st.receipt && st.capability && st.capability.available && !st.capability.enabled;
+  const isToggle = draft.action === 'rule.toggle';
+  const accounts: any[] = Array.isArray(draft.accounts) ? draft.accounts : [];
+  const selectedAccountId = st.accountId || accounts[0]?.id || null;
+
+  const statusText = st.receipt
+    ? (st.undoState === 'undone' ? 'Revertida com backup' : 'Aplicada · com recibo')
+    : 'Prévia · nada gravado';
+  const statusClass = st.receipt
+    ? (st.undoState === 'undone' ? 'mf-ic2-epistemic-badge is-estimate' : 'mf-ic2-epistemic-badge is-fact')
+    : 'mf-ic2-epistemic-badge is-simulation';
+
+  return h('div', { className: 'mf-m3-action-card', role: 'region', 'aria-label': 'Prévia de regra supervisionada' },
+    h('div', { className: 'mf-m3-action-head' },
+      h('span', { className: 'micro-label' }, isToggle ? 'ALTERNAR REGRA · M3-S3' : 'REGRA AUTOMÁTICA FUTURA · M3-S3'),
+      h('div', { className: 'mf-m3-action-badges' },
+        !isToggle ? h('span', { className: 'mf-ic2-pill is-strong mf-m3-badge-future' }, `Somente futuras (> #${draft.afterRowid ?? 0})`) : null,
+        h('span', { className: statusClass }, statusText))),
+
+    h('div', { className: 'mf-m3-action-target' },
+      h('div', { className: 'mf-m3-action-target-copy' },
+        h('small', {}, isToggle ? (draft.enabled ? 'Ativar regra existente' : 'Desativar regra existente') : `Quando descrição contiver “${draft.pattern}”`),
+        h('strong', {}, `${draft.pattern} → ${draft.targetLabel}`)),
+      h('div', { className: 'mf-m3-action-target-total' },
+        h('small', {}, 'Natureza'),
+        h('strong', {}, draft.nature === 'income' ? 'Entrada' : 'Saída'))),
+
+    Array.isArray(draft.warnings) && draft.warnings.length > 0
+      ? h('div', { className: 'mf-m3-action-warnings' },
+          ...draft.warnings.map((w: string, i: number) => h('p', { key: i, className: 'mf-m3-action-notice is-rule-note' }, w)))
+      : null,
+
+    !isToggle && accounts.length > 1 && !st.receipt
+      ? h('div', { className: 'mf-m3-action-account-picker' },
+          h('label', {}, 'Conta vinculada à regra',
+            h('select', {
+              value: selectedAccountId || '',
+              disabled: st.busy,
+              onChange: (e: any) => { st.accountId = String(e.target.value); copilotForceRender(app); }
+            }, ...accounts.map((a) => h('option', { key: a.id, value: a.id }, a.name)))))
+      : null,
+
+    !isToggle && Array.isArray(draft.sampleMatches) && draft.sampleMatches.length > 0
+      ? h('details', { className: 'mf-m3-action-excluded' },
+          h('summary', {}, `${draft.sampleMatches.length} exemplo(s) recente(s) compatível(is) — apenas visualização, histórico não será alterado`),
+          h('ul', {},
+            ...draft.sampleMatches.slice(0, 10).map((m: any) =>
+              h('li', { key: m.accountId + '|' + m.externalId }, `${m.date} · ${m.description} (${fmt(m.amountCents)}) · Atual: ${m.currentCategory}`)
+            )))
+      : null,
+
+    needOptIn
+      ? h('div', { className: 'mf-m3-action-optin' },
+          h('p', {}, 'Ative as ações supervisionadas para salvar regras automáticas com confirmação nativa e reversão em 1 clique.'),
+          h('button', { type: 'button', className: 'secondary-button', disabled: st.busy, onClick: () => void copilotEnableGenericCapability(app, msg, draft) },
+            st.busy ? 'Ativando…' : 'Ativar ações supervisionadas'))
+      : null,
+
+    st.receipt
+      ? h('div', { className: 'mf-m3-action-receipt', role: 'status' },
+          h('div', { className: 'mf-m3-action-receipt-info' },
+            h('strong', {}, st.undoState === 'undone' ? 'Regra revertida ao estado anterior' : isToggle ? 'Status da regra atualizado' : `Regra futura criada (#${st.receipt.result?.ruleId || ''})`),
+            h('small', {}, `Recibo ${String(st.receipt.proposalId || '').slice(0, 8)} · Backup SQLite verificado`)),
+          st.undoState === 'available'
+            ? h('button', { type: 'button', className: 'ghost-button', disabled: st.busy, onClick: () => void copilotGenericUndo(app, msg, draft) },
+                st.busy ? 'Revertendo…' : 'Desfazer')
+            : h('span', { className: 'mf-ic2-pill' }, 'Desfeito'))
+      : h('div', { className: 'mf-m3-action-footer' },
+          h('button', {
+            type: 'button',
+            className: 'primary-button',
+            disabled: st.busy || !!needOptIn || (!isToggle && !selectedAccountId),
+            onClick: () => {
+              const payload = isToggle
+                ? { action: 'rule.toggle', profile: draft.profile, id: draft.ruleId, enabled: draft.enabled, ...(selectedAccountId ? { accountId: selectedAccountId } : {}) }
+                : {
+                    action: 'rule.save',
+                    profile: draft.profile,
+                    accountId: selectedAccountId,
+                    pattern: draft.pattern,
+                    matchMode: draft.matchMode || 'contains',
+                    priority: draft.priority || 100,
+                    target: draft.target,
+                    constraint: { accountId: selectedAccountId, nature: draft.nature || 'expense', afterRowid: draft.afterRowid ?? 0 }
+                  };
+              void copilotGenericExecute(app, msg, draft, payload, selectedAccountId);
+            }
+          }, st.busy ? 'Aguardando confirmação…' : isToggle ? (draft.enabled ? 'Confirmar ativação' : 'Confirmar desativação') : 'Confirmar e criar regra futura'),
+          h('button', { type: 'button', className: 'ghost-button', disabled: st.busy, onClick: () => { st.dismissed = true; st.error = ''; copilotForceRender(app); } }, 'Descartar')),
+
+    st.error ? h('p', { className: 'mf-m3-action-error', role: 'alert' }, st.error) : null);
+}
+
+function renderCategoryDraftCard(app: any, msg: any, draft: any) {
+  if (draft.status === 'needs_clarification' || draft.status === 'unavailable') {
+    return h('div', { className: 'mf-m3-action-card is-info', role: 'region', 'aria-label': 'Estrutura de categorias' },
+      h('div', { className: 'mf-m3-action-head' },
+        h('span', { className: 'micro-label' }, 'CATEGORIAS · M3-S3'),
+        h('span', { className: 'mf-ic2-epistemic-badge is-estimate' }, 'Sem gravação')));
+  }
+  const st = copilotGetGenericDraftUiState(msg, draft);
+  if (st.dismissed) {
+    return h('div', { className: 'mf-m3-action-card is-dismissed', role: 'status' }, 'Proposta descartada · catálogo mantido sem alterações.');
+  }
+  const needOptIn = !st.receipt && st.capability && st.capability.available && !st.capability.enabled;
+  const statusText = st.receipt ? (st.undoState === 'undone' ? 'Revertida com backup' : 'Aplicada · com recibo') : 'Prévia · nada gravado';
+  const statusClass = st.receipt ? (st.undoState === 'undone' ? 'mf-ic2-epistemic-badge is-estimate' : 'mf-ic2-epistemic-badge is-fact') : 'mf-ic2-epistemic-badge is-simulation';
+  const headline =
+    draft.action === 'category.create' ? `Nova categoria: ${draft.name}` :
+    draft.action === 'category.rename' ? `${draft.currentName} → ${draft.newName}` :
+    draft.action === 'subcategory.create' ? `${draft.parentName} › ${draft.name}` :
+    `${draft.parentName} › ${draft.currentName} → ${draft.newName}`;
+
+  return h('div', { className: 'mf-m3-action-card', role: 'region', 'aria-label': 'Prévia de categoria supervisionada' },
+    h('div', { className: 'mf-m3-action-head' },
+      h('span', { className: 'micro-label' }, 'ESTRUTURA D05 · M3-S3'),
+      h('span', { className: statusClass }, statusText)),
+    h('div', { className: 'mf-m3-action-target' },
+      h('div', { className: 'mf-m3-action-target-copy' },
+        h('small', {}, draft.action.replace('.', ' · ').toUpperCase()),
+        h('strong', {}, headline))),
+    needOptIn
+      ? h('div', { className: 'mf-m3-action-optin' },
+          h('p', {}, 'Ative as ações supervisionadas para confirmar alterações no catálogo D05.'),
+          h('button', { type: 'button', className: 'secondary-button', disabled: st.busy, onClick: () => void copilotEnableGenericCapability(app, msg, draft) },
+            st.busy ? 'Ativando…' : 'Ativar ações supervisionadas'))
+      : null,
+    st.receipt
+      ? h('div', { className: 'mf-m3-action-receipt', role: 'status' },
+          h('div', { className: 'mf-m3-action-receipt-info' },
+            h('strong', {}, st.undoState === 'undone' ? 'Catálogo restaurado ao estado anterior' : 'Catálogo atualizado com sucesso'),
+            h('small', {}, `Recibo ${String(st.receipt.proposalId || '').slice(0, 8)} · Backup SQLite verificado`)),
+          st.undoState === 'available'
+            ? h('button', { type: 'button', className: 'ghost-button', disabled: st.busy, onClick: () => void copilotGenericUndo(app, msg, draft) }, st.busy ? 'Revertendo…' : 'Desfazer')
+            : h('span', { className: 'mf-ic2-pill' }, 'Desfeito'))
+      : h('div', { className: 'mf-m3-action-footer' },
+          h('button', {
+            type: 'button',
+            className: 'primary-button',
+            disabled: st.busy || !!needOptIn,
+            onClick: () => void copilotGenericExecute(app, msg, draft, { action: draft.action, profile: draft.profile, ...(draft.payload || {}) })
+          }, st.busy ? 'Aguardando confirmação…' : 'Confirmar e aplicar'),
+          h('button', { type: 'button', className: 'ghost-button', disabled: st.busy, onClick: () => { st.dismissed = true; st.error = ''; copilotForceRender(app); } }, 'Descartar')),
+    st.error ? h('p', { className: 'mf-m3-action-error', role: 'alert' }, st.error) : null);
+}
+
+function renderBudgetEditDraftCard(app: any, msg: any, draft: any) {
+  if (draft.status === 'needs_clarification' || draft.status === 'unavailable') {
+    return h('div', { className: 'mf-m3-action-card is-info', role: 'region', 'aria-label': 'Ajuste de orçamento' },
+      h('div', { className: 'mf-m3-action-head' },
+        h('span', { className: 'micro-label' }, 'ORÇAMENTO MENSAL · M3-S4'),
+        h('span', { className: 'mf-ic2-epistemic-badge is-estimate' }, 'Sem gravação')));
+  }
+  const st: any = copilotGetGenericDraftUiState(msg, draft);
+  if (st.dismissed) {
+    return h('div', { className: 'mf-m3-action-card is-dismissed', role: 'status' }, 'Ajuste descartado · orçamento mantido.');
+  }
+  const needOptIn = !st.receipt && st.capability && st.capability.available && !st.capability.enabled;
+  const parsedVal = copilotParseBrlCents(st.editedLimitText);
+  const amountCents = parsedVal !== null ? parsedVal : draft.proposedLimitCents;
+  const statusText = st.receipt ? (st.undoState === 'undone' ? 'Revertida com backup' : 'Aplicada · com recibo') : 'Prévia · nada gravado';
+  const statusClass = st.receipt ? (st.undoState === 'undone' ? 'mf-ic2-epistemic-badge is-estimate' : 'mf-ic2-epistemic-badge is-fact') : 'mf-ic2-epistemic-badge is-simulation';
+
+  return h('div', { className: 'mf-m3-action-card', role: 'region', 'aria-label': 'Prévia de ajuste de orçamento' },
+    h('div', { className: 'mf-m3-action-head' },
+      h('span', { className: 'micro-label' }, `ORÇAMENTO · ${draft.month} · ` + (st.applyRecurring ? 'MÊS + RECORRENTE' : 'SOMENTE NESTE MÊS')),
+      h('span', { className: statusClass }, statusText)),
+    h('div', { className: 'mf-m3-action-target' },
+      h('div', { className: 'mf-m3-action-target-copy' },
+        h('small', {}, `Atual: ${draft.currentLimitCents !== null ? fmt(draft.currentLimitCents) : 'Sem limite'} · Gasto no mês: ${fmt(draft.currentSpentCents || 0)}`),
+        h('strong', {}, `${draft.category} → ${fmt(amountCents)}`)),
+      !st.receipt
+        ? h('label', { className: 'mf-m3-salary-input-wrap' },
+            h('span', {}, 'Limite R$'),
+            h('input', {
+              type: 'text',
+              inputMode: 'decimal',
+              disabled: st.busy,
+              value: st.editedLimitText,
+              onChange: (e: any) => { st.editedLimitText = String(e.target.value); copilotForceRender(app); }
+            }))
+        : null),
+    !st.receipt
+      ? h('label', { className: 'mf-m3-salary-income-opt' },
+          h('input', { type: 'checkbox', checked: !!st.applyRecurring, disabled: st.busy, onChange: (e: any) => { st.applyRecurring = !!e.target.checked; copilotForceRender(app); } }),
+          h('span', {}, `Aplicar também como limite recorrente para os próximos meses (padrão: somente ${draft.month})`))
+      : null,
+    Array.isArray(draft.warnings) && draft.warnings.length > 0
+      ? h('div', { className: 'mf-m3-action-warnings' }, ...draft.warnings.map((w: string, i: number) => h('p', { key: i, className: 'mf-m3-action-notice' }, w)))
+      : null,
+    needOptIn
+      ? h('div', { className: 'mf-m3-action-optin' },
+          h('p', {}, 'Ative as ações supervisionadas para atualizar seu orçamento com backup SQLite.'),
+          h('button', { type: 'button', className: 'secondary-button', disabled: st.busy, onClick: () => void copilotEnableGenericCapability(app, msg, draft) }, st.busy ? 'Ativando…' : 'Ativar ações supervisionadas'))
+      : null,
+    st.receipt
+      ? h('div', { className: 'mf-m3-action-receipt', role: 'status' },
+          h('div', { className: 'mf-m3-action-receipt-info' },
+            h('strong', {}, st.undoState === 'undone' ? 'Limite anterior restaurado' : `Limite de ${draft.category} atualizado`),
+            h('small', {}, `Recibo ${String(st.receipt.proposalId || '').slice(0, 8)} · Backup SQLite verificado`)),
+          st.undoState === 'available'
+            ? h('button', { type: 'button', className: 'ghost-button', disabled: st.busy, onClick: () => void copilotGenericUndo(app, msg, draft) }, st.busy ? 'Revertendo…' : 'Desfazer')
+            : h('span', { className: 'mf-ic2-pill' }, 'Desfeito'))
+      : h('div', { className: 'mf-m3-action-footer' },
+          h('button', {
+            type: 'button',
+            className: 'primary-button',
+            disabled: st.busy || parsedVal === null || !!needOptIn,
+            onClick: () => void copilotGenericExecute(app, msg, draft, {
+              action: 'budgets.reorganize',
+              profile: draft.profile,
+              month: draft.month,
+              applyRecurring: !!st.applyRecurring,
+              budgets: [{ category: draft.category, amountCents }]
+            })
+          }, st.busy ? 'Aguardando confirmação…' : 'Confirmar novo limite'),
+          h('button', { type: 'button', className: 'ghost-button', disabled: st.busy, onClick: () => { st.dismissed = true; st.error = ''; copilotForceRender(app); } }, 'Descartar')),
+    st.error ? h('p', { className: 'mf-m3-action-error', role: 'alert' }, st.error) : null);
+}
+
+function renderPlanningDraftCard(app: any, msg: any, draft: any) {
+  if (draft.status === 'needs_clarification' || draft.status === 'unavailable') {
+    return h('div', { className: 'mf-m3-action-card is-info', role: 'region', 'aria-label': 'Planejamento supervisionado' },
+      h('div', { className: 'mf-m3-action-head' },
+        h('span', { className: 'micro-label' }, 'PLANEJAMENTO · M3-S4'),
+        h('span', { className: 'mf-ic2-epistemic-badge is-estimate' }, 'Sem gravação')));
+  }
+  const st = copilotGetGenericDraftUiState(msg, draft);
+  if (st.dismissed) {
+    return h('div', { className: 'mf-m3-action-card is-dismissed', role: 'status' }, 'Prévia de planejamento descartada · nenhum item criado ou alterado.');
+  }
+  const needOptIn = !st.receipt && st.capability && st.capability.available && !st.capability.enabled;
+  const statusText = st.receipt ? (st.undoState === 'undone' ? 'Revertida com backup' : 'Aplicada · com recibo') : 'Prévia · nada gravado';
+  const statusClass = st.receipt ? (st.undoState === 'undone' ? 'mf-ic2-epistemic-badge is-estimate' : 'mf-ic2-epistemic-badge is-fact') : 'mf-ic2-epistemic-badge is-simulation';
+
+  return h('div', { className: 'mf-m3-action-card', role: 'region', 'aria-label': 'Prévia de planejamento supervisionado' },
+    h('div', { className: 'mf-m3-action-head' },
+      h('span', { className: 'micro-label' }, draft.fromSimulation ? 'SIMULAÇÃO F4 → PLANEJAMENTO · M3-S4' : 'PLANEJAMENTO LOCAL · M3-S4'),
+      h('div', { className: 'mf-m3-action-badges' },
+        h('span', { className: 'mf-ic2-pill mf-m3-badge-no-payment' }, 'Não realiza pagamento bancário'),
+        h('span', { className: statusClass }, statusText))),
+
+    h('div', { className: 'mf-m3-action-target' },
+      h('div', { className: 'mf-m3-action-target-copy' },
+        h('small', {}, draft.action === 'planning.create' ? `${draft.kind === 'income' ? 'Receita prevista' : 'Despesa prevista'} · ${draft.targetLabel || 'Outros'} · Vencimento ${draft.dueDate}` : draft.changeLabel || draft.afterSummary || draft.dueDate),
+        h('strong', {}, draft.title)),
+      h('div', { className: 'mf-m3-action-target-total' },
+        h('small', {}, draft.count > 1 ? `${draft.count}x` : 'Valor'),
+        h('strong', {}, fmt(draft.totalAmountCents ?? draft.amountCents ?? 0)))),
+
+    draft.noBankPaymentNotice
+      ? h('p', { className: 'mf-m3-action-notice is-rule-note', role: 'note' }, draft.noBankPaymentNotice)
+      : null,
+    Array.isArray(draft.warnings) && draft.warnings.length > 0
+      ? h('div', { className: 'mf-m3-action-warnings' }, ...draft.warnings.map((w: string, i: number) => h('p', { key: i, className: 'mf-m3-action-notice' }, w)))
+      : null,
+    needOptIn
+      ? h('div', { className: 'mf-m3-action-optin' },
+          h('p', {}, 'Ative as ações supervisionadas para salvar itens no Planejamento local com backup SQLite.'),
+          h('button', { type: 'button', className: 'secondary-button', disabled: st.busy, onClick: () => void copilotEnableGenericCapability(app, msg, draft) }, st.busy ? 'Ativando…' : 'Ativar ações supervisionadas'))
+      : null,
+    st.receipt
+      ? h('div', { className: 'mf-m3-action-receipt', role: 'status' },
+          h('div', { className: 'mf-m3-action-receipt-info' },
+            h('strong', {}, st.undoState === 'undone' ? 'Planejamento restaurado ao estado anterior' : 'Planejamento atualizado com sucesso'),
+            h('small', {}, `Recibo ${String(st.receipt.proposalId || '').slice(0, 8)} · Backup SQLite verificado`)),
+          st.undoState === 'available'
+            ? h('button', { type: 'button', className: 'ghost-button', disabled: st.busy, onClick: () => void copilotGenericUndo(app, msg, draft) }, st.busy ? 'Revertendo…' : 'Desfazer')
+            : h('span', { className: 'mf-ic2-pill' }, 'Desfeito'))
+      : h('div', { className: 'mf-m3-action-footer' },
+          h('button', {
+            type: 'button',
+            className: 'primary-button',
+            disabled: st.busy || !!needOptIn,
+            onClick: () => void copilotGenericExecute(app, msg, draft, { action: draft.action, profile: draft.profile, ...(draft.payload || {}) })
+          }, st.busy ? 'Aguardando confirmação…' : 'Confirmar no Planejamento'),
+          h('button', { type: 'button', className: 'ghost-button', disabled: st.busy, onClick: () => { st.dismissed = true; st.error = ''; copilotForceRender(app); } }, 'Descartar')),
+    st.error ? h('p', { className: 'mf-m3-action-error', role: 'alert' }, st.error) : null);
+}
+
 function renderCopilotActionCard(app: any, msg: any) {
   const draft = msg?.m3ActionDraft;
   if (!draft) return null;
@@ -908,6 +1299,10 @@ function renderCopilotActionCard(app: any, msg: any) {
       }
     });
   }
+  if (draft.contract === 'MF3/RULE-DRAFT-V1') return renderRuleDraftCard(app, msg, draft);
+  if (draft.contract === 'MF3/CATEGORY-DRAFT-V1') return renderCategoryDraftCard(app, msg, draft);
+  if (draft.contract === 'MF3/BUDGET-EDIT-DRAFT-V1') return renderBudgetEditDraftCard(app, msg, draft);
+  if (draft.contract === 'MF3/PLANNING-DRAFT-V1') return renderPlanningDraftCard(app, msg, draft);
   if (draft.contract !== 'MF3/ACTION-DRAFT-V1') return null;
 
   if (draft.status === 'needs_clarification' || draft.status === 'unavailable') {

@@ -113,6 +113,20 @@ contextBridge.exposeInMainWorld('financeDesktop', Object.freeze({
   aiUsageSummary: () => ipcRenderer.invoke('ai:usage-summary'),
   aiContextPreview: (input) => ipcRenderer.invoke('ai:context-preview',input),
   aiFinancialContextDemo: (source) => ipcRenderer.invoke('ai:financial-context-demo',source),
+  aiCopilotCapabilityStatus: () => ipcRenderer.invoke('ai:copilot-capability-status'),
+  aiCopilotCapabilityEnable: () => ipcRenderer.invoke('ai:copilot-capability-enable'),
+  aiCopilotCapabilityRevoke: () => ipcRenderer.invoke('ai:copilot-capability-revoke'),
+  aiCopilotAsk: (input) => ipcRenderer.invoke('ai:copilot-ask',input),
+  aiCopilotCancel: () => ipcRenderer.invoke('ai:copilot-cancel'),
+  onAICopilotDelta: (callback) => {
+    if(typeof callback!=='function')throw new TypeError('Callback inválido.');
+    const listener=(_event,data)=>callback({
+      requestId:typeof data?.requestId==='string'?data.requestId:'',
+      delta:typeof data?.delta==='string'?data.delta:''
+    });
+    ipcRenderer.on('ai:copilot-delta',listener);
+    return () => ipcRenderer.removeListener('ai:copilot-delta',listener);
+  },
   onAIDelta: (callback) => {
     if(typeof callback!=='function')throw new TypeError('Callback inválido.');
     const listener=(_event,data)=>callback(typeof data?.delta==='string'?data.delta:'');

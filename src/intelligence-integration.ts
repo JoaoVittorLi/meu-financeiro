@@ -3,8 +3,13 @@
 async function intelligenceRefresh(app:any){
   if(!desktop?.aiStatus)return;
   try{
-    const [status,capabilities]=await Promise.all([desktop.aiStatus(),desktop.aiCapabilities?.()||Promise.resolve(null)]);
-    app.setState({aiStatus:status,aiCapabilities:capabilities,aiError:''});
+    const [status,capabilities,aiCopilotCap,m3ActionCap]=await Promise.all([
+      desktop.aiStatus(),
+      desktop.aiCapabilities?.()||Promise.resolve(null),
+      desktop.aiCopilotCapabilityStatus?.().catch(()=>null)||Promise.resolve(null),
+      desktop.copilotActionCapabilityStatus?.().catch(()=>null)||Promise.resolve(null)
+    ]);
+    app.setState({aiStatus:status,aiCapabilities:capabilities,aiCopilotCap,m3ActionCap,aiError:''});
     if(status.connected)void intelligenceLoadPersonal(app);
     else app.setState({aiMemories:[],aiUsageStats:null,aiUseMemories:false,aiPreview:null});
   }

@@ -27,8 +27,23 @@ function requiredDate(d){if(!dateOK(d))throw new Error('Data inválida.');return
 function normalized(s){return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/[^A-Z0-9 ]/g,' ').replace(/\s+/g,' ').trim();}
 function bankStatus(v){return v==='POSTED';}
 function decideStatus(item,today){if(item.status==='cancelled')return 'cancelled';if(item.status==='settled'||item.status==='settled_manual')return 'paid';if(item.remaining<=0)return 'paid';return item.dueDate<today?'overdue':'pending';}
+let planNestedSeq=0;
+function inPlanTx(db,inTransaction,fn){
+ const nested=!!inTransaction||!!db.isTransaction;
+ const sp=nested?'plan_nested_'+(++planNestedSeq):null;
+ db.exec(nested?'SAVEPOINT '+sp:'BEGIN IMMEDIATE');
+ try{
+  const out=fn();
+  db.exec(nested?'RELEASE SAVEPOINT '+sp:'COMMIT');
+  return out;
+ }catch(e){
+  if(nested){db.exec('ROLLBACK TO SAVEPOINT '+sp);db.exec('RELEASE SAVEPOINT '+sp);}
+  else db.exec('ROLLBACK');
+  throw e;
+ }
+}
 class PlanningStore {
- constructor(finance){this.fin=finance;this.db=finance.db;this.db.exec(`
+ constructor(finance){this.fin=finance;this.db=finance.db;if(!this.db.isTransaction){this.db.exec(`
  CREATE TABLE IF NOT EXISTS planned_items(
   id TEXT PRIMARY KEY, group_id TEXT, group_type TEXT NOT NULL DEFAULT 'single', occurrence INTEGER NOT NULL DEFAULT 1,
   total_occurrences INTEGER NOT NULL DEFAULT 1,
@@ -64,7 +79,7 @@ class PlanningStore {
  `);
  // PlanningStore creates planned_items after FinanceDB startup; include D05 refs safely.
  migrateHierarchy(this.db);
- }
+ }}
  log(itemId,action,details=''){this.db.prepare('INSERT INTO planned_audit(item_id,action,details,at) VALUES(?,?,?,?)').run(itemId,action,String(details).slice(0,300),new Date().toISOString());}
  validateInput(input){
   const title=text(input?.title,140,'Nome');const kind=input?.kind;if(!KINDS.includes(kind))throw new Error('Tipo de transação inválido.');
@@ -77,7 +92,7 @@ class PlanningStore {
   if(!this.db.prepare('SELECT 1 FROM categories WHERE name=?').get(category))throw new Error('Categoria não encontrada.');
   return {title,kind,amount,dueDate,category,notes,certainty,accountId};
  }
- create(input){
+ create(input,{inTransaction=false}={}){
   const destination=input?.target===undefined?null:new D05CategoryService(this.fin).resolve(input.target);
   if(destination&&input?.category&&input.category!==destination.parentName)throw Error('D05: destino planejado divergente');
   const base=this.validateInput(destination?{...input,category:destination.parentName}:input);
@@ -85,8 +100,7 @@ class PlanningStore {
   const count=mode==='once'?1:Number(input?.count||12);
   if(!Number.isInteger(count)||count<1||count>36)throw new Error('Escolha de 1 a 36 ocorrências.');
   const now=new Date().toISOString(),group=count>1?randomUUID():null;const ids=[];
-  this.db.exec('BEGIN IMMEDIATE');
-  try{
+  return inPlanTx(this.db,inTransaction,()=>{
    const stmt=this.db.prepare(`INSERT INTO planned_items(id,group_id,group_type,occurrence,total_occurrences,title,kind,amount_cents,due_date,category,account_id,notes,certainty,status,created_at,updated_at,category_id,subcategory_id)
       VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,'planned',?,?,?,?)`);
    for(let i=0;i<count;i++){
@@ -98,11 +112,11 @@ class PlanningStore {
     stmt.run(id,group,mode,i+1,count,base.title,base.kind,amount,date,base.category,base.accountId,base.notes,base.certainty,now,now,destination?.categoryId??null,destination?.subcategoryId??null);
     this.log(id,'created',`${mode} ${i+1}/${count}`);
    }
-   this.db.exec('COMMIT');return {ids,count};
-  }catch(e){this.db.exec('ROLLBACK');throw e;}
+   return {ids,count};
+  });
  }
  item(id){const row=this.db.prepare('SELECT * FROM planned_items WHERE id=?').get(id);if(!row)throw new Error('Lançamento planejado não encontrado.');return row;}
- edit(input){const row=this.item(input?.id);if(row.status==='cancelled')throw new Error('Reative o lançamento antes de editar.');
+ edit(input,{inTransaction=false}={}){const row=this.item(input?.id);if(row.status==='cancelled')throw new Error('Reative o lançamento antes de editar.');
   const destination=input?.target===undefined?null:new D05CategoryService(this.fin).resolve(input.target);
   if(destination&&input?.category&&input.category!==destination.parentName)throw Error('D05: destino planejado divergente');
   const validated=this.validateInput({...row,title:input.title??row.title,kind:input.kind??row.kind,amount:input.amount??row.amount_cents,dueDate:input.dueDate??row.due_date,category:destination?.parentName??input.category??row.category,notes:input.notes??row.notes,certainty:input.certainty??row.certainty,accountId:input.accountId===undefined?row.account_id:input.accountId});
@@ -110,18 +124,22 @@ class PlanningStore {
   const linked=this.linkedTotal(row.id);if(linked>validated.amount)throw new Error('Valor menor que os pagamentos já vinculados.');
   const categoryId=destination?.categoryId??(validated.category===row.category?row.category_id:null);
   const subcategoryId=destination?destination.subcategoryId:(validated.category===row.category?row.subcategory_id:null);
-  this.db.prepare(`UPDATE planned_items SET title=?,kind=?,amount_cents=?,due_date=?,category=?,
-    category_id=?,subcategory_id=?,account_id=?,notes=?,certainty=?,updated_at=? WHERE id=?`)
-    .run(validated.title,validated.kind,validated.amount,validated.dueDate,validated.category,categoryId,subcategoryId,validated.accountId,validated.notes,validated.certainty,new Date().toISOString(),row.id);
-  this.log(row.id,'edited',`Vencimento ${row.due_date} → ${validated.dueDate}; valor ${row.amount_cents} → ${validated.amount}`);return {ok:true};
+  return inPlanTx(this.db,inTransaction,()=>{
+   this.db.prepare(`UPDATE planned_items SET title=?,kind=?,amount_cents=?,due_date=?,category=?,
+     category_id=?,subcategory_id=?,account_id=?,notes=?,certainty=?,updated_at=? WHERE id=?`)
+     .run(validated.title,validated.kind,validated.amount,validated.dueDate,validated.category,categoryId,subcategoryId,validated.accountId,validated.notes,validated.certainty,new Date().toISOString(),row.id);
+   this.log(row.id,'edited',`Vencimento ${row.due_date} → ${validated.dueDate}; valor ${row.amount_cents} → ${validated.amount}`);return {ok:true};
+  });
  }
- setStatus(id,status){const item=this.item(id);if(!['planned','cancelled','settled_manual'].includes(status))throw new Error('Situação inválida.');
+ setStatus(id,status,{inTransaction=false}={}){const item=this.item(id);if(!['planned','cancelled','settled_manual'].includes(status))throw new Error('Situação inválida.');
   const count=this.db.prepare('SELECT COUNT(*) AS n FROM planned_bank_links WHERE item_id=?').get(id).n;
   if(count&&status!=='planned')throw new Error('Desvincule os pagamentos bancários antes de alterar a situação.');
   if(status==='settled_manual'&&item.due_date>isoToday())throw new Error('Não é possível confirmar pagamento futuro.');
   const settled=status==='settled_manual'?new Date().toISOString():null;
-  this.db.prepare('UPDATE planned_items SET status=?,settled_at=?,updated_at=? WHERE id=?').run(status,settled,new Date().toISOString(),id);
-  this.log(id,status,status==='settled_manual'?'Pagamento marcado manualmente como refletido no saldo atual.':'');return {ok:true};
+  return inPlanTx(this.db,inTransaction,()=>{
+   this.db.prepare('UPDATE planned_items SET status=?,settled_at=?,updated_at=? WHERE id=?').run(status,settled,new Date().toISOString(),id);
+   this.log(id,status,status==='settled_manual'?'Pagamento marcado manualmente como refletido no saldo atual.':'');return {ok:true};
+  });
  }
  linkedTotal(id){const r=this.db.prepare(`SELECT COALESCE(SUM(abs(b.amount_cents)),0) AS total FROM planned_bank_links l JOIN bank_transactions b USING(account_id,external_id) WHERE l.item_id=? AND b.status='POSTED'`).get(id);return r.total;}
  link(input){const item=this.item(input?.itemId);if(item.status==='cancelled'||item.status==='settled_manual')throw new Error('Reative o lançamento para vinculá-lo.');

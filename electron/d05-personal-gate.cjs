@@ -6,6 +6,8 @@ const { randomUUID, createHash } = require('node:crypto');
 const path = require('node:path');
 const fs = require('node:fs');
 const { D05CategoryService } = require('./d05-category-service.cjs');
+const { normalizedName } = require('./d05-hierarchy.cjs');
+const { PlanningStore } = require('./planning.cjs');
 const { assertSyntheticVault } = require('./intelligence-category-vault.cjs');
 
 const hash = (x) => createHash('sha256').update(JSON.stringify(x)).digest('hex');
@@ -17,7 +19,15 @@ const ACTIONS = new Set([
   'bank.batch-categorize',
   'bank.split',
   'rule.save',
+  'rule.toggle',
+  'category.create',
+  'category.rename',
+  'subcategory.create',
+  'subcategory.rename',
   'planning.categorize',
+  'planning.create',
+  'planning.update',
+  'planning.status',
   'budgets.reorganize'
 ]);
 
@@ -27,7 +37,16 @@ const UNDOABLE_ACTIONS = new Set([
   'bank.categorize',
   'bank.batch-categorize',
   'bank.split',
+  'rule.save',
+  'rule.toggle',
+  'category.create',
+  'category.rename',
+  'subcategory.create',
+  'subcategory.rename',
   'planning.categorize',
+  'planning.create',
+  'planning.update',
+  'planning.status',
   'budgets.reorganize'
 ]);
 
@@ -258,9 +277,367 @@ class D05PersonalWriteGateway {
       if (s.profile !== 'real' || !s.activeAccountId) {
         throw Error('PersonalWrite: regras bancárias sem conta selecionada');
       }
-      // E2's rule schema has no account-bound future-only constraint. Personal
-      // rule writes remain blocked until S3 lands account/afterRowid constraint support.
-      throw Error('PersonalWrite: regra pessoal sem contrato por conta/afterRowid');
+      const c = request.constraint;
+      if (
+        !c ||
+        typeof c !== 'object' ||
+        Array.isArray(c) ||
+        c.accountId !== s.activeAccountId ||
+        !['expense', 'income'].includes(c.nature) ||
+        !Number.isInteger(c.afterRowid) ||
+        c.afterRowid < 0
+      ) {
+        throw Error('PersonalWrite: regra pessoal sem contrato por conta/afterRowid');
+      }
+      const pattern = String(request.pattern || '').trim();
+      if (!pattern || pattern.length > 120 || /[\x00-\x1f<>]/.test(pattern)) {
+        throw Error('PersonalWrite: padrão da regra inválido');
+      }
+      const matchMode = String(request.matchMode || 'contains');
+      if (!['contains', 'starts', 'exact'].includes(matchMode)) {
+        throw Error('PersonalWrite: modo de correspondência inválido');
+      }
+      const priority = Number(request.priority ?? 100);
+      if (!Number.isInteger(priority) || priority < 1 || priority > 999) {
+        throw Error('PersonalWrite: prioridade da regra inválida');
+      }
+      if (!after || !v) throw Error('PersonalWrite: destino D05 da regra obrigatório');
+      if (v.parent.kind !== 'both' && v.parent.kind !== c.nature) {
+        throw Error('PersonalWrite: natureza da regra incompatível com a categoria D05');
+      }
+      const existing = sql
+        .prepare('SELECT id, pattern, match_mode, category, priority, enabled FROM category_rules WHERE LOWER(pattern)=LOWER(?)')
+        .all(pattern);
+      return {
+        before: {
+          accountId: s.activeAccountId,
+          existingMatches: existing
+        },
+        after: {
+          ...after,
+          pattern,
+          matchMode,
+          scope: 'bank',
+          priority,
+          constraint: {
+            accountId: c.accountId,
+            nature: c.nature,
+            afterRowid: c.afterRowid
+          }
+        },
+        accountId: s.activeAccountId,
+        amountCents: 0
+      };
+    }
+
+    if (action === 'rule.toggle') {
+      if (s.profile !== 'real') {
+        throw Error('PersonalWrite: regras disponíveis apenas no perfil real');
+      }
+      const ruleId = Number(request.id);
+      if (!Number.isInteger(ruleId) || ruleId <= 0 || typeof request.enabled !== 'boolean') {
+        throw Error('PersonalWrite: parâmetros inválidos para ativar/desativar regra');
+      }
+      const hasConstraints = !!sql
+        .prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='category_rule_constraints'")
+        .get();
+      const row = hasConstraints
+        ? sql
+            .prepare(
+              'SELECT r.id,r.pattern,r.category,r.enabled,c.account_id FROM category_rules r LEFT JOIN category_rule_constraints c ON c.rule_id=r.id WHERE r.id=?'
+            )
+            .get(ruleId)
+        : sql.prepare('SELECT id,pattern,category,enabled,NULL AS account_id FROM category_rules WHERE id=?').get(ruleId);
+      if (!row) throw Error('PersonalWrite: regra não encontrada');
+      if (row.account_id && s.activeAccountId && row.account_id !== s.activeAccountId) {
+        throw Error('PersonalWrite: regra pertence a outra conta bancária');
+      }
+      return {
+        before: { id: row.id, pattern: row.pattern, category: row.category, enabled: row.enabled ? 1 : 0 },
+        after: { id: row.id, pattern: row.pattern, category: row.category, enabled: request.enabled ? 1 : 0 },
+        accountId: row.account_id || s.activeAccountId || null,
+        amountCents: 0
+      };
+    }
+
+    if (action === 'category.create') {
+      const name = String(request.name || '').trim();
+      if (!name || name.length > 70 || /[\x00-\x1f<>]/.test(name)) {
+        throw Error('PersonalWrite: nome de categoria inválido');
+      }
+      if (sql.prepare('SELECT 1 FROM categories WHERE name=? COLLATE NOCASE').get(name)) {
+        throw Error('PersonalWrite: categoria já existe');
+      }
+      const kind = ['expense', 'income', 'both'].includes(request.kind) ? request.kind : 'expense';
+      const color = /^#[0-9a-fA-F]{6}$/.test(String(request.color || '')) ? String(request.color).toLowerCase() : '#6b7280';
+      const emoji = typeof request.emoji === 'string' && request.emoji.trim().length > 0 && request.emoji.trim().length <= 16
+        ? request.emoji.trim()
+        : '✨';
+      const iconKey = typeof request.iconKey === 'string' && /^[a-z0-9-]+$/.test(request.iconKey)
+        ? request.iconKey
+        : 'tag';
+      const hue = Number.isInteger(request.hue) && request.hue >= 0 && request.hue <= 359 ? request.hue : 210;
+      return {
+        before: { existed: false },
+        after: { name, kind, color, emoji, iconKey, hue },
+        accountId: null,
+        amountCents: 0
+      };
+    }
+
+    if (action === 'category.rename') {
+      const currentName = String(request.currentName || '').trim();
+      const newName = String(request.newName || '').trim();
+      if (!currentName || !newName || newName.length > 70 || /[\x00-\x1f<>]/.test(newName)) {
+        throw Error('PersonalWrite: nome inválido para renomear categoria');
+      }
+      const row = sql
+        .prepare('SELECT id, name, color, built_in, emoji, kind FROM categories WHERE name=? COLLATE NOCASE')
+        .get(currentName);
+      if (!row) throw Error('PersonalWrite: categoria não encontrada');
+      if (row.built_in) throw Error('PersonalWrite: categorias padrão do catálogo D05 não podem ser renomeadas');
+      const clash = sql.prepare('SELECT name FROM categories WHERE name=? COLLATE NOCASE').get(newName);
+      if (clash && clash.name !== row.name) {
+        throw Error('PersonalWrite: já existe uma categoria com o novo nome');
+      }
+      return {
+        before: { id: row.id, name: row.name, color: row.color, emoji: row.emoji, kind: row.kind },
+        after: { id: row.id, oldName: row.name, newName, category: newName },
+        accountId: null,
+        amountCents: 0
+      };
+    }
+
+    if (action === 'subcategory.create') {
+      const parent = svc.resolve({ categoryId: request.parentCategoryId, subcategoryId: null });
+      const name = String(request.name || '').trim();
+      if (!name || name.length > 80 || /[\x00-\x1f<>]/.test(name)) {
+        throw Error('PersonalWrite: nome de subcategoria inválido');
+      }
+      const norm = normalizedName(name);
+      if (
+        sql
+          .prepare('SELECT 1 FROM subcategories WHERE parent_category_id=? AND normalized_name=?')
+          .get(parent.categoryId, norm)
+      ) {
+        throw Error('PersonalWrite: subcategoria duplicada na categoria-pai');
+      }
+      const iconKey = typeof request.iconKey === 'string' && /^[a-z0-9-]+$/.test(request.iconKey)
+        ? request.iconKey
+        : parent.parent.iconKey || 'tag';
+      const hue = Number.isInteger(request.hue) && request.hue >= 0 && request.hue <= 359
+        ? request.hue
+        : Number.isInteger(parent.parent.hue)
+          ? parent.parent.hue
+          : 210;
+      return {
+        before: { existed: false, parentCategoryId: parent.categoryId },
+        after: {
+          parentCategoryId: parent.categoryId,
+          parentName: parent.parentName,
+          category: parent.parentName,
+          subcategory: name,
+          name,
+          norm,
+          iconKey,
+          hue
+        },
+        accountId: null,
+        amountCents: 0
+      };
+    }
+
+    if (action === 'subcategory.rename') {
+      const subId = String(request.id || '').trim();
+      const name = String(request.newName ?? request.name ?? '').trim();
+      if (!subId || !name || name.length > 80 || /[\x00-\x1f<>]/.test(name)) {
+        throw Error('PersonalWrite: nome inválido para renomear subcategoria');
+      }
+      const prev = sql.prepare('SELECT * FROM subcategories WHERE id=?').get(subId);
+      if (!prev) throw Error('PersonalWrite: subcategoria não encontrada');
+      if (prev.built_in) throw Error('PersonalWrite: subcategoria aprovada do catálogo D05 é imutável');
+      const norm = normalizedName(name);
+      const clash = sql
+        .prepare('SELECT id FROM subcategories WHERE parent_category_id=? AND normalized_name=?')
+        .get(prev.parent_category_id, norm);
+      if (clash && clash.id !== prev.id) {
+        throw Error('PersonalWrite: subcategoria duplicada na categoria-pai');
+      }
+      const parent = svc.resolve({ categoryId: prev.parent_category_id, subcategoryId: null });
+      return {
+        before: {
+          id: prev.id,
+          parentCategoryId: prev.parent_category_id,
+          name: prev.name,
+          normalizedName: prev.normalized_name,
+          iconKey: prev.icon_key,
+          hue: prev.hue,
+          active: prev.active
+        },
+        after: {
+          id: prev.id,
+          parentCategoryId: prev.parent_category_id,
+          category: parent.parentName,
+          oldName: prev.name,
+          name,
+          subcategory: name,
+          normalizedName: norm
+        },
+        accountId: null,
+        amountCents: 0
+      };
+    }
+
+    if (action === 'planning.create') {
+      const store = new PlanningStore(finance);
+      if (s.profile === 'real' && typeof request.accountId === 'string' && request.accountId !== s.activeAccountId) {
+        throw Error('PersonalWrite: conta fora da autorização');
+      }
+      const destination = request.target === undefined ? null : svc.resolve(request.target);
+      if (destination && request.category && request.category !== destination.parentName) {
+        throw Error('PersonalWrite: destino planejado divergente');
+      }
+      const base = store.validateInput(destination ? { ...request, category: destination.parentName } : request);
+      const mode = request.mode || 'once';
+      if (!['once', 'monthly', 'weekly', 'yearly', 'installments'].includes(mode)) {
+        throw Error('PersonalWrite: repetição inválida no planejamento');
+      }
+      const count = mode === 'once' ? 1 : Number(request.count || 12);
+      if (!Number.isInteger(count) || count < 1 || count > 36) {
+        throw Error('PersonalWrite: escolha de 1 a 36 ocorrências');
+      }
+      if (mode === 'installments' && Math.floor(base.amount / count) < 1) {
+        throw Error('PersonalWrite: o valor total precisa cobrir todas as parcelas');
+      }
+      const totalAmountCents = mode === 'installments' ? base.amount : base.amount * count;
+      const existingCount = sql.prepare('SELECT COUNT(*) AS n FROM planned_items').get().n;
+      return {
+        before: { existed: false, existingCount },
+        after: {
+          title: base.title,
+          kind: base.kind,
+          amount: base.amount,
+          totalAmountCents,
+          dueDate: base.dueDate,
+          category: base.category,
+          categoryId: destination?.categoryId ?? null,
+          subcategoryId: destination?.subcategoryId ?? null,
+          subcategory: destination?.child?.name || null,
+          accountId: base.accountId,
+          notes: base.notes,
+          certainty: base.certainty,
+          mode,
+          count,
+          noBankPayment: true
+        },
+        accountId: base.accountId || null,
+        amountCents: totalAmountCents
+      };
+    }
+
+    if (action === 'planning.update') {
+      const store = new PlanningStore(finance);
+      if (typeof request.id !== 'string' || !request.id) throw Error('PersonalWrite: planejamento inválido');
+      const row = store.item(request.id);
+      if (row.status === 'cancelled') throw Error('PersonalWrite: reative o lançamento antes de editar');
+      if (s.profile === 'real' && row.account_id && s.activeAccountId && row.account_id !== s.activeAccountId) {
+        throw Error('PersonalWrite: compromisso fora da conta');
+      }
+      if (after && request.category && request.category !== after.category) {
+        throw Error('PersonalWrite: destino planejado divergente');
+      }
+      const merged = store.validateInput({
+        ...row,
+        title: request.title ?? row.title,
+        kind: request.kind ?? row.kind,
+        amount: request.amount ?? row.amount_cents,
+        dueDate: request.dueDate ?? row.due_date,
+        category: after?.category ?? request.category ?? row.category,
+        notes: request.notes ?? row.notes,
+        certainty: request.certainty ?? row.certainty,
+        accountId: request.accountId === undefined ? row.account_id : request.accountId
+      });
+      if (row.status !== 'planned' && (merged.amount !== row.amount_cents || merged.kind !== row.kind)) {
+        throw Error('PersonalWrite: desfaça a quitação antes de alterar valor ou tipo');
+      }
+      if (store.linkedTotal(row.id) > merged.amount) {
+        throw Error('PersonalWrite: valor menor que pagamentos vinculados');
+      }
+      const nextCatId = after?.categoryId ?? (merged.category === row.category ? row.category_id : null);
+      const nextSubId = after ? after.subcategoryId : (merged.category === row.category ? row.subcategory_id : null);
+      return {
+        before: {
+          id: row.id,
+          title: row.title,
+          kind: row.kind,
+          amount_cents: row.amount_cents,
+          due_date: row.due_date,
+          category: row.category,
+          category_id: row.category_id,
+          subcategory_id: row.subcategory_id,
+          account_id: row.account_id,
+          notes: row.notes,
+          certainty: row.certainty,
+          status: row.status
+        },
+        after: {
+          id: row.id,
+          title: merged.title,
+          kind: merged.kind,
+          amount: merged.amount,
+          dueDate: merged.dueDate,
+          category: merged.category,
+          subcategory: after?.subcategory || null,
+          categoryId: nextCatId,
+          subcategoryId: nextSubId,
+          accountId: merged.accountId,
+          notes: merged.notes,
+          certainty: merged.certainty,
+          noBankPayment: true
+        },
+        accountId: merged.accountId || null,
+        amountCents: merged.amount
+      };
+    }
+
+    if (action === 'planning.status') {
+      const store = new PlanningStore(finance);
+      if (typeof request.id !== 'string' || !request.id) throw Error('PersonalWrite: planejamento inválido');
+      const row = store.item(request.id);
+      if (!['planned', 'cancelled', 'settled_manual'].includes(request.status)) {
+        throw Error('PersonalWrite: situação planejada inválida');
+      }
+      if (s.profile === 'real' && row.account_id && s.activeAccountId && row.account_id !== s.activeAccountId) {
+        throw Error('PersonalWrite: compromisso fora da conta');
+      }
+      const linkedCount = sql.prepare('SELECT COUNT(*) AS n FROM planned_bank_links WHERE item_id=?').get(row.id).n;
+      if (linkedCount && request.status !== 'planned') {
+        throw Error('PersonalWrite: desvincule os pagamentos bancários antes de alterar a situação');
+      }
+      const today = (() => {
+        const d = new Date(this.clock());
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      })();
+      if (request.status === 'settled_manual' && row.due_date > today) {
+        throw Error('PersonalWrite: não é possível marcar pagamento futuro como quitado');
+      }
+      return {
+        before: {
+          id: row.id,
+          title: row.title,
+          status: row.status,
+          settled_at: row.settled_at,
+          amount_cents: row.amount_cents
+        },
+        after: {
+          id: row.id,
+          title: row.title,
+          status: request.status,
+          noBankPayment: true
+        },
+        accountId: row.account_id || null,
+        amountCents: row.amount_cents
+      };
     }
 
     if (action === 'planning.categorize') {
@@ -407,14 +784,28 @@ class D05PersonalWriteGateway {
       ? state.before.length
       : Array.isArray(state.after?.budgets)
         ? state.after.budgets.length
-        : 1;
+        : Number.isInteger(state.after?.count)
+          ? state.after.count
+          : 1;
+    const previewSource =
+      s.profile === 'demo'
+        ? 'manual'
+        : action.startsWith('manual.') ||
+            action === 'budgets.reorganize' ||
+            action.startsWith('category.') ||
+            action.startsWith('subcategory.') ||
+            action === 'planning.create' ||
+            action === 'planning.update' ||
+            action === 'planning.status'
+          ? 'manual'
+          : 'bank';
     return {
       contract: 'D05/PERSONAL-SUPERVISED-PREVIEW-V1',
       proposalId: id,
       nonce,
       expiresAt,
       action,
-      source: s.profile === 'demo' ? 'manual' : action.startsWith('manual.') || action === 'budgets.reorganize' ? 'manual' : 'bank',
+      source: previewSource,
       profile: s.profile,
       accountId: state.accountId,
       before: state.before,
@@ -467,6 +858,138 @@ class D05PersonalWriteGateway {
     if (action === 'bank.batch-categorize') return service.assignBankBatch(request);
     if (action === 'bank.split') return service.setBankSplits(request);
     if (action === 'planning.categorize') return service.assignPlanned(request);
+    if (action === 'rule.save') {
+      const sql = service.db;
+      const v = service.resolve(request.target);
+      const pattern = String(request.pattern || '').trim();
+      const matchMode = String(request.matchMode || 'contains');
+      const priority = Number(request.priority ?? 100);
+      const c = request.constraint;
+      sql.exec(`
+        CREATE TABLE IF NOT EXISTS category_rule_constraints (
+          rule_id INTEGER PRIMARY KEY REFERENCES category_rules(id) ON DELETE CASCADE,
+          account_id TEXT NOT NULL,
+          nature TEXT NOT NULL CHECK(nature IN ('expense','income')),
+          after_rowid INTEGER NOT NULL DEFAULT 0,
+          created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+      const ins = sql
+        .prepare(
+          "INSERT INTO category_rules(pattern,match_mode,category,scope,priority,enabled,category_id,subcategory_id) VALUES(?,?,?,'bank',?,1,?,?)"
+        )
+        .run(pattern, matchMode, v.parentName, priority, v.categoryId, v.subcategoryId);
+      const ruleId = Number(ins.lastInsertRowid);
+      sql
+        .prepare('INSERT INTO category_rule_constraints(rule_id,account_id,nature,after_rowid) VALUES(?,?,?,?)')
+        .run(ruleId, c.accountId, c.nature, c.afterRowid);
+      return {
+        ruleId,
+        pattern,
+        matchMode,
+        scope: 'bank',
+        priority,
+        category: v.parentName,
+        categoryId: v.categoryId,
+        subcategoryId: v.subcategoryId,
+        constraint: { accountId: c.accountId, nature: c.nature, afterRowid: c.afterRowid }
+      };
+    }
+    if (action === 'rule.toggle') {
+      const ruleId = Number(request.id);
+      const enabled = request.enabled ? 1 : 0;
+      const res = service.db.prepare('UPDATE category_rules SET enabled=? WHERE id=?').run(enabled, ruleId);
+      if (res.changes !== 1) throw Error('PersonalWrite: regra não encontrada para atualização');
+      return { id: ruleId, enabled: enabled === 1 };
+    }
+    if (action === 'category.create') {
+      const sql = service.db;
+      const name = String(request.name || '').trim();
+      const kind = ['expense', 'income', 'both'].includes(request.kind) ? request.kind : 'expense';
+      const color = /^#[0-9a-fA-F]{6}$/.test(String(request.color || '')) ? String(request.color).toLowerCase() : '#6b7280';
+      const emoji = typeof request.emoji === 'string' && request.emoji.trim().length > 0 && request.emoji.trim().length <= 16
+        ? request.emoji.trim()
+        : '✨';
+      const iconKey = typeof request.iconKey === 'string' && /^[a-z0-9-]+$/.test(request.iconKey)
+        ? request.iconKey
+        : 'tag';
+      const hue = Number.isInteger(request.hue) && request.hue >= 0 && request.hue <= 359 ? request.hue : 210;
+      const id = 'cat:custom:' + randomUUID();
+      sql
+        .prepare('INSERT INTO categories(name,color,built_in,emoji,kind,id,icon_key,hue) VALUES(?,?,0,?,?,?,?,?)')
+        .run(name, color, emoji, kind, id, iconKey, hue);
+      return { id, name, kind, color, emoji, iconKey, hue };
+    }
+    if (action === 'category.rename') {
+      const sql = service.db;
+      const currentName = String(request.currentName || '').trim();
+      const newName = String(request.newName || '').trim();
+      const row = sql.prepare('SELECT id,name,built_in FROM categories WHERE name=? COLLATE NOCASE').get(currentName);
+      if (!row || row.built_in) throw Error('PersonalWrite: categoria não renomeável');
+      sql.prepare('UPDATE categories SET name=? WHERE name=? AND built_in=0').run(newName, row.name);
+      sql.prepare('UPDATE transactions SET category=? WHERE category=?').run(newName, row.name);
+      sql.prepare('UPDATE budgets SET category=? WHERE category=?').run(newName, row.name);
+      if (sql.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='monthly_budgets'").get()) {
+        sql.prepare('UPDATE monthly_budgets SET category=? WHERE category=?').run(newName, row.name);
+      }
+      if (sql.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='planned_items'").get()) {
+        sql.prepare('UPDATE planned_items SET category=? WHERE category=?').run(newName, row.name);
+      }
+      return { id: row.id, oldName: row.name, newName };
+    }
+    if (action === 'subcategory.create') {
+      const parent = service.resolve({ categoryId: request.parentCategoryId, subcategoryId: null });
+      const created = service.createSubcategory({
+        parentCategoryId: parent.categoryId,
+        name: String(request.name || '').trim(),
+        iconKey: typeof request.iconKey === 'string' && /^[a-z0-9-]+$/.test(request.iconKey)
+          ? request.iconKey
+          : parent.parent.iconKey || 'tag',
+        hue: Number.isInteger(request.hue) && request.hue >= 0 && request.hue <= 359
+          ? request.hue
+          : Number.isInteger(parent.parent.hue)
+            ? parent.parent.hue
+            : 210
+      });
+      return {
+        id: created.id,
+        parentCategoryId: created.parentCategoryId,
+        parentName: parent.parentName,
+        name: created.name
+      };
+    }
+    if (action === 'subcategory.rename') {
+      const subId = String(request.id || '').trim();
+      const updated = service.updateSubcategory({
+        id: subId,
+        name: String(request.newName ?? request.name ?? '').trim()
+      });
+      return { id: updated.id, parentCategoryId: updated.parentCategoryId, name: updated.name };
+    }
+    if (action === 'planning.create') {
+      const store = new PlanningStore(service.finance);
+      const out = store.create(request, { inTransaction: true });
+      const mode = request.mode || 'once';
+      const count = out.count;
+      const totalAmountCents = mode === 'installments' ? request.amount : request.amount * count;
+      return {
+        createdIds: out.ids,
+        count,
+        mode,
+        totalAmountCents,
+        noBankPayment: true
+      };
+    }
+    if (action === 'planning.update') {
+      const store = new PlanningStore(service.finance);
+      store.edit(request, { inTransaction: true });
+      return { id: request.id, updated: true, noBankPayment: true };
+    }
+    if (action === 'planning.status') {
+      const store = new PlanningStore(service.finance);
+      store.setStatus(request.id, request.status, { inTransaction: true });
+      return { id: request.id, status: request.status, noBankPayment: true };
+    }
     if (action === 'budgets.reorganize') {
       const sql = service.db;
       const month = request.month == null ? null : String(request.month).trim();
@@ -692,7 +1215,9 @@ class D05PersonalWriteGateway {
         ? freshState.before.length
         : Array.isArray(freshState.after?.budgets)
           ? freshState.after.budgets.length
-          : 1;
+          : Number.isInteger(freshState.after?.count)
+            ? freshState.after.count
+            : 1;
       const accepted = await this.confirm({
         kind: 'write',
         owner,
@@ -900,6 +1425,95 @@ class D05PersonalWriteGateway {
       }
       return true;
     }
+    if (a === 'rule.save') {
+      const ruleId = persisted.result?.ruleId;
+      if (!Number.isInteger(ruleId)) return false;
+      const row = sql
+        .prepare(
+          'SELECT r.pattern,r.match_mode,r.category,r.enabled,r.category_id,r.subcategory_id,c.account_id,c.nature,c.after_rowid ' +
+            'FROM category_rules r LEFT JOIN category_rule_constraints c ON c.rule_id=r.id WHERE r.id=?'
+        )
+        .get(ruleId);
+      return Boolean(
+        row &&
+          row.pattern === after.pattern &&
+          row.match_mode === after.matchMode &&
+          row.category === after.category &&
+          row.enabled === 1 &&
+          (row.category_id ?? null) === (after.categoryId ?? null) &&
+          (row.subcategory_id ?? null) === (after.subcategoryId ?? null) &&
+          row.account_id === after.constraint?.accountId &&
+          row.nature === after.constraint?.nature &&
+          row.after_rowid === after.constraint?.afterRowid
+      );
+    }
+    if (a === 'rule.toggle') {
+      const cur = sql.prepare('SELECT enabled FROM category_rules WHERE id=?').get(before.id);
+      return Boolean(cur && cur.enabled === (after.enabled ? 1 : 0));
+    }
+    if (a === 'category.create') {
+      const catId = persisted.result?.id;
+      if (!catId) return false;
+      const cat = sql.prepare('SELECT name,built_in FROM categories WHERE id=?').get(catId);
+      if (!cat || cat.built_in !== 0 || cat.name !== after.name) return false;
+      const subUse = sql.prepare('SELECT 1 FROM subcategories WHERE parent_category_id=? LIMIT 1').get(catId);
+      if (subUse) return false;
+      for (const tbl of ['transactions', 'budgets', 'monthly_budgets', 'category_rules', 'bank_category_overrides', 'bank_transaction_splits', 'planned_items']) {
+        if (!sql.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?").get(tbl)) continue;
+        if (sql.prepare(`SELECT 1 FROM ${tbl} WHERE category=? LIMIT 1`).get(after.name)) return false;
+      }
+      return true;
+    }
+    if (a === 'category.rename') {
+      const cur = sql.prepare('SELECT id,name,built_in FROM categories WHERE id=?').get(before.id);
+      if (!cur || cur.built_in !== 0 || cur.name !== after.newName) return false;
+      return !sql.prepare('SELECT 1 FROM categories WHERE name=? COLLATE NOCASE').get(before.name);
+    }
+    if (a === 'subcategory.create') {
+      const subId = persisted.result?.id;
+      if (!subId) return false;
+      const cur = sql.prepare('SELECT id,name,built_in FROM subcategories WHERE id=?').get(subId);
+      if (!cur || cur.built_in !== 0 || cur.name !== after.name) return false;
+      for (const tbl of ['transactions', 'bank_category_overrides', 'bank_transaction_splits', 'category_rules', 'planned_items']) {
+        if (!sql.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?").get(tbl)) continue;
+        if (sql.prepare(`SELECT 1 FROM ${tbl} WHERE subcategory_id=? LIMIT 1`).get(subId)) return false;
+      }
+      return true;
+    }
+    if (a === 'subcategory.rename') {
+      const cur = sql.prepare('SELECT id,name,built_in FROM subcategories WHERE id=?').get(before.id);
+      return Boolean(cur && cur.built_in === 0 && cur.name === after.name);
+    }
+    if (a === 'planning.create') {
+      const ids = Array.isArray(persisted.result?.createdIds) ? persisted.result.createdIds : [];
+      if (!ids.length) return false;
+      for (const itemId of ids) {
+        const row = sql.prepare('SELECT status,title FROM planned_items WHERE id=?').get(itemId);
+        if (!row || row.status !== 'planned' || row.title !== after.title) return false;
+        const linked = sql.prepare('SELECT COUNT(*) AS n FROM planned_bank_links WHERE item_id=?').get(itemId).n;
+        if (linked > 0) return false;
+      }
+      return true;
+    }
+    if (a === 'planning.update') {
+      const cur = sql
+        .prepare('SELECT title,kind,amount_cents,due_date,category,notes,certainty FROM planned_items WHERE id=?')
+        .get(before.id);
+      return Boolean(
+        cur &&
+          cur.title === after.title &&
+          cur.kind === after.kind &&
+          cur.amount_cents === after.amount &&
+          cur.due_date === after.dueDate &&
+          cur.category === after.category &&
+          cur.notes === (after.notes || '') &&
+          cur.certainty === after.certainty
+      );
+    }
+    if (a === 'planning.status') {
+      const cur = sql.prepare('SELECT status FROM planned_items WHERE id=?').get(before.id);
+      return Boolean(cur && cur.status === after.status);
+    }
     return false;
   }
 
@@ -1005,6 +1619,88 @@ class D05PersonalWriteGateway {
             .run(persisted.profile, before.incomeSetting.value_cents);
         }
       }
+      return;
+    }
+    if (a === 'rule.save') {
+      const ruleId = persisted.result?.ruleId;
+      if (Number.isInteger(ruleId)) {
+        if (sql.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='category_rule_constraints'").get()) {
+          sql.prepare('DELETE FROM category_rule_constraints WHERE rule_id=?').run(ruleId);
+        }
+        sql.prepare('DELETE FROM category_rules WHERE id=?').run(ruleId);
+      }
+      return;
+    }
+    if (a === 'rule.toggle') {
+      sql.prepare('UPDATE category_rules SET enabled=? WHERE id=?').run(before.enabled ? 1 : 0, before.id);
+      return;
+    }
+    if (a === 'category.create') {
+      sql.prepare('DELETE FROM categories WHERE id=? AND built_in=0').run(persisted.result?.id);
+      return;
+    }
+    if (a === 'category.rename') {
+      const oldName = persisted.after?.newName;
+      sql.prepare('UPDATE categories SET name=? WHERE id=? AND built_in=0').run(before.name, before.id);
+      if (oldName) {
+        sql.prepare('UPDATE transactions SET category=? WHERE category=?').run(before.name, oldName);
+        sql.prepare('UPDATE budgets SET category=? WHERE category=?').run(before.name, oldName);
+        if (sql.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='monthly_budgets'").get()) {
+          sql.prepare('UPDATE monthly_budgets SET category=? WHERE category=?').run(before.name, oldName);
+        }
+        if (sql.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='planned_items'").get()) {
+          sql.prepare('UPDATE planned_items SET category=? WHERE category=?').run(before.name, oldName);
+        }
+      }
+      return;
+    }
+    if (a === 'subcategory.create') {
+      sql.prepare('DELETE FROM subcategories WHERE id=? AND built_in=0').run(persisted.result?.id);
+      return;
+    }
+    if (a === 'subcategory.rename') {
+      sql
+        .prepare('UPDATE subcategories SET name=?,normalized_name=?,updated_at=CURRENT_TIMESTAMP WHERE id=? AND built_in=0')
+        .run(before.name, before.normalizedName, before.id);
+      return;
+    }
+    if (a === 'planning.create') {
+      const ids = Array.isArray(persisted.result?.createdIds) ? persisted.result.createdIds : [];
+      const delAudit = sql.prepare('DELETE FROM planned_audit WHERE item_id=?');
+      const delRej = sql.prepare('DELETE FROM planned_rejected_matches WHERE item_id=?');
+      const delItem = sql.prepare('DELETE FROM planned_items WHERE id=?');
+      for (const itemId of ids) {
+        delAudit.run(itemId);
+        delRej.run(itemId);
+        delItem.run(itemId);
+      }
+      return;
+    }
+    if (a === 'planning.update') {
+      sql
+        .prepare(
+          'UPDATE planned_items SET title=?,kind=?,amount_cents=?,due_date=?,category=?,category_id=?,subcategory_id=?,account_id=?,notes=?,certainty=?,updated_at=? WHERE id=?'
+        )
+        .run(
+          before.title,
+          before.kind,
+          before.amount_cents,
+          before.due_date,
+          before.category,
+          before.category_id ?? null,
+          before.subcategory_id ?? null,
+          before.account_id ?? null,
+          before.notes ?? '',
+          before.certainty,
+          new Date().toISOString(),
+          before.id
+        );
+      return;
+    }
+    if (a === 'planning.status') {
+      sql
+        .prepare('UPDATE planned_items SET status=?,settled_at=?,updated_at=? WHERE id=?')
+        .run(before.status, before.settled_at ?? null, new Date().toISOString(), before.id);
     }
   }
 

@@ -494,9 +494,10 @@ function renderIntelligenceViewLegacy(app:any){
               h('span',{},q),h(Icon,{name:'arrow',size:14}))))):
       h('div',{className:'mf-ai-thread',role:'log','aria-live':'polite'},
         ...messages.map(m=>renderIntelligenceMessageItem(app,m)),
-        (s.aiBusy||s.localFinancialBusy)?h('div',{className:'mf-ai-msg is-assistant is-streaming',role:'status'},
-          h('strong',{},'Assistente MF'),
-          h('p',{},'Processando solicitação…')):null),
+        (s.aiBusy||s.localFinancialBusy||s.aiCopilotBusy)?h('div',{className:'mf-ai-msg is-assistant is-streaming',role:'status'},
+          h('strong',{},s.aiCopilotBusy?'Copiloto GPT-6.2 Sol':'Assistente MF'),
+          h('p',{},s.aiCopilotBusy&&s.aiCopilotStreaming?s.aiCopilotStreaming:'Processando solicitação…'),
+          s.aiCopilotBusy&&typeof (desktop as any)?.aiCopilotCancel==='function'?h('button',{type:'button',className:'ghost-button mf-ai-stream-cancel',onClick:()=>void (desktop as any).aiCopilotCancel()},'Cancelar solicitação'):null):null),
       s.aiError?h('p',{className:'mf-ai-error',role:'alert'},s.aiError):null,
       renderIntelligenceFollowups(app),
       renderIntelligenceComposer(app)));
@@ -586,21 +587,36 @@ function renderIntelligencePanel(app:any){
         h('div',{className:'mf-ai-drawer-messages',role:'log','aria-live':'polite'},
           ...messages.map(m=>renderIntelligenceMessageItem(app,m)),
           busy?h('div',{className:'mf-ai-msg is-assistant is-streaming',role:'status'},
-            h('strong',{},'Assistente MF'),
-            h('p',{},'Processando solicitação no contexto de '+scope.label+'…')):null),
+            h('strong',{},app.state.aiCopilotBusy?'Copiloto GPT-6.2 Sol':'Assistente MF'),
+            h('p',{},app.state.aiCopilotBusy&&app.state.aiCopilotStreaming?app.state.aiCopilotStreaming:'Processando solicitação no contexto de '+scope.label+'…'),
+            app.state.aiCopilotBusy&&typeof (desktop as any)?.aiCopilotCancel==='function'?h('button',{type:'button',className:'ghost-button mf-ai-stream-cancel',onClick:()=>void (desktop as any).aiCopilotCancel()},'Cancelar'):null):null),
         app.state.intelligenceStorageError?h('p',{className:'mf-ai-error',role:'alert'},app.state.intelligenceStorageError):null,
         app.state.aiError?h('p',{className:'mf-ai-error',role:'alert'},app.state.aiError):null),
       renderIntelligenceFollowups(app),renderIntelligenceComposer(app,true)));
 }
 
 function renderIntelligenceSettings(app:any){
+  const s=app.state;
+  const aiCap=s.aiCopilotCap||null;
+  const m3Cap=s.m3ActionCap||null;
+  const inferenceLabel=aiCap?.inferenceStatus||'CONFIGURADO';
   return h(Card,{className:'settings-card mf-ai-settings'},
-    h('div',{className:'card-heading'},h('div',{},h('h2',{},'Inteligência artificial'),h('p',{},'Autenticação local e testes fictícios · Entrega 2'))),
-    h('div',{className:'mf-ai-setting-line'},h('span',{},'Estado'),h('strong',{},app.state.aiStatus.connected?'Conectada':'Não conectada')),
-    h('div',{className:'mf-ai-setting-line'},h('span',{},'Modelo previsto'),h('strong',{},'GPT-6.2 Sol')),
+    h('div',{className:'card-heading'},h('div',{},h('h2',{},'Inteligência artificial'),h('p',{},'Autenticação OAuth, Copiloto M3 e GPT-6.2 Sol'))),
+    h('div',{className:'mf-ai-setting-line'},h('span',{},'Conexão OAuth ChatGPT'),h('strong',{},s.aiStatus.connected?'Conectada':'Não conectada')),
+    h('div',{className:'mf-ai-setting-line'},h('span',{},'Modelo'),h('strong',{},'GPT-6.2 Sol ('+inferenceLabel+')')),
     h('div',{className:'mf-ai-setting-line'},h('span',{},'Raciocínio'),h('strong',{},'Low / Medium / High adaptativo')),
-    h('div',{className:'mf-ai-setting-line'},h('span',{},'Economia de tokens'),h('strong',{},'Contexto mínimo + aprovação por teste')),
-    h('p',{className:'muted-desc'},'OAuth e memórias aprovadas são protegidos localmente no Windows. Nenhuma memória é enviada sem consentimento por teste. Dados bancários e sincronização de memórias no PWA continuam indisponíveis para a IA.'),
+    h('div',{className:'mf-ai-setting-line'},h('span',{},'Economia e privacidade'),h('strong',{},'Somente agregados autorizados · zero fallback pago')),
+    desktop?.copilotActionCapabilityStatus?h('div',{className:'mf-ai-setting-line mf-ai-settings-toggle'},
+      h('span',{},'Ações supervisionadas no Copiloto (M3)'),
+      h('div',{className:'mf-ai-settings-toggle-actions'},
+        h('strong',{},m3Cap?.enabled?'Ativadas':'Desativadas'),
+        m3Cap?.available?h('button',{type:'button',className:'ghost-button',onClick:()=>void (m3Cap.enabled?(desktop as any).copilotActionCapabilityRevoke?.():(desktop as any).copilotActionCapabilityEnable?.()).then(()=>intelligenceRefresh(app))},m3Cap.enabled?'Revogar':'Ativar'):null)):null,
+    desktop?.aiCopilotCapabilityStatus?h('div',{className:'mf-ai-setting-line mf-ai-settings-toggle'},
+      h('span',{},'Inferência GPT-6.2 Sol com contexto mínimo'),
+      h('div',{className:'mf-ai-settings-toggle-actions'},
+        h('strong',{},aiCap?.enabled?'Ativada':'Desativada'),
+        aiCap?.available?h('button',{type:'button',className:'ghost-button',onClick:()=>void (aiCap.enabled?(desktop as any).aiCopilotCapabilityRevoke?.():(desktop as any).aiCopilotCapabilityEnable?.()).then(()=>intelligenceRefresh(app))},aiCap.enabled?'Revogar':'Ativar'):null)):null,
+    h('p',{className:'muted-desc'},'OAuth e permissões ficam isolados no processo principal do Windows. Ações financeiras exigem prévia, confirmação nativa, backup SQLite e geram recibo reversível em 1 clique.'),
     h('details',{className:'mf-ai-advanced-settings'},
      h('summary',{},'Inteligência · configurações avançadas'),
      renderIntelligenceConnection(app),renderIntelligencePrivacy(app),

@@ -341,7 +341,7 @@ class FinanceDB {
      migrateHierarchy(this.db);
      // Additive CAT-01 metadata sidecar. Bank source rows stay unchanged.
      migrateCat01(this.db);
-     // M3 additive month-scoped budgets within SQLite schema v7.
+     // M3 additive month-scoped budgets and account/future-only rule constraints within SQLite schema v7.
      this.db.exec(`
        CREATE TABLE IF NOT EXISTS monthly_budgets (
          profile TEXT NOT NULL REFERENCES profiles(profile) ON DELETE CASCADE,
@@ -350,6 +350,12 @@ class FinanceDB {
          amount_cents INTEGER NOT NULL CHECK(amount_cents>=0),
          updated_at TEXT NOT NULL,
          PRIMARY KEY(profile,month,category)
+       );
+       CREATE TABLE IF NOT EXISTS category_rule_constraints (
+         rule_id INTEGER PRIMARY KEY REFERENCES category_rules(id) ON DELETE CASCADE,
+         account_id TEXT NOT NULL REFERENCES bank_accounts(account_id) ON DELETE CASCADE,
+         nature TEXT NOT NULL CHECK(nature IN ('income','expense')),
+         after_rowid INTEGER NOT NULL CHECK(after_rowid>=0)
        );
      `);
    }catch(err){
@@ -565,6 +571,11 @@ class FinanceDB {
  deleteRule(id){
    const n=Number(id);if(!Number.isInteger(n)||n<=0)throw new Error('Regra inválida.');
    this.db.prepare('DELETE FROM category_rules WHERE id=?').run(n);
+   return this.listCategories();
+ }
+ setRuleEnabled(id,enabled){
+   const n=Number(id);if(!Number.isInteger(n)||n<=0)throw new Error('Regra inválida.');
+   this.db.prepare('UPDATE category_rules SET enabled=? WHERE id=?').run(enabled?1:0,n);
    return this.listCategories();
  }
  overrideBankCategory({accountId,externalId,category}){

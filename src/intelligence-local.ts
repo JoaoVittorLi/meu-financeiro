@@ -101,8 +101,16 @@ async function localFinancialSubmit(app:any,question:string){
  // I3-01 investigations use the already-authorized IC2 read pipeline, not a
  // V3 decorative card. Follow-ups retain IC2 context without copying money.
  const foldedQuestion=intelligenceFoldText(q);
- const m3ActionIntent=/\b(coloque|coloquem|categoriz|recategoriz|classifiqu|reclassifiqu|mova|mover|alter[ea]r?\s+(?:a\s+)?categoria|mud[ea]r?\s+(?:a\s+)?categoria)\b/.test(foldedQuestion)||
-  /(salario|salarios|renda|remuneracao|holerite|recebi|ganho).*(orcament|limite|reorganiz|organiz|distribu|redistribu|ajust|guardar|poupar|reservar)|(?:reorganiz|redistribu|recalcul|equilibr)\w*\s+(?:os?\s+|meus?\s+)?orcament/.test(foldedQuestion);
+ const m3ActionIntent=
+  /\b(coloque|coloquem|categoriz|recategoriz|classifiqu|reclassifiqu|mova|mover|alter[ea]r?\s+(?:a\s+)?categoria|mud[ea]r?\s+(?:a\s+)?categoria)\b/.test(foldedQuestion)||
+  /(salario|salarios|renda|remuneracao|holerite|recebi|ganho).*(orcament|limite|reorganiz|organiz|distribu|redistribu|ajust|guardar|poupar|reservar)|(?:reorganiz|redistribu|recalcul|equilibr)\w*\s+(?:os?\s+|meus?\s+)?orcament/.test(foldedQuestion)||
+  /^(?:por favor,?\s*)?(?:sempre que|toda vez que)\b/.test(foldedQuestion)||
+  /\b(?:regra(?:\s+futura|\s+automatica)?\s+(?:para|quando)|(?:desativ|paus|desabilit|ativ|reabilit|habilit)\w*\s+(?:a\s+)?regra)\b/.test(foldedQuestion)||
+  /\b(?:crie|criar|adicione|adicionar|inclua|incluir|nova|renomei\w*|mud\w*\s+o\s+nome|alter\w*\s+o\s+nome)\s+(?:a\s+)?(?:subcategoria|categoria)\b/.test(foldedQuestion)||
+  /^(?:por favor,?\s*)?(?:deixe|defin\w*|ajust\w*|mud\w*|alter\w*|coloque|fique com)\s+(?:o\s+|meu\s+)?(?:limite|orcamento|teto)\b/.test(foldedQuestion)||
+  /\b(?:despesa prevista|receita prevista|conta prevista|compromisso|parcela prevista|planejamento)\b.*\b(?:registr|adicion|crie|criar|agend|cancel|reativ|acabamos de simular|simul)\b|\b(?:registr|adicion|crie|criar|agend|cancel|reativ)\w*.*\b(?:despesa prevista|receita prevista|conta prevista|compromisso|parcela prevista|planejamento)\b/.test(foldedQuestion)||
+  /^(?:por favor,?\s*)?(?:alter|mud|atualiz|ajust|remarqu)\w*\s+(?:o\s+|a\s+)?(?:vencimento|data|valor)\b/.test(foldedQuestion)||
+  /\b(?:gostei.*mais|guardar.*a mais|poupar.*a mais|aument\w*.*reserva|trave |fixe |destrave|desbloque|reduza mais|use o valor que voce sugeriu|economia sugerida|reducao sugerida)\b/.test(foldedQuestion);
  const financialInvestigation=/por que.*(despes|gast)|investig|categorias?.*contribu|estabelec.*(cresc|aument)|mostre.*estabelec|despes.*(aument|subi)|gast.*(aument|mais)|onde.*gastando|o que aumentou|compar.*(janeiro|fevereiro|marco|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro|mes)/.test(foldedQuestion);
  const sameThread=!!app.__ic2Conversation?.answerId&&messages.some((m:any)=>m.id===app.__ic2Conversation.answerId);
  const i3Followup=sameThread&&!!app.__ic2InvestigationActive&&
@@ -122,7 +130,7 @@ async function localFinancialSubmit(app:any,question:string){
  const user:IntelligenceChatMessage={id:'local-u-'+Date.now(),role:'user',text:q,status:'sent',
   createdAt:intelligenceNowTime(),scopeLabel:scope.label,periodLabel:month};
  app.setState({localFinancialBusy:true,intelligenceDraft:''});
- let reply:LocalFinancialReply=null,operational:any=null,ic2:MfIC2Reply|null=null,m3Draft:any=null,error='';
+ let reply:LocalFinancialReply=null,operational:any=null,ic2:MfIC2Reply|null=null,m3Draft:any=null,solReply:any=null,error='';
  try{
   if(m3ActionIntent&&typeof api?.copilotActionInterpret==='function'){
    const draft=await api.copilotActionInterpret({token:access.token,source:access.source,profile:access.profile,month,question:q});
@@ -145,6 +153,20 @@ async function localFinancialSubmit(app:any,question:string){
       source:access.source,profile:access.profile,month,question:q,density,pageContext,
       ...(conversationId?{conversationId}:{})});
    if(!mfIC2Valid(ic2,access,month))throw Error('Resposta IC2 não verificada.');
+   if(ic2.status==='unsupported'&&app.state.aiStatus?.connected&&app.state.aiCopilotCap?.enabled&&typeof api?.aiCopilotAsk==='function'){
+    const requestId='sol-'+Date.now();
+    app.setState({aiCopilotBusy:true,aiCopilotStreaming:'',aiCopilotRequestId:requestId});
+    try{
+     solReply=await api.aiCopilotAsk({token:access.token,source:access.source,profile:access.profile,month,question:q,effortOverride:'auto',requestId});
+     if(solReply?.inferenceStatus&&app.state.aiCopilotCap){
+      app.setState({aiCopilotCap:{...app.state.aiCopilotCap,inferenceStatus:solReply.inferenceStatus}});
+     }
+    }catch(solErr:any){
+     error=String(solErr?.message||'');
+    }finally{
+     app.setState({aiCopilotBusy:false,aiCopilotStreaming:'',aiCopilotRequestId:null});
+    }
+   }
   }else if(typeof api?.intelligenceOperationalAsk==='function'){
    operational=await api.intelligenceOperationalAsk({token:access.token,month,
      question:v3Kind?'Radar financeiro':q});
@@ -177,9 +199,11 @@ async function localFinancialSubmit(app:any,question:string){
  if(ic2&&['ready','partial','needs_clarification','unsupported'].includes(ic2.status))
    app.__ic2Conversation={access,signature,id:ic2.conversationId};
  const state=operational?.uiState;
- let answerText=m3Draft?.answer||ic2?.answer||operational?.answer||reply?.text||error||'Consulta indisponível.';
+ let answerText=m3Draft?.answer||solReply?.text||error||ic2?.answer||operational?.answer||reply?.text||'Consulta indisponível.';
  const finalStatus:IntelligenceChatMessage['status']=m3Draft?
-  (m3Draft.status==='ready'?'done':'unsupported'):ic2?
+  (m3Draft.status==='ready'?'done':'unsupported'):solReply?.text?
+  'done':error&&ic2?.status==='unsupported'?
+  'unavailable':ic2?
   (['ready','partial'].includes(ic2.status)?'done':ic2.status==='unsupported'||ic2.status==='needs_clarification'?'unsupported':
    ic2.status==='denied'||ic2.status==='stale'?'unavailable':'error'):operational?
   (state==='ready'||state==='empty'?'done':state==='unsupported'?'unsupported':state==='denied'||state==='expired'?'unavailable':'error'):
@@ -187,6 +211,8 @@ async function localFinancialSubmit(app:any,question:string){
  const factsValid=operational&&(state==='ready'||state==='empty');
  const evidence=m3Draft?
   'Ação supervisionada · '+(m3Draft.source==='bank'?'Fonte bancária':'Fonte manual')+' · '+month:
+  solReply?.text?
+  'GPT-6.2 Sol · Esforço '+(solReply.effort==='high'?'Alto':solReply.effort==='medium'?'Médio':'Baixo')+' · Apenas agregados autorizados · '+month:
   ic2&&['ready','partial'].includes(ic2.status)?
   'Consulta local · '+(ic2.source==='bank'?'Fonte bancária':'Fonte manual')+' · '+month:
   factsValid?(operational.profile==='synthetic'?'Ambiente sintético':'Fonte '+(operational.source==='bank'?'bancária':'manual'))+
@@ -212,6 +238,7 @@ async function localFinancialSubmit(app:any,question:string){
   operationalActions:factsValid&&!visualV3&&Array.isArray(operational.actions)?operational.actions:[],
   operationalEvidence:evidence,
   details:m3Draft?'Prévia supervisionada M3 · confirmação nativa e backup SQLite antes de qualquer escrita.':
+    solReply?.text?'GPT-6.2 Sol via OAuth · somente totais agregados enviados · zero fallback pago · não grava no SQLite.':
     ic2?'Leitura local verificada · '+(ic2.status==='partial'?'Cobertura parcial. ':'')+
     'Fatos locais verificáveis, sem escrita financeira ou modelo externo.':v3Kind&&!visualV3?'Os fatos autorizados não permitem esta visualização; nenhuma informação foi estimada.':
     visualKind&&!visual?'Não há evidências suficientes para desenhar o gráfico com totais reconciliados. Confira fonte e cobertura.':
