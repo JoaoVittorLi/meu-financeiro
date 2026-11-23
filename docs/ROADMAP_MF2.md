@@ -1,5 +1,12 @@
 # MEU FINANCEIRO — ROADMAP MESTRE, INTELIGÊNCIA FINANCEIRA E CONTROLE DE AVANÇO
 
+## Atualização de governança V2 — 23/11/2026
+
+O proprietário aprovou a estrutura [Antigravity + Codex + coordenação ChatGPT](ai-context/OPERATING_PROTOCOL.md). Não cria novo marco. M3 continua prioridade até 1.0.0 **stable**, incluindo CAT-P0, S0–S5, M3-SALARY e inferência real autorizada. Antigravity Neon é integrador único; Codex explora Visão Geral em laboratório isolado e realizará auditoria/QA independentes no SHA congelado. Redesign somente após aprovação, em atualização independente; Stitch suspenso. Preservar gates A/B/C e autorizações permanentes. M4/PWA continuam fora da missão.
+
+Checkpoint remoto: PR #108 Draft, SHA 948f382c28bdb8f40a7deb15194d05decc2bb892 (23/11), commit de S2 publicado com médias 3/6m, outliers, locks e redistribuição; S0/S1 já publicados. Não há comprovação nesta revisão de gates completos no novo SHA. S3/S4/S5, inferência real e stable instalado pendentes de evidência. [ACTIVE_WORK](ai-context/ACTIVE_WORK.md) e [log](ai-context/logs/2026-11-23-GOVERNANCE-V2.md). Esta decisão não promove CURRENT_STATE nem autoriza release/merge/dados pessoais.
+
+
 ## Reconstrução Oficial de Marcos (18/11/2026 — Consolidação PR #105 & Diretriz Permanente NSIS)
 
 > **Diretriz Permanente — Homologação por Marco (vinculante):** O único formato de distribuição é **Instalador NSIS Windows x64** (`--win nsis --x64`). Versão **Portable** está fora de escopo. Todo marco com alteração funcional só é considerado concluído após **Nível A (técnico) + Nível B (Electron interativo real) + autorização do proprietário + Nível C (aplicativo NSIS realmente instalado em ambiente isolado)**, revisão independente (`pro` para Arquitetura/Guardião SQLite/Auditor Forense; `flash` para execução/testes) e preservação de baseline separada. Nenhum marco futuro pode ser iniciado sem autorização explícita do proprietário.

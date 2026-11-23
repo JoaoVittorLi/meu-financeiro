@@ -1,5 +1,20 @@
 # Registro de frentes ativas e prevenção de conflitos
 
+## Checkpoint de coordenação V2 — 23/11/2026
+
+**Protocolo vigente:** [OPERATING_PROTOCOL](OPERATING_PROTOCOL.md). Atualização de governança, não de homologação.
+
+| Frente | Dono | Estado observado / próximo passo |
+| --- | --- | --- |
+| M3 / release 1.0.0 | Antigravity Orchestrator Neon | PR #108, HEAD observado 948f382c28bdb8f40a7deb15194d05decc2bb892; S0/S1 publicados; commit S2 publicado 23/11 (médias 3/6m, outliers, locks, redistribuição e teste dedicado); concluir S3/S4/S5, inferência real, gates stable. PR Draft; testes do novo SHA não comprovados nesta revisão. |
+| Creative Design Lab V01 / CD-01 | Codex | Execução relatada pelo proprietário, Visão Geral apenas, original + 3 propostas interativas; worktree independente a confirmar; nenhuma integração aprovada. Stitch suspenso. |
+| CD-02 | Codex | Aguardar aprovação explícita do design; sem interferir em M3. |
+| CD-03 / CD-04 | Codex | Aguardar candidata funcional congelada; auditoria/QA independentes; nenhum parecer ainda. |
+| Governança / coordenação | ChatGPT + proprietário | Documento versionado; Antigravity incorpora no fluxo oficial sem sobrescrever trabalho local. |
+
+PRs #105 (M1) e #107 (M2) são referências da cadeia, não novas frentes concorrentes. Main observada e0d5131ebeda855a792614d9986f40e5bb94af5e. RC.1 antiga não reúne M2/M3. Um check Workers em andamento no SHA M3 observado não prova homologação NSIS. A execução local dos agentes não foi inspecionada neste checkpoint; conferir estado e reconciliar antes de escrever. As reservas e menções a Argon abaixo são histórico de 19/11; a escolha atual é Neon.
+
+
 ## Frente Atual — Marco 3: Copiloto Supervisionado, GPT-6.2 Sol, M3-SALARY e Consolidação Estável 1.0.0 (19/11/2026)
 
 - **Coordenação ativa:** Orchestrator **Argon** (`C:\Dev\meu-financeiro-worktrees\m3-supervised-copilot`, branch `feat/mf3-supervised-copilot-1-0-0-20261119`), ancorado sobre a linha M2 homologada (`6b9c9ad`).

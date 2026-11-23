@@ -1,5 +1,8 @@
 # Meu Financeiro — entrada obrigatória para novas IAs
 
+> **LEITURA PRIORITÁRIA — 23/11/2026:** [Governança V2 / OPERATING_PROTOCOL](OPERATING_PROTOCOL.md) é a referência atual de papéis, plugins/skills, ownership, auditoria independente, handoff e release. Comece por ela e por [ACTIVE_WORK](ACTIVE_WORK.md), [ROADMAP_MF2](../ROADMAP_MF2.md) e AGENTS.md. Antigravity Neon lidera M3 e integra; Codex tem frente visual isolada e futura auditoria independente. A entrega 1.0.0 stable não espera redesign. Os planos Fast Lane, Argon e cloud abaixo são históricos naquilo que conflita com o roadmap vigente. Não repita a Rodada A global se já houver missão autorizada; faça reconciliação focal e siga a execução aprovada.
+
+
 > **LEITURA PRIORITÁRIA DESDE 12/11/2026:** a missão de execução rápida aprovada supera as instruções históricas de repetir auditoria ampla **somente** nas frentes Redesign Premium e Inteligência. Comece por [FAST_LANE_20261112](FAST_LANE_20261112.md), [Contrato IC v1](INTELLIGENCE_UI_CONTRACT_V1.md), [Backlog enxuto](FAST_LANE_BACKLOG.md), [Design Premium](DESIGN_DIRECTION_PREMIUM.md) e [quadro #49](https://github.com/JoaoVittorLi/meu-financeiro/issues/49). Baseline Q1 PR #48 em Draft; nenhuma feature nova foi homologada por estes documentos. O estado de 09/11 abaixo é histórico.
 
 

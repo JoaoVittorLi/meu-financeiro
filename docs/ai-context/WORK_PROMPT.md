@@ -1,5 +1,8 @@
 # Diretrizes e Prompts Operacionais — Meu Financeiro
 
+> **Governança V2 (23/11/2026):** os prompts antigos abaixo são históricos quando conflitantes. Antes de qualquer missão, consultar [OPERATING_PROTOCOL](OPERATING_PROTOCOL.md) e [ACTIVE_WORK](ACTIVE_WORK.md), escolher papel Antigravity ou CD-01/02/03/04 e verificar SHA/ownership. Usar somente plugins pertinentes e efetivamente disponíveis. Não reiniciar missões aprovadas. Antigravity integra e corrige; Codex audita em checkout separado sem editar a implementação; design não bloqueia M3 stable.
+
+
 > **Atualização Antigravity / Argon (18/11/2026):** Utilize [.agents/rules/](../../.agents/rules/00-permanent-nsis-homologation.md), [.agents/skills/](../../.agents/skills/qa-guardian-sqlite/SKILL.md) e `python .agents/scripts/run_workflow.py` para coordenar subagentes (`pro` para Arquitetura/IA/Design/Guardião SQLite/Auditor Forense; `flash` para execução/testes). Mantenha `MF_QA_SYNTHETIC=1`, formato único NSIS x64, e atualização contínua dos docs canônicos sem criar duplicatas. Os prompts históricos do ChatGPT/Work abaixo permanecem apenas como referência de legado.
 
 O proprietário utiliza ChatGPT Plus e prefere usar Work com eficiência. **Chat arquiteto** prepara roadmap, pesquisa, especificação e auditoria; **Work** executa inspeção em software, código, testes, alterações e PR. Não gastar sessão Work com discussão que pode ser feita no Chat. Estas recomendações são operacionais: limites e consumo variam; não há economia porcentual garantida.
