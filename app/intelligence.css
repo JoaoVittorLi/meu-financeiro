@@ -3382,3 +3382,64 @@
 @media(prefers-reduced-motion:reduce){
  .mf-m3-action-row{transition:none!important}
 }
+
+/* M3-SALARY — Reorganização de orçamentos orientada a salário */
+.mf-m3-salary-trigger{white-space:nowrap}
+.mf-m3-salary-panel{display:grid;gap:14px;margin:10px 0 18px;padding:18px;border-radius:16px;
+ border:1px solid color-mix(in srgb,var(--green) 26%,var(--border));background:var(--surface);min-width:0}
+.mf-m3-salary-panel-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.mf-m3-salary-panel-head h2{margin:4px 0 4px;font-size:17px}
+.mf-m3-salary-panel-head p{margin:0;font-size:12.5px;color:var(--muted);max-width:66ch}
+.mf-m3-salary-form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) auto;gap:10px;align-items:end}
+.mf-m3-salary-form label{display:grid;gap:5px;font-size:11.5px;font-weight:600;color:var(--muted)}
+.mf-m3-salary-form input,.mf-m3-salary-form select{min-height:38px;padding:7px 10px;border-radius:10px;
+ border:1px solid var(--border);background:var(--surface2);color:var(--text);font-variant-numeric:tabular-nums}
+.mf-m3-salary-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.mf-m3-salary-kpi{display:grid;gap:2px;padding:9px 11px;border-radius:11px;border:1px solid var(--border);
+ background:var(--surface);font-variant-numeric:tabular-nums}
+.mf-m3-salary-kpi small{font-size:11px;color:var(--muted)}
+.mf-m3-salary-kpi strong{font-size:14.5px}
+.mf-m3-salary-kpi.is-surplus strong{color:var(--green)}
+.mf-m3-salary-kpi.is-deficit{border-color:rgba(225,29,72,.38);background:rgba(225,29,72,.08)}
+.mf-m3-salary-kpi.is-deficit strong{color:#be123c}
+[data-theme="dark"] .mf-m3-salary-kpi.is-deficit strong{color:#fda4af}
+.mf-m3-salary-modes{display:flex;flex-wrap:wrap;gap:6px}
+.mf-m3-salary-modes .mf-ic2-followup-chip.is-active{border-color:var(--green);
+ background:color-mix(in srgb,var(--green) 14%,var(--surface));font-weight:700}
+.mf-m3-salary-list{display:grid;gap:7px;max-height:320px;overflow-y:auto;padding-right:2px}
+.mf-m3-salary-row{display:grid;grid-template-columns:auto auto minmax(0,1fr) auto;align-items:center;gap:9px;
+ padding:9px 10px;border-radius:11px;border:1px solid var(--border);background:var(--surface);
+ transition:border-color 140ms ease}
+.mf-m3-salary-row.is-selected{border-color:color-mix(in srgb,var(--green) 42%,var(--border))}
+.mf-m3-salary-row-copy{display:grid;gap:2px;min-width:0}
+.mf-m3-salary-row-title{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.mf-m3-salary-row-title strong{font-size:13px}
+.mf-m3-salary-row-copy small{font-size:11px;color:var(--muted);overflow-wrap:anywhere}
+.mf-m3-salary-rationale{opacity:.88}
+.mf-m3-salary-input-wrap{display:grid;gap:3px;text-align:right;font-size:10.5px;color:var(--muted)}
+.mf-m3-salary-input-wrap input{width:108px;min-height:32px;padding:4px 8px;border-radius:8px;text-align:right;
+ border:1px solid var(--border);background:var(--surface2);color:var(--text);font-weight:650;font-variant-numeric:tabular-nums}
+.mf-m3-salary-submeta{margin:0;font-size:11.5px;color:var(--muted);line-height:1.45}
+.mf-m3-salary-redistributions{display:grid;gap:6px;padding:10px 12px;border-radius:11px;border:1px solid var(--border);background:var(--surface)}
+.mf-m3-salary-redistributions strong{font-size:12px}
+.mf-m3-salary-redistributions ul{margin:0;padding-left:16px;display:grid;gap:4px;font-size:11.5px;color:var(--muted)}
+.mf-m3-salary-lock-btn{padding:2px 8px;border-radius:999px;border:1px solid var(--border);background:var(--surface2);
+ color:var(--muted);font-size:10.5px;font-weight:600;cursor:pointer}
+.mf-m3-salary-lock-btn.is-active{border-color:var(--green);color:var(--green);
+ background:color-mix(in srgb,var(--green) 14%,var(--surface))}
+.mf-m3-salary-row.is-locked{border-style:dashed}
+.mf-m3-salary-options{display:grid;gap:6px}
+.mf-m3-salary-income-opt{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text);cursor:pointer}
+@media(max-width:860px){
+ .mf-m3-salary-form{grid-template-columns:1fr 1fr}
+ .mf-m3-salary-kpis{grid-template-columns:1fr}
+}
+@media(max-width:600px){
+ .mf-m3-salary-form{grid-template-columns:1fr}
+ .mf-m3-salary-row{grid-template-columns:auto auto minmax(0,1fr)}
+ .mf-m3-salary-input-wrap{grid-column:1 / -1;text-align:left}
+ .mf-m3-salary-input-wrap input{width:100%;text-align:left}
+}
+@media(prefers-reduced-motion:reduce){
+ .mf-m3-salary-row{transition:none!important}
+}

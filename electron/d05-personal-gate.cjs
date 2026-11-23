@@ -17,7 +17,8 @@ const ACTIONS = new Set([
   'bank.batch-categorize',
   'bank.split',
   'rule.save',
-  'planning.categorize'
+  'planning.categorize',
+  'budgets.reorganize'
 ]);
 
 const UNDOABLE_ACTIONS = new Set([
@@ -26,7 +27,8 @@ const UNDOABLE_ACTIONS = new Set([
   'bank.categorize',
   'bank.batch-categorize',
   'bank.split',
-  'planning.categorize'
+  'planning.categorize',
+  'budgets.reorganize'
 ]);
 
 function denyReserved(input) {
@@ -274,6 +276,100 @@ class D05PersonalWriteGateway {
       return { before, after, accountId: before.account_id || null, amountCents: before.amount_cents };
     }
 
+    if (action === 'budgets.reorganize') {
+      if (request.profile !== s.profile) throw Error('PersonalWrite: perfil de orçamento inválido');
+      const month = request.month == null ? null : String(request.month).trim();
+      if (month !== null && !/^20\d\d-(0[1-9]|1[0-2])$/.test(month)) {
+        throw Error('PersonalWrite: mês de orçamento inválido');
+      }
+      const applyRecurring = month === null ? true : request.applyRecurring === true;
+      const rawBudgets = Array.isArray(request.budgets) ? request.budgets : [];
+      if (!rawBudgets.length || rawBudgets.length > 50) {
+        throw Error('PersonalWrite: lote de orçamentos inválido');
+      }
+      const allowedCats = new Map(
+        sql.prepare("SELECT name,kind FROM categories WHERE kind!='income'").all().map((c) => [c.name, c])
+      );
+      const seenCats = new Set();
+      const normalizedBudgets = [];
+      for (const item of rawBudgets) {
+        if (
+          !item ||
+          typeof item !== 'object' ||
+          Array.isArray(item) ||
+          Object.keys(item).some((k) => !['category', 'amountCents'].includes(k))
+        ) {
+          throw Error('PersonalWrite: item de orçamento inválido');
+        }
+        const cat = String(item.category || '').trim();
+        if (!cat || !allowedCats.has(cat) || seenCats.has(cat)) {
+          throw Error('PersonalWrite: categoria de orçamento inválida ou duplicada');
+        }
+        if (!Number.isSafeInteger(item.amountCents) || item.amountCents < 0 || item.amountCents > 100_000_000_000) {
+          throw Error('PersonalWrite: valor de orçamento inválido');
+        }
+        seenCats.add(cat);
+        normalizedBudgets.push({ category: cat, amountCents: item.amountCents });
+      }
+      normalizedBudgets.sort((a, b) => a.category.localeCompare(b.category, 'en'));
+
+      const updateIncome = request.updateIncomeSetting === true;
+      let salaryCents = null;
+      if (updateIncome) {
+        if (!Number.isSafeInteger(request.salaryCents) || request.salaryCents <= 0 || request.salaryCents > 100_000_000_000) {
+          throw Error('PersonalWrite: valor de salário inválido para configuração');
+        }
+        salaryCents = request.salaryCents;
+      }
+
+      const priorRecurringBudgets = applyRecurring
+        ? normalizedBudgets.map((nb) => {
+            const row = sql
+              .prepare('SELECT amount_cents FROM budgets WHERE profile=? AND category=?')
+              .get(s.profile, nb.category);
+            return { category: nb.category, existed: !!row, amount_cents: row ? row.amount_cents : null };
+          })
+        : [];
+      const hasMonthlyTable = !!sql
+        .prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='monthly_budgets'")
+        .get();
+      const priorMonthlyBudgets = month && hasMonthlyTable
+        ? normalizedBudgets.map((nb) => {
+            const row = sql
+              .prepare('SELECT amount_cents FROM monthly_budgets WHERE profile=? AND month=? AND category=?')
+              .get(s.profile, month, nb.category);
+            return { category: nb.category, existed: !!row, amount_cents: row ? row.amount_cents : null };
+          })
+        : [];
+      let incomeSetting = null;
+      if (updateIncome) {
+        const incRow = sql
+          .prepare("SELECT value_cents FROM financial_settings WHERE profile=? AND name='income'")
+          .get(s.profile);
+        incomeSetting = { existed: !!incRow, value_cents: incRow ? incRow.value_cents : null };
+      }
+      const totalCents = normalizedBudgets.reduce((acc, b) => acc + b.amountCents, 0);
+      return {
+        before: {
+          profile: s.profile,
+          month,
+          applyRecurring,
+          budgets: priorRecurringBudgets,
+          monthlyBudgets: priorMonthlyBudgets,
+          incomeSetting
+        },
+        after: {
+          month,
+          applyRecurring,
+          budgets: normalizedBudgets,
+          updateIncomeSetting: updateIncome,
+          salaryCents
+        },
+        accountId: null,
+        amountCents: totalCents
+      };
+    }
+
     throw Error('PersonalWrite: operação não disponível');
   }
 
@@ -307,19 +403,24 @@ class D05PersonalWriteGateway {
     });
     if (this.previews.size > 60) this.previews.delete(this.previews.keys().next().value);
     const personalAuthorized = this.approvedForPersonal() === true || this.m3CapabilityCheck() === true;
+    const affectedCount = Array.isArray(state.before)
+      ? state.before.length
+      : Array.isArray(state.after?.budgets)
+        ? state.after.budgets.length
+        : 1;
     return {
       contract: 'D05/PERSONAL-SUPERVISED-PREVIEW-V1',
       proposalId: id,
       nonce,
       expiresAt,
       action,
-      source: s.profile === 'demo' ? 'manual' : action.startsWith('manual.') ? 'manual' : 'bank',
+      source: s.profile === 'demo' ? 'manual' : action.startsWith('manual.') || action === 'budgets.reorganize' ? 'manual' : 'bank',
       profile: s.profile,
       accountId: state.accountId,
       before: state.before,
       after: state.after,
       amountCents: state.amountCents,
-      affectedCount: Array.isArray(state.before) ? state.before.length : 1,
+      affectedCount,
       changesApplied: false,
       personalWriteAuthorized: personalAuthorized,
       needs: personalAuthorized ? 'NATIVE_CONFIRMATION' : 'OWNER_APPROVAL_AND_QA',
@@ -366,6 +467,59 @@ class D05PersonalWriteGateway {
     if (action === 'bank.batch-categorize') return service.assignBankBatch(request);
     if (action === 'bank.split') return service.setBankSplits(request);
     if (action === 'planning.categorize') return service.assignPlanned(request);
+    if (action === 'budgets.reorganize') {
+      const sql = service.db;
+      const month = request.month == null ? null : String(request.month).trim();
+      const applyRecurring = month === null ? true : request.applyRecurring === true;
+      let totalBudgetCents = 0;
+      if (month) {
+        sql.exec(`
+          CREATE TABLE IF NOT EXISTS monthly_budgets (
+            profile TEXT NOT NULL REFERENCES profiles(profile) ON DELETE CASCADE,
+            month TEXT NOT NULL CHECK(month GLOB '20[0-9][0-9]-[0-1][0-9]'),
+            category TEXT NOT NULL,
+            amount_cents INTEGER NOT NULL CHECK(amount_cents>=0),
+            updated_at TEXT NOT NULL,
+            PRIMARY KEY(profile,month,category)
+          );
+        `);
+        const upsertMonthly = sql.prepare(
+          'INSERT INTO monthly_budgets(profile,month,category,amount_cents,updated_at) VALUES(?,?,?,?,?) ' +
+            'ON CONFLICT(profile,month,category) DO UPDATE SET amount_cents=excluded.amount_cents,updated_at=excluded.updated_at'
+        );
+        const nowIso = new Date().toISOString();
+        for (const b of request.budgets) {
+          upsertMonthly.run(request.profile, month, b.category, b.amountCents, nowIso);
+        }
+      }
+      const upsertBudget = applyRecurring
+        ? sql.prepare(
+            'INSERT INTO budgets(profile,category,amount_cents) VALUES(?,?,?) ' +
+              'ON CONFLICT(profile,category) DO UPDATE SET amount_cents=excluded.amount_cents'
+          )
+        : null;
+      for (const b of request.budgets) {
+        if (upsertBudget) upsertBudget.run(request.profile, b.category, b.amountCents);
+        totalBudgetCents += b.amountCents;
+      }
+      const incomeUpdated = request.updateIncomeSetting === true;
+      if (incomeUpdated) {
+        sql
+          .prepare(
+            "INSERT INTO financial_settings(profile,name,value_cents) VALUES(?,'income',?) " +
+              'ON CONFLICT(profile,name) DO UPDATE SET value_cents=excluded.value_cents'
+          )
+          .run(request.profile, request.salaryCents);
+      }
+      return {
+        profile: request.profile,
+        month,
+        applyRecurring,
+        updatedCount: request.budgets.length,
+        totalBudgetCents,
+        incomeUpdated
+      };
+    }
     throw Error('PersonalWrite: ação não implementada');
   }
 
@@ -534,6 +688,11 @@ class D05PersonalWriteGateway {
         return { status: 'stale', changesApplied: false, reason: 'Prévia desatualizada' };
       }
 
+      const freshAffected = Array.isArray(freshState.before)
+        ? freshState.before.length
+        : Array.isArray(freshState.after?.budgets)
+          ? freshState.after.budgets.length
+          : 1;
       const accepted = await this.confirm({
         kind: 'write',
         owner,
@@ -542,7 +701,7 @@ class D05PersonalWriteGateway {
         accountId: s.activeAccountId || null,
         proposalId: id,
         amountCents: freshState.amountCents,
-        count: Array.isArray(freshState.before) ? freshState.before.length : 1,
+        count: freshAffected,
         after: freshState.after,
         syntheticOnly: synthetic
       });
@@ -589,7 +748,7 @@ class D05PersonalWriteGateway {
         changesApplied: true,
         syntheticOnly: synthetic,
         amountCents: freshState.amountCents,
-        affectedCount: Array.isArray(freshState.before) ? freshState.before.length : 1,
+        affectedCount: freshAffected,
         after: freshState.after,
         splitsAfter: freshState.splitsAfter || null,
         result,
@@ -714,6 +873,33 @@ class D05PersonalWriteGateway {
       }
       return true;
     }
+    if (a === 'budgets.reorganize') {
+      const targetBudgets = Array.isArray(after?.budgets) ? after.budgets : [];
+      if (!targetBudgets.length) return false;
+      const month = after?.month || null;
+      const applyRecurring = month === null ? true : after?.applyRecurring === true;
+      for (const b of targetBudgets) {
+        if (month) {
+          const mcur = sql
+            .prepare('SELECT amount_cents FROM monthly_budgets WHERE profile=? AND month=? AND category=?')
+            .get(persisted.profile, month, b.category);
+          if (!mcur || mcur.amount_cents !== b.amountCents) return false;
+        }
+        if (applyRecurring) {
+          const cur = sql
+            .prepare('SELECT amount_cents FROM budgets WHERE profile=? AND category=?')
+            .get(persisted.profile, b.category);
+          if (!cur || cur.amount_cents !== b.amountCents) return false;
+        }
+      }
+      if (after.updateIncomeSetting === true) {
+        const inc = sql
+          .prepare("SELECT value_cents FROM financial_settings WHERE profile=? AND name='income'")
+          .get(persisted.profile);
+        if (!inc || inc.value_cents !== after.salaryCents) return false;
+      }
+      return true;
+    }
     return false;
   }
 
@@ -776,6 +962,49 @@ class D05PersonalWriteGateway {
           sp.subcategory_id ?? null
         );
       });
+      return;
+    }
+    if (a === 'budgets.reorganize') {
+      const month = before.month || null;
+      if (month && Array.isArray(before.monthlyBudgets)) {
+        const delMonthly = sql.prepare('DELETE FROM monthly_budgets WHERE profile=? AND month=? AND category=?');
+        const upsertMonthly = sql.prepare(
+          'INSERT INTO monthly_budgets(profile,month,category,amount_cents,updated_at) VALUES(?,?,?,?,?) ' +
+            'ON CONFLICT(profile,month,category) DO UPDATE SET amount_cents=excluded.amount_cents,updated_at=excluded.updated_at'
+        );
+        const nowIso = new Date().toISOString();
+        for (const item of before.monthlyBudgets) {
+          if (!item.existed) {
+            delMonthly.run(persisted.profile, month, item.category);
+          } else {
+            upsertMonthly.run(persisted.profile, month, item.category, item.amount_cents, nowIso);
+          }
+        }
+      }
+      const delBudget = sql.prepare('DELETE FROM budgets WHERE profile=? AND category=?');
+      const upsertBudget = sql.prepare(
+        'INSERT INTO budgets(profile,category,amount_cents) VALUES(?,?,?) ' +
+          'ON CONFLICT(profile,category) DO UPDATE SET amount_cents=excluded.amount_cents'
+      );
+      for (const item of before.budgets || []) {
+        if (!item.existed) {
+          delBudget.run(persisted.profile, item.category);
+        } else {
+          upsertBudget.run(persisted.profile, item.category, item.amount_cents);
+        }
+      }
+      if (before.incomeSetting) {
+        if (!before.incomeSetting.existed) {
+          sql.prepare("DELETE FROM financial_settings WHERE profile=? AND name='income'").run(persisted.profile);
+        } else {
+          sql
+            .prepare(
+              "INSERT INTO financial_settings(profile,name,value_cents) VALUES(?,'income',?) " +
+                'ON CONFLICT(profile,name) DO UPDATE SET value_cents=excluded.value_cents'
+            )
+            .run(persisted.profile, before.incomeSetting.value_cents);
+        }
+      }
     }
   }
 

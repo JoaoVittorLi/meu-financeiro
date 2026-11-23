@@ -341,6 +341,17 @@ class FinanceDB {
      migrateHierarchy(this.db);
      // Additive CAT-01 metadata sidecar. Bank source rows stay unchanged.
      migrateCat01(this.db);
+     // M3 additive month-scoped budgets within SQLite schema v7.
+     this.db.exec(`
+       CREATE TABLE IF NOT EXISTS monthly_budgets (
+         profile TEXT NOT NULL REFERENCES profiles(profile) ON DELETE CASCADE,
+         month TEXT NOT NULL CHECK(month GLOB '20[0-9][0-9]-[0-1][0-9]'),
+         category TEXT NOT NULL,
+         amount_cents INTEGER NOT NULL CHECK(amount_cents>=0),
+         updated_at TEXT NOT NULL,
+         PRIMARY KEY(profile,month,category)
+       );
+     `);
    }catch(err){
      try{this.db.close();}catch(_){}
      throw err;
@@ -351,12 +362,54 @@ class FinanceDB {
    if(!this.db.prepare('SELECT 1 FROM profiles WHERE profile=?').get(profile))return null;
    const budgets={};
    for(const r of this.db.prepare('SELECT category, amount_cents FROM budgets WHERE profile=?').all(profile))budgets[r.category]=r.amount_cents;
+   const monthlyBudgets=this.listMonthlyBudgets(profile);
    const settings={opening:0,income:0,fixed:0,existing:0,reserve:0};
    for(const r of this.db.prepare('SELECT name, value_cents FROM financial_settings WHERE profile=?').all(profile))if(KEYS.includes(r.name))settings[r.name]=r.value_cents;
    // Expose D05 links on the existing manual read model without hiding
    // legacy amount/date/type fields or inventing a child for legacy rows.
    const transactions=this.db.prepare('SELECT id,date,description,kind,amount_cents AS amount,category,origin,category_id AS categoryId,subcategory_id AS subcategoryId FROM transactions WHERE profile=? ORDER BY date,id').all(profile).map(x=>({...x}));
-   return {version:5,transactions,budgets,settings};
+   return {version:5,transactions,budgets,monthlyBudgets,settings};
+ }
+ listMonthlyBudgets(profile){
+   checkProfile(profile);
+   const out={};
+   if(!this.db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='monthly_budgets'").get())return out;
+   for(const r of this.db.prepare('SELECT month,category,amount_cents FROM monthly_budgets WHERE profile=? ORDER BY month,category').all(profile)){
+     if(!out[r.month])out[r.month]={};
+     out[r.month][r.category]=r.amount_cents;
+   }
+   return out;
+ }
+ getMonthlyBudgets(profile,month){
+   checkProfile(profile);
+   if(typeof month!=='string'||!/^20\d\d-(0[1-9]|1[0-2])$/.test(month))throw new Error('Mês de orçamento inválido.');
+   const out={};
+   if(!this.db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='monthly_budgets'").get())return out;
+   for(const r of this.db.prepare('SELECT category,amount_cents FROM monthly_budgets WHERE profile=? AND month=?').all(profile,month))out[r.category]=r.amount_cents;
+   return out;
+ }
+ effectiveBudgets(profile,month){
+   checkProfile(profile);
+   const recurring={};
+   for(const r of this.db.prepare('SELECT category,amount_cents FROM budgets WHERE profile=?').all(profile))recurring[r.category]=r.amount_cents;
+   const monthly=this.getMonthlyBudgets(profile,month);
+   return {effective:{...recurring,...monthly},recurring,monthly};
+ }
+ setMonthlyBudget(profile,month,category,amountCents){
+   checkProfile(profile);
+   if(typeof month!=='string'||!/^20\d\d-(0[1-9]|1[0-2])$/.test(month))throw new Error('Mês de orçamento inválido.');
+   const cat=categoryName(category);
+   if(!isCents(amountCents))throw new Error('Valor de orçamento mensal inválido.');
+   if(!this.db.prepare('SELECT 1 FROM categories WHERE name=?').get(cat))throw new Error('Categoria de orçamento desconhecida: '+cat);
+   this.db.prepare('INSERT OR IGNORE INTO profiles(profile) VALUES(?)').run(profile);
+   this.db.prepare('INSERT INTO monthly_budgets(profile,month,category,amount_cents,updated_at) VALUES(?,?,?,?,?) ON CONFLICT(profile,month,category) DO UPDATE SET amount_cents=excluded.amount_cents,updated_at=excluded.updated_at').run(profile,month,cat,amountCents,new Date().toISOString());
+   return this.getMonthlyBudgets(profile,month);
+ }
+ deleteMonthlyBudget(profile,month,category){
+   checkProfile(profile);
+   if(typeof month!=='string'||!/^20\d\d-(0[1-9]|1[0-2])$/.test(month))throw new Error('Mês de orçamento inválido.');
+   this.db.prepare('DELETE FROM monthly_budgets WHERE profile=? AND month=? AND category=?').run(profile,month,categoryName(category));
+   return this.getMonthlyBudgets(profile,month);
  }
  /** Guard against stale renderer snapshots; this checks authoritative SQLite links.
   * Called within BEGIN IMMEDIATE before replacing manual rows.
@@ -462,6 +515,7 @@ class FinanceDB {
          this.db.prepare('UPDATE categories SET name=?,color=?,emoji=?,kind=? WHERE name=?').run(label,hex,icon,chosenKind,row.name);
          this.db.prepare('UPDATE transactions SET category=? WHERE category=?').run(label,row.name);
          this.db.prepare('UPDATE budgets SET category=? WHERE category=?').run(label,row.name);
+         if(this.db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='monthly_budgets'").get())this.db.prepare('UPDATE monthly_budgets SET category=? WHERE category=?').run(label,row.name);
          if(this.db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='planned_items'").get())this.db.prepare('UPDATE planned_items SET category=? WHERE category=?').run(label,row.name);
        }else this.db.prepare('UPDATE categories SET color=?,emoji=?,kind=? WHERE name=?').run(hex,icon,chosenKind,row.name);
      }else{

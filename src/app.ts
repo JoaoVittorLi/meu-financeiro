@@ -8,7 +8,7 @@ const h: any = React.createElement;
 type Kind = 'income' | 'expense';
 type Tx = { id:string; date:string; description:string; kind:Kind; amount:number; category:string; origin?:string; categoryId?:string|null; subcategoryId?:string|null };
 type Settings = { opening:number; income:number; fixed:number; existing:number; reserve:number };
-type Data = { version:number; transactions:Tx[]; budgets:{[category:string]:number}; settings:Settings };
+type Data = { version:number; transactions:Tx[]; budgets:{[category:string]:number}; monthlyBudgets?:{[month:string]:{[category:string]:number}}; settings:Settings };
 type Sim = { value:string; installments:string; interest:string; firstDueDate?:string };
 /** Compare input snapshots, never the calculated output or saved scenario A. */
 function simInputsEqual(a:Sim|null|undefined,b:Sim|null|undefined):boolean{
@@ -262,7 +262,10 @@ function OverviewSpendingChart(props:any){
   h('details',{className:'u1-chart-data'},h('summary',{},'Ver valores do gráfico'),h('div',{className:'u1-table-scroll'},h('table',{},h('caption',{},'Gasto acumulado na fonte selecionada'),h('thead',{},h('tr',{},h('th',{},'Até'),h('th',{},'Período atual'),props.compare?h('th',{},'Intervalo anterior'):null)),h('tbody',{},rows.map(r=>h('tr',{key:r.date},h('td',{},r.date.split('-').reverse().join('/')),h('td',{},fmt(r.current)),props.compare?h('td',{},fmt(r.previous||0)):null)))))));
 }
 
-function starter():Data { return { version:5,transactions:[],budgets:{},settings:{opening:0,income:0,fixed:0,existing:0,reserve:0} }; }
+function starter():Data { return { version:5,transactions:[],budgets:{},monthlyBudgets:{},settings:{opening:0,income:0,fixed:0,existing:0,reserve:0} }; }
+function effectiveMonthBudgets(data:Data|null|undefined,month:string):{[category:string]:number}{
+ return {...(data?.budgets||{}),...(data?.monthlyBudgets?.[month]||{})};
+}
 function demoData():Data {
  const t:Tx[]=[]; const add=(offset:number,day:number,description:string,kind:Kind,amount:number,category:string)=>{
   const m=shiftMonth(nowYM,offset); t.push({id:'demo-'+t.length,date:m+'-'+String(day).padStart(2,'0'),description,kind,amount:Math.round(amount*100),category,origin:'demo'});
@@ -294,6 +297,16 @@ function safeData(v:any):Data {
    categoryId,subcategoryId,origin:'restored'};
  });
  for(const [c,raw] of Object.entries(v.budgets||{})){const b=Number(raw);if(c.length<=50&&Number.isSafeInteger(b)&&b>=0&&(b>0||Number(v.version)>=5))d.budgets[c]=b;}
+ const monthlyOut:{[m:string]:{[c:string]:number}}={};
+ if(v.monthlyBudgets&&typeof v.monthlyBudgets==='object'){
+  for(const [ym,cats] of Object.entries(v.monthlyBudgets as any)){
+   if(!/^20\d\d-(0[1-9]|1[0-2])$/.test(ym)||!cats||typeof cats!=='object')continue;
+   const row:{[c:string]:number}={};
+   for(const [c,raw] of Object.entries(cats as any)){const b=Number(raw);if(c.length<=50&&Number.isSafeInteger(b)&&b>=0)row[c]=b;}
+   if(Object.keys(row).length)monthlyOut[ym]=row;
+  }
+ }
+ d.monthlyBudgets=monthlyOut;
  for(const key of ['opening','income','fixed','existing','reserve'] as (keyof Settings)[]){const n=Number(v.settings?.[key]||0); (d.settings as any)[key]=(Number.isSafeInteger(n)&&Math.abs(n)<100000000000)?n:0;}
  return d;
 }
@@ -1526,7 +1539,8 @@ class App extends React.Component<any,State>{
  const comparison=overviewComparison(s.expense,prior.expense,compareAvailable),points=overviewCumulative(start,end,range,compareAvailable?previous:null);
  const due=pendingDashboardItems(state.planning.items),upcoming=due.filter(x=>x.dueDate<=advanceDate(today,6)),overdue=due.filter(x=>x.dueDate<today);
  const generated=!!state.planning.generatedAt,month=end.slice(0,7),budget=range(firstOfMonth(month),endOfMonth(month));
- const limits=this.getCategories().filter(c=>c.kind!=='income'&&Object.prototype.hasOwnProperty.call(d.budgets,c.name)).map(info=>({info,limit:d.budgets[info.name],hasLimit:true,total:budget.categories.find(c=>c.name===info.name)?.total||0})).sort(budgetPresentationOrder);
+ const effBudgets=effectiveMonthBudgets(d,month);
+ const limits=this.getCategories().filter(c=>c.kind!=='income'&&Object.prototype.hasOwnProperty.call(effBudgets,c.name)).map(info=>({info,limit:effBudgets[info.name],hasLimit:true,total:budget.categories.find(c=>c.name===info.name)?.total||0})).sort(budgetPresentationOrder);
  const totalLimit=limits.reduce((n,c)=>n+c.limit,0),spentLimited=limits.reduce((n,c)=>n+c.total,0),budgetCoverage=overviewCoverage(budget.expense,spentLimited),used=totalLimit>0?Math.round(spentLimited/totalLimit*100):spentLimited>0?100:0;
  const recent=useBank?bank.data.transactions.filter(x=>x.date>=start&&x.date<=end&&x.status==='POSTED'&&['income','expense'].includes(effectiveNature(x))).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5).map(x=>({key:x.accountId+'|'+x.id,title:x.customTitle||x.merchant||x.description,original:x.description,date:x.date,category:x.category,categoryId:(x as any).categoryId||null,subcategoryId:(x as any).subcategoryId||null,amount:Math.abs(x.amount),kind:effectiveNature(x),raw:x})):d.transactions.filter(x=>x.date>=start&&x.date<=end).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5).map(x=>({key:x.id,title:x.description,original:'',date:x.date,category:x.category,categoryId:(x as any).categoryId||null,subcategoryId:(x as any).subcategoryId||null,amount:x.amount,kind:x.kind,raw:x}));
  const manualInPeriod=d.transactions.filter(x=>x.date>=start&&x.date<=end).length;
@@ -1790,7 +1804,10 @@ class App extends React.Component<any,State>{
    const assigned=allowed.reduce((sum,c)=>sum+getAmount(c.name),0);
    const total=mode==='income'?s.income:s.expense;
    const unclassified=Math.max(0,total-assigned);
-   const entries=allowed.map(c=>({info:c,total:getAmount(c.name),hasLimit:Object.prototype.hasOwnProperty.call(d.budgets,c.name),limit:d.budgets[c.name]}))
+   const monthOverrides=d.monthlyBudgets?.[this.state.month]||{};
+   const effBudgets=effectiveMonthBudgets(d,this.state.month);
+   const hasMonthOverrides=Object.keys(monthOverrides).length>0;
+   const entries=allowed.map(c=>({info:c,total:getAmount(c.name),hasLimit:Object.prototype.hasOwnProperty.call(effBudgets,c.name),limit:effBudgets[c.name],isMonthly:Object.prototype.hasOwnProperty.call(monthOverrides,c.name)}))
       .filter(x=>x.total>0||(mode==='expense'&&x.hasLimit));
    const quiet=allowed.filter(c=>!entries.some(x=>x.info.name===c.name));
    const limited=entries.filter(x=>mode==='expense'&&x.hasLimit);
@@ -1817,7 +1834,17 @@ class App extends React.Component<any,State>{
        h('div',{},h('p',{},mode==='expense'?'Acompanhe seus limites por categoria.':'Veja a composição das receitas recebidas.')),
        h('div',{className:'mf-budget-switch',role:'group','aria-label':'Visualização financeira'},
          h('button',{type:'button',className:mode==='expense'?'active':'','aria-pressed':mode==='expense',onClick:()=>this.setState({budgetTab:'expense',showAllBudgetCategories:false,budgetFocus:'all',budgetSearch:''})},'Gastos'),
-         h('button',{type:'button',className:mode==='income'?'active':'','aria-pressed':mode==='income',onClick:()=>this.setState({budgetTab:'income',showAllBudgetCategories:false,budgetFocus:'all',budgetSearch:''})},'Receitas'))),
+         h('button',{type:'button',className:mode==='income'?'active':'','aria-pressed':mode==='income',onClick:()=>this.setState({budgetTab:'income',showAllBudgetCategories:false,budgetFocus:'all',budgetSearch:''})},'Receitas')),
+       mode==='expense'&&typeof desktop!=='undefined'&&(desktop as any)?.copilotSalaryBudgetPropose?h('button',{type:'button',className:'ghost-button mf-m3-salary-trigger',
+         onClick:()=>{
+           const self=this as any;
+           if(!self.__m3SalaryPanel){
+             const curInc=this.state.data?.settings?.income;
+             self.__m3SalaryPanel={open:true,salaryText:curInc>0?copilotFormatEditCents(curInc):'',reserveText:'',profileMode:'balanced',busy:false,error:'',proposal:null};
+           }else{self.__m3SalaryPanel.open=!self.__m3SalaryPanel.open;}
+           this.forceUpdate();
+         }},'Reorganizar com salário'):null),
+     mode==='expense'&&typeof renderBudgetsSalaryPanel==='function'?renderBudgetsSalaryPanel(this,useBank):null,
      this.renderSourcePicker(),
      h('p',{className:'mf-budget-context'},prettyMonth(this.state.month)+' · '+(mode==='expense'?'Gastos do mês e limites cadastrados por categoria':'Composição das receitas recebidas, sem incluir transferências próprias confirmadas')),
      mode==='expense'?h('div',{className:'mf-budget-summary mf-budget-summary-four'},
@@ -1836,7 +1863,9 @@ class App extends React.Component<any,State>{
         {key:'unlimited',count:signals.unlimited,title:'Sem limite',description:'Categorias com gastos para organizar',icon:'layers'}
        ].map(x=>h('button',{type:'button',className:'u3-insight-action','aria-pressed':focus===x.key,onClick:()=>this.setState({budgetFocus:focus===x.key?'all':x.key,budgetSearch:''})},h(Icon,{name:x.icon,size:18}),h('span',{},h('b',{},x.title),h('small',{},x.description)),h('strong',{},x.count),h(Icon,{name:'chevron-right',size:15}))))):null,
      useBank&&this.state.bank.data.truncated&&!this.state.bank.data.dailyTotals?h('p',{className:'mf-budget-warning'},'Histórico carregado parcialmente. Valores e cobertura refletem somente os registros disponíveis.'):null,
-     mode==='expense'?h('p',{className:'mf-budget-contract'},'O mês filtra os gastos. Os limites cadastrados são recorrentes e valem para todos os meses.') :null,
+     mode==='expense'?h('p',{className:'mf-budget-contract'},hasMonthOverrides?
+      'O mês filtra os gastos. Há limites personalizados especificamente para '+prettyMonth(this.state.month)+'; os demais permanecem recorrentes.':
+      'O mês filtra os gastos. Os limites cadastrados são recorrentes e valem para todos os meses.') :null,
      mode==='income'&&this.state.planning.items.some(x=>x.kind==='income'&&x.dueDate.slice(0,7)===this.state.month&&x.remaining>0&&x.status!=='cancelled')?
        h('p',{className:'mf-budget-expected'},'Recebimentos ainda previstos no Planejamento: '+fmt(this.state.planning.items.filter(x=>x.kind==='income'&&x.dueDate.slice(0,7)===this.state.month&&x.remaining>0&&x.status!=='cancelled').reduce((sum,x)=>sum+x.remaining,0))+'. Não somados às receitas já recebidas.'):null,
      unclassified>0?h('div',{className:'mf-budget-warning',role:'status'},

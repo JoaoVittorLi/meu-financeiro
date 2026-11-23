@@ -66,6 +66,641 @@ function copilotEffortLabel(effort: string): string {
   return 'Baixo';
 }
 
+function copilotParseBrlCents(raw: any): number | null {
+  if (typeof raw === 'number') {
+    return Number.isSafeInteger(raw) && raw >= 0 && raw <= 100_000_000_000 ? raw : null;
+  }
+  const clean = String(raw || '').replace(/r\$/gi, '').replace(/\s+/g, '').trim();
+  if (!clean) return null;
+  if (/^\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?$/.test(clean)) {
+    const [i, f = ''] = clean.split(',');
+    const val = Number(i.replace(/\./g, '')) * 100 + Number(f.padEnd(2, '0').slice(0, 2));
+    return Number.isSafeInteger(val) && val >= 0 && val <= 100_000_000_000 ? val : null;
+  }
+  if (/^\d+(?:,\d{1,2})?$/.test(clean)) {
+    const [i, f = ''] = clean.split(',');
+    const val = Number(i) * 100 + Number(f.padEnd(2, '0').slice(0, 2));
+    return Number.isSafeInteger(val) && val >= 0 && val <= 100_000_000_000 ? val : null;
+  }
+  if (/^\d+\.\d{1,2}$/.test(clean)) {
+    const [i, f = ''] = clean.split('.');
+    const val = Number(i) * 100 + Number(f.padEnd(2, '0').slice(0, 2));
+    return Number.isSafeInteger(val) && val >= 0 && val <= 100_000_000_000 ? val : null;
+  }
+  return null;
+}
+
+function copilotFormatEditCents(cents: number): string {
+  return ((cents || 0) / 100).toFixed(2).replace('.', ',');
+}
+
+const MF_M3_SALARY_UI_STATE = new WeakMap<any, {
+  selectedCats: Set<string>;
+  lockedCats: Set<string>;
+  editedCents: Map<string, number>;
+  editedText: Map<string, string>;
+  updateIncome: boolean;
+  applyRecurring: boolean;
+  busy: boolean;
+  capability: { available: boolean; enabled: boolean } | null;
+  receipt: any | null;
+  undoState: string | null;
+  error: string;
+  dismissed: boolean;
+}>();
+
+function copilotGetSalaryUiState(keyObj: any, draft: any) {
+  let st = MF_M3_SALARY_UI_STATE.get(keyObj);
+  if (st) return st;
+  const items: any[] = Array.isArray(draft?.items) ? draft.items : [];
+  const selectedCats = new Set<string>();
+  const lockedCats = new Set<string>(Array.isArray(draft?.lockedCategories) ? draft.lockedCategories : []);
+  const editedCents = new Map<string, number>();
+  const editedText = new Map<string, string>();
+  for (const it of items) {
+    if (!it?.category) continue;
+    selectedCats.add(it.category);
+    if (it.isLocked) lockedCats.add(it.category);
+    const val = Number.isSafeInteger(it.proposedLimitCents) ? it.proposedLimitCents : 0;
+    editedCents.set(it.category, val);
+    editedText.set(it.category, copilotFormatEditCents(val));
+  }
+  st = {
+    selectedCats,
+    lockedCats,
+    editedCents,
+    editedText,
+    updateIncome: !!draft?.updateIncomeSetting,
+    applyRecurring: !!draft?.applyRecurring,
+    busy: false,
+    capability: draft?.capability || null,
+    receipt: null,
+    undoState: null,
+    error: '',
+    dismissed: false
+  };
+  MF_M3_SALARY_UI_STATE.set(keyObj, st);
+  return st;
+}
+
+async function copilotEnableSalaryCapability(app: any, keyObj: any, draft: any, onChange?: () => void) {
+  const api = desktop as any;
+  const st = copilotGetSalaryUiState(keyObj, draft);
+  if (!api?.copilotActionCapabilityEnable || st.busy) return;
+  st.busy = true;
+  st.error = '';
+  if (onChange) onChange(); else copilotForceRender(app);
+  try {
+    const res = await api.copilotActionCapabilityEnable();
+    st.capability = {
+      available: st.capability ? !!st.capability.available : true,
+      enabled: !!res?.enabled
+    };
+    if (res?.cancelled && !res?.enabled) {
+      st.error = 'Ativação cancelada. Nenhuma permissão foi concedida.';
+    }
+  } catch (e: any) {
+    st.error = String(e?.message || 'Não foi possível ativar as ações supervisionadas.');
+  } finally {
+    st.busy = false;
+    if (onChange) onChange(); else copilotForceRender(app);
+  }
+}
+
+function copilotCollectLocksPayload(st: any): Record<string, number> {
+  const lockedCategories: Record<string, number> = {};
+  for (const cat of st.lockedCats || []) {
+    const cents = st.editedCents.get(cat);
+    if (Number.isSafeInteger(cents) && (cents as number) >= 0) {
+      lockedCategories[cat] = cents as number;
+    }
+  }
+  return lockedCategories;
+}
+
+async function copilotRecalcSalaryDraft(
+  app: any,
+  keyObj: any,
+  draft: any,
+  mode: string,
+  onReplaceDraft: (next: any) => void
+) {
+  const api = desktop as any;
+  const st = copilotGetSalaryUiState(keyObj, draft);
+  if (!api?.copilotSalaryBudgetPropose || st.busy || st.receipt) return;
+  st.busy = true;
+  st.error = '';
+  copilotForceRender(app);
+  try {
+    const nextDraft = await api.copilotSalaryBudgetPropose({
+      profile: draft.profile,
+      source: draft.source,
+      month: draft.month,
+      salaryCents: draft.salaryCents,
+      reserveGoalCents: draft.requestedReserveCents ?? null,
+      profileMode: mode,
+      lockedCategories: copilotCollectLocksPayload(st),
+      updateIncomeSetting: st.updateIncome,
+      applyRecurring: st.applyRecurring
+    });
+    if (nextDraft?.contract === 'MF3/SALARY-BUDGET-PROPOSAL-V1') {
+      nextDraft.capability = st.capability;
+      MF_M3_SALARY_UI_STATE.delete(keyObj);
+      const nextSt = copilotGetSalaryUiState(keyObj, nextDraft);
+      for (const c of st.lockedCats) nextSt.lockedCats.add(c);
+      nextSt.applyRecurring = st.applyRecurring;
+      nextSt.updateIncome = st.updateIncome;
+      onReplaceDraft(nextDraft);
+    }
+  } catch (e: any) {
+    st.error = String(e?.message || 'Não foi possível recalcular os orçamentos.');
+    st.busy = false;
+    copilotForceRender(app);
+  }
+}
+
+async function copilotSwitchSalaryMode(app: any, keyObj: any, draft: any, mode: string, onReplaceDraft: (next: any) => void) {
+  return copilotRecalcSalaryDraft(app, keyObj, draft, mode, onReplaceDraft);
+}
+
+async function copilotExecuteSalaryBudget(app: any, keyObj: any, draft: any, onChange?: () => void) {
+  const api = desktop as any;
+  const st = copilotGetSalaryUiState(keyObj, draft);
+  if (!api || st.busy || st.receipt) return;
+  const items: any[] = Array.isArray(draft?.items) ? draft.items : [];
+  const budgets: Array<{ category: string; amountCents: number }> = [];
+  for (const it of items) {
+    if (!st.selectedCats.has(it.category)) continue;
+    const rawCents = st.editedCents.get(it.category);
+    if (!Number.isSafeInteger(rawCents) || (rawCents as number) < 0) {
+      st.error = `Valor inválido para a categoria "${it.category}". Use formato monetário válido (ex.: 1.250,00).`;
+      if (onChange) onChange(); else copilotForceRender(app);
+      return;
+    }
+    budgets.push({ category: it.category, amountCents: rawCents as number });
+  }
+  if (!budgets.length) {
+    st.error = 'Selecione ao menos uma categoria para aplicar novos limites.';
+    if (onChange) onChange(); else copilotForceRender(app);
+    return;
+  }
+  if (!api.d05SessionAuthorize || !api.copilotActionPrepare || !api.copilotActionConfirm) {
+    st.error = 'Bridge desktop de ações supervisionadas indisponível nesta sessão.';
+    if (onChange) onChange(); else copilotForceRender(app);
+    return;
+  }
+
+  st.busy = true;
+  st.error = '';
+  if (onChange) onChange(); else copilotForceRender(app);
+  try {
+    await api.d05SessionAuthorize({ profile: draft.profile });
+    const prepared = await api.copilotActionPrepare({
+      action: 'budgets.reorganize',
+      profile: draft.profile,
+      month: draft.month,
+      applyRecurring: !!st.applyRecurring,
+      budgets,
+      updateIncomeSetting: st.updateIncome,
+      ...(st.updateIncome ? { salaryCents: draft.salaryCents } : {})
+    });
+    if (!prepared || prepared.contract !== 'D05/PERSONAL-SUPERVISED-PREVIEW-V1') {
+      throw Error('Prévia oficial D05 não confirmada.');
+    }
+    if (prepared.personalWriteAuthorized === false) {
+      if (typeof api.copilotActionCapabilityStatus === 'function') {
+        const cap = await api.copilotActionCapabilityStatus().catch(() => null);
+        if (cap) st.capability = { available: !!cap.available, enabled: !!cap.enabled };
+      }
+      st.error = 'Ative primeiro "Ações supervisionadas do Copiloto" para autorizar gravações locais com confirmação nativa.';
+      return;
+    }
+    const confirmed = await api.copilotActionConfirm({
+      proposalId: prepared.proposalId,
+      nonce: prepared.nonce
+    });
+    if (confirmed?.status === 'applied' && confirmed.changesApplied === true) {
+      st.receipt = confirmed.receipt;
+      st.undoState = confirmed.undoState || 'available';
+      await copilotRefreshAppData(app, draft.profile);
+    } else if (confirmed?.status === 'denied') {
+      st.error = confirmed.reason || 'Confirmação cancelada ou negada. Nenhuma alteração foi gravada.';
+    } else {
+      st.error = confirmed?.reason || 'Os orçamentos mudaram antes da confirmação; gere uma nova simulação.';
+    }
+  } catch (e: any) {
+    st.error = String(e?.message || 'Não foi possível aplicar a reorganização de orçamentos.');
+  } finally {
+    st.busy = false;
+    if (onChange) onChange(); else copilotForceRender(app);
+  }
+}
+
+async function copilotUndoSalaryBudget(app: any, keyObj: any, draft: any, onChange?: () => void) {
+  const api = desktop as any;
+  const st = copilotGetSalaryUiState(keyObj, draft);
+  if (!api?.copilotActionUndo || !st.receipt || st.busy || st.undoState !== 'available') return;
+
+  st.busy = true;
+  st.error = '';
+  if (onChange) onChange(); else copilotForceRender(app);
+  try {
+    await api.d05SessionAuthorize({ profile: draft.profile });
+    const res = await api.copilotActionUndo({ proposalId: st.receipt.proposalId });
+    if (res?.status === 'undone') {
+      st.undoState = 'undone';
+      st.receipt = res.receipt || st.receipt;
+      await copilotRefreshAppData(app, draft.profile);
+    } else if (res?.status === 'already_undone') {
+      st.undoState = 'undone';
+    } else {
+      st.error = res?.reason || 'Os orçamentos foram alterados posteriormente; reversão automática bloqueada.';
+    }
+  } catch (e: any) {
+    st.error = String(e?.message || 'Não foi possível desfazer a reorganização.');
+  } finally {
+    st.busy = false;
+    if (onChange) onChange(); else copilotForceRender(app);
+  }
+}
+
+function renderSalaryBudgetProposalBox(
+  app: any,
+  keyObj: any,
+  draft: any,
+  opts: { onReplaceDraft?: (next: any) => void; onDismiss?: () => void } = {}
+) {
+  if (!draft || draft.contract !== 'MF3/SALARY-BUDGET-PROPOSAL-V1') return null;
+
+  if (draft.status === 'needs_clarification') {
+    return h('div', { className: 'mf-m3-action-card is-info', role: 'region', 'aria-label': 'Esclarecimento de salário' },
+      h('div', { className: 'mf-m3-action-head' },
+        h('span', { className: 'micro-label' }, 'REORGANIZAÇÃO POR SALÁRIO · M3-SALARY'),
+        h('span', { className: 'mf-ic2-epistemic-badge is-estimate' }, 'Informe o salário')),
+      h('p', { className: 'mf-m3-action-muted' }, draft.answer));
+  }
+
+  const st = copilotGetSalaryUiState(keyObj, draft);
+  if (st.dismissed) {
+    return h('div', { className: 'mf-m3-action-card is-dismissed', role: 'status' },
+      'Proposta salarial descartada · nenhuma alteração foi gravada nos orçamentos.');
+  }
+
+  const items: any[] = Array.isArray(draft.items) ? draft.items : [];
+  let selectedCount = 0;
+  let selectedTotalCents = 0;
+  let invalidInput = false;
+  for (const it of items) {
+    if (!st.selectedCats.has(it.category)) continue;
+    selectedCount++;
+    const c = st.editedCents.get(it.category);
+    if (Number.isSafeInteger(c) && (c as number) >= 0) {
+      selectedTotalCents += c as number;
+    } else {
+      invalidInput = true;
+    }
+  }
+  const marginAfterEdits = draft.salaryCents - selectedTotalCents;
+  const needOptIn = !st.receipt && st.capability && st.capability.available && !st.capability.enabled;
+  const confidenceLabel =
+    draft.confidence === 'high' ? `Base forte (${draft.completeMonthsAnalyzed} meses completos)` :
+    draft.confidence === 'medium' ? `Base média (${draft.completeMonthsAnalyzed} meses completos)` :
+    draft.completeMonthsAnalyzed === 1 ? 'Base inicial (1 mês completo)' : 'Estimativa sem histórico completo';
+
+  const statusText = st.receipt
+    ? (st.undoState === 'undone' ? 'Revertida com backup' : 'Aplicada · com recibo')
+    : 'Simulação · nada gravado';
+  const statusClass = st.receipt
+    ? (st.undoState === 'undone' ? 'mf-ic2-epistemic-badge is-estimate' : 'mf-ic2-epistemic-badge is-fact')
+    : 'mf-ic2-epistemic-badge is-simulation';
+  const salaryProvenanceLabel =
+    draft.salaryStatus === 'received_in_statement'
+      ? `Salário detectado nas entradas (${fmt(draft.observedSalaryCents || draft.observedIncomeCents || 0)}) · sem duplicação`
+      : `Referência prevista para ${draft.month}` + (draft.plannedIncomeCents > 0 ? ` · Previsto aberto ${fmt(draft.plannedIncomeCents)}` : '');
+
+  return h('div', { className: 'mf-m3-action-card mf-m3-salary-card', role: 'region', 'aria-label': 'Reorganização de orçamentos por salário' },
+    h('div', { className: 'mf-m3-action-head' },
+      h('span', { className: 'micro-label' },
+        `M3-SALARY · ${draft.source === 'bank' ? 'CONTAS CONECTADAS' : 'MANUAL'} · ${draft.month} · ` +
+        (st.applyRecurring ? 'MÊS + RECORRENTE' : 'VÁLIDO NESTE MÊS')),
+      h('div', { className: 'mf-m3-action-badges' },
+        h('span', { className: 'mf-ic2-pill' }, confidenceLabel),
+        h('span', { className: statusClass }, statusText))),
+
+    h('p', { className: 'mf-m3-salary-submeta' },
+      salaryProvenanceLabel + (draft.incomeVsBalanceNote ? ' · ' + draft.incomeVsBalanceNote : '')),
+
+    h('div', { className: 'mf-m3-salary-kpis' },
+      h('div', { className: 'mf-m3-salary-kpi' },
+        h('small', {}, 'Salário informado'),
+        h('strong', {}, fmt(draft.salaryCents))),
+      h('div', { className: 'mf-m3-salary-kpi' },
+        h('small', {}, `Limites selecionados (${selectedCount})`),
+        h('strong', {}, fmt(selectedTotalCents))),
+      h('div', { className: 'mf-m3-salary-kpi ' + (marginAfterEdits < 0 ? 'is-deficit' : 'is-surplus') },
+        h('small', {}, marginAfterEdits < 0 ? 'Déficit sobre salário' : 'Margem / Reserva'),
+        h('strong', {}, (marginAfterEdits < 0 ? '−' : '') + fmt(Math.abs(marginAfterEdits))))),
+
+    Array.isArray(draft.redistributions) && draft.redistributions.length > 0
+      ? h('div', { className: 'mf-m3-salary-redistributions', role: 'region', 'aria-label': 'Redistribuições propostas' },
+          h('strong', {}, `Redistribuições recomendadas (${draft.redistributions.length})`),
+          h('ul', {},
+            ...draft.redistributions.slice(0, 6).map((rd: any, idx: number) =>
+              h('li', { key: idx },
+                h('b', {}, `${rd.fromCategory} → ${rd.toCategory} (${fmt(rd.amountCents)})`),
+                h('span', {}, ` — ${rd.reason}`)))))
+      : null,
+
+    !st.receipt && typeof (desktop as any)?.copilotSalaryBudgetPropose === 'function' && opts.onReplaceDraft
+      ? h('div', { className: 'mf-m3-salary-modes', role: 'group', 'aria-label': 'Perfil de distribuição' },
+          [
+            { id: 'conservative', label: 'Conservador (20%)' },
+            { id: 'balanced', label: 'Equilibrado (15%)' },
+            { id: 'flexible', label: 'Flexível (10%)' }
+          ].map((m) =>
+            h('button', {
+              key: m.id,
+              type: 'button',
+              className: 'mf-ic2-followup-chip' + (draft.profileMode === m.id ? ' is-active' : ''),
+              disabled: st.busy,
+              onClick: () => void copilotSwitchSalaryMode(app, keyObj, draft, m.id, opts.onReplaceDraft!)
+            }, m.label)
+          ))
+      : null,
+
+    Array.isArray(draft.warnings) && draft.warnings.length > 0
+      ? h('div', { className: 'mf-m3-action-warnings' },
+          ...draft.warnings.map((w: string, i: number) =>
+            h('p', { key: i, className: 'mf-m3-action-notice' }, w)))
+      : null,
+
+    h('div', { className: 'mf-m3-salary-list', role: 'list', 'aria-label': 'Limites propostos por categoria' },
+      ...items.map((it) => {
+        const checked = st.selectedCats.has(it.category);
+        const locked = st.lockedCats.has(it.category);
+        const identity = resolveCategoryVisualIdentity({
+          categoryName: it.category,
+          catalog: app?.state?.qa84VisualCatalog || [],
+          aggregate: true
+        });
+        const editedVal = st.editedCents.get(it.category);
+        const currentDiff = it.currentLimitCents !== null && Number.isSafeInteger(editedVal)
+          ? (editedVal as number) - it.currentLimitCents
+          : null;
+        return h('div', { key: it.category, role: 'listitem', className: 'mf-m3-salary-row' + (checked ? ' is-selected' : '') + (locked ? ' is-locked' : '') },
+          h('input', {
+            type: 'checkbox',
+            checked,
+            disabled: !!st.receipt || st.busy,
+            'aria-label': 'Incluir ' + it.category,
+            onChange: (e: any) => {
+              if (e.target.checked) st.selectedCats.add(it.category);
+              else st.selectedCats.delete(it.category);
+              st.error = '';
+              copilotForceRender(app);
+            }
+          }),
+          h(CategoryVisualGlyph, { identity, size: 19 }),
+          h('div', { className: 'mf-m3-salary-row-copy' },
+            h('div', { className: 'mf-m3-salary-row-title' },
+              h('strong', {}, it.category),
+              h('span', { className: 'mf-ic2-pill' }, it.tierLabel),
+              it.isProtected ? h('span', { className: 'mf-ic2-pill is-strong' }, 'Preservada') : null,
+              it.atypicalDetected ? h('span', { className: 'mf-ic2-pill' }, 'Mês atípico') : null,
+              !st.receipt && checked && opts.onReplaceDraft
+                ? h('button', {
+                    type: 'button',
+                    className: 'mf-m3-salary-lock-btn' + (locked ? ' is-active' : ''),
+                    disabled: st.busy,
+                    'aria-pressed': locked,
+                    onClick: () => {
+                      if (st.lockedCats.has(it.category)) st.lockedCats.delete(it.category);
+                      else st.lockedCats.add(it.category);
+                      void copilotRecalcSalaryDraft(app, keyObj, draft, draft.profileMode || 'balanced', opts.onReplaceDraft!);
+                    }
+                  }, locked ? 'Fixado' : 'Fixar')
+                : locked ? h('span', { className: 'mf-ic2-pill is-strong' }, 'Fixado') : null),
+            h('small', {},
+              `Atual: ${it.currentLimitCents !== null ? fmt(it.currentLimitCents) : 'Sem limite'} · ` +
+              `3m: ${fmt(it.avg3mCents ?? it.historicalAvgCents)} · ` +
+              `6m: ${fmt(it.avg6mCents ?? it.historicalAvgCents)} · ` +
+              `Realizado+Prev.: ${fmt(it.committedFloorCents)}` +
+              (currentDiff !== null && currentDiff !== 0
+                ? ` (${currentDiff > 0 ? '+' : '−'}${fmt(Math.abs(currentDiff))})`
+                : '')),
+            h('small', { className: 'mf-m3-salary-rationale' }, it.rationale)),
+          h('label', { className: 'mf-m3-salary-input-wrap' },
+            h('span', {}, 'Novo R$'),
+            h('input', {
+              type: 'text',
+              inputMode: 'decimal',
+              disabled: !!st.receipt || st.busy || !checked,
+              value: st.editedText.get(it.category) ?? copilotFormatEditCents(it.proposedLimitCents),
+              'aria-label': 'Novo limite em reais para ' + it.category,
+              onChange: (e: any) => {
+                const text = String(e.target.value);
+                st.editedText.set(it.category, text);
+                const parsed = copilotParseBrlCents(text);
+                if (parsed !== null) st.editedCents.set(it.category, parsed);
+                else st.editedCents.delete(it.category);
+                st.error = '';
+                copilotForceRender(app);
+              }
+            })));
+      })),
+
+    !st.receipt
+      ? h('div', { className: 'mf-m3-salary-options' },
+          h('label', { className: 'mf-m3-salary-income-opt' },
+            h('input', {
+              type: 'checkbox',
+              checked: st.applyRecurring,
+              disabled: st.busy,
+              onChange: (e: any) => {
+                st.applyRecurring = !!e.target.checked;
+                copilotForceRender(app);
+              }
+            }),
+            h('span', {}, `Aplicar também como limite recorrente para os próximos meses (padrão: somente ${draft.month})`)),
+          h('label', { className: 'mf-m3-salary-income-opt' },
+            h('input', {
+              type: 'checkbox',
+              checked: st.updateIncome,
+              disabled: st.busy,
+              onChange: (e: any) => {
+                st.updateIncome = !!e.target.checked;
+                copilotForceRender(app);
+              }
+            }),
+            h('span', {}, `Atualizar também renda mensal de referência no perfil para ${fmt(draft.salaryCents)} (não cria lançamento no extrato)`)))
+      : null,
+
+    needOptIn
+      ? h('div', { className: 'mf-m3-action-optin' },
+          h('p', {}, 'Para gravar esses novos limites no banco SQLite com confirmação nativa e reversão, ative antes as ações supervisionadas.'),
+          h('button', {
+            type: 'button',
+            className: 'secondary-button',
+            disabled: st.busy,
+            onClick: () => void copilotEnableSalaryCapability(app, keyObj, draft)
+          }, st.busy ? 'Ativando…' : 'Ativar ações supervisionadas'))
+      : null,
+
+    st.receipt
+      ? h('div', { className: 'mf-m3-action-receipt', role: 'status' },
+          h('div', { className: 'mf-m3-action-receipt-info' },
+            h('strong', {},
+              st.undoState === 'undone'
+                ? 'Limites anteriores restaurados com sucesso'
+                : `Orçamentos atualizados em ${st.receipt.affectedCount || selectedCount} categoria(s)`),
+            h('small', {}, `Recibo ${String(st.receipt.proposalId || '').slice(0, 8)} · Backup SQLite verificado`)),
+          st.undoState === 'available'
+            ? h('button', {
+                type: 'button',
+                className: 'ghost-button',
+                disabled: st.busy,
+                onClick: () => void copilotUndoSalaryBudget(app, keyObj, draft)
+              }, st.busy ? 'Revertendo…' : 'Desfazer')
+            : h('span', { className: 'mf-ic2-pill' }, 'Desfeito'))
+      : h('div', { className: 'mf-m3-action-footer' },
+          h('button', {
+            type: 'button',
+            className: 'primary-button',
+            disabled: st.busy || selectedCount === 0 || invalidInput || !!needOptIn,
+            onClick: () => void copilotExecuteSalaryBudget(app, keyObj, draft)
+          }, st.busy ? 'Aguardando confirmação…' : `Confirmar e aplicar (${selectedCount} categorias)`),
+          h('button', {
+            type: 'button',
+            className: 'ghost-button',
+            disabled: st.busy,
+            onClick: () => {
+              if (opts.onDismiss) opts.onDismiss();
+              else { st.dismissed = true; st.error = ''; copilotForceRender(app); }
+            }
+          }, 'Descartar')),
+
+    st.error ? h('p', { className: 'mf-m3-action-error', role: 'alert' }, st.error) : null);
+}
+
+function renderBudgetsSalaryPanel(app: any, useBank: boolean) {
+  const api = desktop as any;
+  if (!api?.copilotSalaryBudgetPropose) return null;
+  if (!app.__m3SalaryPanel) {
+    const curInc = app?.state?.data?.settings?.income;
+    app.__m3SalaryPanel = {
+      open: false,
+      salaryText: curInc > 0 ? copilotFormatEditCents(curInc) : '',
+      reserveText: '',
+      profileMode: 'balanced',
+      busy: false,
+      error: '',
+      proposal: null
+    };
+  }
+  const panel = app.__m3SalaryPanel;
+  if (!panel.open) return null;
+
+  const generate = async () => {
+    const salaryCents = copilotParseBrlCents(panel.salaryText);
+    if (!salaryCents || salaryCents <= 0) {
+      panel.error = 'Informe um salário líquido mensal válido em reais (ex.: 7.500,00).';
+      copilotForceRender(app);
+      return;
+    }
+    const reserveTrim = String(panel.reserveText || '').trim();
+    let reserveGoalCents: number | null = null;
+    if (reserveTrim) {
+      reserveGoalCents = copilotParseBrlCents(reserveTrim);
+      if (reserveGoalCents === null || reserveGoalCents > salaryCents) {
+        panel.error = 'Meta de reserva inválida ou maior que o salário informado.';
+        copilotForceRender(app);
+        return;
+      }
+    }
+    panel.busy = true;
+    panel.error = '';
+    copilotForceRender(app);
+    try {
+      const profile = app.state.mode === 'demo' ? 'demo' : 'real';
+      const source = profile === 'demo' ? 'manual' : useBank ? 'bank' : 'manual';
+      const draft = await api.copilotSalaryBudgetPropose({
+        profile,
+        source,
+        month: app.state.month,
+        salaryCents,
+        reserveGoalCents,
+        profileMode: panel.profileMode,
+        updateIncomeSetting: false
+      });
+      const cap = typeof api.copilotActionCapabilityStatus === 'function'
+        ? await api.copilotActionCapabilityStatus().catch(() => null)
+        : null;
+      if (draft) draft.capability = cap ? { available: !!cap.available, enabled: !!cap.enabled } : null;
+      panel.proposal = draft;
+    } catch (e: any) {
+      panel.error = String(e?.message || 'Não foi possível calcular a reorganização.');
+    } finally {
+      panel.busy = false;
+      copilotForceRender(app);
+    }
+  };
+
+  return h('section', { className: 'mf-m3-salary-panel card', role: 'region', 'aria-label': 'Planejador de orçamento por salário' },
+    h('div', { className: 'mf-m3-salary-panel-head' },
+      h('div', {},
+        h('span', { className: 'micro-label' }, 'COPILOTO M3-SALARY'),
+        h('h2', {}, 'Reorganizar limites a partir do seu salário mensal'),
+        h('p', {}, 'Calcula médias reais apenas de meses completos anteriores, soma compromissos restantes do Planejamento e exige sua confirmação antes de alterar limites.')),
+      h('button', {
+        type: 'button',
+        className: 'ghost-button',
+        onClick: () => { panel.open = false; copilotForceRender(app); }
+      }, 'Fechar')),
+
+    h('div', { className: 'mf-m3-salary-form' },
+      h('label', {}, 'Salário mensal líquido (R$)',
+        h('input', {
+          type: 'text',
+          inputMode: 'decimal',
+          placeholder: 'Ex.: 7.500,00',
+          value: panel.salaryText,
+          disabled: panel.busy,
+          onChange: (e: any) => { panel.salaryText = String(e.target.value); panel.error = ''; copilotForceRender(app); }
+        })),
+      h('label', {}, 'Meta de reserva (R$, opcional)',
+        h('input', {
+          type: 'text',
+          inputMode: 'decimal',
+          placeholder: 'Padrão pelo perfil',
+          value: panel.reserveText,
+          disabled: panel.busy,
+          onChange: (e: any) => { panel.reserveText = String(e.target.value); panel.error = ''; copilotForceRender(app); }
+        })),
+      h('label', {}, 'Estratégia',
+        h('select', {
+          value: panel.profileMode,
+          disabled: panel.busy,
+          onChange: (e: any) => { panel.profileMode = String(e.target.value); copilotForceRender(app); }
+        },
+          h('option', { value: 'conservative' }, 'Conservador (20% reserva)'),
+          h('option', { value: 'balanced' }, 'Equilibrado (15% reserva)'),
+          h('option', { value: 'flexible' }, 'Flexível (10% reserva)'))),
+      h('button', {
+        type: 'button',
+        className: 'primary-button',
+        disabled: panel.busy,
+        onClick: () => void generate()
+      }, panel.busy ? 'Calculando…' : 'Simular reorganização')),
+
+    panel.error ? h('p', { className: 'mf-m3-action-error', role: 'alert' }, panel.error) : null,
+    panel.proposal
+      ? renderSalaryBudgetProposalBox(app, panel.proposal, panel.proposal, {
+          onReplaceDraft: (nextDraft) => { panel.proposal = nextDraft; copilotForceRender(app); },
+          onDismiss: () => { panel.proposal = null; copilotForceRender(app); }
+        })
+      : null);
+}
+
 function copilotGetActionUiState(msg: any, draft: any) {
   let st = MF_M3_ACTION_UI_STATE.get(msg);
   if (st) return st;
@@ -264,7 +899,16 @@ async function copilotUndoSupervisedAction(app: any, msg: any, draft: any) {
 
 function renderCopilotActionCard(app: any, msg: any) {
   const draft = msg?.m3ActionDraft;
-  if (!draft || draft.contract !== 'MF3/ACTION-DRAFT-V1') return null;
+  if (!draft) return null;
+  if (draft.contract === 'MF3/SALARY-BUDGET-PROPOSAL-V1') {
+    return renderSalaryBudgetProposalBox(app, msg, draft, {
+      onReplaceDraft: (nextDraft) => {
+        msg.m3ActionDraft = nextDraft;
+        copilotForceRender(app);
+      }
+    });
+  }
+  if (draft.contract !== 'MF3/ACTION-DRAFT-V1') return null;
 
   if (draft.status === 'needs_clarification' || draft.status === 'unavailable') {
     return h('div', { className: 'mf-m3-action-card is-info', role: 'region', 'aria-label': 'Esclarecimento de ação' },

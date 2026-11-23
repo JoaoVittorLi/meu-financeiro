@@ -21,6 +21,7 @@ const {IC2ReadQueryGateway}=require('./intelligence-ic2-adapter.cjs');
 const {scopeOf}=require('./intelligence-context.cjs');
 const {scanProactiveInsights}=require('./intelligence-proactive.cjs');
 const {interpretCopilotAction}=require('./copilot-actions.cjs');
+const {buildSalaryBudgetProposal}=require('./copilot-salary-budget.cjs');
 const {RCCategoryGateway}=require('./intelligence-category-rc.cjs');
 const {installD05Ipc}=require('./d05-ipc-adapter.cjs');
 const {D05RCSecureGate}=require('./d05-rc-gate.cjs');
@@ -279,21 +280,34 @@ app.whenReady().then(async()=>{
    if(!mainWindow||mainWindow.isDestroyed()||!mainWindow.isFocused())return false;
    const m3Active=isM3CapabilityEnabled();
    const isUndo=details.kind==='undo';
-   const targetText=details.after?
-    details.after.category+(details.after.subcategory?' › '+details.after.subcategory:''):
-    String(details.action||'operação');
+   const isBudgetReorg=details.action==='budgets.reorganize';
+   const budgetScopeNote=details.after?.month?
+    (details.after?.applyRecurring===true?
+     ` (mês ${details.after.month} + recorrente)`:
+     ` (somente para ${details.after.month})`):'';
+   const amountLabel=Number.isSafeInteger(details.amountCents)?
+    new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(details.amountCents/100):'';
+   const targetText=isBudgetReorg?
+    'reorganização de orçamento'+budgetScopeNote:
+    details.after&&details.after.category?
+     details.after.category+(details.after.subcategory?' › '+details.after.subcategory:''):
+     String(details.action||'operação');
    const result=await dialog.showMessageBox(mainWindow,{
     type:'warning',
     buttons:isUndo?['Cancelar','Confirmar reversão']:
      (m3Active||details.syntheticOnly)?['Cancelar','Confirmar e aplicar']:['Cancelar','Confirmar somente após homologação'],
     defaultId:0,cancelId:0,noLink:true,
-    title:isUndo?'Reverter alteração supervisionada':'Escrita financeira supervisionada',
+    title:isUndo?'Reverter alteração supervisionada':isBudgetReorg?'Reorganização de orçamento supervisionada':'Escrita financeira supervisionada',
     message:isUndo?
-     'Desfazer alteração aplicada em '+String(details.count||1)+' lançamento(s)?':
-     'Confirmar '+targetText+' em '+String(details.count||1)+' lançamento(s)?',
+     (isBudgetReorg?
+      'Desfazer reorganização de orçamento em '+String(details.count||1)+' categoria(s)'+budgetScopeNote+'?':
+      'Desfazer alteração aplicada em '+String(details.count||1)+' lançamento(s)?'):
+     (isBudgetReorg?
+      'Confirmar reorganização de orçamento'+budgetScopeNote+' em '+String(details.count||1)+' categoria(s) (total '+amountLabel+')?':
+      'Confirmar '+targetText+' em '+String(details.count||1)+' lançamento(s)?'),
     detail:isUndo?
-     'Restaura a classificação anterior salva no recibo '+String(details.proposalId||'')+' após backup SQLite verificado.':
-     'Antes da confirmação o sistema revalidará IDs, conta, perfil, prévia e criará backup SQLite com recibo reversível.'
+     'Restaura os valores anteriores salvos no recibo '+String(details.proposalId||'')+' após backup SQLite verificado.':
+     'Antes da confirmação o sistema revalidará limites/dados e criará backup SQLite com recibo reversível.'
    });
    return result.response===1&&!mainWindow.isDestroyed();
   }
@@ -352,7 +366,26 @@ app.whenReady().then(async()=>{
      typeof input.question!=='string')
    throw Error('Copilot: solicitação de ação inválida.');
   const scope=scopeOf({token:input.token,source:input.source,profile:input.profile,month:input.month},event.sender.id);
-  return interpretCopilotAction({local:localFinancial,scope,owner:event.sender.id,question:input.question});
+  return interpretCopilotAction({local:localFinancial,planner,scope,owner:event.sender.id,question:input.question});
+ });
+ ipcMain.handle('copilot:salary-budget-propose',(event,input)=>{
+  requireAppSender(event);
+  if(!input||typeof input!=='object'||Array.isArray(input)||
+     Object.keys(input).some(k=>!['profile','source','month','salaryCents','reserveGoalCents','profileMode','protectedCategories','lockedCategories','updateIncomeSetting','applyRecurring'].includes(k)))
+   throw Error('Copilot: parâmetros de proposta de salário inválidos.');
+  return buildSalaryBudgetProposal({
+   db,planner,
+   profile:input.profile==='demo'?'demo':'real',
+   source:input.profile==='demo'?'manual':input.source==='manual'?'manual':'bank',
+   month:input.month,
+   salaryCents:input.salaryCents,
+   reserveGoalCents:input.reserveGoalCents===undefined?null:input.reserveGoalCents,
+   profileMode:input.profileMode||'balanced',
+   protectedCategories:Array.isArray(input.protectedCategories)?input.protectedCategories:[],
+   lockedCategories:input.lockedCategories&&typeof input.lockedCategories==='object'&&!Array.isArray(input.lockedCategories)?input.lockedCategories:{},
+   updateIncomeSetting:input.updateIncomeSetting===true,
+   applyRecurring:input.applyRecurring===true
+  });
  });
  ipcMain.handle('copilot:action-prepare',(event,input)=>{
   requireAppSender(event);if(restoring||syncing||autoBackupBusy)throw Error('D05: operação concorrente');

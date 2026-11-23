@@ -2,6 +2,7 @@
 // M3 — Supervised Action Interpreter (read-only proposal builder for S1..S4).
 // Never mutates SQLite, never executes dynamic SQL, never infers unverified data.
 const { D05CategoryService } = require('./d05-category-service.cjs');
+const { parseSalaryBudgetCommand, buildSalaryBudgetProposal } = require('./copilot-salary-budget.cjs');
 
 const fold = (s) =>
   String(s || '')
@@ -157,12 +158,13 @@ function parseCategorizeCommand(question) {
   };
 }
 
-function interpretCopilotAction({ local, scope, owner, question } = {}) {
+function interpretCopilotAction({ local, planner = null, scope, owner, question } = {}) {
   if (!local || typeof local.query !== 'function') {
     throw Error('CopilotActions: serviço local obrigatório.');
   }
-  const cmd = parseCategorizeCommand(question);
-  if (!cmd) return { matched: false };
+  const salaryCmd = parseSalaryBudgetCommand(question);
+  const cmd = salaryCmd ? null : parseCategorizeCommand(question);
+  if (!salaryCmd && !cmd) return { matched: false };
 
   // Re-verify active read grant BEFORE accessing SQLite catalog or rows.
   const grant = local.query({ token: scope.token, month: scope.month, intent: 'radar' }, owner);
@@ -173,6 +175,39 @@ function interpretCopilotAction({ local, scope, owner, question } = {}) {
     grant.references?.profile !== scope.profile
   ) {
     throw Error('CopilotActions: concessão de leitura inválida ou expirada.');
+  }
+
+  if (salaryCmd) {
+    if (salaryCmd.missingSalary) {
+      return {
+        matched: true,
+        contract: 'MF3/SALARY-BUDGET-PROPOSAL-V1',
+        intent: 'salary_budget_reorg',
+        status: 'needs_clarification',
+        effort: 'medium',
+        readOnly: true,
+        changesApplied: false,
+        source: scope.source,
+        profile: scope.profile,
+        month: scope.month,
+        items: [],
+        warnings: [],
+        answer:
+          'Para reorganizar seus orçamentos de forma realista, informe seu salário líquido deste mês em reais (ex.: "Meu salário este mês é R$ 6.500, reorganize meus orçamentos").'
+      };
+    }
+    return buildSalaryBudgetProposal({
+      db: local.db,
+      planner: planner || local.planner || null,
+      profile: scope.profile,
+      source: scope.source,
+      month: scope.month,
+      salaryCents: salaryCmd.salaryCents,
+      reserveGoalCents: salaryCmd.reserveGoalCents,
+      profileMode: salaryCmd.profileMode,
+      protectedHints: salaryCmd.protectedHints,
+      updateIncomeSetting: salaryCmd.updateIncomeSetting
+    });
   }
 
   const db = local.db;

@@ -18,6 +18,7 @@ contextBridge.exposeInMainWorld('financeDesktop', Object.freeze({
   copilotActionCapabilityEnable: () => ipcRenderer.invoke('copilot:action-capability-enable'),
   copilotActionCapabilityRevoke: () => ipcRenderer.invoke('copilot:action-capability-revoke'),
   copilotActionInterpret: input => ipcRenderer.invoke('copilot:action-interpret',input),
+  copilotSalaryBudgetPropose: input => ipcRenderer.invoke('copilot:salary-budget-propose',input),
   intelligenceCategoryPersonal: input => ipcRenderer.invoke('intelligence:category-personal',input),
   intelligenceCategorySandboxStart: month => ipcRenderer.invoke('intelligence:category-sandbox-start',month),
   intelligenceCategorySandboxCommand: input => ipcRenderer.invoke('intelligence:category-sandbox-command',input),

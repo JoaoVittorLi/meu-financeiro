@@ -461,7 +461,7 @@ function qa84BudgetReturn(host, toCategory) {
     }
 }
 function renderQA84BudgetCards(host, visible, mode, total, bank, suggest) {
-    return h('div', { className: 'qa84-budgets-grid', role: 'list', 'aria-label': 'Orçamentos por categoria' }, visible.map(({ info, total: spent, hasLimit, limit }) => {
+    return h('div', { className: 'qa84-budgets-grid', role: 'list', 'aria-label': 'Orçamentos por categoria' }, visible.map(({ info, total: spent, hasLimit, limit, isMonthly }) => {
         const identity = resolveCategoryVisualIdentity({ categoryName: info.name, catalog: host.state.qa84VisualCatalog || [], aggregate: true });
         const model = qa84BudgetStatus(spent, limit !== null && limit !== void 0 ? limit : null, mode === 'expense' && hasLimit);
         const tone = model.status === 'exceeded' ? 'exceeded' : model.status === 'near' ? 'near' :
@@ -472,7 +472,7 @@ function renderQA84BudgetCards(host, visible, mode, total, bank, suggest) {
         const caption = mode === 'income' ? 'Recebido' : model.status === 'exceeded' || model.status === 'zero' && spent > 0 ? 'Excedido' :
             model.status === 'unlimited' ? 'Não definido' : model.status === 'zero' ? 'Definido' : 'Restante';
         const pctLabel = model.usedPercent === null ? model.status === 'zero' ? 'Limite R$ 0' : model.status === 'unlimited' ? 'Sem limite' :
-            'Sem orçamento' : model.usedPercent.toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + '% utilizado';
+            'Sem orçamento' : model.usedPercent.toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + '% utilizado' + (isMonthly ? ' · mês' : '');
         return h('button', { type: 'button', role: 'listitem', key: info.name, id: 'qa84-card-' + encodeURIComponent(info.name),
             className: 'qa84-budget-card tone-' + tone, 'aria-label': info.name + ' · ' + pctLabel +
                 ' · gasto ' + fmt(spent) + (hasLimit ? ' · limite ' + fmt(limit) : ' · sem limite'),
@@ -481,7 +481,7 @@ function renderQA84BudgetCards(host, visible, mode, total, bank, suggest) {
     }));
 }
 function renderQA84BudgetDetail(host, context) {
-    var _a, _b, _c, _d, _e, _f;
+    var _a, _b, _c, _d, _e, _f, _g, _h;
     const drill = host.state.qa84BudgetDrill;
     if (!drill)
         return null;
@@ -491,8 +491,10 @@ function renderQA84BudgetDetail(host, context) {
     const authoritative = drill.bank ? bankSnapshot(host.state.bank, drill.month) : snapshot(host.state.data, drill.month);
     const total = drill.mode === 'income' ? ((_a = authoritative.incomeCategories.find((c) => c.name === drill.categoryName)) === null || _a === void 0 ? void 0 : _a.total) || 0 :
         ((_b = authoritative.categories.find((c) => c.name === drill.categoryName)) === null || _b === void 0 ? void 0 : _b.total) || 0;
-    const hasLimit = Object.prototype.hasOwnProperty.call(host.state.data.budgets, drill.categoryName);
-    const limit = host.state.data.budgets[drill.categoryName];
+    const monthOverride = ((_d = (_c = host.state.data) === null || _c === void 0 ? void 0 : _c.monthlyBudgets) === null || _d === void 0 ? void 0 : _d[drill.month]) || {};
+    const hasLimit = Object.prototype.hasOwnProperty.call(monthOverride, drill.categoryName) || Object.prototype.hasOwnProperty.call(host.state.data.budgets, drill.categoryName);
+    const limit = Object.prototype.hasOwnProperty.call(monthOverride, drill.categoryName) ? monthOverride[drill.categoryName] : host.state.data.budgets[drill.categoryName];
+    const isMonthlyOverride = Object.prototype.hasOwnProperty.call(monthOverride, drill.categoryName);
     const model = qa84BudgetStatus(total, limit !== null && limit !== void 0 ? limit : null, drill.mode === 'expense' && hasLimit);
     const tone = model.status === 'exceeded' ? 'exceeded' : model.status === 'near' ? 'near' :
         model.status === 'within' ? 'within' : 'neutral';
@@ -566,10 +568,10 @@ function renderQA84BudgetDetail(host, context) {
                 qa84Ring(0, 'neutral', '—', 'dados parciais', 'mini'));
         });
     })()), details.complete && details.groups.length === 0 ? h('p', {}, 'Nenhuma despesa nesta categoria e período.') : null) : h('section', { className: 'qa84-subcategory-history' }, h('h2', {}, 'Histórico da subcategoria'), !details.complete ? h('p', { className: 'qa84-budget-partial' }, 'Histórico parcial: a conciliação com a categoria principal ainda não foi concluída.') : null, h('div', { className: 'qa84-history-list' }, ((selected === null || selected === void 0 ? void 0 : selected.rows) || []).slice(page * 25, (page + 1) * 25).map(t => h('div', { className: 'qa84-history-row', key: t.key }, h('div', {}, h('strong', {}, t.description), h('small', {}, t.date.split('-').reverse().join('/') +
-        ' · ID ' + t.id + (t.accountId ? ' · Conta ' + t.accountId : ''))), h('strong', {}, fmt(t.amount))))), !((_c = selected === null || selected === void 0 ? void 0 : selected.rows) === null || _c === void 0 ? void 0 : _c.length) ? h('p', { className: 'qa84-budget-empty' }, 'Nenhuma movimentação registrada nesta subcategoria no período.') : null, (((_d = selected === null || selected === void 0 ? void 0 : selected.rows) === null || _d === void 0 ? void 0 : _d.length) || 0) > 25 ? h('div', { className: 'qa84-history-pagination' }, h('button', { type: 'button', disabled: page === 0, onClick: () => host.setState({ qa84BudgetPage: page - 1 }) }, 'Anterior'), h('span', {}, 'Página ' + (page + 1) + ' de ' + Math.ceil(((selected === null || selected === void 0 ? void 0 : selected.rows.length) || 0) / 25)), h('button', { type: 'button', disabled: (page + 1) * 25 >= selected.rows.length,
-        onClick: () => host.setState({ qa84BudgetPage: page + 1 }) }, 'Próxima')) : null), drill.bank && (!((_e = host.state.bank.data.last) === null || _e === void 0 ? void 0 : _e.completedAt) || Date.now() - Date.parse(host.state.bank.data.last.completedAt) > 48 * 3600000) ?
+        ' · ID ' + t.id + (t.accountId ? ' · Conta ' + t.accountId : ''))), h('strong', {}, fmt(t.amount))))), !((_e = selected === null || selected === void 0 ? void 0 : selected.rows) === null || _e === void 0 ? void 0 : _e.length) ? h('p', { className: 'qa84-budget-empty' }, 'Nenhuma movimentação registrada nesta subcategoria no período.') : null, (((_f = selected === null || selected === void 0 ? void 0 : selected.rows) === null || _f === void 0 ? void 0 : _f.length) || 0) > 25 ? h('div', { className: 'qa84-history-pagination' }, h('button', { type: 'button', disabled: page === 0, onClick: () => host.setState({ qa84BudgetPage: page - 1 }) }, 'Anterior'), h('span', {}, 'Página ' + (page + 1) + ' de ' + Math.ceil(((selected === null || selected === void 0 ? void 0 : selected.rows.length) || 0) / 25)), h('button', { type: 'button', disabled: (page + 1) * 25 >= selected.rows.length,
+        onClick: () => host.setState({ qa84BudgetPage: page + 1 }) }, 'Próxima')) : null), drill.bank && (!((_g = host.state.bank.data.last) === null || _g === void 0 ? void 0 : _g.completedAt) || Date.now() - Date.parse(host.state.bank.data.last.completedAt) > 48 * 3600000) ?
         h('p', { className: 'qa84-budget-partial', role: 'status' }, 'A última atualização bancária pode estar desatualizada. Data informada: ' +
-            (((_f = host.state.bank.data.last) === null || _f === void 0 ? void 0 : _f.completedAt) ? new Date(host.state.bank.data.last.completedAt).toLocaleString('pt-BR') : 'não disponível')) : null, host.state.qa84BudgetPartial ? h('p', { className: 'qa84-budget-partial' }, 'Alguns registros bancários antigos podem não constar da janela carregada.') : null);
+            (((_h = host.state.bank.data.last) === null || _h === void 0 ? void 0 : _h.completedAt) ? new Date(host.state.bank.data.last.completedAt).toLocaleString('pt-BR') : 'não disponível')) : null, host.state.qa84BudgetPartial ? h('p', { className: 'qa84-budget-partial' }, 'Alguns registros bancários antigos podem não constar da janela carregada.') : null);
 }
 const h = React.createElement;
 function simInputsEqual(a, b) {
@@ -837,7 +839,11 @@ function OverviewSpendingChart(props) {
     const path = (key) => rows.map((r, i) => { const [x, y] = point(r[key] || 0, i); return (i ? 'L' : 'M') + x.toFixed(2) + ' ' + y.toFixed(2); }).join(' ');
     return h('div', { className: 'u1-spending-chart' }, h('svg', { viewBox: '0 0 748 218', role: 'img', 'aria-label': 'Gasto acumulado no período. Valores exatos na tabela.' }, [0, .5, 1].map((n, i) => h('g', { key: i }, h('line', { x1: left, x2: right, y1: bottom - n * (bottom - top), y2: bottom - n * (bottom - top), className: 'u1-chart-grid' }), h('text', { x: left - 10, y: bottom - n * (bottom - top) + 4, textAnchor: 'end', className: 'u1-chart-label' }, financialAxisLabel(peak * n, peak)))), props.compare ? h('path', { d: path('previous'), className: 'u1-chart-previous' }) : null, h('path', { d: path('current') + ' L ' + right + ' ' + bottom + ' L ' + left + ' ' + bottom + ' Z', className: 'u1-chart-area' }), h('path', { d: path('current'), className: 'u1-chart-current' }), rows.length ? h('circle', { cx: point(rows[rows.length - 1].current, rows.length - 1)[0], cy: point(rows[rows.length - 1].current, rows.length - 1)[1], r: 4, className: 'u1-chart-point' }) : null, [0, Math.floor((rows.length - 1) / 2), rows.length - 1].filter((v, i, a) => a.indexOf(v) === i).map(i => { var _a, _b; return h('text', { key: i, x: point(0, i)[0], y: 208, textAnchor: 'middle', className: 'u1-chart-label' }, ((_a = rows[i]) === null || _a === void 0 ? void 0 : _a.date.slice(8)) + '/' + ((_b = rows[i]) === null || _b === void 0 ? void 0 : _b.date.slice(5, 7))); })), h('details', { className: 'u1-chart-data' }, h('summary', {}, 'Ver valores do gráfico'), h('div', { className: 'u1-table-scroll' }, h('table', {}, h('caption', {}, 'Gasto acumulado na fonte selecionada'), h('thead', {}, h('tr', {}, h('th', {}, 'Até'), h('th', {}, 'Período atual'), props.compare ? h('th', {}, 'Intervalo anterior') : null)), h('tbody', {}, rows.map(r => h('tr', { key: r.date }, h('td', {}, r.date.split('-').reverse().join('/')), h('td', {}, fmt(r.current)), props.compare ? h('td', {}, fmt(r.previous || 0)) : null)))))));
 }
-function starter() { return { version: 5, transactions: [], budgets: {}, settings: { opening: 0, income: 0, fixed: 0, existing: 0, reserve: 0 } }; }
+function starter() { return { version: 5, transactions: [], budgets: {}, monthlyBudgets: {}, settings: { opening: 0, income: 0, fixed: 0, existing: 0, reserve: 0 } }; }
+function effectiveMonthBudgets(data, month) {
+    var _a;
+    return { ...((data === null || data === void 0 ? void 0 : data.budgets) || {}), ...(((_a = data === null || data === void 0 ? void 0 : data.monthlyBudgets) === null || _a === void 0 ? void 0 : _a[month]) || {}) };
+}
 function demoData() {
     const t = [];
     const add = (offset, day, description, kind, amount, category) => {
@@ -877,6 +883,22 @@ function safeData(v) {
         if (c.length <= 50 && Number.isSafeInteger(b) && b >= 0 && (b > 0 || Number(v.version) >= 5))
             d.budgets[c] = b;
     }
+    const monthlyOut = {};
+    if (v.monthlyBudgets && typeof v.monthlyBudgets === 'object') {
+        for (const [ym, cats] of Object.entries(v.monthlyBudgets)) {
+            if (!/^20\d\d-(0[1-9]|1[0-2])$/.test(ym) || !cats || typeof cats !== 'object')
+                continue;
+            const row = {};
+            for (const [c, raw] of Object.entries(cats)) {
+                const b = Number(raw);
+                if (c.length <= 50 && Number.isSafeInteger(b) && b >= 0)
+                    row[c] = b;
+            }
+            if (Object.keys(row).length)
+                monthlyOut[ym] = row;
+        }
+    }
+    d.monthlyBudgets = monthlyOut;
     for (const key of ['opening', 'income', 'fixed', 'existing', 'reserve']) {
         const n = Number(((_a = v.settings) === null || _a === void 0 ? void 0 : _a[key]) || 0);
         d.settings[key] = (Number.isSafeInteger(n) && Math.abs(n) < 100000000000) ? n : 0;
@@ -2540,7 +2562,8 @@ class App extends React.Component {
         const comparison = overviewComparison(s.expense, prior.expense, compareAvailable), points = overviewCumulative(start, end, range, compareAvailable ? previous : null);
         const due = pendingDashboardItems(state.planning.items), upcoming = due.filter(x => x.dueDate <= advanceDate(today, 6)), overdue = due.filter(x => x.dueDate < today);
         const generated = !!state.planning.generatedAt, month = end.slice(0, 7), budget = range(firstOfMonth(month), endOfMonth(month));
-        const limits = this.getCategories().filter(c => c.kind !== 'income' && Object.prototype.hasOwnProperty.call(d.budgets, c.name)).map(info => { var _a; return ({ info, limit: d.budgets[info.name], hasLimit: true, total: ((_a = budget.categories.find(c => c.name === info.name)) === null || _a === void 0 ? void 0 : _a.total) || 0 }); }).sort(budgetPresentationOrder);
+        const effBudgets = effectiveMonthBudgets(d, month);
+        const limits = this.getCategories().filter(c => c.kind !== 'income' && Object.prototype.hasOwnProperty.call(effBudgets, c.name)).map(info => { var _a; return ({ info, limit: effBudgets[info.name], hasLimit: true, total: ((_a = budget.categories.find(c => c.name === info.name)) === null || _a === void 0 ? void 0 : _a.total) || 0 }); }).sort(budgetPresentationOrder);
         const totalLimit = limits.reduce((n, c) => n + c.limit, 0), spentLimited = limits.reduce((n, c) => n + c.total, 0), budgetCoverage = overviewCoverage(budget.expense, spentLimited), used = totalLimit > 0 ? Math.round(spentLimited / totalLimit * 100) : spentLimited > 0 ? 100 : 0;
         const recent = useBank ? bank.data.transactions.filter(x => x.date >= start && x.date <= end && x.status === 'POSTED' && ['income', 'expense'].includes(effectiveNature(x))).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5).map(x => ({ key: x.accountId + '|' + x.id, title: x.customTitle || x.merchant || x.description, original: x.description, date: x.date, category: x.category, categoryId: x.categoryId || null, subcategoryId: x.subcategoryId || null, amount: Math.abs(x.amount), kind: effectiveNature(x), raw: x })) : d.transactions.filter(x => x.date >= start && x.date <= end).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5).map(x => ({ key: x.id, title: x.description, original: '', date: x.date, category: x.category, categoryId: x.categoryId || null, subcategoryId: x.subcategoryId || null, amount: x.amount, kind: x.kind, raw: x }));
         const manualInPeriod = d.transactions.filter(x => x.date >= start && x.date <= end).length;
@@ -2664,6 +2687,7 @@ class App extends React.Component {
             ].map(x => h('button', { className: 'ghost-button', key: x.pattern, onClick: () => this.setState({ ruleEditor: { ...emptyRule(), pattern: x.pattern, category: x.category } }) }, x.pattern))), h('h3', {}, r.id ? 'Editar regra' : 'Nova regra'), this.field('Texto da movimentação', h('input', { className: 'form-control', placeholder: 'Ex.: IFOOD, UBER, NETFLIX', maxLength: 120, value: r.pattern, onChange: (v) => this.setState({ ruleEditor: { ...r, pattern: v.target.value } }) })), h('div', { className: 'two-inputs' }, this.field('Correspondência', h(StyledSelect, { className: 'form-control', value: r.matchMode, options: [{ value: 'contains', label: 'Contém' }, { value: 'starts', label: 'Começa com' }, { value: 'exact', label: 'Texto exato' }], onChange: (value) => this.setState({ ruleEditor: { ...r, matchMode: value } }) })), this.field('Aplicar em', h(StyledSelect, { className: 'form-control', value: r.scope, options: [{ value: 'both', label: 'Bancos e novos manuais' }, { value: 'bank', label: 'Só banco' }, { value: 'manual', label: 'Só novos manuais' }], onChange: (value) => this.setState({ ruleEditor: { ...r, scope: value } }) }))), h('div', { className: 'two-inputs' }, this.field('Categoria', h(StyledSelect, { className: 'form-control', value: r.category, options: categories.map(c => ({ value: c.name, label: (c.emoji || '✨') + '  ' + c.name })), onChange: (value) => this.setState({ ruleEditor: { ...r, category: value } }) })), this.field('Prioridade (1 = mais alta)', h('input', { className: 'form-control', type: 'number', min: 1, max: 999, value: r.priority, onChange: (v) => this.setState({ ruleEditor: { ...r, priority: v.target.value } }) }))), h('div', { className: 'toolbar-actions' }, h('button', { className: 'primary-button', onClick: () => this.saveRule() }, r.id ? 'Atualizar regra' : 'Salvar regra'), r.id ? h('button', { className: 'ghost-button', onClick: () => this.setState({ ruleEditor: emptyRule() }) }, 'Cancelar edição') : null), h('div', { className: 'rule-preview' }, h('b', {}, 'Testar classificação'), h('input', { className: 'form-control', value: this.state.ruleTest, placeholder: 'Digite uma descrição do extrato', onChange: (v) => this.setState({ ruleTest: v.target.value }) }), h('p', {}, 'Resultado: ', h('strong', {}, preview || 'Sem regra correspondente (Outros)'))))), this.state.categoryMessage ? h('p', { className: 'bank-feedback', role: 'status' }, this.state.categoryMessage) : null, h('p', { className: 'muted-desc' }, 'Regras reclassificam imediatamente o extrato bancário na visualização, inclusive dados já sincronizados. Correções individuais do banco sempre prevalecem. Lançamentos manuais antigos preservam sua categoria; regras automáticas ajudam em novos lançamentos e importações sem categoria.'));
     }
     renderBudgets() {
+        var _a;
         const useBank = this.state.mode === 'real' && this.state.dashboardSource === 'bank' && this.state.bank.data.accounts.length > 0;
         const s = useBank ? bankSnapshot(this.state.bank, this.state.month) : this.monthData();
         const d = this.state.data, mode = this.state.budgetTab, focus = this.state.budgetFocus || 'all', search = this.state.budgetSearch || '';
@@ -2674,7 +2698,10 @@ class App extends React.Component {
         const assigned = allowed.reduce((sum, c) => sum + getAmount(c.name), 0);
         const total = mode === 'income' ? s.income : s.expense;
         const unclassified = Math.max(0, total - assigned);
-        const entries = allowed.map(c => ({ info: c, total: getAmount(c.name), hasLimit: Object.prototype.hasOwnProperty.call(d.budgets, c.name), limit: d.budgets[c.name] }))
+        const monthOverrides = ((_a = d.monthlyBudgets) === null || _a === void 0 ? void 0 : _a[this.state.month]) || {};
+        const effBudgets = effectiveMonthBudgets(d, this.state.month);
+        const hasMonthOverrides = Object.keys(monthOverrides).length > 0;
+        const entries = allowed.map(c => ({ info: c, total: getAmount(c.name), hasLimit: Object.prototype.hasOwnProperty.call(effBudgets, c.name), limit: effBudgets[c.name], isMonthly: Object.prototype.hasOwnProperty.call(monthOverrides, c.name) }))
             .filter(x => x.total > 0 || (mode === 'expense' && x.hasLimit));
         const quiet = allowed.filter(c => !entries.some(x => x.info.name === c.name));
         const limited = entries.filter(x => mode === 'expense' && x.hasLimit);
@@ -2698,11 +2725,25 @@ class App extends React.Component {
         };
         if (this.state.qa84BudgetDrill)
             return renderQA84BudgetDetail(this, {});
-        return h('div', { className: 'section mf-budget-section u3-budgets' }, h('div', { className: 'mf-budget-heading' }, h('div', {}, h('p', {}, mode === 'expense' ? 'Acompanhe seus limites por categoria.' : 'Veja a composição das receitas recebidas.')), h('div', { className: 'mf-budget-switch', role: 'group', 'aria-label': 'Visualização financeira' }, h('button', { type: 'button', className: mode === 'expense' ? 'active' : '', 'aria-pressed': mode === 'expense', onClick: () => this.setState({ budgetTab: 'expense', showAllBudgetCategories: false, budgetFocus: 'all', budgetSearch: '' }) }, 'Gastos'), h('button', { type: 'button', className: mode === 'income' ? 'active' : '', 'aria-pressed': mode === 'income', onClick: () => this.setState({ budgetTab: 'income', showAllBudgetCategories: false, budgetFocus: 'all', budgetSearch: '' }) }, 'Receitas'))), this.renderSourcePicker(), h('p', { className: 'mf-budget-context' }, prettyMonth(this.state.month) + ' · ' + (mode === 'expense' ? 'Gastos do mês e limites cadastrados por categoria' : 'Composição das receitas recebidas, sem incluir transferências próprias confirmadas')), mode === 'expense' ? h('div', { className: 'mf-budget-summary mf-budget-summary-four' }, h('div', { className: 'mf-border-reveal mf-tone-expense', role: 'group', tabIndex: 0 }, h('small', {}, 'Gasto nas categorias com limite'), h('strong', {}, fmt(spentLimited))), h('div', { className: 'mf-border-reveal mf-tone-balance', role: 'group', tabIndex: 0 }, h('small', {}, 'Limites cadastrados'), h('strong', {}, limited.length ? fmt(limitTotal) : 'Sem limites')), h('div', { className: 'mf-border-reveal mf-tone-net ' + (limited.length ? (margin < 0 ? 'is-negative' : 'is-positive') : 'is-neutral'), role: 'group', tabIndex: 0 }, h('small', {}, margin < 0 ? 'Excesso nos limites' : 'Margem nos limites'), h('strong', { className: margin < 0 ? 'bad-text' : '' }, limited.length ? fmt(Math.abs(margin)) : 'Sem limites'), h('small', {}, 'Não representa saldo disponível')), h('div', { className: 'mf-border-reveal mf-tone-warning', role: 'group', tabIndex: 0 }, h('small', {}, 'Gasto fora dos limites'), h('strong', {}, fmt(Math.max(0, total - spentLimited))))) :
+        return h('div', { className: 'section mf-budget-section u3-budgets' }, h('div', { className: 'mf-budget-heading' }, h('div', {}, h('p', {}, mode === 'expense' ? 'Acompanhe seus limites por categoria.' : 'Veja a composição das receitas recebidas.')), h('div', { className: 'mf-budget-switch', role: 'group', 'aria-label': 'Visualização financeira' }, h('button', { type: 'button', className: mode === 'expense' ? 'active' : '', 'aria-pressed': mode === 'expense', onClick: () => this.setState({ budgetTab: 'expense', showAllBudgetCategories: false, budgetFocus: 'all', budgetSearch: '' }) }, 'Gastos'), h('button', { type: 'button', className: mode === 'income' ? 'active' : '', 'aria-pressed': mode === 'income', onClick: () => this.setState({ budgetTab: 'income', showAllBudgetCategories: false, budgetFocus: 'all', budgetSearch: '' }) }, 'Receitas')), mode === 'expense' && typeof desktop !== 'undefined' && (desktop === null || desktop === void 0 ? void 0 : desktop.copilotSalaryBudgetPropose) ? h('button', { type: 'button', className: 'ghost-button mf-m3-salary-trigger',
+            onClick: () => {
+                var _a, _b;
+                const self = this;
+                if (!self.__m3SalaryPanel) {
+                    const curInc = (_b = (_a = this.state.data) === null || _a === void 0 ? void 0 : _a.settings) === null || _b === void 0 ? void 0 : _b.income;
+                    self.__m3SalaryPanel = { open: true, salaryText: curInc > 0 ? copilotFormatEditCents(curInc) : '', reserveText: '', profileMode: 'balanced', busy: false, error: '', proposal: null };
+                }
+                else {
+                    self.__m3SalaryPanel.open = !self.__m3SalaryPanel.open;
+                }
+                this.forceUpdate();
+            } }, 'Reorganizar com salário') : null), mode === 'expense' && typeof renderBudgetsSalaryPanel === 'function' ? renderBudgetsSalaryPanel(this, useBank) : null, this.renderSourcePicker(), h('p', { className: 'mf-budget-context' }, prettyMonth(this.state.month) + ' · ' + (mode === 'expense' ? 'Gastos do mês e limites cadastrados por categoria' : 'Composição das receitas recebidas, sem incluir transferências próprias confirmadas')), mode === 'expense' ? h('div', { className: 'mf-budget-summary mf-budget-summary-four' }, h('div', { className: 'mf-border-reveal mf-tone-expense', role: 'group', tabIndex: 0 }, h('small', {}, 'Gasto nas categorias com limite'), h('strong', {}, fmt(spentLimited))), h('div', { className: 'mf-border-reveal mf-tone-balance', role: 'group', tabIndex: 0 }, h('small', {}, 'Limites cadastrados'), h('strong', {}, limited.length ? fmt(limitTotal) : 'Sem limites')), h('div', { className: 'mf-border-reveal mf-tone-net ' + (limited.length ? (margin < 0 ? 'is-negative' : 'is-positive') : 'is-neutral'), role: 'group', tabIndex: 0 }, h('small', {}, margin < 0 ? 'Excesso nos limites' : 'Margem nos limites'), h('strong', { className: margin < 0 ? 'bad-text' : '' }, limited.length ? fmt(Math.abs(margin)) : 'Sem limites'), h('small', {}, 'Não representa saldo disponível')), h('div', { className: 'mf-border-reveal mf-tone-warning', role: 'group', tabIndex: 0 }, h('small', {}, 'Gasto fora dos limites'), h('strong', {}, fmt(Math.max(0, total - spentLimited))))) :
             h('div', { className: 'mf-budget-summary' }, h('div', {}, h('small', {}, 'Total recebido no período'), h('strong', {}, fmt(total))), h('div', {}, h('small', {}, 'Origens com recebimentos'), h('strong', {}, String(entries.filter(x => x.total > 0).length))), h('div', {}, h('small', {}, 'Maior fonte de receita'), h('strong', {}, entries.length ? entries.slice().sort((a, b) => b.total - a.total)[0].info.name : 'Nenhuma ainda'))), mode === 'expense' ? h('section', { className: 'u3-budget-insight' }, h('div', { className: 'u3-coverage' }, h('div', { className: 'u3-coverage-ring', 'aria-hidden': 'true', style: { background: 'conic-gradient(var(--u3-accent) ' + (signals.covered || 0) + '%, var(--surface3) 0)' } }, h('strong', {}, signals.covered === null ? '—' : signals.covered + '%')), h('div', {}, h('h2', {}, 'Gastos com um limite definido'), h('p', {}, signals.covered === null ? 'Sem gastos nesta fonte e mês.' : signals.covered + '% dos gastos do mês estão em categorias com limite.'), h('small', {}, 'Cobertura do orçamento · não é dinheiro reservado'))), h('div', { className: 'u3-budget-actions' }, [
             { key: 'attention', count: signals.exceeded + signals.near, title: 'Pedem atenção', description: signals.exceeded + ' acima · ' + signals.near + ' perto do limite', icon: 'alert' },
             { key: 'unlimited', count: signals.unlimited, title: 'Sem limite', description: 'Categorias com gastos para organizar', icon: 'layers' }
-        ].map(x => h('button', { type: 'button', className: 'u3-insight-action', 'aria-pressed': focus === x.key, onClick: () => this.setState({ budgetFocus: focus === x.key ? 'all' : x.key, budgetSearch: '' }) }, h(Icon, { name: x.icon, size: 18 }), h('span', {}, h('b', {}, x.title), h('small', {}, x.description)), h('strong', {}, x.count), h(Icon, { name: 'chevron-right', size: 15 }))))) : null, useBank && this.state.bank.data.truncated && !this.state.bank.data.dailyTotals ? h('p', { className: 'mf-budget-warning' }, 'Histórico carregado parcialmente. Valores e cobertura refletem somente os registros disponíveis.') : null, mode === 'expense' ? h('p', { className: 'mf-budget-contract' }, 'O mês filtra os gastos. Os limites cadastrados são recorrentes e valem para todos os meses.') : null, mode === 'income' && this.state.planning.items.some(x => x.kind === 'income' && x.dueDate.slice(0, 7) === this.state.month && x.remaining > 0 && x.status !== 'cancelled') ?
+        ].map(x => h('button', { type: 'button', className: 'u3-insight-action', 'aria-pressed': focus === x.key, onClick: () => this.setState({ budgetFocus: focus === x.key ? 'all' : x.key, budgetSearch: '' }) }, h(Icon, { name: x.icon, size: 18 }), h('span', {}, h('b', {}, x.title), h('small', {}, x.description)), h('strong', {}, x.count), h(Icon, { name: 'chevron-right', size: 15 }))))) : null, useBank && this.state.bank.data.truncated && !this.state.bank.data.dailyTotals ? h('p', { className: 'mf-budget-warning' }, 'Histórico carregado parcialmente. Valores e cobertura refletem somente os registros disponíveis.') : null, mode === 'expense' ? h('p', { className: 'mf-budget-contract' }, hasMonthOverrides ?
+            'O mês filtra os gastos. Há limites personalizados especificamente para ' + prettyMonth(this.state.month) + '; os demais permanecem recorrentes.' :
+            'O mês filtra os gastos. Os limites cadastrados são recorrentes e valem para todos os meses.') : null, mode === 'income' && this.state.planning.items.some(x => x.kind === 'income' && x.dueDate.slice(0, 7) === this.state.month && x.remaining > 0 && x.status !== 'cancelled') ?
             h('p', { className: 'mf-budget-expected' }, 'Recebimentos ainda previstos no Planejamento: ' + fmt(this.state.planning.items.filter(x => x.kind === 'income' && x.dueDate.slice(0, 7) === this.state.month && x.remaining > 0 && x.status !== 'cancelled').reduce((sum, x) => sum + x.remaining, 0)) + '. Não somados às receitas já recebidas.') : null, unclassified > 0 ? h('div', { className: 'mf-budget-warning', role: 'status' }, 'Há ' + fmt(unclassified) + ' em ' + (mode === 'expense' ? 'despesas' : 'receitas') + ' com categorias incompatíveis ou ainda não identificadas. Confira em Movimentações.') : null, h('div', { className: 'u3-budget-toolbar' }, h('div', { className: 'u2-view-tabs', 'aria-label': 'Filtro de categorias' }, (mode === 'income' ? [{ value: 'all', label: 'Recebimentos' }] : [{ value: 'all', label: 'Todas' }, { value: 'attention', label: 'Atenção' }, { value: 'unlimited', label: 'Sem limite' }]).map(x => h('button', { type: 'button', 'aria-pressed': focus === x.value, onClick: () => this.setState({ budgetFocus: x.value }) }, x.label))), h('div', { className: 'search-box' }, h(Icon, { name: 'search', size: 16 }), h('input', { 'aria-label': 'Buscar categoria no orçamento', placeholder: 'Buscar categoria', value: search, onChange: (e) => this.setState({ budgetSearch: e.target.value }) }))), h('div', { className: 'u3-budget-list-heading' }, h('h2', {}, mode === 'expense' ? 'Limites por categoria' : 'Origens da sua renda'), h('span', { role: 'status' }, visible.length + ' categoria(s)')), visible.length ? renderQA84BudgetCards(this, visible, mode, total, useBank, suggestLimit) : h(Card, { className: 'mf-budget-empty' }, h('h3', {}, entries.length ? 'Nenhuma categoria para estes filtros' : mode === 'income' ? 'Nenhuma receita neste período' : 'Nenhum gasto neste período'), h('p', {}, entries.length ? 'Altere o filtro ou a busca para ver outras categorias.' : mode === 'income' ? 'As receitas aparecerão aqui depois de serem registradas ou sincronizadas.' : 'Suas despesas aparecerão aqui quando houver movimentações.')), quiet.length ? h('div', { className: 'mf-budget-quiet' }, h('button', { className: 'mf-budget-quiet-trigger', type: 'button', 'aria-expanded': this.state.showAllBudgetCategories,
             onClick: () => this.setState({ showAllBudgetCategories: !this.state.showAllBudgetCategories }) }, this.state.showAllBudgetCategories ? 'Ocultar outras categorias' : 'Ver outras categorias (' + quiet.length + ')', h(Icon, { name: this.state.showAllBudgetCategories ? 'chevron-up' : 'chevron-down', size: 16 })), this.state.showAllBudgetCategories ? h('div', { className: 'mf-budget-quiet-grid' }, quiet.map(c => h('div', { className: 'mf-budget-quiet-row', key: c.name }, h('span', { className: 'qa84-category-combo' }, h(CategoryVisualGlyph, { identity: resolveCategoryVisualIdentity({ categoryName: c.name, catalog: this.state.qa84VisualCatalog || [], aggregate: true }), size: 17 }), c.name), mode === 'expense' ? h('button', { className: 'small-link', onClick: () => this.setState({ editModal: { type: 'budget', key: c.name, title: 'Definir limite · ' + c.name, value: '' } }) }, 'Definir limite') : h('span', { className: 'muted' }, 'Sem receitas neste mês')))) : null) : null, h('p', { className: 'mf-budget-disclaimer' }, 'Pix para terceiros continuam como entradas ou saídas até que sejam identificados como transferências próprias. Reembolsos sem vínculo são mostrados como entradas, não abatimentos automáticos de gastos.'));
     }
@@ -8641,7 +8682,8 @@ async function localFinancialSubmit(app, question) {
     const api = localFinancialAPI();
     const month = app.state.localFinancialMonth || app.state.month, signature = intelligencePremiumSignature(app);
     const foldedQuestion = intelligenceFoldText(q);
-    const m3ActionIntent = /\b(coloque|coloquem|categoriz|recategoriz|classifiqu|reclassifiqu|mova|mover|alter[ea]r?\s+(?:a\s+)?categoria|mud[ea]r?\s+(?:a\s+)?categoria)\b/.test(foldedQuestion);
+    const m3ActionIntent = /\b(coloque|coloquem|categoriz|recategoriz|classifiqu|reclassifiqu|mova|mover|alter[ea]r?\s+(?:a\s+)?categoria|mud[ea]r?\s+(?:a\s+)?categoria)\b/.test(foldedQuestion) ||
+        /(salario|salarios|renda|remuneracao|holerite|recebi|ganho).*(orcament|limite|reorganiz|organiz|distribu|redistribu|ajust|guardar|poupar|reservar)|(?:reorganiz|redistribu|recalcul|equilibr)\w*\s+(?:os?\s+|meus?\s+)?orcament/.test(foldedQuestion);
     const financialInvestigation = /por que.*(despes|gast)|investig|categorias?.*contribu|estabelec.*(cresc|aument)|mostre.*estabelec|despes.*(aument|subi)|gast.*(aument|mais)|onde.*gastando|o que aumentou|compar.*(janeiro|fevereiro|marco|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro|mes)/.test(foldedQuestion);
     const sameThread = !!((_a = app.__ic2Conversation) === null || _a === void 0 ? void 0 : _a.answerId) && messages.some((m) => m.id === app.__ic2Conversation.answerId);
     const i3Followup = sameThread && !!app.__ic2InvestigationActive &&
@@ -8908,6 +8950,561 @@ function copilotEffortLabel(effort) {
         return 'Médio';
     return 'Baixo';
 }
+function copilotParseBrlCents(raw) {
+    if (typeof raw === 'number') {
+        return Number.isSafeInteger(raw) && raw >= 0 && raw <= 100000000000 ? raw : null;
+    }
+    const clean = String(raw || '').replace(/r\$/gi, '').replace(/\s+/g, '').trim();
+    if (!clean)
+        return null;
+    if (/^\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?$/.test(clean)) {
+        const [i, f = ''] = clean.split(',');
+        const val = Number(i.replace(/\./g, '')) * 100 + Number(f.padEnd(2, '0').slice(0, 2));
+        return Number.isSafeInteger(val) && val >= 0 && val <= 100000000000 ? val : null;
+    }
+    if (/^\d+(?:,\d{1,2})?$/.test(clean)) {
+        const [i, f = ''] = clean.split(',');
+        const val = Number(i) * 100 + Number(f.padEnd(2, '0').slice(0, 2));
+        return Number.isSafeInteger(val) && val >= 0 && val <= 100000000000 ? val : null;
+    }
+    if (/^\d+\.\d{1,2}$/.test(clean)) {
+        const [i, f = ''] = clean.split('.');
+        const val = Number(i) * 100 + Number(f.padEnd(2, '0').slice(0, 2));
+        return Number.isSafeInteger(val) && val >= 0 && val <= 100000000000 ? val : null;
+    }
+    return null;
+}
+function copilotFormatEditCents(cents) {
+    return ((cents || 0) / 100).toFixed(2).replace('.', ',');
+}
+const MF_M3_SALARY_UI_STATE = new WeakMap();
+function copilotGetSalaryUiState(keyObj, draft) {
+    let st = MF_M3_SALARY_UI_STATE.get(keyObj);
+    if (st)
+        return st;
+    const items = Array.isArray(draft === null || draft === void 0 ? void 0 : draft.items) ? draft.items : [];
+    const selectedCats = new Set();
+    const lockedCats = new Set(Array.isArray(draft === null || draft === void 0 ? void 0 : draft.lockedCategories) ? draft.lockedCategories : []);
+    const editedCents = new Map();
+    const editedText = new Map();
+    for (const it of items) {
+        if (!(it === null || it === void 0 ? void 0 : it.category))
+            continue;
+        selectedCats.add(it.category);
+        if (it.isLocked)
+            lockedCats.add(it.category);
+        const val = Number.isSafeInteger(it.proposedLimitCents) ? it.proposedLimitCents : 0;
+        editedCents.set(it.category, val);
+        editedText.set(it.category, copilotFormatEditCents(val));
+    }
+    st = {
+        selectedCats,
+        lockedCats,
+        editedCents,
+        editedText,
+        updateIncome: !!(draft === null || draft === void 0 ? void 0 : draft.updateIncomeSetting),
+        applyRecurring: !!(draft === null || draft === void 0 ? void 0 : draft.applyRecurring),
+        busy: false,
+        capability: (draft === null || draft === void 0 ? void 0 : draft.capability) || null,
+        receipt: null,
+        undoState: null,
+        error: '',
+        dismissed: false
+    };
+    MF_M3_SALARY_UI_STATE.set(keyObj, st);
+    return st;
+}
+async function copilotEnableSalaryCapability(app, keyObj, draft, onChange) {
+    const api = desktop;
+    const st = copilotGetSalaryUiState(keyObj, draft);
+    if (!(api === null || api === void 0 ? void 0 : api.copilotActionCapabilityEnable) || st.busy)
+        return;
+    st.busy = true;
+    st.error = '';
+    if (onChange)
+        onChange();
+    else
+        copilotForceRender(app);
+    try {
+        const res = await api.copilotActionCapabilityEnable();
+        st.capability = {
+            available: st.capability ? !!st.capability.available : true,
+            enabled: !!(res === null || res === void 0 ? void 0 : res.enabled)
+        };
+        if ((res === null || res === void 0 ? void 0 : res.cancelled) && !(res === null || res === void 0 ? void 0 : res.enabled)) {
+            st.error = 'Ativação cancelada. Nenhuma permissão foi concedida.';
+        }
+    }
+    catch (e) {
+        st.error = String((e === null || e === void 0 ? void 0 : e.message) || 'Não foi possível ativar as ações supervisionadas.');
+    }
+    finally {
+        st.busy = false;
+        if (onChange)
+            onChange();
+        else
+            copilotForceRender(app);
+    }
+}
+function copilotCollectLocksPayload(st) {
+    const lockedCategories = {};
+    for (const cat of st.lockedCats || []) {
+        const cents = st.editedCents.get(cat);
+        if (Number.isSafeInteger(cents) && cents >= 0) {
+            lockedCategories[cat] = cents;
+        }
+    }
+    return lockedCategories;
+}
+async function copilotRecalcSalaryDraft(app, keyObj, draft, mode, onReplaceDraft) {
+    var _a;
+    const api = desktop;
+    const st = copilotGetSalaryUiState(keyObj, draft);
+    if (!(api === null || api === void 0 ? void 0 : api.copilotSalaryBudgetPropose) || st.busy || st.receipt)
+        return;
+    st.busy = true;
+    st.error = '';
+    copilotForceRender(app);
+    try {
+        const nextDraft = await api.copilotSalaryBudgetPropose({
+            profile: draft.profile,
+            source: draft.source,
+            month: draft.month,
+            salaryCents: draft.salaryCents,
+            reserveGoalCents: (_a = draft.requestedReserveCents) !== null && _a !== void 0 ? _a : null,
+            profileMode: mode,
+            lockedCategories: copilotCollectLocksPayload(st),
+            updateIncomeSetting: st.updateIncome,
+            applyRecurring: st.applyRecurring
+        });
+        if ((nextDraft === null || nextDraft === void 0 ? void 0 : nextDraft.contract) === 'MF3/SALARY-BUDGET-PROPOSAL-V1') {
+            nextDraft.capability = st.capability;
+            MF_M3_SALARY_UI_STATE.delete(keyObj);
+            const nextSt = copilotGetSalaryUiState(keyObj, nextDraft);
+            for (const c of st.lockedCats)
+                nextSt.lockedCats.add(c);
+            nextSt.applyRecurring = st.applyRecurring;
+            nextSt.updateIncome = st.updateIncome;
+            onReplaceDraft(nextDraft);
+        }
+    }
+    catch (e) {
+        st.error = String((e === null || e === void 0 ? void 0 : e.message) || 'Não foi possível recalcular os orçamentos.');
+        st.busy = false;
+        copilotForceRender(app);
+    }
+}
+async function copilotSwitchSalaryMode(app, keyObj, draft, mode, onReplaceDraft) {
+    return copilotRecalcSalaryDraft(app, keyObj, draft, mode, onReplaceDraft);
+}
+async function copilotExecuteSalaryBudget(app, keyObj, draft, onChange) {
+    const api = desktop;
+    const st = copilotGetSalaryUiState(keyObj, draft);
+    if (!api || st.busy || st.receipt)
+        return;
+    const items = Array.isArray(draft === null || draft === void 0 ? void 0 : draft.items) ? draft.items : [];
+    const budgets = [];
+    for (const it of items) {
+        if (!st.selectedCats.has(it.category))
+            continue;
+        const rawCents = st.editedCents.get(it.category);
+        if (!Number.isSafeInteger(rawCents) || rawCents < 0) {
+            st.error = `Valor inválido para a categoria "${it.category}". Use formato monetário válido (ex.: 1.250,00).`;
+            if (onChange)
+                onChange();
+            else
+                copilotForceRender(app);
+            return;
+        }
+        budgets.push({ category: it.category, amountCents: rawCents });
+    }
+    if (!budgets.length) {
+        st.error = 'Selecione ao menos uma categoria para aplicar novos limites.';
+        if (onChange)
+            onChange();
+        else
+            copilotForceRender(app);
+        return;
+    }
+    if (!api.d05SessionAuthorize || !api.copilotActionPrepare || !api.copilotActionConfirm) {
+        st.error = 'Bridge desktop de ações supervisionadas indisponível nesta sessão.';
+        if (onChange)
+            onChange();
+        else
+            copilotForceRender(app);
+        return;
+    }
+    st.busy = true;
+    st.error = '';
+    if (onChange)
+        onChange();
+    else
+        copilotForceRender(app);
+    try {
+        await api.d05SessionAuthorize({ profile: draft.profile });
+        const prepared = await api.copilotActionPrepare({
+            action: 'budgets.reorganize',
+            profile: draft.profile,
+            month: draft.month,
+            applyRecurring: !!st.applyRecurring,
+            budgets,
+            updateIncomeSetting: st.updateIncome,
+            ...(st.updateIncome ? { salaryCents: draft.salaryCents } : {})
+        });
+        if (!prepared || prepared.contract !== 'D05/PERSONAL-SUPERVISED-PREVIEW-V1') {
+            throw Error('Prévia oficial D05 não confirmada.');
+        }
+        if (prepared.personalWriteAuthorized === false) {
+            if (typeof api.copilotActionCapabilityStatus === 'function') {
+                const cap = await api.copilotActionCapabilityStatus().catch(() => null);
+                if (cap)
+                    st.capability = { available: !!cap.available, enabled: !!cap.enabled };
+            }
+            st.error = 'Ative primeiro "Ações supervisionadas do Copiloto" para autorizar gravações locais com confirmação nativa.';
+            return;
+        }
+        const confirmed = await api.copilotActionConfirm({
+            proposalId: prepared.proposalId,
+            nonce: prepared.nonce
+        });
+        if ((confirmed === null || confirmed === void 0 ? void 0 : confirmed.status) === 'applied' && confirmed.changesApplied === true) {
+            st.receipt = confirmed.receipt;
+            st.undoState = confirmed.undoState || 'available';
+            await copilotRefreshAppData(app, draft.profile);
+        }
+        else if ((confirmed === null || confirmed === void 0 ? void 0 : confirmed.status) === 'denied') {
+            st.error = confirmed.reason || 'Confirmação cancelada ou negada. Nenhuma alteração foi gravada.';
+        }
+        else {
+            st.error = (confirmed === null || confirmed === void 0 ? void 0 : confirmed.reason) || 'Os orçamentos mudaram antes da confirmação; gere uma nova simulação.';
+        }
+    }
+    catch (e) {
+        st.error = String((e === null || e === void 0 ? void 0 : e.message) || 'Não foi possível aplicar a reorganização de orçamentos.');
+    }
+    finally {
+        st.busy = false;
+        if (onChange)
+            onChange();
+        else
+            copilotForceRender(app);
+    }
+}
+async function copilotUndoSalaryBudget(app, keyObj, draft, onChange) {
+    const api = desktop;
+    const st = copilotGetSalaryUiState(keyObj, draft);
+    if (!(api === null || api === void 0 ? void 0 : api.copilotActionUndo) || !st.receipt || st.busy || st.undoState !== 'available')
+        return;
+    st.busy = true;
+    st.error = '';
+    if (onChange)
+        onChange();
+    else
+        copilotForceRender(app);
+    try {
+        await api.d05SessionAuthorize({ profile: draft.profile });
+        const res = await api.copilotActionUndo({ proposalId: st.receipt.proposalId });
+        if ((res === null || res === void 0 ? void 0 : res.status) === 'undone') {
+            st.undoState = 'undone';
+            st.receipt = res.receipt || st.receipt;
+            await copilotRefreshAppData(app, draft.profile);
+        }
+        else if ((res === null || res === void 0 ? void 0 : res.status) === 'already_undone') {
+            st.undoState = 'undone';
+        }
+        else {
+            st.error = (res === null || res === void 0 ? void 0 : res.reason) || 'Os orçamentos foram alterados posteriormente; reversão automática bloqueada.';
+        }
+    }
+    catch (e) {
+        st.error = String((e === null || e === void 0 ? void 0 : e.message) || 'Não foi possível desfazer a reorganização.');
+    }
+    finally {
+        st.busy = false;
+        if (onChange)
+            onChange();
+        else
+            copilotForceRender(app);
+    }
+}
+function renderSalaryBudgetProposalBox(app, keyObj, draft, opts = {}) {
+    if (!draft || draft.contract !== 'MF3/SALARY-BUDGET-PROPOSAL-V1')
+        return null;
+    if (draft.status === 'needs_clarification') {
+        return h('div', { className: 'mf-m3-action-card is-info', role: 'region', 'aria-label': 'Esclarecimento de salário' }, h('div', { className: 'mf-m3-action-head' }, h('span', { className: 'micro-label' }, 'REORGANIZAÇÃO POR SALÁRIO · M3-SALARY'), h('span', { className: 'mf-ic2-epistemic-badge is-estimate' }, 'Informe o salário')), h('p', { className: 'mf-m3-action-muted' }, draft.answer));
+    }
+    const st = copilotGetSalaryUiState(keyObj, draft);
+    if (st.dismissed) {
+        return h('div', { className: 'mf-m3-action-card is-dismissed', role: 'status' }, 'Proposta salarial descartada · nenhuma alteração foi gravada nos orçamentos.');
+    }
+    const items = Array.isArray(draft.items) ? draft.items : [];
+    let selectedCount = 0;
+    let selectedTotalCents = 0;
+    let invalidInput = false;
+    for (const it of items) {
+        if (!st.selectedCats.has(it.category))
+            continue;
+        selectedCount++;
+        const c = st.editedCents.get(it.category);
+        if (Number.isSafeInteger(c) && c >= 0) {
+            selectedTotalCents += c;
+        }
+        else {
+            invalidInput = true;
+        }
+    }
+    const marginAfterEdits = draft.salaryCents - selectedTotalCents;
+    const needOptIn = !st.receipt && st.capability && st.capability.available && !st.capability.enabled;
+    const confidenceLabel = draft.confidence === 'high' ? `Base forte (${draft.completeMonthsAnalyzed} meses completos)` :
+        draft.confidence === 'medium' ? `Base média (${draft.completeMonthsAnalyzed} meses completos)` :
+            draft.completeMonthsAnalyzed === 1 ? 'Base inicial (1 mês completo)' : 'Estimativa sem histórico completo';
+    const statusText = st.receipt
+        ? (st.undoState === 'undone' ? 'Revertida com backup' : 'Aplicada · com recibo')
+        : 'Simulação · nada gravado';
+    const statusClass = st.receipt
+        ? (st.undoState === 'undone' ? 'mf-ic2-epistemic-badge is-estimate' : 'mf-ic2-epistemic-badge is-fact')
+        : 'mf-ic2-epistemic-badge is-simulation';
+    const salaryProvenanceLabel = draft.salaryStatus === 'received_in_statement'
+        ? `Salário detectado nas entradas (${fmt(draft.observedSalaryCents || draft.observedIncomeCents || 0)}) · sem duplicação`
+        : `Referência prevista para ${draft.month}` + (draft.plannedIncomeCents > 0 ? ` · Previsto aberto ${fmt(draft.plannedIncomeCents)}` : '');
+    return h('div', { className: 'mf-m3-action-card mf-m3-salary-card', role: 'region', 'aria-label': 'Reorganização de orçamentos por salário' }, h('div', { className: 'mf-m3-action-head' }, h('span', { className: 'micro-label' }, `M3-SALARY · ${draft.source === 'bank' ? 'CONTAS CONECTADAS' : 'MANUAL'} · ${draft.month} · ` +
+        (st.applyRecurring ? 'MÊS + RECORRENTE' : 'VÁLIDO NESTE MÊS')), h('div', { className: 'mf-m3-action-badges' }, h('span', { className: 'mf-ic2-pill' }, confidenceLabel), h('span', { className: statusClass }, statusText))), h('p', { className: 'mf-m3-salary-submeta' }, salaryProvenanceLabel + (draft.incomeVsBalanceNote ? ' · ' + draft.incomeVsBalanceNote : '')), h('div', { className: 'mf-m3-salary-kpis' }, h('div', { className: 'mf-m3-salary-kpi' }, h('small', {}, 'Salário informado'), h('strong', {}, fmt(draft.salaryCents))), h('div', { className: 'mf-m3-salary-kpi' }, h('small', {}, `Limites selecionados (${selectedCount})`), h('strong', {}, fmt(selectedTotalCents))), h('div', { className: 'mf-m3-salary-kpi ' + (marginAfterEdits < 0 ? 'is-deficit' : 'is-surplus') }, h('small', {}, marginAfterEdits < 0 ? 'Déficit sobre salário' : 'Margem / Reserva'), h('strong', {}, (marginAfterEdits < 0 ? '−' : '') + fmt(Math.abs(marginAfterEdits))))), Array.isArray(draft.redistributions) && draft.redistributions.length > 0
+        ? h('div', { className: 'mf-m3-salary-redistributions', role: 'region', 'aria-label': 'Redistribuições propostas' }, h('strong', {}, `Redistribuições recomendadas (${draft.redistributions.length})`), h('ul', {}, ...draft.redistributions.slice(0, 6).map((rd, idx) => h('li', { key: idx }, h('b', {}, `${rd.fromCategory} → ${rd.toCategory} (${fmt(rd.amountCents)})`), h('span', {}, ` — ${rd.reason}`)))))
+        : null, !st.receipt && typeof (desktop === null || desktop === void 0 ? void 0 : desktop.copilotSalaryBudgetPropose) === 'function' && opts.onReplaceDraft
+        ? h('div', { className: 'mf-m3-salary-modes', role: 'group', 'aria-label': 'Perfil de distribuição' }, [
+            { id: 'conservative', label: 'Conservador (20%)' },
+            { id: 'balanced', label: 'Equilibrado (15%)' },
+            { id: 'flexible', label: 'Flexível (10%)' }
+        ].map((m) => h('button', {
+            key: m.id,
+            type: 'button',
+            className: 'mf-ic2-followup-chip' + (draft.profileMode === m.id ? ' is-active' : ''),
+            disabled: st.busy,
+            onClick: () => void copilotSwitchSalaryMode(app, keyObj, draft, m.id, opts.onReplaceDraft)
+        }, m.label)))
+        : null, Array.isArray(draft.warnings) && draft.warnings.length > 0
+        ? h('div', { className: 'mf-m3-action-warnings' }, ...draft.warnings.map((w, i) => h('p', { key: i, className: 'mf-m3-action-notice' }, w)))
+        : null, h('div', { className: 'mf-m3-salary-list', role: 'list', 'aria-label': 'Limites propostos por categoria' }, ...items.map((it) => {
+        var _a, _b, _c, _d;
+        const checked = st.selectedCats.has(it.category);
+        const locked = st.lockedCats.has(it.category);
+        const identity = resolveCategoryVisualIdentity({
+            categoryName: it.category,
+            catalog: ((_a = app === null || app === void 0 ? void 0 : app.state) === null || _a === void 0 ? void 0 : _a.qa84VisualCatalog) || [],
+            aggregate: true
+        });
+        const editedVal = st.editedCents.get(it.category);
+        const currentDiff = it.currentLimitCents !== null && Number.isSafeInteger(editedVal)
+            ? editedVal - it.currentLimitCents
+            : null;
+        return h('div', { key: it.category, role: 'listitem', className: 'mf-m3-salary-row' + (checked ? ' is-selected' : '') + (locked ? ' is-locked' : '') }, h('input', {
+            type: 'checkbox',
+            checked,
+            disabled: !!st.receipt || st.busy,
+            'aria-label': 'Incluir ' + it.category,
+            onChange: (e) => {
+                if (e.target.checked)
+                    st.selectedCats.add(it.category);
+                else
+                    st.selectedCats.delete(it.category);
+                st.error = '';
+                copilotForceRender(app);
+            }
+        }), h(CategoryVisualGlyph, { identity, size: 19 }), h('div', { className: 'mf-m3-salary-row-copy' }, h('div', { className: 'mf-m3-salary-row-title' }, h('strong', {}, it.category), h('span', { className: 'mf-ic2-pill' }, it.tierLabel), it.isProtected ? h('span', { className: 'mf-ic2-pill is-strong' }, 'Preservada') : null, it.atypicalDetected ? h('span', { className: 'mf-ic2-pill' }, 'Mês atípico') : null, !st.receipt && checked && opts.onReplaceDraft
+            ? h('button', {
+                type: 'button',
+                className: 'mf-m3-salary-lock-btn' + (locked ? ' is-active' : ''),
+                disabled: st.busy,
+                'aria-pressed': locked,
+                onClick: () => {
+                    if (st.lockedCats.has(it.category))
+                        st.lockedCats.delete(it.category);
+                    else
+                        st.lockedCats.add(it.category);
+                    void copilotRecalcSalaryDraft(app, keyObj, draft, draft.profileMode || 'balanced', opts.onReplaceDraft);
+                }
+            }, locked ? 'Fixado' : 'Fixar')
+            : locked ? h('span', { className: 'mf-ic2-pill is-strong' }, 'Fixado') : null), h('small', {}, `Atual: ${it.currentLimitCents !== null ? fmt(it.currentLimitCents) : 'Sem limite'} · ` +
+            `3m: ${fmt((_b = it.avg3mCents) !== null && _b !== void 0 ? _b : it.historicalAvgCents)} · ` +
+            `6m: ${fmt((_c = it.avg6mCents) !== null && _c !== void 0 ? _c : it.historicalAvgCents)} · ` +
+            `Realizado+Prev.: ${fmt(it.committedFloorCents)}` +
+            (currentDiff !== null && currentDiff !== 0
+                ? ` (${currentDiff > 0 ? '+' : '−'}${fmt(Math.abs(currentDiff))})`
+                : '')), h('small', { className: 'mf-m3-salary-rationale' }, it.rationale)), h('label', { className: 'mf-m3-salary-input-wrap' }, h('span', {}, 'Novo R$'), h('input', {
+            type: 'text',
+            inputMode: 'decimal',
+            disabled: !!st.receipt || st.busy || !checked,
+            value: (_d = st.editedText.get(it.category)) !== null && _d !== void 0 ? _d : copilotFormatEditCents(it.proposedLimitCents),
+            'aria-label': 'Novo limite em reais para ' + it.category,
+            onChange: (e) => {
+                const text = String(e.target.value);
+                st.editedText.set(it.category, text);
+                const parsed = copilotParseBrlCents(text);
+                if (parsed !== null)
+                    st.editedCents.set(it.category, parsed);
+                else
+                    st.editedCents.delete(it.category);
+                st.error = '';
+                copilotForceRender(app);
+            }
+        })));
+    })), !st.receipt
+        ? h('div', { className: 'mf-m3-salary-options' }, h('label', { className: 'mf-m3-salary-income-opt' }, h('input', {
+            type: 'checkbox',
+            checked: st.applyRecurring,
+            disabled: st.busy,
+            onChange: (e) => {
+                st.applyRecurring = !!e.target.checked;
+                copilotForceRender(app);
+            }
+        }), h('span', {}, `Aplicar também como limite recorrente para os próximos meses (padrão: somente ${draft.month})`)), h('label', { className: 'mf-m3-salary-income-opt' }, h('input', {
+            type: 'checkbox',
+            checked: st.updateIncome,
+            disabled: st.busy,
+            onChange: (e) => {
+                st.updateIncome = !!e.target.checked;
+                copilotForceRender(app);
+            }
+        }), h('span', {}, `Atualizar também renda mensal de referência no perfil para ${fmt(draft.salaryCents)} (não cria lançamento no extrato)`)))
+        : null, needOptIn
+        ? h('div', { className: 'mf-m3-action-optin' }, h('p', {}, 'Para gravar esses novos limites no banco SQLite com confirmação nativa e reversão, ative antes as ações supervisionadas.'), h('button', {
+            type: 'button',
+            className: 'secondary-button',
+            disabled: st.busy,
+            onClick: () => void copilotEnableSalaryCapability(app, keyObj, draft)
+        }, st.busy ? 'Ativando…' : 'Ativar ações supervisionadas'))
+        : null, st.receipt
+        ? h('div', { className: 'mf-m3-action-receipt', role: 'status' }, h('div', { className: 'mf-m3-action-receipt-info' }, h('strong', {}, st.undoState === 'undone'
+            ? 'Limites anteriores restaurados com sucesso'
+            : `Orçamentos atualizados em ${st.receipt.affectedCount || selectedCount} categoria(s)`), h('small', {}, `Recibo ${String(st.receipt.proposalId || '').slice(0, 8)} · Backup SQLite verificado`)), st.undoState === 'available'
+            ? h('button', {
+                type: 'button',
+                className: 'ghost-button',
+                disabled: st.busy,
+                onClick: () => void copilotUndoSalaryBudget(app, keyObj, draft)
+            }, st.busy ? 'Revertendo…' : 'Desfazer')
+            : h('span', { className: 'mf-ic2-pill' }, 'Desfeito'))
+        : h('div', { className: 'mf-m3-action-footer' }, h('button', {
+            type: 'button',
+            className: 'primary-button',
+            disabled: st.busy || selectedCount === 0 || invalidInput || !!needOptIn,
+            onClick: () => void copilotExecuteSalaryBudget(app, keyObj, draft)
+        }, st.busy ? 'Aguardando confirmação…' : `Confirmar e aplicar (${selectedCount} categorias)`), h('button', {
+            type: 'button',
+            className: 'ghost-button',
+            disabled: st.busy,
+            onClick: () => {
+                if (opts.onDismiss)
+                    opts.onDismiss();
+                else {
+                    st.dismissed = true;
+                    st.error = '';
+                    copilotForceRender(app);
+                }
+            }
+        }, 'Descartar')), st.error ? h('p', { className: 'mf-m3-action-error', role: 'alert' }, st.error) : null);
+}
+function renderBudgetsSalaryPanel(app, useBank) {
+    var _a, _b, _c;
+    const api = desktop;
+    if (!(api === null || api === void 0 ? void 0 : api.copilotSalaryBudgetPropose))
+        return null;
+    if (!app.__m3SalaryPanel) {
+        const curInc = (_c = (_b = (_a = app === null || app === void 0 ? void 0 : app.state) === null || _a === void 0 ? void 0 : _a.data) === null || _b === void 0 ? void 0 : _b.settings) === null || _c === void 0 ? void 0 : _c.income;
+        app.__m3SalaryPanel = {
+            open: false,
+            salaryText: curInc > 0 ? copilotFormatEditCents(curInc) : '',
+            reserveText: '',
+            profileMode: 'balanced',
+            busy: false,
+            error: '',
+            proposal: null
+        };
+    }
+    const panel = app.__m3SalaryPanel;
+    if (!panel.open)
+        return null;
+    const generate = async () => {
+        const salaryCents = copilotParseBrlCents(panel.salaryText);
+        if (!salaryCents || salaryCents <= 0) {
+            panel.error = 'Informe um salário líquido mensal válido em reais (ex.: 7.500,00).';
+            copilotForceRender(app);
+            return;
+        }
+        const reserveTrim = String(panel.reserveText || '').trim();
+        let reserveGoalCents = null;
+        if (reserveTrim) {
+            reserveGoalCents = copilotParseBrlCents(reserveTrim);
+            if (reserveGoalCents === null || reserveGoalCents > salaryCents) {
+                panel.error = 'Meta de reserva inválida ou maior que o salário informado.';
+                copilotForceRender(app);
+                return;
+            }
+        }
+        panel.busy = true;
+        panel.error = '';
+        copilotForceRender(app);
+        try {
+            const profile = app.state.mode === 'demo' ? 'demo' : 'real';
+            const source = profile === 'demo' ? 'manual' : useBank ? 'bank' : 'manual';
+            const draft = await api.copilotSalaryBudgetPropose({
+                profile,
+                source,
+                month: app.state.month,
+                salaryCents,
+                reserveGoalCents,
+                profileMode: panel.profileMode,
+                updateIncomeSetting: false
+            });
+            const cap = typeof api.copilotActionCapabilityStatus === 'function'
+                ? await api.copilotActionCapabilityStatus().catch(() => null)
+                : null;
+            if (draft)
+                draft.capability = cap ? { available: !!cap.available, enabled: !!cap.enabled } : null;
+            panel.proposal = draft;
+        }
+        catch (e) {
+            panel.error = String((e === null || e === void 0 ? void 0 : e.message) || 'Não foi possível calcular a reorganização.');
+        }
+        finally {
+            panel.busy = false;
+            copilotForceRender(app);
+        }
+    };
+    return h('section', { className: 'mf-m3-salary-panel card', role: 'region', 'aria-label': 'Planejador de orçamento por salário' }, h('div', { className: 'mf-m3-salary-panel-head' }, h('div', {}, h('span', { className: 'micro-label' }, 'COPILOTO M3-SALARY'), h('h2', {}, 'Reorganizar limites a partir do seu salário mensal'), h('p', {}, 'Calcula médias reais apenas de meses completos anteriores, soma compromissos restantes do Planejamento e exige sua confirmação antes de alterar limites.')), h('button', {
+        type: 'button',
+        className: 'ghost-button',
+        onClick: () => { panel.open = false; copilotForceRender(app); }
+    }, 'Fechar')), h('div', { className: 'mf-m3-salary-form' }, h('label', {}, 'Salário mensal líquido (R$)', h('input', {
+        type: 'text',
+        inputMode: 'decimal',
+        placeholder: 'Ex.: 7.500,00',
+        value: panel.salaryText,
+        disabled: panel.busy,
+        onChange: (e) => { panel.salaryText = String(e.target.value); panel.error = ''; copilotForceRender(app); }
+    })), h('label', {}, 'Meta de reserva (R$, opcional)', h('input', {
+        type: 'text',
+        inputMode: 'decimal',
+        placeholder: 'Padrão pelo perfil',
+        value: panel.reserveText,
+        disabled: panel.busy,
+        onChange: (e) => { panel.reserveText = String(e.target.value); panel.error = ''; copilotForceRender(app); }
+    })), h('label', {}, 'Estratégia', h('select', {
+        value: panel.profileMode,
+        disabled: panel.busy,
+        onChange: (e) => { panel.profileMode = String(e.target.value); copilotForceRender(app); }
+    }, h('option', { value: 'conservative' }, 'Conservador (20% reserva)'), h('option', { value: 'balanced' }, 'Equilibrado (15% reserva)'), h('option', { value: 'flexible' }, 'Flexível (10% reserva)'))), h('button', {
+        type: 'button',
+        className: 'primary-button',
+        disabled: panel.busy,
+        onClick: () => void generate()
+    }, panel.busy ? 'Calculando…' : 'Simular reorganização')), panel.error ? h('p', { className: 'mf-m3-action-error', role: 'alert' }, panel.error) : null, panel.proposal
+        ? renderSalaryBudgetProposalBox(app, panel.proposal, panel.proposal, {
+            onReplaceDraft: (nextDraft) => { panel.proposal = nextDraft; copilotForceRender(app); },
+            onDismiss: () => { panel.proposal = null; copilotForceRender(app); }
+        })
+        : null);
+}
 function copilotGetActionUiState(msg, draft) {
     let st = MF_M3_ACTION_UI_STATE.get(msg);
     if (st)
@@ -9115,7 +9712,17 @@ async function copilotUndoSupervisedAction(app, msg, draft) {
 function renderCopilotActionCard(app, msg) {
     var _a, _b, _c;
     const draft = msg === null || msg === void 0 ? void 0 : msg.m3ActionDraft;
-    if (!draft || draft.contract !== 'MF3/ACTION-DRAFT-V1')
+    if (!draft)
+        return null;
+    if (draft.contract === 'MF3/SALARY-BUDGET-PROPOSAL-V1') {
+        return renderSalaryBudgetProposalBox(app, msg, draft, {
+            onReplaceDraft: (nextDraft) => {
+                msg.m3ActionDraft = nextDraft;
+                copilotForceRender(app);
+            }
+        });
+    }
+    if (draft.contract !== 'MF3/ACTION-DRAFT-V1')
         return null;
     if (draft.status === 'needs_clarification' || draft.status === 'unavailable') {
         return h('div', { className: 'mf-m3-action-card is-info', role: 'region', 'aria-label': 'Esclarecimento de ação' }, h('div', { className: 'mf-m3-action-head' }, h('span', { className: 'micro-label' }, 'AÇÃO SUPERVISIONADA · SOMENTE LEITURA'), h('span', { className: 'mf-ic2-epistemic-badge is-estimate' }, 'Sem gravação')), draft.futureRuleNotice ? h('p', { className: 'mf-m3-action-notice' }, draft.futureRuleNotice) : null, draft.excludedBySafetyCount > 0 ? h('small', { className: 'mf-m3-action-muted' }, `${draft.excludedBySafetyCount} registro(s) foram protegidos fora do escopo (pendentes, splits ou transferências).`) : null);
