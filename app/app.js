@@ -7820,11 +7820,18 @@ async function intelligenceSubmitQuestion(app, rawQuestion) {
         return;
     }
     if (!wantsLocalSummary && ((_d = app.state.aiStatus) === null || _d === void 0 ? void 0 : _d.connected) && ((_f = app.state.aiCopilotCap) === null || _f === void 0 ? void 0 : _f.enabled) && typeof (api === null || api === void 0 ? void 0 : api.aiCopilotAsk) === 'function') {
-        const requestId = 'sol-gen-' + Date.now();
+        const startMode = app.state.mode === 'demo' ? 'demo' : 'real';
+        const startThreadId = app.state.intelligenceActiveThreadId || null;
+        const requestId = 'sol-gen-' + Date.now() + '-' + Math.floor(Math.random() * 10000);
+        const isStillCurrent = () => (app.state.mode === 'demo' ? 'demo' : 'real') === startMode &&
+            (app.state.intelligenceActiveThreadId || null) === startThreadId &&
+            app.state.aiCopilotRequestId === requestId;
         app.setState({ aiCopilotBusy: true, aiCopilotStreaming: '', aiCopilotRequestId: requestId, aiError: '' }, () => intelligenceScrollChatToBottom());
         try {
             const history = intelligenceRecentPlainHistory(currentMessages);
             const sol = await api.aiCopilotAsk({ token: null, question: q, history, effortOverride: 'auto', requestId });
+            if (!isStillCurrent())
+                return;
             if ((sol === null || sol === void 0 ? void 0 : sol.inferenceStatus) && app.state.aiCopilotCap) {
                 app.setState({ aiCopilotCap: { ...app.state.aiCopilotCap, inferenceStatus: sol.inferenceStatus } });
             }
@@ -7837,16 +7844,29 @@ async function intelligenceSubmitQuestion(app, rawQuestion) {
             });
         }
         catch (solErr) {
+            if (!isStillCurrent())
+                return;
             const errMsg = String((solErr === null || solErr === void 0 ? void 0 : solErr.message) || 'Não foi possível consultar o GPT-6.2 Sol neste momento.').slice(0, 260);
-            appendAssistant({
-                status: 'error',
-                text: '**Não foi possível obter resposta do GPT-6.2 Sol:** ' + errMsg + ' Nenhuma resposta foi simulada.',
-                permissionActions: [{ id: 'open_ai_settings', label: 'Abrir Configurações de IA' }],
-                details: 'Erro real retornado pelo serviço GPT-6.2 Sol (OAuth): ' + errMsg
-            });
+            if (/^USER_CANCELLED$|cancelad[ao]\s+por\s+solicita[çc][ãa]o/i.test(errMsg)) {
+                appendAssistant({
+                    status: 'done',
+                    text: 'Solicitação cancelada. Nenhuma resposta ou alteração financeira foi registrada.',
+                    details: 'Cancelamento manual pelo usuário antes da conclusão.'
+                });
+            }
+            else {
+                appendAssistant({
+                    status: 'error',
+                    text: '**Não foi possível obter resposta do GPT-6.2 Sol:** ' + errMsg + ' Nenhuma resposta foi simulada.',
+                    permissionActions: [{ id: 'open_ai_settings', label: 'Abrir Configurações de IA' }],
+                    details: 'Erro real retornado pelo serviço GPT-6.2 Sol (OAuth): ' + errMsg
+                });
+            }
         }
         finally {
-            app.setState({ aiCopilotBusy: false, aiCopilotStreaming: '', aiCopilotRequestId: null });
+            if (app.state.aiCopilotRequestId === requestId) {
+                app.setState({ aiCopilotBusy: false, aiCopilotStreaming: '', aiCopilotRequestId: null });
+            }
         }
         return;
     }
@@ -8104,10 +8124,15 @@ function intelligenceScrollChatToBottom() {
     else
         scroll();
 }
-function intelligenceCreateThread(app, initialTitle = 'Nova conversa') {
-    if (app.state.aiCopilotBusy && typeof (desktop === null || desktop === void 0 ? void 0 : desktop.aiCopilotCancel) === 'function') {
+function intelligenceResetStreamingState(app) {
+    var _a;
+    if (((_a = app === null || app === void 0 ? void 0 : app.state) === null || _a === void 0 ? void 0 : _a.aiCopilotBusy) && typeof (desktop === null || desktop === void 0 ? void 0 : desktop.aiCopilotCancel) === 'function') {
         void desktop.aiCopilotCancel().catch(() => { });
     }
+    return { aiCopilotBusy: false, aiCopilotStreaming: '', aiCopilotRequestId: null };
+}
+function intelligenceCreateThread(app, initialTitle = 'Nova conversa') {
+    const streamingReset = intelligenceResetStreamingState(app);
     intelligenceEnsureHydrated(app);
     const mode = app.state.mode === 'demo' ? 'demo' : 'real';
     const todayIso = intelligenceReferenceToday(app) || '2026-11-11';
@@ -8136,9 +8161,7 @@ function intelligenceCreateThread(app, initialTitle = 'Nova conversa') {
         intelligenceDraft: '',
         intelligencePreparedQuestion: '',
         intelligenceDraftScope: null,
-        aiCopilotBusy: false,
-        aiCopilotStreaming: '',
-        aiCopilotRequestId: null,
+        ...streamingReset,
         intelligenceStorageError: storageErr
     });
     return newThread.id;
@@ -8149,10 +8172,14 @@ function intelligenceSelectThread(app, threadId) {
     const found = threads.find(t => t.id === threadId);
     if (!found)
         return;
+    const switching = found.id !== app.state.intelligenceActiveThreadId;
+    const streamingReset = switching ? intelligenceResetStreamingState(app) : {};
     app.setState({
         intelligenceActiveThreadId: found.id,
         intelligenceMessages: found.messages,
-        intelligenceDraftScope: { label: found.scopeLabel, period: found.periodLabel, mode: found.mode === 'demo' ? 'Demonstração' : 'Pessoal' }
+        intelligenceDraftScope: { label: found.scopeLabel, period: found.periodLabel, mode: found.mode === 'demo' ? 'Demonstração' : 'Pessoal' },
+        ...(switching ? { intelligencePreparedQuestion: '' } : {}),
+        ...streamingReset
     });
 }
 function intelligenceDeleteThread(app, threadId, confirmFn) {
@@ -8164,9 +8191,11 @@ function intelligenceDeleteThread(app, threadId, confirmFn) {
     const ask = confirmFn || (typeof confirm === 'function' ? confirm : () => false);
     if (!ask('Excluir permanentemente a conversa “' + target.title + '” deste perfil?'))
         return false;
+    const deletingActive = app.state.intelligenceActiveThreadId === threadId;
+    const streamingReset = deletingActive ? intelligenceResetStreamingState(app) : {};
     const mode = app.state.mode === 'demo' ? 'demo' : 'real';
     const remaining = threads.filter(t => t.id !== threadId);
-    const nextActive = app.state.intelligenceActiveThreadId === threadId ? (remaining[0] || null) : (remaining.find(t => t.id === app.state.intelligenceActiveThreadId) || remaining[0] || null);
+    const nextActive = deletingActive ? (remaining[0] || null) : (remaining.find(t => t.id === app.state.intelligenceActiveThreadId) || remaining[0] || null);
     const storageErr = intelligencePersistThreads(app, remaining, mode);
     if (storageErr) {
         app.setState({ intelligenceStorageError: storageErr });
@@ -8176,6 +8205,7 @@ function intelligenceDeleteThread(app, threadId, confirmFn) {
         intelligenceThreads: remaining,
         intelligenceActiveThreadId: nextActive ? nextActive.id : null,
         intelligenceMessages: nextActive ? nextActive.messages : [],
+        ...streamingReset,
         intelligenceStorageError: storageErr
     });
     return true;
@@ -8183,7 +8213,8 @@ function intelligenceDeleteThread(app, threadId, confirmFn) {
 function intelligenceClearHistory(app, confirmFn) {
     var _a, _b;
     if (((_a = app.state.localFinancialAccess) === null || _a === void 0 ? void 0 : _a.token) || ((_b = app.state.categoryReviewGrant) === null || _b === void 0 ? void 0 : _b.token)) {
-        app.setState({ intelligenceThreads: [], intelligenceMessages: [], intelligenceActiveThreadId: null });
+        const streamingReset = intelligenceResetStreamingState(app);
+        app.setState({ intelligenceThreads: [], intelligenceMessages: [], intelligenceActiveThreadId: null, intelligencePreparedQuestion: '', ...streamingReset });
         return;
     }
     intelligenceEnsureHydrated(app);
@@ -8193,6 +8224,7 @@ function intelligenceClearHistory(app, confirmFn) {
     const ask = confirmFn || (typeof confirm === 'function' ? confirm : () => false);
     if (!ask('Excluir todas as ' + threads.length + ' conversa(s) salvas neste perfil?'))
         return false;
+    const streamingReset = intelligenceResetStreamingState(app);
     const mode = app.state.mode === 'demo' ? 'demo' : 'real';
     const storageErr = intelligencePersistThreads(app, [], mode);
     if (storageErr) {
@@ -8203,15 +8235,15 @@ function intelligenceClearHistory(app, confirmFn) {
         intelligenceThreads: [],
         intelligenceActiveThreadId: null,
         intelligenceMessages: [],
+        intelligencePreparedQuestion: '',
+        ...streamingReset,
         intelligenceStorageError: storageErr
     });
     return true;
 }
 function intelligenceSwitchProfileMode(app, newMode) {
     var _a;
-    if (app.state.aiCopilotBusy && typeof (desktop === null || desktop === void 0 ? void 0 : desktop.aiCopilotCancel) === 'function') {
-        void desktop.aiCopilotCancel().catch(() => { });
-    }
+    const streamingReset = intelligenceResetStreamingState(app);
     if (app.state.categoryReviewGrant && typeof categoryReviewDisable === 'function')
         categoryReviewDisable(app);
     if (((_a = app.state.localFinancialAccess) === null || _a === void 0 ? void 0 : _a.token) && typeof localFinancialDisable === 'function')
@@ -8226,9 +8258,7 @@ function intelligenceSwitchProfileMode(app, newMode) {
         intelligenceMessages: first ? first.messages : [],
         intelligenceDraftScope: null,
         intelligencePreparedQuestion: '',
-        aiCopilotBusy: false,
-        aiCopilotStreaming: '',
-        aiCopilotRequestId: null,
+        ...streamingReset,
         intelligenceStorageError: loaded.error
     });
 }
@@ -9062,7 +9092,7 @@ async function localFinancialSubmit(app, question) {
     const user = { id: 'local-u-' + Date.now(), role: 'user', text: q, status: 'sent',
         createdAt: intelligenceNowTime(), scopeLabel: scope.label, periodLabel: month };
     app.setState({ localFinancialBusy: true, intelligenceDraft: '', intelligencePreparedQuestion: '' });
-    let reply = null, operational = null, ic2 = null, m3Draft = null, solReply = null, error = '', permissionActions = undefined;
+    let reply = null, operational = null, ic2 = null, m3Draft = null, solReply = null, solCancelled = false, error = '', permissionActions = undefined;
     try {
         if (m3ActionIntent && typeof (api === null || api === void 0 ? void 0 : api.copilotActionInterpret) === 'function') {
             const draft = await api.copilotActionInterpret({ token: access.token, source: access.source, profile: access.profile, month, question: q });
@@ -9087,7 +9117,7 @@ async function localFinancialSubmit(app, question) {
                 throw Error('Resposta IC2 não verificada.');
             if (ic2.status === 'unsupported') {
                 if (((_b = app.state.aiStatus) === null || _b === void 0 ? void 0 : _b.connected) && ((_c = app.state.aiCopilotCap) === null || _c === void 0 ? void 0 : _c.enabled) && typeof (api === null || api === void 0 ? void 0 : api.aiCopilotAsk) === 'function') {
-                    const requestId = 'sol-' + Date.now();
+                    const requestId = 'sol-' + Date.now() + '-' + Math.floor(Math.random() * 10000);
                     app.setState({ aiCopilotBusy: true, aiCopilotStreaming: '', aiCopilotRequestId: requestId });
                     try {
                         const history = typeof intelligenceRecentPlainHistory === 'function' ? intelligenceRecentPlainHistory(messages, 6, { excludeFinancial: true }) : [];
@@ -9097,11 +9127,19 @@ async function localFinancialSubmit(app, question) {
                         }
                     }
                     catch (solErr) {
-                        error = '**Não foi possível consultar o GPT-6.2 Sol:** ' + String((solErr === null || solErr === void 0 ? void 0 : solErr.message) || 'falha inesperada') + ' Nenhuma resposta foi simulada.';
-                        permissionActions = [{ id: 'open_ai_settings', label: 'Verificar Configurações de IA' }];
+                        const solMsg = String((solErr === null || solErr === void 0 ? void 0 : solErr.message) || 'falha inesperada');
+                        if (/^USER_CANCELLED$|cancelad[ao]\s+por\s+solicita[çc][ãa]o/i.test(solMsg)) {
+                            solCancelled = true;
+                        }
+                        else {
+                            error = '**Não foi possível consultar o GPT-6.2 Sol:** ' + solMsg + ' Nenhuma resposta foi simulada.';
+                            permissionActions = [{ id: 'open_ai_settings', label: 'Verificar Configurações de IA' }];
+                        }
                     }
                     finally {
-                        app.setState({ aiCopilotBusy: false, aiCopilotStreaming: '', aiCopilotRequestId: null });
+                        if (app.state.aiCopilotRequestId === requestId) {
+                            app.setState({ aiCopilotBusy: false, aiCopilotStreaming: '', aiCopilotRequestId: null });
+                        }
                     }
                 }
                 else if (((_d = app.state.aiStatus) === null || _d === void 0 ? void 0 : _d.connected) === true) {
@@ -9154,9 +9192,9 @@ async function localFinancialSubmit(app, question) {
     if (ic2 && ['ready', 'partial', 'needs_clarification', 'unsupported'].includes(ic2.status))
         app.__ic2Conversation = { access, signature, id: ic2.conversationId };
     const state = operational === null || operational === void 0 ? void 0 : operational.uiState;
-    let answerText = (m3Draft === null || m3Draft === void 0 ? void 0 : m3Draft.answer) || (solReply === null || solReply === void 0 ? void 0 : solReply.text) || error || (ic2 === null || ic2 === void 0 ? void 0 : ic2.answer) || (operational === null || operational === void 0 ? void 0 : operational.answer) || (reply === null || reply === void 0 ? void 0 : reply.text) || 'Consulta indisponível.';
+    let answerText = (m3Draft === null || m3Draft === void 0 ? void 0 : m3Draft.answer) || (solReply === null || solReply === void 0 ? void 0 : solReply.text) || (solCancelled ? 'Solicitação cancelada. Nenhuma resposta ou alteração financeira foi registrada.' : '') || error || (ic2 === null || ic2 === void 0 ? void 0 : ic2.answer) || (operational === null || operational === void 0 ? void 0 : operational.answer) || (reply === null || reply === void 0 ? void 0 : reply.text) || 'Consulta indisponível.';
     const finalStatus = m3Draft ?
-        (m3Draft.status === 'ready' ? 'done' : 'unsupported') : (solReply === null || solReply === void 0 ? void 0 : solReply.text) ?
+        (m3Draft.status === 'ready' ? 'done' : 'unsupported') : (solReply === null || solReply === void 0 ? void 0 : solReply.text) || solCancelled ?
         'done' : error && (ic2 === null || ic2 === void 0 ? void 0 : ic2.status) === 'unsupported' ?
         'error' : ic2 ?
         (['ready', 'partial'].includes(ic2.status) ? 'done' : ic2.status === 'unsupported' || ic2.status === 'needs_clarification' ? 'unsupported' :
@@ -9168,10 +9206,12 @@ async function localFinancialSubmit(app, question) {
         'Ação supervisionada · ' + (m3Draft.source === 'bank' ? 'Fonte bancária' : 'Fonte manual') + ' · ' + month :
         (solReply === null || solReply === void 0 ? void 0 : solReply.text) ?
             'GPT-6.2 Sol · Esforço ' + (solReply.effort === 'high' ? 'Alto' : solReply.effort === 'medium' ? 'Médio' : 'Baixo') + ' · Apenas agregados autorizados · ' + month :
-            ic2 && ['ready', 'partial'].includes(ic2.status) ?
-                'Consulta local · ' + (ic2.source === 'bank' ? 'Fonte bancária' : 'Fonte manual') + ' · ' + month :
-                factsValid ? (operational.profile === 'synthetic' ? 'Ambiente sintético' : 'Fonte ' + (operational.source === 'bank' ? 'bancária' : 'manual')) +
-                    ' · ' + intelligencePremiumCoverage(operational.coverage) + ' · ' + month : '';
+            solCancelled ?
+                'Solicitação cancelada pelo usuário' :
+                ic2 && ['ready', 'partial'].includes(ic2.status) ?
+                    'Consulta local · ' + (ic2.source === 'bank' ? 'Fonte bancária' : 'Fonte manual') + ' · ' + month :
+                    factsValid ? (operational.profile === 'synthetic' ? 'Ambiente sintético' : 'Fonte ' + (operational.source === 'bank' ? 'bancária' : 'manual')) +
+                        ' · ' + intelligencePremiumCoverage(operational.coverage) + ' · ' + month : '';
     const visualV3 = !m3Draft && v3Kind && factsValid ? mfV3BindGrant(mfV3FromOperational(operational, v3Kind, previousOperational), access, signature) : null;
     if (v3Kind && !m3Draft) {
         answerText = !visualV3 ? 'Não há evidência suficiente para apresentar esta análise com segurança. Nenhum valor foi estimado.' :

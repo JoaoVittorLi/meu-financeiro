@@ -843,11 +843,18 @@ async function intelligenceSubmitQuestion(app:any,rawQuestion:string){
   }
 
   if(!wantsLocalSummary&&app.state.aiStatus?.connected&&app.state.aiCopilotCap?.enabled&&typeof api?.aiCopilotAsk==='function'){
-    const requestId='sol-gen-'+Date.now();
+    const startMode:'real'|'demo'=app.state.mode==='demo'?'demo':'real';
+    const startThreadId=app.state.intelligenceActiveThreadId||null;
+    const requestId='sol-gen-'+Date.now()+'-'+Math.floor(Math.random()*10000);
+    const isStillCurrent=()=>
+      (app.state.mode==='demo'?'demo':'real')===startMode&&
+      (app.state.intelligenceActiveThreadId||null)===startThreadId&&
+      app.state.aiCopilotRequestId===requestId;
     app.setState({aiCopilotBusy:true,aiCopilotStreaming:'',aiCopilotRequestId:requestId,aiError:''},()=>intelligenceScrollChatToBottom());
     try{
       const history=intelligenceRecentPlainHistory(currentMessages);
       const sol=await api.aiCopilotAsk({token:null,question:q,history,effortOverride:'auto',requestId});
+      if(!isStillCurrent())return;
       if(sol?.inferenceStatus&&app.state.aiCopilotCap){
         app.setState({aiCopilotCap:{...app.state.aiCopilotCap,inferenceStatus:sol.inferenceStatus}});
       }
@@ -859,15 +866,26 @@ async function intelligenceSubmitQuestion(app:any,rawQuestion:string){
         details:'Conversa geral via OAuth com GPT-6.2 Sol · zero acesso ao SQLite ou extratos pessoais · zero fallback pago.'
       });
     }catch(solErr:any){
+      if(!isStillCurrent())return;
       const errMsg=String(solErr?.message||'Não foi possível consultar o GPT-6.2 Sol neste momento.').slice(0,260);
-      appendAssistant({
-        status:'error',
-        text:'**Não foi possível obter resposta do GPT-6.2 Sol:** '+errMsg+' Nenhuma resposta foi simulada.',
-        permissionActions:[{id:'open_ai_settings',label:'Abrir Configurações de IA'}],
-        details:'Erro real retornado pelo serviço GPT-6.2 Sol (OAuth): '+errMsg
-      });
+      if(/^USER_CANCELLED$|cancelad[ao]\s+por\s+solicita[çc][ãa]o/i.test(errMsg)){
+        appendAssistant({
+          status:'done',
+          text:'Solicitação cancelada. Nenhuma resposta ou alteração financeira foi registrada.',
+          details:'Cancelamento manual pelo usuário antes da conclusão.'
+        });
+      }else{
+        appendAssistant({
+          status:'error',
+          text:'**Não foi possível obter resposta do GPT-6.2 Sol:** '+errMsg+' Nenhuma resposta foi simulada.',
+          permissionActions:[{id:'open_ai_settings',label:'Abrir Configurações de IA'}],
+          details:'Erro real retornado pelo serviço GPT-6.2 Sol (OAuth): '+errMsg
+        });
+      }
     }finally{
-      app.setState({aiCopilotBusy:false,aiCopilotStreaming:'',aiCopilotRequestId:null});
+      if(app.state.aiCopilotRequestId===requestId){
+        app.setState({aiCopilotBusy:false,aiCopilotStreaming:'',aiCopilotRequestId:null});
+      }
     }
     return;
   }
@@ -1104,10 +1122,14 @@ function intelligenceScrollChatToBottom(){
   };
   if(typeof requestAnimationFrame==='function')requestAnimationFrame(scroll);else scroll();
 }
-function intelligenceCreateThread(app:any,initialTitle:string='Nova conversa'){
-  if(app.state.aiCopilotBusy&&typeof (desktop as any)?.aiCopilotCancel==='function'){
+function intelligenceResetStreamingState(app:any){
+  if(app?.state?.aiCopilotBusy&&typeof (desktop as any)?.aiCopilotCancel==='function'){
     void (desktop as any).aiCopilotCancel().catch(()=>{});
   }
+  return {aiCopilotBusy:false,aiCopilotStreaming:'',aiCopilotRequestId:null as string|null};
+}
+function intelligenceCreateThread(app:any,initialTitle:string='Nova conversa'){
+  const streamingReset=intelligenceResetStreamingState(app);
   intelligenceEnsureHydrated(app);
   const mode:'real'|'demo'=app.state.mode==='demo'?'demo':'real';
   const todayIso=intelligenceReferenceToday(app)||'2026-11-11';
@@ -1136,9 +1158,7 @@ function intelligenceCreateThread(app:any,initialTitle:string='Nova conversa'){
     intelligenceDraft:'',
     intelligencePreparedQuestion:'',
     intelligenceDraftScope:null,
-    aiCopilotBusy:false,
-    aiCopilotStreaming:'',
-    aiCopilotRequestId:null,
+    ...streamingReset,
     intelligenceStorageError:storageErr
   });
   return newThread.id;
@@ -1148,10 +1168,14 @@ function intelligenceSelectThread(app:any,threadId:string){
   const threads:IntelligenceThread[]=Array.isArray(app.state.intelligenceThreads)?app.state.intelligenceThreads:[];
   const found=threads.find(t=>t.id===threadId);
   if(!found)return;
+  const switching=found.id!==app.state.intelligenceActiveThreadId;
+  const streamingReset=switching?intelligenceResetStreamingState(app):{};
   app.setState({
     intelligenceActiveThreadId:found.id,
     intelligenceMessages:found.messages,
-    intelligenceDraftScope:{label:found.scopeLabel,period:found.periodLabel,mode:found.mode==='demo'?'Demonstração':'Pessoal'}
+    intelligenceDraftScope:{label:found.scopeLabel,period:found.periodLabel,mode:found.mode==='demo'?'Demonstração':'Pessoal'},
+    ...(switching?{intelligencePreparedQuestion:''}:{}),
+    ...streamingReset
   });
 }
 function intelligenceDeleteThread(app:any,threadId:string,confirmFn?:(msg:string)=>boolean){
@@ -1161,26 +1185,34 @@ function intelligenceDeleteThread(app:any,threadId:string,confirmFn?:(msg:string
   if(!target)return false;
   const ask=confirmFn||(typeof confirm==='function'?confirm:()=>false);
   if(!ask('Excluir permanentemente a conversa “'+target.title+'” deste perfil?'))return false;
+  const deletingActive=app.state.intelligenceActiveThreadId===threadId;
+  const streamingReset=deletingActive?intelligenceResetStreamingState(app):{};
   const mode:'real'|'demo'=app.state.mode==='demo'?'demo':'real';
   const remaining=threads.filter(t=>t.id!==threadId);
-  const nextActive=app.state.intelligenceActiveThreadId===threadId?(remaining[0]||null):(remaining.find(t=>t.id===app.state.intelligenceActiveThreadId)||remaining[0]||null);
+  const nextActive=deletingActive?(remaining[0]||null):(remaining.find(t=>t.id===app.state.intelligenceActiveThreadId)||remaining[0]||null);
   const storageErr=intelligencePersistThreads(app,remaining,mode);
   if(storageErr){app.setState({intelligenceStorageError:storageErr});return false;}
   app.setState({
     intelligenceThreads:remaining,
     intelligenceActiveThreadId:nextActive?nextActive.id:null,
     intelligenceMessages:nextActive?nextActive.messages:[],
+    ...streamingReset,
     intelligenceStorageError:storageErr
   });
   return true;
 }
 function intelligenceClearHistory(app:any,confirmFn?:(msg:string)=>boolean){
-  if(app.state.localFinancialAccess?.token||app.state.categoryReviewGrant?.token){app.setState({intelligenceThreads:[],intelligenceMessages:[],intelligenceActiveThreadId:null});return;}
+  if(app.state.localFinancialAccess?.token||app.state.categoryReviewGrant?.token){
+    const streamingReset=intelligenceResetStreamingState(app);
+    app.setState({intelligenceThreads:[],intelligenceMessages:[],intelligenceActiveThreadId:null,intelligencePreparedQuestion:'',...streamingReset});
+    return;
+  }
   intelligenceEnsureHydrated(app);
   const threads:IntelligenceThread[]=Array.isArray(app.state.intelligenceThreads)?app.state.intelligenceThreads:[];
   if(!threads.length)return false;
   const ask=confirmFn||(typeof confirm==='function'?confirm:()=>false);
   if(!ask('Excluir todas as '+threads.length+' conversa(s) salvas neste perfil?'))return false;
+  const streamingReset=intelligenceResetStreamingState(app);
   const mode:'real'|'demo'=app.state.mode==='demo'?'demo':'real';
   const storageErr=intelligencePersistThreads(app,[],mode);
   if(storageErr){app.setState({intelligenceStorageError:storageErr});return false;}
@@ -1188,14 +1220,14 @@ function intelligenceClearHistory(app:any,confirmFn?:(msg:string)=>boolean){
     intelligenceThreads:[],
     intelligenceActiveThreadId:null,
     intelligenceMessages:[],
+    intelligencePreparedQuestion:'',
+    ...streamingReset,
     intelligenceStorageError:storageErr
   });
   return true;
 }
 function intelligenceSwitchProfileMode(app:any,newMode:'real'|'demo'){
-  if(app.state.aiCopilotBusy&&typeof (desktop as any)?.aiCopilotCancel==='function'){
-    void (desktop as any).aiCopilotCancel().catch(()=>{});
-  }
+  const streamingReset=intelligenceResetStreamingState(app);
   if(app.state.categoryReviewGrant&&typeof categoryReviewDisable==='function')categoryReviewDisable(app);
   if(app.state.localFinancialAccess?.token&&typeof localFinancialDisable==='function')localFinancialDisable(app);
   const loaded=intelligenceLoadStoredThreads(app,newMode);
@@ -1208,9 +1240,7 @@ function intelligenceSwitchProfileMode(app:any,newMode:'real'|'demo'){
     intelligenceMessages:first?first.messages:[],
     intelligenceDraftScope:null,
     intelligencePreparedQuestion:'',
-    aiCopilotBusy:false,
-    aiCopilotStreaming:'',
-    aiCopilotRequestId:null,
+    ...streamingReset,
     intelligenceStorageError:loaded.error
   });
 }

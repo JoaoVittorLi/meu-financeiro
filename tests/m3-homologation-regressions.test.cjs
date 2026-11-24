@@ -52,7 +52,7 @@ function compileIntelligenceIntegrationRuntime(desktopOverride = null) {
   const fn = new Function(
     'h', 'Icon', 'Card', 'DEFAULT_CATEGORY_INFOS', 'desktop',
     'spanLabel', 'dateSpan', 'prettyMonth', 'iso', 'document', 'FinancePeriodLedger',
-    js + ';return {intelligenceRecentPlainHistory,intelligenceSubmitQuestion,intelligenceClassifyQuestion,intelligenceCreateThread,intelligenceSwitchProfileMode};'
+    js + ';return {intelligenceRecentPlainHistory,intelligenceSubmitQuestion,intelligenceClassifyQuestion,intelligenceCreateThread,intelligenceSelectThread,intelligenceDeleteThread,intelligenceClearHistory,intelligenceSwitchProfileMode};'
   );
   return {
     DEFAULT_CATEGORY_INFOS,
@@ -232,6 +232,91 @@ test('D-03 & D-08: cancel aborts SSE inference cleanly, post-SSE capability loss
   assert.equal(cancelledCalls, 2);
   assert.equal(app.state.mode, 'demo');
   assert.equal(app.state.aiCopilotBusy, false);
+
+  // Async race guard (P1): in-flight request rejected or resolved after thread/mode switch must never overwrite the active thread or clear a newer requestId
+  let pendingReject = null;
+  let pendingResolve = null;
+  let askMode = 'reject';
+  const raceDesktop = {
+    aiCopilotCancel: async () => { cancelledCalls++; },
+    aiCopilotAsk: () => new Promise((resolve, reject) => {
+      if (askMode === 'reject') pendingReject = reject;
+      else pendingResolve = resolve;
+    })
+  };
+  const raceRuntime = compileIntelligenceIntegrationRuntime(raceDesktop).runtime;
+  const raceApp = {
+    state: {
+      mode: 'real',
+      page: 'intelligence',
+      month: '2026-11',
+      today: '2026-11-24',
+      categories: DEFAULT_CATEGORY_INFOS,
+      aiStatus: { connected: true, secure: true },
+      aiCopilotCap: { available: true, enabled: true },
+      aiCopilotBusy: false,
+      aiCopilotStreaming: '',
+      aiCopilotRequestId: null,
+      intelligenceThreads: [],
+      intelligenceMessages: [],
+      intelligenceActiveThreadId: null
+    },
+    setState(patch, cb) {
+      raceApp.state = { ...raceApp.state, ...(typeof patch === 'function' ? patch(raceApp.state) : patch) };
+      if (cb) cb();
+    }
+  };
+  const thA = raceRuntime.intelligenceCreateThread(raceApp, 'Conversa A');
+  const inflightA = raceRuntime.intelligenceSubmitQuestion(raceApp, 'Oi, tudo bem?');
+  assert.equal(raceApp.state.aiCopilotBusy, true);
+  const reqIdA = raceApp.state.aiCopilotRequestId;
+  assert.ok(reqIdA);
+
+  const thB = raceRuntime.intelligenceCreateThread(raceApp, 'Conversa B');
+  assert.equal(raceApp.state.intelligenceActiveThreadId, thB);
+  assert.equal(raceApp.state.aiCopilotBusy, false);
+  // Simulate a new request started on Thread B before old Thread A settles
+  askMode = 'resolve';
+  const inflightB = raceRuntime.intelligenceSubmitQuestion(raceApp, 'Como montar reserva?');
+  const reqIdB = raceApp.state.aiCopilotRequestId;
+  assert.notEqual(reqIdA, reqIdB);
+
+  pendingReject(new Error('USER_CANCELLED'));
+  await inflightA;
+  assert.equal(raceApp.state.intelligenceActiveThreadId, thB);
+  assert.equal(raceApp.state.aiCopilotRequestId, reqIdB);
+  assert.equal(raceApp.state.aiCopilotBusy, true);
+  assert.equal(raceApp.state.intelligenceMessages.filter((m) => m.role === 'assistant').length, 0);
+
+  // Resolve Thread B cleanly
+  pendingResolve({ text: 'Reserva de emergência concluída.', effort: 'low' });
+  await inflightB;
+  assert.equal(raceApp.state.aiCopilotBusy, false);
+  assert.equal(raceApp.state.intelligenceMessages.at(-1).text, 'Reserva de emergência concluída.');
+
+  // Select Thread A while Thread B starts another pending ask -> must cancel & never leak late resolve
+  askMode = 'resolve';
+  const inflightB2 = raceRuntime.intelligenceSubmitQuestion(raceApp, 'Segunda pergunta B');
+  raceRuntime.intelligenceSelectThread(raceApp, thA);
+  assert.equal(raceApp.state.intelligenceActiveThreadId, thA);
+  assert.equal(raceApp.state.aiCopilotBusy, false);
+  assert.equal(raceApp.state.aiCopilotRequestId, null);
+  pendingResolve({ text: 'Resposta atrasada de B' });
+  await inflightB2;
+  assert.equal(raceApp.state.intelligenceActiveThreadId, thA);
+  assert.equal(raceApp.state.intelligenceMessages.some((m) => String(m.text).includes('Resposta atrasada de B')), false);
+
+  // Same-thread manual cancellation renders neutral message without raw USER_CANCELLED or error status
+  askMode = 'reject';
+  const thC = raceRuntime.intelligenceCreateThread(raceApp, 'Conversa C');
+  assert.equal(raceApp.state.intelligenceActiveThreadId, thC);
+  const inflightC = raceRuntime.intelligenceSubmitQuestion(raceApp, 'Explicar juros compostos');
+  pendingReject(new Error('USER_CANCELLED'));
+  await inflightC;
+  const cancelReply = raceApp.state.intelligenceMessages.at(-1);
+  assert.equal(cancelReply.status, 'done');
+  assert.equal(cancelReply.text.includes('USER_CANCELLED'), false);
+  assert.match(cancelReply.text, /Solicitação cancelada/);
 });
 
 test('D-05 & D-07 & C-12: trailing periods parse cleanly, conceptual prompts return unsupported, and split attribution uses parts', async () => {

@@ -132,7 +132,7 @@ async function localFinancialSubmit(app:any,question:string){
  const user:IntelligenceChatMessage={id:'local-u-'+Date.now(),role:'user',text:q,status:'sent',
   createdAt:intelligenceNowTime(),scopeLabel:scope.label,periodLabel:month};
  app.setState({localFinancialBusy:true,intelligenceDraft:'',intelligencePreparedQuestion:''});
- let reply:LocalFinancialReply=null,operational:any=null,ic2:MfIC2Reply|null=null,m3Draft:any=null,solReply:any=null,error='',permissionActions:any[]=undefined;
+ let reply:LocalFinancialReply=null,operational:any=null,ic2:MfIC2Reply|null=null,m3Draft:any=null,solReply:any=null,solCancelled=false,error='',permissionActions:any[]=undefined;
  try{
   if(m3ActionIntent&&typeof api?.copilotActionInterpret==='function'){
    const draft=await api.copilotActionInterpret({token:access.token,source:access.source,profile:access.profile,month,question:q});
@@ -157,7 +157,7 @@ async function localFinancialSubmit(app:any,question:string){
    if(!mfIC2Valid(ic2,access,month))throw Error('Resposta IC2 não verificada.');
    if(ic2.status==='unsupported'){
     if(app.state.aiStatus?.connected&&app.state.aiCopilotCap?.enabled&&typeof api?.aiCopilotAsk==='function'){
-     const requestId='sol-'+Date.now();
+     const requestId='sol-'+Date.now()+'-'+Math.floor(Math.random()*10000);
      app.setState({aiCopilotBusy:true,aiCopilotStreaming:'',aiCopilotRequestId:requestId});
      try{
       const history=typeof intelligenceRecentPlainHistory==='function'?intelligenceRecentPlainHistory(messages,6,{excludeFinancial:true}):[];
@@ -166,10 +166,17 @@ async function localFinancialSubmit(app:any,question:string){
        app.setState({aiCopilotCap:{...app.state.aiCopilotCap,inferenceStatus:solReply.inferenceStatus}});
       }
      }catch(solErr:any){
-      error='**Não foi possível consultar o GPT-6.2 Sol:** '+String(solErr?.message||'falha inesperada')+' Nenhuma resposta foi simulada.';
-      permissionActions=[{id:'open_ai_settings',label:'Verificar Configurações de IA'}];
+      const solMsg=String(solErr?.message||'falha inesperada');
+      if(/^USER_CANCELLED$|cancelad[ao]\s+por\s+solicita[çc][ãa]o/i.test(solMsg)){
+       solCancelled=true;
+      }else{
+       error='**Não foi possível consultar o GPT-6.2 Sol:** '+solMsg+' Nenhuma resposta foi simulada.';
+       permissionActions=[{id:'open_ai_settings',label:'Verificar Configurações de IA'}];
+      }
      }finally{
-      app.setState({aiCopilotBusy:false,aiCopilotStreaming:'',aiCopilotRequestId:null});
+      if(app.state.aiCopilotRequestId===requestId){
+       app.setState({aiCopilotBusy:false,aiCopilotStreaming:'',aiCopilotRequestId:null});
+      }
      }
     }else if(app.state.aiStatus?.connected===true){
      permissionActions=[{id:'enable_ai_copilot',label:'Ativar GPT-6.2 Sol e responder',primary:true,retryQuestion:q},{id:'open_ai_settings',label:'Configurações de IA'}];
@@ -209,9 +216,9 @@ async function localFinancialSubmit(app:any,question:string){
  if(ic2&&['ready','partial','needs_clarification','unsupported'].includes(ic2.status))
    app.__ic2Conversation={access,signature,id:ic2.conversationId};
  const state=operational?.uiState;
- let answerText=m3Draft?.answer||solReply?.text||error||ic2?.answer||operational?.answer||reply?.text||'Consulta indisponível.';
+ let answerText=m3Draft?.answer||solReply?.text||(solCancelled?'Solicitação cancelada. Nenhuma resposta ou alteração financeira foi registrada.':'')||error||ic2?.answer||operational?.answer||reply?.text||'Consulta indisponível.';
  const finalStatus:IntelligenceChatMessage['status']=m3Draft?
-  (m3Draft.status==='ready'?'done':'unsupported'):solReply?.text?
+  (m3Draft.status==='ready'?'done':'unsupported'):solReply?.text||solCancelled?
   'done':error&&ic2?.status==='unsupported'?
   'error':ic2?
   (['ready','partial'].includes(ic2.status)?'done':ic2.status==='unsupported'||ic2.status==='needs_clarification'?'unsupported':
@@ -223,6 +230,8 @@ async function localFinancialSubmit(app:any,question:string){
   'Ação supervisionada · '+(m3Draft.source==='bank'?'Fonte bancária':'Fonte manual')+' · '+month:
   solReply?.text?
   'GPT-6.2 Sol · Esforço '+(solReply.effort==='high'?'Alto':solReply.effort==='medium'?'Médio':'Baixo')+' · Apenas agregados autorizados · '+month:
+  solCancelled?
+  'Solicitação cancelada pelo usuário':
   ic2&&['ready','partial'].includes(ic2.status)?
   'Consulta local · '+(ic2.source==='bank'?'Fonte bancária':'Fonte manual')+' · '+month:
   factsValid?(operational.profile==='synthetic'?'Ambiente sintético':'Fonte '+(operational.source==='bank'?'bancária':'manual'))+
