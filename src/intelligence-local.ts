@@ -264,13 +264,7 @@ async function localFinancialSubmit(app:any,question:string){
  }else mfLocalBindMessage(answer,access,signature,month);
  intelligenceSyncThreadMessages(app,[...messages,user,answer],scope);
  app.setState({localFinancialBusy:false},()=>{
-  if(typeof document!=='undefined'&&typeof document.querySelectorAll==='function'){
-   const scroll=()=>{
-    for(const el of Array.from(document.querySelectorAll('.mf-b05-chat-thread, .mf-ai-drawer-body')))
-     (el as HTMLElement).scrollTop=(el as HTMLElement).scrollHeight;
-   };
-   if(typeof requestAnimationFrame==='function')requestAnimationFrame(scroll);else scroll();
-  }
+  if(typeof intelligenceScrollChatToBottom==='function')intelligenceScrollChatToBottom();
  });
 }
 function renderLocalFinancialAccess(app:any){

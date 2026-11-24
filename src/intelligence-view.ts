@@ -625,7 +625,7 @@ function renderIntelligencePanel(app:any){
   const threads:IntelligenceThread[]=Array.isArray(app.state.intelligenceThreads)?app.state.intelligenceThreads:[];
   const activeThreadId=app.state.intelligenceActiveThreadId||'';
   const convState=typeof intelligenceConversationState==='function'?intelligenceConversationState(app):{kind:'oauth_disconnected',pill:'IA externa desconectada · leitura local requer autorização',badge:'Conta desconectada',css:'is-offline'};
-  const busy=Boolean(app.state.aiBusy||app.state.localFinancialBusy||app.state.intelligenceDrawerBusy);
+  const busy=Boolean(app.state.aiBusy||app.state.localFinancialBusy||app.state.intelligenceDrawerBusy||app.state.aiCopilotBusy);
   const draft=String(app.state.intelligenceDraft||'');
   return h('div',{className:'mf-ai-backdrop',role:'presentation',onMouseDown:(e:any)=>{if(e.target===e.currentTarget)app.setState({intelligencePanelOpen:false});}},
     h('aside',{className:'mf-ai-drawer mf-ai-drawer-compact mf-d01',role:'dialog','aria-modal':'true','aria-label':'Assistente contextual de '+info.label},

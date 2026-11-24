@@ -695,7 +695,7 @@ function intelligenceResolveActionProposal(app:any,proposalId:string,decision:'a
       proposal:{
         ...p,
         status:'preview_confirmed' as const,
-        resultMessage:'Prévia validada sem gravação: identidade ('+(p.origin==='bank'?'Banco · '+(p.accountName||p.accountId):'Manual')+'), data ('+p.date+'), valor e categoria ('+p.currentCategory+' → '+p.proposedCategory+') conferidos. Nenhuma escrita foi executada no banco de dados (persistência real prevista para a I2-B).'
+        resultMessage:'Prévia validada sem gravação: identidade ('+(p.origin==='bank'?'Banco · '+(p.accountName||p.accountId):'Manual')+'), data ('+p.date+'), valor e categoria ('+p.currentCategory+' → '+p.proposedCategory+') conferidos. Nenhuma alteração é gravada sem sua confirmação supervisionada.'
       }
     };
   });
@@ -767,7 +767,7 @@ async function intelligenceSubmitQuestion(app:any,rawQuestion:string){
     intelligenceDraft:'',
     intelligencePreparedQuestion:'',
     intelligenceDraftScope:scope
-  });
+  },()=>intelligenceScrollChatToBottom());
 
   const catIntent=intelligenceParseCategorizeIntent(q,app.state.categories,todayIso);
   if(catIntent){
@@ -836,7 +836,7 @@ async function intelligenceSubmitQuestion(app:any,rawQuestion:string){
 
   if(!wantsLocalSummary&&app.state.aiStatus?.connected&&app.state.aiCopilotCap?.enabled&&typeof api?.aiCopilotAsk==='function'){
     const requestId='sol-gen-'+Date.now();
-    app.setState({aiCopilotBusy:true,aiCopilotStreaming:'',aiCopilotRequestId:requestId,aiError:''});
+    app.setState({aiCopilotBusy:true,aiCopilotStreaming:'',aiCopilotRequestId:requestId,aiError:''},()=>intelligenceScrollChatToBottom());
     try{
       const history=intelligenceRecentPlainHistory(currentMessages);
       const sol=await api.aiCopilotAsk({token:null,question:q,history,effortOverride:'auto',requestId});
@@ -1086,7 +1086,15 @@ function intelligenceSyncThreadMessages(app:any,messages:IntelligenceChatMessage
     intelligenceActiveThreadId:activeId,
     intelligenceMessages:trimmedMsgs,
     intelligenceStorageError:storageErr
-  });
+  },()=>intelligenceScrollChatToBottom());
+}
+function intelligenceScrollChatToBottom(){
+  if(typeof document==='undefined'||typeof document.querySelectorAll!=='function')return;
+  const scroll=()=>{
+    for(const el of Array.from(document.querySelectorAll('.mf-b05-chat-thread, .mf-ai-drawer-body')))
+      (el as HTMLElement).scrollTop=(el as HTMLElement).scrollHeight;
+  };
+  if(typeof requestAnimationFrame==='function')requestAnimationFrame(scroll);else scroll();
 }
 function intelligenceCreateThread(app:any,initialTitle:string='Nova conversa'){
   intelligenceEnsureHydrated(app);

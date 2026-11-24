@@ -4866,7 +4866,7 @@ function renderIntelligencePanel(app) {
     const threads = Array.isArray(app.state.intelligenceThreads) ? app.state.intelligenceThreads : [];
     const activeThreadId = app.state.intelligenceActiveThreadId || '';
     const convState = typeof intelligenceConversationState === 'function' ? intelligenceConversationState(app) : { kind: 'oauth_disconnected', pill: 'IA externa desconectada · leitura local requer autorização', badge: 'Conta desconectada', css: 'is-offline' };
-    const busy = Boolean(app.state.aiBusy || app.state.localFinancialBusy || app.state.intelligenceDrawerBusy);
+    const busy = Boolean(app.state.aiBusy || app.state.localFinancialBusy || app.state.intelligenceDrawerBusy || app.state.aiCopilotBusy);
     const draft = String(app.state.intelligenceDraft || '');
     return h('div', { className: 'mf-ai-backdrop', role: 'presentation', onMouseDown: (e) => { if (e.target === e.currentTarget)
             app.setState({ intelligencePanelOpen: false }); } }, h('aside', { className: 'mf-ai-drawer mf-ai-drawer-compact mf-d01', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Assistente contextual de ' + info.label }, h('div', { className: 'mf-ai-drawer-head' }, h('div', { className: 'mf-ai-drawer-title-wrap' }, h('div', { className: 'mf-ai-drawer-kicker-row' }, h('span', { className: 'mf-d01-spark', 'aria-hidden': 'true' }, '✦'), h('span', { className: 'micro-label' }, 'SEU ASSISTENTE')), h('h2', {}, 'Assistente Financeiro'), h('small', { className: 'mf-d01-context-subtitle' }, 'Ajudando em ' + info.label)), h('div', { className: 'mf-ai-drawer-head-actions' }, h('button', { type: 'button', className: 'ghost-button mf-ai-expand-btn', 'aria-label': 'Nova conversa', title: 'Iniciar nova conversa', onClick: () => intelligenceCreateThread(app) }, 'Nova'), h('button', { type: 'button', className: 'ghost-button mf-ai-expand-btn', 'aria-label': 'Expandir na aba Inteligência', title: 'Abrir na aba Inteligência mantendo a conversa ativa', onClick: () => intelligenceOpenFullChat(app) }, 'Expandir'), h('button', { type: 'button', className: 'close-button', 'aria-label': 'Fechar assistente', onClick: () => app.setState({ intelligencePanelOpen: false }) }, '×'))), h('details', { className: 'mf-d01-context-disclosure' }, h('summary', {}, 'Contexto da conversa', h(Icon, { name: 'chevron-down', size: 14 })), h('div', { className: 'mf-ai-context-meta mf-ai-drawer-scope' }, h('span', {}, scope.label), h('span', {}, scope.period), h('span', {}, scope.mode), ...scope.filters.map((filter) => h('span', { key: filter }, filter)), h('span', {}, ((_b = app.state.localFinancialAccess) === null || _b === void 0 ? void 0 : _b.token) ? 'Leitura local autorizada' : convState.pill)), threads.length > 1 ? h('select', { className: 'mf-ai-drawer-thread-select', 'aria-label': 'Alternar conversa ativa', value: activeThreadId, onChange: (e) => intelligenceSelectThread(app, e.target.value) }, ...threads.map((t) => h('option', { key: t.id, value: t.id }, t.title + ' (' + t.messages.length + ')'))) : null), h('details', { className: 'mf-d01-access' }, h('summary', {}, 'Permissões de consulta'), renderIntelligenceAccess(app)), app.state.categoryReviewPreview ? h('div', { className: 'mf-review-drawer-pending' }, h('p', {}, 'Uma prévia de categorização aguarda sua decisão.'), h('button', { type: 'button', className: 'primary-button', onClick: () => void categoryReviewOpen(app) }, 'Revisar prévia na Central')) : null, h('div', { className: 'mf-ai-drawer-body' }, messages.length === 0 ? h('div', { className: 'mf-ai-drawer-empty' }, h('p', { className: 'muted-desc' }, info.description), h('div', { className: 'mf-ai-drawer-suggestions', 'aria-label': 'Sugestões rápidas para ' + info.label }, ...info.questions.filter(q => !intelligenceHistoryList(app).some(m => m.role === 'user' && m.text === q)).slice(0, 2).map((q, i) => h('button', { type: 'button', className: 'mf-ai-context-prompt', key: i, onClick: () => intelligenceSubmitQuestion(app, q) }, h('span', {}, q), h(Icon, { name: 'arrow', size: 15 }))))) :
@@ -7566,7 +7566,7 @@ function intelligenceResolveActionProposal(app, proposalId, decision) {
             proposal: {
                 ...p,
                 status: 'preview_confirmed',
-                resultMessage: 'Prévia validada sem gravação: identidade (' + (p.origin === 'bank' ? 'Banco · ' + (p.accountName || p.accountId) : 'Manual') + '), data (' + p.date + '), valor e categoria (' + p.currentCategory + ' → ' + p.proposedCategory + ') conferidos. Nenhuma escrita foi executada no banco de dados (persistência real prevista para a I2-B).'
+                resultMessage: 'Prévia validada sem gravação: identidade (' + (p.origin === 'bank' ? 'Banco · ' + (p.accountName || p.accountId) : 'Manual') + '), data (' + p.date + '), valor e categoria (' + p.currentCategory + ' → ' + p.proposedCategory + ') conferidos. Nenhuma alteração é gravada sem sua confirmação supervisionada.'
             }
         };
     });
@@ -7651,7 +7651,7 @@ async function intelligenceSubmitQuestion(app, rawQuestion) {
         intelligenceDraft: '',
         intelligencePreparedQuestion: '',
         intelligenceDraftScope: scope
-    });
+    }, () => intelligenceScrollChatToBottom());
     const catIntent = intelligenceParseCategorizeIntent(q, app.state.categories, todayIso);
     if (catIntent) {
         const built = intelligenceBuildCategorizeProposal(app, catIntent);
@@ -7714,7 +7714,7 @@ async function intelligenceSubmitQuestion(app, rawQuestion) {
     }
     if (!wantsLocalSummary && ((_d = app.state.aiStatus) === null || _d === void 0 ? void 0 : _d.connected) && ((_f = app.state.aiCopilotCap) === null || _f === void 0 ? void 0 : _f.enabled) && typeof (api === null || api === void 0 ? void 0 : api.aiCopilotAsk) === 'function') {
         const requestId = 'sol-gen-' + Date.now();
-        app.setState({ aiCopilotBusy: true, aiCopilotStreaming: '', aiCopilotRequestId: requestId, aiError: '' });
+        app.setState({ aiCopilotBusy: true, aiCopilotStreaming: '', aiCopilotRequestId: requestId, aiError: '' }, () => intelligenceScrollChatToBottom());
         try {
             const history = intelligenceRecentPlainHistory(currentMessages);
             const sol = await api.aiCopilotAsk({ token: null, question: q, history, effortOverride: 'auto', requestId });
@@ -7983,7 +7983,19 @@ function intelligenceSyncThreadMessages(app, messages, scopeOverride) {
         intelligenceActiveThreadId: activeId,
         intelligenceMessages: trimmedMsgs,
         intelligenceStorageError: storageErr
-    });
+    }, () => intelligenceScrollChatToBottom());
+}
+function intelligenceScrollChatToBottom() {
+    if (typeof document === 'undefined' || typeof document.querySelectorAll !== 'function')
+        return;
+    const scroll = () => {
+        for (const el of Array.from(document.querySelectorAll('.mf-b05-chat-thread, .mf-ai-drawer-body')))
+            el.scrollTop = el.scrollHeight;
+    };
+    if (typeof requestAnimationFrame === 'function')
+        requestAnimationFrame(scroll);
+    else
+        scroll();
 }
 function intelligenceCreateThread(app, initialTitle = 'Nova conversa') {
     intelligenceEnsureHydrated(app);
@@ -9078,16 +9090,8 @@ async function localFinancialSubmit(app, question) {
         mfLocalBindMessage(answer, access, signature, month);
     intelligenceSyncThreadMessages(app, [...messages, user, answer], scope);
     app.setState({ localFinancialBusy: false }, () => {
-        if (typeof document !== 'undefined' && typeof document.querySelectorAll === 'function') {
-            const scroll = () => {
-                for (const el of Array.from(document.querySelectorAll('.mf-b05-chat-thread, .mf-ai-drawer-body')))
-                    el.scrollTop = el.scrollHeight;
-            };
-            if (typeof requestAnimationFrame === 'function')
-                requestAnimationFrame(scroll);
-            else
-                scroll();
-        }
+        if (typeof intelligenceScrollChatToBottom === 'function')
+            intelligenceScrollChatToBottom();
     });
 }
 function renderLocalFinancialAccess(app) {

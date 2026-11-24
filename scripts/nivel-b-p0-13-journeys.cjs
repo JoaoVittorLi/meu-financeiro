@@ -369,6 +369,19 @@ async function runP013Journeys() {
       await assertNoForbiddenLegacyText(running.cdp, 'J1-first-access');
       await shot(running.cdp, outputDir, 'j01-first-access-1366x768-light');
 
+      await running.cdp.send('Emulation.setDeviceMetricsOverride', { width: 1920, height: 1080, deviceScaleFactor: 1, mobile: false });
+      await delay(140);
+      const j1Layout1080 = await evaluate(running.cdp, `
+        const c = document.querySelector('.mf-b05-chat-composer');
+        const b = [...document.querySelectorAll('.mf-b05-chat-composer button')].find(x => x.textContent.includes('Enviar'));
+        const cr = c ? c.getBoundingClientRect() : null;
+        const br = b ? b.getBoundingClientRect() : null;
+        return { overflow: document.documentElement.scrollWidth > window.innerWidth, bottom: cr ? cr.bottom : 9999, sendBottom: br ? br.bottom : 9999, vh: window.innerHeight };
+      `);
+      assert.equal(j1Layout1080.overflow, false, 'J1 1920x1080 zero horizontal overflow');
+      assert.ok(j1Layout1080.bottom <= j1Layout1080.vh + 4 && j1Layout1080.sendBottom <= j1Layout1080.vh + 4, `J1 1920x1080 full composer & Enviar (${j1Layout1080.bottom}/${j1Layout1080.sendBottom}) must be above fold (${j1Layout1080.vh})`);
+      await shot(running.cdp, outputDir, 'j01-first-access-1920x1080-light');
+
       await running.cdp.send('Emulation.clearDeviceMetricsOverride');
       await closeCleanly(running);
       running = null;
@@ -400,6 +413,15 @@ async function runP013Journeys() {
       assert.match(capTextJ2, /GPT-6\.2 Sol: Inativo/);
       assert.match(capTextJ2, /Ações M3: Desativadas/);
       await assertNoForbiddenLegacyText(running.cdp, 'J2-oauth-no-fin');
+      const j2Layout = await evaluate(running.cdp, `
+        const c = document.querySelector('.mf-b05-chat-composer');
+        const b = [...document.querySelectorAll('.mf-b05-chat-composer button')].find(x => x.textContent.includes('Enviar'));
+        const cr = c ? c.getBoundingClientRect() : null;
+        const br = b ? b.getBoundingClientRect() : null;
+        return { overflow: document.documentElement.scrollWidth > window.innerWidth, bottom: cr ? cr.bottom : 9999, sendBottom: br ? br.bottom : 9999, vw: window.innerWidth, vh: window.innerHeight };
+      `);
+      assert.equal(j2Layout.overflow, false, 'J2 default window zero horizontal overflow');
+      assert.ok(j2Layout.bottom <= j2Layout.vh + 4 && j2Layout.sendBottom <= j2Layout.vh + 4, `J2 default (${j2Layout.vw}x${j2Layout.vh}) full composer & Enviar (${j2Layout.bottom}/${j2Layout.sendBottom}) must be above fold`);
       await shot(running.cdp, outputDir, 'j02-oauth-no-fin-1920x1080');
 
       // J3 (part A): "Opa, testando!" BEFORE inference opt-in -> NEVER "Aguarda I2-A", shows actionable CTA!
@@ -474,6 +496,15 @@ async function runP013Journeys() {
         'J8 multi-turn'
       );
       assert.ok(mockAi.requests.at(-1).input.length >= 3, 'J8 must send multi-turn history to GPT-6.2 Sol');
+      await waitFor(running.cdp, `
+        const t = document.querySelector('.mf-b05-chat-thread');
+        const msgs = [...document.querySelectorAll('.mf-ai-msg.is-assistant')];
+        const last = msgs.find(el => el.textContent.includes('Considerando o contexto anterior da conversa'));
+        if (!t || !last) return false;
+        const tr = t.getBoundingClientRect();
+        const mr = last.getBoundingClientRect();
+        return mr.top < tr.bottom - 12 && mr.bottom <= tr.bottom + 14;
+      `, 'J8 reply auto-scrolled visibly into .mf-b05-chat-thread', 4000);
       await shot(running.cdp, outputDir, 'j04-j08-general-multiturn');
 
       // Re-authorize local read + enable M3 actions for J9 & J10!
