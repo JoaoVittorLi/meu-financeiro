@@ -800,13 +800,13 @@ class FinanceDB {
      const isIncome=nature==='income';
      const baseProvider=(isIncome&&normalizeLabel(row.description).includes('PIX DEVOLVIDO'))?'Reembolsos':providerCategory(row.bankCategory,categories);
      const proposed=overrideCat||fromRule||foundAuto?.parent_name||baseProvider;
-     let category=proposed;
+     let aggregateCategory=proposed;
      if(!hasSplits&&row.status==='POSTED'){
-       if(isIncome&&kindByCategory.get(proposed)==='expense')category='Outros';
-       else if(nature==='expense'&&kindByCategory.get(proposed)==='income')category='Outros';
+       if(isIncome&&kindByCategory.get(proposed)==='expense')aggregateCategory='Outros';
+       else if(nature==='expense'&&kindByCategory.get(proposed)==='income')aggregateCategory='Outros';
      }
      const categorySource=overrideCat?'manual':fromRule?'rule':foundAuto?'automatic':'bank';
-     return {overrideCat,foundAuto,category,categorySource,nature,hasSplits};
+     return {overrideCat,foundAuto,category:proposed,aggregateCategory,categorySource,nature,hasSplits};
    };
    const transactions=this.db.prepare(`SELECT b.rowid AS rowid,b.external_id AS id,b.account_id AS accountId,a.name AS accountName,b.date,b.description,b.amount_cents AS amount,b.status,b.category AS bankCategory,
      o.category AS overrideCategory,n.merchant,n.note,n.nature,n.reviewed_at AS reviewedAt,l.manual_id AS linkedManualId
@@ -843,14 +843,14 @@ class FinanceDB {
      const day=dayMap.get(x.date),amount=Math.abs(x.amount);
      if(resolved.nature==='income'){
        day.income+=amount;
-       day.incomeCategories.set(resolved.category,(day.incomeCategories.get(resolved.category)||0)+amount);
+       day.incomeCategories.set(resolved.aggregateCategory,(day.incomeCategories.get(resolved.aggregateCategory)||0)+amount);
        continue;
      }
      if(resolved.nature!=='expense')continue;
      day.expense+=amount;
      const parts=splitMap.get(x.accountId+'|'+x.externalId)||[];
      const ok=parts.length&&parts.reduce((sum,part)=>sum+part.amount,0)===amount;
-     for(const part of ok?parts:[{category:resolved.category,amount}]){
+     for(const part of ok?parts:[{category:resolved.aggregateCategory,amount}]){
        const bucket=kindByCategory.get(part.category)==='income'?'Outros':part.category;
        day.categories.set(bucket,(day.categories.get(bucket)||0)+part.amount);
      }

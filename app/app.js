@@ -7685,7 +7685,7 @@ function intelligenceClassifyQuestion(question) {
     if (intelligenceIsM3ActionIntent(f))
         return 'm3_action';
     const educationalHowTo = /\bcomo\s+(?:organizar|controlar|montar|construir|administrar|planejar|estruturar|equilibrar|dividir|criar)\b/.test(f) &&
-        !/\b(extrato|saldo|fatura|neste\s+mes|este\s+mes|mes\s+passado|ultim[oa]s?\s+\d*\s*(?:mes|dias)|gastei|recebi|paguei|lancament|movimentac|minhas\s+contas|projecao|minhas\s+despesas|meus\s+gastos|meu\s+orcamento|orcamento\s+de)\b/.test(f);
+        !/\b(extrato|saldo|fatura|neste\s+mes|este\s+mes|mes\s+passado|ultim[oa]s?\s+\d*\s*(?:mes|dias)|gastei|recebi|paguei|lancament|movimentac|minhas\s+contas|projecao|orcamento\s+de)\b/.test(f);
     if (educationalHowTo)
         return 'general';
     if (/\b(meu\s+(?:extrato|saldo|orcamento|fluxo)|minha\s+(?:conta|fatura|projecao|renda)|minhas\s+(?:contas|despesas|receitas|financas|movimentacoes|compras|parcelas)|meus\s+(?:gastos|orcamentos|compromissos|lancamentos|limites)|orcamento\s+de\b|quanto\s+sobrou|gastei(?:\s+mais)?|onde\s+(?:mais\s+gastei|gastei\s+mais|posso\s+economizar)|quais\s+(?:os\s+|meus\s+)?gastos|faturas?|parcelas?|a\s+pagar|assinaturas?|recorrentes?|economizei|recebi\s+(?:este|no)\s+mes|paguei|ultrapass|estourou|compar[ea]\s+minhas|movimentacoes\s+a\s+revisar|proximo\s+(?:mes|trimestre))\b/.test(f))
