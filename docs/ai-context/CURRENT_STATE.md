@@ -99,3 +99,9 @@ O usuário manifestou a intenção de a U4 evoluir para operações multiárea a
 ## Checkpoint de integração — 12/11/2026
 Integrador temporário autorizado: integration/mf2-q1-operational-premium-20261112 une #48/#51/#52 com coord/#50. Código6979ba2,533 testes PASS, gates locais e IPC Electron PASS, QA nativo Premium e evidências novas publicados na candidata. Não integrado à main, não instalado, sem escrita pessoal ou build Windows. Consultar log2026-11-12-INTEGRATION-Q1-I-R.md e HEAD do PR da união. Status global de produção não promovido.
 
+## Checkpoint M3 / v1.0.0 — Homologação Integral Pré-Release (24/11/2026)
+
+- **Branch/PR:** `feat/mf3-supervised-copilot-1-0-0-20261119` (**PR Draft #108**), consolidando M1 + M2 + M3 em ambiente de homologação sintético isolado.
+- **Correções e blindagem:** Endurecidos serviços backend (`ai-copilot-service.cjs`, `copilot-actions.cjs`, `copilot-salary-budget.cjs`, `d05-personal-gate.cjs`, `pluggy.cjs`), renderer/IPC (`app.ts`, `d05-movements.ts`, `intelligence-integration.ts`, `intelligence-local.ts`, `intelligence-view.ts`, `copilot-supervised-actions.ts`, `plan-view.ts`), estilos claro/escuro (`premium-interactions.css`, `intelligence.css`, `intelligence-b05.css`, `decisions.css`, `refinement.css`), além de nova suíte de regressão (`tests/m3-homologation-regressions.test.cjs`) e varredura E2E em 4 resoluções (`scripts/nivel-b-full-homologation.cjs`).
+- **Limites declarados:** Testes E2E e gates ocorrem em perfil sintético isolado (`MF_QA_SYNTHETIC='1'`); Nível C (NSIS Windows EXE), OAuth vivo real e sincronização Pluggy real permanecem `NOT_RUN` até execução presencial pós-freeze. Consultar [logs/2026-11-24-v1-0-0-integral-homologation.md](logs/2026-11-24-v1-0-0-integral-homologation.md).
+

@@ -2,7 +2,7 @@
  * Runs in the same TypeScript module:none bundle as src/app.ts.
  * Never mutates SQLite directly; every write goes through D05PersonalWriteGateway IPC + native MAIN confirmation. */
 
-const MF_M3_ACTION_GRANTS = new WeakMap<any, { access: any; signature: string; month: string }>();
+const MF_M3_ACTION_GRANTS = new WeakMap<any, { access: any; signature: string; month: string; revision: number }>();
 const MF_M3_ACTION_UI_STATE = new WeakMap<any, {
   selectedKeys: Set<string>;
   accountId: string | null;
@@ -14,19 +14,22 @@ const MF_M3_ACTION_UI_STATE = new WeakMap<any, {
   dismissed: boolean;
 }>();
 
-function copilotBindActionMessage(msg: any, access: any, signature: string, month: string) {
-  if (access?.token) MF_M3_ACTION_GRANTS.set(msg, { access, signature, month });
+function copilotBindActionMessage(msg: any, access: any, signature: string, month: string, revision: number = 0) {
+  if (access?.token) MF_M3_ACTION_GRANTS.set(msg, { access, signature, month, revision });
   return msg;
 }
 
 function copilotActionMessageLive(app: any, msg: any): boolean {
   const b = MF_M3_ACTION_GRANTS.get(msg);
   const access: LocalFinancialAccess = app?.state?.localFinancialAccess;
+  const hasReceipt = !!(MF_M3_ACTION_UI_STATE.get(msg)?.receipt || MF_M3_SALARY_UI_STATE.get(msg)?.receipt);
+  const curRevision = Number(app?.state?.financeRevision || 0);
   return !!b &&
     b.access === access &&
     !!access?.token &&
     b.signature === intelligencePremiumSignature(app) &&
     b.month === (app.state.localFinancialMonth || app.state.month) &&
+    (hasReceipt || b.revision === curRevision) &&
     access?.profile === (app.state.mode === 'demo' ? 'demo' : 'real') &&
     (!access?.expiresAt || access.expiresAt > Date.now());
 }
@@ -54,6 +57,11 @@ async function copilotRefreshAppData(app: any, profile: string) {
   } catch { /* ignore */ }
   try {
     if (typeof app.refreshPlanning === 'function') await app.refreshPlanning();
+  } catch { /* ignore */ }
+  try {
+    if (typeof app.setState === 'function') {
+      app.setState((prev: any) => ({ financeRevision: Number(prev?.financeRevision || 0) + 1 }));
+    }
   } catch { /* ignore */ }
   try {
     if (app.state?.localFinancialAccess?.token) {
@@ -341,7 +349,7 @@ function renderSalaryBudgetProposalBox(
   if (draft.status === 'needs_clarification') {
     return h('div', { className: 'mf-m3-action-card is-info', role: 'region', 'aria-label': 'Esclarecimento de salário' },
       h('div', { className: 'mf-m3-action-head' },
-        h('span', { className: 'micro-label' }, 'REORGANIZAÇÃO POR SALÁRIO · M3-SALARY'),
+        h('span', { className: 'micro-label' }, 'REORGANIZAÇÃO POR SALÁRIO'),
         h('span', { className: 'mf-ic2-epistemic-badge is-estimate' }, 'Informe o salário')),
       h('p', { className: 'mf-m3-action-muted' }, draft.answer));
   }
@@ -387,7 +395,7 @@ function renderSalaryBudgetProposalBox(
   return h('div', { className: 'mf-m3-action-card mf-m3-salary-card', role: 'region', 'aria-label': 'Reorganização de orçamentos por salário' },
     h('div', { className: 'mf-m3-action-head' },
       h('span', { className: 'micro-label' },
-        `M3-SALARY · ${draft.source === 'bank' ? 'CONTAS CONECTADAS' : 'MANUAL'} · ${draft.month} · ` +
+        `PLANO POR SALÁRIO · ${draft.source === 'bank' ? 'CONTAS CONECTADAS' : 'MANUAL'} · ${draft.month} · ` +
         (st.applyRecurring ? 'MÊS + RECORRENTE' : 'VÁLIDO NESTE MÊS')),
       h('div', { className: 'mf-m3-action-badges' },
         draft.revision && draft.revision > 1
@@ -603,10 +611,17 @@ function renderSalaryBudgetProposalBox(
 function renderBudgetsSalaryPanel(app: any, useBank: boolean) {
   const api = desktop as any;
   if (!api?.copilotSalaryBudgetPropose) return null;
+  const curMonth = String(app?.state?.month || '');
+  const curMode = String(app?.state?.mode || 'real');
+  const curRev = Number(app?.state?.financeRevision || 0);
   if (!app.__m3SalaryPanel) {
     const curInc = app?.state?.data?.settings?.income;
     app.__m3SalaryPanel = {
       open: false,
+      month: curMonth,
+      mode: curMode,
+      useBank,
+      revision: curRev,
       salaryText: curInc > 0 ? copilotFormatEditCents(curInc) : '',
       reserveText: '',
       profileMode: 'balanced',
@@ -616,6 +631,28 @@ function renderBudgetsSalaryPanel(app: any, useBank: boolean) {
     };
   }
   const panel = app.__m3SalaryPanel;
+  const contextChanged =
+    panel.month !== curMonth ||
+    panel.mode !== curMode ||
+    panel.useBank !== useBank ||
+    panel.revision !== curRev;
+  if (contextChanged) {
+    const hasReceipt = !!(panel.proposal && MF_M3_SALARY_UI_STATE.get(panel.proposal)?.receipt);
+    if (panel.mode !== curMode) {
+      const nextInc = app?.state?.data?.settings?.income;
+      panel.proposal = null;
+      panel.error = '';
+      panel.open = false;
+      panel.salaryText = nextInc > 0 ? copilotFormatEditCents(nextInc) : '';
+    } else if (!hasReceipt) {
+      panel.proposal = null;
+      panel.error = '';
+    }
+    panel.month = curMonth;
+    panel.mode = curMode;
+    panel.useBank = useBank;
+    panel.revision = curRev;
+  }
   if (!panel.open) return null;
 
   const generate = async () => {
@@ -666,7 +703,7 @@ function renderBudgetsSalaryPanel(app: any, useBank: boolean) {
   return h('section', { className: 'mf-m3-salary-panel card', role: 'region', 'aria-label': 'Planejador de orçamento por salário' },
     h('div', { className: 'mf-m3-salary-panel-head' },
       h('div', {},
-        h('span', { className: 'micro-label' }, 'COPILOTO M3-SALARY'),
+        h('span', { className: 'micro-label' }, 'PLANEJADOR POR SALÁRIO'),
         h('h2', {}, 'Reorganizar limites a partir do seu salário mensal'),
         h('p', {}, 'Calcula médias reais apenas de meses completos anteriores, soma compromissos restantes do Planejamento e exige sua confirmação antes de alterar limites.')),
       h('button', {
@@ -1000,7 +1037,7 @@ function renderRuleDraftCard(app: any, msg: any, draft: any) {
   if (draft.status === 'needs_clarification' || draft.status === 'unavailable') {
     return h('div', { className: 'mf-m3-action-card is-info', role: 'region', 'aria-label': 'Regra supervisionada' },
       h('div', { className: 'mf-m3-action-head' },
-        h('span', { className: 'micro-label' }, 'REGRA SUPERVISIONADA · M3-S3'),
+        h('span', { className: 'micro-label' }, 'REGRA SUPERVISIONADA'),
         h('span', { className: 'mf-ic2-epistemic-badge is-estimate' }, 'Somente leitura')));
   }
   const st = copilotGetGenericDraftUiState(msg, draft);
@@ -1022,7 +1059,7 @@ function renderRuleDraftCard(app: any, msg: any, draft: any) {
 
   return h('div', { className: 'mf-m3-action-card', role: 'region', 'aria-label': 'Prévia de regra supervisionada' },
     h('div', { className: 'mf-m3-action-head' },
-      h('span', { className: 'micro-label' }, isToggle ? 'ALTERNAR REGRA · M3-S3' : 'REGRA AUTOMÁTICA FUTURA · M3-S3'),
+      h('span', { className: 'micro-label' }, isToggle ? 'ALTERNAR REGRA' : 'REGRA AUTOMÁTICA FUTURA'),
       h('div', { className: 'mf-m3-action-badges' },
         !isToggle ? h('span', { className: 'mf-ic2-pill is-strong mf-m3-badge-future' }, `Somente futuras (> #${draft.afterRowid ?? 0})`) : null,
         h('span', { className: statusClass }, statusText))),
@@ -1105,7 +1142,7 @@ function renderCategoryDraftCard(app: any, msg: any, draft: any) {
   if (draft.status === 'needs_clarification' || draft.status === 'unavailable') {
     return h('div', { className: 'mf-m3-action-card is-info', role: 'region', 'aria-label': 'Estrutura de categorias' },
       h('div', { className: 'mf-m3-action-head' },
-        h('span', { className: 'micro-label' }, 'CATEGORIAS · M3-S3'),
+        h('span', { className: 'micro-label' }, 'CATEGORIAS'),
         h('span', { className: 'mf-ic2-epistemic-badge is-estimate' }, 'Sem gravação')));
   }
   const st = copilotGetGenericDraftUiState(msg, draft);
@@ -1123,7 +1160,7 @@ function renderCategoryDraftCard(app: any, msg: any, draft: any) {
 
   return h('div', { className: 'mf-m3-action-card', role: 'region', 'aria-label': 'Prévia de categoria supervisionada' },
     h('div', { className: 'mf-m3-action-head' },
-      h('span', { className: 'micro-label' }, 'ESTRUTURA D05 · M3-S3'),
+      h('span', { className: 'micro-label' }, 'ESTRUTURA DE CATEGORIAS'),
       h('span', { className: statusClass }, statusText)),
     h('div', { className: 'mf-m3-action-target' },
       h('div', { className: 'mf-m3-action-target-copy' },
@@ -1158,7 +1195,7 @@ function renderBudgetEditDraftCard(app: any, msg: any, draft: any) {
   if (draft.status === 'needs_clarification' || draft.status === 'unavailable') {
     return h('div', { className: 'mf-m3-action-card is-info', role: 'region', 'aria-label': 'Ajuste de orçamento' },
       h('div', { className: 'mf-m3-action-head' },
-        h('span', { className: 'micro-label' }, 'ORÇAMENTO MENSAL · M3-S4'),
+        h('span', { className: 'micro-label' }, 'ORÇAMENTO MENSAL'),
         h('span', { className: 'mf-ic2-epistemic-badge is-estimate' }, 'Sem gravação')));
   }
   const st: any = copilotGetGenericDraftUiState(msg, draft);
@@ -1232,7 +1269,7 @@ function renderPlanningDraftCard(app: any, msg: any, draft: any) {
   if (draft.status === 'needs_clarification' || draft.status === 'unavailable') {
     return h('div', { className: 'mf-m3-action-card is-info', role: 'region', 'aria-label': 'Planejamento supervisionado' },
       h('div', { className: 'mf-m3-action-head' },
-        h('span', { className: 'micro-label' }, 'PLANEJAMENTO · M3-S4'),
+        h('span', { className: 'micro-label' }, 'PLANEJAMENTO'),
         h('span', { className: 'mf-ic2-epistemic-badge is-estimate' }, 'Sem gravação')));
   }
   const st = copilotGetGenericDraftUiState(msg, draft);
@@ -1245,7 +1282,7 @@ function renderPlanningDraftCard(app: any, msg: any, draft: any) {
 
   return h('div', { className: 'mf-m3-action-card', role: 'region', 'aria-label': 'Prévia de planejamento supervisionado' },
     h('div', { className: 'mf-m3-action-head' },
-      h('span', { className: 'micro-label' }, draft.fromSimulation ? 'SIMULAÇÃO F4 → PLANEJAMENTO · M3-S4' : 'PLANEJAMENTO LOCAL · M3-S4'),
+      h('span', { className: 'micro-label' }, draft.fromSimulation ? 'SIMULAÇÃO → PLANEJAMENTO' : 'PLANEJAMENTO LOCAL'),
       h('div', { className: 'mf-m3-action-badges' },
         h('span', { className: 'mf-ic2-pill mf-m3-badge-no-payment' }, 'Não realiza pagamento bancário'),
         h('span', { className: statusClass }, statusText))),
@@ -1282,7 +1319,13 @@ function renderPlanningDraftCard(app: any, msg: any, draft: any) {
             type: 'button',
             className: 'primary-button',
             disabled: st.busy || !!needOptIn,
-            onClick: () => void copilotGenericExecute(app, msg, draft, { action: draft.action, profile: draft.profile, ...(draft.payload || {}) })
+            onClick: () => void copilotGenericExecute(
+              app,
+              msg,
+              draft,
+              { action: draft.action, profile: draft.profile, ...(draft.payload || {}) },
+              Array.isArray(draft.accountIds) && draft.accountIds.length > 0 ? draft.accountIds[0] : (draft.payload?.accountId || null)
+            )
           }, st.busy ? 'Aguardando confirmação…' : 'Confirmar no Planejamento'),
           h('button', { type: 'button', className: 'ghost-button', disabled: st.busy, onClick: () => { st.dismissed = true; st.error = ''; copilotForceRender(app); } }, 'Descartar')),
     st.error ? h('p', { className: 'mf-m3-action-error', role: 'alert' }, st.error) : null);

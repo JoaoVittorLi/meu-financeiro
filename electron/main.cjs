@@ -437,13 +437,21 @@ app.whenReady().then(async()=>{
  ipcMain.handle('copilot:action-confirm',async(event,input)=>{
   requireAppSender(event);if(restoring||syncing||autoBackupBusy)throw Error('D05: operação concorrente');
   autoBackupBusy=true;
-  try{return await d05PersonalGate.confirmPreview(event,input);}
+  try{
+   const res=await d05PersonalGate.confirmPreview(event,input);
+   if(res?.changesApplied&&copilotSessionCtx)copilotSessionCtx.invalidateFinancialDrafts();
+   return res;
+  }
   finally{autoBackupBusy=false;}
  });
  ipcMain.handle('copilot:action-undo',async(event,input)=>{
   requireAppSender(event);if(restoring||syncing||autoBackupBusy)throw Error('D05: operação concorrente');
   autoBackupBusy=true;
-  try{return await d05PersonalGate.undoReceipt(event,input);}
+  try{
+   const res=await d05PersonalGate.undoReceipt(event,input);
+   if(res?.status==='undone'&&copilotSessionCtx)copilotSessionCtx.invalidateFinancialDrafts();
+   return res;
+  }
   finally{autoBackupBusy=false;}
  });
  ipcMain.handle('copilot:action-receipts',(event,input)=>{
@@ -573,7 +581,16 @@ app.whenReady().then(async()=>{
      ses.webRequest.onBeforeRequest({urls:['http://*/*','https://*/*']},(_details,done)=>done({cancel:true}));
  }
  ipcMain.handle('finance:load',(event,profile)=>{requireAppSender(event);return db.load(profile);});
- ipcMain.handle('finance:save',(event,profile,data)=>{requireAppSender(event);return db.save(profile,data);});
+ ipcMain.handle('finance:save',(event,profile,data)=>{requireAppSender(event);const out=db.save(profile,data);if(copilotSessionCtx)copilotSessionCtx.invalidateFinancialDrafts();return out;});
+ ipcMain.handle('finance:monthly-budget',(event,input)=>{
+   requireAppSender(event);
+   if(!input||typeof input!=='object'||Array.isArray(input))throw new Error('Orçamento mensal inválido.');
+   const out=input.amountCents===null
+     ? db.deleteMonthlyBudget(input.profile,input.month,input.category)
+     : db.setMonthlyBudget(input.profile,input.month,input.category,input.amountCents);
+   if(copilotSessionCtx)copilotSessionCtx.invalidateFinancialDrafts();
+   return {monthlyBudgets:db.listMonthlyBudgets(input.profile),currentMonth:out,effective:db.effectiveBudgets(input.profile,input.month)};
+ });
  ipcMain.handle('finance:info',(event)=>{requireAppSender(event);return {engine:'sqlite',path:filename,appVersion:app.getVersion(),integrity:db.integrity()};});
  ipcMain.handle('finance:backup',async(event)=>{
    requireAppSender(event);
@@ -935,12 +952,28 @@ app.whenReady().then(async()=>{
    try{
      const client=new PluggyClient();
      await client.authenticate(config.clientId,config.clientSecret);
-     let newCount=0,totalCount=0;
+     let newCount=0,totalCount=0,succeeded=0;
+     const skippedAccounts=[],syncErrors=[];
      for(const id of config.itemIds){
-       const payload=await client.syncItem(id);
-       const added=db.ingestBank(id,payload);
-       newCount+=added.newCount;totalCount+=added.totalCount;
+       try{
+         const payload=await client.syncItem(id);
+         if(Array.isArray(payload.skippedAccounts)&&payload.skippedAccounts.length){
+           skippedAccounts.push(...payload.skippedAccounts);
+         }
+         const added=db.ingestBank(id,payload);
+         newCount+=added.newCount;totalCount+=added.totalCount;
+         succeeded++;
+       }catch(err){
+         const failStatus=err?.code==='CONSENT_EXPIRED'?'CONSENT_EXPIRED':err?.code==='RECONNECT'?'LOGIN_ERROR':'SYNC_ERROR';
+         try{db.recordBankSyncFailure(id,{status:failStatus});}catch{}
+         syncErrors.push({itemId:id,code:String(err?.code||'SYNC_ERROR'),message:String(err?.message||'Falha na sincronização.')});
+       }
      }
+     if(succeeded===0&&syncErrors.length){
+       const firstMsg=syncErrors[0].message;
+       throw new Error(syncErrors.length>1?`${firstMsg} (${syncErrors.length} conexões falharam; histórico local preservado.)`:firstMsg);
+     }
+     if(copilotSessionCtx)copilotSessionCtx.invalidateFinancialDrafts();
      let autoResult={state:'disabled_or_no_evidence',applied:0};
      if(stablePackaged&&autoCategory.status().enabled&&autoCategory.initialReady()){
       autoBackupBusy=true;
@@ -948,7 +981,7 @@ app.whenReady().then(async()=>{
       catch(_){autoResult={state:'failed_safely',error:'Sincronização salva; a automação não foi aplicada. Confira os backups e tente novamente.'};}
       finally{autoBackupBusy=false;}
      }
-     return {...await bankStatusSafe(),newCount,totalCount,autoCategorization:autoResult};
+     return {...await bankStatusSafe(),newCount,totalCount,skippedAccounts,syncErrors,autoCategorization:autoResult};
    }finally{syncing=false;}
  });
  // Categorização local: operações explícitas, sem expor SQL ao renderer.
@@ -975,14 +1008,14 @@ app.whenReady().then(async()=>{
    }finally{autoBackupBusy=false;}
  });
  ipcMain.handle('categories:status',(event)=>{requireAppSender(event);return db.listCategories();});
- ipcMain.handle('categories:save',(event,input)=>{requireAppSender(event);return db.upsertCategory(input);});
- ipcMain.handle('categories:delete',(event,name)=>{requireAppSender(event);return db.deleteCategory(name);});
- ipcMain.handle('rules:save',(event,input)=>{requireAppSender(event);return db.upsertRule(input);});
- ipcMain.handle('rules:delete',(event,id)=>{requireAppSender(event);return db.deleteRule(id);});
- ipcMain.handle('bank:categorize',(event,input)=>{requireAppSender(event);return db.overrideBankCategory(input);});
- ipcMain.handle('bank:edit-detail',(event,input)=>{requireAppSender(event);return db.editBankTransaction(input);});
- ipcMain.handle('bank:batch',(event,input)=>{requireAppSender(event);return db.batchBankChanges(input);});
- ipcMain.handle('bank:split',(event,input)=>{requireAppSender(event);return db.setBankSplits(input);});
+ ipcMain.handle('categories:save',(event,input)=>{requireAppSender(event);const out=db.upsertCategory(input);if(copilotSessionCtx)copilotSessionCtx.invalidateFinancialDrafts();return out;});
+ ipcMain.handle('categories:delete',(event,name)=>{requireAppSender(event);const out=db.deleteCategory(name);if(copilotSessionCtx)copilotSessionCtx.invalidateFinancialDrafts();return out;});
+ ipcMain.handle('rules:save',(event,input)=>{requireAppSender(event);const out=db.upsertRule(input);if(copilotSessionCtx)copilotSessionCtx.invalidateFinancialDrafts();return out;});
+ ipcMain.handle('rules:delete',(event,id)=>{requireAppSender(event);const out=db.deleteRule(id);if(copilotSessionCtx)copilotSessionCtx.invalidateFinancialDrafts();return out;});
+ ipcMain.handle('bank:categorize',(event,input)=>{requireAppSender(event);const out=db.overrideBankCategory(input);if(copilotSessionCtx)copilotSessionCtx.invalidateFinancialDrafts();return out;});
+ ipcMain.handle('bank:edit-detail',(event,input)=>{requireAppSender(event);const out=db.editBankTransaction(input);if(copilotSessionCtx)copilotSessionCtx.invalidateFinancialDrafts();return out;});
+ ipcMain.handle('bank:batch',(event,input)=>{requireAppSender(event);const out=db.batchBankChanges(input);if(copilotSessionCtx)copilotSessionCtx.invalidateFinancialDrafts();return out;});
+ ipcMain.handle('bank:split',(event,input)=>{requireAppSender(event);const out=db.setBankSplits(input);if(copilotSessionCtx)copilotSessionCtx.invalidateFinancialDrafts();return out;});
  ipcMain.handle('bank:link-manual',(event,input)=>{requireAppSender(event);return db.linkManualTransaction(input);});
  ipcMain.handle('bank:merchant-alias',(event,input)=>{requireAppSender(event);return db.saveMerchantAlias(input);});
  ipcMain.handle('bank:delete-alias',(event,id)=>{requireAppSender(event);return db.deleteMerchantAlias(id);});
@@ -991,11 +1024,11 @@ app.whenReady().then(async()=>{
  // Planejamento financeiro: todas as alterações passam por operações validadas no processo principal.
  ipcMain.handle('plan:overview',(event,options)=>{requireAppSender(event);return planner.overview(options||{});});
  ipcMain.handle('plan:simulate',(event,options)=>{requireAppSender(event);return planner.simulatePurchase(options||{});});
- ipcMain.handle('plan:create',(event,payload)=>{requireAppSender(event);const out=planner.create(payload);return {...out,overview:planner.overview()};});
- ipcMain.handle('plan:edit',(event,payload)=>{requireAppSender(event);planner.edit(payload);return planner.overview();});
- ipcMain.handle('plan:status',(event,id,status)=>{requireAppSender(event);planner.setStatus(id,status);return planner.overview();});
- ipcMain.handle('plan:link',(event,payload)=>{requireAppSender(event);planner.link(payload);return planner.overview();});
- ipcMain.handle('plan:unlink',(event,payload)=>{requireAppSender(event);planner.unlink(payload);return planner.overview();});
+ ipcMain.handle('plan:create',(event,payload)=>{requireAppSender(event);const out=planner.create(payload);if(copilotSessionCtx)copilotSessionCtx.invalidateFinancialDrafts();return {...out,overview:planner.overview()};});
+ ipcMain.handle('plan:edit',(event,payload)=>{requireAppSender(event);planner.edit(payload);if(copilotSessionCtx)copilotSessionCtx.invalidateFinancialDrafts();return planner.overview();});
+ ipcMain.handle('plan:status',(event,id,status)=>{requireAppSender(event);planner.setStatus(id,status);if(copilotSessionCtx)copilotSessionCtx.invalidateFinancialDrafts();return planner.overview();});
+ ipcMain.handle('plan:link',(event,payload)=>{requireAppSender(event);planner.link(payload);if(copilotSessionCtx)copilotSessionCtx.invalidateFinancialDrafts();return planner.overview();});
+ ipcMain.handle('plan:unlink',(event,payload)=>{requireAppSender(event);planner.unlink(payload);if(copilotSessionCtx)copilotSessionCtx.invalidateFinancialDrafts();return planner.overview();});
  ipcMain.handle('plan:reject',(event,payload)=>{requireAppSender(event);planner.reject(payload);return planner.overview();});
  ipcMain.handle('plan:rename',(event,payload)=>{requireAppSender(event);planner.renameBank(payload);return {overview:planner.overview(),data:titledBankData()};});
  ipcMain.handle('plan:history',(event,id)=>{requireAppSender(event);return planner.history(id);});

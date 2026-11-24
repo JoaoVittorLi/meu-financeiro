@@ -2,8 +2,8 @@
 chcp 65001 >nul
 cd /d "%~dp0"
 echo ===================================================
-echo Meu Financeiro v0.4 - Compilacao Electron Windows
- echo ===================================================
+echo Meu Financeiro 1.0.0 - Compilacao Electron Windows
+echo ===================================================
 where node >nul 2>nul
 if errorlevel 1 (
  echo.
@@ -15,7 +15,7 @@ if errorlevel 1 (
 )
 call npm install --no-audit --no-fund
 if errorlevel 1 ( echo Falhou ao instalar dependencias. & pause & exit /b 1 )
-call npm run dist:windows
+call npm run dist:windows:stable
 if errorlevel 1 ( echo Falhou a compilacao. & pause & exit /b 1 )
 echo.
 echo Concluido! Arquivos EXE na pasta release.

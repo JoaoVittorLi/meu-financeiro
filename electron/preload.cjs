@@ -6,6 +6,8 @@ contextBridge.exposeInMainWorld('financeDesktop', Object.freeze({
   ...createD05PreloadBridge(ipcRenderer),
   load: (profile) => ipcRenderer.invoke('finance:load',profile),
   save: (profile,data) => ipcRenderer.invoke('finance:save',profile,data),
+  setMonthlyBudget: (profile,month,category,amountCents) => ipcRenderer.invoke('finance:monthly-budget',{profile,month,category,amountCents}),
+  deleteMonthlyBudget: (profile,month,category) => ipcRenderer.invoke('finance:monthly-budget',{profile,month,category,amountCents:null}),
   info: () => ipcRenderer.invoke('finance:info'),
   localFinancialAuthorize: input => ipcRenderer.invoke('finance:read-authorize',input),
   localFinancialQuery: input => ipcRenderer.invoke('finance:read-query',input),

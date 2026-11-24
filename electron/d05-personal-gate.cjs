@@ -5,12 +5,29 @@
 const { randomUUID, createHash } = require('node:crypto');
 const path = require('node:path');
 const fs = require('node:fs');
+const { DatabaseSync } = require('node:sqlite');
 const { D05CategoryService } = require('./d05-category-service.cjs');
 const { normalizedName } = require('./d05-hierarchy.cjs');
 const { PlanningStore } = require('./planning.cjs');
 const { assertSyntheticVault } = require('./intelligence-category-vault.cjs');
 
 const hash = (x) => createHash('sha256').update(JSON.stringify(x)).digest('hex');
+
+function verifyBackupIntegrity(filePath) {
+  if (!fs.existsSync(filePath) || fs.statSync(filePath).size <= 0) {
+    throw Error('PersonalWrite: backup vazio');
+  }
+  const probe = new DatabaseSync(filePath, { readOnly: true });
+  try {
+    const rows = probe.prepare('PRAGMA integrity_check').all();
+    const ok = rows.length === 1 && rows[0]?.integrity_check === 'ok';
+    if (!ok) {
+      throw Error('PersonalWrite: backup SQLite corrompido na verificação de integridade');
+    }
+  } finally {
+    probe.close();
+  }
+}
 
 const ACTIONS = new Set([
   'manual.categorize',
@@ -647,7 +664,7 @@ class D05PersonalWriteGateway {
       const before = sql
         .prepare('SELECT id,category,category_id,subcategory_id,amount_cents,account_id FROM planned_items WHERE id=?')
         .get(request.id);
-      if (!before || (before.account_id && before.account_id !== s.activeAccountId)) {
+      if (!before || (before.account_id && s.activeAccountId && before.account_id !== s.activeAccountId)) {
         throw Error('PersonalWrite: compromisso fora da conta');
       }
       return { before, after, accountId: before.account_id || null, amountCents: before.amount_cents };
@@ -1152,10 +1169,11 @@ class D05PersonalWriteGateway {
         if (previous.owner !== owner || previous.nonce_hash !== hash(input.nonce) || previous.scope_hash !== scopeHash) {
           return { status: 'denied', changesApplied: false };
         }
+        const wasUndone = previous.undo_state === 'undone';
         return {
-          status: 'applied',
+          status: wasUndone ? 'already_undone' : 'applied',
           replayed: true,
-          changesApplied: true,
+          changesApplied: !wasUndone,
           undoState: previous.undo_state || 'available',
           receipt: JSON.parse(previous.result_json)
         };
@@ -1197,10 +1215,11 @@ class D05PersonalWriteGateway {
         if (previous.owner !== owner || previous.nonce_hash !== hash(input.nonce) || previous.scope_hash !== scopeHash) {
           return { status: 'denied', changesApplied: false };
         }
+        const wasUndone = previous.undo_state === 'undone';
         return {
-          status: 'applied',
+          status: wasUndone ? 'already_undone' : 'applied',
           replayed: true,
-          changesApplied: true,
+          changesApplied: !wasUndone,
           undoState: previous.undo_state || 'available',
           receipt: JSON.parse(previous.result_json)
         };
@@ -1245,7 +1264,7 @@ class D05PersonalWriteGateway {
       fs.mkdirSync(folder, { recursive: true, mode: 0o700 });
       backup = path.join(folder, 'd05-personal-before-' + id + '.sqlite');
       await db.backupTo(backup);
-      if (fs.statSync(backup).size <= 0) throw Error('PersonalWrite: backup vazio');
+      verifyBackupIntegrity(backup);
 
       if (
         this.verify(event, input).s !== s ||
@@ -1467,7 +1486,7 @@ class D05PersonalWriteGateway {
     if (a === 'category.rename') {
       const cur = sql.prepare('SELECT id,name,built_in FROM categories WHERE id=?').get(before.id);
       if (!cur || cur.built_in !== 0 || cur.name !== after.newName) return false;
-      return !sql.prepare('SELECT 1 FROM categories WHERE name=? COLLATE NOCASE').get(before.name);
+      return !sql.prepare('SELECT 1 FROM categories WHERE name=? COLLATE NOCASE AND id!=?').get(before.name, before.id);
     }
     if (a === 'subcategory.create') {
       const subId = persisted.result?.id;
@@ -1768,7 +1787,7 @@ class D05PersonalWriteGateway {
     try {
       const recheckRow = sql.prepare('SELECT undo_state FROM d05_personal_supervised_receipts WHERE proposal_id=?').get(id);
       if (!recheckRow || recheckRow.undo_state !== 'available') {
-        return { status: 'already_undone', changesApplied: false };
+        return { status: 'already_undone', changesApplied: false, receipt: persisted };
       }
       if (
         this.verify(event, input).s !== s ||
@@ -1782,7 +1801,7 @@ class D05PersonalWriteGateway {
       fs.mkdirSync(folder, { recursive: true, mode: 0o700 });
       const undoBackup = path.join(folder, 'd05-personal-before-undo-' + id + '.sqlite');
       await db.backupTo(undoBackup);
-      if (fs.statSync(undoBackup).size <= 0) throw Error('PersonalWrite: backup pré-reversão vazio');
+      verifyBackupIntegrity(undoBackup);
 
       sql.exec('BEGIN IMMEDIATE');
       begun = true;

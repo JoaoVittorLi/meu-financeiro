@@ -347,9 +347,16 @@ class D05CategoryService{
   const overview=this.finance.bankOverview();
   const overrides=new Map(this.db.prepare('SELECT account_id,external_id,category_id,subcategory_id FROM bank_category_overrides').all()
     .map(x=>[JSON.stringify([x.account_id,x.external_id]),x]));
-  const ruleRows=this.db.prepare(`SELECT id,pattern,match_mode AS matchMode,category AS category,
+  const hasRuleConstraints=!!this.db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='category_rule_constraints'").get();
+  const ruleRows=(hasRuleConstraints
+   ? this.db.prepare(`SELECT r.id,r.pattern,r.match_mode AS matchMode,r.category AS category,
+    r.scope,r.priority,r.enabled,r.category_id AS categoryId,r.subcategory_id AS subcategoryId,
+    c.account_id AS cAccountId,c.nature AS cNature,c.after_rowid AS cAfterRowid
+    FROM category_rules r LEFT JOIN category_rule_constraints c ON c.rule_id=r.id
+    ORDER BY r.priority,r.id`).all().map(r=>({...r,constraint:r.cAccountId?{accountId:r.cAccountId,nature:r.cNature,afterRowid:r.cAfterRowid}:null}))
+   : this.db.prepare(`SELECT id,pattern,match_mode AS matchMode,category AS category,
     scope,priority,enabled,category_id AS categoryId,subcategory_id AS subcategoryId FROM category_rules
-    ORDER BY priority,id`).all();
+    ORDER BY priority,id`).all());
   const autoIds=this.db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='mf_auto_labels'").get()?
    new Map(this.db.prepare('SELECT account_id,external_id,category_id,subcategory_id FROM mf_auto_labels').all()
    .map(r=>[JSON.stringify([r.account_id,r.external_id]),r])):new Map();

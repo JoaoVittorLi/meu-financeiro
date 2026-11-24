@@ -160,7 +160,7 @@ async function localFinancialSubmit(app:any,question:string){
      const requestId='sol-'+Date.now();
      app.setState({aiCopilotBusy:true,aiCopilotStreaming:'',aiCopilotRequestId:requestId});
      try{
-      const history=typeof intelligenceRecentPlainHistory==='function'?intelligenceRecentPlainHistory(messages):[];
+      const history=typeof intelligenceRecentPlainHistory==='function'?intelligenceRecentPlainHistory(messages,6,{excludeFinancial:true}):[];
       solReply=await api.aiCopilotAsk({token:access.token,source:access.source,profile:access.profile,month,question:q,history,effortOverride:'auto',requestId});
       if(solReply?.inferenceStatus&&app.state.aiCopilotCap){
        app.setState({aiCopilotCap:{...app.state.aiCopilotCap,inferenceStatus:solReply.inferenceStatus}});
@@ -257,7 +257,7 @@ async function localFinancialSubmit(app:any,question:string){
     reply?JSON.stringify(reply.references):'Nenhuma alteração financeira nem envio externo.'
  };
  if(m3Draft){
-  if(typeof copilotBindActionMessage==='function')copilotBindActionMessage(answer,access,signature,month);
+  if(typeof copilotBindActionMessage==='function')copilotBindActionMessage(answer,access,signature,month,Number(app.state?.financeRevision||0));
  }else if(ic2){
   mfIC2BindMessage(answer,access,signature,month);
   if(app.__ic2Conversation?.id===ic2.conversationId)app.__ic2Conversation.answerId=answer.id;

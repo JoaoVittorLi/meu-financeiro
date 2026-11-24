@@ -24,7 +24,7 @@ function renderMfB05Chat(app,messages,convState,activeScope) {
  const hasReview=!!s.categoryReviewGrant?.token&&s.categoryReviewGrant?.expiresAt>Date.now();
  return h('section',{className:'mf-b05-chat',role:'region','aria-label':'Conversar com a Inteligência'},
   h('header',{className:'mf-b05-chat-head'},
-   h('div',{},h('span',{className:'mf-b05-kicker'},'INTELLIGENCE ALIVE · CONVERSAR'),
+   h('div',{},h('span',{className:'mf-b05-kicker'},'INTELIGÊNCIA FINANCEIRA · CONVERSAR'),
     h('h2',{},'Uma boa conversa muda a perspectiva.'),
     h('p',{},'Pergunte, compare e decida com contexto e evidências quando disponíveis.')),
    h('div',{className:'mf-b05-chat-controls'},
@@ -38,7 +38,7 @@ function renderMfB05Chat(app,messages,convState,activeScope) {
    h('span',{className:convState?.css||'is-offline'},authorized?'Leitura autorizada':hasReview?'Revisão sintética':convState?.pill||'Sem conexão autorizada'),
    h('span',{},'Contexto: '+(activeScope?.label||'Inteligência')+' · '+(activeScope?.period||'Sem período')),
    session.expired?h('strong',{className:'mf-b05-warning'},'Permissão expirada — renove em Permissões de consulta'):null),
-  s.intelligenceDraftScope?h('p',{className:'mf-b05-chat-context'},'Rascunho preparado a partir de '+s.intelligenceDraftScope.label):null,
+  s.intelligenceDraftScope&&items.length===0?h('p',{className:'mf-b05-chat-context'},'Rascunho preparado a partir de '+s.intelligenceDraftScope.label):null,
   s.intelligencePreparedQuestion&&s.intelligenceDraft&&s.intelligencePreparedQuestion===s.intelligenceDraft?h('div',{className:'mf-ai-prepared',role:'status'},
    h('p',{},s.intelligencePreparedQuestion),h('small',{},'Pergunta preparada, ainda não enviada.')):null,
   h('div',{className:'mf-b05-chat-thread',role:'log','aria-label':'Mensagens da conversa','aria-live':'polite'},

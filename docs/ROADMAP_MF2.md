@@ -615,3 +615,15 @@ Checkpoint integrado #54: R3/R2/R4 funcionais; primeira fatia R5 em e897140. 542
 **QA real neste chat:** 17/17 checks em V8 isolado PASS sobre produção + arquivo versionado tests/rc-all-01-ui.test.cjs, após corrigir regressão concreta de parênteses/estrutura de render. **NOT_RUN:** TypeScript oficial, Node/SQLite completos, F08, ASAR, Electron/screenshot. Status RC-ALL-01 continua BLOCKED até Integrador #65 consolidar e proprietário disparar preflight CircleCI no SHA final.
 
 [Log técnico](ai-context/logs/2026-11-13-RC-ALL-01-D03-D04-EXECUTOR1.md). Sem merge main, Windows build pago, EXE, Cloudflare Production ou I2-A #64 integrado sem revisão.
+
+
+## M3 / v1.0.0 — Homologação Integral Pré-Release (24/11/2026)
+
+**Branch:** `feat/mf3-supervised-copilot-1-0-0-20261119` (**PR Draft #108**). Base congelada anterior: `cb0e189a6a267ffed086019f7d7e6b5af5b744b6`.
+
+- **Varredura e correções integrais:** Endurecidos serviços backend, persistência SQLite/IPC, interface desktop e estilos CSS:
+  - Segredo/privacidade e coerência do Copiloto: histórico sem vazar contexto financeiro quando fora do escopo autorizado, expiração e revogação explícita de concessão local, cancelamento de streaming ativo ao trocar modo/thread, remoção de fallbacks legados no fluxo de perguntas e preservação de gates de governança pessoal.
+  - Integridade financeira e M3: validação de `accountId` e deduplicação/revisão em lote em Movimentações, sincronização bidirecional de limites mensais em `monthly_budgets` entre edição manual e ações M3 com `financeRevision`, proteção contra conflito case-insensitive no undo de renomeação de categoria (`COLLATE NOCASE`), tratamento explícito de erros/limites parciais em sincronização bancária e exclusão de transferências/ignorados nas sugestões do Planejamento.
+  - Ergonomia e paridade visual claro/escuro: remoção de cabeçalho duplicado em Movimentações, cards de tema interativos em Configurações, eliminação de flash inicial em Orçamentos, acomodação do CTA do simulador acima da dobra em `1366×768`, humanização de labels técnicos internos na UI, e ocultação do FAB flutuante na tela de Inteligência.
+- **Blindagem automatizada:** Criada suíte de regressão [tests/m3-homologation-regressions.test.cjs](../../tests/m3-homologation-regressions.test.cjs) e jornada E2E estendida [scripts/nivel-b-full-homologation.cjs](../../scripts/nivel-b-full-homologation.cjs) cobrindo 4 resoluções (`1366×768`, `1440×900`, `1484×901`, `1920×1080`) nos temas claro e escuro em ambiente sintético isolado.
+- **Execução e limites:** Evidências e gates do SHA congelado final registrados em [Log de homologação v1.0.0](ai-context/logs/2026-11-24-v1-0-0-integral-homologation.md). Nível C (instalador NSIS/EXE Windows), OAuth vivo real e sincronização Pluggy real permanecem fora do escopo automatizado sintético (`NOT_RUN`).

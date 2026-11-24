@@ -25,8 +25,9 @@ function validateEndpointUrl(raw) {
 
 const sanitizeText = (raw, max = 140) =>
   String(raw || '')
+    .replace(/<\s*\/?\s*script\b[^>]*>/gi, '[filtered]')
     .replace(/[\x00-\x1f\x7f<>`]/g, ' ')
-    .replace(/\b(?:ignore previous|system prompt|override rules|DROP TABLE|SELECT \*|PRAGMA)\b/gi, '[filtered]')
+    .replace(/\b(?:ignore\s+(?:all\s+)?(?:previous|prior|above)(?:\s+(?:instructions?|rules?))?|ignore\s+(?:previous|all)\s+rules|desconsidere\s+(?:todas?\s+as\s+)?instru[cç][oõ]es|system\s*prompt|override\s+(?:all\s+)?rules|DROP\s+TABLE|SELECT\s+\*|PRAGMA)\b/gi, '[filtered]')
     .replace(/\s+/g, ' ')
     .trim()
     .slice(0, max);
@@ -60,11 +61,11 @@ function buildMinimalAuthorizedContext({ local, scope, sessionCtx = null }) {
   const f = radar?.facts || {};
   const topCategories = (Array.isArray(f.expenseCategories) ? f.expenseCategories : [])
     .slice(0, 8)
-    .map((c) => `${sanitizeText(c.name, 40)}: ${moneyBRL(c.amountCents)}`);
+    .map((c) => `${JSON.stringify(sanitizeText(c.name, 40))}: ${moneyBRL(c.amountCents)}`);
 
   const budgetSummaries = (Array.isArray(budgetsQuery?.facts?.budgets) ? budgetsQuery.facts.budgets : [])
     .slice(0, 12)
-    .map((b) => `${sanitizeText(b.category, 40)}: gasto ${moneyBRL(b.spentCents)} de limite ${moneyBRL(b.limitCents)}`);
+    .map((b) => `${JSON.stringify(sanitizeText(b.category, 40))}: gasto ${moneyBRL(b.spentCents)} de limite ${moneyBRL(b.limitCents)}`);
 
   const st = sessionCtx ? sessionCtx.get(scope, scope.owner) : null;
   const activeState = [];
@@ -261,7 +262,16 @@ class CopilotInferenceService {
       if (!response.ok) {
         throw new Error(normalizedError(response.status));
       }
-      const { text, usage } = await readSSE(response.body, onDelta);
+      const { text, usage } = await readSSE(response.body, (delta) => {
+        if (controller.signal.aborted || !this.capabilityCheck()) return;
+        onDelta(delta);
+      });
+      if (controller.signal.aborted) {
+        throw Object.assign(new Error('USER_CANCELLED'), { cause: 'USER_CANCELLED' });
+      }
+      if (!this.capabilityCheck()) {
+        throw new Error('Consulta ao GPT-6.2 Sol interrompida porque a permissão foi revogada em voo.');
+      }
 
       let usageStored = false;
       if (this.personalStore && usage) {

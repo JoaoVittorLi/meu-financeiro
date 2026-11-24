@@ -159,3 +159,9 @@ Sprint Premium checkpoint #54: R3/R2/R4 entregues, R5 primeira fatia; código e8
 ## RC-ALL-01 — Ownership UI D03/D04 (13/11/2026)
 
 Executor 1: PR Draft #73, branch feat/mf2-rc-all-01-d03-d04-ui-20261113, base PR #68 bf08ec54fbcaf498eff12f1edeea5949cee1a524. Ownership: novos src/intelligence-today-v2.ts e src/intelligence-review-v11.ts, alterações dirigidas src/intelligence-view.ts, src/intelligence-review.ts, app/intelligence.css, app/intelligence-review.css e tsconfig.json, teste e log da missão. Integrador #65 coordena contratos de arquivos compartilhados via #49 e regenera app/app.js, QA Electron e release. I2-A #64 mantém ownership separado de motor/backend; nenhuma alteração IPC, main.cjs, preload ou backend foi realizada. C1/C2 código publicado; 17/17 verificações V8 isoladas passaram; testes oficiais/CI e capturas Electron ainda NÃO executados. PR permanece Draft / NOT_HOMOLOGATED.
+
+## M3 / v1.0.0 — Homologação Integral Pré-Release (24/11/2026)
+
+- **Branch:** `feat/mf3-supervised-copilot-1-0-0-20261119` (**PR Draft #108**), worktree dedicada `m3-supervised-copilot`.
+- **Escopo executado:** Varredura completa backend/SQLite/IPC, fluxo financeiro, UX/visual em 4 resoluções claro/escuro e Inteligência/M3-SALARY, correção de defeitos confirmados, criação de `tests/m3-homologation-regressions.test.cjs` e `scripts/nivel-b-full-homologation.cjs`, compilação/proveniência e bateria completa Nível A + Nível B em ambiente sintético isolado.
+- **Referência:** [logs/2026-11-24-v1-0-0-integral-homologation.md](logs/2026-11-24-v1-0-0-integral-homologation.md). Nível C (build/instalador NSIS Windows), OAuth vivo real e Pluggy real fora desta execução sintética.

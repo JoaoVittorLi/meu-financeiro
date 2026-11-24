@@ -359,7 +359,7 @@ function parseSingleBudgetCommand(question) {
   if (!m) return null;
   if (/\b(?:salario|renda|reorganiz)\b/.test(f)) return null;
   const categoryRaw = safeText(m[1], 70);
-  const amountCents = parseMoneyToCents(m[2]);
+  const amountCents = parseMoneyToCents(m[2], { allowZero: true });
   if (!categoryRaw || amountCents === null) return null;
   const tail = fold(m[3] || '');
   const applyRecurring = /\b(?:recorrente|todos os meses|proximos meses|fixo todo mes)\b/.test(tail);
@@ -479,8 +479,44 @@ function parseSalaryRefinementCommand(question, activeSalaryDraft) {
   // Do not hijack a fresh full salary command
   if (/\bmeu salario\b.*\be\s*r\$/i.test(f) && /\breorganiz/i.test(f)) return null;
 
-  // Check reserve adjustment: "Gostei, mas quero guardar R$ 200 a mais." / "Aumente a reserva em R$ 300"
   const deltaMoney = parseBrlCents(raw) ?? parseMoneyToCents(raw);
+
+  // Budget transfer between categories inside active salary draft:
+  // "Transfira R$ 200 de Lazer para Alimentação" / "Passe 150 de Compras para Educação"
+  if (/\b(?:transf\w*|pass\w*|mova|mover|realoqu\w*|desloqu\w*)\b/.test(f)) {
+    const items = Array.isArray(activeSalaryDraft.items) ? activeSalaryDraft.items : [];
+    const transferRx = /\bde\s+["'“”]?([^,"']+?)["'“”]?\s+para\s+["'“”]?([^.,?!;"']+?)["'“”]?[.?!]*$/i.exec(raw);
+    const matchesCat = (hint) => {
+      const hf = fold(hint);
+      if (!hf) return null;
+      return (
+        items.find((it) => fold(it.category) === hf) ||
+        items.find((it) => hf.length >= 3 && (fold(it.category).includes(hf) || hf.includes(fold(it.category)))) ||
+        null
+      );
+    };
+    let donor = transferRx ? matchesCat(transferRx[1]) : null;
+    let recipient = transferRx ? matchesCat(transferRx[2]) : null;
+    if (!donor || !recipient) {
+      const ordered = items
+        .map((it) => ({ it, idx: f.indexOf(fold(it.category)) }))
+        .filter((x) => x.idx >= 0)
+        .sort((a, b) => a.idx - b.idx);
+      if (!donor && ordered.length >= 2) donor = ordered[0].it;
+      if (!recipient && ordered.length >= 2) recipient = ordered[1].it;
+    }
+    if (!deltaMoney || deltaMoney <= 0 || !donor || !recipient || donor.category === recipient.category) {
+      return { kind: 'clarify_transfer', missingAmount: !deltaMoney || deltaMoney <= 0 };
+    }
+    return {
+      kind: 'transfer_category',
+      fromCategory: donor.category,
+      toCategory: recipient.category,
+      amountCents: deltaMoney
+    };
+  }
+
+  // Check reserve adjustment: "Gostei, mas quero guardar R$ 200 a mais." / "Aumente a reserva em R$ 300"
   if (
     deltaMoney !== null &&
     (/\b(gostei|mas quero|quero guardar|aument\w*.*reserva|poup\w*.*mais|reserv\w*.*mais)\b/.test(f) ||
@@ -501,6 +537,20 @@ function parseSalaryRefinementCommand(question, activeSalaryDraft) {
       nextReserveGoalCents,
       deltaCents: isMinus ? -deltaMoney : isRelative ? deltaMoney : nextReserveGoalCents - baseReserve
     };
+  }
+
+  // Protect without reduction ("Não reduza Moradia", "Não corte Transporte")
+  if (/\bn[ãa]o\s+(?:reduz\w*|cort\w*|diminu\w*|mex\w*)\b/i.test(raw)) {
+    const items = Array.isArray(activeSalaryDraft.items) ? activeSalaryDraft.items : [];
+    const hit = items.find((it) => f.includes(fold(it.category)));
+    if (hit) {
+      return {
+        kind: 'protect_category',
+        category: hit.category,
+        targetCents: Math.max(hit.proposedLimitCents || 0, hit.currentLimitCents || 0, hit.committedFloorCents || 0)
+      };
+    }
+    return { kind: 'missing_category_for_lock' };
   }
 
   // Check category lock/unlock: "Trave Moradia e recalcule." / "Destrave Moradia"
@@ -910,16 +960,69 @@ function interpretCopilotAction({ local, planner = null, scope, owner, question,
       };
     }
 
+    if (salaryRefineCmd.kind === 'clarify_transfer') {
+      return {
+        matched: true,
+        contract: 'MF3/SALARY-BUDGET-PROPOSAL-V1',
+        intent: 'salary_budget_reorg',
+        status: 'needs_clarification',
+        effort: 'medium',
+        readOnly: true,
+        changesApplied: false,
+        source: scope.source,
+        profile: scope.profile,
+        month: scope.month,
+        items: [],
+        warnings: [],
+        answer: salaryRefineCmd.missingAmount
+          ? 'Informe o valor e as duas categorias para transferir na proposta (ex.: "Transfira R$ 200 de Lazer para Alimentação").'
+          : 'Não consegui identificar duas categorias distintas do orçamento atual para transferir. Informe origem, destino e valor.'
+      };
+    }
+
     const lockedMap = collectLockedMapFromDraft(prev);
+    let protectedCats = Array.isArray(prev.protectedCategories) ? [...prev.protectedCategories] : [];
+    const protectedHints = Array.isArray(prev.protectedHints) ? [...prev.protectedHints] : [];
     let reserveGoalCents = prev.requestedReserveCents ?? null;
     if (salaryRefineCmd.kind === 'adjust_reserve') {
       reserveGoalCents = Math.min(prev.salaryCents, Math.max(0, salaryRefineCmd.nextReserveGoalCents));
+    } else if (salaryRefineCmd.kind === 'protect_category') {
+      if (!protectedCats.some((c) => fold(c) === fold(salaryRefineCmd.category))) {
+        protectedCats.push(salaryRefineCmd.category);
+      }
+      lockedMap[salaryRefineCmd.category] = salaryRefineCmd.targetCents;
+    } else if (salaryRefineCmd.kind === 'transfer_category') {
+      const donor = (prev.items || []).find((i) => i.category === salaryRefineCmd.fromCategory);
+      const recip = (prev.items || []).find((i) => i.category === salaryRefineCmd.toCategory);
+      const donorFloor = donor?.committedFloorCents || 0;
+      const nextDonor = (donor?.proposedLimitCents || 0) - salaryRefineCmd.amountCents;
+      if (nextDonor < donorFloor) {
+        const mf = (c) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(c / 100);
+        return {
+          matched: true,
+          contract: 'MF3/SALARY-BUDGET-PROPOSAL-V1',
+          intent: 'salary_budget_reorg',
+          status: 'needs_clarification',
+          effort: 'medium',
+          readOnly: true,
+          changesApplied: false,
+          source: scope.source,
+          profile: scope.profile,
+          month: scope.month,
+          items: [],
+          warnings: [],
+          answer: `Não é possível transferir ${mf(salaryRefineCmd.amountCents)} de **${salaryRefineCmd.fromCategory}** porque ${mf(donorFloor)} já estão comprometidos neste mês.`
+        };
+      }
+      lockedMap[salaryRefineCmd.fromCategory] = nextDonor;
+      lockedMap[salaryRefineCmd.toCategory] = (recip?.proposedLimitCents || 0) + salaryRefineCmd.amountCents;
     } else if (salaryRefineCmd.kind === 'lock_category' || salaryRefineCmd.kind === 'adjust_category') {
       lockedMap[salaryRefineCmd.category] = salaryRefineCmd.targetCents;
     } else if (salaryRefineCmd.kind === 'unlock_category') {
       for (const k of Object.keys(lockedMap)) {
         if (fold(k) === fold(salaryRefineCmd.category)) delete lockedMap[k];
       }
+      protectedCats = protectedCats.filter((c) => fold(c) !== fold(salaryRefineCmd.category));
     }
 
     const next = buildSalaryBudgetProposal({
@@ -931,6 +1034,8 @@ function interpretCopilotAction({ local, planner = null, scope, owner, question,
       salaryCents: prev.salaryCents,
       reserveGoalCents,
       profileMode: prev.profileMode || 'balanced',
+      protectedCategories: protectedCats,
+      protectedHints,
       lockedCategories: lockedMap,
       updateIncomeSetting: !!prev.updateIncomeSetting,
       applyRecurring: !!prev.applyRecurring
@@ -1014,7 +1119,8 @@ function interpretCopilotAction({ local, planner = null, scope, owner, question,
 
   // --- S5 Anaphora: Apply suggested savings reduction to monthly budget ---
   if (anaphoricSavingsBudget) {
-    const opp = st?.lastSavings?.opportunities?.[0];
+    const opps = Array.isArray(st?.lastSavings?.opportunities) ? st.lastSavings.opportunities : [];
+    const opp = opps.find((o) => o.kind !== 'merchant' && o.categoryLabel) || opps[0];
     if (!opp) {
       return {
         matched: true,
@@ -1031,12 +1137,18 @@ function interpretCopilotAction({ local, planner = null, scope, owner, question,
           'Não encontrei nenhuma sugestão recente de economia nesta sessão. Pergunte primeiro "Onde posso economizar?" ou informe a categoria e o novo limite em reais.'
       };
     }
-    const targetRes = resolveD05Target(opp.categoryLabel, catalog.parents);
-    const catName = targetRes.ok ? targetRes.parent.name : opp.categoryLabel;
+    const rawCatHint =
+      opp.kind === 'merchant'
+        ? /\(([^)]+)\)\s*$/.exec(String(opp.categoryLabel || ''))?.[1] || opp.categoryLabel
+        : opp.categoryLabel;
+    const targetRes = resolveD05Target(rawCatHint, catalog.parents);
+    const catName = targetRes.ok ? targetRes.parent.name : rawCatHint;
     const effective =
       typeof db.effectiveBudgets === 'function' ? db.effectiveBudgets(scope.profile, scope.month).effective : {};
-    const currentLimit = Number.isSafeInteger(effective[catName]) ? effective[catName] : opp.currentSpentCents || 0;
-    const proposedLimit = Math.max(0, Math.max(opp.currentSpentCents ? Math.round(opp.currentSpentCents * 0.85) : 0, currentLimit - (opp.monthlySavingsCents || 0)));
+    const currentSpentCents = opp.currentCents || 0;
+    const suggestedSaveCents = opp.baseSaveCents || 0;
+    const currentLimit = Number.isSafeInteger(effective[catName]) ? effective[catName] : currentSpentCents;
+    const proposedLimit = Math.max(0, Math.max(currentSpentCents ? Math.round(currentSpentCents * 0.85) : 0, currentLimit - suggestedSaveCents));
     return finish({
       matched: true,
       contract: 'MF3/BUDGET-EDIT-DRAFT-V1',
@@ -1053,7 +1165,7 @@ function interpretCopilotAction({ local, planner = null, scope, owner, question,
       category: catName,
       currentLimitCents: Number.isSafeInteger(effective[catName]) ? effective[catName] : null,
       proposedLimitCents: proposedLimit,
-      suggestedSavingsCents: opp.monthlySavingsCents || 0,
+      suggestedSavingsCents: suggestedSaveCents,
       warnings: [`Alteração válida somente para ${scope.month} (salvo se marcar opção recorrente).`],
       answer:
         `Com base na economia sugerida em **${catName}**, preparei o novo limite mensal (${scope.month}) para **${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(proposedLimit / 100)}**. Confirme na prévia abaixo.`
@@ -1286,6 +1398,7 @@ function interpretCopilotAction({ local, planner = null, scope, owner, question,
           profile: scope.profile,
           month: scope.month,
           noBankPaymentNotice,
+          accountIds: targetItem.accountId ? [targetItem.accountId] : [],
           payload: { id: targetItem.id, status: planningCmd.status },
           title: targetItem.title,
           kind: targetItem.kind,
@@ -1355,6 +1468,7 @@ function interpretCopilotAction({ local, planner = null, scope, owner, question,
         profile: scope.profile,
         month: scope.month,
         noBankPaymentNotice,
+        accountIds: targetItem.accountId ? [targetItem.accountId] : [],
         payload: nextPayload,
         title: targetItem.title,
         kind: targetItem.kind,

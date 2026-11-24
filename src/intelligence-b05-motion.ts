@@ -80,7 +80,7 @@ function renderMfB05Main(app) {
     s.aiStatus?.connected?'OAuth ChatGPT: Conectado':'OAuth ChatGPT: Não conectado',
     !s.aiStatus?.connected?h('button',{type:'button',className:'mf-b05-cap-btn',onClick:()=>runAct({id:'connect_chatgpt',label:'Conectar ChatGPT'})},'Conectar'):null):null,
    api?.aiCopilotCapabilityStatus?h('span',{className:'mf-b05-cap-chip '+(s.aiCopilotCap?.enabled?'is-ok':'')},
-    s.aiCopilotCap?.enabled?'GPT-6.2 Sol: Ativo':s.aiCopilotCap?.available?'GPT-6.2 Sol: Inativo':'GPT-6.2 Sol: '+String(s.aiCopilotCap?.inferenceStatus||'Bloqueado nesta build'),
+    s.aiCopilotCap?.enabled?'GPT-6.2 Sol: Ativo':s.aiCopilotCap?.available?'GPT-6.2 Sol: Inativo':'GPT-6.2 Sol: '+String(s.aiCopilotCap?.inferenceStatus==='CONFIGURADO'?'Configurado (aguarda 1ª consulta)':(s.aiCopilotCap?.inferenceStatus||'Bloqueado nesta build')),
     !s.aiCopilotCap?.enabled&&s.aiCopilotCap?.available?h('button',{type:'button',className:'mf-b05-cap-btn',onClick:()=>runAct({id:'enable_ai_copilot',label:'Ativar'})},'Ativar'):null):null,
    api?.copilotActionCapabilityStatus?h('span',{className:'mf-b05-cap-chip '+(s.m3ActionCap?.enabled?'is-ok':'')},
     s.m3ActionCap?.enabled?'Ações M3: Ativas':s.m3ActionCap?.available?'Ações M3: Desativadas':'Ações M3: Indisponível',

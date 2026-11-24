@@ -73,7 +73,7 @@ function renderMfB05Actions(app,proposals) {
    ['understand','simulate','review'].includes(s.mfB05ActionStage)?s.mfB05ActionStage:'understand';
  return h('section',{className:'mf-b05-plan',role:'region','aria-label':'Plano de Ação'},
   h('header',{className:'mf-b05-plan-head'},
-   h('span',{className:'mf-b05-kicker'},'INTELLIGENCE ALIVE · PLANO DE AÇÃO'),
+   h('span',{className:'mf-b05-kicker'},'INTELIGÊNCIA FINANCEIRA · PLANO DE AÇÃO'),
    h('h2',{},'Decisões melhores começam com clareza.'),
    h('p',{},'Entenda o fato, teste possibilidades e revise antes de qualquer decisão.')),
   s.mode==='real'&&s.autoCategoryStatus?h('section',{className:'mf-b05-plan-proposals',

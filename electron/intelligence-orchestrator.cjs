@@ -15,6 +15,11 @@ const money=n=>new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).
 const DENSITIES=['compact','standard','analysis','mobile'];
 function localPlan(question,context,categories){
  const q=fold(question),list=[...new Set([...categories,...(context?.categoryNames||[])])];
+ const conceptual=/\b(qual\s+(?:e\s+)?a\s+diferenca|o\s+que\s+(?:e|sao|significa)|como\s+funciona|me\s+expli(?:que|ca)|conceito\s+de)\b/.test(q)&&
+  !/\b(meu|minha|meus|minhas|gastei|fatura|extrato|saldo|este\s+mes|mes\s+passado)\b/.test(q);
+ if(conceptual){
+  return {status:'unsupported',message:'Esta pergunta conceitual pode ser respondida pelo Copiloto sem acessar seu saldo.'};
+ }
  const found=list.find(name=>q.includes(fold(name)));
  const exclusion=/(?:desconsidere|ignore|ignorando|sem |tirando |excluindo )/.test(q);
  const excluded=exclusion?list.filter(name=>q.includes(fold(name))).map(fold):[];

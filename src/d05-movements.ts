@@ -54,16 +54,18 @@ class D05Movements extends React.Component<any,any> {
  const [decor,setDecor]=useState({bank:{},manual:{}} as any);
  const [loadState,setLoadState]=useState('loading');
  const [accessMessage,setAccessMessage]=useState('');
+ const sanitizeUiError=(err:any)=>String(err?.message||err||'Não foi possível concluir a operação.').replace(/^Error invoking remote method '[^']+':\s*(?:Error:\s*)?/i,'').trim().slice(0,220);
  const incomingCategory=state.qa84TransactionsCategory||state.txCategoryFilter||'';
-  const incomingIdentity=incomingCategory?resolveCategoryVisualIdentity({categoryName:incomingCategory,
+ const incomingIdentity=incomingCategory?resolveCategoryVisualIdentity({categoryName:incomingCategory,
    catalog:state.qa84VisualCatalog||[],aggregate:true}):null;
-  const [search,setSearch]=useState(incomingIdentity?.source==='fallback'?incomingCategory:'');
+ const [search,setSearch]=useState(incomingIdentity?.source==='fallback'?incomingCategory:'');
  const [source,setSource]=useState(state.txSource||'all');
  const [metricSource,setMetricSource]=useState('bank');
- const [tab,setTab]=useState(state.txReviewOnly?'pending':'all');
- const [period,setPeriod]=useState(state.qa84TransactionsSpan?'':state.month||iso(new Date()).slice(0,7));
- const [account,setAccount]=useState('');
- const [kind,setKind]=useState('all');
+ const [tab,setTab]=useState(state.txReviewOnly?'pending':state.txReviewFilter==='reviewed'?'reviewed':'all');
+ const initialPeriod=state.qa84TransactionsSpan||state.overviewPeriod==='all'||(state.overviewPeriod&&state.overviewPeriod!=='month')?'':(state.month||iso(new Date()).slice(0,7));
+ const [period,setPeriod]=useState(initialPeriod);
+ const [account,setAccount]=useState(state.bankFilter||'');
+ const [kind,setKind]=useState(state.txKindFilter||'all');
  const [categoryId,setCategoryId]=useState(incomingIdentity&&incomingIdentity.source!=='fallback'?incomingIdentity.categoryId:'');
  const [subcategoryId,setSubcategoryId]=useState('');
  const [sort,setSort]=useState('newest');
@@ -108,8 +110,32 @@ class D05Movements extends React.Component<any,any> {
  const byName=(name:string)=>parents.find((p:any)=>p.name===name)||D05ApprovedParent(name);
  const byId=(id:string)=>parents.find((p:any)=>p.id===id)||approved.find((p:any)=>p.id===id);
  const format=(cents:number)=>fmt(cents);
+ const externalSyncKey=JSON.stringify([
+  state.mode,state.txSource||'all',!!state.txReviewOnly,state.txReviewFilter||'all',
+  state.txKindFilter||'all',state.bankFilter||'',state.txCategoryFilter||'',
+  state.qa84TransactionsCategory||'',state.qa84TransactionsSpan?.start||'',
+  state.qa84TransactionsSpan?.end||'',state.overviewPeriod||'month',state.month||''
+ ]);
+ const prevExternalSyncRef=useRef(externalSyncKey);
+ useEffect(()=>{
+  if(prevExternalSyncRef.current===externalSyncKey)return;
+  prevExternalSyncRef.current=externalSyncKey;
+  const nextCat=state.qa84TransactionsCategory||state.txCategoryFilter||'';
+  const nextId=nextCat?resolveCategoryVisualIdentity({categoryName:nextCat,catalog:state.qa84VisualCatalog||[],aggregate:true}):null;
+  setSource(state.txSource||'all');
+  setTab(state.txReviewOnly?'pending':state.txReviewFilter==='reviewed'?'reviewed':'all');
+  setAccount(state.bankFilter||'');
+  setKind(state.txKindFilter||'all');
+  setCategoryId(nextId&&nextId.source!=='fallback'?nextId.categoryId:'');
+  setSubcategoryId('');
+  if(nextId?.source==='fallback'&&nextCat)setSearch(nextCat);
+  setPeriod(state.qa84TransactionsSpan||state.overviewPeriod==='all'||(state.overviewPeriod&&state.overviewPeriod!=='month')?'':(state.month||iso(new Date()).slice(0,7)));
+ },[externalSyncKey]);
+ const topSpan=!period&&!state.qa84TransactionsSpan&&state.overviewPeriod&&state.overviewPeriod!=='all'&&state.overviewPeriod!=='month'
+  ?dateSpan(state.overviewPeriod,state.customStart,state.customEnd):null;
  const inRange=(date:string)=>period?date.slice(0,7)===period:state.qa84TransactionsSpan?
-  date>=state.qa84TransactionsSpan.start&&date<=state.qa84TransactionsSpan.end:true;
+  date>=state.qa84TransactionsSpan.start&&date<=state.qa84TransactionsSpan.end:topSpan?
+  date>=topSpan.start&&date<=topSpan.end:true;
  const bankData=state.mode==='demo'?[]:state.bank.data.transactions||[];
  const realBank=bankData.map((tx:any)=>{
   const key=JSON.stringify([tx.accountId,tx.id]),data=decor.bank[key]||{};
@@ -155,7 +181,7 @@ class D05Movements extends React.Component<any,any> {
   }catch(e:any){
    if(req!==refreshId.current)return;
    setLoadState(/autoriz|negado|denied|permiss/i.test(String(e?.message||e))?'denied':'error');
-   setAccessMessage('Catálogo D05 indisponível: '+String(e?.message||e));
+   setAccessMessage('Catálogo D05 indisponível: '+sanitizeUiError(e));
   }
  };
  useEffect(()=>{
@@ -176,7 +202,7 @@ class D05Movements extends React.Component<any,any> {
       }
      }
     }
-   }).catch((e:any)=>setAutoMessage(String(e?.message||e)));
+   }).catch((e:any)=>setAutoMessage(sanitizeUiError(e)));
   }
  },[state.mode,state.bank.data.accounts,state.bank.data.transactions]);
  const refreshAuto=async()=>{
@@ -216,14 +242,14 @@ class D05Movements extends React.Component<any,any> {
   autoScanRef.current.stop=true;
   try{setAutoProgress(await bridge.bankAutoPreviewPause(id));
    setAutoMessage('Análise pausada; nenhuma categoria foi aplicada.');}
-  catch(e:any){setAutoMessage(String(e?.message||e));}
+  catch(e:any){setAutoMessage(sanitizeUiError(e));}
  };
  const resumeAutoScan=async()=>{
   const id=autoScanRef.current.jobId;
   if(!id||!bridge?.bankAutoPreviewResume)return;
   setAutoBusy(true);setAutoMessage('');
   try{setAutoProgress(await bridge.bankAutoPreviewResume(id));await scanAutoPages(id);}
-  catch(e:any){setAutoMessage(String(e?.message||e));}
+  catch(e:any){setAutoMessage(sanitizeUiError(e));}
   finally{setAutoBusy(false);}
  };
  const cancelAutoScan=async()=>{
@@ -233,7 +259,7 @@ class D05Movements extends React.Component<any,any> {
   try{await bridge.bankAutoPreviewCancel(id);autoScanRef.current.jobId=null;
    setAutoProgress(null);setAutoPreview(null);
    setAutoMessage('Análise cancelada; nenhuma classificação aplicada.');}
-  catch(e:any){setAutoMessage(String(e?.message||e));}
+  catch(e:any){setAutoMessage(sanitizeUiError(e));}
  };
  const loadAutoReceipts=async(filter:string='all',cursor:string|null=null)=>{
   if(!bridge?.bankAutoReceipts||state.mode!=='real')return;
@@ -243,7 +269,7 @@ class D05Movements extends React.Component<any,any> {
    setAutoReceipts((prev:any[])=>cursor?[...prev,...(page.items||[])]:page.items||[]);
    setAutoReceiptCursor(page.nextCursor||null);
    setAutoReceiptTotal(page.total||0);
-  }catch(e:any){setAutoMessage('Falha na consulta de recibos: '+String(e?.message||e));}
+  }catch(e:any){setAutoMessage('Falha na consulta de recibos: '+sanitizeUiError(e));}
   finally{setAutoReceiptBusy(false);}
  };
  const openAutoView=(view:string)=>{
@@ -260,7 +286,7 @@ class D05Movements extends React.Component<any,any> {
    await host.refreshBank();await refreshAuto();await loadAutoReceipts(autoReceiptFilter);
    setAutoReceiptDetail(null);
    setAutoMessage('Classificação revertida e protegida contra reaplicação automática.');
-  }catch(e:any){setAutoMessage('A reversão não foi confirmada: '+String(e?.message||e));}
+  }catch(e:any){setAutoMessage('A reversão não foi confirmada: '+sanitizeUiError(e));}
   finally{setAutoBusy(false);}
  };
  const runWritePages=async(jobId:string)=>{
@@ -290,7 +316,7 @@ class D05Movements extends React.Component<any,any> {
   autoWriteRef.current.stop=true;
   try{const job=await bridge.bankAutoBatchPause(id);setAutoWriteJob(job);
    setAutoMessage('Aplicação pausada após '+String(job.committed)+' confirmações. Nenhuma categoria será reprocessada.');}
-  catch(e:any){setAutoMessage(String(e?.message||e));}
+  catch(e:any){setAutoMessage(sanitizeUiError(e));}
  };
  const resumeWrite=async()=>{
   const id=autoWriteJob?.jobId;
@@ -298,7 +324,7 @@ class D05Movements extends React.Component<any,any> {
   setAutoBusy(true);setAutoMessage('');
   try{const job=await bridge.bankAutoBatchResume(id);
    setAutoWriteJob(job);await runWritePages(id);}
-  catch(e:any){setAutoMessage('Retomada bloqueada: '+String(e?.message||e));}
+  catch(e:any){setAutoMessage('Retomada bloqueada: '+sanitizeUiError(e));}
   finally{setAutoBusy(false);}
  };
  const cancelWrite=async()=>{
@@ -308,7 +334,7 @@ class D05Movements extends React.Component<any,any> {
   try{const job=await bridge.bankAutoBatchCancel(id);setAutoWriteJob(job);
    await host.refreshBank();await refreshAuto();
    setAutoMessage('Lote cancelado. '+String(job.committed)+' classificações confirmadas foram preservadas; nenhuma reversão em massa foi executada.');}
-  catch(e:any){setAutoMessage(String(e?.message||e));}
+  catch(e:any){setAutoMessage(sanitizeUiError(e));}
  };
  const runAutoAction=async(action:string,accountId:string|null=null)=>{
   if(!bridge||autoBusy||state.mode!=='real')return;
@@ -389,6 +415,7 @@ class D05Movements extends React.Component<any,any> {
  },[picker,review,manual,busy]);
  useEffect(()=>{
   if(!(picker||review||manual)||!modalRef.current)return;
+  if(modalRef.current.contains(typeof document!=='undefined'?document.activeElement:null))return;
   const searchField=picker&&['parent','child'].includes(picker.phase)?
    modalRef.current.querySelector('.d05-picker-search input'):null;
   (searchField||modalRef.current.querySelector('input,button'))?.focus();
@@ -449,18 +476,21 @@ class D05Movements extends React.Component<any,any> {
  };
  // A single selector belongs to D05; the App-owned drawer requests it through
  // a scoped UI event instead of mounting a second classifier or authorizer.
+ const openPickerContextRef=useRef({rows,openPicker});
+ openPickerContextRef.current={rows,openPicker};
  useEffect(()=>{
   const fromDrawer=(event:any)=>{
    const request=event?.detail;
    if(!request||!['bank','manual'].includes(request.source)||!request.id)return;
-   const row=rows.find((r:any)=>r.source===request.source&&r.id===request.id&&
+   const ctx=openPickerContextRef.current;
+   const row=ctx.rows.find((r:any)=>r.source===request.source&&r.id===request.id&&
     (r.source==='manual'||r.accountId===request.accountId));
    if(!row){setError('Movimentação não encontrada; atualize o histórico.');return;}
-   openPicker({currentTarget:request.trigger,stopPropagation:()=>{}},row,'drawer');
+   ctx.openPicker({currentTarget:request.trigger,stopPropagation:()=>{}},row,'drawer');
   };
   window.addEventListener('mf2:d05:open-picker',fromDrawer);
   return ()=>window.removeEventListener('mf2:d05:open-picker',fromDrawer);
- },[state.mode,state.data.transactions,state.bank.data.transactions,catalog,decor,selected]);
+ },[]);
  const openDetail=(r:any)=>r.source==='bank'?
   host.openBankDetail(r.raw,{categoryId:r.categoryId,subcategoryId:r.subcategoryId}):
   host.openManualDetail(r.raw,{categoryId:r.categoryId,subcategoryId:r.subcategoryId});
@@ -562,7 +592,7 @@ class D05Movements extends React.Component<any,any> {
     setNotice('Prévia supervisionada conferida. A gravação pessoal permanece bloqueada até homologação.');
 
    }
-  }catch(e:any){setError(String(e?.message||e));}
+  }catch(e:any){setError(sanitizeUiError(e));}
   finally{setBusy(false);}
  };
  const commitManual=async()=>{
@@ -597,7 +627,7 @@ class D05Movements extends React.Component<any,any> {
     subcategoryId:item.subcategoryId,categoryName:item.category},parents));
    setNotice('Classificação de demonstração confirmada no SQLite.');
    setPreview(null);setPicker(null);await refreshHierarchy();
-  }catch(e:any){setError('Gravação não confirmada: '+String(e?.message||e));}
+  }catch(e:any){setError('Gravação não confirmada: '+sanitizeUiError(e));}
   finally{setBusy(false);}
  };
  const commitBatch=async()=>{
@@ -617,7 +647,7 @@ class D05Movements extends React.Component<any,any> {
    if(result?.changed!==preview.items.length)throw Error('Recibo incompleto: verifique o histórico');
    await host.refreshBank();await refreshHierarchy();
    setNotice(result.changed+' classificação(ões) persistidas.');setPicker(null);setPreview(null);setSelected(new Set());
-  }catch(e:any){setError('Prévia desatualizada ou acesso negado: '+String(e?.message||e));}
+  }catch(e:any){setError('Prévia desatualizada ou acesso negado: '+sanitizeUiError(e));}
   finally{setBusy(false);}
  };
  const reviewNow=async()=>{
@@ -633,7 +663,7 @@ class D05Movements extends React.Component<any,any> {
    const updated=current?.data?.transactions?.find((t:any)=>t.accountId===review.accountId&&t.id===review.id);
    if(!updated?.reviewed)throw Error('Sem confirmação persistida da revisão');
    setReview(null);setNotice('Conferência registrada.');
-  }catch(e:any){setError(String(e?.message||e));}
+  }catch(e:any){setError(sanitizeUiError(e));}
   finally{setBusy(false);}
  };
  const saveManual=async()=>{
@@ -654,7 +684,7 @@ class D05Movements extends React.Component<any,any> {
    const saved=await host.updateData(data,'Movimentação manual registrada.');
    if(!saved)throw Error('A gravação não foi confirmada');
    setManual(null);setNotice('Lançamento registrado no SQLite.');await refreshHierarchy();
-  }catch(e:any){setError(String(e?.message||e));}
+  }catch(e:any){setError(sanitizeUiError(e));}
   finally{setBusy(false);}
  };
  const portal=(body:any,left:number=20,top:number=60,width:number=355)=>{
@@ -775,7 +805,7 @@ class D05Movements extends React.Component<any,any> {
   h('p',{className:'d05-notice'},'Carregando registros financeiros…'));
  return h('section',{className:'d05-screen',id:'d05-movements'},
   h('header',{className:'d05-head'},
-   h('div',{},h('h1',{},'Movimentações'),h('p',{},'Seu histórico organizado, com contexto e controle.')),
+   h('div',{className:'d05-head-copy'},h('p',{},'Histórico completo com filtros, categorias e revisão confirmada.')),
    h('div',{className:'d05-head-actions'},
     h('button',{type:'button',onClick:()=>host.csvInput?.click()},'Importar CSV'),
     h('button',{type:'button',className:'d05-primary',onClick:(e:any)=>{activeTrigger.current=e.currentTarget;setError('');setManual({description:'',date:iso(new Date()),value:'',kind:'expense',categoryId:'cat:outros',subcategoryId:null});}},'+ Nova movimentação'))),
@@ -1158,10 +1188,24 @@ class D05Movements extends React.Component<any,any> {
     h('span',{},filtered.length+' movimentações no escopo'+(filtered.length>500?' · exibindo 500':''),
      pending?' · '+pending+' em processamento':'',ignored?' · '+ignored+' transferência(s)/ignorada(s) fora dos totais':'')),
    partial?h('p',{className:'d05-notice',role:'status'},'Histórico parcial: '+bankData.length+' de '+String(state.bank.data.totalTransactions||'?')+' movimentações bancárias carregadas. Métricas apenas desta amostra.'):null,
-   selected.size?h('div',{className:'d05-bulk-bar',role:'region','aria-label':'Ações em lote'},
-    h('b',{},selected.size+' selecionada(s)'),
-    h('button',{type:'button',onClick:(e:any)=>openPicker(e,null,'batch')},'Categorizar seleção'),
-    h('button',{type:'button',onClick:()=>setSelected(new Set())},'Limpar seleção')):null,
+   state.mode==='real'&&Array.isArray(state.bank.data.suspectedDuplicates)&&state.bank.data.suspectedDuplicates.length?
+    h('div',{className:'d05-notice mf-duplicates-alert',role:'region','aria-label':'Possíveis movimentações duplicadas'},
+     h('strong',{},'Possíveis duplicidades detectadas ('+state.bank.data.suspectedDuplicates.length+')'),
+     ...state.bank.data.suspectedDuplicates.slice(0,5).map((d:any)=>h('div',{key:d.pairKey,className:'mf-duplicate-row'},
+      h('span',{},d.date.split('-').reverse().join('/')+' · '+d.description+' · '+format(Math.abs(d.amount))),
+      h('button',{type:'button',className:'d05-ghost',onClick:()=>void host.dismissBankDuplicate(d.pairKey)},'Ignorar aviso')))):null,
+   selected.size?(()=>{
+    const selectedReviewItems=Array.from(selected).map((key:string)=>rows.find((r:any)=>r.key===key))
+     .filter((r:any)=>r&&r.source==='bank'&&r.status==='POSTED'&&!r.reviewed);
+    return h('div',{className:'d05-bulk-bar',role:'region','aria-label':'Ações em lote'},
+     h('b',{},selected.size+' selecionada(s)'),
+     selectedReviewItems.length?h('button',{type:'button',disabled:state.detailBusy,onClick:async()=>{
+      await host.runBankOperation('bankBatch',{items:selectedReviewItems.map((r:any)=>({accountId:r.accountId,externalId:r.id})),reviewed:true},selectedReviewItems.length+' movimentações marcadas como revisadas.');
+      setSelected(new Set());
+     }},'Marcar revisadas ('+selectedReviewItems.length+')'):null,
+     h('button',{type:'button',onClick:(e:any)=>openPicker(e,null,'batch')},'Categorizar seleção'),
+     h('button',{type:'button',onClick:()=>setSelected(new Set())},'Limpar seleção'));
+   })():null,
    filtered.length?h('div',{className:'d05-list'},onScreen.map((r:any,i:number)=>{
     const p=byId(r.categoryId)||byName(r.category),child=p?.subcategories?.find((c:any)=>c.id===r.subcategoryId);
     const icon=resolveCategoryVisualIdentity({categoryId:r.categoryId||null,
@@ -1189,6 +1233,7 @@ class D05Movements extends React.Component<any,any> {
         r.source==='bank'&&r.status==='PENDING'?h('span',{className:'d05-pending',title:'Em processamento','aria-label':'Em processamento'},h(D05VectorIcon,{iconKey:'clock-3',hue:37,size:16})):null),
        h('small',{},r.account+' · '+(p?.name||r.category)+(child?' › '+child.name:''),
         r.source==='manual'?' · Manual':r.raw.categorySource==='automatic'?' · Automática (evidência verificada)':''),
+       r.raw?.splits?.length?h('small',{className:'d05-split-badge'},'Dividida em '+r.raw.splits.length+' partes'):null,
        r.merchant!==r.description?h('small',{className:'d05-desc'},r.description):null),
       h('div',{className:'d05-row-end'},
        h('strong',{className:'d05-amount '+signed},(r.amount>=0?'+':'−')+format(Math.abs(r.amount))),
@@ -1204,13 +1249,13 @@ class D05Movements extends React.Component<any,any> {
             await host.refreshBank();await refreshHierarchy();await refreshAuto();
             setAutoMessage('Classificação revertida. Movimento protegido contra reaplicação automática.');
            }
-          }catch(error:any){setAutoMessage(String(error?.message||error));}
+          }catch(error:any){setAutoMessage(sanitizeUiError(error));}
           finally{setAutoBusy(false);}
          }},'Desfazer'):null,
        r.kind==='transfer'||r.kind==='ignore'?h('small',{},r.kind==='transfer'?'Transferência':'Desconsiderada'):null)
      ));
    })):h('div',{className:'d05-empty'},h('strong',{},'Nenhuma movimentação encontrada'),h('p',{},'Altere a pesquisa ou os filtros para continuar.'),
-      h('button',{type:'button',onClick:()=>{setSearch('');setPeriod('');setAccount('');setCategoryId('');setSubcategoryId('');setKind('all');setTab('all');setSource('all');}},'Limpar filtros'))
+      h('button',{type:'button',onClick:()=>{setSearch('');setPeriod('');setAccount('');setCategoryId('');setSubcategoryId('');setKind('all');setTab('all');setSource('all');host.setState({txCategoryFilter:'',txKindFilter:'all',txReviewFilter:'all',bankFilter:'',txReviewOnly:false,qa84TransactionsSpan:null,qa84TransactionsCategory:'',query:''});}},'Limpar filtros'))
   ),
   chooser,reviewPanel,manualPanel);
  }

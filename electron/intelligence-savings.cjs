@@ -19,7 +19,7 @@ const ESSENTIAL_PARENT_IDS = new Set(['cat:moradia', 'cat:saude', 'cat:contas'])
 function parseBrlCents(rawQuestion) {
  const q = String(rawQuestion || '');
  const match = q.match(
-  /(?:r\$\s*(\d{1,3}(?:\.\d{3})+|\d+)(?:[,.](\d{1,2}))?(?![\d.,])|\b(\d{1,3}(?:\.\d{3})+|\d+)(?:[,.](\d{1,2}))?\s*reais\b|\b(?:economizar|poupar|guardar|reduzir|comprar|compra|gastar|gasto|parcelar|pagar|custa|custando|de|por)\s+(?:r\$\s*)?(\d{1,3}(?:\.\d{3})+|\d+)(?:[,.](\d{1,2}))?(?![\d.,])(?!\s*(?:x\b|%|vezes|parcelas?|mes(?:es)?|dias?|anos?)\b))/i
+  /(?:r\$\s*(\d{1,3}(?:\.\d{3})+|\d+)(?:[,.](\d{1,2}))?(?!(?:\d|[.,]\d))|\b(\d{1,3}(?:\.\d{3})+|\d+)(?:[,.](\d{1,2}))?\s*reais\b|\b(?:economizar|poupar|guardar|reduzir|comprar|compra|gastar|gasto|parcelar|pagar|custa|custando|de|por)\s+(?:r\$\s*)?(\d{1,3}(?:\.\d{3})+|\d+)(?:[,.](\d{1,2}))?(?!(?:\d|[.,]\d))(?!\s*(?:x\b|%|vezes|parcelas?|mes(?:es)?|dias?|anos?)\b))/i
  );
  if (!match) return null;
  const intStr = match[1] ?? match[3] ?? match[5];
@@ -95,18 +95,18 @@ function recommendSavings({ local, scope, intention = {}, clock = Date.now }) {
    const set = catEvidence.get(exp.name) || new Set();
    if (set.size < 25) set.add(entry.id);
    catEvidence.set(exp.name, set);
+   if (!safeCents(exp.amountCents) || exp.amountCents <= 0) continue;
+   const mKey = `${fold(entry.merchant) || 'nao identificado'}|${fold(exp.name)}`;
+   const prevM = merchantAgg.get(mKey) || {
+    merchant: entry.merchant,
+    categoryName: exp.name,
+    currentCents: 0,
+    evidenceIds: new Set()
+   };
+   prevM.currentCents += exp.amountCents;
+   if (prevM.evidenceIds.size < 25) prevM.evidenceIds.add(entry.id);
+   merchantAgg.set(mKey, prevM);
   }
-  const primaryCat = item.expenses[0]?.name || 'Outros';
-  const mKey = fold(entry.merchant) || 'nao identificado';
-  const prevM = merchantAgg.get(mKey) || {
-   merchant: entry.merchant,
-   categoryName: primaryCat,
-   currentCents: 0,
-   evidenceIds: new Set()
-  };
-  prevM.currentCents += item.expenseCents;
-  if (prevM.evidenceIds.size < 25) prevM.evidenceIds.add(entry.id);
-  merchantAgg.set(mKey, prevM);
  }
 
  const candidates = [];

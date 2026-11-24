@@ -38,6 +38,18 @@ class CopilotSessionContext {
     this.sessions.clear();
   }
 
+  invalidateFinancialDrafts() {
+    for (const s of this.sessions.values()) {
+      s.activeSalaryDraft = null;
+      s.activeCategorizeDraft = null;
+      s.activeRuleDraft = null;
+      s.activePlanningDraft = null;
+      s.lastSavings = null;
+      s.lastInvestigation = null;
+      s.lastTransactions = [];
+    }
+  }
+
   touch(scope, owner) {
     if (!scope?.token || !Number.isInteger(owner)) return null;
     this.prune();

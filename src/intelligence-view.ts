@@ -627,7 +627,11 @@ function renderIntelligencePanel(app:any){
   const convState=typeof intelligenceConversationState==='function'?intelligenceConversationState(app):{kind:'oauth_disconnected',pill:'IA externa desconectada · leitura local requer autorização',badge:'Conta desconectada',css:'is-offline'};
   const busy=Boolean(app.state.aiBusy||app.state.localFinancialBusy||app.state.intelligenceDrawerBusy||app.state.aiCopilotBusy);
   const draft=String(app.state.intelligenceDraft||'');
-  return h('div',{className:'mf-ai-backdrop',role:'presentation',onMouseDown:(e:any)=>{if(e.target===e.currentTarget)app.setState({intelligencePanelOpen:false});}},
+  const closeDrawer=()=>{
+    const expired=Boolean(app.state.localFinancialAccess?.expiresAt&&app.state.localFinancialAccess.expiresAt<=Date.now());
+    app.setState({intelligencePanelOpen:false,...(expired?{intelligencePreparedQuestion:'',intelligenceDraftScope:null}:{})});
+  };
+  return h('div',{className:'mf-ai-backdrop',role:'presentation',onMouseDown:(e:any)=>{if(e.target===e.currentTarget)closeDrawer();}},
     h('aside',{className:'mf-ai-drawer mf-ai-drawer-compact mf-d01',role:'dialog','aria-modal':'true','aria-label':'Assistente contextual de '+info.label},
       h('div',{className:'mf-ai-drawer-head'},
         h('div',{className:'mf-ai-drawer-title-wrap'},
@@ -637,9 +641,10 @@ function renderIntelligencePanel(app:any){
           h('h2',{},'Assistente Financeiro'),
           h('small',{className:'mf-d01-context-subtitle'},'Ajudando em '+info.label)),
         h('div',{className:'mf-ai-drawer-head-actions'},
+          app.state.localFinancialAccess?.token&&typeof localFinancialDisable==='function'?h('button',{type:'button',className:'ghost-button mf-ai-expand-btn','aria-label':'Revogar leitura local',title:'Encerrar acesso local desta sessão',onClick:()=>localFinancialDisable(app)},'Revogar leitura'):null,
           h('button',{type:'button',className:'ghost-button mf-ai-expand-btn','aria-label':'Nova conversa',title:'Iniciar nova conversa',onClick:()=>intelligenceCreateThread(app)},'Nova'),
           h('button',{type:'button',className:'ghost-button mf-ai-expand-btn','aria-label':'Expandir na aba Inteligência',title:'Abrir na aba Inteligência mantendo a conversa ativa',onClick:()=>intelligenceOpenFullChat(app)},'Expandir'),
-          h('button',{type:'button',className:'close-button','aria-label':'Fechar assistente',onClick:()=>app.setState({intelligencePanelOpen:false})},'×'))),
+          h('button',{type:'button',className:'close-button','aria-label':'Fechar assistente',onClick:closeDrawer},'×'))),
       h('details',{className:'mf-d01-context-disclosure'},
         h('summary',{},'Contexto da conversa',h(Icon,{name:'chevron-down',size:14})),
         h('div',{className:'mf-ai-context-meta mf-ai-drawer-scope'},
@@ -672,12 +677,13 @@ function renderIntelligenceSettings(app:any){
   const s=app.state;
   const aiCap=s.aiCopilotCap||null;
   const m3Cap=s.m3ActionCap||null;
-  const inferenceLabel=aiCap?.inferenceStatus||'CONFIGURADO';
+  const rawInferenceStatus=aiCap?.inferenceStatus||'CONFIGURADO';
+  const inferenceLabel=rawInferenceStatus==='CONFIGURADO'?'Configurado (aguarda 1ª consulta)':rawInferenceStatus;
   return h(Card,{className:'settings-card mf-ai-settings'},
-    h('div',{className:'card-heading'},h('div',{},h('h2',{},'Inteligência artificial'),h('p',{},'Autenticação OAuth, Copiloto M3 e GPT-6.2 Sol'))),
+    h('div',{className:'card-heading'},h('div',{},h('h2',{},'Inteligência artificial'),h('p',{},'Autenticação OAuth, Copiloto e GPT-6.2 Sol'))),
     h('div',{className:'mf-ai-setting-line'},h('span',{},'Conexão OAuth ChatGPT'),h('strong',{},s.aiStatus.connected?'Conectada':'Não conectada')),
     h('div',{className:'mf-ai-setting-line'},h('span',{},'Modelo'),h('strong',{},'GPT-6.2 Sol ('+inferenceLabel+')')),
-    h('div',{className:'mf-ai-setting-line'},h('span',{},'Raciocínio'),h('strong',{},'Low / Medium / High adaptativo')),
+    h('div',{className:'mf-ai-setting-line'},h('span',{},'Raciocínio'),h('strong',{},'Automático (baixo, médio ou alto conforme a pergunta)')),
     h('div',{className:'mf-ai-setting-line'},h('span',{},'Economia e privacidade'),h('strong',{},'Somente agregados autorizados · zero fallback pago')),
     desktop?.copilotActionCapabilityStatus?h('div',{className:'mf-ai-setting-line mf-ai-settings-toggle'},
       h('span',{},'Ações supervisionadas no Copiloto (M3)'),

@@ -46,9 +46,10 @@ function monthRange(month) {
   return { start, end };
 }
 
-function parseMoneyToCents(raw) {
+function parseMoneyToCents(raw, { allowZero = false } = {}) {
   if (typeof raw === 'number') {
-    if (Number.isSafeInteger(raw) && raw > 0 && raw <= MAX_CENTS) return raw;
+    const validNum = allowZero ? raw >= 0 : raw > 0;
+    if (Number.isSafeInteger(raw) && validNum && raw <= MAX_CENTS) return raw;
     return null;
   }
   const str = String(raw || '').trim();
@@ -59,9 +60,9 @@ function parseMoneyToCents(raw) {
   if (/^\s*(?:r\$\s*)?(\d+(?:[.,]\d+)?)\s*mil\b/i.test(str)) {
     const m = /^\s*(?:r\$\s*)?(\d+(?:[.,]\d+)?)\s*mil\b/i.exec(str);
     const val = Number(m[1].replace(',', '.'));
-    if (Number.isFinite(val) && val > 0) {
+    if (Number.isFinite(val) && (allowZero ? val >= 0 : val > 0)) {
       const cents = Math.round(val * 1000 * 100);
-      return Number.isSafeInteger(cents) && cents > 0 && cents <= MAX_CENTS ? cents : null;
+      return Number.isSafeInteger(cents) && (allowZero ? cents >= 0 : cents > 0) && cents <= MAX_CENTS ? cents : null;
     }
   }
   void milMatch;
@@ -85,7 +86,7 @@ function parseMoneyToCents(raw) {
     return null;
   }
   const cents = Number(intPart) * 100 + Number(fracPart);
-  return Number.isSafeInteger(cents) && cents > 0 && cents <= MAX_CENTS ? cents : null;
+  return Number.isSafeInteger(cents) && (allowZero ? cents >= 0 : cents > 0) && cents <= MAX_CENTS ? cents : null;
 }
 
 function parseSalaryBudgetCommand(question) {
@@ -150,7 +151,7 @@ function parseSalaryBudgetCommand(question) {
 
   // Extract explicitly protected categories after "preservando / mantendo / protegendo / sem cortar"
   const protectedHints = [];
-  const protRx = /\b(?:preservando|mantendo|protegendo|priorizando|sem\s+cortar)\s+([^.;!\n]+)/i;
+  const protRx = /\b(?:preservando|mantendo|protegendo|priorizando|sem\s+cortar|sem\s+mexer(?:\s+(?:em|nos?|nas?))?|n[ãa]o\s+reduz\w*|n[ãa]o\s+cort\w*)\s+([^.;!\n]+)/i;
   const pm = protRx.exec(raw);
   if (pm && pm[1]) {
     const cleanedProt = pm[1].replace(/\b(?:e\s+distribu\w*|o\s+resto).*$/i, '');
@@ -263,7 +264,7 @@ function medianCents(values) {
 function loadCanonicalRows(db, profile, source) {
   const manual = db.load(profile) || { transactions: [], budgets: {}, monthlyBudgets: {}, settings: {} };
   if (source === 'bank') {
-    const bank = db.bankOverview();
+    const bank = typeof db.bankOverview === 'function' ? db.bankOverview({ limit: null }) : { transactions: [], truncated: false };
     const records = bank?.transactions || [];
     const rows = records.map((r) => ({
       date: r.date,
@@ -359,15 +360,22 @@ function buildSalaryBudgetProposal({
     .reduce((s, x) => s + x.amountCents, 0);
 
   // Remaining planned obligations and planned income for `month` ONLY (unpaid remaining cents; avoids double counting!)
+  // Uncertain/estimated items never inflate mandatory floors or income guarantees.
   const plannedRemainingByCat = new Map();
   let plannedIncomeCents = 0;
+  let estimatedPlannedExpenseCents = 0;
   if (planner && typeof planner.list === 'function' && profile === 'real') {
     const items = planner.list({ start: curRange.start, end: curRange.end });
     for (const item of items) {
       if (item.status === 'planned' && Number.isSafeInteger(item.remaining) && item.remaining > 0) {
+        const isEstimated = item.certainty === 'estimated';
         if (item.kind === 'expense') {
-          plannedRemainingByCat.set(item.category, (plannedRemainingByCat.get(item.category) || 0) + item.remaining);
-        } else if (item.kind === 'income') {
+          if (isEstimated) {
+            estimatedPlannedExpenseCents += item.remaining;
+          } else {
+            plannedRemainingByCat.set(item.category, (plannedRemainingByCat.get(item.category) || 0) + item.remaining);
+          }
+        } else if (item.kind === 'income' && !isEstimated) {
           plannedIncomeCents += item.remaining;
         }
       }
@@ -541,10 +549,16 @@ function buildSalaryBudgetProposal({
           : c.currentLimitCents !== null
             ? c.currentLimitCents
             : c.committedFloorCents;
-      const factor = c.isProtected ? 1.0 : modeFactors[c.tier];
-      const scaled = Math.round(baseSignal * factor);
-      c.desiredCents = Math.max(c.committedFloorCents, scaled);
-      c.usedStarterWeight = false;
+      if (completeMonthsAnalyzed === 0 && baseSignal === 0) {
+        const w = STARTER_WEIGHTS[fold(c.category)] || 3;
+        c.desiredCents = Math.max(0, Math.round((spendableAfterReserve * w) / Math.max(1, totalStarterWeight)));
+        c.usedStarterWeight = true;
+      } else {
+        const factor = c.isProtected ? 1.0 : modeFactors[c.tier];
+        const scaled = Math.round(baseSignal * factor);
+        c.desiredCents = Math.max(c.committedFloorCents, scaled);
+        c.usedStarterWeight = false;
+      }
     }
   }
 
@@ -567,6 +581,22 @@ function buildSalaryBudgetProposal({
     warnings.push(
       `Salário de ${moneyFmt(observedSalaryCents)} já registrado nas entradas de ${month}; nenhum lançamento duplicado será adicionado.`
     );
+  } else if (observedIncomeCents > 0) {
+    warnings.push(
+      `Entradas de ${moneyFmt(observedIncomeCents)} registradas em ${month} em outras categorias (não classificadas como Salário); o orçamento mantém ${moneyFmt(salaryCents)} apenas como base de planejamento.`
+    );
+  }
+  if (estimatedPlannedExpenseCents > 0) {
+    warnings.push(
+      `Existem ${moneyFmt(estimatedPlannedExpenseCents)} em despesas planejadas estimadas (incertas); apenas compromissos confirmados entraram no piso obrigatório.`
+    );
+  }
+  for (const c of candidates) {
+    if (c.isLocked && c.lockedValueCents < c.currentSpentCents) {
+      warnings.push(
+        `O valor fixado para ${c.category} (${moneyFmt(c.lockedValueCents)}) está abaixo do gasto já realizado em ${month} (${moneyFmt(c.currentSpentCents)}).`
+      );
+    }
   }
   if (atypicalMonths.length > 0) {
     const cats = [...new Set(atypicalMonths.map((a) => `${a.category} (${a.month})`))].slice(0, 4).join(', ');
@@ -752,6 +782,8 @@ function buildSalaryBudgetProposal({
     confidence,
     atypicalMonths,
     lockedCategories: [...lockedFolded.keys()],
+    protectedCategories: candidates.filter((c) => c.isProtected).map((c) => c.category),
+    protectedHints: Array.isArray(protectedHints) ? [...protectedHints] : [],
     redistributions,
     updateIncomeSetting: !!updateIncomeSetting,
     currentIncomeSettingCents,

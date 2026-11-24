@@ -268,7 +268,10 @@ function describeInvestigation(info,intent,focus){
    'Não há ocorrências suficientes para confirmar recorrência nos registros carregados.');
  }
  lines.push('Fonte '+(info.source==='bank'?'bancária':'manual')+', período '+info.previousPeriod.start+' a '+info.currentPeriod.end+
-  ', motor local determinístico; não é saldo disponível.');
+   ', motor local determinístico; não é saldo disponível.');
+ if(/\b(?:ultim[oa]s?\s+\d*\s*meses|varios\s+meses|hist[oó]rico\s+completo|ao\s+longo\s+dos\s+meses)\b/i.test(fold(intent.question||''))){
+  lines.push('Nota de escopo: esta investigação compara exatamente os dois períodos acima ('+info.previousPeriod.start.slice(0,7)+' vs '+info.currentPeriod.start.slice(0,7)+'), e não uma média multi-meses.');
+ }
  if(info.warnings.length)lines.push('Limitações: '+info.warnings.join(' '));
  lines.push(GUARDRAIL_COPY.ARITHMETIC_CONTRIBUTION);
  return lines.join('\n\n');

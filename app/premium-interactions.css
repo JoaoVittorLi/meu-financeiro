@@ -229,3 +229,126 @@
   background: radial-gradient(ellipse at 50% 0%,var(--mf-hover-glow),transparent 75%),var(--surface2);
   color: var(--text);
 }
+
+/* Pre-release v1.0.0 visual polish: contrast, fold discipline, secondary actions */
+@keyframes mfImmediateReveal {
+  from { opacity: 1; transform: translateY(3px); }
+  to { opacity: 1; transform: none; }
+}
+.mf-detail-drawer {
+  background: var(--surface);
+}
+.u3-budgets .mf-budget-summary > div,
+.u3-budgets .u3-budget-insight,
+.u3-budgets .u3-coverage-ring {
+  opacity: 1;
+  animation: mfImmediateReveal 180ms ease-out both;
+}
+.secondary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 9px 15px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  transition: background 150ms ease, border-color 150ms ease, transform 150ms ease;
+}
+.secondary-button:hover:not(:disabled) {
+  background: var(--surface3);
+  border-color: var(--green);
+}
+.secondary-button:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.primary-button:disabled,
+.secondary-button:disabled,
+.ghost-button:disabled,
+.outlined-action:disabled,
+.mf-small-link:disabled,
+.d05-confirm:disabled {
+  opacity: 0.68;
+  cursor: not-allowed;
+}
+.d05-head-copy p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+.d05-split-badge {
+  display: inline-block;
+  margin-top: 2px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 500;
+}
+.mf-duplicates-alert {
+  display: grid;
+  gap: 8px;
+  padding: 12px 14px;
+  background: var(--warning-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.mf-duplicate-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.mf-theme-preview {
+  display: grid;
+  place-items: end start;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  color: var(--text);
+}
+.mf-theme-preview:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.toast {
+  bottom: 90px;
+  right: 26px;
+  z-index: 120;
+}
+@media (max-height: 820px), (max-width: 1400px) {
+  .u3-simulator {
+    gap: 12px;
+  }
+  .u3-simulator .u3-sim-heading {
+    padding: 12px 16px;
+    margin-bottom: 0;
+  }
+  .u3-simulator .sim-form-card {
+    padding: 14px 18px;
+  }
+  .u3-simulator .sim-form-card .card-heading {
+    margin-bottom: 8px;
+  }
+  .u3-simulator .sim-form-card .field {
+    gap: 4px;
+    margin-bottom: 8px;
+  }
+  .u3-simulator .u3-reserve-note {
+    padding: 8px 12px;
+    margin-top: 2px;
+  }
+  .u3-simulator .sim-form-card .action-large {
+    margin-top: 4px;
+    min-height: 38px;
+    padding: 9px 16px;
+  }
+}

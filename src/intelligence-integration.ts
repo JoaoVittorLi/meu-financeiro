@@ -717,20 +717,26 @@ function intelligenceClassifyQuestion(question:string):'m3_action'|'personal_fin
   const f=intelligenceFoldText(question);
   if(intelligenceIsM3ActionIntent(f))return 'm3_action';
   const educationalHowTo=/\bcomo\s+(?:organizar|controlar|montar|construir|administrar|planejar|estruturar|equilibrar|dividir|criar)\b/.test(f)&&
-    !/\b(extrato|saldo|fatura|neste\s+mes|este\s+mes|mes\s+passado|ultim[oa]s?\s+\d*\s*(?:mes|dias)|gastei|recebi|paguei|lancament|movimentac|minhas\s+contas|projecao)\b/.test(f);
+    !/\b(extrato|saldo|fatura|neste\s+mes|este\s+mes|mes\s+passado|ultim[oa]s?\s+\d*\s*(?:mes|dias)|gastei|recebi|paguei|lancament|movimentac|minhas\s+contas|projecao|minhas\s+despesas|meus\s+gastos|meu\s+orcamento|orcamento\s+de)\b/.test(f);
   if(educationalHowTo)return 'general';
-  if(/\b(meu\s+(?:extrato|saldo|orcamento|fluxo)|minha\s+(?:conta|fatura|projecao|renda)|minhas\s+(?:contas|despesas|receitas|financas|movimentacoes|compras|parcelas)|meus\s+(?:gastos|orcamentos|compromissos|lancamentos|limites)|gastei|economizei|recebi\s+(?:este|no)\s+mes|paguei|ultrapass|estourou|compar[ea]\s+minhas|movimentacoes\s+a\s+revisar|proximo\s+(?:mes|trimestre))\b/.test(f))return 'personal_financial';
+  if(/\b(meu\s+(?:extrato|saldo|orcamento|fluxo)|minha\s+(?:conta|fatura|projecao|renda)|minhas\s+(?:contas|despesas|receitas|financas|movimentacoes|compras|parcelas)|meus\s+(?:gastos|orcamentos|compromissos|lancamentos|limites)|orcamento\s+de\b|quanto\s+sobrou|gastei(?:\s+mais)?|onde\s+(?:mais\s+gastei|gastei\s+mais|posso\s+economizar)|quais\s+(?:os\s+|meus\s+)?gastos|faturas?|parcelas?|a\s+pagar|assinaturas?|recorrentes?|economizei|recebi\s+(?:este|no)\s+mes|paguei|ultrapass|estourou|compar[ea]\s+minhas|movimentacoes\s+a\s+revisar|proximo\s+(?:mes|trimestre))\b/.test(f))return 'personal_financial';
   if(/\b(quanto\s+(?:gastei|paguei|recebi|tenho\s+comprometido)|quais\s+foram\s+(?:os?\s+)?(?:maiores|meus|minhas)|estabelecimentos\s+onde\s+mais|por\s+que\s+(?:gastei|minhas?\s+despesas)|analise\s+(?:meu\s+fluxo|meus\s+gastos))\b/.test(f))return 'personal_financial';
   if(/\bse\s+eu\s+comprar\b|\bposso\s+comprar\b/.test(f))return 'personal_financial';
   return 'general';
 }
-function intelligenceRecentPlainHistory(messages:IntelligenceChatMessage[],limit=6):Array<{role:'user'|'assistant';text:string}>{
+function intelligenceRecentPlainHistory(messages:IntelligenceChatMessage[],limit=6,opts?:{excludeFinancial?:boolean}):Array<{role:'user'|'assistant';text:string}>{
   const out:Array<{role:'user'|'assistant';text:string}>=[];
   const list=Array.isArray(messages)?messages:[];
+  const excludeFinancial=opts?.excludeFinancial!==false;
   for(const m of list.slice(-14)){
     if(!m||!m.text)continue;
     if(m.role!=='user'&&m.role!=='assistant')continue;
     if(m.role==='assistant'&&m.status!=='done')continue;
+    if(excludeFinancial){
+      if(/^(?:local-|ic2-|m3a-|review-)/.test(String(m.id||'')))continue;
+      if((m as any).structuredCard||(m as any).ic2Reply||(m as any).visual||(m as any).visualV3||(m as any).m3ActionDraft||m.proposal)continue;
+      if(/R\$\s*-?\d|Consulta local ·|Prévia supervisionada|O que aconteceu:|Total de entradas|Saldo nas contas/i.test(String(m.text)))continue;
+    }
     const text=String(m.text).replace(/\s+/g,' ').trim().slice(0,450);
     if(text)out.push({role:m.role,text});
   }
@@ -769,8 +775,27 @@ async function intelligenceSubmitQuestion(app:any,rawQuestion:string){
     intelligenceDraftScope:scope
   },()=>intelligenceScrollChatToBottom());
 
+  const desktopConsentRequired=typeof (desktop as any)?.localFinancialAuthorize==='function'&&app.state.mode!=='demo'&&!grantValid;
   const catIntent=intelligenceParseCategorizeIntent(q,app.state.categories,todayIso);
   if(catIntent){
+    if(desktopConsentRequired){
+      const reply:IntelligenceChatMessage={
+        id:'ast-'+(Date.now()+1),
+        role:'assistant',
+        text:'**Autorização financeira necessária para preparar esta ação:** para examinar seus lançamentos, categorias ou orçamento antes de gerar uma prévia confirmável, autorize a leitura financeira desta sessão. Nenhuma escrita ocorre sem prévia, confirmação nativa e recibo reversível.',
+        createdAt:intelligenceNowTime(),
+        createdAtIso:todayIso,
+        scopeLabel:scope.label,
+        periodLabel:scope.period,
+        status:'done',
+        permissionActions:[
+          {id:'authorize_local_read',label:'Autorizar leitura financeira agora',primary:true,retryQuestion:q}
+        ],
+        details:'Escopo: '+scope.label+' ('+scope.period+') · Aguardando permissão de leitura financeira nesta sessão.'
+      };
+      intelligenceSyncThreadMessages(app,[...currentMessages,userMsg,reply],scope);
+      return;
+    }
     const built=intelligenceBuildCategorizeProposal(app,catIntent);
     const reply:IntelligenceChatMessage={
       id:'ast-'+(Date.now()+1),
@@ -789,7 +814,7 @@ async function intelligenceSubmitQuestion(app:any,rawQuestion:string){
   }
 
   const wantsLocalSummary=/\b(?:resumo\s+estruturado|tabela\s+de\s+categorias|resumo\s+das\s+minhas\s+movimenta[çc][õo]es)\b/i.test(q);
-  const structuredCard=wantsLocalSummary?intelligenceBuildStructuredSummaryCard(app):null;
+  const structuredCard=wantsLocalSummary&&!desktopConsentRequired?intelligenceBuildStructuredSummaryCard(app):null;
   const intent=intelligenceClassifyQuestion(q);
 
   const appendAssistant=(partial:Partial<IntelligenceChatMessage>)=>{
@@ -808,9 +833,10 @@ async function intelligenceSubmitQuestion(app:any,rawQuestion:string){
     intelligenceSyncThreadMessages(app,[...currentMessages,userMsg,reply],scope);
   };
 
-  if(!wantsLocalSummary&&(intent==='m3_action'||intent==='personal_financial')){
+  if((wantsLocalSummary&&desktopConsentRequired)||(!wantsLocalSummary&&(intent==='m3_action'||intent==='personal_financial'))){
     appendAssistant({
       status:'permission_needed',
+      structuredCard:null,
       text:intent==='m3_action'
         ?'**Autorização financeira necessária para preparar esta ação:** para examinar seus lançamentos, categorias ou orçamento antes de gerar uma prévia confirmável, autorize a leitura financeira desta sessão. Nenhuma escrita ocorre sem prévia, confirmação nativa e recibo reversível.'
         :'**Autorização de leitura financeira necessária:** por segurança, seus gastos, orçamento, faturas e compromissos locais só são consultados após você autorizar a leitura financeira desta sessão. Nenhuma resposta pessoal foi estimada ou simulada.',
@@ -1097,6 +1123,9 @@ function intelligenceScrollChatToBottom(){
   if(typeof requestAnimationFrame==='function')requestAnimationFrame(scroll);else scroll();
 }
 function intelligenceCreateThread(app:any,initialTitle:string='Nova conversa'){
+  if(app.state.aiCopilotBusy&&typeof (desktop as any)?.aiCopilotCancel==='function'){
+    void (desktop as any).aiCopilotCancel().catch(()=>{});
+  }
   intelligenceEnsureHydrated(app);
   const mode:'real'|'demo'=app.state.mode==='demo'?'demo':'real';
   const todayIso=intelligenceReferenceToday(app)||'2026-11-11';
@@ -1123,6 +1152,11 @@ function intelligenceCreateThread(app:any,initialTitle:string='Nova conversa'){
     intelligenceActiveThreadId:newThread.id,
     intelligenceMessages:[],
     intelligenceDraft:'',
+    intelligencePreparedQuestion:'',
+    intelligenceDraftScope:null,
+    aiCopilotBusy:false,
+    aiCopilotStreaming:'',
+    aiCopilotRequestId:null,
     intelligenceStorageError:storageErr
   });
   return newThread.id;
@@ -1177,6 +1211,9 @@ function intelligenceClearHistory(app:any,confirmFn?:(msg:string)=>boolean){
   return true;
 }
 function intelligenceSwitchProfileMode(app:any,newMode:'real'|'demo'){
+  if(app.state.aiCopilotBusy&&typeof (desktop as any)?.aiCopilotCancel==='function'){
+    void (desktop as any).aiCopilotCancel().catch(()=>{});
+  }
   if(app.state.categoryReviewGrant&&typeof categoryReviewDisable==='function')categoryReviewDisable(app);
   if(app.state.localFinancialAccess?.token&&typeof localFinancialDisable==='function')localFinancialDisable(app);
   const loaded=intelligenceLoadStoredThreads(app,newMode);
@@ -1187,6 +1224,11 @@ function intelligenceSwitchProfileMode(app:any,newMode:'real'|'demo'){
     intelligenceThreads:loaded.threads,
     intelligenceActiveThreadId:first?first.id:null,
     intelligenceMessages:first?first.messages:[],
+    intelligenceDraftScope:null,
+    intelligencePreparedQuestion:'',
+    aiCopilotBusy:false,
+    aiCopilotStreaming:'',
+    aiCopilotRequestId:null,
     intelligenceStorageError:loaded.error
   });
 }
