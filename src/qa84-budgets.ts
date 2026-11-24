@@ -312,3 +312,7 @@ function renderQA84BudgetDetail(host:any,context:any){
   host.state.qa84BudgetPartial?h('p',{className:'qa84-budget-partial'},
    'Alguns registros bancários antigos podem não constar da janela carregada.'):null);
 }
+
+function effectiveMonthBudgets(data:Data|null|undefined,month:string):{[category:string]:number}{
+ return {...(data?.budgets||{}),...(data?.monthlyBudgets?.[month]||{})};
+}

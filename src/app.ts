@@ -263,9 +263,6 @@ function OverviewSpendingChart(props:any){
 }
 
 function starter():Data { return { version:5,transactions:[],budgets:{},monthlyBudgets:{},settings:{opening:0,income:0,fixed:0,existing:0,reserve:0} }; }
-function effectiveMonthBudgets(data:Data|null|undefined,month:string):{[category:string]:number}{
- return {...(data?.budgets||{}),...(data?.monthlyBudgets?.[month]||{})};
-}
 function demoData():Data {
  const t:Tx[]=[]; const add=(offset:number,day:number,description:string,kind:Kind,amount:number,category:string)=>{
   const m=shiftMonth(nowYM,offset); t.push({id:'demo-'+t.length,date:m+'-'+String(day).padStart(2,'0'),description,kind,amount:Math.round(amount*100),category,origin:'demo'});

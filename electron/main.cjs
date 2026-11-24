@@ -231,7 +231,7 @@ app.whenReady().then(async()=>{
   operationalIntelligence=new IntelligenceOperational({localFinancial,categoryReview,db});
   // Restoration replaces services, invalidating prior IC2 contexts.
   ic2ReadQuery=new IC2ReadQueryGateway(localFinancial);
-  if(copilotSessionCtx)copilotSessionCtx.clearAll();
+  if(typeof copilotSessionCtx!=='undefined'&&copilotSessionCtx)copilotSessionCtx.clearAll();
   // Personal category work is preview-only; synthetic sandbox remains separate.
   if(d05PersonalGate)d05PersonalGate.stopAll();
   if(d05Gate)d05Gate.stopAll();

@@ -616,7 +616,7 @@ function renderIntelligenceSettings(app:any){
       h('div',{className:'mf-ai-settings-toggle-actions'},
         h('strong',{},aiCap?.enabled?'Ativada':'Desativada'),
         aiCap?.available?h('button',{type:'button',className:'ghost-button',onClick:()=>void (aiCap.enabled?(desktop as any).aiCopilotCapabilityRevoke?.():(desktop as any).aiCopilotCapabilityEnable?.()).then(()=>intelligenceRefresh(app))},aiCap.enabled?'Revogar':'Ativar'):null)):null,
-    h('p',{className:'muted-desc'},'OAuth e permissões ficam isolados no processo principal do Windows. Ações financeiras exigem prévia, confirmação nativa, backup SQLite e geram recibo reversível em 1 clique.'),
+    h('p',{className:'muted-desc'},'OAuth e memórias aprovadas são protegidos localmente no Windows. Ações financeiras exigem prévia, confirmação nativa, backup SQLite e geram recibo reversível em 1 clique.'),
     h('details',{className:'mf-ai-advanced-settings'},
      h('summary',{},'Inteligência · configurações avançadas'),
      renderIntelligenceConnection(app),renderIntelligencePrivacy(app),
