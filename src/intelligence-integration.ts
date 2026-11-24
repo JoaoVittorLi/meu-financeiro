@@ -742,6 +742,15 @@ function intelligenceRecentPlainHistory(messages:IntelligenceChatMessage[],limit
   }
   return out.slice(-limit);
 }
+function intelligenceCleanIpcError(err:any,fallback:string):string{
+  const raw=String(err?.message||fallback||'');
+  const cleaned=raw.replace(/^Error invoking remote method '[^']+':\s*(?:Error:\s*)?/i,'').trim();
+  return (cleaned||String(fallback||'')).slice(0,260);
+}
+function intelligenceIsUserCancelledError(err:any):boolean{
+  const msg=String(err?.message||'')+' '+String(err?.cause||'');
+  return /\bUSER_CANCELLED\b|cancelad[ao]\s+(?:pelo\s+usu[áa]rio|por\s+solicita[çc][ãa]o)/i.test(msg);
+}
 async function intelligenceSubmitQuestion(app:any,rawQuestion:string){
   if(typeof categoryReviewHandleQuestion==='function'&&categoryReviewHandleQuestion(app,rawQuestion))return;
   const grant=app.state.localFinancialAccess;
@@ -845,10 +854,14 @@ async function intelligenceSubmitQuestion(app:any,rawQuestion:string){
   if(!wantsLocalSummary&&app.state.aiStatus?.connected&&app.state.aiCopilotCap?.enabled&&typeof api?.aiCopilotAsk==='function'){
     const startMode:'real'|'demo'=app.state.mode==='demo'?'demo':'real';
     const startThreadId=app.state.intelligenceActiveThreadId||null;
+    const startLocalToken=app.state.localFinancialAccess?.token||null;
+    const startReviewToken=app.state.categoryReviewGrant?.token||null;
     const requestId='sol-gen-'+Date.now()+'-'+Math.floor(Math.random()*10000);
     const isStillCurrent=()=>
       (app.state.mode==='demo'?'demo':'real')===startMode&&
       (app.state.intelligenceActiveThreadId||null)===startThreadId&&
+      (app.state.localFinancialAccess?.token||null)===startLocalToken&&
+      (app.state.categoryReviewGrant?.token||null)===startReviewToken&&
       app.state.aiCopilotRequestId===requestId;
     app.setState({aiCopilotBusy:true,aiCopilotStreaming:'',aiCopilotRequestId:requestId,aiError:''},()=>intelligenceScrollChatToBottom());
     try{
@@ -867,14 +880,14 @@ async function intelligenceSubmitQuestion(app:any,rawQuestion:string){
       });
     }catch(solErr:any){
       if(!isStillCurrent())return;
-      const errMsg=String(solErr?.message||'Não foi possível consultar o GPT-6.2 Sol neste momento.').slice(0,260);
-      if(/^USER_CANCELLED$|cancelad[ao]\s+por\s+solicita[çc][ãa]o/i.test(errMsg)){
+      if(intelligenceIsUserCancelledError(solErr)){
         appendAssistant({
           status:'done',
           text:'Solicitação cancelada. Nenhuma resposta ou alteração financeira foi registrada.',
           details:'Cancelamento manual pelo usuário antes da conclusão.'
         });
       }else{
+        const errMsg=intelligenceCleanIpcError(solErr,'Não foi possível consultar o GPT-6.2 Sol neste momento.');
         appendAssistant({
           status:'error',
           text:'**Não foi possível obter resposta do GPT-6.2 Sol:** '+errMsg+' Nenhuma resposta foi simulada.',

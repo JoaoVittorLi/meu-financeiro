@@ -306,7 +306,7 @@ test('D-03 & D-08: cancel aborts SSE inference cleanly, post-SSE capability loss
   assert.equal(raceApp.state.intelligenceActiveThreadId, thA);
   assert.equal(raceApp.state.intelligenceMessages.some((m) => String(m.text).includes('Resposta atrasada de B')), false);
 
-  // Same-thread manual cancellation renders neutral message without raw USER_CANCELLED or error status
+  // Same-thread manual cancellation renders neutral message without raw USER_CANCELLED, IPC wrapper, or error status
   askMode = 'reject';
   const thC = raceRuntime.intelligenceCreateThread(raceApp, 'Conversa C');
   assert.equal(raceApp.state.intelligenceActiveThreadId, thC);
@@ -317,6 +317,94 @@ test('D-03 & D-08: cancel aborts SSE inference cleanly, post-SSE capability loss
   assert.equal(cancelReply.status, 'done');
   assert.equal(cancelReply.text.includes('USER_CANCELLED'), false);
   assert.match(cancelReply.text, /Solicitação cancelada/);
+
+  // Real CopilotInferenceService.cancelActive() message + Electron IPC wrapper + real error prefix stripping + token transition guard
+  let rejectFn = null;
+  let svcMode = 'cancel_service';
+  const svcRuntime = compileIntelligenceIntegrationRuntime({
+    aiCopilotCancel: async () => {},
+    aiCopilotAsk: () => new Promise((_, reject) => { rejectFn = reject; })
+  }).runtime;
+  const realSvc = new CopilotInferenceService({
+    auth: { accessToken: async () => 'oauth-tok' },
+    personalStore: { recordUsage: () => {} },
+    capabilityCheck: () => true,
+    endpointUrl: 'https://api.openai.com/v1/responses',
+    fetchFn: (_url, opts) => new Promise((_, reject) => {
+      opts.signal.addEventListener('abort', () => {
+        const err = new Error('USER_CANCELLED');
+        err.cause = 'USER_CANCELLED';
+        reject(err);
+      });
+    })
+  });
+  const pendingSvc = realSvc.ask({ question: 'Oi', history: [], effortOverride: 'low' });
+  await new Promise((r) => setTimeout(r, 15));
+  realSvc.cancelActive();
+  let capturedSvcErr = null;
+  try { await pendingSvc; } catch (e) { capturedSvcErr = e; }
+  assert.ok(capturedSvcErr);
+
+  const ipcApp = {
+    state: {
+      mode: 'real',
+      page: 'intelligence',
+      month: '2026-11',
+      today: '2026-11-24',
+      categories: DEFAULT_CATEGORY_INFOS,
+      aiStatus: { connected: true, secure: true },
+      aiCopilotCap: { available: true, enabled: true },
+      aiCopilotBusy: false,
+      aiCopilotStreaming: '',
+      aiCopilotRequestId: null,
+      localFinancialAccess: null,
+      categoryReviewGrant: null,
+      intelligenceThreads: [],
+      intelligenceMessages: [],
+      intelligenceActiveThreadId: null
+    },
+    setState(patch, cb) {
+      ipcApp.state = { ...ipcApp.state, ...(typeof patch === 'function' ? patch(ipcApp.state) : patch) };
+      if (cb) cb();
+    }
+  };
+  const thIpc = svcRuntime.intelligenceCreateThread(ipcApp, 'Cancel Real IPC');
+  const pRealCancel = svcRuntime.intelligenceSubmitQuestion(ipcApp, 'Pergunta cancelada via serviço');
+  rejectFn(capturedSvcErr);
+  await pRealCancel;
+  const rRealCancel = ipcApp.state.intelligenceMessages.at(-1);
+  assert.equal(rRealCancel.status, 'done');
+  assert.match(rRealCancel.text, /Solicitação cancelada/);
+
+  const pIpcWrapCancel = svcRuntime.intelligenceSubmitQuestion(ipcApp, 'Pergunta cancelada com prefixo IPC');
+  rejectFn(new Error("Error invoking remote method 'ai:copilot-ask': Error: " + capturedSvcErr.message));
+  await pIpcWrapCancel;
+  const rIpcWrapCancel = ipcApp.state.intelligenceMessages.at(-1);
+  assert.equal(rIpcWrapCancel.status, 'done');
+  assert.equal(rIpcWrapCancel.text.includes('Error invoking remote method'), false);
+  assert.match(rIpcWrapCancel.text, /Solicitação cancelada/);
+
+  const pIpcRealErr = svcRuntime.intelligenceSubmitQuestion(ipcApp, 'Pergunta com erro real IPC');
+  rejectFn(new Error("Error invoking remote method 'ai:copilot-ask': Error: Limite temporário atingido."));
+  await pIpcRealErr;
+  const rIpcRealErr = ipcApp.state.intelligenceMessages.at(-1);
+  assert.equal(rIpcRealErr.status, 'error');
+  assert.equal(rIpcRealErr.text.includes('Error invoking remote method'), false);
+  assert.equal(rIpcRealErr.text.includes('Limite temporário atingido.'), true);
+
+  // General question started with startThreadId === null must not overwrite newly authorized temporary session
+  ipcApp.state.intelligenceThreads = [];
+  ipcApp.state.intelligenceActiveThreadId = null;
+  ipcApp.state.intelligenceMessages = [];
+  const pBeforeGrant = svcRuntime.intelligenceSubmitQuestion(ipcApp, 'Pergunta antes da concessão');
+  assert.equal(ipcApp.state.intelligenceActiveThreadId, null);
+  ipcApp.state.localFinancialAccess = { token: 'grant-tok-1' };
+  rejectFn(new Error("Error invoking remote method 'ai:copilot-ask': Error: Falha tardia"));
+  await pBeforeGrant;
+  assert.equal(ipcApp.state.intelligenceThreads.length, 0);
+  assert.equal(ipcApp.state.intelligenceActiveThreadId, null);
+  void thIpc;
+  void svcMode;
 });
 
 test('D-05 & D-07 & C-12: trailing periods parse cleanly, conceptual prompts return unsupported, and split attribution uses parts', async () => {

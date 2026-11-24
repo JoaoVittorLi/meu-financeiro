@@ -52,18 +52,22 @@ async function localFinancialEnable(app:any):Promise<boolean>{
   const grant=await api.localFinancialAuthorize(scope);
   if(app.__localReadGeneration!==generation||app.state.mode!==s.mode){void api.localFinancialRevoke?.(grant.token);return false;}
   app.__ic2Conversation=null;app.__ic2InvestigationActive=false; // Invalidate I2-A when renewing read grant.
+  app.__localChatRequest=(app.__localChatRequest||0)+1;
+  const streamingReset=typeof intelligenceResetStreamingState==='function'?intelligenceResetStreamingState(app):{aiCopilotBusy:false,aiCopilotStreaming:'',aiCopilotRequestId:null};
   const backup=s.localFinancialAccess?.backup||{intelligenceThreads:s.intelligenceThreads,intelligenceMessages:s.intelligenceMessages,intelligenceActiveThreadId:s.intelligenceActiveThreadId,intelligenceHydratedMode:s.intelligenceHydratedMode};
-  await new Promise<void>((resolve)=>app.setState({localFinancialAccess:{...grant,backup},localFinancialBusy:false,localFinancialRadar:null,intelligenceCopilotInsights:null,intelligenceThreads:[],intelligenceMessages:[],intelligenceActiveThreadId:null,intelligenceDraft:'',intelligencePreparedQuestion:'',workIntelligenceDemo:s.workIntelligenceDemo?{...s.workIntelligenceDemo,enabled:false}:undefined},()=>{void localFinancialRadar(app);if(typeof intelligencePremiumLoad==='function')void intelligencePremiumLoad(app);void intelligenceCopilotInsightsLoad(app);resolve();}));
+  await new Promise<void>((resolve)=>app.setState({...streamingReset,localFinancialAccess:{...grant,backup},localFinancialBusy:false,localFinancialRadar:null,intelligenceCopilotInsights:null,intelligenceThreads:[],intelligenceMessages:[],intelligenceActiveThreadId:null,intelligenceDraft:'',intelligencePreparedQuestion:'',workIntelligenceDemo:s.workIntelligenceDemo?{...s.workIntelligenceDemo,enabled:false}:undefined},()=>{void localFinancialRadar(app);if(typeof intelligencePremiumLoad==='function')void intelligencePremiumLoad(app);void intelligenceCopilotInsightsLoad(app);resolve();}));
   return true;
  }catch{app.setState({localFinancialBusy:false,localFinancialError:'Não foi possível autorizar a leitura local. Nenhum dado foi consultado por esta solicitação.'});return false;}
 }
 function localFinancialDisable(app:any){
  app.__ic2Conversation=null;
  app.__ic2InvestigationActive=false;
+ app.__localChatRequest=(app.__localChatRequest||0)+1;
  app.__localRadarRequest=(app.__localRadarRequest||0)+1;
  app.__copilotInsightsRequest=(app.__copilotInsightsRequest||0)+1;
+ const streamingReset=typeof intelligenceResetStreamingState==='function'?intelligenceResetStreamingState(app):{aiCopilotBusy:false,aiCopilotStreaming:'',aiCopilotRequestId:null};
  const access:LocalFinancialAccess=app.state.localFinancialAccess;app.__localReadGeneration=(app.__localReadGeneration||0)+1;
- app.setState({...access?.backup,localFinancialAccess:null,localFinancialRadar:null,intelligenceCopilotInsights:null,localFinancialBusy:false,localFinancialError:'',intelligenceDraft:''},()=>{if(typeof intelligencePremiumLoad==='function')void intelligencePremiumLoad(app);});
+ app.setState({...access?.backup,...streamingReset,localFinancialAccess:null,localFinancialRadar:null,intelligenceCopilotInsights:null,localFinancialBusy:false,localFinancialError:'',intelligenceDraft:''},()=>{if(typeof intelligencePremiumLoad==='function')void intelligencePremiumLoad(app);});
  if(access?.token)void localFinancialAPI()?.localFinancialRevoke?.(access.token).catch(()=>app.setState({localFinancialError:'A interface encerrou a leitura. A autorização do processo expira em até 15 minutos.'}));
 }
 async function localFinancialQuery(app:any,intent:{intent:LocalFinancialIntent;category?:string}):Promise<LocalFinancialReply>{
@@ -132,7 +136,7 @@ async function localFinancialSubmit(app:any,question:string){
  const user:IntelligenceChatMessage={id:'local-u-'+Date.now(),role:'user',text:q,status:'sent',
   createdAt:intelligenceNowTime(),scopeLabel:scope.label,periodLabel:month};
  app.setState({localFinancialBusy:true,intelligenceDraft:'',intelligencePreparedQuestion:''});
- let reply:LocalFinancialReply=null,operational:any=null,ic2:MfIC2Reply|null=null,m3Draft:any=null,solReply:any=null,solCancelled=false,error='',permissionActions:any[]=undefined;
+ let reply:LocalFinancialReply=null,operational:any=null,ic2:MfIC2Reply|null=null,m3Draft:any=null,solReply:any=null,solCancelled=false,solStale=false,error='',permissionActions:any[]=undefined;
  try{
   if(m3ActionIntent&&typeof api?.copilotActionInterpret==='function'){
    const draft=await api.copilotActionInterpret({token:access.token,source:access.source,profile:access.profile,month,question:q});
@@ -162,16 +166,27 @@ async function localFinancialSubmit(app:any,question:string){
      try{
       const history=typeof intelligenceRecentPlainHistory==='function'?intelligenceRecentPlainHistory(messages,6,{excludeFinancial:true}):[];
       solReply=await api.aiCopilotAsk({token:access.token,source:access.source,profile:access.profile,month,question:q,history,effortOverride:'auto',requestId});
-      if(solReply?.inferenceStatus&&app.state.aiCopilotCap){
+      if(app.state.aiCopilotRequestId!==requestId||request!==app.__localChatRequest){
+       solStale=true;
+      }else if(solReply?.inferenceStatus&&app.state.aiCopilotCap){
        app.setState({aiCopilotCap:{...app.state.aiCopilotCap,inferenceStatus:solReply.inferenceStatus}});
       }
      }catch(solErr:any){
-      const solMsg=String(solErr?.message||'falha inesperada');
-      if(/^USER_CANCELLED$|cancelad[ao]\s+por\s+solicita[çc][ãa]o/i.test(solMsg)){
-       solCancelled=true;
+      if(app.state.aiCopilotRequestId!==requestId||request!==app.__localChatRequest){
+       solStale=true;
       }else{
-       error='**Não foi possível consultar o GPT-6.2 Sol:** '+solMsg+' Nenhuma resposta foi simulada.';
-       permissionActions=[{id:'open_ai_settings',label:'Verificar Configurações de IA'}];
+       const isCancel=typeof intelligenceIsUserCancelledError==='function'
+        ?intelligenceIsUserCancelledError(solErr)
+        :/\bUSER_CANCELLED\b|cancelad[ao]\s+(?:pelo\s+usu[áa]rio|por\s+solicita[çc][ãa]o)/i.test(String(solErr?.message||'')+' '+String(solErr?.cause||''));
+       if(isCancel){
+        solCancelled=true;
+       }else{
+        const cleanSolErr=typeof intelligenceCleanIpcError==='function'
+         ?intelligenceCleanIpcError(solErr,'falha inesperada')
+         :String(solErr?.message||'falha inesperada').replace(/^Error invoking remote method '[^']+':\s*(?:Error:\s*)?/i,'').trim().slice(0,260);
+        error='**Não foi possível consultar o GPT-6.2 Sol:** '+cleanSolErr+' Nenhuma resposta foi simulada.';
+        permissionActions=[{id:'open_ai_settings',label:'Verificar Configurações de IA'}];
+       }
       }
      }finally{
       if(app.state.aiCopilotRequestId===requestId){
@@ -203,8 +218,12 @@ async function localFinancialSubmit(app:any,question:string){
    if(parsed)reply=await localFinancialQuery(app,parsed);
    else error='Consulta ainda não reconhecida. Comandos de escrita não são executados por esta consulta local.';
   }
- }catch(e:any){error=String(e?.message||'Consulta local indisponível.').slice(0,220);}
- if(request!==app.__localChatRequest||(app.state.intelligenceActiveThreadId||null)!==threadAtStart||
+ }catch(e:any){
+  error=typeof intelligenceCleanIpcError==='function'
+   ?intelligenceCleanIpcError(e,'Consulta local indisponível.').slice(0,220)
+   :String(e?.message||'Consulta local indisponível.').replace(/^Error invoking remote method '[^']+':\s*(?:Error:\s*)?/i,'').trim().slice(0,220);
+ }
+ if(solStale||request!==app.__localChatRequest||(app.state.intelligenceActiveThreadId||null)!==threadAtStart||
     app.state.localFinancialAccess!==access||
     app.state.localFinancialAccess?.token!==access?.token||
     signature!==intelligencePremiumSignature(app)){

@@ -47,6 +47,7 @@ async function categoryReviewEnable(app:any){
   const mode=app.state.mode,grant=await categoryReviewAPI().categoryReviewAuthorize({consent:'SYNTHETIC_CATEGORY_REVIEW_V1'});
   if(app.state.mode!==mode){await categoryReviewAPI().categoryReviewRevoke({token:grant.token});return;}
   const backup={intelligenceThreads:app.state.intelligenceThreads,intelligenceMessages:app.state.intelligenceMessages,intelligenceActiveThreadId:app.state.intelligenceActiveThreadId,intelligenceHydratedMode:app.state.intelligenceHydratedMode};
+  const streamingReset=typeof intelligenceResetStreamingState==='function'?intelligenceResetStreamingState(app):{aiCopilotBusy:false,aiCopilotStreaming:'',aiCopilotRequestId:null};
   // A newly issued grant must never display or confirm cached queue/preview/receipt
   // belonging to the preceding synthetic review session.
   app.setState({categoryReviewGrant:grant,categoryReviewBackup:backup,
@@ -54,7 +55,7 @@ async function categoryReviewEnable(app:any){
    categoryReviewConfirmed:false,categoryReviewReceipt:null,categoryReviewSelected:[],categoryReviewDetail:null,
    categoryReviewFilters:{},categoryReviewFilterRevision:(app.state.categoryReviewFilterRevision||0)+1,
    mfD04Drafts:{},mfD04Excluded:{},mfD04Selected:null,mfD04Error:'',mfD04Stage:'pending',mfD04Search:'',
-   intelligenceThreads:[],intelligenceMessages:[],intelligenceActiveThreadId:null});
+   intelligenceThreads:[],intelligenceMessages:[],intelligenceActiveThreadId:null,...streamingReset});
   await categoryReviewRefresh(app);
  });
 }
@@ -62,7 +63,8 @@ function categoryReviewDisable(app:any){
  const grant=app.state.categoryReviewGrant;
  // Invalidate in-flight queue replies and all state owned by the old grant.
  app.categoryReviewRequest=(app.categoryReviewRequest||0)+1;
- app.setState({...app.state.categoryReviewBackup,categoryReviewGrant:null,categoryReviewBackup:null,
+ const streamingReset=typeof intelligenceResetStreamingState==='function'?intelligenceResetStreamingState(app):{aiCopilotBusy:false,aiCopilotStreaming:'',aiCopilotRequestId:null};
+ app.setState({...app.state.categoryReviewBackup,...streamingReset,categoryReviewGrant:null,categoryReviewBackup:null,
   categoryReviewReport:null,categoryReviewQueue:null,categoryReviewPreview:null,categoryReviewSelected:[],
   categoryReviewConfirmed:false,categoryReviewReceipt:null,categoryReviewDetail:null,
   categoryReviewFilters:{},categoryReviewFilterRevision:(app.state.categoryReviewFilterRevision||0)+1,
