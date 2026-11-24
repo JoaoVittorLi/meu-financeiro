@@ -23,7 +23,10 @@ function scanProactiveInsights({ local, scope, clock = Date.now }) {
  const p = period(scope.month);
  const prev = period(scope.month, -1);
  const manual = local.db.load(scope.profile) || { transactions: [], budgets: {} };
- const limits = Object.entries(manual.budgets || {})
+ const rawBudgets = typeof local.db.effectiveBudgets === 'function'
+  ? (local.db.effectiveBudgets(scope.profile, scope.month)?.effective || {})
+  : { ...(manual.budgets || {}), ...(manual.monthlyBudgets?.[scope.month] || {}) };
+ const limits = Object.entries(rawBudgets)
   .filter(([, v]) => safeCents(v) && v >= 0)
   .map(([category, amountCents]) => ({ category, amountCents }));
 

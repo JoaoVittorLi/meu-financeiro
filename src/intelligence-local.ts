@@ -40,21 +40,22 @@ function localFinancialParse(question:string,categories:any[]=[]):{intent:LocalF
  if(/assinatura/.test(q))return {intent:'category',category:'Assinaturas'};
  return null;
 }
-async function localFinancialEnable(app:any){
+async function localFinancialEnable(app:any):Promise<boolean>{
  if(app.state.categoryReviewGrant&&typeof categoryReviewDisable==='function')categoryReviewDisable(app);
- const api=localFinancialAPI(),s=app.state;if(s.localFinancialBusy)return;
- if(!api?.localFinancialAuthorize){app.setState({localFinancialError:'Consulta local requer a versão desktop desta candidata.'});return;}
+ const api=localFinancialAPI(),s=app.state;if(s.localFinancialBusy)return false;
+ if(!api?.localFinancialAuthorize){app.setState({localFinancialError:'Consulta local requer a versão desktop desta candidata.'});return false;}
  const source=s.mode==='demo'?'manual':s.localFinancialSource||'bank',profile=s.mode==='demo'?'demo':'real';
  const scope:LocalFinancialScope={source,profile,planning:profile==='real'&&s.localFinancialPlanning===true,consent:'LOCAL_FINANCIAL_READ_V1'};
  const generation=(app.__localReadGeneration||0)+1;app.__localReadGeneration=generation;
  app.setState({localFinancialBusy:true,localFinancialError:''});
  try{
   const grant=await api.localFinancialAuthorize(scope);
-  if(app.__localReadGeneration!==generation||app.state.mode!==s.mode){void api.localFinancialRevoke?.(grant.token);return;}
+  if(app.__localReadGeneration!==generation||app.state.mode!==s.mode){void api.localFinancialRevoke?.(grant.token);return false;}
   app.__ic2Conversation=null;app.__ic2InvestigationActive=false; // Invalidate I2-A when renewing read grant.
   const backup=s.localFinancialAccess?.backup||{intelligenceThreads:s.intelligenceThreads,intelligenceMessages:s.intelligenceMessages,intelligenceActiveThreadId:s.intelligenceActiveThreadId,intelligenceHydratedMode:s.intelligenceHydratedMode};
-  app.setState({localFinancialAccess:{...grant,backup},localFinancialBusy:false,localFinancialRadar:null,intelligenceCopilotInsights:null,intelligenceThreads:[],intelligenceMessages:[],intelligenceActiveThreadId:null,intelligenceDraft:'',intelligencePreparedQuestion:'',workIntelligenceDemo:s.workIntelligenceDemo?{...s.workIntelligenceDemo,enabled:false}:undefined},()=>{void localFinancialRadar(app);if(typeof intelligencePremiumLoad==='function')void intelligencePremiumLoad(app);void intelligenceCopilotInsightsLoad(app);});
- }catch{app.setState({localFinancialBusy:false,localFinancialError:'Não foi possível autorizar a leitura local. Nenhum dado foi consultado por esta solicitação.'});}
+  await new Promise<void>((resolve)=>app.setState({localFinancialAccess:{...grant,backup},localFinancialBusy:false,localFinancialRadar:null,intelligenceCopilotInsights:null,intelligenceThreads:[],intelligenceMessages:[],intelligenceActiveThreadId:null,intelligenceDraft:'',intelligencePreparedQuestion:'',workIntelligenceDemo:s.workIntelligenceDemo?{...s.workIntelligenceDemo,enabled:false}:undefined},()=>{void localFinancialRadar(app);if(typeof intelligencePremiumLoad==='function')void intelligencePremiumLoad(app);void intelligenceCopilotInsightsLoad(app);resolve();}));
+  return true;
+ }catch{app.setState({localFinancialBusy:false,localFinancialError:'Não foi possível autorizar a leitura local. Nenhum dado foi consultado por esta solicitação.'});return false;}
 }
 function localFinancialDisable(app:any){
  app.__ic2Conversation=null;
@@ -101,16 +102,17 @@ async function localFinancialSubmit(app:any,question:string){
  // I3-01 investigations use the already-authorized IC2 read pipeline, not a
  // V3 decorative card. Follow-ups retain IC2 context without copying money.
  const foldedQuestion=intelligenceFoldText(q);
- const m3ActionIntent=
-  /\b(coloque|coloquem|categoriz|recategoriz|classifiqu|reclassifiqu|mova|mover|alter[ea]r?\s+(?:a\s+)?categoria|mud[ea]r?\s+(?:a\s+)?categoria)\b/.test(foldedQuestion)||
-  /(salario|salarios|renda|remuneracao|holerite|recebi|ganho).*(orcament|limite|reorganiz|organiz|distribu|redistribu|ajust|guardar|poupar|reservar)|(?:reorganiz|redistribu|recalcul|equilibr)\w*\s+(?:os?\s+|meus?\s+)?orcament/.test(foldedQuestion)||
-  /^(?:por favor,?\s*)?(?:sempre que|toda vez que)\b/.test(foldedQuestion)||
-  /\b(?:regra(?:\s+futura|\s+automatica)?\s+(?:para|quando)|(?:desativ|paus|desabilit|ativ|reabilit|habilit)\w*\s+(?:a\s+)?regra)\b/.test(foldedQuestion)||
-  /\b(?:crie|criar|adicione|adicionar|inclua|incluir|nova|renomei\w*|mud\w*\s+o\s+nome|alter\w*\s+o\s+nome)\s+(?:a\s+)?(?:subcategoria|categoria)\b/.test(foldedQuestion)||
-  /^(?:por favor,?\s*)?(?:deixe|defin\w*|ajust\w*|mud\w*|alter\w*|coloque|fique com)\s+(?:o\s+|meu\s+)?(?:limite|orcamento|teto)\b/.test(foldedQuestion)||
-  /\b(?:despesa prevista|receita prevista|conta prevista|compromisso|parcela prevista|planejamento)\b.*\b(?:registr|adicion|crie|criar|agend|cancel|reativ|acabamos de simular|simul)\b|\b(?:registr|adicion|crie|criar|agend|cancel|reativ)\w*.*\b(?:despesa prevista|receita prevista|conta prevista|compromisso|parcela prevista|planejamento)\b/.test(foldedQuestion)||
-  /^(?:por favor,?\s*)?(?:alter|mud|atualiz|ajust|remarqu)\w*\s+(?:o\s+|a\s+)?(?:vencimento|data|valor)\b/.test(foldedQuestion)||
-  /\b(?:gostei.*mais|guardar.*a mais|poupar.*a mais|aument\w*.*reserva|trave |fixe |destrave|desbloque|reduza mais|use o valor que voce sugeriu|economia sugerida|reducao sugerida)\b/.test(foldedQuestion);
+ const m3ActionIntent=typeof intelligenceIsM3ActionIntent==='function'
+  ?intelligenceIsM3ActionIntent(foldedQuestion)
+  :/\b(coloque|coloquem|categoriz|recategoriz|classifiqu|reclassifiqu|mova|mover|alter[ea]r?\s+(?:a\s+)?categoria|mud[ea]r?\s+(?:a\s+)?categoria)\b/.test(foldedQuestion)||
+   /(salario|salarios|renda|remuneracao|holerite|recebi|ganho).*(orcament|limite|reorganiz|organiz|distribu|redistribu|ajust|guardar|poupar|reservar)|(?:reorganiz|redistribu|recalcul|equilibr)\w*\s+(?:os?\s+|meus?\s+)?orcament/.test(foldedQuestion)||
+   /^(?:por favor,?\s*)?(?:sempre que|toda vez que)\b/.test(foldedQuestion)||
+   /\b(?:regra(?:\s+futura|\s+automatica)?\s+(?:para|quando)|(?:desativ|paus|desabilit|ativ|reabilit|habilit)\w*\s+(?:a\s+)?regra)\b/.test(foldedQuestion)||
+   /\b(?:crie|criar|adicione|adicionar|inclua|incluir|nova|renomei\w*|mud\w*\s+o\s+nome|alter\w*\s+o\s+nome)\s+(?:a\s+)?(?:subcategoria|categoria)\b/.test(foldedQuestion)||
+   /^(?:por favor,?\s*)?(?:deixe|defin\w*|ajust\w*|mud\w*|alter\w*|coloque|fique com)\s+(?:o\s+|meu\s+)?(?:limite|orcamento|teto)\b/.test(foldedQuestion)||
+   /\b(?:despesa prevista|receita prevista|conta prevista|compromisso|parcela prevista|planejamento)\b.*\b(?:registr|adicion|crie|criar|agend|cancel|reativ|acabamos de simular|simul)\b|\b(?:registr|adicion|crie|criar|agend|cancel|reativ)\w*.*\b(?:despesa prevista|receita prevista|conta prevista|compromisso|parcela prevista|planejamento)\b/.test(foldedQuestion)||
+   /^(?:por favor,?\s*)?(?:alter|mud|atualiz|ajust|remarqu)\w*\s+(?:o\s+|a\s+)?(?:vencimento|data|valor)\b/.test(foldedQuestion)||
+   /\b(?:gostei.*mais|guardar.*a mais|poupar.*a mais|aument\w*.*reserva|trave |fixe |destrave|desbloque|reduza mais|use o valor que voce sugeriu|economia sugerida|reducao sugerida)\b/.test(foldedQuestion);
  const financialInvestigation=/por que.*(despes|gast)|investig|categorias?.*contribu|estabelec.*(cresc|aument)|mostre.*estabelec|despes.*(aument|subi)|gast.*(aument|mais)|onde.*gastando|o que aumentou|compar.*(janeiro|fevereiro|marco|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro|mes)/.test(foldedQuestion);
  const sameThread=!!app.__ic2Conversation?.answerId&&messages.some((m:any)=>m.id===app.__ic2Conversation.answerId);
  const i3Followup=sameThread&&!!app.__ic2InvestigationActive&&
@@ -129,8 +131,8 @@ async function localFinancialSubmit(app:any,question:string){
  const request=(app.__localChatRequest||0)+1;app.__localChatRequest=request;
  const user:IntelligenceChatMessage={id:'local-u-'+Date.now(),role:'user',text:q,status:'sent',
   createdAt:intelligenceNowTime(),scopeLabel:scope.label,periodLabel:month};
- app.setState({localFinancialBusy:true,intelligenceDraft:''});
- let reply:LocalFinancialReply=null,operational:any=null,ic2:MfIC2Reply|null=null,m3Draft:any=null,solReply:any=null,error='';
+ app.setState({localFinancialBusy:true,intelligenceDraft:'',intelligencePreparedQuestion:''});
+ let reply:LocalFinancialReply=null,operational:any=null,ic2:MfIC2Reply|null=null,m3Draft:any=null,solReply:any=null,error='',permissionActions:any[]=undefined;
  try{
   if(m3ActionIntent&&typeof api?.copilotActionInterpret==='function'){
    const draft=await api.copilotActionInterpret({token:access.token,source:access.source,profile:access.profile,month,question:q});
@@ -153,18 +155,26 @@ async function localFinancialSubmit(app:any,question:string){
       source:access.source,profile:access.profile,month,question:q,density,pageContext,
       ...(conversationId?{conversationId}:{})});
    if(!mfIC2Valid(ic2,access,month))throw Error('Resposta IC2 não verificada.');
-   if(ic2.status==='unsupported'&&app.state.aiStatus?.connected&&app.state.aiCopilotCap?.enabled&&typeof api?.aiCopilotAsk==='function'){
-    const requestId='sol-'+Date.now();
-    app.setState({aiCopilotBusy:true,aiCopilotStreaming:'',aiCopilotRequestId:requestId});
-    try{
-     solReply=await api.aiCopilotAsk({token:access.token,source:access.source,profile:access.profile,month,question:q,effortOverride:'auto',requestId});
-     if(solReply?.inferenceStatus&&app.state.aiCopilotCap){
-      app.setState({aiCopilotCap:{...app.state.aiCopilotCap,inferenceStatus:solReply.inferenceStatus}});
+   if(ic2.status==='unsupported'){
+    if(app.state.aiStatus?.connected&&app.state.aiCopilotCap?.enabled&&typeof api?.aiCopilotAsk==='function'){
+     const requestId='sol-'+Date.now();
+     app.setState({aiCopilotBusy:true,aiCopilotStreaming:'',aiCopilotRequestId:requestId});
+     try{
+      const history=typeof intelligenceRecentPlainHistory==='function'?intelligenceRecentPlainHistory(messages):[];
+      solReply=await api.aiCopilotAsk({token:access.token,source:access.source,profile:access.profile,month,question:q,history,effortOverride:'auto',requestId});
+      if(solReply?.inferenceStatus&&app.state.aiCopilotCap){
+       app.setState({aiCopilotCap:{...app.state.aiCopilotCap,inferenceStatus:solReply.inferenceStatus}});
+      }
+     }catch(solErr:any){
+      error='**Não foi possível consultar o GPT-6.2 Sol:** '+String(solErr?.message||'falha inesperada')+' Nenhuma resposta foi simulada.';
+      permissionActions=[{id:'open_ai_settings',label:'Verificar Configurações de IA'}];
+     }finally{
+      app.setState({aiCopilotBusy:false,aiCopilotStreaming:'',aiCopilotRequestId:null});
      }
-    }catch(solErr:any){
-     error=String(solErr?.message||'');
-    }finally{
-     app.setState({aiCopilotBusy:false,aiCopilotStreaming:'',aiCopilotRequestId:null});
+    }else if(app.state.aiStatus?.connected===true){
+     permissionActions=[{id:'enable_ai_copilot',label:'Ativar GPT-6.2 Sol e responder',primary:true,retryQuestion:q},{id:'open_ai_settings',label:'Configurações de IA'}];
+    }else{
+     permissionActions=[{id:'connect_chatgpt',label:'Conectar ChatGPT',primary:true}];
     }
    }
   }else if(typeof api?.intelligenceOperationalAsk==='function'){
@@ -203,7 +213,7 @@ async function localFinancialSubmit(app:any,question:string){
  const finalStatus:IntelligenceChatMessage['status']=m3Draft?
   (m3Draft.status==='ready'?'done':'unsupported'):solReply?.text?
   'done':error&&ic2?.status==='unsupported'?
-  'unavailable':ic2?
+  'error':ic2?
   (['ready','partial'].includes(ic2.status)?'done':ic2.status==='unsupported'||ic2.status==='needs_clarification'?'unsupported':
    ic2.status==='denied'||ic2.status==='stale'?'unavailable':'error'):operational?
   (state==='ready'||state==='empty'?'done':state==='unsupported'?'unsupported':state==='denied'||state==='expired'?'unavailable':'error'):
@@ -235,6 +245,7 @@ async function localFinancialSubmit(app:any,question:string){
   ic2Reply:ic2||undefined,
   ic2FollowUps:ic2&&Array.isArray(ic2.followUps)?ic2.followUps.slice(0,3):undefined,
   m3ActionDraft:m3Draft||undefined,
+  permissionActions,
   operationalActions:factsValid&&!visualV3&&Array.isArray(operational.actions)?operational.actions:[],
   operationalEvidence:evidence,
   details:m3Draft?'Prévia supervisionada M3 · confirmação nativa e backup SQLite antes de qualquer escrita.':

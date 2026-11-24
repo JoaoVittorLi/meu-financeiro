@@ -50,7 +50,7 @@ test('Configurações não coletam segredos no renderer',()=>{
 
 const ts=require('typescript');
 
-function compileIntelligenceRuntime(){
+function compileIntelligenceRuntime(desktopOverride=null){
   const mdSrc=source('src/ai-markdown.ts');
   const viewSrc=source('src/intelligence-view.ts');
   const integSrc=source('src/intelligence-integration.ts');
@@ -69,13 +69,13 @@ function compileIntelligenceRuntime(){
   ];
   const fn=new Function(
     'h','Icon','Card','DEFAULT_CATEGORY_INFOS','desktop','spanLabel','dateSpan','prettyMonth','iso','document','FinancePeriodLedger',
-    js+';return {renderIntelligencePanel,renderIntelligenceView,renderIntelligenceActionProposalCard,intelligenceOpenFullChat,intelligenceSubmitQuestion,intelligenceParseCategorizeIntent,intelligenceBuildCategorizeProposal,intelligenceExpandProposalCandidates,intelligenceSelectActionCandidate,intelligenceResolveActionProposal,intelligenceConversationState,intelligenceCreateThread,intelligenceSelectThread,intelligenceDeleteThread,intelligenceClearHistory,intelligenceGroupThreadsByDate,intelligenceSearchThreads,intelligenceSwitchProfileMode,intelligenceSanitizeThreadList,intelligenceBuildStructuredSummaryCard};'
+    js+';return {renderIntelligencePanel,renderIntelligenceView,renderIntelligenceActionProposalCard,intelligenceOpenFullChat,intelligenceSubmitQuestion,intelligenceParseCategorizeIntent,intelligenceBuildCategorizeProposal,intelligenceExpandProposalCandidates,intelligenceSelectActionCandidate,intelligenceResolveActionProposal,intelligenceConversationState,intelligenceCreateThread,intelligenceSelectThread,intelligenceDeleteThread,intelligenceClearHistory,intelligenceGroupThreadsByDate,intelligenceSearchThreads,intelligenceSwitchProfileMode,intelligenceSanitizeThreadList,intelligenceBuildStructuredSummaryCard,intelligenceClassifyQuestion};'
   );
   return {
     h,
     DEFAULT_CATEGORY_INFOS,
     runtime:fn(
-      h,Icon,Card,DEFAULT_CATEGORY_INFOS,null,
+      h,Icon,Card,DEFAULT_CATEGORY_INFOS,desktopOverride,
       ()=> '01/11/2026 a 11/11/2026',
       ()=> ({start:'2026-11-01',end:'2026-11-11'}),
       ym=>ym,
@@ -235,38 +235,56 @@ test('I1-A.1 confirmação de prévia e negação não realizam escrita financei
   assert.equal(app.state.intelligenceMessages[5].proposal.status,'denied');
 });
 
-test('I1-A.2 continuidade entre drawer e aba principal e distinção dos 4 estados de conversação (Problemas A, B e C)',async()=>{
-  const {runtime}=compileIntelligenceRuntime();
+test('I1-A.2 continuidade entre drawer e aba principal, roteamento pós-P0 sem I2-A legado e distinção dos estados de conversação',async()=>{
+  let copilotAsks=[];
+  const {runtime}=compileIntelligenceRuntime({
+    aiCopilotAsk:async(input)=>{
+      copilotAsks.push(input);
+      return {model:'gpt-6.2-sol',effort:'low',text:'Olá! Estou pronto para ajudar com dúvidas gerais.',inferenceStatus:'INFERÊNCIA_REAL_VERIFICADA'};
+    }
+  });
 
-  // Problema C: estado inicial da beta.8 {connected:false, secure:false} deve ser oauth_disconnected e não service_unavailable
-  const app=makeFakeApp({aiStatus:{connected:false,secure:false},aiError:''});
+  // Estado inicial desconectado sem leitura financeira: nunca exibe "Aguarda I2-A"
+  const app=makeFakeApp({aiStatus:{connected:false,secure:false},aiError:'',aiCopilotCap:{available:true,enabled:false}});
   assert.equal(runtime.intelligenceConversationState(app).kind,'oauth_disconnected');
   await runtime.intelligenceSubmitQuestion(app,'Qual é a minha projeção para o próximo trimestre?');
-  assert.equal(app.state.intelligenceMessages[1].status,'unavailable');
-  assert.match(app.state.intelligenceMessages[1].text,/Conta desconectada/);
+  assert.equal(app.state.intelligenceMessages[1].status,'permission_needed');
+  assert.match(app.state.intelligenceMessages[1].text,/Autorização de leitura financeira necessária/);
+  assert.equal(app.state.intelligenceMessages[1].permissionActions[0].id,'authorize_local_read');
+  assert.doesNotMatch(app.state.intelligenceMessages[1].text,/Aguarda I2-A|Funcionalidade ainda não implementada/);
 
-  // Conta autenticada mas conversação aberta não implementada
-  app.setState({aiStatus:{connected:true,secure:true,email:'user@test.local'},aiCapabilities:{conversationalInferenceEnabled:false}});
-  assert.equal(runtime.intelligenceConversationState(app).kind,'oauth_connected_unimplemented');
-  await runtime.intelligenceSubmitQuestion(app,'Explique minhas despesas deste mês');
-  assert.equal(app.state.intelligenceMessages[3].status,'unimplemented');
-  assert.match(app.state.intelligenceMessages[3].text,/Funcionalidade ainda não implementada/);
+  // Pergunta geral com OAuth desconectado orienta conectar ChatGPT ou autorizar leitura local
+  await runtime.intelligenceSubmitQuestion(app,'Opa, testando!');
+  assert.equal(app.state.intelligenceMessages[3].status,'unavailable');
+  assert.match(app.state.intelligenceMessages[3].text,/ChatGPT desconectado/);
+  assert.equal(app.state.intelligenceMessages[3].permissionActions[0].id,'connect_chatgpt');
 
-  // Problema B: quando chat_available é retornado, nunca responder "Conta não autenticada"
-  app.setState({aiStatus:{connected:true,secure:true,email:'user@test.local'},aiCapabilities:{conversationalInferenceEnabled:true}});
+  // Conta OAuth autenticada sem opt-in GPT-6.2 Sol: exibe CTA acionável, jamais "Aguarda I2-A"
+  app.setState({aiStatus:{connected:true,secure:true,email:'user@test.local'},aiCopilotCap:{available:true,enabled:false}});
+  assert.equal(runtime.intelligenceConversationState(app).kind,'oauth_connected_needs_optin');
+  await runtime.intelligenceSubmitQuestion(app,'Opa, testando!');
+  assert.equal(app.state.intelligenceMessages[5].status,'permission_needed');
+  assert.match(app.state.intelligenceMessages[5].text,/GPT-6\.2 Sol/);
+  assert.equal(app.state.intelligenceMessages[5].permissionActions[0].id,'enable_ai_copilot');
+  assert.doesNotMatch(app.state.intelligenceMessages[5].text,/Aguarda I2-A|Funcionalidade ainda não implementada/);
+
+  // Com OAuth + opt-in habilitado e sem leitura financeira: pergunta geral vai ao GPT-6.2 Sol (token: null)
+  app.setState({aiCopilotCap:{available:true,enabled:true}});
   assert.equal(runtime.intelligenceConversationState(app).kind,'chat_available');
-  await runtime.intelligenceSubmitQuestion(app,'Como está meu orçamento deste mês?');
-  assert.equal(app.state.intelligenceMessages[5].status,'unimplemented');
-  assert.match(app.state.intelligenceMessages[5].text,/Conta autenticada e serviço de conversação disponível/);
-  assert.doesNotMatch(app.state.intelligenceMessages[5].text,/Conta não autenticada|Conta desconectada/);
+  await runtime.intelligenceSubmitQuestion(app,'Opa, testando!');
+  assert.equal(copilotAsks.length,1);
+  assert.equal(copilotAsks[0].token,null);
+  assert.equal(app.state.intelligenceMessages[7].status,'done');
+  assert.match(app.state.intelligenceMessages[7].text,/pronto para ajudar/);
+  assert.doesNotMatch(app.state.intelligenceMessages[7].text,/Conta não autenticada|Conta desconectada|Aguarda I2-A/);
 
-  // Problema A: erro de conexão existente não pode ser apagado antes de intelligenceConversationState()
+  // Erro de serviço existente não pode ser apagado antes de intelligenceConversationState()
   app.setState({aiError:'Falha temporária de conexão'});
   assert.equal(runtime.intelligenceConversationState(app).kind,'service_unavailable');
-  await runtime.intelligenceSubmitQuestion(app,'Analise meu fluxo');
-  assert.equal(app.state.intelligenceMessages[7].status,'error');
-  assert.match(app.state.intelligenceMessages[7].text,/Serviço temporariamente indisponível/);
-  assert.match(app.state.intelligenceMessages[7].text,/Falha temporária de conexão/);
+  await runtime.intelligenceSubmitQuestion(app,'Como montar reserva de emergência?');
+  assert.equal(app.state.intelligenceMessages[9].status,'error');
+  assert.match(app.state.intelligenceMessages[9].text,/Serviço temporariamente indisponível/);
+  assert.match(app.state.intelligenceMessages[9].text,/Falha temporária de conexão/);
   assert.equal(app.state.aiError,'Falha temporária de conexão');
 
   // Continuidade do histórico entre drawer e aba principal

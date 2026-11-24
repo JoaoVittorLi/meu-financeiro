@@ -59,6 +59,8 @@ function renderMfB05Main(app) {
   {kind:'oauth_disconnected',pill:'Conta desconectada · modo local',css:'is-offline'};
  const scope=s.intelligenceDraftScope||intelligencePageScope(app,s.intelligenceContext||s.page);
  const active=s.localFinancialAccess?.token&&s.localFinancialAccess?.expiresAt>Date.now();
+ const api=typeof desktop!=='undefined'?desktop as any:null;
+ const runAct=(act:any)=>{if(typeof intelligenceRunPermissionAction==='function')void intelligenceRunPermissionAction(app,act);};
  const section=tab==='today'?renderMfB05Today(app):
   tab==='chat'?renderMfB05Chat(app,messages,convState,scope):
   renderMfB05Actions(app,proposals);
@@ -67,12 +69,22 @@ function renderMfB05Main(app) {
   h('div',{className:'mf-b05-top'},
    h('strong',{className:'mf-b05-brand'},'Inteligência'),
    h('span',{className:'mf-b05-status'},
-    h('i',{className:'mf-b05-status-dot','aria-hidden':'true'}),
-    s.mode==='demo'?'Ambiente de demonstração':active?'Leitura local autorizada':'Sem leitura pessoal autorizada')),
+    h('i',{className:'mf-b05-status-dot '+(active?'is-active':'is-idle'),'aria-hidden':'true'}),
+    s.mode==='demo'?'Ambiente de demonstração':active?'Leitura local autorizada':convState?.pill||'Sem leitura pessoal autorizada')),
   mfB05Tabs(app,tab),
-  h('details',{className:'mf-b05-permissions'},
-   h('summary',{},active?'Gerenciar permissão de consulta':'Autorizar consulta financeira'),
-   renderIntelligenceAccess(app)),
+  h('div',{className:'mf-b05-cap-bar'},
+   h('details',{className:'mf-b05-permissions'},
+    h('summary',{},active?'Gerenciar permissão de consulta':'Autorizar consulta financeira'),
+    typeof renderLocalFinancialAccess==='function'?renderLocalFinancialAccess(app):renderIntelligenceAccess(app)),
+   api?.aiStatus?h('span',{className:'mf-b05-cap-chip '+(s.aiStatus?.connected?'is-ok':'')},
+    s.aiStatus?.connected?'OAuth ChatGPT: Conectado':'OAuth ChatGPT: Não conectado',
+    !s.aiStatus?.connected?h('button',{type:'button',className:'mf-b05-cap-btn',onClick:()=>runAct({id:'connect_chatgpt',label:'Conectar ChatGPT'})},'Conectar'):null):null,
+   api?.aiCopilotCapabilityStatus?h('span',{className:'mf-b05-cap-chip '+(s.aiCopilotCap?.enabled?'is-ok':'')},
+    s.aiCopilotCap?.enabled?'GPT-6.2 Sol: Ativo':s.aiCopilotCap?.available?'GPT-6.2 Sol: Inativo':'GPT-6.2 Sol: '+String(s.aiCopilotCap?.inferenceStatus||'Bloqueado nesta build'),
+    !s.aiCopilotCap?.enabled&&s.aiCopilotCap?.available?h('button',{type:'button',className:'mf-b05-cap-btn',onClick:()=>runAct({id:'enable_ai_copilot',label:'Ativar'})},'Ativar'):null):null,
+   api?.copilotActionCapabilityStatus?h('span',{className:'mf-b05-cap-chip '+(s.m3ActionCap?.enabled?'is-ok':'')},
+    s.m3ActionCap?.enabled?'Ações M3: Ativas':s.m3ActionCap?.available?'Ações M3: Desativadas':'Ações M3: Indisponível',
+    !s.m3ActionCap?.enabled&&s.m3ActionCap?.available?h('button',{type:'button',className:'mf-b05-cap-btn',onClick:()=>runAct({id:'enable_m3_actions',label:'Ativar'})},'Ativar'):null):null),
   s.categoryReviewPreview?h('div',{className:'mf-b05-review-pending',role:'status'},
    h('span',{},'Existe uma prévia supervisionada aguardando revisão. '),
    h('button',{type:'button',className:'mf-b05-link',onClick:()=>void categoryReviewOpen(app)},

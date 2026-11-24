@@ -167,4 +167,4 @@ class ChatGPTDemoClient{
     } finally {this.busy=false;this.activeController=null;}
   }
 }
-module.exports={ChatGPTDemoClient,readSSE,normalizedError};
+module.exports={ChatGPTDemoClient,readSSE,normalizedError,connectionError};

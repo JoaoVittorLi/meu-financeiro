@@ -83,7 +83,7 @@ function renderMfB05Actions(app,proposals) {
     'Ativa em '+String((s.autoCategoryStatus.permissions||[]).filter((x:any)=>x.enabled).length)+
     ' conta(s). Rótulos aplicados: '+String(s.autoCategoryStatus.counts?.classified||0)+
     ' · revisão: '+String(s.autoCategoryStatus.counts?.awaitingReview||0)+'.':
-    'Desativada. Habilite explicitamente as contas no módulo Movimentações quando o canal estável estiver homologado.'),
+    'Desativada. Habilite explicitamente por conta no módulo Movimentações em Categorias e regras.'),
    h('p',{},'Motor local de evidências históricas, não inferência de um modelo. Regras e correções humanas prevalecem.'),
    h('button',{type:'button',className:'ghost-button',onClick:()=>{
     app.setState({txSource:'bank',txReviewOnly:true});

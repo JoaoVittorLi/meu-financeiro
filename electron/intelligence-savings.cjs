@@ -73,7 +73,9 @@ function recommendSavings({ local, scope, intention = {}, clock = Date.now }) {
  const first = snapshot(local, scope);
  const p = period(scope.month);
  const manualData = local.db.load(scope.profile) || { transactions: [], budgets: {} };
- const rawBudgets = manualData.budgets || {};
+ const rawBudgets = typeof local.db.effectiveBudgets === 'function'
+  ? (local.db.effectiveBudgets(scope.profile, scope.month)?.effective || {})
+  : { ...(manualData.budgets || {}), ...(manualData.monthlyBudgets?.[scope.month] || {}) };
  const budgetMap = new Map(Object.entries(rawBudgets).map(([k, v]) => [fold(k), safeCents(v) ? v : null]));
  const limits = Object.entries(rawBudgets)
   .filter(([, amountCents]) => safeCents(amountCents) && amountCents >= 0)

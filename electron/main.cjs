@@ -23,7 +23,7 @@ const {scanProactiveInsights}=require('./intelligence-proactive.cjs');
 const {interpretCopilotAction}=require('./copilot-actions.cjs');
 const {buildSalaryBudgetProposal}=require('./copilot-salary-budget.cjs');
 const {CopilotSessionContext}=require('./copilot-session-context.cjs');
-const {CopilotInferenceService}=require('./ai-copilot-service.cjs');
+const {CopilotInferenceService,resolveQaLoopbackMock}=require('./ai-copilot-service.cjs');
 const {AI_MODEL,AI_INFERENCE_STATES}=require('../shared/ai-policy.mjs');
 const {RCCategoryGateway}=require('./intelligence-category-rc.cjs');
 const {installD05Ipc}=require('./d05-ipc-adapter.cjs');
@@ -549,7 +549,19 @@ app.whenReady().then(async()=>{
  });
  vault=new PluggyVault(app.getPath('userData'),safeStorage);
  const aiVault=new AIAuthVault(app.getPath('userData'),safeStorage);
- const aiAuth=new ChatGPTSignIn({vault:aiVault,openExternal:url=>shell.openExternal(url)});
+ const qaCopilotMock=resolveQaLoopbackMock({appIsPackaged:app.isPackaged,smokeProfileActive,env:process.env});
+ let qaLoopbackConnected=qaCopilotMock.mockOAuth;
+ const realAiAuth=new ChatGPTSignIn({vault:aiVault,openExternal:url=>shell.openExternal(url)});
+ const aiAuth=qaCopilotMock.endpointUrl?{
+  vault:{
+   read:async()=>qaLoopbackConnected?{subject:'qa-synthetic-subject',email:'qa-synthetic@local.test',scopes:['chatgpt.tokens.use.direct']}:realAiAuth.vault.read(),
+   status:async()=>qaLoopbackConnected?{connected:true,secure:true,email:'qa-synthetic@local.test',model:AI_MODEL,scopeGranted:true}:realAiAuth.vault.status()
+  },
+  status:async()=>qaLoopbackConnected?{connected:true,secure:true,email:'qa-synthetic@local.test',model:AI_MODEL,scopeGranted:true}:realAiAuth.status(),
+  connect:async()=>{if(!qaLoopbackConnected)qaLoopbackConnected=true;return {connected:true,secure:true,email:'qa-synthetic@local.test',model:AI_MODEL,scopeGranted:true};},
+  disconnect:async()=>{qaLoopbackConnected=false;return realAiAuth.disconnect();},
+  accessToken:async()=>qaLoopbackConnected?'qa-loopback-token':realAiAuth.accessToken()
+ }:realAiAuth;
  const aiPersonal=new AIPersonalStore(app.getPath('userData'),safeStorage);
  const aiDemo=new ChatGPTDemoClient({auth:aiAuth,personalStore:aiPersonal});
  session.defaultSession.setPermissionRequestHandler((_wc,_permission,callback)=>callback(false));
@@ -1042,8 +1054,9 @@ app.whenReady().then(async()=>{
    return aiDemo.testDemo({caseId:input.caseId,effort:input.effort,creditsDisabledConfirmed:true,useSavedMemories:input.useSavedMemories,
      onDelta:delta=>{if(mainWindow&&!mainWindow.isDestroyed())mainWindow.webContents.send('ai:delta',{delta});}});
  });
+ const aiCopilotAvailable=!experimentalPackaged&&(!smokeProfileActive||Boolean(qaCopilotMock.endpointUrl));
  const isAiCopilotInferenceEnabled=()=>{
-  if(experimentalPackaged||smokeProfileActive)return false;
+  if(!aiCopilotAvailable)return false;
   try{
    return db?.db?.prepare("SELECT value FROM app_meta WHERE key='ai_copilot_inference_enabled'").get()?.value==='1';
   }catch{return false;}
@@ -1058,13 +1071,14 @@ app.whenReady().then(async()=>{
  copilotInference=new CopilotInferenceService({
   auth:aiAuth,
   personalStore:aiPersonal,
-  capabilityCheck:()=>isAiCopilotInferenceEnabled()
+  capabilityCheck:()=>isAiCopilotInferenceEnabled(),
+  ...(qaCopilotMock.endpointUrl?{endpointUrl:qaCopilotMock.endpointUrl}:{})
  });
  ipcMain.handle('ai:copilot-capability-status',async event=>{
   requireAppSender(event);
   const authStatus=await aiAuth.status().catch(()=>({connected:false}));
   return {
-   available:!(experimentalPackaged||smokeProfileActive),
+   available:aiCopilotAvailable,
    enabled:isAiCopilotInferenceEnabled(),
    model:AI_MODEL,
    inferenceStatus:aiCopilotInferenceState(),
@@ -1074,7 +1088,7 @@ app.whenReady().then(async()=>{
  });
  ipcMain.handle('ai:copilot-capability-enable',async event=>{
   requireAppSender(event);
-  forbidExperimentalNetwork();
+  if(!qaCopilotMock.endpointUrl)forbidExperimentalNetwork();
   if(!mainWindow||mainWindow.isDestroyed()||!mainWindow.isFocused())
    throw Error('Ativação do GPT-6.2 Sol exige janela ativa.');
   const answer=await dialog.showMessageBox(mainWindow,{
@@ -1100,19 +1114,22 @@ app.whenReady().then(async()=>{
  });
  ipcMain.handle('ai:copilot-ask',async(event,input)=>{
   requireAppSender(event);
-  forbidExperimentalNetwork();
+  if(!qaCopilotMock.endpointUrl)forbidExperimentalNetwork();
   if(!input||typeof input!=='object'||Array.isArray(input)||
-     Object.keys(input).some(k=>!['token','source','profile','month','question','effortOverride','requestId'].includes(k))||
+     Object.keys(input).some(k=>!['token','source','profile','month','question','history','effortOverride','requestId'].includes(k))||
      typeof input.question!=='string')
    throw Error('Parâmetros de consulta ao Copiloto inválidos.');
-  const scope=scopeOf({token:input.token,source:input.source,profile:input.profile,month:input.month},event.sender.id);
+  const hasToken=typeof input.token==='string'&&input.token.trim().length>0;
+  const scope=hasToken?scopeOf({token:input.token,source:input.source,profile:input.profile,month:input.month},event.sender.id):null;
+  const history=Array.isArray(input.history)?input.history.slice(-8):[];
   const effortOverride=['auto','low','medium','high'].includes(input.effortOverride)?input.effortOverride:'auto';
   const requestId=typeof input.requestId==='string'?input.requestId.slice(0,80):'sol';
   const res=await copilotInference.ask({
-   local:localFinancial,
+   local:scope?localFinancial:null,
    scope,
-   sessionCtx:copilotSessionCtx,
+   sessionCtx:scope?copilotSessionCtx:null,
    question:input.question,
+   history,
    effortOverride,
    onDelta:delta=>{
     if(mainWindow&&!mainWindow.isDestroyed()){
@@ -1120,9 +1137,9 @@ app.whenReady().then(async()=>{
     }
    }
   });
-  if(res?.inferenceStatus===AI_INFERENCE_STATES.LIVE_VERIFIED&&db?.db){
+  if((res?.inferenceStatus===AI_INFERENCE_STATES.LIVE_VERIFIED||res?.inferenceStatus===AI_INFERENCE_STATES.MOCK_TESTED)&&db?.db){
    try{
-    db.db.prepare("INSERT OR REPLACE INTO app_meta(key,value) VALUES('gpt62_sol_inference_state',?)").run(AI_INFERENCE_STATES.LIVE_VERIFIED);
+    db.db.prepare("INSERT OR REPLACE INTO app_meta(key,value) VALUES('gpt62_sol_inference_state',?)").run(res.inferenceStatus);
    }catch{}
   }
   return res;

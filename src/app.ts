@@ -1479,7 +1479,7 @@ class App extends React.Component<any,State>{
  return h('header',{className:'topbar'},
    h('div',{className:'top-left'},h('div',{className:'page-kicker'},'FINANÇAS PESSOAIS / '+(labels[this.state.page]||'').toUpperCase()),
      h('h1',{},labels[this.state.page]),h('p',{},this.state.page==='overview'?'Saldo, receitas e despesas do período selecionado.':
-     this.state.page==='assistant'?'Compare o custo e o impacto das parcelas.':this.state.page==='intelligence'?'Prévia de insights e ferramentas de análise.':this.state.page==='transactions'?'Visualize e organize suas movimentações.':this.state.page==='banks'?'Saldos e referências das suas contas.':this.state.page==='settings'?'Preferências e dados do aplicativo.':'Acompanhe seus registros.')),
+     this.state.page==='assistant'?'Compare o custo e o impacto das parcelas.':this.state.page==='intelligence'?'Panorama financeiro, conversa assistida e ações supervisionadas.':this.state.page==='transactions'?'Visualize e organize suas movimentações.':this.state.page==='banks'?'Saldos e referências das suas contas.':this.state.page==='settings'?'Preferências e dados do aplicativo.':'Acompanhe seus registros.')),
    h('div',{className:'header-actions'},
 
      this.state.page==='overview'?h('div',{className:'mf-quick-add'},h('button',{className:'primary-button mf-quick-trigger','aria-expanded':this.state.quickAddOpen,

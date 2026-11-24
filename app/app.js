@@ -2530,7 +2530,7 @@ class App extends React.Component {
         const last = (_a = this.state.bank.data.last) === null || _a === void 0 ? void 0 : _a.completedAt;
         const periodControl = (this.state.page === 'overview' || this.state.page === 'transactions' && !this.state.txReviewOnly && !this.state.txOrganize);
         return h('header', { className: 'topbar' }, h('div', { className: 'top-left' }, h('div', { className: 'page-kicker' }, 'FINANÇAS PESSOAIS / ' + (labels[this.state.page] || '').toUpperCase()), h('h1', {}, labels[this.state.page]), h('p', {}, this.state.page === 'overview' ? 'Saldo, receitas e despesas do período selecionado.' :
-            this.state.page === 'assistant' ? 'Compare o custo e o impacto das parcelas.' : this.state.page === 'intelligence' ? 'Prévia de insights e ferramentas de análise.' : this.state.page === 'transactions' ? 'Visualize e organize suas movimentações.' : this.state.page === 'banks' ? 'Saldos e referências das suas contas.' : this.state.page === 'settings' ? 'Preferências e dados do aplicativo.' : 'Acompanhe seus registros.')), h('div', { className: 'header-actions' }, this.state.page === 'overview' ? h('div', { className: 'mf-quick-add' }, h('button', { className: 'primary-button mf-quick-trigger', 'aria-expanded': this.state.quickAddOpen,
+            this.state.page === 'assistant' ? 'Compare o custo e o impacto das parcelas.' : this.state.page === 'intelligence' ? 'Panorama financeiro, conversa assistida e ações supervisionadas.' : this.state.page === 'transactions' ? 'Visualize e organize suas movimentações.' : this.state.page === 'banks' ? 'Saldos e referências das suas contas.' : this.state.page === 'settings' ? 'Preferências e dados do aplicativo.' : 'Acompanhe seus registros.')), h('div', { className: 'header-actions' }, this.state.page === 'overview' ? h('div', { className: 'mf-quick-add' }, h('button', { className: 'primary-button mf-quick-trigger', 'aria-expanded': this.state.quickAddOpen,
             onClick: () => this.setState({ quickAddOpen: !this.state.quickAddOpen }) }, h(Icon, { name: 'plus', size: 16 }), 'Adicionar'), this.state.quickAddOpen ? h('div', { className: 'mf-quick-menu' }, h('button', { onClick: () => this.openQuickEntry('expense') }, 'Nova despesa'), h('button', { onClick: () => this.openQuickEntry('income') }, 'Nova receita'), h('button', { onClick: () => { this.setState({ quickAddOpen: false }); this.openPlan(undefined, 'expense'); } }, 'Compromisso futuro')) : null) : this.state.page === 'transactions' ? h('button', { type: 'button', className: 'primary-button', onClick: () => this.openQuickEntry('expense') }, h(Icon, { name: 'plus', size: 16 }), 'Novo lançamento') : null, periodControl ? h('div', { className: 'overview-period-controls' }, h(PeriodPicker, { mode: this.state.overviewPeriod, span: period, onChange: (m, a, b) => this.setSharedPeriod(m, a, b) }), this.state.page === 'overview' && configured ? h('button', { type: 'button', className: 'mf-refresh-button', disabled: this.state.bankBusy, onClick: () => this.syncBank(false),
             title: last ? 'Última consulta: ' + new Date(last).toLocaleString('pt-BR') : 'Ainda não sincronizado' }, h(Icon, { name: 'refresh', size: 16 }), this.state.bankBusy ? 'Atualizando…' : 'Atualizar') : null) :
             this.state.page === 'budgets' ? h(StyledSelect, { wrapperClass: 'month-dropdown', className: 'mf-month-trigger', value: this.state.month,
@@ -4487,6 +4487,77 @@ function intelligencePrepare(app, question) {
         intelligenceEnsureHydrated(app);
     app.setState({ page: 'intelligence', intelligenceTab: 'chat', intelligenceMainMode: 'chat', intelligenceDraft: question, intelligenceDraftScope: app.state.intelligencePanelOpen && app.state.intelligenceContextSnapshot ? app.state.intelligenceContextSnapshot : intelligencePageScope(app), intelligencePanelOpen: false, detail: null, planSelected: null });
 }
+async function intelligenceRunPermissionAction(app, action) {
+    var _a, _b, _c, _d;
+    if (!(action === null || action === void 0 ? void 0 : action.id))
+        return;
+    const api = desktop;
+    if (action.id === 'authorize_local_read') {
+        if (typeof localFinancialEnable === 'function') {
+            const ok = await localFinancialEnable(app);
+            if (ok && action.retryQuestion && typeof intelligenceSubmitQuestion === 'function') {
+                void intelligenceSubmitQuestion(app, action.retryQuestion);
+            }
+        }
+        return;
+    }
+    if (action.id === 'enable_ai_copilot') {
+        if (typeof (api === null || api === void 0 ? void 0 : api.aiCopilotCapabilityEnable) === 'function') {
+            try {
+                const res = await api.aiCopilotCapabilityEnable();
+                if (res && !res.cancelled && res.enabled) {
+                    await new Promise((resolve) => app.setState({ aiCopilotCap: { available: true, ...(app.state.aiCopilotCap || {}), enabled: true } }, () => resolve()));
+                }
+                if (typeof intelligenceRefresh === 'function')
+                    await intelligenceRefresh(app);
+                if (res && !res.cancelled && res.enabled && action.retryQuestion && typeof intelligenceSubmitQuestion === 'function') {
+                    void intelligenceSubmitQuestion(app, action.retryQuestion);
+                }
+            }
+            catch (err) {
+                app.setState({ aiError: String((err === null || err === void 0 ? void 0 : err.message) || 'Não foi possível ativar o GPT-6.2 Sol.').slice(0, 220) });
+            }
+        }
+        else {
+            app.setState({ settingsSection: 'intelligence', intelligencePanelOpen: false });
+            (_a = app.navigate) === null || _a === void 0 ? void 0 : _a.call(app, 'settings');
+        }
+        return;
+    }
+    if (action.id === 'connect_chatgpt') {
+        if (typeof (api === null || api === void 0 ? void 0 : api.aiConnect) === 'function' && typeof intelligenceConnect === 'function') {
+            await intelligenceConnect(app);
+            if (typeof intelligenceRefresh === 'function')
+                await intelligenceRefresh(app);
+        }
+        else {
+            app.setState({ settingsSection: 'intelligence', intelligencePanelOpen: false });
+            (_b = app.navigate) === null || _b === void 0 ? void 0 : _b.call(app, 'settings');
+        }
+        return;
+    }
+    if (action.id === 'enable_m3_actions') {
+        if (typeof (api === null || api === void 0 ? void 0 : api.copilotActionCapabilityEnable) === 'function') {
+            try {
+                await api.copilotActionCapabilityEnable();
+                if (typeof intelligenceRefresh === 'function')
+                    await intelligenceRefresh(app);
+            }
+            catch (err) {
+                app.setState({ aiError: String((err === null || err === void 0 ? void 0 : err.message) || 'Não foi possível ativar as ações M3.').slice(0, 220) });
+            }
+        }
+        else {
+            app.setState({ settingsSection: 'intelligence', intelligencePanelOpen: false });
+            (_c = app.navigate) === null || _c === void 0 ? void 0 : _c.call(app, 'settings');
+        }
+        return;
+    }
+    if (action.id === 'open_ai_settings') {
+        app.setState({ settingsSection: 'intelligence', intelligencePanelOpen: false });
+        (_d = app.navigate) === null || _d === void 0 ? void 0 : _d.call(app, 'settings');
+    }
+}
 function renderIntelligenceStructuredCard(card) {
     return h('div', { className: 'mf-ai-structured-card', role: 'region', 'aria-label': card.title }, h('div', { className: 'mf-ai-structured-head' }, h('strong', {}, card.title), card.subtitle ? h('small', {}, card.subtitle) : null), Array.isArray(card.metrics) && card.metrics.length ? h('div', { className: 'mf-ai-structured-metrics' }, ...card.metrics.map((m, idx) => h('div', { key: idx, className: 'mf-ai-structured-metric is-' + (m.tone || 'neutral') }, h('small', {}, m.label), h('strong', {}, m.value)))) : null, Array.isArray(card.rows) && card.rows.length ? h('div', { className: 'mf-ai-table-wrap' }, h('table', {}, card.headers ? h('thead', {}, h('tr', {}, h('th', {}, card.headers[0]), h('th', {}, card.headers[1]), card.headers[2] ? h('th', {}, card.headers[2]) : null)) : null, h('tbody', {}, ...card.rows.map((r, idx) => h('tr', { key: idx }, h('td', {}, r.col1), h('td', {}, r.col2), r.col3 !== undefined ? h('td', {}, r.col3) : null))))) : null, card.footnote ? h('small', { className: 'mf-ai-structured-foot' }, card.footnote) : null);
 }
@@ -4514,13 +4585,13 @@ function renderIntelligenceMessageItem(app, msg) {
     if (msg.id.startsWith('m3a-') && typeof copilotActionMessageLive === 'function' && !copilotActionMessageLive(app, msg))
         return h('article', { className: 'mf-ai-msg is-assistant is-unavailable' }, h('p', { role: 'status' }, 'Prévia de ação anterior bloqueada: a autorização ou o período mudou. Solicite novamente.'));
     const isUser = msg.role === 'user';
-    const badge = msg.status === 'unavailable' ? h('span', { className: 'mf-ai-msg-badge is-warn' }, 'Consulta não autorizada') :
-        msg.status === 'unsupported' ? h('span', { className: 'mf-ai-msg-badge is-info' }, 'Consulta não reconhecida') :
-            msg.status === 'unimplemented' ? h('span', { className: 'mf-ai-msg-badge is-info' }, 'Aguarda I2-A') :
-                msg.status === 'error' ? h('span', { className: 'mf-ai-msg-badge is-error' }, 'Serviço indisponível') : null;
+    const badge = msg.status === 'permission_needed' ? h('span', { className: 'mf-ai-msg-badge is-warn' }, 'Permissão necessária') :
+        msg.status === 'unavailable' ? h('span', { className: 'mf-ai-msg-badge is-warn' }, 'Acesso necessário') :
+            msg.status === 'unsupported' ? h('span', { className: 'mf-ai-msg-badge is-info' }, 'Fora do escopo local') :
+                msg.status === 'error' ? h('span', { className: 'mf-ai-msg-badge is-error' }, 'Erro no serviço') : null;
     return h('article', { key: msg.id, className: 'mf-ai-msg ' + (isUser ? 'is-user' : 'is-assistant') + ' is-' + msg.status }, h('header', { className: 'mf-ai-msg-meta' }, h('strong', {}, isUser ? 'Você' : 'Assistente MF'), h('span', {}, msg.scopeLabel + ' · ' + msg.periodLabel + ' · ' + msg.createdAt), badge), h('div', { className: 'mf-ai-msg-body mf-ai-markdown' }, ...aiMarkdownNodes(msg.text)), msg.id.startsWith('ic2-a-') && msg.ic2Reply && typeof renderMfIC2Adaptive === 'function'
         ? (renderMfIC2Adaptive(app, msg) || (msg.structuredCard && !msg.visual && !msg.visualV3 ? renderIntelligenceStructuredCard(msg.structuredCard) : null))
-        : (msg.structuredCard && !msg.visual && !msg.visualV3 ? renderIntelligenceStructuredCard(msg.structuredCard) : null), msg.visualV3 ? mfV3Render(app, msg) : msg.visual ? renderMfVisual(app, msg) : null, msg.operationalEvidence ? h('small', { className: 'mf-premium-evidence' }, msg.operationalEvidence) : null, Array.isArray(msg.operationalActions) && msg.operationalActions.length ? h('div', { className: 'mf-premium-tile-actions' }, ...msg.operationalActions.map((action) => intelligencePremiumButton(app, null, action))) : null, msg.proposal ? renderIntelligenceActionProposalCard(app, msg.proposal) : null, msg.m3ActionDraft && typeof renderCopilotActionCard === 'function' ? renderCopilotActionCard(app, msg) : null, msg.id.startsWith('review-answer-') ? h('button', { type: 'button', className: 'primary-button', onClick: () => void categoryReviewOpen(app) }, 'Abrir Central de Revisão') : null, msg.details ? h('details', { className: 'mf-ai-msg-details' }, h('summary', {}, 'Ver contexto e diagnóstico'), h('p', {}, msg.details)) : null);
+        : (msg.structuredCard && !msg.visual && !msg.visualV3 ? renderIntelligenceStructuredCard(msg.structuredCard) : null), msg.visualV3 ? mfV3Render(app, msg) : msg.visual ? renderMfVisual(app, msg) : null, msg.operationalEvidence ? h('small', { className: 'mf-premium-evidence' }, msg.operationalEvidence) : null, Array.isArray(msg.operationalActions) && msg.operationalActions.length ? h('div', { className: 'mf-premium-tile-actions' }, ...msg.operationalActions.map((action) => intelligencePremiumButton(app, null, action))) : null, Array.isArray(msg.permissionActions) && msg.permissionActions.length ? h('div', { className: 'mf-premium-tile-actions mf-ai-perm-actions' }, ...msg.permissionActions.map((act, idx) => h('button', { type: 'button', key: act.id + '-' + idx, className: act.primary ? 'primary-button' : 'ghost-button', onClick: () => void intelligenceRunPermissionAction(app, act) }, act.label))) : null, msg.proposal ? renderIntelligenceActionProposalCard(app, msg.proposal) : null, msg.m3ActionDraft && typeof renderCopilotActionCard === 'function' ? renderCopilotActionCard(app, msg) : null, msg.id.startsWith('review-answer-') ? h('button', { type: 'button', className: 'primary-button', onClick: () => void categoryReviewOpen(app) }, 'Abrir Central de Revisão') : null, msg.details ? h('details', { className: 'mf-ai-msg-details' }, h('summary', {}, 'Ver contexto e diagnóstico'), h('p', {}, msg.details)) : null);
 }
 function intelligenceExampleCard(app, id, title, description, icon, question) {
     return h('div', { className: 'mf-ai-example-card', key: id }, h('span', { className: 'mf-ai-example-icon' }, h(Icon, { name: icon, size: 20 })), h('div', { className: 'mf-ai-example-copy' }, h('strong', {}, title), h('p', {}, description), h('button', { type: 'button', className: 'mf-ai-link', onClick: () => intelligencePrepare(app, question) }, 'Preparar análise', h(Icon, { name: 'arrow', size: 15 }))));
@@ -4689,16 +4760,21 @@ function renderIntelligenceAccess(app) {
 }
 function intelligenceChatSession(app) {
     const s = app.state, g = s.localFinancialAccess || s.categoryReviewGrant;
-    return { temporary: !!g, expired: !!g && g.expiresAt <= Date.now(), busy: !!(s.aiBusy || s.localFinancialBusy || s.intelligenceDrawerBusy) };
+    return { temporary: !!g, expired: !!g && g.expiresAt <= Date.now(), busy: !!(s.aiBusy || s.localFinancialBusy || s.intelligenceDrawerBusy || s.aiCopilotBusy) };
 }
 function renderIntelligenceComposer(app, drawer = false) {
+    var _a, _b;
     const s = app.state, session = intelligenceChatSession(app), draft = String(s.intelligenceDraft || ''), id = drawer ? 'mf-ai-drawer-input' : 'mf-ai-draft';
     const submit = () => { if (draft.trim() && !session.busy && !session.expired)
         void intelligenceSubmitQuestion(app, draft); };
-    return h('form', { className: 'mf-chat-composer ' + (drawer ? 'mf-ai-drawer-composer' : 'mf-ai-composer'), onSubmit: (e) => { e.preventDefault(); submit(); } }, session.expired ? h('div', { className: 'mf-chat-expired', role: 'alert' }, h('strong', {}, 'Autorização expirada'), h('p', {}, 'Renove a permissão acima para consultar novamente. Seu rascunho foi preservado.')) : null, h('label', { className: 'mf-ai-composer-label', htmlFor: id }, 'Converse sobre seus registros'), h('textarea', { id, value: draft, rows: 2, maxLength: 750, disabled: session.busy, placeholder: 'Pergunte sobre despesas, categorias ou compromissos…', onChange: (e) => app.setState({ intelligenceDraft: e.target.value }), onKeyDown: (e) => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
+    const solReady = Boolean(((_a = s.aiStatus) === null || _a === void 0 ? void 0 : _a.connected) && ((_b = s.aiCopilotCap) === null || _b === void 0 ? void 0 : _b.enabled));
+    const footerNote = session.temporary
+        ? (solReady ? 'Leitura local autorizada · GPT-6.2 Sol ativo' : 'Somente nesta sessão · motor local ativo')
+        : (solReady ? 'GPT-6.2 Sol · modo geral sem acesso aos seus registros' : 'Histórico local · não inclua credenciais');
+    return h('form', { className: 'mf-chat-composer ' + (drawer ? 'mf-ai-drawer-composer' : 'mf-ai-composer'), onSubmit: (e) => { e.preventDefault(); submit(); } }, session.expired ? h('div', { className: 'mf-chat-expired', role: 'alert' }, h('strong', {}, 'Autorização expirada'), h('p', {}, 'Renove a permissão acima para consultar novamente. Seu rascunho foi preservado.')) : null, h('label', { className: 'mf-ai-composer-label', htmlFor: id }, 'Converse sobre finanças ou consulte seus registros'), h('textarea', { id, value: draft, rows: 2, maxLength: 750, disabled: session.busy, placeholder: 'Ex.: Dúvida geral, gasto do mês, orçamento pelo salário ou categorização…', onChange: (e) => app.setState({ intelligenceDraft: e.target.value }), onKeyDown: (e) => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
             e.preventDefault();
             submit();
-        } } }), h('div', { className: 'mf-chat-compose-footer' }, h('small', {}, session.temporary ? 'Somente nesta sessão · sem IA externa' : 'Histórico local · não inclua credenciais'), h('small', {}, draft.length + '/750 · Shift + Enter para nova linha'), h('button', { type: 'submit', className: 'primary-button', disabled: !draft.trim() || session.busy || session.expired }, session.busy ? 'Consultando…' : 'Enviar', h(Icon, { name: 'arrow', size: 16 }))));
+        } } }), h('div', { className: 'mf-chat-compose-footer' }, h('small', {}, footerNote), h('small', {}, draft.length + '/750 · Shift + Enter para nova linha'), h('button', { type: 'submit', className: 'primary-button', disabled: !draft.trim() || session.busy || session.expired }, s.aiCopilotBusy ? 'GPT-6.2 Sol…' : session.busy ? 'Consultando…' : 'Enviar', h(Icon, { name: 'arrow', size: 16 }))));
 }
 function renderIntelligenceFollowups(app) {
     var _a;
@@ -4767,7 +4843,7 @@ function renderIntelligenceViewLegacy(app) {
             'aria-expanded': !!s.intelligenceHistoryOpen, onClick: () => app.setState({ intelligenceHistoryOpen: !s.intelligenceHistoryOpen }) }, s.intelligenceHistoryOpen ? 'Recolher histórico' : 'Histórico de conversas'), h('div', { className: 'mf-ai-chat-hero' }, h('span', { className: 'mf-ai-orb' }, h(Icon, { name: 'spark', size: 25 })), h('h2', {}, 'Uma conversa, mais clareza.'), h('p', {}, (s.categoryReviewGrant || ((_b = s.localFinancialAccess) === null || _b === void 0 ? void 0 : _b.token)) ? 'Conversa temporária compartilhada com o chat lateral. Prévia e confirmação continuam disponíveis na Central.' : 'Histórico compartilhado com o chat lateral, salvo localmente quando disponível. Não cole credenciais.')), h('div', { className: 'mf-ai-workbench-badges' }, h('span', { className: 'mf-ai-conn-pill ' + convState.css }, ((_c = s.localFinancialAccess) === null || _c === void 0 ? void 0 : _c.token) ? 'Leitura local autorizada' : convState.pill), h('span', { className: 'mf-ai-scope-badge' }, 'Contexto: ' + activeScope.label + ' · ' + activeScope.period))), s.intelligenceDraftScope ? h('div', { className: 'mf-ai-context-meta' }, h('span', {}, 'Rascunho de ' + s.intelligenceDraftScope.label), h('span', {}, s.intelligenceDraftScope.period)) : null, s.intelligencePreparedQuestion ? h('div', { className: 'mf-ai-prepared', role: 'status' }, h('span', { className: 'micro-label' }, 'PERGUNTA PREPARADA · NÃO ENVIADA'), h('p', {}, s.intelligencePreparedQuestion), h('small', {}, 'Este rascunho não é enviado ao Sol. Use os casos fictícios autorizados abaixo; nenhuma chamada ocorreu aqui.')) : null, messages.length === 0 ? h('div', { className: 'mf-ai-empty-thread' }, h('h3', {}, 'Comece uma análise ou prepare uma categorização supervisionada'), h('p', {}, 'Escolha um ponto de partida. A mesma conversa acompanha você no chat lateral; consultas financeiras autorizadas ficam apenas nesta sessão.'), h('div', { className: 'mf-ai-starter-grid' }, ['Quais foram meus maiores gastos deste mês?', 'Compare minhas despesas com o mês anterior.', 'Quais orçamentos merecem atenção?', 'Quais compromissos tenho para o próximo mês?'].map((q, i) => h('button', { type: 'button', className: 'mf-ai-context-prompt', key: i, onClick: () => intelligenceSubmitQuestion(app, q) }, h('span', {}, q), h(Icon, { name: 'arrow', size: 14 }))))) :
             h('div', { className: 'mf-ai-thread', role: 'log', 'aria-live': 'polite' }, ...messages.map(m => renderIntelligenceMessageItem(app, m)), (s.aiBusy || s.localFinancialBusy || s.aiCopilotBusy) ? h('div', { className: 'mf-ai-msg is-assistant is-streaming', role: 'status' }, h('strong', {}, s.aiCopilotBusy ? 'Copiloto GPT-6.2 Sol' : 'Assistente MF'), h('p', {}, s.aiCopilotBusy && s.aiCopilotStreaming ? s.aiCopilotStreaming : 'Processando solicitação…'), s.aiCopilotBusy && typeof (desktop === null || desktop === void 0 ? void 0 : desktop.aiCopilotCancel) === 'function' ? h('button', { type: 'button', className: 'ghost-button mf-ai-stream-cancel', onClick: () => void desktop.aiCopilotCancel() }, 'Cancelar solicitação') : null) : null), s.aiError ? h('p', { className: 'mf-ai-error', role: 'alert' }, s.aiError) : null, renderIntelligenceFollowups(app), renderIntelligenceComposer(app)));
     else if (tab === 'actions')
-        section = h('div', { className: 'mf-ai-actions' }, h('div', { className: 'mf-ai-welcome' }, h('span', { className: 'micro-label' }, 'AÇÕES SUPERVISIONADAS E EXEMPLOS · SEM GRAVAÇÃO AUTOMÁTICA'), h('h2', {}, 'Sugestões e prévias para revisar, nunca automáticas.'), h('p', {}, 'As propostas preparadas nas suas conversas aparecem abaixo mantendo a prévia sem gravação até a entrega I2-B.')), allProposals.length ? h('div', { className: 'mf-ai-proposals-list', 'aria-label': 'Propostas supervisionadas da sessão' }, ...allProposals.map(p => renderIntelligenceActionProposalCard(app, p))) :
+        section = h('div', { className: 'mf-ai-actions' }, h('div', { className: 'mf-ai-welcome' }, h('span', { className: 'micro-label' }, 'AÇÕES SUPERVISIONADAS E EXEMPLOS · SEM GRAVAÇÃO AUTOMÁTICA'), h('h2', {}, 'Sugestões e prévias para revisar, nunca automáticas.'), h('p', {}, 'As propostas preparadas nas suas conversas aparecem abaixo mantendo prévia, confirmação nativa no Windows e recibo reversível em 1 clique.')), allProposals.length ? h('div', { className: 'mf-ai-proposals-list', 'aria-label': 'Propostas supervisionadas da sessão' }, ...allProposals.map(p => renderIntelligenceActionProposalCard(app, p))) :
             h('div', { className: 'mf-ai-empty-actions' }, h('p', {}, 'Nenhuma proposta supervisionada pendente nesta conversa. Peça no chat, por exemplo: “Categorize minha compra do mercado como Alimentação”.')), [{ id: 'limits', title: 'Revisar limites de categorias', description: 'Compare médias, compromissos e uma margem de segurança.', question: 'Prepare uma proposta de limites por categoria para o próximo mês.' },
             { id: 'reserve', title: 'Planejar reserva de emergência', description: 'Estime um objetivo compatível com despesas essenciais e liquidez.', question: 'Como construir uma reserva de emergência considerando meus compromissos?' },
             { id: 'review', title: 'Revisar despesas recorrentes', description: 'Identifique cobranças repetidas antes de propor mudanças.', question: 'Como posso avaliar se meus gastos recorrentes precisam de revisão?' }].map((item) => h('div', { className: 'mf-ai-action-card', key: item.id }, h('div', { className: 'mf-ai-action-text' }, h('span', { className: 'mf-ai-status' }, 'Exemplo ilustrativo'), h('h3', {}, item.title), h('p', {}, item.description), s.intelligenceExpandedAction === item.id ? h('div', { className: 'mf-ai-action-detail' }, 'Na versão conectada, esta proposta mostrará dados utilizados, impacto esperado, validade da análise e ações de aceitar, editar ou rejeitar. Nada será aplicado automaticamente.') : null), h('div', { className: 'mf-ai-action-buttons' }, h('button', { type: 'button', className: 'ghost-button', onClick: () => app.setState({ intelligenceExpandedAction: s.intelligenceExpandedAction === item.id ? null : item.id }) }, s.intelligenceExpandedAction === item.id ? 'Recolher' : 'Ver detalhes'), h('button', { type: 'button', className: 'mf-ai-link', onClick: () => intelligencePrepare(app, item.question) }, 'Preparar análise', h(Icon, { name: 'arrow', size: 15 }))))));
@@ -4985,7 +5061,7 @@ function mfB05ReducedMotion() {
         window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 function renderMfB05Main(app) {
-    var _a, _b, _c;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s;
     if (((_a = app.state.workIntelligenceDemo) === null || _a === void 0 ? void 0 : _a.enabled) && typeof renderWorkIntelligenceDemo === 'function')
         return renderWorkIntelligenceDemo(app);
     if (typeof intelligenceEnsureHydrated === 'function')
@@ -5001,11 +5077,14 @@ function renderMfB05Main(app) {
         { kind: 'oauth_disconnected', pill: 'Conta desconectada · modo local', css: 'is-offline' };
     const scope = s.intelligenceDraftScope || intelligencePageScope(app, s.intelligenceContext || s.page);
     const active = ((_b = s.localFinancialAccess) === null || _b === void 0 ? void 0 : _b.token) && ((_c = s.localFinancialAccess) === null || _c === void 0 ? void 0 : _c.expiresAt) > Date.now();
+    const api = typeof desktop !== 'undefined' ? desktop : null;
+    const runAct = (act) => { if (typeof intelligenceRunPermissionAction === 'function')
+        void intelligenceRunPermissionAction(app, act); };
     const section = tab === 'today' ? renderMfB05Today(app) :
         tab === 'chat' ? renderMfB05Chat(app, messages, convState, scope) :
             renderMfB05Actions(app, proposals);
     return h('section', { className: 'section mf-intelligence-page mf-b05-page',
-        'aria-label': 'Inteligência Financeira' }, h('div', { className: 'mf-b05-top' }, h('strong', { className: 'mf-b05-brand' }, 'Inteligência'), h('span', { className: 'mf-b05-status' }, h('i', { className: 'mf-b05-status-dot', 'aria-hidden': 'true' }), s.mode === 'demo' ? 'Ambiente de demonstração' : active ? 'Leitura local autorizada' : 'Sem leitura pessoal autorizada')), mfB05Tabs(app, tab), h('details', { className: 'mf-b05-permissions' }, h('summary', {}, active ? 'Gerenciar permissão de consulta' : 'Autorizar consulta financeira'), renderIntelligenceAccess(app)), s.categoryReviewPreview ? h('div', { className: 'mf-b05-review-pending', role: 'status' }, h('span', {}, 'Existe uma prévia supervisionada aguardando revisão. '), h('button', { type: 'button', className: 'mf-b05-link', onClick: () => void categoryReviewOpen(app) }, 'Abrir Central de Revisão')) : null, h('div', { id: 'mf-b05-panel', className: 'mf-b05-content', role: 'tabpanel',
+        'aria-label': 'Inteligência Financeira' }, h('div', { className: 'mf-b05-top' }, h('strong', { className: 'mf-b05-brand' }, 'Inteligência'), h('span', { className: 'mf-b05-status' }, h('i', { className: 'mf-b05-status-dot ' + (active ? 'is-active' : 'is-idle'), 'aria-hidden': 'true' }), s.mode === 'demo' ? 'Ambiente de demonstração' : active ? 'Leitura local autorizada' : (convState === null || convState === void 0 ? void 0 : convState.pill) || 'Sem leitura pessoal autorizada')), mfB05Tabs(app, tab), h('div', { className: 'mf-b05-cap-bar' }, h('details', { className: 'mf-b05-permissions' }, h('summary', {}, active ? 'Gerenciar permissão de consulta' : 'Autorizar consulta financeira'), typeof renderLocalFinancialAccess === 'function' ? renderLocalFinancialAccess(app) : renderIntelligenceAccess(app)), (api === null || api === void 0 ? void 0 : api.aiStatus) ? h('span', { className: 'mf-b05-cap-chip ' + (((_d = s.aiStatus) === null || _d === void 0 ? void 0 : _d.connected) ? 'is-ok' : '') }, ((_e = s.aiStatus) === null || _e === void 0 ? void 0 : _e.connected) ? 'OAuth ChatGPT: Conectado' : 'OAuth ChatGPT: Não conectado', !((_f = s.aiStatus) === null || _f === void 0 ? void 0 : _f.connected) ? h('button', { type: 'button', className: 'mf-b05-cap-btn', onClick: () => runAct({ id: 'connect_chatgpt', label: 'Conectar ChatGPT' }) }, 'Conectar') : null) : null, (api === null || api === void 0 ? void 0 : api.aiCopilotCapabilityStatus) ? h('span', { className: 'mf-b05-cap-chip ' + (((_g = s.aiCopilotCap) === null || _g === void 0 ? void 0 : _g.enabled) ? 'is-ok' : '') }, ((_h = s.aiCopilotCap) === null || _h === void 0 ? void 0 : _h.enabled) ? 'GPT-6.2 Sol: Ativo' : ((_j = s.aiCopilotCap) === null || _j === void 0 ? void 0 : _j.available) ? 'GPT-6.2 Sol: Inativo' : 'GPT-6.2 Sol: ' + String(((_k = s.aiCopilotCap) === null || _k === void 0 ? void 0 : _k.inferenceStatus) || 'Bloqueado nesta build'), !((_l = s.aiCopilotCap) === null || _l === void 0 ? void 0 : _l.enabled) && ((_m = s.aiCopilotCap) === null || _m === void 0 ? void 0 : _m.available) ? h('button', { type: 'button', className: 'mf-b05-cap-btn', onClick: () => runAct({ id: 'enable_ai_copilot', label: 'Ativar' }) }, 'Ativar') : null) : null, (api === null || api === void 0 ? void 0 : api.copilotActionCapabilityStatus) ? h('span', { className: 'mf-b05-cap-chip ' + (((_o = s.m3ActionCap) === null || _o === void 0 ? void 0 : _o.enabled) ? 'is-ok' : '') }, ((_p = s.m3ActionCap) === null || _p === void 0 ? void 0 : _p.enabled) ? 'Ações M3: Ativas' : ((_q = s.m3ActionCap) === null || _q === void 0 ? void 0 : _q.available) ? 'Ações M3: Desativadas' : 'Ações M3: Indisponível', !((_r = s.m3ActionCap) === null || _r === void 0 ? void 0 : _r.enabled) && ((_s = s.m3ActionCap) === null || _s === void 0 ? void 0 : _s.available) ? h('button', { type: 'button', className: 'mf-b05-cap-btn', onClick: () => runAct({ id: 'enable_m3_actions', label: 'Ativar' }) }, 'Ativar') : null) : null), s.categoryReviewPreview ? h('div', { className: 'mf-b05-review-pending', role: 'status' }, h('span', {}, 'Existe uma prévia supervisionada aguardando revisão. '), h('button', { type: 'button', className: 'mf-b05-link', onClick: () => void categoryReviewOpen(app) }, 'Abrir Central de Revisão')) : null, h('div', { id: 'mf-b05-panel', className: 'mf-b05-content', role: 'tabpanel',
         'aria-labelledby': 'mf-b05-tab-' + tab }, section));
 }
 function mfB05DateLabel(date) {
@@ -5232,7 +5311,7 @@ function mfB05HistoryDrawer(app) {
         'aria-label': 'Histórico de conversas', onKeyDown: (event) => mfB05DrawerKeyboard(event, close) }, h('div', { className: 'mf-b05-drawer-heading' }, h('strong', {}, 'Seu histórico'), h('button', { type: 'button', className: 'ghost-button', onClick: close }, 'Fechar')), renderIntelligenceHistorySidebar(app)));
 }
 function renderMfB05Chat(app, messages, convState, activeScope) {
-    var _a, _b, _c, _d;
+    var _a, _b, _c, _d, _e, _f, _g;
     const s = app.state, session = intelligenceChatSession(app);
     const items = Array.isArray(messages) ? messages : [];
     const authorized = !!((_a = s.localFinancialAccess) === null || _a === void 0 ? void 0 : _a.token) && ((_b = s.localFinancialAccess) === null || _b === void 0 ? void 0 : _b.expiresAt) > Date.now();
@@ -5240,11 +5319,17 @@ function renderMfB05Chat(app, messages, convState, activeScope) {
     return h('section', { className: 'mf-b05-chat', role: 'region', 'aria-label': 'Conversar com a Inteligência' }, h('header', { className: 'mf-b05-chat-head' }, h('div', {}, h('span', { className: 'mf-b05-kicker' }, 'INTELLIGENCE ALIVE · CONVERSAR'), h('h2', {}, 'Uma boa conversa muda a perspectiva.'), h('p', {}, 'Pergunte, compare e decida com contexto e evidências quando disponíveis.')), h('div', { className: 'mf-b05-chat-controls' }, h('button', { id: 'mf-b05-history-trigger', type: 'button', className: 'ghost-button',
         'aria-expanded': !!s.intelligenceHistoryOpen,
         onClick: () => app.setState({ intelligenceHistoryOpen: true }) }, h(Icon, { name: 'clock', size: 16 }), 'Histórico'), h('button', { type: 'button', className: 'primary-button',
-        onClick: () => { intelligenceCreateThread(app); app.setState({ intelligenceHistoryOpen: false }); } }, h(Icon, { name: 'plus', size: 15 }), 'Nova conversa'))), h('div', { className: 'mf-b05-chat-scope' }, h('span', { className: (convState === null || convState === void 0 ? void 0 : convState.css) || 'is-offline' }, authorized ? 'Leitura autorizada' : hasReview ? 'Revisão sintética' : (convState === null || convState === void 0 ? void 0 : convState.pill) || 'Sem conexão autorizada'), h('span', {}, 'Contexto: ' + ((activeScope === null || activeScope === void 0 ? void 0 : activeScope.label) || 'Inteligência') + ' · ' + ((activeScope === null || activeScope === void 0 ? void 0 : activeScope.period) || 'Sem período')), session.expired ? h('strong', { className: 'mf-b05-warning' }, 'Permissão expirada — renove em Permissões de consulta') : null), s.intelligenceDraftScope ? h('p', { className: 'mf-b05-chat-context' }, 'Rascunho preparado a partir de ' + s.intelligenceDraftScope.label) : null, s.intelligencePreparedQuestion ? h('div', { className: 'mf-ai-prepared', role: 'status' }, h('p', {}, s.intelligencePreparedQuestion), h('small', {}, 'Pergunta preparada, ainda não enviada.')) : null, h('div', { className: 'mf-b05-chat-thread', role: 'log', 'aria-label': 'Mensagens da conversa', 'aria-live': 'polite' }, items.length ? items.map(msg => renderIntelligenceMessageItem(app, msg)) :
-        h('div', { className: 'mf-b05-chat-welcome' }, h('span', { className: 'mf-b05-chat-orb' }, h(Icon, { name: 'spark', size: 30 })), h('h3', {}, 'O que você gostaria de entender hoje?'), h('p', {}, authorized ? 'Explore seus registros autorizados e identifique oportunidades reais.' :
-            'Você pode começar com uma pergunta geral. Informações pessoais exigem autorização.'), h('div', { className: 'mf-b05-starters' }, ...(authorized ? ['Quais foram minhas maiores despesas?', 'Quais categorias ultrapassaram o orçamento?'] :
-            ['Como organizar minhas despesas mensais?', 'Como planejar uma reserva com segurança?'])
-            .map(q => h('button', { type: 'button', key: q, onClick: () => intelligencePrepare(app, q) }, q, h(Icon, { name: 'arrow', size: 14 }))))), s.aiBusy || s.localFinancialBusy ? h('p', { className: 'mf-b05-chat-thinking', role: 'status' }, 'Consultando a fonte disponível…') : null, s.aiError ? h('p', { role: 'alert', className: 'mf-ai-error' }, s.aiError) : null, s.intelligenceStorageError ? h('p', { role: 'alert', className: 'mf-ai-error' }, s.intelligenceStorageError) : null), renderIntelligenceFollowups(app), h('div', { className: 'mf-b05-chat-composer' }, renderIntelligenceComposer(app)), mfB05HistoryDrawer(app));
+        onClick: () => { intelligenceCreateThread(app); app.setState({ intelligenceHistoryOpen: false }); } }, h(Icon, { name: 'plus', size: 15 }), 'Nova conversa'))), h('div', { className: 'mf-b05-chat-scope' }, h('span', { className: (convState === null || convState === void 0 ? void 0 : convState.css) || 'is-offline' }, authorized ? 'Leitura autorizada' : hasReview ? 'Revisão sintética' : (convState === null || convState === void 0 ? void 0 : convState.pill) || 'Sem conexão autorizada'), h('span', {}, 'Contexto: ' + ((activeScope === null || activeScope === void 0 ? void 0 : activeScope.label) || 'Inteligência') + ' · ' + ((activeScope === null || activeScope === void 0 ? void 0 : activeScope.period) || 'Sem período')), session.expired ? h('strong', { className: 'mf-b05-warning' }, 'Permissão expirada — renove em Permissões de consulta') : null), s.intelligenceDraftScope ? h('p', { className: 'mf-b05-chat-context' }, 'Rascunho preparado a partir de ' + s.intelligenceDraftScope.label) : null, s.intelligencePreparedQuestion && s.intelligenceDraft && s.intelligencePreparedQuestion === s.intelligenceDraft ? h('div', { className: 'mf-ai-prepared', role: 'status' }, h('p', {}, s.intelligencePreparedQuestion), h('small', {}, 'Pergunta preparada, ainda não enviada.')) : null, h('div', { className: 'mf-b05-chat-thread', role: 'log', 'aria-label': 'Mensagens da conversa', 'aria-live': 'polite' }, items.length ? items.map(msg => renderIntelligenceMessageItem(app, msg)) :
+        h('div', { className: 'mf-b05-chat-welcome' }, h('span', { className: 'mf-b05-chat-orb' }, h(Icon, { name: 'spark', size: 30 })), h('h3', {}, 'O que você gostaria de entender hoje?'), h('p', {}, authorized ? 'Explore seus registros autorizados ou converse com o Copiloto.' :
+            ((_e = s.aiStatus) === null || _e === void 0 ? void 0 : _e.connected) && ((_f = s.aiCopilotCap) === null || _f === void 0 ? void 0 : _f.enabled) ? 'Pergunte sobre finanças em geral ou autorize a leitura local para consultar seus registros.' :
+                'Comece com uma dúvida geral ou autorize seus registros para análises e ações supervisionadas.'), h('div', { className: 'mf-b05-starters' }, ...(authorized ? ['Quais foram minhas maiores despesas?', 'Quais categorias ultrapassaram o orçamento?'] :
+            ['Como organizar minhas despesas mensais?', 'Como construir uma reserva de emergência?'])
+            .map(q => h('button', { type: 'button', key: q, onClick: () => {
+                if (typeof intelligenceSubmitQuestion === 'function')
+                    void intelligenceSubmitQuestion(app, q);
+                else
+                    intelligencePrepare(app, q);
+            } }, q, h(Icon, { name: 'arrow', size: 14 }))))), s.aiCopilotBusy ? h('div', { className: 'mf-ai-msg is-assistant is-streaming', role: 'status' }, h('strong', {}, 'Copiloto GPT-6.2 Sol'), h('p', {}, s.aiCopilotStreaming || 'Consultando GPT-6.2 Sol…'), typeof ((_g = (typeof desktop !== 'undefined' ? desktop : null)) === null || _g === void 0 ? void 0 : _g.aiCopilotCancel) === 'function' ? h('button', { type: 'button', className: 'ghost-button mf-ai-stream-cancel', onClick: () => void desktop.aiCopilotCancel() }, 'Cancelar solicitação') : null) : null, !s.aiCopilotBusy && (s.aiBusy || s.localFinancialBusy) ? h('p', { className: 'mf-b05-chat-thinking', role: 'status' }, 'Consultando a fonte disponível…') : null, s.aiError ? h('p', { role: 'alert', className: 'mf-ai-error' }, s.aiError) : null, s.intelligenceStorageError ? h('p', { role: 'alert', className: 'mf-ai-error' }, s.intelligenceStorageError) : null), items.length ? renderIntelligenceFollowups(app) : null, h('div', { className: 'mf-b05-chat-composer' }, renderIntelligenceComposer(app)), mfB05HistoryDrawer(app));
 }
 function mfB05ActionSignals(app) {
     const report = app.state.intelligencePremiumReport;
@@ -5308,7 +5393,7 @@ function renderMfB05Actions(app, proposals) {
         'Ativa em ' + String((s.autoCategoryStatus.permissions || []).filter((x) => x.enabled).length) +
             ' conta(s). Rótulos aplicados: ' + String(((_a = s.autoCategoryStatus.counts) === null || _a === void 0 ? void 0 : _a.classified) || 0) +
             ' · revisão: ' + String(((_b = s.autoCategoryStatus.counts) === null || _b === void 0 ? void 0 : _b.awaitingReview) || 0) + '.' :
-        'Desativada. Habilite explicitamente as contas no módulo Movimentações quando o canal estável estiver homologado.'), h('p', {}, 'Motor local de evidências históricas, não inferência de um modelo. Regras e correções humanas prevalecem.'), h('button', { type: 'button', className: 'ghost-button', onClick: () => {
+        'Desativada. Habilite explicitamente por conta no módulo Movimentações em Categorias e regras.'), h('p', {}, 'Motor local de evidências históricas, não inferência de um modelo. Regras e correções humanas prevalecem.'), h('button', { type: 'button', className: 'ghost-button', onClick: () => {
             app.setState({ txSource: 'bank', txReviewOnly: true });
             app.navigate('transactions');
         } }, 'Abrir Movimentações e A conferir')) : null, !selected && !items.length ? h('div', { className: 'mf-b05-plan-empty', role: 'status' }, h(Icon, { name: 'shield', size: 28 }), h('h3', {}, 'Nenhuma oportunidade verificável disponível.'), h('p', {}, 'Autorize a leitura, atualize o período ou converse sobre organização financeira. Não criamos recomendações pessoais sem fatos.'), h('div', { className: 'mf-b05-hero-actions' }, h('button', { type: 'button', className: 'primary-button', onClick: () => mfB05ChangeMode(app, 'chat') }, 'Abrir Conversar'), h('button', { type: 'button', className: 'ghost-button', onClick: () => {
@@ -6999,31 +7084,36 @@ function intelligenceFoldText(value) {
     return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('pt-BR').replace(/\s+/g, ' ').trim();
 }
 function intelligenceConversationState(app) {
-    var _a, _b, _c, _d, _f, _g, _h, _j, _k, _l, _m;
+    var _a, _b, _c, _d, _f, _g, _h, _j, _k, _l;
     if (app.state.categoryReviewGrant)
         return { kind: 'chat_available', pill: app.state.categoryReviewGrant.expiresAt > Date.now() ? 'Revisão sintética · sem IA externa' : 'Revisão sintética expirada', badge: 'Revisão sintética', css: 'is-local' };
-    if ((_a = app.state.localFinancialAccess) === null || _a === void 0 ? void 0 : _a.token)
-        return { kind: 'chat_available', pill: app.state.localFinancialAccess.expiresAt > Date.now() ? 'Leitura local · sem IA externa' : 'Leitura local expirada', badge: 'Leitura local', css: 'is-local' };
     const s = (app === null || app === void 0 ? void 0 : app.state) || {};
-    const activeError = String(s.aiError || ((_b = s.aiStatus) === null || _b === void 0 ? void 0 : _b.error) || '').trim();
+    const solEnabled = Boolean((_a = s.aiCopilotCap) === null || _a === void 0 ? void 0 : _a.enabled);
+    if ((_b = app.state.localFinancialAccess) === null || _b === void 0 ? void 0 : _b.token) {
+        const active = app.state.localFinancialAccess.expiresAt > Date.now();
+        return {
+            kind: 'chat_available',
+            pill: active ? (((_c = s.aiStatus) === null || _c === void 0 ? void 0 : _c.connected) && solEnabled ? 'Leitura local + GPT-6.2 Sol ativos' : 'Leitura local autorizada · sem IA externa') : 'Leitura local expirada',
+            badge: 'Leitura local',
+            css: 'is-local'
+        };
+    }
+    const activeError = String(s.aiError || ((_d = s.aiStatus) === null || _d === void 0 ? void 0 : _d.error) || '').trim();
     const explicitUnavailable = Boolean(activeError ||
-        ((_c = s.aiStatus) === null || _c === void 0 ? void 0 : _c.unavailable) === true ||
-        ((_d = s.aiStatus) === null || _d === void 0 ? void 0 : _d.serviceAvailable) === false ||
-        ((_f = s.aiCapabilities) === null || _f === void 0 ? void 0 : _f.serviceAvailable) === false ||
-        (((_g = s.aiStatus) === null || _g === void 0 ? void 0 : _g.connected) === true && ((_h = s.aiStatus) === null || _h === void 0 ? void 0 : _h.secure) === false));
+        ((_f = s.aiStatus) === null || _f === void 0 ? void 0 : _f.unavailable) === true ||
+        ((_g = s.aiStatus) === null || _g === void 0 ? void 0 : _g.serviceAvailable) === false ||
+        ((_h = s.aiCapabilities) === null || _h === void 0 ? void 0 : _h.serviceAvailable) === false ||
+        (((_j = s.aiStatus) === null || _j === void 0 ? void 0 : _j.connected) === true && ((_k = s.aiStatus) === null || _k === void 0 ? void 0 : _k.secure) === false));
     if (explicitUnavailable) {
         return { kind: 'service_unavailable', pill: 'Serviço temporariamente indisponível', badge: 'Indisponível', css: 'is-error' };
     }
-    if (((_j = s.aiStatus) === null || _j === void 0 ? void 0 : _j.connected) === true) {
-        const chatDeclared = Boolean(((_k = s.aiCapabilities) === null || _k === void 0 ? void 0 : _k.conversationalInferenceEnabled) === true ||
-            ((_l = s.aiCapabilities) === null || _l === void 0 ? void 0 : _l.chatAvailable) === true ||
-            ((_m = s.aiStatus) === null || _m === void 0 ? void 0 : _m.chatAvailable) === true);
-        if (chatDeclared) {
-            return { kind: 'chat_available', pill: 'Serviço de conversação disponível · motor I2-A pendente', badge: 'Chat disponível', css: 'is-ready' };
+    if (((_l = s.aiStatus) === null || _l === void 0 ? void 0 : _l.connected) === true) {
+        if (solEnabled) {
+            return { kind: 'chat_available', pill: 'ChatGPT conectado · GPT-6.2 Sol ativo (modo geral)', badge: 'GPT-6.2 Sol ativo', css: 'is-ready' };
         }
-        return { kind: 'oauth_connected_unimplemented', pill: 'Conta autenticada · chat aberto na I2-A', badge: 'Aguarda I2-A', css: 'is-auth-only' };
+        return { kind: 'oauth_connected_needs_optin', pill: 'ChatGPT conectado · ative o GPT-6.2 Sol para conversar', badge: 'Ativação pendente', css: 'is-auth-only' };
     }
-    return { kind: 'oauth_disconnected', pill: 'IA externa desconectada · leitura local requer autorização', badge: 'Sem OAuth', css: 'is-offline' };
+    return { kind: 'oauth_disconnected', pill: 'ChatGPT não conectado · leitura local sob autorização', badge: 'Sem OAuth', css: 'is-offline' };
 }
 function intelligenceReferenceToday(app) {
     var _a;
@@ -7482,16 +7572,62 @@ function intelligenceResolveActionProposal(app, proposalId, decision) {
     });
     intelligenceSyncThreadMessages(app, updated);
 }
+function intelligenceIsM3ActionIntent(foldedQuestion) {
+    const q = String(foldedQuestion || '');
+    return /\b(coloque|coloquem|categoriz|recategoriz|classifiqu|reclassifiqu|mova|mover|alter[ea]r?\s+(?:a\s+)?categoria|mud[ea]r?\s+(?:a\s+)?categoria)\b/.test(q) ||
+        /(salario|salarios|renda|remuneracao|holerite|recebi|ganho).*(orcament|limite|reorganiz|organiz|distribu|redistribu|ajust|guardar|poupar|reservar)|(?:reorganiz|redistribu|recalcul|equilibr)\w*\s+(?:os?\s+|meus?\s+)?orcament/.test(q) ||
+        /^(?:por favor,?\s*)?(?:sempre que|toda vez que)\b/.test(q) ||
+        /\b(?:regra(?:\s+futura|\s+automatica)?\s+(?:para|quando)|(?:desativ|paus|desabilit|ativ|reabilit|habilit)\w*\s+(?:a\s+)?regra)\b/.test(q) ||
+        /\b(?:crie|criar|adicione|adicionar|inclua|incluir|nova|renomei\w*|mud\w*\s+o\s+nome|alter\w*\s+o\s+nome)\s+(?:a\s+)?(?:subcategoria|categoria)\b/.test(q) ||
+        /^(?:por favor,?\s*)?(?:deixe|defin\w*|ajust\w*|mud\w*|alter\w*|coloque|fique com)\s+(?:o\s+|meu\s+)?(?:limite|orcamento|teto)\b/.test(q) ||
+        /\b(?:despesa prevista|receita prevista|conta prevista|compromisso|parcela prevista|planejamento)\b.*\b(?:registr|adicion|crie|criar|agend|cancel|reativ|acabamos de simular|simul)\b|\b(?:registr|adicion|crie|criar|agend|cancel|reativ)\w*.*\b(?:despesa prevista|receita prevista|conta prevista|compromisso|parcela prevista|planejamento)\b/.test(q) ||
+        /^(?:por favor,?\s*)?(?:alter|mud|atualiz|ajust|remarqu)\w*\s+(?:o\s+|a\s+)?(?:vencimento|data|valor)\b/.test(q) ||
+        /\b(?:gostei.*mais|guardar.*a mais|poupar.*a mais|aument\w*.*reserva|trave |fixe |destrave|desbloque|reduza mais|use o valor que voce sugeriu|economia sugerida|reducao sugerida)\b/.test(q);
+}
+function intelligenceClassifyQuestion(question) {
+    const f = intelligenceFoldText(question);
+    if (intelligenceIsM3ActionIntent(f))
+        return 'm3_action';
+    const educationalHowTo = /\bcomo\s+(?:organizar|controlar|montar|construir|administrar|planejar|estruturar|equilibrar|dividir|criar)\b/.test(f) &&
+        !/\b(extrato|saldo|fatura|neste\s+mes|este\s+mes|mes\s+passado|ultim[oa]s?\s+\d*\s*(?:mes|dias)|gastei|recebi|paguei|lancament|movimentac|minhas\s+contas|projecao)\b/.test(f);
+    if (educationalHowTo)
+        return 'general';
+    if (/\b(meu\s+(?:extrato|saldo|orcamento|fluxo)|minha\s+(?:conta|fatura|projecao|renda)|minhas\s+(?:contas|despesas|receitas|financas|movimentacoes|compras|parcelas)|meus\s+(?:gastos|orcamentos|compromissos|lancamentos|limites)|gastei|economizei|recebi\s+(?:este|no)\s+mes|paguei|ultrapass|estourou|compar[ea]\s+minhas|movimentacoes\s+a\s+revisar|proximo\s+(?:mes|trimestre))\b/.test(f))
+        return 'personal_financial';
+    if (/\b(quanto\s+(?:gastei|paguei|recebi|tenho\s+comprometido)|quais\s+foram\s+(?:os?\s+)?(?:maiores|meus|minhas)|estabelecimentos\s+onde\s+mais|por\s+que\s+(?:gastei|minhas?\s+despesas)|analise\s+(?:meu\s+fluxo|meus\s+gastos))\b/.test(f))
+        return 'personal_financial';
+    if (/\bse\s+eu\s+comprar\b|\bposso\s+comprar\b/.test(f))
+        return 'personal_financial';
+    return 'general';
+}
+function intelligenceRecentPlainHistory(messages, limit = 6) {
+    const out = [];
+    const list = Array.isArray(messages) ? messages : [];
+    for (const m of list.slice(-14)) {
+        if (!m || !m.text)
+            continue;
+        if (m.role !== 'user' && m.role !== 'assistant')
+            continue;
+        if (m.role === 'assistant' && m.status !== 'done')
+            continue;
+        const text = String(m.text).replace(/\s+/g, ' ').trim().slice(0, 450);
+        if (text)
+            out.push({ role: m.role, text });
+    }
+    return out.slice(-limit);
+}
 async function intelligenceSubmitQuestion(app, rawQuestion) {
-    var _a, _b, _c, _d;
+    var _a, _b, _c, _d, _f, _g;
     if (typeof categoryReviewHandleQuestion === 'function' && categoryReviewHandleQuestion(app, rawQuestion))
         return;
-    if (((_a = app.state.localFinancialAccess) === null || _a === void 0 ? void 0 : _a.token) && typeof localFinancialSubmit === 'function')
+    const grant = app.state.localFinancialAccess;
+    const grantValid = !!(grant === null || grant === void 0 ? void 0 : grant.token) && (!Number.isFinite(grant.expiresAt) || grant.expiresAt > Date.now());
+    if (grantValid && typeof localFinancialSubmit === 'function')
         return localFinancialSubmit(app, rawQuestion);
     const q = String(rawQuestion || '').trim().slice(0, 750);
-    if (!q || app.state.aiBusy || app.state.intelligenceDrawerBusy)
+    if (!q || app.state.aiBusy || app.state.intelligenceDrawerBusy || app.state.aiCopilotBusy)
         return;
-    const priorError = String(app.state.aiError || ((_b = app.state.aiStatus) === null || _b === void 0 ? void 0 : _b.error) || '').trim();
+    const priorError = String(app.state.aiError || ((_a = app.state.aiStatus) === null || _a === void 0 ? void 0 : _a.error) || '').trim();
     const convState = intelligenceConversationState(app);
     const scope = app.state.intelligencePanelOpen && app.state.intelligenceContextSnapshot
         ? app.state.intelligenceContextSnapshot
@@ -7513,7 +7649,7 @@ async function intelligenceSubmitQuestion(app, rawQuestion) {
     app.setState({
         intelligenceMessages: [...currentMessages, userMsg],
         intelligenceDraft: '',
-        intelligencePreparedQuestion: q,
+        intelligencePreparedQuestion: '',
         intelligenceDraftScope: scope
     });
     const catIntent = intelligenceParseCategorizeIntent(q, app.state.categories, todayIso);
@@ -7536,38 +7672,106 @@ async function intelligenceSubmitQuestion(app, rawQuestion) {
     }
     const wantsLocalSummary = /\b(?:resumo\s+estruturado|tabela\s+de\s+categorias|resumo\s+das\s+minhas\s+movimenta[çc][õo]es)\b/i.test(q);
     const structuredCard = wantsLocalSummary ? intelligenceBuildStructuredSummaryCard(app) : null;
-    let replyText = '';
-    let replyStatus = 'unavailable';
-    if (convState.kind === 'service_unavailable') {
-        replyStatus = 'error';
-        const errReason = priorError || (((_c = app.state.aiStatus) === null || _c === void 0 ? void 0 : _c.connected) && ((_d = app.state.aiStatus) === null || _d === void 0 ? void 0 : _d.secure) === false ? 'cofre de criptografia local indisponível' : 'falha temporária de comunicação com o serviço de IA');
-        replyText = '**Serviço temporariamente indisponível:** Não foi possível acessar o serviço de IA neste momento (' + errReason + '). Nenhuma resposta foi simulada.';
-    }
-    else if (convState.kind === 'chat_available') {
-        replyStatus = 'unimplemented';
-        replyText = '**Conta autenticada e serviço de conversação disponível, mas motor de conversação aberta ainda não implementado (aguarda I2-A):** Sua conexão OAuth com o ChatGPT está ativa e a capacidade de conversação está habilitada, porém o envio de perguntas abertas sobre dados financeiros reais ainda não foi implementado nesta etapa por segurança. Nenhuma resposta de IA foi simulada e nenhum provedor externo foi acionado.';
-    }
-    else if (convState.kind === 'oauth_connected_unimplemented') {
-        replyStatus = 'unimplemented';
-        replyText = '**Funcionalidade ainda não implementada (aguarda I2-A):** Sua conta ChatGPT está autenticada via OAuth, mas o serviço de conversação aberta sobre dados financeiros reais ainda não foi habilitado nesta etapa. Você já pode preparar prévias locais de categorização (ex.: *"Categorize minha compra do mercado de ontem como Alimentação"*) ou executar os casos homologados no Laboratório.';
-    }
-    else {
-        replyStatus = 'unavailable';
-        replyText = '**Conta desconectada (não autenticada) e conversação aberta pendente (I2-A):** O ChatGPT não está conectado neste computador e a conversação financeira livre será entregue na etapa I2-A. Nenhuma resposta de IA foi simulada. Prévias determinísticas de categorização continuam disponíveis localmente.';
-    }
-    const reply = {
-        id: 'ast-' + (Date.now() + 1),
-        role: 'assistant',
-        text: replyText,
-        createdAt: intelligenceNowTime(),
-        createdAtIso: todayIso,
-        scopeLabel: scope.label,
-        periodLabel: scope.period,
-        status: replyStatus,
-        details: 'Estado: ' + convState.pill + ' · Escopo: ' + scope.label + ' (' + scope.period + ') · Conversa salva com segurança no histórico local do perfil.',
-        structuredCard
+    const intent = intelligenceClassifyQuestion(q);
+    const appendAssistant = (partial) => {
+        const reply = {
+            id: 'ast-' + (Date.now() + 1),
+            role: 'assistant',
+            text: '',
+            createdAt: intelligenceNowTime(),
+            createdAtIso: todayIso,
+            scopeLabel: scope.label,
+            periodLabel: scope.period,
+            status: 'done',
+            structuredCard,
+            ...partial
+        };
+        intelligenceSyncThreadMessages(app, [...currentMessages, userMsg, reply], scope);
     };
-    intelligenceSyncThreadMessages(app, [...currentMessages, userMsg, reply], scope);
+    if (!wantsLocalSummary && (intent === 'm3_action' || intent === 'personal_financial')) {
+        appendAssistant({
+            status: 'permission_needed',
+            text: intent === 'm3_action'
+                ? '**Autorização financeira necessária para preparar esta ação:** para examinar seus lançamentos, categorias ou orçamento antes de gerar uma prévia confirmável, autorize a leitura financeira desta sessão. Nenhuma escrita ocorre sem prévia, confirmação nativa e recibo reversível.'
+                : '**Autorização de leitura financeira necessária:** por segurança, seus gastos, orçamento, faturas e compromissos locais só são consultados após você autorizar a leitura financeira desta sessão. Nenhuma resposta pessoal foi estimada ou simulada.',
+            permissionActions: [
+                { id: 'authorize_local_read', label: 'Autorizar leitura financeira agora', primary: true, retryQuestion: q }
+            ],
+            details: 'Escopo: ' + scope.label + ' (' + scope.period + ') · Aguardando permissão de leitura financeira nesta sessão.'
+        });
+        return;
+    }
+    const api = desktop;
+    if (convState.kind === 'service_unavailable') {
+        const errReason = priorError || (((_b = app.state.aiStatus) === null || _b === void 0 ? void 0 : _b.connected) && ((_c = app.state.aiStatus) === null || _c === void 0 ? void 0 : _c.secure) === false ? 'cofre de criptografia local indisponível' : 'falha temporária de comunicação com o serviço de IA');
+        appendAssistant({
+            status: 'error',
+            text: '**Serviço temporariamente indisponível:** Não foi possível acessar o serviço de IA neste momento (' + errReason + '). Nenhuma resposta foi simulada.',
+            permissionActions: [{ id: 'open_ai_settings', label: 'Verificar em Configurações de IA' }],
+            details: 'Estado: ' + convState.pill + ' · ' + errReason
+        });
+        return;
+    }
+    if (!wantsLocalSummary && ((_d = app.state.aiStatus) === null || _d === void 0 ? void 0 : _d.connected) && ((_f = app.state.aiCopilotCap) === null || _f === void 0 ? void 0 : _f.enabled) && typeof (api === null || api === void 0 ? void 0 : api.aiCopilotAsk) === 'function') {
+        const requestId = 'sol-gen-' + Date.now();
+        app.setState({ aiCopilotBusy: true, aiCopilotStreaming: '', aiCopilotRequestId: requestId, aiError: '' });
+        try {
+            const history = intelligenceRecentPlainHistory(currentMessages);
+            const sol = await api.aiCopilotAsk({ token: null, question: q, history, effortOverride: 'auto', requestId });
+            if ((sol === null || sol === void 0 ? void 0 : sol.inferenceStatus) && app.state.aiCopilotCap) {
+                app.setState({ aiCopilotCap: { ...app.state.aiCopilotCap, inferenceStatus: sol.inferenceStatus } });
+            }
+            const effortLabel = (sol === null || sol === void 0 ? void 0 : sol.effort) === 'high' ? 'Alto' : (sol === null || sol === void 0 ? void 0 : sol.effort) === 'medium' ? 'Médio' : 'Baixo';
+            appendAssistant({
+                status: 'done',
+                text: String((sol === null || sol === void 0 ? void 0 : sol.text) || '').trim() || 'O GPT-6.2 Sol concluiu a solicitação sem conteúdo de resposta.',
+                operationalEvidence: 'GPT-6.2 Sol · Modo geral (sem dados financeiros) · Esforço ' + effortLabel,
+                details: 'Conversa geral via OAuth com GPT-6.2 Sol · zero acesso ao SQLite ou extratos pessoais · zero fallback pago.'
+            });
+        }
+        catch (solErr) {
+            const errMsg = String((solErr === null || solErr === void 0 ? void 0 : solErr.message) || 'Não foi possível consultar o GPT-6.2 Sol neste momento.').slice(0, 260);
+            appendAssistant({
+                status: 'error',
+                text: '**Não foi possível obter resposta do GPT-6.2 Sol:** ' + errMsg + ' Nenhuma resposta foi simulada.',
+                permissionActions: [{ id: 'open_ai_settings', label: 'Abrir Configurações de IA' }],
+                details: 'Erro real retornado pelo serviço GPT-6.2 Sol (OAuth): ' + errMsg
+            });
+        }
+        finally {
+            app.setState({ aiCopilotBusy: false, aiCopilotStreaming: '', aiCopilotRequestId: null });
+        }
+        return;
+    }
+    if (wantsLocalSummary) {
+        appendAssistant({
+            status: 'done',
+            text: '**Resumo estruturado local pronto (somente registros carregados na sessão):** consulte os totais reconciliados abaixo sem acionar IA externa.',
+            details: 'Escopo: ' + scope.label + ' (' + scope.period + ') · Resumo local determinístico sem escrita financeira.'
+        });
+        return;
+    }
+    if (((_g = app.state.aiStatus) === null || _g === void 0 ? void 0 : _g.connected) === true) {
+        appendAssistant({
+            status: 'permission_needed',
+            text: 'Sua conta **ChatGPT está conectada via OAuth**, mas a inferência do modelo **GPT-6.2 Sol** ainda precisa ser ativada neste dispositivo. Ative abaixo para responder a saudações e perguntas gerais sem compartilhar seus registros financeiros pessoais.',
+            permissionActions: [
+                { id: 'enable_ai_copilot', label: 'Ativar GPT-6.2 Sol e responder', primary: true, retryQuestion: q },
+                { id: 'open_ai_settings', label: 'Configurações de IA' }
+            ],
+            details: 'Estado: OAuth conectado · opt-in GPT-6.2 Sol desativado · nenhum registro financeiro acessado.'
+        });
+        return;
+    }
+    appendAssistant({
+        status: 'unavailable',
+        text: '**ChatGPT desconectado neste computador:** conecte sua conta ChatGPT para conversar com o **GPT-6.2 Sol** sobre dúvidas gerais, ou autorize a leitura financeira local para consultar gastos, orçamentos e ações supervisionadas sem IA externa. Nenhuma resposta foi simulada.',
+        permissionActions: [
+            { id: 'connect_chatgpt', label: 'Conectar ChatGPT', primary: true },
+            { id: 'authorize_local_read', label: 'Autorizar leitura local' }
+        ],
+        details: 'Estado: ' + convState.pill + ' · Escopo: ' + scope.label + ' (' + scope.period + ').'
+    });
 }
 const INTELLIGENCE_STORAGE_PREFIX = 'mf_ai_threads_v1_';
 const INTELLIGENCE_MAX_THREADS = 24;
@@ -8611,10 +8815,10 @@ async function localFinancialEnable(app) {
         categoryReviewDisable(app);
     const api = localFinancialAPI(), s = app.state;
     if (s.localFinancialBusy)
-        return;
+        return false;
     if (!(api === null || api === void 0 ? void 0 : api.localFinancialAuthorize)) {
         app.setState({ localFinancialError: 'Consulta local requer a versão desktop desta candidata.' });
-        return;
+        return false;
     }
     const source = s.mode === 'demo' ? 'manual' : s.localFinancialSource || 'bank', profile = s.mode === 'demo' ? 'demo' : 'real';
     const scope = { source, profile, planning: profile === 'real' && s.localFinancialPlanning === true, consent: 'LOCAL_FINANCIAL_READ_V1' };
@@ -8625,16 +8829,18 @@ async function localFinancialEnable(app) {
         const grant = await api.localFinancialAuthorize(scope);
         if (app.__localReadGeneration !== generation || app.state.mode !== s.mode) {
             void ((_a = api.localFinancialRevoke) === null || _a === void 0 ? void 0 : _a.call(api, grant.token));
-            return;
+            return false;
         }
         app.__ic2Conversation = null;
         app.__ic2InvestigationActive = false;
         const backup = ((_b = s.localFinancialAccess) === null || _b === void 0 ? void 0 : _b.backup) || { intelligenceThreads: s.intelligenceThreads, intelligenceMessages: s.intelligenceMessages, intelligenceActiveThreadId: s.intelligenceActiveThreadId, intelligenceHydratedMode: s.intelligenceHydratedMode };
-        app.setState({ localFinancialAccess: { ...grant, backup }, localFinancialBusy: false, localFinancialRadar: null, intelligenceCopilotInsights: null, intelligenceThreads: [], intelligenceMessages: [], intelligenceActiveThreadId: null, intelligenceDraft: '', intelligencePreparedQuestion: '', workIntelligenceDemo: s.workIntelligenceDemo ? { ...s.workIntelligenceDemo, enabled: false } : undefined }, () => { void localFinancialRadar(app); if (typeof intelligencePremiumLoad === 'function')
-            void intelligencePremiumLoad(app); void intelligenceCopilotInsightsLoad(app); });
+        await new Promise((resolve) => app.setState({ localFinancialAccess: { ...grant, backup }, localFinancialBusy: false, localFinancialRadar: null, intelligenceCopilotInsights: null, intelligenceThreads: [], intelligenceMessages: [], intelligenceActiveThreadId: null, intelligenceDraft: '', intelligencePreparedQuestion: '', workIntelligenceDemo: s.workIntelligenceDemo ? { ...s.workIntelligenceDemo, enabled: false } : undefined }, () => { void localFinancialRadar(app); if (typeof intelligencePremiumLoad === 'function')
+            void intelligencePremiumLoad(app); void intelligenceCopilotInsightsLoad(app); resolve(); }));
+        return true;
     }
     catch {
         app.setState({ localFinancialBusy: false, localFinancialError: 'Não foi possível autorizar a leitura local. Nenhum dado foi consultado por esta solicitação.' });
+        return false;
     }
 }
 function localFinancialDisable(app) {
@@ -8681,7 +8887,7 @@ async function localFinancialRadar(app) {
     }
 }
 async function localFinancialSubmit(app, question) {
-    var _a, _b, _c, _d, _e, _f;
+    var _a, _b, _c, _d, _e, _f, _g;
     if (app.state.localFinancialBusy || !String(question || '').trim())
         return;
     const access = app.state.localFinancialAccess;
@@ -8694,15 +8900,17 @@ async function localFinancialSubmit(app, question) {
     const api = localFinancialAPI();
     const month = app.state.localFinancialMonth || app.state.month, signature = intelligencePremiumSignature(app);
     const foldedQuestion = intelligenceFoldText(q);
-    const m3ActionIntent = /\b(coloque|coloquem|categoriz|recategoriz|classifiqu|reclassifiqu|mova|mover|alter[ea]r?\s+(?:a\s+)?categoria|mud[ea]r?\s+(?:a\s+)?categoria)\b/.test(foldedQuestion) ||
-        /(salario|salarios|renda|remuneracao|holerite|recebi|ganho).*(orcament|limite|reorganiz|organiz|distribu|redistribu|ajust|guardar|poupar|reservar)|(?:reorganiz|redistribu|recalcul|equilibr)\w*\s+(?:os?\s+|meus?\s+)?orcament/.test(foldedQuestion) ||
-        /^(?:por favor,?\s*)?(?:sempre que|toda vez que)\b/.test(foldedQuestion) ||
-        /\b(?:regra(?:\s+futura|\s+automatica)?\s+(?:para|quando)|(?:desativ|paus|desabilit|ativ|reabilit|habilit)\w*\s+(?:a\s+)?regra)\b/.test(foldedQuestion) ||
-        /\b(?:crie|criar|adicione|adicionar|inclua|incluir|nova|renomei\w*|mud\w*\s+o\s+nome|alter\w*\s+o\s+nome)\s+(?:a\s+)?(?:subcategoria|categoria)\b/.test(foldedQuestion) ||
-        /^(?:por favor,?\s*)?(?:deixe|defin\w*|ajust\w*|mud\w*|alter\w*|coloque|fique com)\s+(?:o\s+|meu\s+)?(?:limite|orcamento|teto)\b/.test(foldedQuestion) ||
-        /\b(?:despesa prevista|receita prevista|conta prevista|compromisso|parcela prevista|planejamento)\b.*\b(?:registr|adicion|crie|criar|agend|cancel|reativ|acabamos de simular|simul)\b|\b(?:registr|adicion|crie|criar|agend|cancel|reativ)\w*.*\b(?:despesa prevista|receita prevista|conta prevista|compromisso|parcela prevista|planejamento)\b/.test(foldedQuestion) ||
-        /^(?:por favor,?\s*)?(?:alter|mud|atualiz|ajust|remarqu)\w*\s+(?:o\s+|a\s+)?(?:vencimento|data|valor)\b/.test(foldedQuestion) ||
-        /\b(?:gostei.*mais|guardar.*a mais|poupar.*a mais|aument\w*.*reserva|trave |fixe |destrave|desbloque|reduza mais|use o valor que voce sugeriu|economia sugerida|reducao sugerida)\b/.test(foldedQuestion);
+    const m3ActionIntent = typeof intelligenceIsM3ActionIntent === 'function'
+        ? intelligenceIsM3ActionIntent(foldedQuestion)
+        : /\b(coloque|coloquem|categoriz|recategoriz|classifiqu|reclassifiqu|mova|mover|alter[ea]r?\s+(?:a\s+)?categoria|mud[ea]r?\s+(?:a\s+)?categoria)\b/.test(foldedQuestion) ||
+            /(salario|salarios|renda|remuneracao|holerite|recebi|ganho).*(orcament|limite|reorganiz|organiz|distribu|redistribu|ajust|guardar|poupar|reservar)|(?:reorganiz|redistribu|recalcul|equilibr)\w*\s+(?:os?\s+|meus?\s+)?orcament/.test(foldedQuestion) ||
+            /^(?:por favor,?\s*)?(?:sempre que|toda vez que)\b/.test(foldedQuestion) ||
+            /\b(?:regra(?:\s+futura|\s+automatica)?\s+(?:para|quando)|(?:desativ|paus|desabilit|ativ|reabilit|habilit)\w*\s+(?:a\s+)?regra)\b/.test(foldedQuestion) ||
+            /\b(?:crie|criar|adicione|adicionar|inclua|incluir|nova|renomei\w*|mud\w*\s+o\s+nome|alter\w*\s+o\s+nome)\s+(?:a\s+)?(?:subcategoria|categoria)\b/.test(foldedQuestion) ||
+            /^(?:por favor,?\s*)?(?:deixe|defin\w*|ajust\w*|mud\w*|alter\w*|coloque|fique com)\s+(?:o\s+|meu\s+)?(?:limite|orcamento|teto)\b/.test(foldedQuestion) ||
+            /\b(?:despesa prevista|receita prevista|conta prevista|compromisso|parcela prevista|planejamento)\b.*\b(?:registr|adicion|crie|criar|agend|cancel|reativ|acabamos de simular|simul)\b|\b(?:registr|adicion|crie|criar|agend|cancel|reativ)\w*.*\b(?:despesa prevista|receita prevista|conta prevista|compromisso|parcela prevista|planejamento)\b/.test(foldedQuestion) ||
+            /^(?:por favor,?\s*)?(?:alter|mud|atualiz|ajust|remarqu)\w*\s+(?:o\s+|a\s+)?(?:vencimento|data|valor)\b/.test(foldedQuestion) ||
+            /\b(?:gostei.*mais|guardar.*a mais|poupar.*a mais|aument\w*.*reserva|trave |fixe |destrave|desbloque|reduza mais|use o valor que voce sugeriu|economia sugerida|reducao sugerida)\b/.test(foldedQuestion);
     const financialInvestigation = /por que.*(despes|gast)|investig|categorias?.*contribu|estabelec.*(cresc|aument)|mostre.*estabelec|despes.*(aument|subi)|gast.*(aument|mais)|onde.*gastando|o que aumentou|compar.*(janeiro|fevereiro|marco|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro|mes)/.test(foldedQuestion);
     const sameThread = !!((_a = app.__ic2Conversation) === null || _a === void 0 ? void 0 : _a.answerId) && messages.some((m) => m.id === app.__ic2Conversation.answerId);
     const i3Followup = sameThread && !!app.__ic2InvestigationActive &&
@@ -8718,8 +8926,8 @@ async function localFinancialSubmit(app, question) {
     app.__localChatRequest = request;
     const user = { id: 'local-u-' + Date.now(), role: 'user', text: q, status: 'sent',
         createdAt: intelligenceNowTime(), scopeLabel: scope.label, periodLabel: month };
-    app.setState({ localFinancialBusy: true, intelligenceDraft: '' });
-    let reply = null, operational = null, ic2 = null, m3Draft = null, solReply = null, error = '';
+    app.setState({ localFinancialBusy: true, intelligenceDraft: '', intelligencePreparedQuestion: '' });
+    let reply = null, operational = null, ic2 = null, m3Draft = null, solReply = null, error = '', permissionActions = undefined;
     try {
         if (m3ActionIntent && typeof (api === null || api === void 0 ? void 0 : api.copilotActionInterpret) === 'function') {
             const draft = await api.copilotActionInterpret({ token: access.token, source: access.source, profile: access.profile, month, question: q });
@@ -8742,20 +8950,30 @@ async function localFinancialSubmit(app, question) {
                 ...(conversationId ? { conversationId } : {}) });
             if (!mfIC2Valid(ic2, access, month))
                 throw Error('Resposta IC2 não verificada.');
-            if (ic2.status === 'unsupported' && ((_b = app.state.aiStatus) === null || _b === void 0 ? void 0 : _b.connected) && ((_c = app.state.aiCopilotCap) === null || _c === void 0 ? void 0 : _c.enabled) && typeof (api === null || api === void 0 ? void 0 : api.aiCopilotAsk) === 'function') {
-                const requestId = 'sol-' + Date.now();
-                app.setState({ aiCopilotBusy: true, aiCopilotStreaming: '', aiCopilotRequestId: requestId });
-                try {
-                    solReply = await api.aiCopilotAsk({ token: access.token, source: access.source, profile: access.profile, month, question: q, effortOverride: 'auto', requestId });
-                    if ((solReply === null || solReply === void 0 ? void 0 : solReply.inferenceStatus) && app.state.aiCopilotCap) {
-                        app.setState({ aiCopilotCap: { ...app.state.aiCopilotCap, inferenceStatus: solReply.inferenceStatus } });
+            if (ic2.status === 'unsupported') {
+                if (((_b = app.state.aiStatus) === null || _b === void 0 ? void 0 : _b.connected) && ((_c = app.state.aiCopilotCap) === null || _c === void 0 ? void 0 : _c.enabled) && typeof (api === null || api === void 0 ? void 0 : api.aiCopilotAsk) === 'function') {
+                    const requestId = 'sol-' + Date.now();
+                    app.setState({ aiCopilotBusy: true, aiCopilotStreaming: '', aiCopilotRequestId: requestId });
+                    try {
+                        const history = typeof intelligenceRecentPlainHistory === 'function' ? intelligenceRecentPlainHistory(messages) : [];
+                        solReply = await api.aiCopilotAsk({ token: access.token, source: access.source, profile: access.profile, month, question: q, history, effortOverride: 'auto', requestId });
+                        if ((solReply === null || solReply === void 0 ? void 0 : solReply.inferenceStatus) && app.state.aiCopilotCap) {
+                            app.setState({ aiCopilotCap: { ...app.state.aiCopilotCap, inferenceStatus: solReply.inferenceStatus } });
+                        }
+                    }
+                    catch (solErr) {
+                        error = '**Não foi possível consultar o GPT-6.2 Sol:** ' + String((solErr === null || solErr === void 0 ? void 0 : solErr.message) || 'falha inesperada') + ' Nenhuma resposta foi simulada.';
+                        permissionActions = [{ id: 'open_ai_settings', label: 'Verificar Configurações de IA' }];
+                    }
+                    finally {
+                        app.setState({ aiCopilotBusy: false, aiCopilotStreaming: '', aiCopilotRequestId: null });
                     }
                 }
-                catch (solErr) {
-                    error = String((solErr === null || solErr === void 0 ? void 0 : solErr.message) || '');
+                else if (((_d = app.state.aiStatus) === null || _d === void 0 ? void 0 : _d.connected) === true) {
+                    permissionActions = [{ id: 'enable_ai_copilot', label: 'Ativar GPT-6.2 Sol e responder', primary: true, retryQuestion: q }, { id: 'open_ai_settings', label: 'Configurações de IA' }];
                 }
-                finally {
-                    app.setState({ aiCopilotBusy: false, aiCopilotStreaming: '', aiCopilotRequestId: null });
+                else {
+                    permissionActions = [{ id: 'connect_chatgpt', label: 'Conectar ChatGPT', primary: true }];
                 }
             }
         }
@@ -8790,14 +9008,14 @@ async function localFinancialSubmit(app, question) {
     }
     if (request !== app.__localChatRequest || (app.state.intelligenceActiveThreadId || null) !== threadAtStart ||
         app.state.localFinancialAccess !== access ||
-        ((_d = app.state.localFinancialAccess) === null || _d === void 0 ? void 0 : _d.token) !== (access === null || access === void 0 ? void 0 : access.token) ||
+        ((_e = app.state.localFinancialAccess) === null || _e === void 0 ? void 0 : _e.token) !== (access === null || access === void 0 ? void 0 : access.token) ||
         signature !== intelligencePremiumSignature(app)) {
         if (request === app.__localChatRequest)
             app.setState({ localFinancialBusy: false });
         return;
     }
     app.__ic2InvestigationActive = !!(ic2 && ['ready', 'partial'].includes(ic2.status) &&
-        ((_e = ic2.facts) === null || _e === void 0 ? void 0 : _e.some((fact) => fact.tool === 'compare_spending_breakdown')));
+        ((_f = ic2.facts) === null || _f === void 0 ? void 0 : _f.some((fact) => fact.tool === 'compare_spending_breakdown')));
     if (ic2 && ['ready', 'partial', 'needs_clarification', 'unsupported'].includes(ic2.status))
         app.__ic2Conversation = { access, signature, id: ic2.conversationId };
     const state = operational === null || operational === void 0 ? void 0 : operational.uiState;
@@ -8805,7 +9023,7 @@ async function localFinancialSubmit(app, question) {
     const finalStatus = m3Draft ?
         (m3Draft.status === 'ready' ? 'done' : 'unsupported') : (solReply === null || solReply === void 0 ? void 0 : solReply.text) ?
         'done' : error && (ic2 === null || ic2 === void 0 ? void 0 : ic2.status) === 'unsupported' ?
-        'unavailable' : ic2 ?
+        'error' : ic2 ?
         (['ready', 'partial'].includes(ic2.status) ? 'done' : ic2.status === 'unsupported' || ic2.status === 'needs_clarification' ? 'unsupported' :
             ic2.status === 'denied' || ic2.status === 'stale' ? 'unavailable' : 'error') : operational ?
         (state === 'ready' || state === 'empty' ? 'done' : state === 'unsupported' ? 'unsupported' : state === 'denied' || state === 'expired' ? 'unavailable' : 'error') :
@@ -8836,6 +9054,7 @@ async function localFinancialSubmit(app, question) {
         ic2Reply: ic2 || undefined,
         ic2FollowUps: ic2 && Array.isArray(ic2.followUps) ? ic2.followUps.slice(0, 3) : undefined,
         m3ActionDraft: m3Draft || undefined,
+        permissionActions,
         operationalActions: factsValid && !visualV3 && Array.isArray(operational.actions) ? operational.actions : [],
         operationalEvidence: evidence,
         details: m3Draft ? 'Prévia supervisionada M3 · confirmação nativa e backup SQLite antes de qualquer escrita.' :
@@ -8852,7 +9071,7 @@ async function localFinancialSubmit(app, question) {
     }
     else if (ic2) {
         mfIC2BindMessage(answer, access, signature, month);
-        if (((_f = app.__ic2Conversation) === null || _f === void 0 ? void 0 : _f.id) === ic2.conversationId)
+        if (((_g = app.__ic2Conversation) === null || _g === void 0 ? void 0 : _g.id) === ic2.conversationId)
             app.__ic2Conversation.answerId = answer.id;
     }
     else

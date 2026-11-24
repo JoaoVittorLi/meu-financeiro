@@ -1,6 +1,20 @@
 # Registro de frentes ativas e prevenção de conflitos
 
-## Frente Atual — Marco 3 Integral & Candidata Estável 1.0.0 (23/11/2026)
+## Checkpoint de coordenação V2 & Incidente P0 1.0.0 — 24/11/2026
+
+**Protocolo vigente:** [OPERATING_PROTOCOL](OPERATING_PROTOCOL.md) (PR `#109` `c46c9a5` incorporado em `feat/mf3-supervised-copilot-1-0-0-20261119`).
+
+| Frente | Dono | Estado observado / próximo passo |
+| --- | --- | --- |
+| M3 / release 1.0.0 (`P0` Inteligência) | Antigravity Orchestrator Neon | **Candidata anterior `4a148848` marcada `NO-GO (P0)`** após instalação do proprietário exibir `"Aguarda I2-A"` e regressão visual B05. Correção completa integrada na worktree `m3-supervised-copilot` (`PR #108`); executando suíte de regressão M4/M5 (13 jornadas), Nível A/B e auditoria dupla `pro`, para congelar SHA ao Codex `CD-03/CD-04`. |
+| Creative Design Lab V01 / CD-01 | Codex | Frente visual isolada (Visão Geral apenas); não bloqueia correção M3 P0 nem release `1.0.0 stable`. Stitch suspenso. |
+| CD-02 | Codex | Aguardar aprovação explícita do design; sem interferir em M3. |
+| CD-03 / CD-04 | Codex | Aguardando SHA congelado da candidata corrigida pós-P0 para auditoria de segurança e reprodução independente de jornadas. |
+| Governança / coordenação | ChatGPT + proprietário | PR `#109` incorporado; promoção e empacotamento final suspensos até auditoria e autorização. |
+
+PRs `#105` (M1) e `#107` (M2) são referências da cadeia, não novas frentes concorrentes. Main observada `e0d5131ebeda855a792614d9986f40e5bb94af5e`.
+
+## Frente Atual — Marco 3: Copiloto Supervisionado, GPT-6.2 Sol, M3-SALARY e Consolidação Estável 1.0.0 (24/11/2026)
 
 - **Coordenação ativa:** Orchestrator **Neon** (`C:\Dev\meu-financeiro-worktrees\m3-supervised-copilot`, branch `feat/mf3-supervised-copilot-1-0-0-20261119`), consolidação M1 + M2 + M3 + CAT-P0 na versão **`1.0.0`** (canal **`stable`**).
 - **Workspaces isolados:** `C:\Dev\meu-financeiro` (`PR #105`, `61d9b81`); `C:\Dev\meu-financeiro-worktrees\v1-stable-rc` (`release/v1.0.0-rc.1-candidate-20261119` @ `1a22181e`); `C:\Dev\meu-financeiro-worktrees\m2-copilot` (`PR Draft #107`, `6b9c9ad`); `C:\Dev\meu-financeiro-worktrees\m3-supervised-copilot` (`feat/mf3-supervised-copilot-1-0-0-20261119`, candidata estável `1.0.0`). Workspace OneDrive original (`Carbon Meu Financeiro`) intacto e intocado.

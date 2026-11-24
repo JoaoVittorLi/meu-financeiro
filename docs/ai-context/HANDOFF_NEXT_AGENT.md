@@ -1,3 +1,9 @@
+# Handoff prioritário — Governança V2 (23/11/2026)
+
+Antes de assumir qualquer missão, leia [OPERATING_PROTOCOL](OPERATING_PROTOCOL.md), [ACTIVE_WORK](ACTIVE_WORK.md), [README](README.md) e [ROADMAP](../ROADMAP_MF2.md). Verifique branch, SHA, worktrees, PR, status local e ownership. Escolha papel explícito: Antigravity funcional/integrador, CD-01 design, CD-02 implementação visual aprovada, CD-03 auditoria, CD-04 QA ou coordenação. Continue o trabalho autorizado; não reinicie marcos ou auditoria global sem necessidade. Preserve sessões e alterações existentes. Reporte SHA, testes reais, evidências, pendências e próximo checkpoint conforme o protocolo. Os handoffs abaixo são históricos; não usar bases antigas como ponto de partida sem verificação.
+
+---
+
 ## Sprint Premium #54 — 12/11/2026 (novo checkpoint)
 
 Base #53/779cd31 preservada. Branch `feat/mf2-premium-productivity-sprint-20261112`, Draft [#54](https://github.com/JoaoVittorLi/meu-financeiro/pull/54) contra `integration/mf2-q1-operational-premium-20261112`. Código validado `e897140f3b93a9705bfdb7f44bb95112fff7a156`; commits seguintes contêm somente evidências/handoff. R3 Central, R2 Chat e R4 Movimentações têm jornadas funcionais verificadas; R5 começou com briefing e drilldowns, não foi declarado redesign completo.

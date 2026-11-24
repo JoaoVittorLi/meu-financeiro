@@ -1,5 +1,8 @@
 # AGENTS.md — Meu Financeiro
 
+> **GOVERNANÇA V2 — 23/11/2026 (decisão do proprietário):** leitura obrigatória do [protocolo canônico](docs/ai-context/OPERATING_PROTOCOL.md#governança-v2--decisão-do-proprietário-em-23112026) antes de atuar. ChatGPT coordena; Antigravity Neon é líder funcional e integrador único; Codex atua em design isolado e auditoria/QA independentes. M3/S0–S5 e 1.0.0 stable têm prioridade; redesign não bloqueia release. Stitch suspenso. Ver [ACTIVE_WORK](docs/ai-context/ACTIVE_WORK.md) para ownership. Regras de segurança, NSIS e autorizações existentes permanecem vinculantes. As descrições de papéis antigas são históricas quando conflitantes.
+
+
 > **ATUALIZAÇÃO VINCULANTE — GOVERNANÇA ANTIGRAVITY & HOMOLOGAÇÃO NSIS (18/11/2026):**
 > - **Toolchain oficial:** `Node v22.23.4`, `npm 10.9.9`, `Electron 45.2.3`, `TypeScript 5.8.3`, `Python >= 3.8`.
 > - **Workspace oficial:** `C:\Dev\meu-financeiro` (worktrees em `C:\Dev\meu-financeiro-worktrees\*`). Preservar intacto o workspace OneDrive (`Carbon Meu Financeiro`) e os perfis pessoais/estáveis do Windows.

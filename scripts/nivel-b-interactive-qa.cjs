@@ -1209,7 +1209,10 @@ async function runNivelB(options = {}) {
       await ui.clickElement(`return document.getElementById('mf-b05-tab-chat');`, 'Tab Conversar');
       await ui.fillText(`return document.getElementById('mf-ai-draft');`, 'Quais foram minhas maiores despesas?', 'Unauth query');
       await ui.clickButtonText('Enviar', 'document.querySelector(".mf-b05-chat-composer")');
-      await ui.waitFor(`return document.querySelector('.mf-b05-chat-thread')?.textContent?.includes('Conta desconectada (não autenticada)');`, 'Unauthenticated reply');
+      await ui.waitFor(`
+        const t = document.querySelector('.mf-b05-chat-thread')?.textContent || '';
+        return t.includes('Autorização de leitura financeira necessária') && !t.includes('Aguarda I2-A') && !t.includes('ainda não implementada');
+      `, 'Unauthenticated financial permission prompt');
 
       // 3. Ambiguous D01 prompt ("Categorize Mercado como Alimentação") -> 2+ matches -> Conferir proposta disabled
       await ui.fillText(`return document.getElementById('mf-ai-draft');`, 'Categorize Mercado como Alimentação', 'Ambiguous D01 prompt');
