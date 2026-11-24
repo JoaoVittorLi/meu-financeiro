@@ -6,6 +6,8 @@ contextBridge.exposeInMainWorld('financeDesktop', Object.freeze({
   ...createD05PreloadBridge(ipcRenderer),
   load: (profile) => ipcRenderer.invoke('finance:load',profile),
   save: (profile,data) => ipcRenderer.invoke('finance:save',profile,data),
+  setMonthlyBudget: (profile,month,category,amountCents) => ipcRenderer.invoke('finance:monthly-budget',{profile,month,category,amountCents}),
+  deleteMonthlyBudget: (profile,month,category) => ipcRenderer.invoke('finance:monthly-budget',{profile,month,category,amountCents:null}),
   info: () => ipcRenderer.invoke('finance:info'),
   localFinancialAuthorize: input => ipcRenderer.invoke('finance:read-authorize',input),
   localFinancialQuery: input => ipcRenderer.invoke('finance:read-query',input),
@@ -14,6 +16,11 @@ contextBridge.exposeInMainWorld('financeDesktop', Object.freeze({
   intelligenceOperationalAsk: input => ipcRenderer.invoke('intelligence:operational-ask',input),
   intelligenceIC2ReadQuery: input => ipcRenderer.invoke('intelligence:ic2-read-query',input),
   intelligenceCopilotInsights: input => ipcRenderer.invoke('intelligence:copilot-insights',input),
+  copilotActionCapabilityStatus: () => ipcRenderer.invoke('copilot:action-capability-status'),
+  copilotActionCapabilityEnable: () => ipcRenderer.invoke('copilot:action-capability-enable'),
+  copilotActionCapabilityRevoke: () => ipcRenderer.invoke('copilot:action-capability-revoke'),
+  copilotActionInterpret: input => ipcRenderer.invoke('copilot:action-interpret',input),
+  copilotSalaryBudgetPropose: input => ipcRenderer.invoke('copilot:salary-budget-propose',input),
   intelligenceCategoryPersonal: input => ipcRenderer.invoke('intelligence:category-personal',input),
   intelligenceCategorySandboxStart: month => ipcRenderer.invoke('intelligence:category-sandbox-start',month),
   intelligenceCategorySandboxCommand: input => ipcRenderer.invoke('intelligence:category-sandbox-command',input),
@@ -99,6 +106,7 @@ contextBridge.exposeInMainWorld('financeDesktop', Object.freeze({
   aiConnect: () => ipcRenderer.invoke('ai:connect'),
   aiDisconnect: () => ipcRenderer.invoke('ai:disconnect'),
   aiModelAvailable: () => ipcRenderer.invoke('ai:model-available'),
+  aiCancel: () => ipcRenderer.invoke('ai:cancel'),
   aiRunDemo: (input) => ipcRenderer.invoke('ai:run-demo',input),
   aiMemoryList: () => ipcRenderer.invoke('ai:memory-list'),
   aiMemoryAdd: (input) => ipcRenderer.invoke('ai:memory-add',input),
@@ -107,6 +115,20 @@ contextBridge.exposeInMainWorld('financeDesktop', Object.freeze({
   aiUsageSummary: () => ipcRenderer.invoke('ai:usage-summary'),
   aiContextPreview: (input) => ipcRenderer.invoke('ai:context-preview',input),
   aiFinancialContextDemo: (source) => ipcRenderer.invoke('ai:financial-context-demo',source),
+  aiCopilotCapabilityStatus: () => ipcRenderer.invoke('ai:copilot-capability-status'),
+  aiCopilotCapabilityEnable: () => ipcRenderer.invoke('ai:copilot-capability-enable'),
+  aiCopilotCapabilityRevoke: () => ipcRenderer.invoke('ai:copilot-capability-revoke'),
+  aiCopilotAsk: (input) => ipcRenderer.invoke('ai:copilot-ask',input),
+  aiCopilotCancel: () => ipcRenderer.invoke('ai:copilot-cancel'),
+  onAICopilotDelta: (callback) => {
+    if(typeof callback!=='function')throw new TypeError('Callback inválido.');
+    const listener=(_event,data)=>callback({
+      requestId:typeof data?.requestId==='string'?data.requestId:'',
+      delta:typeof data?.delta==='string'?data.delta:''
+    });
+    ipcRenderer.on('ai:copilot-delta',listener);
+    return () => ipcRenderer.removeListener('ai:copilot-delta',listener);
+  },
   onAIDelta: (callback) => {
     if(typeof callback!=='function')throw new TypeError('Callback inválido.');
     const listener=(_event,data)=>callback(typeof data?.delta==='string'?data.delta:'');

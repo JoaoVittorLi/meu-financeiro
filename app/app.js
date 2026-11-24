@@ -461,7 +461,7 @@ function qa84BudgetReturn(host, toCategory) {
     }
 }
 function renderQA84BudgetCards(host, visible, mode, total, bank, suggest) {
-    return h('div', { className: 'qa84-budgets-grid', role: 'list', 'aria-label': 'Orçamentos por categoria' }, visible.map(({ info, total: spent, hasLimit, limit }) => {
+    return h('div', { className: 'qa84-budgets-grid', role: 'list', 'aria-label': 'Orçamentos por categoria' }, visible.map(({ info, total: spent, hasLimit, limit, isMonthly }) => {
         const identity = resolveCategoryVisualIdentity({ categoryName: info.name, catalog: host.state.qa84VisualCatalog || [], aggregate: true });
         const model = qa84BudgetStatus(spent, limit !== null && limit !== void 0 ? limit : null, mode === 'expense' && hasLimit);
         const tone = model.status === 'exceeded' ? 'exceeded' : model.status === 'near' ? 'near' :
@@ -472,7 +472,7 @@ function renderQA84BudgetCards(host, visible, mode, total, bank, suggest) {
         const caption = mode === 'income' ? 'Recebido' : model.status === 'exceeded' || model.status === 'zero' && spent > 0 ? 'Excedido' :
             model.status === 'unlimited' ? 'Não definido' : model.status === 'zero' ? 'Definido' : 'Restante';
         const pctLabel = model.usedPercent === null ? model.status === 'zero' ? 'Limite R$ 0' : model.status === 'unlimited' ? 'Sem limite' :
-            'Sem orçamento' : model.usedPercent.toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + '% utilizado';
+            'Sem orçamento' : model.usedPercent.toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + '% utilizado' + (isMonthly ? ' · mês' : '');
         return h('button', { type: 'button', role: 'listitem', key: info.name, id: 'qa84-card-' + encodeURIComponent(info.name),
             className: 'qa84-budget-card tone-' + tone, 'aria-label': info.name + ' · ' + pctLabel +
                 ' · gasto ' + fmt(spent) + (hasLimit ? ' · limite ' + fmt(limit) : ' · sem limite'),
@@ -481,7 +481,7 @@ function renderQA84BudgetCards(host, visible, mode, total, bank, suggest) {
     }));
 }
 function renderQA84BudgetDetail(host, context) {
-    var _a, _b, _c, _d, _e, _f;
+    var _a, _b, _c, _d, _e, _f, _g, _h;
     const drill = host.state.qa84BudgetDrill;
     if (!drill)
         return null;
@@ -491,8 +491,10 @@ function renderQA84BudgetDetail(host, context) {
     const authoritative = drill.bank ? bankSnapshot(host.state.bank, drill.month) : snapshot(host.state.data, drill.month);
     const total = drill.mode === 'income' ? ((_a = authoritative.incomeCategories.find((c) => c.name === drill.categoryName)) === null || _a === void 0 ? void 0 : _a.total) || 0 :
         ((_b = authoritative.categories.find((c) => c.name === drill.categoryName)) === null || _b === void 0 ? void 0 : _b.total) || 0;
-    const hasLimit = Object.prototype.hasOwnProperty.call(host.state.data.budgets, drill.categoryName);
-    const limit = host.state.data.budgets[drill.categoryName];
+    const monthOverride = ((_d = (_c = host.state.data) === null || _c === void 0 ? void 0 : _c.monthlyBudgets) === null || _d === void 0 ? void 0 : _d[drill.month]) || {};
+    const hasLimit = Object.prototype.hasOwnProperty.call(monthOverride, drill.categoryName) || Object.prototype.hasOwnProperty.call(host.state.data.budgets, drill.categoryName);
+    const limit = Object.prototype.hasOwnProperty.call(monthOverride, drill.categoryName) ? monthOverride[drill.categoryName] : host.state.data.budgets[drill.categoryName];
+    const isMonthlyOverride = Object.prototype.hasOwnProperty.call(monthOverride, drill.categoryName);
     const model = qa84BudgetStatus(total, limit !== null && limit !== void 0 ? limit : null, drill.mode === 'expense' && hasLimit);
     const tone = model.status === 'exceeded' ? 'exceeded' : model.status === 'near' ? 'near' :
         model.status === 'within' ? 'within' : 'neutral';
@@ -566,10 +568,14 @@ function renderQA84BudgetDetail(host, context) {
                 qa84Ring(0, 'neutral', '—', 'dados parciais', 'mini'));
         });
     })()), details.complete && details.groups.length === 0 ? h('p', {}, 'Nenhuma despesa nesta categoria e período.') : null) : h('section', { className: 'qa84-subcategory-history' }, h('h2', {}, 'Histórico da subcategoria'), !details.complete ? h('p', { className: 'qa84-budget-partial' }, 'Histórico parcial: a conciliação com a categoria principal ainda não foi concluída.') : null, h('div', { className: 'qa84-history-list' }, ((selected === null || selected === void 0 ? void 0 : selected.rows) || []).slice(page * 25, (page + 1) * 25).map(t => h('div', { className: 'qa84-history-row', key: t.key }, h('div', {}, h('strong', {}, t.description), h('small', {}, t.date.split('-').reverse().join('/') +
-        ' · ID ' + t.id + (t.accountId ? ' · Conta ' + t.accountId : ''))), h('strong', {}, fmt(t.amount))))), !((_c = selected === null || selected === void 0 ? void 0 : selected.rows) === null || _c === void 0 ? void 0 : _c.length) ? h('p', { className: 'qa84-budget-empty' }, 'Nenhuma movimentação registrada nesta subcategoria no período.') : null, (((_d = selected === null || selected === void 0 ? void 0 : selected.rows) === null || _d === void 0 ? void 0 : _d.length) || 0) > 25 ? h('div', { className: 'qa84-history-pagination' }, h('button', { type: 'button', disabled: page === 0, onClick: () => host.setState({ qa84BudgetPage: page - 1 }) }, 'Anterior'), h('span', {}, 'Página ' + (page + 1) + ' de ' + Math.ceil(((selected === null || selected === void 0 ? void 0 : selected.rows.length) || 0) / 25)), h('button', { type: 'button', disabled: (page + 1) * 25 >= selected.rows.length,
-        onClick: () => host.setState({ qa84BudgetPage: page + 1 }) }, 'Próxima')) : null), drill.bank && (!((_e = host.state.bank.data.last) === null || _e === void 0 ? void 0 : _e.completedAt) || Date.now() - Date.parse(host.state.bank.data.last.completedAt) > 48 * 3600000) ?
+        ' · ID ' + t.id + (t.accountId ? ' · Conta ' + t.accountId : ''))), h('strong', {}, fmt(t.amount))))), !((_e = selected === null || selected === void 0 ? void 0 : selected.rows) === null || _e === void 0 ? void 0 : _e.length) ? h('p', { className: 'qa84-budget-empty' }, 'Nenhuma movimentação registrada nesta subcategoria no período.') : null, (((_f = selected === null || selected === void 0 ? void 0 : selected.rows) === null || _f === void 0 ? void 0 : _f.length) || 0) > 25 ? h('div', { className: 'qa84-history-pagination' }, h('button', { type: 'button', disabled: page === 0, onClick: () => host.setState({ qa84BudgetPage: page - 1 }) }, 'Anterior'), h('span', {}, 'Página ' + (page + 1) + ' de ' + Math.ceil(((selected === null || selected === void 0 ? void 0 : selected.rows.length) || 0) / 25)), h('button', { type: 'button', disabled: (page + 1) * 25 >= selected.rows.length,
+        onClick: () => host.setState({ qa84BudgetPage: page + 1 }) }, 'Próxima')) : null), drill.bank && (!((_g = host.state.bank.data.last) === null || _g === void 0 ? void 0 : _g.completedAt) || Date.now() - Date.parse(host.state.bank.data.last.completedAt) > 48 * 3600000) ?
         h('p', { className: 'qa84-budget-partial', role: 'status' }, 'A última atualização bancária pode estar desatualizada. Data informada: ' +
-            (((_f = host.state.bank.data.last) === null || _f === void 0 ? void 0 : _f.completedAt) ? new Date(host.state.bank.data.last.completedAt).toLocaleString('pt-BR') : 'não disponível')) : null, host.state.qa84BudgetPartial ? h('p', { className: 'qa84-budget-partial' }, 'Alguns registros bancários antigos podem não constar da janela carregada.') : null);
+            (((_h = host.state.bank.data.last) === null || _h === void 0 ? void 0 : _h.completedAt) ? new Date(host.state.bank.data.last.completedAt).toLocaleString('pt-BR') : 'não disponível')) : null, host.state.qa84BudgetPartial ? h('p', { className: 'qa84-budget-partial' }, 'Alguns registros bancários antigos podem não constar da janela carregada.') : null);
+}
+function effectiveMonthBudgets(data, month) {
+    var _a;
+    return { ...((data === null || data === void 0 ? void 0 : data.budgets) || {}), ...(((_a = data === null || data === void 0 ? void 0 : data.monthlyBudgets) === null || _a === void 0 ? void 0 : _a[month]) || {}) };
 }
 const h = React.createElement;
 function simInputsEqual(a, b) {
@@ -837,7 +843,7 @@ function OverviewSpendingChart(props) {
     const path = (key) => rows.map((r, i) => { const [x, y] = point(r[key] || 0, i); return (i ? 'L' : 'M') + x.toFixed(2) + ' ' + y.toFixed(2); }).join(' ');
     return h('div', { className: 'u1-spending-chart' }, h('svg', { viewBox: '0 0 748 218', role: 'img', 'aria-label': 'Gasto acumulado no período. Valores exatos na tabela.' }, [0, .5, 1].map((n, i) => h('g', { key: i }, h('line', { x1: left, x2: right, y1: bottom - n * (bottom - top), y2: bottom - n * (bottom - top), className: 'u1-chart-grid' }), h('text', { x: left - 10, y: bottom - n * (bottom - top) + 4, textAnchor: 'end', className: 'u1-chart-label' }, financialAxisLabel(peak * n, peak)))), props.compare ? h('path', { d: path('previous'), className: 'u1-chart-previous' }) : null, h('path', { d: path('current') + ' L ' + right + ' ' + bottom + ' L ' + left + ' ' + bottom + ' Z', className: 'u1-chart-area' }), h('path', { d: path('current'), className: 'u1-chart-current' }), rows.length ? h('circle', { cx: point(rows[rows.length - 1].current, rows.length - 1)[0], cy: point(rows[rows.length - 1].current, rows.length - 1)[1], r: 4, className: 'u1-chart-point' }) : null, [0, Math.floor((rows.length - 1) / 2), rows.length - 1].filter((v, i, a) => a.indexOf(v) === i).map(i => { var _a, _b; return h('text', { key: i, x: point(0, i)[0], y: 208, textAnchor: 'middle', className: 'u1-chart-label' }, ((_a = rows[i]) === null || _a === void 0 ? void 0 : _a.date.slice(8)) + '/' + ((_b = rows[i]) === null || _b === void 0 ? void 0 : _b.date.slice(5, 7))); })), h('details', { className: 'u1-chart-data' }, h('summary', {}, 'Ver valores do gráfico'), h('div', { className: 'u1-table-scroll' }, h('table', {}, h('caption', {}, 'Gasto acumulado na fonte selecionada'), h('thead', {}, h('tr', {}, h('th', {}, 'Até'), h('th', {}, 'Período atual'), props.compare ? h('th', {}, 'Intervalo anterior') : null)), h('tbody', {}, rows.map(r => h('tr', { key: r.date }, h('td', {}, r.date.split('-').reverse().join('/')), h('td', {}, fmt(r.current)), props.compare ? h('td', {}, fmt(r.previous || 0)) : null)))))));
 }
-function starter() { return { version: 5, transactions: [], budgets: {}, settings: { opening: 0, income: 0, fixed: 0, existing: 0, reserve: 0 } }; }
+function starter() { return { version: 5, transactions: [], budgets: {}, monthlyBudgets: {}, settings: { opening: 0, income: 0, fixed: 0, existing: 0, reserve: 0 } }; }
 function demoData() {
     const t = [];
     const add = (offset, day, description, kind, amount, category) => {
@@ -877,6 +883,22 @@ function safeData(v) {
         if (c.length <= 50 && Number.isSafeInteger(b) && b >= 0 && (b > 0 || Number(v.version) >= 5))
             d.budgets[c] = b;
     }
+    const monthlyOut = {};
+    if (v.monthlyBudgets && typeof v.monthlyBudgets === 'object') {
+        for (const [ym, cats] of Object.entries(v.monthlyBudgets)) {
+            if (!/^20\d\d-(0[1-9]|1[0-2])$/.test(ym) || !cats || typeof cats !== 'object')
+                continue;
+            const row = {};
+            for (const [c, raw] of Object.entries(cats)) {
+                const b = Number(raw);
+                if (c.length <= 50 && Number.isSafeInteger(b) && b >= 0)
+                    row[c] = b;
+            }
+            if (Object.keys(row).length)
+                monthlyOut[ym] = row;
+        }
+    }
+    d.monthlyBudgets = monthlyOut;
     for (const key of ['opening', 'income', 'fixed', 'existing', 'reserve']) {
         const n = Number(((_a = v.settings) === null || _a === void 0 ? void 0 : _a[key]) || 0);
         d.settings[key] = (Number.isSafeInteger(n) && Math.abs(n) < 100000000000) ? n : 0;
@@ -1243,6 +1265,7 @@ class App extends React.Component {
         this.autoSyncTimer = null;
         this.unsubscribePersonalCloud = null;
         this.unsubscribeAI = null;
+        this.unsubscribeAICopilot = null;
         this.lastSyncAttempt = 0;
         this.focusReturn = null;
         this.focusCategoryOnDetailOpen = false;
@@ -1342,10 +1365,10 @@ class App extends React.Component {
             this.closeQuickCategory(false);
         };
         const mode = 'real';
-        this.state = { mode, data: desktop ? starter() : load(mode), page: 'overview', month: nowYM, showEntry: false, entry: { date: iso(new Date()), description: '', kind: 'expense', category: 'Outros', value: '' }, sim: { value: '', installments: '6', interest: '0' }, outcome: null, simCalculatedInput: null, simResultStale: false, simError: '', query: '', toast: '', budgetEdit: '', busy: !!desktop, booting: !!desktop, editModal: null, bank: EMPTY_BANK, bankForm: { clientId: '', clientSecret: '', itemIds: '' }, bankBusy: false, bankMessage: '', bankFilter: '', txSource: 'all', txReviewOnly: false, txOrganize: false, txAdvancedOpen: false, txCategoryFilter: '', txKindFilter: 'all', txReviewFilter: 'all', txSort: 'date_desc', quickCategory: null, quickCategoryQuery: '', quickCategoryIndex: 0, quickCategoryBusy: false, quickCategoryError: '', categoryMoreEmojis: false, quickAddOpen: false, dashboardSource: 'bank', sourceDetailsOpen: false, budgetTab: 'expense', showAllBudgetCategories: false, categories: DEFAULT_CATEGORY_INFOS, rules: [], categoryEditor: { previousName: '', name: '', color: '#3e9a85', emoji: '✨', kind: 'expense' }, ruleEditor: emptyRule(), ruleTest: 'IFOOD', categoryMessage: '', entryCategoryTouched: false, bankConfigOpen: false, overviewPeriod: 'month', customStart: iso(new Date()), customEnd: iso(new Date()), backupInfo: { copies: 0, last: null }, detail: null, detailDraft: { merchant: '', note: '', nature: 'auto', reviewed: false, aliasPattern: '', splitParts: [] }, manualDraft: null, detailBusy: false, categorySaving: [], txSelected: [], txBatchCategory: 'Alimentação', planning: EMPTY_PLANNING, planMonth: nowYM, planDay: iso(new Date()), planSelected: null, planOpen: false, planForm: freshPlanForm(), planBusy: false, planView: 'all', planTerm: '', planIncludeEstimated: false, planBankTitle: '', planMatchQuery: '', planHistory: [], cloudStage: 'not_started', cloudBusy: false, cloudMessage: '', cloudIdentityConnected: false, cloudQuarantineVerified: false, cloudPersonalTransferred: false, cloudParityBusy: false, cloudParityMessage: '', cloudE1Report: null, intelligenceTab: 'today', intelligenceDraft: '', intelligencePreparedQuestion: '', intelligencePanelOpen: false, intelligenceContext: 'overview', intelligenceExpandedAction: null, aiStatus: { connected: false, secure: false }, aiBusy: false, aiError: '', aiDemoCase: 'budget', aiEffort: 'auto', aiCreditsConfirmed: false, aiResult: null, aiStreaming: '', aiCapabilities: null, aiMemories: [], aiMemoryDraft: '', aiMemoryKind: 'preference', aiMemoryBusy: false, aiMemoryError: '', aiUseMemories: false, aiPreview: null, aiUsageStats: null, aiFinancialDemoSource: 'bank', aiFinancialDemo: null, aiFinancialDemoBusy: false, aiFinancialDemoError: '' };
+        this.state = { mode, data: desktop ? starter() : load(mode), page: 'overview', month: nowYM, showEntry: false, entry: { date: iso(new Date()), description: '', kind: 'expense', category: 'Outros', value: '' }, sim: { value: '', installments: '6', interest: '0' }, outcome: null, simCalculatedInput: null, simResultStale: false, simError: '', query: '', toast: '', budgetEdit: '', busy: !!desktop, booting: !!desktop, editModal: null, bank: EMPTY_BANK, bankForm: { clientId: '', clientSecret: '', itemIds: '' }, bankBusy: false, bankMessage: '', bankFilter: '', txSource: 'all', txReviewOnly: false, txOrganize: false, txAdvancedOpen: false, txCategoryFilter: '', txKindFilter: 'all', txReviewFilter: 'all', txSort: 'date_desc', quickCategory: null, quickCategoryQuery: '', quickCategoryIndex: 0, quickCategoryBusy: false, quickCategoryError: '', categoryMoreEmojis: false, quickAddOpen: false, dashboardSource: 'bank', sourceDetailsOpen: false, budgetTab: 'expense', showAllBudgetCategories: false, categories: DEFAULT_CATEGORY_INFOS, rules: [], categoryEditor: { previousName: '', name: '', color: '#3e9a85', emoji: '✨', kind: 'expense' }, ruleEditor: emptyRule(), ruleTest: 'IFOOD', categoryMessage: '', entryCategoryTouched: false, bankConfigOpen: false, overviewPeriod: 'month', customStart: iso(new Date()), customEnd: iso(new Date()), backupInfo: { copies: 0, last: null }, detail: null, detailDraft: { merchant: '', note: '', nature: 'auto', reviewed: false, aliasPattern: '', splitParts: [] }, manualDraft: null, detailBusy: false, categorySaving: [], txSelected: [], txBatchCategory: 'Alimentação', planning: EMPTY_PLANNING, planMonth: nowYM, planDay: iso(new Date()), planSelected: null, planOpen: false, planForm: freshPlanForm(), planBusy: false, planView: 'all', planTerm: '', planIncludeEstimated: false, planBankTitle: '', planMatchQuery: '', planHistory: [], cloudStage: 'not_started', cloudBusy: false, cloudMessage: '', cloudIdentityConnected: false, cloudQuarantineVerified: false, cloudPersonalTransferred: false, cloudParityBusy: false, cloudParityMessage: '', cloudE1Report: null, intelligenceTab: 'today', intelligenceDraft: '', intelligencePreparedQuestion: '', intelligencePanelOpen: false, intelligenceContext: 'overview', intelligenceExpandedAction: null, financeRevision: 0, aiStatus: { connected: false, secure: false }, aiBusy: false, aiError: '', aiDemoCase: 'budget', aiEffort: 'auto', aiCreditsConfirmed: false, aiResult: null, aiStreaming: '', aiCapabilities: null, aiMemories: [], aiMemoryDraft: '', aiMemoryKind: 'preference', aiMemoryBusy: false, aiMemoryError: '', aiUseMemories: false, aiPreview: null, aiUsageStats: null, aiFinancialDemoSource: 'bank', aiFinancialDemo: null, aiFinancialDemoBusy: false, aiFinancialDemoError: '', aiCopilotCap: null, m3ActionCap: null, aiCopilotStreaming: '', aiCopilotBusy: false, aiCopilotRequestId: null };
     }
     async componentDidMount() {
-        var _a, _b, _c, _d, _e;
+        var _a, _b, _c, _d, _e, _f;
         window.addEventListener('keydown', this.onGlobalKeydown);
         window.addEventListener('resize', this.onQuickCategoryViewportChange);
         window.addEventListener('scroll', this.onQuickCategoryViewportChange, true);
@@ -1353,6 +1376,9 @@ class App extends React.Component {
         if (!desktop)
             return;
         this.unsubscribeAI = ((_a = desktop.onAIDelta) === null || _a === void 0 ? void 0 : _a.call(desktop, (delta) => this.setState((previous) => ({ aiStreaming: (previous.aiStreaming + delta).slice(0, 12000) })))) || null;
+        this.unsubscribeAICopilot = ((_b = desktop.onAICopilotDelta) === null || _b === void 0 ? void 0 : _b.call(desktop, (payload) => this.setState((previous) => { if (!(payload === null || payload === void 0 ? void 0 : payload.delta) || previous.aiCopilotRequestId !== payload.requestId)
+            return {}; return { aiCopilotStreaming: (String(previous.aiCopilotStreaming || '') + payload.delta).slice(0, 12000) }; }, () => { if (typeof intelligenceScrollChatToBottom === 'function')
+            intelligenceScrollChatToBottom(); }))) || null;
         void intelligenceRefresh(this);
         try {
             const persisted = await desktop.load('real');
@@ -1361,24 +1387,24 @@ class App extends React.Component {
             void this.loadQA84VisualCatalog();
             const currentBank = await this.refreshBank();
             await this.refreshPlanning();
-            this.unsubscribePersonalCloud = ((_b = desktop.onCloudPersonalUpdated) === null || _b === void 0 ? void 0 : _b.call(desktop, (event) => {
+            this.unsubscribePersonalCloud = ((_c = desktop.onCloudPersonalUpdated) === null || _c === void 0 ? void 0 : _c.call(desktop, (event) => {
                 if ((event === null || event === void 0 ? void 0 : event.inbound) > 0 && this.state.mode === 'real')
                     void this.refreshCloudPersonalUI();
             })) || null;
             try {
-                const backupInfo = await ((_c = desktop.backupStatus) === null || _c === void 0 ? void 0 : _c.call(desktop));
+                const backupInfo = await ((_d = desktop.backupStatus) === null || _d === void 0 ? void 0 : _d.call(desktop));
                 if (backupInfo)
                     this.setState({ backupInfo });
             }
             catch (_) { }
             try {
-                const cloud = await ((_d = desktop.cloudMigrationStatus) === null || _d === void 0 ? void 0 : _d.call(desktop));
+                const cloud = await ((_e = desktop.cloudMigrationStatus) === null || _e === void 0 ? void 0 : _e.call(desktop));
                 if (cloud)
                     this.setState({ cloudStage: cloud.stage });
             }
             catch (_) { }
             try {
-                const identity = await ((_e = desktop.cloudAccessStatus) === null || _e === void 0 ? void 0 : _e.call(desktop));
+                const identity = await ((_f = desktop.cloudAccessStatus) === null || _f === void 0 ? void 0 : _f.call(desktop));
                 if (identity)
                     this.setState({ cloudIdentityConnected: !!identity.connected });
             }
@@ -1443,7 +1469,7 @@ class App extends React.Component {
             this.setState({ bankMessage: 'Não foi possível consultar a integração: ' + String((e === null || e === void 0 ? void 0 : e.message) || e) });
         }
     }
-    componentWillUnmount() { var _a, _b; window.removeEventListener('keydown', this.onGlobalKeydown); window.removeEventListener('resize', this.onQuickCategoryViewportChange); window.removeEventListener('scroll', this.onQuickCategoryViewportChange, true); document.removeEventListener('pointerdown', this.onQuickCategoryOutside, true); (_a = this.unsubscribePersonalCloud) === null || _a === void 0 ? void 0 : _a.call(this); (_b = this.unsubscribeAI) === null || _b === void 0 ? void 0 : _b.call(this); if (this.autoSyncTimer)
+    componentWillUnmount() { var _a, _b, _c; window.removeEventListener('keydown', this.onGlobalKeydown); window.removeEventListener('resize', this.onQuickCategoryViewportChange); window.removeEventListener('scroll', this.onQuickCategoryViewportChange, true); document.removeEventListener('pointerdown', this.onQuickCategoryOutside, true); (_a = this.unsubscribePersonalCloud) === null || _a === void 0 ? void 0 : _a.call(this); (_b = this.unsubscribeAI) === null || _b === void 0 ? void 0 : _b.call(this); (_c = this.unsubscribeAICopilot) === null || _c === void 0 ? void 0 : _c.call(this); if (this.autoSyncTimer)
         clearInterval(this.autoSyncTimer); if (this.timeout)
         clearTimeout(this.timeout); }
     maybeAutoSync(bank = this.state.bank) {
@@ -1810,7 +1836,7 @@ class App extends React.Component {
         this.setState({ detailBusy: true });
         try {
             const data = await desktop.bankEditDetail({ accountId: sel.accountId, externalId: sel.id, merchant: f.merchant, note: f.note, nature: f.nature, reviewed: f.reviewed });
-            this.setState({ bank: { ...this.state.bank, data }, detailBusy: false });
+            this.setState({ bank: { ...this.state.bank, data }, detailBusy: false, financeRevision: (this.state.financeRevision || 0) + 1 });
             this.flash('Detalhes salvos.');
         }
         catch (e) {
@@ -1824,7 +1850,7 @@ class App extends React.Component {
         this.setState({ detailBusy: true });
         try {
             const data = await desktop[method](input);
-            this.setState({ bank: { ...this.state.bank, data }, detailBusy: false, txSelected: method === 'bankBatch' ? [] : this.state.txSelected, detail: closeDetail ? null : this.state.detail });
+            this.setState({ bank: { ...this.state.bank, data }, detailBusy: false, txSelected: method === 'bankBatch' ? [] : this.state.txSelected, detail: closeDetail ? null : this.state.detail, financeRevision: (this.state.financeRevision || 0) + 1 });
             this.flash(feedback);
         }
         catch (e) {
@@ -1909,7 +1935,7 @@ class App extends React.Component {
             return;
         try {
             const data = await desktop.bankDismissDuplicate(pairKey);
-            this.setState({ bank: { ...this.state.bank, data } });
+            this.setState({ bank: { ...this.state.bank, data }, financeRevision: (this.state.financeRevision || 0) + 1 });
             this.flash('Aviso ocultado. Nenhum lançamento foi excluído.');
         }
         catch (e) {
@@ -1923,10 +1949,16 @@ class App extends React.Component {
         this.setState({ bankBusy: true, bankMessage: 'Atualizando suas contas. Isso pode levar alguns instantes.' });
         try {
             const result = await desktop.bankSync();
-            this.setState({ bank: result, bankBusy: false, bankMessage: 'Contas atualizadas: ' + result.newCount + ' novas e ' + result.totalCount + ' consultadas. Os lançamentos manuais foram preservados.' });
+            const extra = [];
+            if (Array.isArray(result.syncErrors) && result.syncErrors.length)
+                extra.push(result.syncErrors.length + ' conexão(ões) falharam (histórico anterior mantido)');
+            if (Array.isArray(result.skippedAccounts) && result.skippedAccounts.length)
+                extra.push(result.skippedAccounts.length + ' conta(s) não bancária(s) ignorada(s)');
+            const warn = extra.length ? ' Atenção: ' + extra.join('; ') + '.' : '';
+            this.setState({ bank: result, bankBusy: false, financeRevision: (this.state.financeRevision || 0) + 1, bankMessage: 'Contas atualizadas: ' + result.newCount + ' novas e ' + result.totalCount + ' consultadas. Os lançamentos manuais foram preservados.' + warn });
             await this.refreshPlanning();
             if (!automatic)
-                this.flash('Contas atualizadas: ' + result.newCount + ' novas movimentações.');
+                this.flash('Contas atualizadas: ' + result.newCount + ' novas movimentações.' + warn);
         }
         catch (e) {
             this.setState({ bankBusy: false, bankMessage: 'Sincronização não concluída: ' + String((e === null || e === void 0 ? void 0 : e.message) || e) + '. O histórico anterior foi preservado.' });
@@ -1960,7 +1992,7 @@ class App extends React.Component {
                 await desktop.save(mode, data);
             else
                 save(mode, data);
-            this.setState({ data, busy: false });
+            this.setState({ data, busy: false, financeRevision: (this.state.financeRevision || 0) + 1 });
             if (msg)
                 this.flash(msg);
             return true;
@@ -1981,10 +2013,21 @@ class App extends React.Component {
             this.flash('Aguarde a operação atual.');
             return;
         }
+        if (this.state.aiCopilotBusy && typeof (desktop === null || desktop === void 0 ? void 0 : desktop.aiCopilotCancel) === 'function') {
+            void desktop.aiCopilotCancel().catch(() => { });
+        }
+        const self = this;
+        self.__m3SalaryPanel = undefined;
+        self.__ic2Conversation = null;
+        self.__ic2InvestigationActive = false;
         const mode = this.state.mode === 'real' ? 'demo' : 'real';
-        const resetScope = { query: '', bankFilter: '', txSource: 'all', txCategoryFilter: '', txKindFilter: 'all', txReviewFilter: 'all', txReviewOnly: false, txOrganize: false, txSelected: [], qa84TransactionsSpan: null, qa84TransactionsCategory: '', qa84BudgetDrill: null, budgetFocus: null, budgetSearch: '', detail: null, manualDraft: null, quickCategory: null };
+        const resetScope = { query: '', bankFilter: '', txSource: 'all', txCategoryFilter: '', txKindFilter: 'all', txReviewFilter: 'all', txReviewOnly: false, txOrganize: false, txSelected: [], qa84TransactionsSpan: null, qa84TransactionsCategory: '', qa84BudgetDrill: null, budgetFocus: null, budgetSearch: '', detail: null, manualDraft: null, quickCategory: null, financeRevision: (this.state.financeRevision || 0) + 1, aiCopilotBusy: false, aiCopilotStreaming: '', aiCopilotRequestId: null, intelligenceDraftScope: null, intelligencePreparedQuestion: '' };
+        const finishSwitch = () => {
+            if (typeof intelligenceSwitchProfileMode === 'function')
+                intelligenceSwitchProfileMode(this, mode);
+        };
         if (!desktop) {
-            this.setState({ ...resetScope, mode, data: load(mode), outcome: null, page: 'overview', showEntry: false });
+            this.setState({ ...resetScope, mode, data: load(mode), outcome: null, page: 'overview', showEntry: false }, finishSwitch);
             return;
         }
         this.setState({ busy: true });
@@ -1995,7 +2038,7 @@ class App extends React.Component {
                 if (mode === 'demo')
                     await desktop.save('demo', loaded);
             }
-            this.setState({ ...resetScope, mode, data: safeData(loaded), busy: false, outcome: null, page: 'overview', showEntry: false });
+            this.setState({ ...resetScope, mode, data: safeData(loaded), busy: false, outcome: null, page: 'overview', showEntry: false }, finishSwitch);
         }
         catch (e) {
             this.setState({ busy: false });
@@ -2150,7 +2193,7 @@ class App extends React.Component {
         return; this.setState({ planBusy: true }); try {
         await action();
         await this.refreshPlanning();
-        this.setState({ planBusy: false, planOpen: false });
+        this.setState({ planBusy: false, planOpen: false, financeRevision: (this.state.financeRevision || 0) + 1 });
         if (message)
             this.flash(message);
     }
@@ -2217,7 +2260,7 @@ class App extends React.Component {
     renderPlanning() { return renderPlanningView(this); }
     renderPlanModal() { return renderPlanEditor(this); }
     renderPlanDetail() { return renderPlanDrawer(this); }
-    openIntelligenceContext(page = this.state.page) { this.setState({ intelligencePanelOpen: true, intelligenceContext: page, intelligenceContextSnapshot: intelligencePageScope(this, page), detail: null, planSelected: null }); }
+    openIntelligenceContext(page = this.state.page) { var _a; const exp = Boolean(((_a = this.state.localFinancialAccess) === null || _a === void 0 ? void 0 : _a.expiresAt) && this.state.localFinancialAccess.expiresAt <= Date.now()); const chg = this.state.intelligenceContext !== page; this.setState({ intelligencePanelOpen: true, intelligenceContext: page, intelligenceContextSnapshot: intelligencePageScope(this, page), detail: null, planSelected: null, ...(exp || chg ? { intelligencePreparedQuestion: '' } : {}) }); }
     navigate(page) {
         this.simRequest++;
         const target = page === 'review' || page === 'categories' ? 'transactions' : page === 'simulator' ? 'assistant' : page;
@@ -2303,12 +2346,39 @@ class App extends React.Component {
             this.flash('Informe um limite válido.');
             return false;
         }
+        const month = this.state.month, mode = this.state.mode;
         const budgets = { ...this.state.data.budgets };
         if (v === null)
             delete budgets[cat];
         else
             budgets[cat] = v;
-        const saved = await this.updateData({ ...this.state.data, budgets }, v === null ? 'Limite removido.' : 'Limite atualizado.');
+        const prevMonthly = { ...(this.state.data.monthlyBudgets || {}) };
+        const monthMap = { ...(prevMonthly[month] || {}) };
+        const hasOverride = monthMap[cat] !== undefined;
+        if (v === null)
+            delete monthMap[cat];
+        else if (hasOverride)
+            monthMap[cat] = v;
+        if (Object.keys(monthMap).length)
+            prevMonthly[month] = monthMap;
+        else
+            delete prevMonthly[month];
+        const saved = await this.updateData({ ...this.state.data, budgets, monthlyBudgets: prevMonthly }, v === null ? 'Limite removido.' : 'Limite atualizado.');
+        if (saved && desktop) {
+            try {
+                if (v === null && typeof desktop.deleteMonthlyBudget === 'function') {
+                    const mb = await desktop.deleteMonthlyBudget(mode, month, cat);
+                    if (mb === null || mb === void 0 ? void 0 : mb.monthlyBudgets)
+                        this.setState({ data: { ...this.state.data, monthlyBudgets: mb.monthlyBudgets } });
+                }
+                else if (v !== null && hasOverride && typeof desktop.setMonthlyBudget === 'function') {
+                    const mb = await desktop.setMonthlyBudget(mode, month, cat, v);
+                    if (mb === null || mb === void 0 ? void 0 : mb.monthlyBudgets)
+                        this.setState({ data: { ...this.state.data, monthlyBudgets: mb.monthlyBudgets } });
+                }
+            }
+            catch { }
+        }
         if (saved)
             this.setState({ budgetEdit: '' });
         return saved;
@@ -2489,7 +2559,7 @@ class App extends React.Component {
     navItem(page, icon, label) { return h('button', { key: page, type: 'button', 'aria-label': label, 'aria-current': this.state.page === page ? 'page' : undefined, title: label, className: 'nav-item ' + (this.state.page === page ? 'active' : ''), onClick: () => this.navigate(page) }, h(Icon, { name: icon, size: 19 }), h('span', {}, label)); }
     renderSide() {
         var _a;
-        return h('aside', { className: 'sidebar' }, h('div', { className: 'brand' }, h(Logo), h('div', { className: 'brand-text' }, h('strong', {}, 'Meu Financeiro'), h('small', {}, 'CONTROLE DO SEU DINHEIRO'))), h('div', { className: 'side-label' }, 'CONTROLE'), h('nav', {}, this.navItem('overview', 'home', 'Visão geral'), this.navItem('transactions', 'wallet', 'Movimentações'), this.navItem('planning', 'calendar', 'Planejamento'), this.navItem('banks', 'bank', 'Minhas contas'), h('div', { className: 'side-label mf-ai-side-label' }, 'ORGANIZAÇÃO'), this.navItem('budgets', 'pie', 'Orçamentos'), h('div', { className: 'side-label mf-ai-side-label' }, 'FERRAMENTAS'), this.navItem('assistant', 'cart', 'Simular compra'), this.navItem('intelligence', 'spark', 'Inteligência')), h('div', { className: 'side-bottom' }, this.navItem('settings', 'settings', 'Configurações'), h('label', { className: 'mf-appearance' }, h('span', {}, 'Aparência'), h('select', { 'aria-label': 'Tema do aplicativo', 'data-appearance': 'select', defaultValue: ((_a = window.MFAppearance) === null || _a === void 0 ? void 0 : _a.get()) || 'system', onChange: (e) => { var _a; return (_a = window.MFAppearance) === null || _a === void 0 ? void 0 : _a.set(e.target.value); } }, h('option', { value: 'light' }, 'Claro'), h('option', { value: 'dark' }, 'Escuro'), h('option', { value: 'system' }, 'Sistema'))), h('div', { className: 'privacy-note' }, h(Icon, { name: 'shield', size: 19 }), h('div', {}, h('b', {}, 'Privado e local'), h('small', {}, 'Dados sob seu controle'))), h('button', { className: 'demo-btn', onClick: () => this.toggleMode() }, h(Icon, { name: this.state.mode === 'real' ? 'spark' : 'home', size: 18 }), this.state.mode === 'real' ? 'Explorar demonstração' : 'Voltar aos meus dados'), h('small', { className: 'app-version' }, 'Meu Financeiro · v0.9.5-beta.9')));
+        return h('aside', { className: 'sidebar' }, h('div', { className: 'brand' }, h(Logo), h('div', { className: 'brand-text' }, h('strong', {}, 'Meu Financeiro'), h('small', {}, 'CONTROLE DO SEU DINHEIRO'))), h('div', { className: 'side-label' }, 'CONTROLE'), h('nav', {}, this.navItem('overview', 'home', 'Visão geral'), this.navItem('transactions', 'wallet', 'Movimentações'), this.navItem('planning', 'calendar', 'Planejamento'), this.navItem('banks', 'bank', 'Minhas contas'), h('div', { className: 'side-label mf-ai-side-label' }, 'ORGANIZAÇÃO'), this.navItem('budgets', 'pie', 'Orçamentos'), h('div', { className: 'side-label mf-ai-side-label' }, 'FERRAMENTAS'), this.navItem('assistant', 'cart', 'Simular compra'), this.navItem('intelligence', 'spark', 'Inteligência')), h('div', { className: 'side-bottom' }, this.navItem('settings', 'settings', 'Configurações'), h('label', { className: 'mf-appearance' }, h('span', {}, 'Aparência'), h('select', { 'aria-label': 'Tema do aplicativo', 'data-appearance': 'select', defaultValue: ((_a = window.MFAppearance) === null || _a === void 0 ? void 0 : _a.get()) || 'system', onChange: (e) => { var _a; return (_a = window.MFAppearance) === null || _a === void 0 ? void 0 : _a.set(e.target.value); } }, h('option', { value: 'light' }, 'Claro'), h('option', { value: 'dark' }, 'Escuro'), h('option', { value: 'system' }, 'Sistema'))), h('div', { className: 'privacy-note' }, h(Icon, { name: 'shield', size: 19 }), h('div', {}, h('b', {}, 'Privado e local'), h('small', {}, 'Dados sob seu controle'))), h('button', { className: 'demo-btn', onClick: () => this.toggleMode() }, h(Icon, { name: this.state.mode === 'real' ? 'spark' : 'home', size: 18 }), this.state.mode === 'real' ? 'Explorar demonstração' : 'Voltar aos meus dados'), h('small', { className: 'app-version' }, 'Meu Financeiro · v1.0.0')));
     }
     renderWorkspaceBar() {
         const labels = { overview: 'Visão geral', transactions: 'Movimentações', planning: 'Planejamento', budgets: 'Orçamentos', assistant: 'Simular compra', banks: 'Minhas contas', settings: 'Configurações', intelligence: 'Inteligência' };
@@ -2505,8 +2575,8 @@ class App extends React.Component {
         const last = (_a = this.state.bank.data.last) === null || _a === void 0 ? void 0 : _a.completedAt;
         const periodControl = (this.state.page === 'overview' || this.state.page === 'transactions' && !this.state.txReviewOnly && !this.state.txOrganize);
         return h('header', { className: 'topbar' }, h('div', { className: 'top-left' }, h('div', { className: 'page-kicker' }, 'FINANÇAS PESSOAIS / ' + (labels[this.state.page] || '').toUpperCase()), h('h1', {}, labels[this.state.page]), h('p', {}, this.state.page === 'overview' ? 'Saldo, receitas e despesas do período selecionado.' :
-            this.state.page === 'assistant' ? 'Compare o custo e o impacto das parcelas.' : this.state.page === 'intelligence' ? 'Prévia de insights e ferramentas de análise.' : this.state.page === 'transactions' ? 'Visualize e organize suas movimentações.' : this.state.page === 'banks' ? 'Saldos e referências das suas contas.' : this.state.page === 'settings' ? 'Preferências e dados do aplicativo.' : 'Acompanhe seus registros.')), h('div', { className: 'header-actions' }, this.state.page === 'overview' ? h('div', { className: 'mf-quick-add' }, h('button', { className: 'primary-button mf-quick-trigger', 'aria-expanded': this.state.quickAddOpen,
-            onClick: () => this.setState({ quickAddOpen: !this.state.quickAddOpen }) }, h(Icon, { name: 'plus', size: 16 }), 'Adicionar'), this.state.quickAddOpen ? h('div', { className: 'mf-quick-menu' }, h('button', { onClick: () => this.openQuickEntry('expense') }, 'Nova despesa'), h('button', { onClick: () => this.openQuickEntry('income') }, 'Nova receita'), h('button', { onClick: () => { this.setState({ quickAddOpen: false }); this.openPlan(undefined, 'expense'); } }, 'Compromisso futuro')) : null) : this.state.page === 'transactions' ? h('button', { type: 'button', className: 'primary-button', onClick: () => this.openQuickEntry('expense') }, h(Icon, { name: 'plus', size: 16 }), 'Novo lançamento') : null, periodControl ? h('div', { className: 'overview-period-controls' }, h(PeriodPicker, { mode: this.state.overviewPeriod, span: period, onChange: (m, a, b) => this.setSharedPeriod(m, a, b) }), this.state.page === 'overview' && configured ? h('button', { type: 'button', className: 'mf-refresh-button', disabled: this.state.bankBusy, onClick: () => this.syncBank(false),
+            this.state.page === 'assistant' ? 'Compare o custo e o impacto das parcelas.' : this.state.page === 'intelligence' ? 'Panorama financeiro, conversa assistida e ações supervisionadas.' : this.state.page === 'transactions' ? 'Visualize e organize suas movimentações.' : this.state.page === 'banks' ? 'Saldos e referências das suas contas.' : this.state.page === 'settings' ? 'Preferências e dados do aplicativo.' : 'Acompanhe seus registros.')), h('div', { className: 'header-actions' }, this.state.page === 'overview' ? h('div', { className: 'mf-quick-add' }, h('button', { className: 'primary-button mf-quick-trigger', 'aria-expanded': this.state.quickAddOpen,
+            onClick: () => this.setState({ quickAddOpen: !this.state.quickAddOpen }) }, h(Icon, { name: 'plus', size: 16 }), 'Adicionar'), this.state.quickAddOpen ? h('div', { className: 'mf-quick-menu' }, h('button', { onClick: () => this.openQuickEntry('expense') }, 'Nova despesa'), h('button', { onClick: () => this.openQuickEntry('income') }, 'Nova receita'), h('button', { onClick: () => { this.setState({ quickAddOpen: false }); this.openPlan(undefined, 'expense'); } }, 'Compromisso futuro')) : null) : this.state.page === 'transactions' && this.state.txOrganize ? h('button', { type: 'button', className: 'primary-button', onClick: () => this.openQuickEntry('expense') }, h(Icon, { name: 'plus', size: 16 }), 'Novo lançamento') : null, periodControl ? h('div', { className: 'overview-period-controls' }, h(PeriodPicker, { mode: this.state.overviewPeriod, span: period, onChange: (m, a, b) => this.setSharedPeriod(m, a, b) }), this.state.page === 'overview' && configured ? h('button', { type: 'button', className: 'mf-refresh-button', disabled: this.state.bankBusy, onClick: () => this.syncBank(false),
             title: last ? 'Última consulta: ' + new Date(last).toLocaleString('pt-BR') : 'Ainda não sincronizado' }, h(Icon, { name: 'refresh', size: 16 }), this.state.bankBusy ? 'Atualizando…' : 'Atualizar') : null) :
             this.state.page === 'budgets' ? h(StyledSelect, { wrapperClass: 'month-dropdown', className: 'mf-month-trigger', value: this.state.month,
                 options: months, ariaLabel: 'Mês do orçamento', onChange: (v) => this.setSharedMonth(v) }) :
@@ -2540,14 +2610,15 @@ class App extends React.Component {
         const comparison = overviewComparison(s.expense, prior.expense, compareAvailable), points = overviewCumulative(start, end, range, compareAvailable ? previous : null);
         const due = pendingDashboardItems(state.planning.items), upcoming = due.filter(x => x.dueDate <= advanceDate(today, 6)), overdue = due.filter(x => x.dueDate < today);
         const generated = !!state.planning.generatedAt, month = end.slice(0, 7), budget = range(firstOfMonth(month), endOfMonth(month));
-        const limits = this.getCategories().filter(c => c.kind !== 'income' && Object.prototype.hasOwnProperty.call(d.budgets, c.name)).map(info => { var _a; return ({ info, limit: d.budgets[info.name], hasLimit: true, total: ((_a = budget.categories.find(c => c.name === info.name)) === null || _a === void 0 ? void 0 : _a.total) || 0 }); }).sort(budgetPresentationOrder);
+        const effBudgets = effectiveMonthBudgets(d, month);
+        const limits = this.getCategories().filter(c => c.kind !== 'income' && Object.prototype.hasOwnProperty.call(effBudgets, c.name)).map(info => { var _a; return ({ info, limit: effBudgets[info.name], hasLimit: true, total: ((_a = budget.categories.find(c => c.name === info.name)) === null || _a === void 0 ? void 0 : _a.total) || 0 }); }).sort(budgetPresentationOrder);
         const totalLimit = limits.reduce((n, c) => n + c.limit, 0), spentLimited = limits.reduce((n, c) => n + c.total, 0), budgetCoverage = overviewCoverage(budget.expense, spentLimited), used = totalLimit > 0 ? Math.round(spentLimited / totalLimit * 100) : spentLimited > 0 ? 100 : 0;
         const recent = useBank ? bank.data.transactions.filter(x => x.date >= start && x.date <= end && x.status === 'POSTED' && ['income', 'expense'].includes(effectiveNature(x))).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5).map(x => ({ key: x.accountId + '|' + x.id, title: x.customTitle || x.merchant || x.description, original: x.description, date: x.date, category: x.category, categoryId: x.categoryId || null, subcategoryId: x.subcategoryId || null, amount: Math.abs(x.amount), kind: effectiveNature(x), raw: x })) : d.transactions.filter(x => x.date >= start && x.date <= end).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5).map(x => ({ key: x.id, title: x.description, original: '', date: x.date, category: x.category, categoryId: x.categoryId || null, subcategoryId: x.subcategoryId || null, amount: x.amount, kind: x.kind, raw: x }));
         const manualInPeriod = d.transactions.filter(x => x.date >= start && x.date <= end).length;
         const openBudget = () => { this.setState({ month }); this.navigate('budgets'); };
         const metric = (label, value, icon, hint, tone) => h('button', { type: 'button', className: 'u1-metric mf-border-reveal mf-tone-' + (tone === 'net' ? 'net' : tone) + ' ' + tone + ' mf-overview-metric' + (tone === 'net' ? (value > 0 ? ' is-positive' : value < 0 ? ' is-negative' : ' is-neutral') : ''), 'aria-label': label + ' · ' + money(value) + ' · ver movimentações', onClick: () => this.openOverviewTransactions(tone === 'income' ? 'income' : tone === 'expense' ? 'expense' : 'all') }, h('div', { className: 'u1-metric-label' }, h(Icon, { name: icon, size: 16 }), label, h(Icon, { name: 'arrow', size: 13 })), h('strong', {}, money(value)), h('small', {}, hint));
         const reviewCount = useBank ? bank.data.transactions.filter(t => !t.reviewed).length : null;
-        return h('div', { className: 'overview-content u1-overview mf-premium-overview ' + (hidden ? 'u1-values-hidden' : '') }, h('div', { className: 'u1-context' }, this.renderSourcePicker(), h('span', {}, date(start) + ' — ' + date(end) + ' · ' + (useBank ? 'Movimentos confirmados' + (bank.data.truncated ? ' · histórico parcial' : '') : 'Registros manuais'))), h('section', { className: 'mf-overview-brief', 'aria-label': 'Prioridades financeiras' }, h('div', { className: 'mf-overview-brief-title' }, h('span', { className: 'micro-label' }, 'SEU DIA FINANCEIRO'), h('h2', {}, 'Clareza para a próxima decisão'), h('p', {}, 'Fonte ' + (useBank ? 'bancária' : 'manual') + ' · ' + date(start) + ' a ' + date(end))), h('div', { className: 'mf-overview-priorities' }, h('button', { type: 'button', onClick: () => useBank ? this.openOverviewTransactions('all', true) : this.openOverviewTransactions() }, h(Icon, { name: 'check', size: 18 }), h('span', {}, h('strong', {}, reviewCount === null ? 'Conferir registros manuais' : reviewCount + ' a conferir'), h('small', {}, useBank ? 'Somente histórico bancário carregado' : 'Abra os lançamentos desta fonte')), h(Icon, { name: 'arrow', size: 14 })), h('button', { type: 'button', onClick: () => this.navigate('planning') }, h(Icon, { name: 'calendar', size: 18 }), h('span', {}, h('strong', {}, generated ? upcoming.length + ' compromissos' : 'Conferir agenda'), h('small', {}, generated ? 'Próximos 7 dias · inclui vencidos' : 'Abra para carregar seus compromissos')), h(Icon, { name: 'arrow', size: 14 })), h('button', { type: 'button', onClick: () => this.openIntelligenceContext('overview') }, h(Icon, { name: 'spark', size: 18 }), h('span', {}, h('strong', {}, 'Entender meus números'), h('small', {}, 'Consulta local sob autorização')), h(Icon, { name: 'arrow', size: 14 })))), state.bankMessage && bank.config.configured ? h('div', { className: 'sync-feedback', role: 'status' }, state.bankMessage) : null, h('div', { className: 'stats-grid' }, h('section', { className: 'u1-balance mf-border-reveal mf-tone-balance', role: 'group', tabIndex: 0, 'aria-label': useBank ? 'Saldo nas contas' : 'Saldo manual' }, h('div', { className: 'u1-balance-label' }, h('span', {}, useBank ? 'Saldo nas contas' : 'Saldo manual'), h('button', { type: 'button', className: 'u1-icon-button', 'aria-label': hidden ? 'Mostrar valores' : 'Ocultar valores', 'aria-pressed': hidden, onClick: () => this.setState({ overviewHideValues: !hidden }) }, h(Icon, { name: hidden ? 'eye-off' : 'eye', size: 18 }))), h('strong', { className: 'u1-balance-value' }, hidden ? '••••' : coverage ? bankBalanceLabel(coverage) : money(s.balance)), h('details', { className: 'u1-balance-info' }, h('summary', {}, h('span', { className: 'u1-status-dot ' + ((coverage === null || coverage === void 0 ? void 0 : coverage.missingCount) ? 'is-partial' : '') }), (coverage === null || coverage === void 0 ? void 0 : coverage.missingCount) ? 'Saldo parcial · conferir' : useBank ? 'Referência das instituições' : 'Como é calculado'), h('p', {}, coverage ? 'Saldos disponíveis de ' + coverage.knownCount + ' de ' + coverage.totalCount + ' conta(s). Não representa dinheiro livre. A consulta pode ser mais recente que o saldo informado.' : 'Saldo inicial mais receitas menos despesas manuais. Não somado ao banco.'))), metric('Receitas', s.income, 'trend', 'No período selecionado', 'income'), metric('Despesas', s.expense, 'down', 'No período selecionado', 'expense'), metric('Resultado', s.net, 'chart', 'Receitas menos despesas', 'net')), h('div', { className: 'u1-main-grid' }, h('div', { className: 'u1-left-stack' }, h('section', { className: 'u1-panel u1-rhythm' }, h('div', { className: 'u1-panel-head' }, h('div', {}, h('h2', {}, 'Seu ritmo de gastos'), h('p', {}, 'Entenda como suas despesas evoluíram.')), h('div', { className: 'u1-chart-tabs', role: 'group', 'aria-label': 'Visualização do período' }, ['spending', 'flow'].map(tab => h('button', { type: 'button', key: tab, 'aria-pressed': (state.overviewChart || 'spending') === tab, onClick: () => this.setState({ overviewChart: tab }) }, tab === 'spending' ? 'Acumulado' : 'Entradas e saídas')))), h('div', { className: 'u1-rhythm-summary' }, h('div', {}, h('strong', {}, money(s.expense)), h('span', {}, 'gastos no período')), h('div', { className: 'u1-comparison ' + (comparison.percent !== null && comparison.percent <= 0 ? 'is-lower' : '') }, hidden ? 'Valores ocultos' : comparison.label, h('small', {}, compareAvailable ? date(previous.start) + ' a ' + date(previous.end) + ' · mesma fonte' : 'Comparação exige histórico disponível nos dois intervalos'))), hidden ? h('div', { className: 'u1-chart-hidden' }, h(Icon, { name: 'eye-off', size: 26 }), h('p', {}, 'Mostre os valores para visualizar o gráfico.')) : (state.overviewChart || 'spending') === 'flow' ? h(Chart, { data: flowSegments(start, end, range) }) : h(OverviewSpendingChart, { rows: points, compare: compareAvailable }), h('div', { className: 'u1-chart-footer' }, h('span', {}, h('i', { className: 'u1-current-dot' }), 'Período selecionado'), compareAvailable ? h('span', {}, h('i', { className: 'u1-previous-dot' }), 'Intervalo anterior') : null, h('span', { className: 'u1-daily-average' }, 'Média diária ', h('b', {}, money(Math.round(s.expense / daysInSpan(start, end)))))))), h('aside', { className: 'u1-side-stack' }, h('section', { className: 'mf-plan-shortcut' }, h('div', { className: 'u1-panel-head' }, h('div', {}, h('h2', {}, 'Na sua agenda'), h('p', {}, 'Hoje e próximos 7 dias · compromissos cadastrados')), h('button', { type: 'button', className: 'u1-icon-button', 'aria-label': 'Abrir Planejamento', onClick: () => this.navigate('planning') }, h(Icon, { name: 'arrow', size: 17 }))), generated ? h('div', { className: 'u1-agenda-stats' }, h('div', {}, h('strong', {}, overdue.length), h('span', {}, 'vencidos')), h('div', {}, h('strong', {}, money(upcoming.reduce((n, x) => n + x.remaining, 0))), h('span', {}, 'a pagar · inclui vencidos'))) : null, upcoming.length ? h('div', { className: 'mf-agenda-list' }, upcoming.slice(0, 3).map(item => h('button', { type: 'button', className: 'mf-agenda-row', key: item.id, onClick: () => this.openPlanDetail(item.id) }, h('span', { className: 'u1-agenda-date' }, date(item.dueDate)), h('span', { className: 'mf-agenda-copy' }, h('strong', {}, item.title), h('small', {}, item.dueDate < today ? 'Vencido' : item.dueDate === today ? 'Hoje' : item.certainty === 'estimated' ? 'Estimado' : 'A vencer')), h('strong', { className: 'mf-agenda-amount' }, money(item.remaining))))) : h('div', { className: 'u1-empty-agenda' }, h(Icon, { name: 'calendar', size: 22 }), h('div', {}, h('b', {}, generated ? 'Sem vencimentos cadastrados neste intervalo' : 'Agenda ainda não carregada'), h('p', {}, generated ? 'Isso não confirma a ausência de contas a pagar.' : 'Abra o Planejamento para conferir seus compromissos.'))), h('button', { type: 'button', className: 'u1-subtle-link', onClick: () => this.navigate('planning') }, 'Ver agenda', h(Icon, { name: 'arrow', size: 14 }))), h('section', { className: 'u1-panel u1-budget' }, h('div', { className: 'u1-panel-head' }, h('div', {}, h('h2', {}, 'Orçamento em foco'), h('p', {}, prettyMonth(month))), h('button', { type: 'button', className: 'u1-icon-button', 'aria-label': 'Abrir Orçamentos', onClick: openBudget }, h(Icon, { name: 'arrow', size: 17 }))), h('div', { className: 'u1-budget-summary' }, h('strong', {}, money(spentLimited)), h('span', {}, 'de ' + money(totalLimit) + ' em limites')), limits.length ? h('div', { className: 'u1-budget-meter ' + (spentLimited > totalLimit ? 'is-over' : ''), role: 'img', 'aria-label': hidden ? 'Valores ocultos' : used + '% dos limites utilizados' }, h('i', { style: { width: hidden ? '0%' : Math.min(100, used) + '%' } })) : null, h('p', { className: 'u1-budget-caption' }, !limits.length ? 'Você ainda não definiu limites.' : hidden ? 'Valores ocultos' : (spentLimited > totalLimit ? money(spentLimited - totalLimit) + ' acima dos limites' : money(totalLimit - spentLimited) + ' de margem nos limites')), h('div', { className: 'u1-coverage' }, h('span', {}, 'Cobertura dos gastos'), h('b', {}, hidden ? '••••' : budgetCoverage === null ? 'Sem gastos' : budgetCoverage + '%')), h('p', { className: 'u1-microcopy' }, 'Considera apenas categorias com limite. Margem não é saldo disponível.'), h('button', { type: 'button', className: 'u1-subtle-link', onClick: openBudget }, 'Gerenciar orçamento', h(Icon, { name: 'arrow', size: 14 })))), h('section', { className: 'u1-panel u1-categories' }, h('div', { className: 'u1-panel-head' }, h('div', {}, h('h2', {}, 'Para onde foi seu dinheiro'), h('p', {}, 'Categorias do período selecionado')), h('span', { className: 'u1-count' }, s.categories.length + ' categorias')), renderQA84OverviewCategories(this, s.categories, s.expense, useBank, hidden))), h('div', { className: 'u1-detail-grid' }, h('section', { className: 'u1-panel u1-recent' }, h('div', { className: 'u1-panel-head' }, h('div', {}, h('h2', {}, 'Últimas movimentações'), h('p', {}, 'Confirmadas no período')), h('button', { type: 'button', className: 'u1-subtle-link', onClick: () => { this.setState({ query: '', bankFilter: '', txSource: useBank ? 'bank' : 'manual', txReviewOnly: false, txOrganize: false }); this.navigate('transactions'); } }, 'Ver tudo', h(Icon, { name: 'arrow', size: 14 }))), recent.length ? h('div', { className: 'u1-recent-list' }, recent.map(t => { const txIdentity = resolveCategoryVisualIdentity({ categoryId: t.categoryId, subcategoryId: t.subcategoryId, categoryName: t.category, catalog: state.qa84VisualCatalog || [] }); return h('button', { type: 'button', className: 'u1-recent-row', key: t.key, onClick: () => useBank ? this.openBankDetail(t.raw) : this.openManualDetail(t.raw) }, h(CategoryVisualGlyph, { identity: txIdentity, size: 18 }), h('span', { className: 'u1-recent-copy' }, h('strong', {}, t.title), h('small', {}, t.original && t.original !== t.title ? t.original : t.category + ' · ' + date(t.date))), h('strong', { className: t.kind === 'income' ? 'good-text' : 'bad-text' }, hidden ? '••••' : (t.kind === 'income' ? '+' : '−') + money(t.amount))); })) : h('p', { className: 'u1-empty' }, 'Nenhuma movimentação confirmada neste período.')), h('section', { className: 'u1-panel u1-accounts' }, h('div', { className: 'u1-panel-head' }, h('div', {}, h('h2', {}, useBank ? 'Suas contas' : 'Fonte dos seus indicadores'), h('p', {}, useBank ? 'Saldo de referência por instituição · não depende do período acima' : 'Acompanhamento com registros adicionados por você')), h('button', { type: 'button', className: 'u1-subtle-link', onClick: () => this.navigate('banks') }, 'Ver contas', h(Icon, { name: 'arrow', size: 14 }))), useBank ? h('div', { className: 'u1-accounts-grid' }, bank.data.accounts.map(account => h('button', { type: 'button', className: 'u1-account', key: account.id, onClick: () => { this.setState({ bankFilter: account.id, query: '', txSource: 'bank', txReviewOnly: false, txOrganize: false }); this.navigate('transactions'); } }, h('span', { className: 'u1-account-icon' }, h(Icon, { name: 'bank', size: 19 })), h('span', { className: 'u1-account-copy' }, h('b', {}, account.name), h('small', {}, 'Referência: ' + bankReferenceLabel(account.updatedAt))), h('strong', {}, Number.isFinite(account.balance) ? money(account.balance) : 'Indisponível')))) : h('div', { className: 'u1-source-panel' }, h('div', { className: 'u1-source-stats' }, h('div', {}, h('strong', {}, state.mode === 'demo' ? 'Demonstração' : manualInPeriod + ' no período'), h('span', {}, state.mode === 'demo' ? 'Dados fictícios ativos' : 'Registros manuais confirmados')), h('div', {}, h('strong', {}, d.transactions.length + ' no histórico'), h('span', {}, bank.data.accounts.length ? bank.data.accounts.length + ' conta(s) bancária(s) separada(s)' : 'Sem mistura com extrato bancário'))), h('div', { className: 'u1-source-note' }, h(Icon, { name: 'shield', size: 17 }), h('p', { className: 'u1-microcopy' }, 'Os registros manuais e o extrato bancário são consultados separadamente para evitar duplicidades.'))))), null);
+        return h('div', { className: 'overview-content u1-overview mf-premium-overview ' + (hidden ? 'u1-values-hidden' : '') }, h('div', { className: 'u1-context' }, this.renderSourcePicker(), h('span', {}, date(start) + ' — ' + date(end) + ' · ' + (useBank ? 'Movimentos confirmados' + (bank.data.truncated ? ' · histórico parcial' : '') : 'Registros manuais'))), h('section', { className: 'mf-overview-brief', 'aria-label': 'Prioridades financeiras' }, h('div', { className: 'mf-overview-brief-title' }, h('span', { className: 'micro-label' }, 'SEU DIA FINANCEIRO'), h('h2', {}, 'Clareza para a próxima decisão'), h('p', {}, 'Fonte ' + (useBank ? 'bancária' : 'manual') + ' · ' + date(start) + ' a ' + date(end))), h('div', { className: 'mf-overview-priorities' }, h('button', { type: 'button', onClick: () => useBank ? this.openOverviewTransactions('all', true) : this.openOverviewTransactions() }, h(Icon, { name: 'check', size: 18 }), h('span', {}, h('strong', {}, reviewCount === null ? 'Conferir registros manuais' : reviewCount + ' a conferir'), h('small', {}, useBank ? 'Somente histórico bancário carregado' : 'Abra os lançamentos desta fonte')), h(Icon, { name: 'arrow', size: 14 })), h('button', { type: 'button', onClick: () => this.navigate('planning') }, h(Icon, { name: 'calendar', size: 18 }), h('span', {}, h('strong', {}, generated ? upcoming.length + ' compromissos' : 'Conferir agenda'), h('small', {}, generated ? 'Próximos 7 dias · inclui vencidos' : 'Abra para carregar seus compromissos')), h(Icon, { name: 'arrow', size: 14 })), h('button', { type: 'button', onClick: () => this.openIntelligenceContext('overview') }, h(Icon, { name: 'spark', size: 18 }), h('span', {}, h('strong', {}, 'Entender meus números'), h('small', {}, 'Consulta local sob autorização')), h(Icon, { name: 'arrow', size: 14 })))), state.bankMessage && bank.config.configured ? h('div', { className: 'sync-feedback', role: 'status' }, state.bankMessage) : null, h('div', { className: 'stats-grid' }, h('section', { className: 'u1-balance mf-border-reveal mf-tone-balance', role: 'group', tabIndex: 0, 'aria-label': useBank ? 'Saldo nas contas' : 'Saldo manual' }, h('div', { className: 'u1-balance-label' }, h('span', {}, useBank ? 'Saldo nas contas' : 'Saldo manual'), h('button', { type: 'button', className: 'u1-icon-button', 'aria-label': hidden ? 'Mostrar valores' : 'Ocultar valores', 'aria-pressed': hidden, onClick: () => this.setState({ overviewHideValues: !hidden }) }, h(Icon, { name: hidden ? 'eye-off' : 'eye', size: 18 }))), h('strong', { className: 'u1-balance-value' }, hidden ? '••••' : coverage ? bankBalanceLabel(coverage) : money(s.balance)), h('details', { className: 'u1-balance-info' }, h('summary', {}, h('span', { className: 'u1-status-dot ' + ((coverage === null || coverage === void 0 ? void 0 : coverage.missingCount) ? 'is-partial' : '') }), (coverage === null || coverage === void 0 ? void 0 : coverage.missingCount) ? 'Saldo parcial · conferir' : useBank ? 'Referência das instituições' : 'Como é calculado'), h('p', {}, coverage ? 'Saldos disponíveis de ' + coverage.knownCount + ' de ' + coverage.totalCount + ' conta(s). Não representa dinheiro livre. A consulta pode ser mais recente que o saldo informado.' : 'Saldo inicial mais receitas menos despesas manuais. Não somado ao banco.'))), metric('Receitas', s.income, 'trend', 'No período selecionado', 'income'), metric('Despesas', s.expense, 'down', 'No período selecionado', 'expense'), metric('Resultado', s.net, 'chart', 'Receitas menos despesas', 'net')), h('div', { className: 'u1-main-grid' }, h('div', { className: 'u1-left-stack' }, h('section', { className: 'u1-panel u1-rhythm' }, h('div', { className: 'u1-panel-head' }, h('div', {}, h('h2', {}, 'Seu ritmo de gastos'), h('p', {}, 'Entenda como suas despesas evoluíram.')), h('div', { className: 'u1-chart-tabs', role: 'group', 'aria-label': 'Visualização do período' }, ['spending', 'flow'].map(tab => h('button', { type: 'button', key: tab, 'aria-pressed': (state.overviewChart || 'spending') === tab, onClick: () => this.setState({ overviewChart: tab }) }, tab === 'spending' ? 'Acumulado' : 'Entradas e saídas')))), h('div', { className: 'u1-rhythm-summary' }, h('div', {}, h('strong', {}, money(s.expense)), h('span', {}, 'gastos no período')), h('div', { className: 'u1-comparison ' + (comparison.percent !== null && comparison.percent <= 0 ? 'is-lower' : '') }, hidden ? 'Valores ocultos' : comparison.label, h('small', {}, compareAvailable ? date(previous.start) + ' a ' + date(previous.end) + ' · mesma fonte' : 'Comparação exige histórico disponível nos dois intervalos'))), hidden ? h('div', { className: 'u1-chart-hidden' }, h(Icon, { name: 'eye-off', size: 26 }), h('p', {}, 'Mostre os valores para visualizar o gráfico.')) : (state.overviewChart || 'spending') === 'flow' ? h(Chart, { data: flowSegments(start, end, range) }) : h(OverviewSpendingChart, { rows: points, compare: compareAvailable }), h('div', { className: 'u1-chart-footer' }, h('span', {}, h('i', { className: 'u1-current-dot' }), 'Período selecionado'), compareAvailable ? h('span', {}, h('i', { className: 'u1-previous-dot' }), 'Intervalo anterior') : null, h('span', { className: 'u1-daily-average' }, 'Média diária ', h('b', {}, money(Math.round(s.expense / daysInSpan(start, end)))))))), h('aside', { className: 'u1-side-stack' }, h('section', { className: 'mf-plan-shortcut' }, h('div', { className: 'u1-panel-head' }, h('div', {}, h('h2', {}, 'Na sua agenda'), h('p', {}, 'Hoje e próximos 7 dias · compromissos cadastrados')), h('button', { type: 'button', className: 'u1-icon-button', 'aria-label': 'Abrir Planejamento', onClick: () => this.navigate('planning') }, h(Icon, { name: 'arrow', size: 17 }))), generated ? h('div', { className: 'u1-agenda-stats' }, h('div', {}, h('strong', {}, overdue.length), h('span', {}, 'vencidos')), h('div', {}, h('strong', {}, money(upcoming.reduce((n, x) => n + x.remaining, 0))), h('span', {}, 'a pagar · inclui vencidos'))) : null, upcoming.length ? h('div', { className: 'mf-agenda-list' }, upcoming.slice(0, 3).map(item => h('button', { type: 'button', className: 'mf-agenda-row', key: item.id, onClick: () => this.openPlanDetail(item.id) }, h('span', { className: 'u1-agenda-date' }, date(item.dueDate)), h('span', { className: 'mf-agenda-copy' }, h('strong', {}, item.title), h('small', {}, item.dueDate < today ? 'Vencido' : item.dueDate === today ? 'Hoje' : item.certainty === 'estimated' ? 'Estimado' : 'A vencer')), h('strong', { className: 'mf-agenda-amount' }, money(item.remaining))))) : h('div', { className: 'u1-empty-agenda' }, h(Icon, { name: 'calendar', size: 22 }), h('div', {}, h('b', {}, generated ? 'Sem vencimentos cadastrados neste intervalo' : 'Agenda ainda não carregada'), h('p', {}, generated ? 'Isso não confirma a ausência de contas a pagar.' : 'Abra o Planejamento para conferir seus compromissos.'))), h('button', { type: 'button', className: 'u1-subtle-link', onClick: () => this.navigate('planning') }, 'Ver agenda', h(Icon, { name: 'arrow', size: 14 }))), h('section', { className: 'u1-panel u1-budget' }, h('div', { className: 'u1-panel-head' }, h('div', {}, h('h2', {}, 'Orçamento em foco'), h('p', {}, prettyMonth(month))), h('button', { type: 'button', className: 'u1-icon-button', 'aria-label': 'Abrir Orçamentos', onClick: openBudget }, h(Icon, { name: 'arrow', size: 17 }))), h('div', { className: 'u1-budget-summary' }, h('strong', {}, money(spentLimited)), h('span', {}, 'de ' + money(totalLimit) + ' em limites')), limits.length ? h('div', { className: 'u1-budget-meter ' + (spentLimited > totalLimit ? 'is-over' : ''), role: 'img', 'aria-label': hidden ? 'Valores ocultos' : used + '% dos limites utilizados' }, h('i', { style: { width: hidden ? '0%' : Math.min(100, used) + '%' } })) : null, h('p', { className: 'u1-budget-caption' }, !limits.length ? 'Você ainda não definiu limites.' : hidden ? 'Valores ocultos' : (spentLimited > totalLimit ? money(spentLimited - totalLimit) + ' acima dos limites' : money(totalLimit - spentLimited) + ' de margem nos limites')), h('div', { className: 'u1-coverage' }, h('span', {}, 'Cobertura dos gastos'), h('b', {}, hidden ? '••••' : budgetCoverage === null ? 'Sem gastos' : budgetCoverage + '%')), h('p', { className: 'u1-microcopy' }, 'Considera apenas categorias com limite. Margem não é saldo disponível.'), h('button', { type: 'button', className: 'u1-subtle-link', onClick: openBudget }, 'Gerenciar orçamento', h(Icon, { name: 'arrow', size: 14 })))), h('section', { className: 'u1-panel u1-categories' }, h('div', { className: 'u1-panel-head' }, h('div', {}, h('h2', {}, 'Para onde foi seu dinheiro'), h('p', {}, 'Categorias do período selecionado')), h('span', { className: 'u1-count' }, s.categories.length + (s.categories.length === 1 ? ' categoria' : ' categorias'))), renderQA84OverviewCategories(this, s.categories, s.expense, useBank, hidden))), h('div', { className: 'u1-detail-grid' }, h('section', { className: 'u1-panel u1-recent' }, h('div', { className: 'u1-panel-head' }, h('div', {}, h('h2', {}, 'Últimas movimentações'), h('p', {}, 'Confirmadas no período')), h('button', { type: 'button', className: 'u1-subtle-link', onClick: () => { this.setState({ query: '', bankFilter: '', txSource: useBank ? 'bank' : 'manual', txReviewOnly: false, txOrganize: false }); this.navigate('transactions'); } }, 'Ver tudo', h(Icon, { name: 'arrow', size: 14 }))), recent.length ? h('div', { className: 'u1-recent-list' }, recent.map(t => { const txIdentity = resolveCategoryVisualIdentity({ categoryId: t.categoryId, subcategoryId: t.subcategoryId, categoryName: t.category, catalog: state.qa84VisualCatalog || [] }); return h('button', { type: 'button', className: 'u1-recent-row', key: t.key, onClick: () => useBank ? this.openBankDetail(t.raw) : this.openManualDetail(t.raw) }, h(CategoryVisualGlyph, { identity: txIdentity, size: 18 }), h('span', { className: 'u1-recent-copy' }, h('strong', {}, t.title), h('small', {}, t.original && t.original !== t.title ? t.original : t.category + ' · ' + date(t.date))), h('strong', { className: t.kind === 'income' ? 'good-text' : 'bad-text' }, hidden ? '••••' : (t.kind === 'income' ? '+' : '−') + money(t.amount))); })) : h('p', { className: 'u1-empty' }, 'Nenhuma movimentação confirmada neste período.')), h('section', { className: 'u1-panel u1-accounts' }, h('div', { className: 'u1-panel-head' }, h('div', {}, h('h2', {}, useBank ? 'Suas contas' : 'Fonte dos seus indicadores'), h('p', {}, useBank ? 'Saldo de referência por instituição · não depende do período acima' : 'Acompanhamento com registros adicionados por você')), h('button', { type: 'button', className: 'u1-subtle-link', onClick: () => this.navigate('banks') }, 'Ver contas', h(Icon, { name: 'arrow', size: 14 }))), useBank ? h('div', { className: 'u1-accounts-grid' }, bank.data.accounts.map(account => h('button', { type: 'button', className: 'u1-account', key: account.id, onClick: () => { this.setState({ bankFilter: account.id, query: '', txSource: 'bank', txReviewOnly: false, txOrganize: false }); this.navigate('transactions'); } }, h('span', { className: 'u1-account-icon' }, h(Icon, { name: 'bank', size: 19 })), h('span', { className: 'u1-account-copy' }, h('b', {}, account.name), h('small', {}, 'Referência: ' + bankReferenceLabel(account.updatedAt))), h('strong', {}, Number.isFinite(account.balance) ? money(account.balance) : 'Indisponível')))) : h('div', { className: 'u1-source-panel' }, h('div', { className: 'u1-source-stats' }, h('div', {}, h('strong', {}, state.mode === 'demo' ? 'Demonstração' : manualInPeriod + ' no período'), h('span', {}, state.mode === 'demo' ? 'Dados fictícios ativos' : 'Registros manuais confirmados')), h('div', {}, h('strong', {}, d.transactions.length + ' no histórico'), h('span', {}, bank.data.accounts.length ? bank.data.accounts.length + ' conta(s) bancária(s) separada(s)' : 'Sem mistura com extrato bancário'))), h('div', { className: 'u1-source-note' }, h(Icon, { name: 'shield', size: 17 }), h('p', { className: 'u1-microcopy' }, 'Os registros manuais e o extrato bancário são consultados separadamente para evitar duplicidades.'))))), null);
     }
     renderTransactions() {
         var _a;
@@ -2631,9 +2702,9 @@ class App extends React.Component {
     renderCategoryEditor() {
         var _a, _b;
         const e = this.state.categoryEditor, categories = this.getCategories();
-        return h('div', { className: 'mf-category-editor' }, h('h3', { id: 'mf-category-editor-heading', tabIndex: -1 }, e.previousName ? 'Editar categoria' : 'Criar categoria'), this.field('Nome', h('input', { className: 'form-control', value: e.name, maxLength: 50, placeholder: 'Ex.: Pets, Delivery, Estudos', disabled: !!(e.previousName && ((_a = categories.find(c => c.name === e.previousName)) === null || _a === void 0 ? void 0 : _a.builtIn)), onChange: (v) => this.setState({ categoryEditor: { ...e, name: v.target.value } }) })), this.field('Tipo de categoria', h(StyledSelect, { value: e.kind, disabled: !!(e.previousName && ((_b = categories.find(c => c.name === e.previousName)) === null || _b === void 0 ? void 0 : _b.builtIn)), options: [{ value: 'expense', label: 'Gasto' }, { value: 'income', label: 'Receita' }, { value: 'both', label: 'Entrada ou saída' }], onChange: (kind) => this.setState({ categoryEditor: { ...e, kind } }) })), h('div', { className: 'category-appearance' }, h('div', { className: 'category-preview', style: { borderColor: e.color + '75' } }, h('span', { className: 'category-preview-icon', style: { background: e.color + '26', boxShadow: '0 0 24px ' + e.color + '25' } }, e.emoji || '✨'), h('div', {}, h('small', {}, 'PRÉVIA DA CATEGORIA'), h('strong', {}, e.name.trim() || 'Minha categoria'), h('span', {}, 'Você escolhe como organizar cada movimentação.'))), h('div', { className: 'appearance-label' }, h('b', {}, 'Escolha um emoji'), h('span', {}, 'Um símbolo para reconhecer rapidamente seus gastos')), h('div', { className: 'emoji-grid', role: 'group', 'aria-label': 'Escolha um emoji' }, (this.state.categoryMoreEmojis ? EMOJI_OPTIONS : Array.from(new Set([...EMOJI_OPTIONS.slice(0, 18), e.emoji]))).map(emoji => h('button', { type: 'button', key: emoji,
+        return h('div', { className: 'mf-category-editor' }, h('h3', { id: 'mf-category-editor-heading', tabIndex: -1 }, e.previousName ? 'Editar categoria' : 'Criar categoria'), this.field('Nome', h('input', { className: 'form-control', value: e.name, maxLength: 70, placeholder: 'Ex.: Pets, Delivery, Estudos', disabled: !!(e.previousName && ((_a = categories.find(c => c.name === e.previousName)) === null || _a === void 0 ? void 0 : _a.builtIn)), onChange: (v) => this.setState({ categoryEditor: { ...e, name: v.target.value } }) })), this.field('Tipo de categoria', h(StyledSelect, { value: e.kind, disabled: !!(e.previousName && ((_b = categories.find(c => c.name === e.previousName)) === null || _b === void 0 ? void 0 : _b.builtIn)), options: [{ value: 'expense', label: 'Gasto' }, { value: 'income', label: 'Receita' }, { value: 'both', label: 'Entrada ou saída' }], onChange: (kind) => this.setState({ categoryEditor: { ...e, kind } }) })), h('div', { className: 'category-appearance' }, h('div', { className: 'category-preview', style: { borderColor: e.color + '75' } }, h('span', { className: 'category-preview-icon', style: { background: e.color + '26', boxShadow: '0 0 24px ' + e.color + '25' } }, e.emoji || '✨'), h('div', {}, h('small', {}, 'PRÉVIA DA CATEGORIA'), h('strong', {}, e.name.trim() || 'Minha categoria'), h('span', {}, 'Você escolhe como organizar cada movimentação.'))), h('div', { className: 'appearance-label' }, h('b', {}, 'Escolha um emoji'), h('span', {}, 'Um símbolo para reconhecer rapidamente seus gastos')), h('div', { className: 'emoji-grid', role: 'group', 'aria-label': 'Escolha um emoji' }, (this.state.categoryMoreEmojis ? EMOJI_OPTIONS : Array.from(new Set([...EMOJI_OPTIONS.slice(0, 18), e.emoji]))).map(emoji => h('button', { type: 'button', key: emoji,
             className: 'emoji-choice ' + (e.emoji === emoji ? 'selected' : ''), 'aria-label': 'Usar emoji ' + emoji, 'aria-pressed': e.emoji === emoji,
-            onClick: () => this.setState({ categoryEditor: { ...e, emoji } }) }, emoji))), h('button', { className: 'mf-small-link', type: 'button', onClick: () => this.setState({ categoryMoreEmojis: !this.state.categoryMoreEmojis }) }, this.state.categoryMoreEmojis ? 'Mostrar menos emojis' : 'Explorar todos os emojis'), h('div', { className: 'appearance-label' }, h('b', {}, 'Sua paleta de cores'), h('span', {}, 'Cores que combinam com o tema escuro')), h('div', { className: 'color-grid', role: 'group', 'aria-label': 'Escolha uma cor' }, COLOR_OPTIONS.map(color => h('button', { key: color, type: 'button',
+            onClick: () => this.setState({ categoryEditor: { ...e, emoji } }) }, emoji))), h('button', { className: 'mf-small-link', type: 'button', onClick: () => this.setState({ categoryMoreEmojis: !this.state.categoryMoreEmojis }) }, this.state.categoryMoreEmojis ? 'Mostrar menos emojis' : 'Explorar todos os emojis'), h('div', { className: 'appearance-label' }, h('b', {}, 'Sua paleta de cores'), h('span', {}, 'Cores equilibradas para os temas claro e escuro')), h('div', { className: 'color-grid', role: 'group', 'aria-label': 'Escolha uma cor' }, COLOR_OPTIONS.map(color => h('button', { key: color, type: 'button',
             className: 'color-choice ' + (e.color === color ? 'selected' : ''), style: { background: color }, 'aria-label': 'Cor ' + color, 'aria-pressed': e.color === color,
             onClick: () => this.setState({ categoryEditor: { ...e, color } }) }, e.color === color ? '✓' : null))), h('label', { className: 'custom-color-label' }, 'Cor personalizada (opcional)', h('input', { key: e.previousName + '-' + e.color, className: 'color-hex-input', defaultValue: e.color,
             maxLength: 7, spellCheck: false, placeholder: '#3e9a85', onBlur: (v) => { const color = String(v.target.value).trim(); if (/^#[0-9a-fA-F]{6}$/.test(color))
@@ -2664,6 +2735,7 @@ class App extends React.Component {
             ].map(x => h('button', { className: 'ghost-button', key: x.pattern, onClick: () => this.setState({ ruleEditor: { ...emptyRule(), pattern: x.pattern, category: x.category } }) }, x.pattern))), h('h3', {}, r.id ? 'Editar regra' : 'Nova regra'), this.field('Texto da movimentação', h('input', { className: 'form-control', placeholder: 'Ex.: IFOOD, UBER, NETFLIX', maxLength: 120, value: r.pattern, onChange: (v) => this.setState({ ruleEditor: { ...r, pattern: v.target.value } }) })), h('div', { className: 'two-inputs' }, this.field('Correspondência', h(StyledSelect, { className: 'form-control', value: r.matchMode, options: [{ value: 'contains', label: 'Contém' }, { value: 'starts', label: 'Começa com' }, { value: 'exact', label: 'Texto exato' }], onChange: (value) => this.setState({ ruleEditor: { ...r, matchMode: value } }) })), this.field('Aplicar em', h(StyledSelect, { className: 'form-control', value: r.scope, options: [{ value: 'both', label: 'Bancos e novos manuais' }, { value: 'bank', label: 'Só banco' }, { value: 'manual', label: 'Só novos manuais' }], onChange: (value) => this.setState({ ruleEditor: { ...r, scope: value } }) }))), h('div', { className: 'two-inputs' }, this.field('Categoria', h(StyledSelect, { className: 'form-control', value: r.category, options: categories.map(c => ({ value: c.name, label: (c.emoji || '✨') + '  ' + c.name })), onChange: (value) => this.setState({ ruleEditor: { ...r, category: value } }) })), this.field('Prioridade (1 = mais alta)', h('input', { className: 'form-control', type: 'number', min: 1, max: 999, value: r.priority, onChange: (v) => this.setState({ ruleEditor: { ...r, priority: v.target.value } }) }))), h('div', { className: 'toolbar-actions' }, h('button', { className: 'primary-button', onClick: () => this.saveRule() }, r.id ? 'Atualizar regra' : 'Salvar regra'), r.id ? h('button', { className: 'ghost-button', onClick: () => this.setState({ ruleEditor: emptyRule() }) }, 'Cancelar edição') : null), h('div', { className: 'rule-preview' }, h('b', {}, 'Testar classificação'), h('input', { className: 'form-control', value: this.state.ruleTest, placeholder: 'Digite uma descrição do extrato', onChange: (v) => this.setState({ ruleTest: v.target.value }) }), h('p', {}, 'Resultado: ', h('strong', {}, preview || 'Sem regra correspondente (Outros)'))))), this.state.categoryMessage ? h('p', { className: 'bank-feedback', role: 'status' }, this.state.categoryMessage) : null, h('p', { className: 'muted-desc' }, 'Regras reclassificam imediatamente o extrato bancário na visualização, inclusive dados já sincronizados. Correções individuais do banco sempre prevalecem. Lançamentos manuais antigos preservam sua categoria; regras automáticas ajudam em novos lançamentos e importações sem categoria.'));
     }
     renderBudgets() {
+        var _a;
         const useBank = this.state.mode === 'real' && this.state.dashboardSource === 'bank' && this.state.bank.data.accounts.length > 0;
         const s = useBank ? bankSnapshot(this.state.bank, this.state.month) : this.monthData();
         const d = this.state.data, mode = this.state.budgetTab, focus = this.state.budgetFocus || 'all', search = this.state.budgetSearch || '';
@@ -2674,7 +2746,10 @@ class App extends React.Component {
         const assigned = allowed.reduce((sum, c) => sum + getAmount(c.name), 0);
         const total = mode === 'income' ? s.income : s.expense;
         const unclassified = Math.max(0, total - assigned);
-        const entries = allowed.map(c => ({ info: c, total: getAmount(c.name), hasLimit: Object.prototype.hasOwnProperty.call(d.budgets, c.name), limit: d.budgets[c.name] }))
+        const monthOverrides = ((_a = d.monthlyBudgets) === null || _a === void 0 ? void 0 : _a[this.state.month]) || {};
+        const effBudgets = effectiveMonthBudgets(d, this.state.month);
+        const hasMonthOverrides = Object.keys(monthOverrides).length > 0;
+        const entries = allowed.map(c => ({ info: c, total: getAmount(c.name), hasLimit: Object.prototype.hasOwnProperty.call(effBudgets, c.name), limit: effBudgets[c.name], isMonthly: Object.prototype.hasOwnProperty.call(monthOverrides, c.name) }))
             .filter(x => x.total > 0 || (mode === 'expense' && x.hasLimit));
         const quiet = allowed.filter(c => !entries.some(x => x.info.name === c.name));
         const limited = entries.filter(x => mode === 'expense' && x.hasLimit);
@@ -2698,12 +2773,26 @@ class App extends React.Component {
         };
         if (this.state.qa84BudgetDrill)
             return renderQA84BudgetDetail(this, {});
-        return h('div', { className: 'section mf-budget-section u3-budgets' }, h('div', { className: 'mf-budget-heading' }, h('div', {}, h('p', {}, mode === 'expense' ? 'Acompanhe seus limites por categoria.' : 'Veja a composição das receitas recebidas.')), h('div', { className: 'mf-budget-switch', role: 'group', 'aria-label': 'Visualização financeira' }, h('button', { type: 'button', className: mode === 'expense' ? 'active' : '', 'aria-pressed': mode === 'expense', onClick: () => this.setState({ budgetTab: 'expense', showAllBudgetCategories: false, budgetFocus: 'all', budgetSearch: '' }) }, 'Gastos'), h('button', { type: 'button', className: mode === 'income' ? 'active' : '', 'aria-pressed': mode === 'income', onClick: () => this.setState({ budgetTab: 'income', showAllBudgetCategories: false, budgetFocus: 'all', budgetSearch: '' }) }, 'Receitas'))), this.renderSourcePicker(), h('p', { className: 'mf-budget-context' }, prettyMonth(this.state.month) + ' · ' + (mode === 'expense' ? 'Gastos do mês e limites cadastrados por categoria' : 'Composição das receitas recebidas, sem incluir transferências próprias confirmadas')), mode === 'expense' ? h('div', { className: 'mf-budget-summary mf-budget-summary-four' }, h('div', { className: 'mf-border-reveal mf-tone-expense', role: 'group', tabIndex: 0 }, h('small', {}, 'Gasto nas categorias com limite'), h('strong', {}, fmt(spentLimited))), h('div', { className: 'mf-border-reveal mf-tone-balance', role: 'group', tabIndex: 0 }, h('small', {}, 'Limites cadastrados'), h('strong', {}, limited.length ? fmt(limitTotal) : 'Sem limites')), h('div', { className: 'mf-border-reveal mf-tone-net ' + (limited.length ? (margin < 0 ? 'is-negative' : 'is-positive') : 'is-neutral'), role: 'group', tabIndex: 0 }, h('small', {}, margin < 0 ? 'Excesso nos limites' : 'Margem nos limites'), h('strong', { className: margin < 0 ? 'bad-text' : '' }, limited.length ? fmt(Math.abs(margin)) : 'Sem limites'), h('small', {}, 'Não representa saldo disponível')), h('div', { className: 'mf-border-reveal mf-tone-warning', role: 'group', tabIndex: 0 }, h('small', {}, 'Gasto fora dos limites'), h('strong', {}, fmt(Math.max(0, total - spentLimited))))) :
+        return h('div', { className: 'section mf-budget-section u3-budgets' }, h('div', { className: 'mf-budget-heading' }, h('div', {}, h('p', {}, mode === 'expense' ? 'Acompanhe seus limites por categoria.' : 'Veja a composição das receitas recebidas.')), h('div', { className: 'mf-budget-switch', role: 'group', 'aria-label': 'Visualização financeira' }, h('button', { type: 'button', className: mode === 'expense' ? 'active' : '', 'aria-pressed': mode === 'expense', onClick: () => this.setState({ budgetTab: 'expense', showAllBudgetCategories: false, budgetFocus: 'all', budgetSearch: '' }) }, 'Gastos'), h('button', { type: 'button', className: mode === 'income' ? 'active' : '', 'aria-pressed': mode === 'income', onClick: () => this.setState({ budgetTab: 'income', showAllBudgetCategories: false, budgetFocus: 'all', budgetSearch: '' }) }, 'Receitas')), mode === 'expense' && typeof desktop !== 'undefined' && (desktop === null || desktop === void 0 ? void 0 : desktop.copilotSalaryBudgetPropose) ? h('button', { type: 'button', className: 'ghost-button mf-m3-salary-trigger',
+            onClick: () => {
+                var _a, _b;
+                const self = this;
+                if (!self.__m3SalaryPanel) {
+                    const curInc = (_b = (_a = this.state.data) === null || _a === void 0 ? void 0 : _a.settings) === null || _b === void 0 ? void 0 : _b.income;
+                    self.__m3SalaryPanel = { open: true, month: this.state.month, mode: this.state.mode, useBank, revision: this.state.financeRevision || 0, salaryText: curInc > 0 ? copilotFormatEditCents(curInc) : '', reserveText: '', profileMode: 'balanced', busy: false, error: '', proposal: null };
+                }
+                else {
+                    self.__m3SalaryPanel.open = !self.__m3SalaryPanel.open;
+                }
+                this.forceUpdate();
+            } }, 'Reorganizar com salário') : null), mode === 'expense' && typeof renderBudgetsSalaryPanel === 'function' ? renderBudgetsSalaryPanel(this, useBank) : null, this.renderSourcePicker(), h('p', { className: 'mf-budget-context' }, prettyMonth(this.state.month) + ' · ' + (mode === 'expense' ? 'Gastos do mês e limites cadastrados por categoria' : 'Composição das receitas recebidas, sem incluir transferências próprias confirmadas')), mode === 'expense' ? h('div', { className: 'mf-budget-summary mf-budget-summary-four' }, h('div', { className: 'mf-border-reveal mf-tone-expense', role: 'group', tabIndex: 0 }, h('small', {}, 'Gasto nas categorias com limite'), h('strong', {}, fmt(spentLimited))), h('div', { className: 'mf-border-reveal mf-tone-balance', role: 'group', tabIndex: 0 }, h('small', {}, 'Limites cadastrados'), h('strong', {}, limited.length ? fmt(limitTotal) : 'Sem limites')), h('div', { className: 'mf-border-reveal mf-tone-net ' + (limited.length ? (margin < 0 ? 'is-negative' : 'is-positive') : 'is-neutral'), role: 'group', tabIndex: 0 }, h('small', {}, margin < 0 ? 'Excesso nos limites' : 'Margem nos limites'), h('strong', { className: margin < 0 ? 'bad-text' : '' }, limited.length ? fmt(Math.abs(margin)) : 'Sem limites'), h('small', {}, 'Não representa saldo disponível')), h('div', { className: 'mf-border-reveal mf-tone-warning', role: 'group', tabIndex: 0 }, h('small', {}, 'Gasto fora dos limites'), h('strong', {}, fmt(Math.max(0, total - spentLimited))))) :
             h('div', { className: 'mf-budget-summary' }, h('div', {}, h('small', {}, 'Total recebido no período'), h('strong', {}, fmt(total))), h('div', {}, h('small', {}, 'Origens com recebimentos'), h('strong', {}, String(entries.filter(x => x.total > 0).length))), h('div', {}, h('small', {}, 'Maior fonte de receita'), h('strong', {}, entries.length ? entries.slice().sort((a, b) => b.total - a.total)[0].info.name : 'Nenhuma ainda'))), mode === 'expense' ? h('section', { className: 'u3-budget-insight' }, h('div', { className: 'u3-coverage' }, h('div', { className: 'u3-coverage-ring', 'aria-hidden': 'true', style: { background: 'conic-gradient(var(--u3-accent) ' + (signals.covered || 0) + '%, var(--surface3) 0)' } }, h('strong', {}, signals.covered === null ? '—' : signals.covered + '%')), h('div', {}, h('h2', {}, 'Gastos com um limite definido'), h('p', {}, signals.covered === null ? 'Sem gastos nesta fonte e mês.' : signals.covered + '% dos gastos do mês estão em categorias com limite.'), h('small', {}, 'Cobertura do orçamento · não é dinheiro reservado'))), h('div', { className: 'u3-budget-actions' }, [
             { key: 'attention', count: signals.exceeded + signals.near, title: 'Pedem atenção', description: signals.exceeded + ' acima · ' + signals.near + ' perto do limite', icon: 'alert' },
             { key: 'unlimited', count: signals.unlimited, title: 'Sem limite', description: 'Categorias com gastos para organizar', icon: 'layers' }
-        ].map(x => h('button', { type: 'button', className: 'u3-insight-action', 'aria-pressed': focus === x.key, onClick: () => this.setState({ budgetFocus: focus === x.key ? 'all' : x.key, budgetSearch: '' }) }, h(Icon, { name: x.icon, size: 18 }), h('span', {}, h('b', {}, x.title), h('small', {}, x.description)), h('strong', {}, x.count), h(Icon, { name: 'chevron-right', size: 15 }))))) : null, useBank && this.state.bank.data.truncated && !this.state.bank.data.dailyTotals ? h('p', { className: 'mf-budget-warning' }, 'Histórico carregado parcialmente. Valores e cobertura refletem somente os registros disponíveis.') : null, mode === 'expense' ? h('p', { className: 'mf-budget-contract' }, 'O mês filtra os gastos. Os limites cadastrados são recorrentes e valem para todos os meses.') : null, mode === 'income' && this.state.planning.items.some(x => x.kind === 'income' && x.dueDate.slice(0, 7) === this.state.month && x.remaining > 0 && x.status !== 'cancelled') ?
-            h('p', { className: 'mf-budget-expected' }, 'Recebimentos ainda previstos no Planejamento: ' + fmt(this.state.planning.items.filter(x => x.kind === 'income' && x.dueDate.slice(0, 7) === this.state.month && x.remaining > 0 && x.status !== 'cancelled').reduce((sum, x) => sum + x.remaining, 0)) + '. Não somados às receitas já recebidas.') : null, unclassified > 0 ? h('div', { className: 'mf-budget-warning', role: 'status' }, 'Há ' + fmt(unclassified) + ' em ' + (mode === 'expense' ? 'despesas' : 'receitas') + ' com categorias incompatíveis ou ainda não identificadas. Confira em Movimentações.') : null, h('div', { className: 'u3-budget-toolbar' }, h('div', { className: 'u2-view-tabs', 'aria-label': 'Filtro de categorias' }, (mode === 'income' ? [{ value: 'all', label: 'Recebimentos' }] : [{ value: 'all', label: 'Todas' }, { value: 'attention', label: 'Atenção' }, { value: 'unlimited', label: 'Sem limite' }]).map(x => h('button', { type: 'button', 'aria-pressed': focus === x.value, onClick: () => this.setState({ budgetFocus: x.value }) }, x.label))), h('div', { className: 'search-box' }, h(Icon, { name: 'search', size: 16 }), h('input', { 'aria-label': 'Buscar categoria no orçamento', placeholder: 'Buscar categoria', value: search, onChange: (e) => this.setState({ budgetSearch: e.target.value }) }))), h('div', { className: 'u3-budget-list-heading' }, h('h2', {}, mode === 'expense' ? 'Limites por categoria' : 'Origens da sua renda'), h('span', { role: 'status' }, visible.length + ' categoria(s)')), visible.length ? renderQA84BudgetCards(this, visible, mode, total, useBank, suggestLimit) : h(Card, { className: 'mf-budget-empty' }, h('h3', {}, entries.length ? 'Nenhuma categoria para estes filtros' : mode === 'income' ? 'Nenhuma receita neste período' : 'Nenhum gasto neste período'), h('p', {}, entries.length ? 'Altere o filtro ou a busca para ver outras categorias.' : mode === 'income' ? 'As receitas aparecerão aqui depois de serem registradas ou sincronizadas.' : 'Suas despesas aparecerão aqui quando houver movimentações.')), quiet.length ? h('div', { className: 'mf-budget-quiet' }, h('button', { className: 'mf-budget-quiet-trigger', type: 'button', 'aria-expanded': this.state.showAllBudgetCategories,
+        ].map(x => h('button', { type: 'button', className: 'u3-insight-action', 'aria-pressed': focus === x.key, onClick: () => this.setState({ budgetFocus: focus === x.key ? 'all' : x.key, budgetSearch: '' }) }, h(Icon, { name: x.icon, size: 18 }), h('span', {}, h('b', {}, x.title), h('small', {}, x.description)), h('strong', {}, x.count), h(Icon, { name: 'chevron-right', size: 15 }))))) : null, useBank && this.state.bank.data.truncated && !this.state.bank.data.dailyTotals ? h('p', { className: 'mf-budget-warning' }, 'Histórico carregado parcialmente. Valores e cobertura refletem somente os registros disponíveis.') : null, mode === 'expense' ? h('p', { className: 'mf-budget-contract' }, hasMonthOverrides ?
+            'O mês filtra os gastos. Há limites personalizados especificamente para ' + prettyMonth(this.state.month) + '; os demais permanecem recorrentes.' :
+            'O mês filtra os gastos. Os limites cadastrados são recorrentes e valem para todos os meses.') : null, mode === 'income' && this.state.planning.items.some(x => x.kind === 'income' && x.dueDate.slice(0, 7) === this.state.month && x.remaining > 0 && x.status !== 'cancelled') ?
+            h('p', { className: 'mf-budget-expected' }, 'Recebimentos ainda previstos no Planejamento: ' + fmt(this.state.planning.items.filter(x => x.kind === 'income' && x.dueDate.slice(0, 7) === this.state.month && x.remaining > 0 && x.status !== 'cancelled').reduce((sum, x) => sum + x.remaining, 0)) + '. Não somados às receitas já recebidas.') : null, unclassified > 0 ? h('div', { className: 'mf-budget-warning', role: 'status' }, 'Há ' + fmt(unclassified) + ' em ' + (mode === 'expense' ? 'despesas' : 'receitas') + ' com categorias incompatíveis ou ainda não identificadas. Confira em Movimentações.') : null, h('div', { className: 'u3-budget-toolbar' }, h('div', { className: 'u2-view-tabs', 'aria-label': 'Filtro de categorias' }, (mode === 'income' ? [{ value: 'all', label: 'Recebimentos' }] : [{ value: 'all', label: 'Todas' }, { value: 'attention', label: 'Atenção' }, { value: 'unlimited', label: 'Sem limite' }]).map(x => h('button', { type: 'button', 'aria-pressed': focus === x.value, onClick: () => this.setState({ budgetFocus: x.value }) }, x.label))), h('div', { className: 'search-box' }, h(Icon, { name: 'search', size: 16 }), h('input', { 'aria-label': 'Buscar categoria no orçamento', placeholder: 'Buscar categoria', value: search, onChange: (e) => this.setState({ budgetSearch: e.target.value }) }))), h('div', { className: 'u3-budget-list-heading' }, h('h2', {}, mode === 'expense' ? 'Limites por categoria' : 'Origens da sua renda'), h('span', { role: 'status' }, visible.length + (visible.length === 1 ? ' categoria' : ' categorias'))), visible.length ? renderQA84BudgetCards(this, visible, mode, total, useBank, suggestLimit) : h(Card, { className: 'mf-budget-empty' }, h('h3', {}, entries.length ? 'Nenhuma categoria para estes filtros' : mode === 'income' ? 'Nenhuma receita neste período' : 'Nenhum gasto neste período'), h('p', {}, entries.length ? 'Altere o filtro ou a busca para ver outras categorias.' : mode === 'income' ? 'As receitas aparecerão aqui depois de serem registradas ou sincronizadas.' : 'Suas despesas aparecerão aqui quando houver movimentações.')), quiet.length ? h('div', { className: 'mf-budget-quiet' }, h('button', { className: 'mf-budget-quiet-trigger', type: 'button', 'aria-expanded': this.state.showAllBudgetCategories,
             onClick: () => this.setState({ showAllBudgetCategories: !this.state.showAllBudgetCategories }) }, this.state.showAllBudgetCategories ? 'Ocultar outras categorias' : 'Ver outras categorias (' + quiet.length + ')', h(Icon, { name: this.state.showAllBudgetCategories ? 'chevron-up' : 'chevron-down', size: 16 })), this.state.showAllBudgetCategories ? h('div', { className: 'mf-budget-quiet-grid' }, quiet.map(c => h('div', { className: 'mf-budget-quiet-row', key: c.name }, h('span', { className: 'qa84-category-combo' }, h(CategoryVisualGlyph, { identity: resolveCategoryVisualIdentity({ categoryName: c.name, catalog: this.state.qa84VisualCatalog || [], aggregate: true }), size: 17 }), c.name), mode === 'expense' ? h('button', { className: 'small-link', onClick: () => this.setState({ editModal: { type: 'budget', key: c.name, title: 'Definir limite · ' + c.name, value: '' } }) }, 'Definir limite') : h('span', { className: 'muted' }, 'Sem receitas neste mês')))) : null) : null, h('p', { className: 'mf-budget-disclaimer' }, 'Pix para terceiros continuam como entradas ou saídas até que sejam identificados como transferências próprias. Reembolsos sem vínculo são mostrados como entradas, não abatimentos automáticos de gastos.'));
     }
     renderAssistant(includeBanner = true) {
@@ -2773,16 +2862,20 @@ class App extends React.Component {
             'Instalação estável nova: nenhum banco anterior foi encontrado nos perfis reconhecidos. Não importe dados nem configure antes de conferir seu perfil anterior.' :
             'Não há conexão Pluggy configurada neste perfil. O histórico salvo, se existir, continua disponível offline.'), h('button', { type: 'button', className: 'mf-small-link', onClick: () => this.setState({ bankIntegrationsOpen: true }) }, 'Configurar conexão')) : null, issues.length ? h('div', { className: 'u3-connection-alert', role: 'status' }, h(Icon, { name: 'alert', size: 18 }), h('span', {}, issues.length + ' conexão(ões) precisam de conferência. Os valores abaixo podem estar desatualizados.'), h('button', { type: 'button', className: 'mf-small-link', onClick: () => this.setState({ bankIntegrationsOpen: true }) }, 'Ver conexão')) : null, accounts.length ? h('section', { className: 'mf-accounts-first' }, h('div', { className: 'mf-bank-account-heading' }, h('h2', {}, 'Saldos por conta'), h('small', {}, 'Atualização: ' + (((_f = b.data.last) === null || _f === void 0 ? void 0 : _f.completedAt) ? new Date(b.data.last.completedAt).toLocaleString('pt-BR') : 'não informada'))), h('div', { className: 'u3-account-toolbar' }, h('div', { className: 'u2-view-tabs', 'aria-label': 'Filtro de contas' }, [{ value: 'all', label: 'Todas as contas' }, { value: 'attention', label: 'Conferir referência' }].map(x => h('button', { type: 'button', 'aria-pressed': (this.state.accountFocus || 'all') === x.value, onClick: () => this.setState({ accountFocus: x.value }) }, x.label))), h('span', {}, 'Contadores do histórico carregado · todos os períodos')), shown.length ? h('div', { className: 'bank-account-grid' }, shown.map(({ account: a, reference, pending, review, count }) => h(Card, { className: 'bank-account u3-account-card', key: a.id }, h('div', { className: 'u3-account-card-head' }, h('span', { className: 'bank-account-icon' }, h(Icon, { name: 'bank', size: 20 })), h('div', {}, h('h3', {}, a.name), h('small', {}, u3AccountType(a.subtype))), h('span', { className: 'u3-reference-badge is-' + reference.status }, reference.label)), h('small', { className: 'u3-balance-label' }, 'Saldo informado'), h('strong', {}, Number.isFinite(a.balance) ? fmt(a.balance) : 'Saldo não disponível'), h('span', { className: 'u3-reference-date' }, 'Referência recebida: ' + bankReferenceLabel(a.updatedAt)), h('div', { className: 'u3-account-counts' }, h('div', {}, h('b', {}, count), h('small', {}, 'registros')), h('div', {}, h('b', {}, pending), h('small', {}, 'pendentes no banco')), h('div', {}, h('b', {}, review), h('small', {}, 'a conferir'))), h('button', { type: 'button', className: 'u3-account-open', onClick: () => { this.setState({ bankFilter: a.id, txSource: 'bank', query: '', txSelected: [] }); this.navigate('transactions'); } }, 'Abrir movimentações', h(Icon, { name: 'arrow', size: 15 }))))) : h('p', { className: 'u3-empty' }, 'Nenhuma conta precisa de conferência de referência.')) :
             h(Card, { className: 'u3-empty-accounts' }, h(Icon, { name: 'bank', size: 28 }), h('h2', {}, c.configured ? 'Sua conexão está configurada' : 'Vamos conectar suas contas?'), h('p', {}, c.configured ? 'Atualize para receber as contas e seus saldos.' : 'Configure sua conexão abaixo. Nenhuma senha bancária é solicitada aqui.')), h('details', { className: 'mf-bank-integrations', open: this.state.bankIntegrationsOpen || !accounts.length, onToggle: (e) => { if (this.state.bankIntegrationsOpen !== e.currentTarget.open)
-                this.setState({ bankIntegrationsOpen: e.currentTarget.open }); } }, h('summary', {}, h(Icon, { name: 'settings', size: 17 }), 'Conexão e sincronização'), h('div', { className: 'bank-grid' }, h(Card, { className: 'settings-card' }, h('div', { className: 'card-heading' }, h('div', {}, h('h2', {}, 'Sua conexão bancária'), h('p', {}, c.configured ? 'Acesso conectado e protegido' : ((_g = b.connection) === null || _g === void 0 ? void 0 : _g.isolated) ? 'Nesta RC, os dados são separados e a conexão é desativada.' : 'Conecte suas contas para acompanhar tudo aqui')), h('span', { className: 'bank-status ' + (c.configured ? 'enabled' : '') }, c.configured ? 'Configurada' : 'Não configurada')), ((_h = b.connection) === null || _h === void 0 ? void 0 : _h.isolated) ? h('p', { className: 'bank-warning' }, 'Canal experimental isolado: não configure credenciais pessoais nesta versão.') : null, !c.secure && !((_j = b.connection) === null || _j === void 0 ? void 0 : _j.isolated) ? h('p', { className: 'bank-warning' }, 'Não foi possível proteger sua chave neste computador. Evite configurar a conexão agora.') : null, c.configured ? h('button', { type: 'button', className: 'bank-details-toggle', 'aria-expanded': this.state.bankConfigOpen, onClick: () => this.setState({ bankConfigOpen: !this.state.bankConfigOpen }) }, h(Icon, { name: 'settings', size: 16 }), this.state.bankConfigOpen ? 'Ocultar detalhes da conexão' : 'Alterar dados da conexão') : null, (!c.configured || this.state.bankConfigOpen) ? h('div', { className: 'bank-settings-details' }, this.field('Código da aplicação', h('input', { className: 'form-control', value: f.clientId, placeholder: 'Cole o código de identificação', maxLength: 300, autoComplete: 'off', onChange: (e) => this.setState({ bankForm: { ...f, clientId: e.target.value } }) })), this.field('Chave privada', h('input', { className: 'form-control', type: 'password', value: f.clientSecret, placeholder: c.configured ? 'Já protegido — deixe vazio para manter' : 'Cole sua chave de acesso', maxLength: 1000, autoComplete: 'new-password', onChange: (e) => this.setState({ bankForm: { ...f, clientSecret: e.target.value } }) })), this.field('Código da conexão (separe por vírgula, se houver mais de uma)', h('textarea', { className: 'form-control bank-item-field', value: f.itemIds, rows: 2, placeholder: 'Cole o código da conta autorizada', onChange: (e) => this.setState({ bankForm: { ...f, itemIds: e.target.value } }) }), 'Use os códigos fornecidos ao autorizar a conexão. Nunca informe sua senha bancária.'), h('div', { className: 'bank-actions' }, h('button', { className: 'primary-button', disabled: !c.secure || this.state.bankBusy || ((_k = b.connection) === null || _k === void 0 ? void 0 : _k.isolated), onClick: () => this.configureBank() }, h(Icon, { name: 'shield', size: 17 }), 'Salvar conexão'))) : null, h('div', { className: 'bank-actions' }, h('button', { className: 'outlined-action full', disabled: !c.configured || this.state.bankBusy || ((_l = b.connection) === null || _l === void 0 ? void 0 : _l.isolated), onClick: () => this.syncBank() }, h(Icon, { name: 'refresh', size: 17 }), this.state.bankBusy ? 'Atualizando…' : 'Atualizar minhas contas')), h('div', { className: 'privacy-small' }, h(Icon, { name: 'shield', size: 17 }), 'Sua chave é protegida neste computador e não faz parte das cópias de segurança.'), c.configured ? h('button', { className: 'bank-forget', onClick: () => this.forgetBank(), disabled: this.state.bankBusy }, 'Desconectar conta deste computador') : null, this.state.bankMessage ? h('p', { className: 'bank-feedback', role: 'status' }, this.state.bankMessage) : null), h(Card, { className: 'settings-card' }, h('h2', {}, 'Resumo da sincronização'), h('div', { className: 'bank-metric-list' }, h('div', {}, h('span', {}, 'Contas bancárias'), h('strong', {}, String(accounts.length))), h('div', {}, h('span', {}, 'Movimentações no histórico local'), h('strong', {}, String((_m = b.data.totalTransactions) !== null && _m !== void 0 ? _m : tx.length))), h('div', {}, h('span', {}, 'Última sincronização'), h('strong', {}, ((_o = b.data.last) === null || _o === void 0 ? void 0 : _o.completedAt) ? new Date(b.data.last.completedAt).toLocaleString('pt-BR') : 'Nunca')), h('div', {}, h('span', {}, 'Novas na última consulta'), h('strong', {}, String((_q = (_p = b.data.last) === null || _p === void 0 ? void 0 : _p.newCount) !== null && _q !== void 0 ? _q : '—')))), h('p', { className: 'muted-desc' }, 'As instituições podem demorar para enviar novas movimentações. Atualizar busca as informações mais recentes disponíveis.'), h('div', { className: 'info-box' }, h(Icon, { name: 'alert', size: 19 }), h('p', {}, 'As movimentações do banco não são misturadas automaticamente aos lançamentos adicionados por você. Isso evita despesas em duplicidade.')), (b.data.items || []).map(x => h('div', { className: 'bank-item-info', key: x.itemId }, h('b', {}, (!x.institution || x.institution === 'Meu Pluggy' ? 'Conta conectada' : x.institution)), h('small', {}, 'Situação: ' + (x.status === 'UPDATED' ? 'Atualizada' : x.status === 'UPDATING' ? 'Atualizando' : x.status === 'LOGIN_ERROR' ? 'Precisa reconectar' : 'Verifique sua conexão')), h('small', {}, 'Consentimento: ' + (x.consentExpiresAt ? new Date(x.consentExpiresAt).toLocaleDateString('pt-BR') : 'conforme seu banco'))))))), h(Card, { className: 'mf-bank-route' }, h('div', {}, h('h2', {}, 'Histórico financeiro em um só lugar'), h('p', { className: 'muted-desc' }, 'Consulte as transações, revise categorias e veja detalhes em Movimentações. Aqui você gerencia apenas suas conexões e saldos.')), h('button', { className: 'primary-button', onClick: () => { this.setState({ bankFilter: '', txSource: 'bank' }); this.navigate('transactions'); } }, 'Ver movimentações', h(Icon, { name: 'arrow', size: 16 }))));
+                this.setState({ bankIntegrationsOpen: e.currentTarget.open }); } }, h('summary', {}, h(Icon, { name: 'settings', size: 17 }), 'Conexão e sincronização'), h('div', { className: 'bank-grid' }, h(Card, { className: 'settings-card' }, h('div', { className: 'card-heading' }, h('div', {}, h('h2', {}, 'Sua conexão bancária'), h('p', {}, c.configured ? 'Acesso conectado e protegido' : ((_g = b.connection) === null || _g === void 0 ? void 0 : _g.isolated) ? 'Os dados deste perfil são isolados e a conexão externa permanece desativada.' : 'Conecte suas contas para acompanhar tudo aqui')), h('span', { className: 'bank-status ' + (c.configured ? 'enabled' : '') }, c.configured ? 'Configurada' : 'Não configurada')), ((_h = b.connection) === null || _h === void 0 ? void 0 : _h.isolated) ? h('p', { className: 'bank-warning' }, 'Ambiente de homologação isolado: não configure credenciais pessoais nesta sessão.') : null, !c.secure && !((_j = b.connection) === null || _j === void 0 ? void 0 : _j.isolated) ? h('p', { className: 'bank-warning' }, 'Não foi possível proteger sua chave neste computador. Evite configurar a conexão agora.') : null, c.configured ? h('button', { type: 'button', className: 'bank-details-toggle', 'aria-expanded': this.state.bankConfigOpen, onClick: () => this.setState({ bankConfigOpen: !this.state.bankConfigOpen }) }, h(Icon, { name: 'settings', size: 16 }), this.state.bankConfigOpen ? 'Ocultar detalhes da conexão' : 'Alterar dados da conexão') : null, (!c.configured || this.state.bankConfigOpen) ? h('div', { className: 'bank-settings-details' }, this.field('Código da aplicação', h('input', { className: 'form-control', value: f.clientId, placeholder: 'Cole o código de identificação', maxLength: 300, autoComplete: 'off', onChange: (e) => this.setState({ bankForm: { ...f, clientId: e.target.value } }) })), this.field('Chave privada', h('input', { className: 'form-control', type: 'password', value: f.clientSecret, placeholder: c.configured ? 'Já protegido — deixe vazio para manter' : 'Cole sua chave de acesso', maxLength: 1000, autoComplete: 'new-password', onChange: (e) => this.setState({ bankForm: { ...f, clientSecret: e.target.value } }) })), this.field('Código da conexão (separe por vírgula, se houver mais de uma)', h('textarea', { className: 'form-control bank-item-field', value: f.itemIds, rows: 2, placeholder: 'Cole o código da conta autorizada', onChange: (e) => this.setState({ bankForm: { ...f, itemIds: e.target.value } }) }), 'Use os códigos fornecidos ao autorizar a conexão. Nunca informe sua senha bancária.'), h('div', { className: 'bank-actions' }, h('button', { className: 'primary-button', disabled: !c.secure || this.state.bankBusy || ((_k = b.connection) === null || _k === void 0 ? void 0 : _k.isolated), onClick: () => this.configureBank() }, h(Icon, { name: 'shield', size: 17 }), 'Salvar conexão'))) : null, h('div', { className: 'bank-actions' }, h('button', { className: 'outlined-action full', disabled: !c.configured || this.state.bankBusy || ((_l = b.connection) === null || _l === void 0 ? void 0 : _l.isolated), onClick: () => this.syncBank() }, h(Icon, { name: 'refresh', size: 17 }), this.state.bankBusy ? 'Atualizando…' : 'Atualizar minhas contas')), h('div', { className: 'privacy-small' }, h(Icon, { name: 'shield', size: 17 }), 'Sua chave é protegida neste computador e não faz parte das cópias de segurança.'), c.configured ? h('button', { className: 'bank-forget', onClick: () => this.forgetBank(), disabled: this.state.bankBusy }, 'Desconectar conta deste computador') : null, this.state.bankMessage ? h('p', { className: 'bank-feedback', role: 'status' }, this.state.bankMessage) : null), h(Card, { className: 'settings-card' }, h('h2', {}, 'Resumo da sincronização'), h('div', { className: 'bank-metric-list' }, h('div', {}, h('span', {}, 'Contas bancárias'), h('strong', {}, String(accounts.length))), h('div', {}, h('span', {}, 'Movimentações no histórico local'), h('strong', {}, String((_m = b.data.totalTransactions) !== null && _m !== void 0 ? _m : tx.length))), h('div', {}, h('span', {}, 'Última sincronização'), h('strong', {}, ((_o = b.data.last) === null || _o === void 0 ? void 0 : _o.completedAt) ? new Date(b.data.last.completedAt).toLocaleString('pt-BR') : 'Nunca')), h('div', {}, h('span', {}, 'Novas na última consulta'), h('strong', {}, String((_q = (_p = b.data.last) === null || _p === void 0 ? void 0 : _p.newCount) !== null && _q !== void 0 ? _q : '—')))), h('p', { className: 'muted-desc' }, 'As instituições podem demorar para enviar novas movimentações. Atualizar busca as informações mais recentes disponíveis.'), h('div', { className: 'info-box' }, h(Icon, { name: 'alert', size: 19 }), h('p', {}, 'As movimentações do banco não são misturadas automaticamente aos lançamentos adicionados por você. Isso evita despesas em duplicidade.')), (b.data.items || []).map(x => h('div', { className: 'bank-item-info', key: x.itemId }, h('b', {}, (!x.institution || x.institution === 'Meu Pluggy' ? 'Conta conectada' : x.institution)), h('small', {}, 'Situação: ' + (x.status === 'UPDATED' ? 'Atualizada' : x.status === 'UPDATING' ? 'Atualizando' : x.status === 'LOGIN_ERROR' ? 'Precisa reconectar' : 'Verifique sua conexão')), h('small', {}, 'Consentimento: ' + (x.consentExpiresAt ? new Date(x.consentExpiresAt).toLocaleDateString('pt-BR') : 'conforme seu banco'))))))), h(Card, { className: 'mf-bank-route' }, h('div', {}, h('h2', {}, 'Histórico financeiro em um só lugar'), h('p', { className: 'muted-desc' }, 'Consulte as transações, revise categorias e veja detalhes em Movimentações. Aqui você gerencia apenas suas conexões e saldos.')), h('button', { className: 'primary-button', onClick: () => { this.setState({ bankFilter: '', txSource: 'bank' }); this.navigate('transactions'); } }, 'Ver movimentações', h(Icon, { name: 'arrow', size: 16 }))));
     }
     renderSettings() {
-        var _a;
+        var _a, _b;
         const panels = collectSettingsPanels(this.renderSettingsContent());
         const options = [{ id: 'appearance', label: 'Aparência', icon: 'settings' }, { id: 'profile', label: 'Perfil financeiro', icon: 'wallet' },
-            { id: 'data', label: 'Dados e recuperação', icon: 'folder' }, { id: 'integrations', label: 'Integrações', icon: 'bank' },
+            { id: 'data', label: 'Dados e recuperação', icon: 'folder' },
+            ...(this.state.cloudPersonalTransferred ? [{ id: 'integrations', label: 'Integrações', icon: 'bank' }] : []),
             { id: 'intelligence', label: 'Inteligência', icon: 'spark' }, { id: 'demo', label: 'Demonstração', icon: 'home' }];
         const selected = options.some(x => x.id === this.state.settingsSection) ? this.state.settingsSection : 'appearance';
-        const appearance = h(Card, { className: 'settings-card mf-appearance-card' }, h('h2', {}, 'Aparência'), h('p', { className: 'muted-desc' }, 'Escolha como o Meu Financeiro aparece neste dispositivo.'), h('div', { className: 'mf-theme-previews', 'aria-hidden': 'true' }, h('div', { className: 'mf-theme-preview theme-light' }, h('i'), h('span'), h('b', {}, 'Claro')), h('div', { className: 'mf-theme-preview theme-dark' }, h('i'), h('span'), h('b', {}, 'Escuro'))), this.field('Tema em Configurações', h('select', { className: 'form-control', 'aria-label': 'Tema em Configurações', 'data-appearance': 'select', defaultValue: ((_a = window.MFAppearance) === null || _a === void 0 ? void 0 : _a.get()) || 'system', onChange: (e) => { var _a; return (_a = window.MFAppearance) === null || _a === void 0 ? void 0 : _a.set(e.target.value); } }, h('option', { value: 'light' }, 'Claro'), h('option', { value: 'dark' }, 'Escuro'), h('option', { value: 'system' }, 'Acompanhar o sistema'))), h('p', { className: 'muted-desc' }, 'A preferência é salva neste dispositivo. No modo automático, acompanha o tema do sistema.'));
+        const currentAppearance = ((_b = (_a = window.MFAppearance) === null || _a === void 0 ? void 0 : _a.get) === null || _b === void 0 ? void 0 : _b.call(_a)) || 'system';
+        const appliedTheme = (typeof document !== 'undefined' ? document.documentElement.dataset.theme : '') || 'light';
+        const applyTheme = (mode) => { var _a, _b; (_b = (_a = window.MFAppearance) === null || _a === void 0 ? void 0 : _a.set) === null || _b === void 0 ? void 0 : _b.call(_a, mode); this.forceUpdate(); };
+        const appearance = h(Card, { className: 'settings-card mf-appearance-card' }, h('h2', {}, 'Aparência'), h('p', { className: 'muted-desc' }, 'Escolha como o Meu Financeiro aparece neste dispositivo.'), h('div', { className: 'mf-theme-previews', role: 'group', 'aria-label': 'Prévia e seleção rápida de tema' }, h('button', { type: 'button', className: 'mf-theme-preview theme-light', 'aria-pressed': currentAppearance === 'light' || (currentAppearance === 'system' && appliedTheme !== 'dark'), onClick: () => applyTheme('light') }, h('i'), h('span'), h('b', {}, 'Claro')), h('button', { type: 'button', className: 'mf-theme-preview theme-dark', 'aria-pressed': currentAppearance === 'dark' || (currentAppearance === 'system' && appliedTheme === 'dark'), onClick: () => applyTheme('dark') }, h('i'), h('span'), h('b', {}, 'Escuro'))), this.field('Tema em Configurações', h('select', { className: 'form-control', 'aria-label': 'Tema em Configurações', 'data-appearance': 'select', value: currentAppearance, onChange: (e) => applyTheme(e.target.value) }, h('option', { value: 'light' }, 'Claro'), h('option', { value: 'dark' }, 'Escuro'), h('option', { value: 'system' }, 'Acompanhar o sistema'))), h('p', { className: 'muted-desc' }, 'A preferência é salva neste dispositivo. No modo automático, acompanha o tema do sistema.'));
         return h('section', { className: 'mf-settings-layout' }, h('nav', { className: 'mf-settings-nav', 'aria-label': 'Assuntos das configurações' }, options.map(option => h('button', { type: 'button', key: option.id, 'aria-current': selected === option.id ? 'page' : undefined, onClick: () => this.setState({ settingsSection: option.id }) }, h(Icon, { name: option.icon, size: 17 }), option.label))), h('div', { className: 'mf-settings-content', key: selected }, selected === 'appearance' ? appearance : panels[selected] || h(Card, { className: 'settings-card' }, h('h2', {}, 'Integrações'), h('p', { className: 'muted-desc' }, 'Abra a versão instalada para gerenciar as integrações disponíveis neste computador.'))));
     }
     renderSettingsContent() {
@@ -2814,7 +2907,7 @@ class App extends React.Component {
                 month.status === 'identity_difference' ? 'IDs diferentes' :
                     month.status === 'amount_or_date_difference' ? 'datas ou valores diferentes' :
                         'descrições ou status diferentes')))), this.state.cloudE1Report.monthDeltas.limitedResults ?
-            h('p', { className: 'muted-desc' }, 'Análise mensal limitada; detalhes restantes precisam ser conferidos.') : null) : null) : null, h(Card, { className: 'settings-card', 'data-settings-group': 'data' }, h('h2', {}, 'Dados e cópias de segurança'), h('p', { className: 'muted-desc' }, desktop ? (this.state.cloudPersonalTransferred ? 'Existem personalizações em quarentena protegida na nuvem; a sincronização financeira ainda não foi ativada. A cópia local completa é independente da exportação manual.' : 'A cópia SQLite completa e a exportação de lançamentos manuais são diferentes. Credenciais bancárias são guardadas separadamente.') : 'A exportação de lançamentos manuais não é um backup completo do banco SQLite.'), h('button', { className: 'outlined-action full', onClick: () => this.exportJSON() }, h(Icon, { name: 'download', size: 17 }), 'Exportar lançamentos manuais'), h('button', { className: 'outlined-action full', onClick: () => { var _a; return (_a = this.fileInput) === null || _a === void 0 ? void 0 : _a.click(); } }, h(Icon, { name: 'upload', size: 17 }), 'Importar lançamentos manuais'), desktop ? h('button', { className: 'outlined-action full', onClick: () => this.backupDB() }, h(Icon, { name: 'download', size: 17 }), 'Salvar cópia completa') : null, desktop ? h('button', { className: 'outlined-action full', onClick: () => this.restoreDB() }, h(Icon, { name: 'upload', size: 17 }), 'Restaurar cópia completa') : null, desktop ? h('div', { className: 'backups-info' }, h(Icon, { name: 'shield', size: 18 }), h('div', {}, h('b', {}, 'Cópias automáticas locais'), h('small', {}, this.state.backupInfo.last ? 'Última cópia: ' + new Date(this.state.backupInfo.last).toLocaleString('pt-BR') + ' · Até 7 datas preservadas' : 'Uma cópia por dia em que o app estiver aberto.'))) : null, desktop ? h('button', { className: 'outlined-action full', onClick: () => this.openBackupsFolder() }, h(Icon, { name: 'folder', size: 17 }), 'Ver minhas cópias automáticas') : null, desktop ? h('button', { className: 'outlined-action full', onClick: () => this.openDataDir() }, h(Icon, { name: 'bank', size: 17 }), 'Abrir pasta dos meus dados') : null, h('div', { className: 'privacy-small' }, h(Icon, { name: 'shield', size: 17 }), 'Exportar lançamentos manuais não substitui uma cópia completa. Consulte a situação da nuvem acima.')), h('div', { 'data-settings-group': 'intelligence' }, renderIntelligenceSettings(this)), h(Card, { className: 'settings-card', 'data-settings-group': 'demo' }, h('h2', {}, 'Modo de demonstração'), h('p', { className: 'muted-desc' }, 'O modo de demonstração tem transações fictícias e armazenamento separado dos seus dados pessoais.'), h('button', { className: 'outlined-action full', onClick: () => this.toggleMode() }, this.state.mode === 'real' ? 'Entrar na demonstração' : 'Voltar aos dados pessoais', h(Icon, { name: 'arrow', size: 16 }))))));
+            h('p', { className: 'muted-desc' }, 'Análise mensal limitada; detalhes restantes precisam ser conferidos.') : null) : null) : null, h(Card, { className: 'settings-card', 'data-settings-group': 'data' }, h('h2', {}, 'Dados e cópias de segurança'), h('p', { className: 'muted-desc' }, desktop ? (this.state.cloudPersonalTransferred ? 'Existem personalizações em quarentena protegida na nuvem; a sincronização financeira ainda não foi ativada. A cópia local completa é independente da exportação manual.' : 'A cópia SQLite completa e a exportação de lançamentos manuais são diferentes. Credenciais bancárias são guardadas separadamente.') : 'A exportação de lançamentos manuais não é um backup completo do banco SQLite.'), h('button', { className: 'outlined-action full', onClick: () => this.exportJSON() }, h(Icon, { name: 'download', size: 17 }), 'Exportar lançamentos manuais'), h('button', { className: 'outlined-action full', onClick: () => { var _a; return (_a = this.fileInput) === null || _a === void 0 ? void 0 : _a.click(); } }, h(Icon, { name: 'upload', size: 17 }), 'Importar lançamentos manuais'), desktop ? h('button', { className: 'outlined-action full', onClick: () => this.backupDB() }, h(Icon, { name: 'download', size: 17 }), 'Salvar cópia completa') : null, desktop ? h('button', { className: 'outlined-action full', onClick: () => this.restoreDB() }, h(Icon, { name: 'upload', size: 17 }), 'Restaurar cópia completa') : null, desktop ? h('div', { className: 'backups-info' }, h(Icon, { name: 'shield', size: 18 }), h('div', {}, h('b', {}, 'Cópias automáticas locais'), h('small', {}, this.state.backupInfo.last ? 'Última cópia: ' + new Date(this.state.backupInfo.last).toLocaleString('pt-BR') + ' · Até 7 datas preservadas' : 'Uma cópia por dia em que o app estiver aberto.'))) : null, desktop ? h('button', { className: 'outlined-action full', onClick: () => this.openBackupsFolder() }, h(Icon, { name: 'folder', size: 17 }), 'Ver minhas cópias automáticas') : null, desktop ? h('button', { className: 'outlined-action full', onClick: () => this.openDataDir() }, h(Icon, { name: 'folder', size: 17 }), 'Abrir pasta dos meus dados') : null, h('div', { className: 'privacy-small' }, h(Icon, { name: 'shield', size: 17 }), 'Exportar lançamentos manuais não substitui uma cópia completa SQLite.')), h('div', { 'data-settings-group': 'intelligence' }, renderIntelligenceSettings(this)), h(Card, { className: 'settings-card', 'data-settings-group': 'demo' }, h('h2', {}, 'Modo de demonstração'), h('p', { className: 'muted-desc' }, 'O modo de demonstração tem transações fictícias e armazenamento separado dos seus dados pessoais.'), h('button', { className: 'outlined-action full', onClick: () => this.toggleMode() }, this.state.mode === 'real' ? 'Entrar na demonstração' : 'Voltar aos dados pessoais', h(Icon, { name: 'arrow', size: 16 }))))));
     }
     renderDetailDrawer() {
         var _a, _b, _c, _d;
@@ -2872,15 +2965,15 @@ class App extends React.Component {
             disabled: this.state.busy || this.isManualLinked(manual.id),
             onClick: () => this.removeEntry(manual.id) }, 'Excluir lançamento'))) : null, tx ? h('div', { className: 'mf-detail-section mf-raw-details' }, h('b', {}, 'Detalhes originais'), h('p', {}, tx.description), h('small', {}, 'Identificador de referência disponível apenas neste computador.')) : null)));
     }
-    renderEditModal() { const item = this.state.editModal; if (!item)
-        return null; return h('div', { className: 'modal-backdrop ' + (item.type === 'budget' ? 'mf-budget-edit-backdrop' : ''), onMouseDown: (e) => { if (e.target === e.currentTarget)
-            this.setState({ editModal: null }); } }, h('div', { className: 'modal small-modal ' + (item.type === 'budget' ? 'mf-budget-editor' : ''), role: 'dialog', 'aria-modal': 'true', 'aria-label': item.type === 'budget' ? 'Editar limite da categoria' : 'Editar valor' }, h('div', { className: 'modal-head' }, h('div', {}, h('small', { className: 'micro-label' }, 'PERSONALIZAÇÃO'), h('h2', {}, item.title)), h('button', { className: 'close-button', type: 'button', 'aria-label': 'Fechar painel', onClick: () => this.setState({ editModal: null }) }, h(Icon, { name: 'close', size: 18 }))), this.field(item.type === 'budget' ? 'Limite da categoria (R$)' : 'Valor (R$)', h('input', { className: 'form-control', value: item.value, inputMode: 'decimal', autoFocus: true, placeholder: item.type === 'budget' ? 'Ex.: 150,00' : '0,00', onChange: (e) => this.setState({ editModal: { ...item, value: e.target.value } }) }), item.type === 'budget' ? 'Limite vinculado à categoria, não exclusivo do mês exibido. Em branco remove o limite; R$ 0,00 mantém zero explícito.' : undefined), h('div', { className: 'modal-actions' }, h('button', { className: 'ghost-button', onClick: () => this.setState({ editModal: null }) }, 'Cancelar'), h('button', { className: 'primary-button', disabled: this.state.busy, onClick: async () => { const saved = item.type === 'budget' ? await this.setBudget(item.key, item.value) : await this.setSetting(item.key, item.value); if (saved)
+    renderEditModal() { var _a, _b; const item = this.state.editModal; if (!item)
+        return null; const hasMonthlyOverride = item.type === 'budget' && ((_b = (_a = this.state.data.monthlyBudgets) === null || _a === void 0 ? void 0 : _a[this.state.month]) === null || _b === void 0 ? void 0 : _b[item.key]) !== undefined; return h('div', { className: 'modal-backdrop ' + (item.type === 'budget' ? 'mf-budget-edit-backdrop' : ''), onMouseDown: (e) => { if (e.target === e.currentTarget)
+            this.setState({ editModal: null }); } }, h('div', { className: 'modal small-modal ' + (item.type === 'budget' ? 'mf-budget-editor' : ''), role: 'dialog', 'aria-modal': 'true', 'aria-label': item.type === 'budget' ? 'Editar limite da categoria' : 'Editar valor' }, h('div', { className: 'modal-head' }, h('div', {}, h('small', { className: 'micro-label' }, 'PERSONALIZAÇÃO'), h('h2', {}, item.title)), h('button', { className: 'close-button', type: 'button', 'aria-label': 'Fechar painel', onClick: () => this.setState({ editModal: null }) }, h(Icon, { name: 'close', size: 18 }))), this.field(item.type === 'budget' ? 'Limite da categoria (R$)' : 'Valor (R$)', h('input', { className: 'form-control', value: item.value, inputMode: 'decimal', autoFocus: true, placeholder: item.type === 'budget' ? 'Ex.: 150,00' : '0,00', onChange: (e) => this.setState({ editModal: { ...item, value: e.target.value } }) }), item.type === 'budget' ? (hasMonthlyOverride ? 'Este mês possui uma regra específica ativa; salvar ou limpar atualizará o mês exibido e o limite da categoria.' : 'Limite vinculado à categoria, não exclusivo do mês exibido. Em branco remove o limite; R$ 0,00 mantém zero explícito.') : undefined), h('div', { className: 'modal-actions' }, h('button', { className: 'ghost-button', onClick: () => this.setState({ editModal: null }) }, 'Cancelar'), h('button', { className: 'primary-button', disabled: this.state.busy, onClick: async () => { const saved = item.type === 'budget' ? await this.setBudget(item.key, item.value) : await this.setSetting(item.key, item.value); if (saved)
             this.setState({ editModal: null }); } }, h(Icon, { name: 'check', size: 18 }), 'Salvar alteração')))); }
     renderEntryModal() { const f = this.state.entry; return h('div', { className: 'modal-backdrop', onMouseDown: (e) => { if (e.target === e.currentTarget)
             this.setState({ showEntry: false }); } }, h('div', { className: 'modal', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Registrar movimentação' }, h('div', { className: 'modal-head' }, h('div', {}, h('small', { className: 'micro-label' }, 'NOVO LANÇAMENTO'), h('h2', {}, 'Registrar movimentação')), h('button', { className: 'close-button', type: 'button', 'aria-label': 'Fechar painel', onClick: () => this.setState({ showEntry: false }) }, h(Icon, { name: 'close', size: 18 }))), h('div', { className: 'segmented' }, ['expense', 'income'].map(k => h('button', { key: k, className: f.kind === k ? 'selected' : '', onClick: () => this.setState({ entry: { ...f, kind: k, category: this.state.entryCategoryTouched && this.getCategories().some(c => c.name === f.category && (k === 'income' ? c.kind !== 'expense' : c.kind !== 'income')) ? f.category : k === 'income' ? 'Salário' : 'Outros' } }) }, k === 'expense' ? 'Despesa' : 'Receita'))), this.field('Descrição', h('input', { className: 'form-control', placeholder: 'Ex.: supermercado', value: f.description, maxLength: 150, onChange: (e) => { const description = e.target.value; const category = this.state.entryCategoryTouched ? f.category : (findCategoryRule(description, 'manual', this.state.rules) || 'Outros'); this.setState({ entry: { ...f, description, category } }); } })), h('div', { className: 'two-inputs' }, this.field('Valor (R$)', h('input', { className: 'form-control', placeholder: '0,00', inputMode: 'decimal', value: f.value, onChange: (e) => this.setState({ entry: { ...f, value: e.target.value } }) })), this.field('Data', h(SingleDatePicker, { value: f.date, onChange: (value) => this.setState({ entry: { ...f, date: value } }) }))), this.field('Categoria', h(StyledSelect, { className: 'form-control', value: f.category, options: this.getCategories().filter(c => f.kind === 'income' ? c.kind !== 'expense' : c.kind !== 'income').map(c => ({ value: c.name, label: (c.emoji || '✨') + '  ' + c.name })), onChange: (value) => this.setState({ entry: { ...f, category: value }, entryCategoryTouched: true }) })), this.state.mode === 'real' ? h('button', { type: 'button', className: 'mf-new-category', onClick: () => this.openContextCategory('entry') }, '+ Nova categoria') : null, h('div', { className: 'modal-actions' }, h('button', { className: 'ghost-button', onClick: () => this.setState({ showEntry: false }) }, 'Cancelar'), h('button', { className: 'primary-button', onClick: () => this.saveEntry() }, h(Icon, { name: 'check', size: 18 }), 'Salvar lançamento')))); }
     render() { if (this.state.fatal)
         return h('main', { className: 'startup-error' }, h('h1', {}, 'Não foi possível abrir seus dados'), h('p', {}, this.state.fatal), h('p', {}, 'Se houver arquivos importantes, não desinstale a versão anterior nem apague a pasta de dados.')); if (this.state.booting && desktop)
-        return h('main', { className: 'startup-error' }, h('h1', {}, 'Meu Financeiro'), h('p', {}, 'Preparando seus dados…')); return h('div', { className: 'shell' }, this.renderSide(), h('main', { className: 'main-area ' + (this.state.page === 'overview' ? 'u1-shell' : ['transactions', 'planning'].includes(this.state.page) ? 'u2-shell' : ['budgets', 'banks', 'assistant'].includes(this.state.page) ? 'u3-shell' : '') }, this.renderWorkspaceBar(), this.renderTop(), this.state.mode === 'demo' ? h('div', { className: 'demo-strip' }, h(Icon, { name: 'spark', size: 17 }), 'Você está explorando dados fictícios. Nada aqui altera suas finanças pessoais.', h('button', { onClick: () => this.toggleMode() }, 'Sair da demonstração')) : null, ({ overview: this.renderOverview, planning: this.renderPlanning, transactions: this.renderMovements, budgets: this.renderBudgets, banks: this.renderBanks, categories: this.renderCategories, assistant: this.renderAssistant, settings: this.renderSettings, intelligence: () => renderIntelligenceView(this) }[this.state.page] || this.renderOverview).call(this), h('footer', { className: 'footer' }, h('span', {}, desktop ? 'Meu Financeiro v0.9.5-beta.9 · Interface U3 · Feito para você' : 'Meu Financeiro v0.9.5-beta.9 · Interface U3 · Feito para você'), h('span', {}, this.state.cloudPersonalTransferred ? 'Personalizações em revisão na nuvem' : 'Fonte local · integração sob autorização'))), this.state.toast ? h('div', { className: 'toast' }, h(Icon, { name: 'check', size: 17 }), this.state.toast) : null, this.state.showEntry && !this.state.contextCategory ? this.renderEntryModal() : null, this.state.editModal ? this.renderEditModal() : null, this.state.detail ? this.renderDetailDrawer() : null, this.state.quickCategory && !this.state.contextCategory ? this.renderQuickCategoryPopover() : null, this.state.contextCategory ? this.renderContextCategory() : null, this.state.planSelected ? this.renderPlanDetail() : null, this.state.planOpen ? this.renderPlanModal() : null, renderIntelligencePanel(this), this.renderCSVPreview(), !this.state.intelligencePanelOpen && !this.state.showEntry && !this.state.editModal && !this.state.detail && !this.state.planOpen && !this.state.planSelected ? h('button', { type: 'button', className: 'mf-ai-fab', 'aria-label': 'Perguntar à IA sobre esta página', title: 'Perguntar à IA sobre esta página', onClick: () => this.openIntelligenceContext() }, h(Icon, { name: 'spark', size: 24 })) : null, h('input', { type: 'file', accept: '.json,application/json', style: { display: 'none' }, ref: (e) => this.fileInput = e, onChange: (e) => { var _a; if ((_a = e.target.files) === null || _a === void 0 ? void 0 : _a[0])
+        return h('main', { className: 'startup-error' }, h('h1', {}, 'Meu Financeiro'), h('p', {}, 'Preparando seus dados…')); return h('div', { className: 'shell' }, this.renderSide(), h('main', { className: 'main-area ' + (this.state.page === 'overview' ? 'u1-shell' : ['transactions', 'planning'].includes(this.state.page) ? 'u2-shell' : ['budgets', 'banks', 'assistant'].includes(this.state.page) ? 'u3-shell' : '') }, this.renderWorkspaceBar(), this.renderTop(), this.state.mode === 'demo' ? h('div', { className: 'demo-strip' }, h(Icon, { name: 'spark', size: 17 }), 'Você está explorando dados fictícios. Nada aqui altera suas finanças pessoais.', h('button', { onClick: () => this.toggleMode() }, 'Sair da demonstração')) : null, ({ overview: this.renderOverview, planning: this.renderPlanning, transactions: this.renderMovements, budgets: this.renderBudgets, banks: this.renderBanks, categories: this.renderCategories, assistant: this.renderAssistant, settings: this.renderSettings, intelligence: () => renderIntelligenceView(this) }[this.state.page] || this.renderOverview).call(this), h('footer', { className: 'footer' }, h('span', {}, desktop ? 'Meu Financeiro v1.0.0 · Controle financeiro local · Feito para você' : 'Meu Financeiro v1.0.0 · Controle financeiro local · Feito para você'), h('span', {}, this.state.cloudPersonalTransferred ? 'Personalizações em revisão na nuvem' : 'Fonte local · integração sob autorização'))), this.state.toast ? h('div', { className: 'toast' }, h(Icon, { name: 'check', size: 17 }), this.state.toast) : null, this.state.showEntry && !this.state.contextCategory ? this.renderEntryModal() : null, this.state.editModal ? this.renderEditModal() : null, this.state.detail ? this.renderDetailDrawer() : null, this.state.quickCategory && !this.state.contextCategory ? this.renderQuickCategoryPopover() : null, this.state.contextCategory ? this.renderContextCategory() : null, this.state.planSelected ? this.renderPlanDetail() : null, this.state.planOpen ? this.renderPlanModal() : null, renderIntelligencePanel(this), this.renderCSVPreview(), !this.state.intelligencePanelOpen && this.state.page !== 'intelligence' && !this.state.showEntry && !this.state.editModal && !this.state.detail && !this.state.planOpen && !this.state.planSelected ? h('button', { type: 'button', className: 'mf-ai-fab', 'aria-label': 'Perguntar à IA sobre esta página', title: 'Perguntar à IA sobre esta página', onClick: () => this.openIntelligenceContext() }, h(Icon, { name: 'spark', size: 24 })) : null, h('input', { type: 'file', accept: '.json,application/json', style: { display: 'none' }, ref: (e) => this.fileInput = e, onChange: (e) => { var _a; if ((_a = e.target.files) === null || _a === void 0 ? void 0 : _a[0])
             this.importJSON(e.target.files[0]); e.target.value = ''; } }), h('input', { type: 'file', accept: '.csv,text/csv', style: { display: 'none' }, ref: (e) => this.csvInput = e, onChange: (e) => { var _a; if ((_a = e.target.files) === null || _a === void 0 ? void 0 : _a[0])
             this.importCSV(e.target.files[0]); e.target.value = ''; } })); }
 }
@@ -3044,7 +3137,7 @@ class D05Movements extends React.Component {
         }
     }
     render() {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z, _0;
         this.stateCursor = 0;
         this.refCursor = 0;
         this.pending = [];
@@ -3076,16 +3169,18 @@ class D05Movements extends React.Component {
         const [decor, setDecor] = useState({ bank: {}, manual: {} });
         const [loadState, setLoadState] = useState('loading');
         const [accessMessage, setAccessMessage] = useState('');
+        const sanitizeUiError = (err) => String((err === null || err === void 0 ? void 0 : err.message) || err || 'Não foi possível concluir a operação.').replace(/^Error invoking remote method '[^']+':\s*(?:Error:\s*)?/i, '').trim().slice(0, 220);
         const incomingCategory = state.qa84TransactionsCategory || state.txCategoryFilter || '';
         const incomingIdentity = incomingCategory ? resolveCategoryVisualIdentity({ categoryName: incomingCategory,
             catalog: state.qa84VisualCatalog || [], aggregate: true }) : null;
         const [search, setSearch] = useState((incomingIdentity === null || incomingIdentity === void 0 ? void 0 : incomingIdentity.source) === 'fallback' ? incomingCategory : '');
         const [source, setSource] = useState(state.txSource || 'all');
         const [metricSource, setMetricSource] = useState('bank');
-        const [tab, setTab] = useState(state.txReviewOnly ? 'pending' : 'all');
-        const [period, setPeriod] = useState(state.qa84TransactionsSpan ? '' : state.month || iso(new Date()).slice(0, 7));
-        const [account, setAccount] = useState('');
-        const [kind, setKind] = useState('all');
+        const [tab, setTab] = useState(state.txReviewOnly ? 'pending' : state.txReviewFilter === 'reviewed' ? 'reviewed' : 'all');
+        const initialPeriod = state.qa84TransactionsSpan || state.overviewPeriod === 'all' || (state.overviewPeriod && state.overviewPeriod !== 'month') ? '' : (state.month || iso(new Date()).slice(0, 7));
+        const [period, setPeriod] = useState(initialPeriod);
+        const [account, setAccount] = useState(state.bankFilter || '');
+        const [kind, setKind] = useState(state.txKindFilter || 'all');
         const [categoryId, setCategoryId] = useState(incomingIdentity && incomingIdentity.source !== 'fallback' ? incomingIdentity.categoryId : '');
         const [subcategoryId, setSubcategoryId] = useState('');
         const [sort, setSort] = useState('newest');
@@ -3130,8 +3225,34 @@ class D05Movements extends React.Component {
         const byName = (name) => parents.find((p) => p.name === name) || D05ApprovedParent(name);
         const byId = (id) => parents.find((p) => p.id === id) || approved.find((p) => p.id === id);
         const format = (cents) => fmt(cents);
+        const externalSyncKey = JSON.stringify([
+            state.mode, state.txSource || 'all', !!state.txReviewOnly, state.txReviewFilter || 'all',
+            state.txKindFilter || 'all', state.bankFilter || '', state.txCategoryFilter || '',
+            state.qa84TransactionsCategory || '', ((_b = state.qa84TransactionsSpan) === null || _b === void 0 ? void 0 : _b.start) || '',
+            ((_c = state.qa84TransactionsSpan) === null || _c === void 0 ? void 0 : _c.end) || '', state.overviewPeriod || 'month', state.month || ''
+        ]);
+        const prevExternalSyncRef = useRef(externalSyncKey);
+        useEffect(() => {
+            if (prevExternalSyncRef.current === externalSyncKey)
+                return;
+            prevExternalSyncRef.current = externalSyncKey;
+            const nextCat = state.qa84TransactionsCategory || state.txCategoryFilter || '';
+            const nextId = nextCat ? resolveCategoryVisualIdentity({ categoryName: nextCat, catalog: state.qa84VisualCatalog || [], aggregate: true }) : null;
+            setSource(state.txSource || 'all');
+            setTab(state.txReviewOnly ? 'pending' : state.txReviewFilter === 'reviewed' ? 'reviewed' : 'all');
+            setAccount(state.bankFilter || '');
+            setKind(state.txKindFilter || 'all');
+            setCategoryId(nextId && nextId.source !== 'fallback' ? nextId.categoryId : '');
+            setSubcategoryId('');
+            if ((nextId === null || nextId === void 0 ? void 0 : nextId.source) === 'fallback' && nextCat)
+                setSearch(nextCat);
+            setPeriod(state.qa84TransactionsSpan || state.overviewPeriod === 'all' || (state.overviewPeriod && state.overviewPeriod !== 'month') ? '' : (state.month || iso(new Date()).slice(0, 7)));
+        }, [externalSyncKey]);
+        const topSpan = !period && !state.qa84TransactionsSpan && state.overviewPeriod && state.overviewPeriod !== 'all' && state.overviewPeriod !== 'month'
+            ? dateSpan(state.overviewPeriod, state.customStart, state.customEnd) : null;
         const inRange = (date) => period ? date.slice(0, 7) === period : state.qa84TransactionsSpan ?
-            date >= state.qa84TransactionsSpan.start && date <= state.qa84TransactionsSpan.end : true;
+            date >= state.qa84TransactionsSpan.start && date <= state.qa84TransactionsSpan.end : topSpan ?
+            date >= topSpan.start && date <= topSpan.end : true;
         const bankData = state.mode === 'demo' ? [] : state.bank.data.transactions || [];
         const realBank = bankData.map((tx) => {
             const key = JSON.stringify([tx.accountId, tx.id]), data = decor.bank[key] || {};
@@ -3191,7 +3312,7 @@ class D05Movements extends React.Component {
                 if (req !== refreshId.current)
                     return;
                 setLoadState(/autoriz|negado|denied|permiss/i.test(String((e === null || e === void 0 ? void 0 : e.message) || e)) ? 'denied' : 'error');
-                setAccessMessage('Catálogo D05 indisponível: ' + String((e === null || e === void 0 ? void 0 : e.message) || e));
+                setAccessMessage('Catálogo D05 indisponível: ' + sanitizeUiError(e));
             }
         };
         useEffect(() => {
@@ -3213,7 +3334,7 @@ class D05Movements extends React.Component {
                             }
                         }
                     }
-                }).catch((e) => setAutoMessage(String((e === null || e === void 0 ? void 0 : e.message) || e)));
+                }).catch((e) => setAutoMessage(sanitizeUiError(e)));
             }
         }, [state.mode, state.bank.data.accounts, state.bank.data.transactions]);
         const refreshAuto = async () => {
@@ -3258,7 +3379,7 @@ class D05Movements extends React.Component {
                 setAutoMessage('Análise pausada; nenhuma categoria foi aplicada.');
             }
             catch (e) {
-                setAutoMessage(String((e === null || e === void 0 ? void 0 : e.message) || e));
+                setAutoMessage(sanitizeUiError(e));
             }
         };
         const resumeAutoScan = async () => {
@@ -3272,7 +3393,7 @@ class D05Movements extends React.Component {
                 await scanAutoPages(id);
             }
             catch (e) {
-                setAutoMessage(String((e === null || e === void 0 ? void 0 : e.message) || e));
+                setAutoMessage(sanitizeUiError(e));
             }
             finally {
                 setAutoBusy(false);
@@ -3291,7 +3412,7 @@ class D05Movements extends React.Component {
                 setAutoMessage('Análise cancelada; nenhuma classificação aplicada.');
             }
             catch (e) {
-                setAutoMessage(String((e === null || e === void 0 ? void 0 : e.message) || e));
+                setAutoMessage(sanitizeUiError(e));
             }
         };
         const loadAutoReceipts = async (filter = 'all', cursor = null) => {
@@ -3305,7 +3426,7 @@ class D05Movements extends React.Component {
                 setAutoReceiptTotal(page.total || 0);
             }
             catch (e) {
-                setAutoMessage('Falha na consulta de recibos: ' + String((e === null || e === void 0 ? void 0 : e.message) || e));
+                setAutoMessage('Falha na consulta de recibos: ' + sanitizeUiError(e));
             }
             finally {
                 setAutoReceiptBusy(false);
@@ -3336,7 +3457,7 @@ class D05Movements extends React.Component {
                 setAutoMessage('Classificação revertida e protegida contra reaplicação automática.');
             }
             catch (e) {
-                setAutoMessage('A reversão não foi confirmada: ' + String((e === null || e === void 0 ? void 0 : e.message) || e));
+                setAutoMessage('A reversão não foi confirmada: ' + sanitizeUiError(e));
             }
             finally {
                 setAutoBusy(false);
@@ -3383,7 +3504,7 @@ class D05Movements extends React.Component {
                 setAutoMessage('Aplicação pausada após ' + String(job.committed) + ' confirmações. Nenhuma categoria será reprocessada.');
             }
             catch (e) {
-                setAutoMessage(String((e === null || e === void 0 ? void 0 : e.message) || e));
+                setAutoMessage(sanitizeUiError(e));
             }
         };
         const resumeWrite = async () => {
@@ -3398,7 +3519,7 @@ class D05Movements extends React.Component {
                 await runWritePages(id);
             }
             catch (e) {
-                setAutoMessage('Retomada bloqueada: ' + String((e === null || e === void 0 ? void 0 : e.message) || e));
+                setAutoMessage('Retomada bloqueada: ' + sanitizeUiError(e));
             }
             finally {
                 setAutoBusy(false);
@@ -3417,7 +3538,7 @@ class D05Movements extends React.Component {
                 setAutoMessage('Lote cancelado. ' + String(job.committed) + ' classificações confirmadas foram preservadas; nenhuma reversão em massa foi executada.');
             }
             catch (e) {
-                setAutoMessage(String((e === null || e === void 0 ? void 0 : e.message) || e));
+                setAutoMessage(sanitizeUiError(e));
             }
         };
         const runAutoAction = async (action, accountId = null) => {
@@ -3552,6 +3673,8 @@ class D05Movements extends React.Component {
             var _a;
             if (!(picker || review || manual) || !modalRef.current)
                 return;
+            if (modalRef.current.contains(typeof document !== 'undefined' ? document.activeElement : null))
+                return;
             const searchField = picker && ['parent', 'child'].includes(picker.phase) ?
                 modalRef.current.querySelector('.d05-picker-search input') : null;
             (_a = (searchField || modalRef.current.querySelector('input,button'))) === null || _a === void 0 ? void 0 : _a.focus();
@@ -3637,22 +3760,25 @@ class D05Movements extends React.Component {
                 originalFingerprint: qa84B04Fingerprint(row),
                 selectionSignature: kindName === 'batch' ? JSON.stringify(Array.from(selected).sort()) : null });
         };
+        const openPickerContextRef = useRef({ rows, openPicker });
+        openPickerContextRef.current = { rows, openPicker };
         useEffect(() => {
             const fromDrawer = (event) => {
                 const request = event === null || event === void 0 ? void 0 : event.detail;
                 if (!request || !['bank', 'manual'].includes(request.source) || !request.id)
                     return;
-                const row = rows.find((r) => r.source === request.source && r.id === request.id &&
+                const ctx = openPickerContextRef.current;
+                const row = ctx.rows.find((r) => r.source === request.source && r.id === request.id &&
                     (r.source === 'manual' || r.accountId === request.accountId));
                 if (!row) {
                     setError('Movimentação não encontrada; atualize o histórico.');
                     return;
                 }
-                openPicker({ currentTarget: request.trigger, stopPropagation: () => { } }, row, 'drawer');
+                ctx.openPicker({ currentTarget: request.trigger, stopPropagation: () => { } }, row, 'drawer');
             };
             window.addEventListener('mf2:d05:open-picker', fromDrawer);
             return () => window.removeEventListener('mf2:d05:open-picker', fromDrawer);
-        }, [state.mode, state.data.transactions, state.bank.data.transactions, catalog, decor, selected]);
+        }, []);
         const openDetail = (r) => r.source === 'bank' ?
             host.openBankDetail(r.raw, { categoryId: r.categoryId, subcategoryId: r.subcategoryId }) :
             host.openManualDetail(r.raw, { categoryId: r.categoryId, subcategoryId: r.subcategoryId });
@@ -3769,7 +3895,7 @@ class D05Movements extends React.Component {
                 }
             }
             catch (e) {
-                setError(String((e === null || e === void 0 ? void 0 : e.message) || e));
+                setError(sanitizeUiError(e));
             }
             finally {
                 setBusy(false);
@@ -3818,7 +3944,7 @@ class D05Movements extends React.Component {
                 await refreshHierarchy();
             }
             catch (e) {
-                setError('Gravação não confirmada: ' + String((e === null || e === void 0 ? void 0 : e.message) || e));
+                setError('Gravação não confirmada: ' + sanitizeUiError(e));
             }
             finally {
                 setBusy(false);
@@ -3852,7 +3978,7 @@ class D05Movements extends React.Component {
                 setSelected(new Set());
             }
             catch (e) {
-                setError('Prévia desatualizada ou acesso negado: ' + String((e === null || e === void 0 ? void 0 : e.message) || e));
+                setError('Prévia desatualizada ou acesso negado: ' + sanitizeUiError(e));
             }
             finally {
                 setBusy(false);
@@ -3879,7 +4005,7 @@ class D05Movements extends React.Component {
                 setNotice('Conferência registrada.');
             }
             catch (e) {
-                setError(String((e === null || e === void 0 ? void 0 : e.message) || e));
+                setError(sanitizeUiError(e));
             }
             finally {
                 setBusy(false);
@@ -3912,7 +4038,7 @@ class D05Movements extends React.Component {
                 await refreshHierarchy();
             }
             catch (e) {
-                setError(String((e === null || e === void 0 ? void 0 : e.message) || e));
+                setError(sanitizeUiError(e));
             }
             finally {
                 setBusy(false);
@@ -3965,16 +4091,16 @@ class D05Movements extends React.Component {
                                 h('div', { className: 'd05-confirm-step' }, h('p', {}, 'Antes: ', h('b', {}, ((_g = picker.row) === null || _g === void 0 ? void 0 : _g.category) || 'Seleção atual')), h('p', {}, 'Depois: ', h('b', {}, labelTarget(picker.categoryId, picker.subcategoryId))), h('button', { type: 'button', className: 'd05-confirm', disabled: busy, onClick: () => void handleClassify() }, busy ? 'Conferindo…' : 'Conferir prévia antes de salvar')), error ? h('p', { className: 'd05-message is-error', role: 'alert' }, error) : null, !(bridge === null || bridge === void 0 ? void 0 : bridge.d05AssignBank) && ((_h = picker.row) === null || _h === void 0 ? void 0 : _h.source) === 'bank' ? h('p', { className: 'd05-message', role: 'status' }, 'Salvar no banco indisponível até a conexão segura do processo principal.') : null), picker.left, picker.top, picker.width);
         })() : null;
         const reviewPanel = review ? portal(h('div', {}, h('header', { className: 'd05-floating-head' }, h('div', {}, h('small', {}, 'CONFERÊNCIA'), h('h3', {}, review.merchant)), h('button', { type: 'button', 'aria-label': 'Fechar revisão', onClick: () => setReview(null) }, '×')), h('p', {}, review.date.split('-').reverse().join('/'), ' · ', review.account), h('strong', { className: review.amount < 0 ? 'd05-negative' : 'd05-positive' }, (review.amount < 0 ? '−' : '+') + format(Math.abs(review.amount))), h('p', { className: 'd05-picker-caption' }, 'Categoria: ' + labelTarget(review.categoryId, review.subcategoryId)), h('div', { className: 'd05-review-actions' }, h('button', { type: 'button', className: 'd05-confirm', disabled: busy, onClick: () => void reviewNow() }, busy ? 'Conferindo…' : 'Marcar como revisada'), h('button', { type: 'button', onClick: (e) => { const row = review; setReview(null); openPicker(e, row); } }, 'Corrigir categoria'), h('button', { type: 'button', onClick: () => setReview(null) }, 'Agora não')), error ? h('p', { className: 'd05-message is-error', role: 'alert' }, error) : null), Math.max(14, Math.floor((window.innerWidth - 355) / 2)), Math.max(20, Math.floor((window.innerHeight - 360) / 2)), 355) : null;
-        const manualPanel = manual ? portal(h('div', {}, h('header', { className: 'd05-floating-head' }, h('div', {}, h('small', {}, 'LANÇAMENTO MANUAL'), h('h3', {}, 'Nova movimentação')), h('button', { type: 'button', 'aria-label': 'Cancelar lançamento', onClick: () => setManual(null) }, '×')), h('label', { className: 'd05-field' }, 'Descrição', h('input', { value: manual.description, maxLength: 180, onChange: (e) => setManual({ ...manual, description: e.target.value }) })), h('div', { className: 'd05-inline-fields' }, h('label', { className: 'd05-field' }, 'Data', h('input', { type: 'date', value: manual.date, onChange: (e) => setManual({ ...manual, date: e.target.value }) })), h('label', { className: 'd05-field' }, 'Valor (R$)', h('input', { inputMode: 'decimal', value: manual.value, placeholder: '0,00', onChange: (e) => setManual({ ...manual, value: e.target.value }) }))), h('div', { className: 'd05-switch-row' }, ['expense', 'income'].map((v) => h('button', { type: 'button', className: manual.kind === v ? 'active' : '', onClick: () => setManual({ ...manual, kind: v }) }, v === 'expense' ? 'Saída' : 'Entrada'))), h('p', { className: 'd05-picker-caption' }, 'Categoria: ' + labelTarget(manual.categoryId, manual.subcategoryId)), categoryGrid(manual.categoryId, (p) => setManual({ ...manual, categoryId: p.id, subcategoryId: null }), ''), h('div', { className: 'd05-child-list' }, (((_b = byId(manual.categoryId)) === null || _b === void 0 ? void 0 : _b.subcategories) || []).length ? h('div', {}, h('button', { type: 'button', className: !manual.subcategoryId ? 'd05-child is-current' : 'd05-child', onClick: () => setManual({ ...manual, subcategoryId: null }) }, 'Somente categoria-pai'), (((_c = byId(manual.categoryId)) === null || _c === void 0 ? void 0 : _c.subcategories) || []).map((c) => h('button', { type: 'button', key: c.id, className: manual.subcategoryId === c.id ? 'd05-child is-current' : 'd05-child', onClick: () => setManual({ ...manual, subcategoryId: c.id }) }, h(D05VectorIcon, { iconKey: c.iconKey, hue: c.hue, size: 16 }), c.name))) : null), h('button', { type: 'button', className: 'd05-confirm', disabled: busy, onClick: () => void saveManual() }, busy ? 'Salvando…' : 'Confirmar lançamento'), error ? h('p', { className: 'd05-message is-error', role: 'alert' }, error) : null), Math.max(12, Math.floor((window.innerWidth - 540) / 2)), 22, 540) : null;
+        const manualPanel = manual ? portal(h('div', {}, h('header', { className: 'd05-floating-head' }, h('div', {}, h('small', {}, 'LANÇAMENTO MANUAL'), h('h3', {}, 'Nova movimentação')), h('button', { type: 'button', 'aria-label': 'Cancelar lançamento', onClick: () => setManual(null) }, '×')), h('label', { className: 'd05-field' }, 'Descrição', h('input', { value: manual.description, maxLength: 180, onChange: (e) => setManual({ ...manual, description: e.target.value }) })), h('div', { className: 'd05-inline-fields' }, h('label', { className: 'd05-field' }, 'Data', h('input', { type: 'date', value: manual.date, onChange: (e) => setManual({ ...manual, date: e.target.value }) })), h('label', { className: 'd05-field' }, 'Valor (R$)', h('input', { inputMode: 'decimal', value: manual.value, placeholder: '0,00', onChange: (e) => setManual({ ...manual, value: e.target.value }) }))), h('div', { className: 'd05-switch-row' }, ['expense', 'income'].map((v) => h('button', { type: 'button', className: manual.kind === v ? 'active' : '', onClick: () => setManual({ ...manual, kind: v }) }, v === 'expense' ? 'Saída' : 'Entrada'))), h('p', { className: 'd05-picker-caption' }, 'Categoria: ' + labelTarget(manual.categoryId, manual.subcategoryId)), categoryGrid(manual.categoryId, (p) => setManual({ ...manual, categoryId: p.id, subcategoryId: null }), ''), h('div', { className: 'd05-child-list' }, (((_d = byId(manual.categoryId)) === null || _d === void 0 ? void 0 : _d.subcategories) || []).length ? h('div', {}, h('button', { type: 'button', className: !manual.subcategoryId ? 'd05-child is-current' : 'd05-child', onClick: () => setManual({ ...manual, subcategoryId: null }) }, 'Somente categoria-pai'), (((_e = byId(manual.categoryId)) === null || _e === void 0 ? void 0 : _e.subcategories) || []).map((c) => h('button', { type: 'button', key: c.id, className: manual.subcategoryId === c.id ? 'd05-child is-current' : 'd05-child', onClick: () => setManual({ ...manual, subcategoryId: c.id }) }, h(D05VectorIcon, { iconKey: c.iconKey, hue: c.hue, size: 16 }), c.name))) : null), h('button', { type: 'button', className: 'd05-confirm', disabled: busy, onClick: () => void saveManual() }, busy ? 'Salvando…' : 'Confirmar lançamento'), error ? h('p', { className: 'd05-message is-error', role: 'alert' }, error) : null), Math.max(12, Math.floor((window.innerWidth - 540) / 2)), 22, 540) : null;
         if (state.booting)
             return h('section', { className: 'd05-screen', id: 'd05-movements', role: 'status' }, h('p', { className: 'd05-notice' }, 'Carregando registros financeiros…'));
-        return h('section', { className: 'd05-screen', id: 'd05-movements' }, h('header', { className: 'd05-head' }, h('div', {}, h('h1', {}, 'Movimentações'), h('p', {}, 'Seu histórico organizado, com contexto e controle.')), h('div', { className: 'd05-head-actions' }, h('button', { type: 'button', onClick: () => { var _a; return (_a = host.csvInput) === null || _a === void 0 ? void 0 : _a.click(); } }, 'Importar CSV'), h('button', { type: 'button', className: 'd05-primary', onClick: (e) => { activeTrigger.current = e.currentTarget; setError(''); setManual({ description: '', date: iso(new Date()), value: '', kind: 'expense', categoryId: 'cat:outros', subcategoryId: null }); } }, '+ Nova movimentação'))), state.booting ? h('p', { className: 'd05-notice', role: 'status' }, 'Carregando dados financeiros…') : null, loadState === 'loading' && (bridge === null || bridge === void 0 ? void 0 : bridge.d05Catalog) ? h('p', { className: 'd05-notice', role: 'status' }, 'Conferindo hierarquia D05…') : null, loadState !== 'ready' && loadState !== 'loading' ? h('p', { className: 'd05-notice', role: 'status' }, accessMessage) : null, notice ? h('p', { className: 'd05-notice', role: 'status' }, confirmedIdentity ? h(D05VectorIcon, { iconKey: confirmedIdentity.iconKey,
+        return h('section', { className: 'd05-screen', id: 'd05-movements' }, h('header', { className: 'd05-head' }, h('div', { className: 'd05-head-copy' }, h('p', {}, 'Histórico completo com filtros, categorias e revisão confirmada.')), h('div', { className: 'd05-head-actions' }, h('button', { type: 'button', onClick: () => { var _a; return (_a = host.csvInput) === null || _a === void 0 ? void 0 : _a.click(); } }, 'Importar CSV'), h('button', { type: 'button', className: 'd05-primary', onClick: (e) => { activeTrigger.current = e.currentTarget; setError(''); setManual({ description: '', date: iso(new Date()), value: '', kind: 'expense', categoryId: 'cat:outros', subcategoryId: null }); } }, '+ Nova movimentação'))), state.booting ? h('p', { className: 'd05-notice', role: 'status' }, 'Carregando dados financeiros…') : null, loadState === 'loading' && (bridge === null || bridge === void 0 ? void 0 : bridge.d05Catalog) ? h('p', { className: 'd05-notice', role: 'status' }, 'Conferindo hierarquia D05…') : null, loadState !== 'ready' && loadState !== 'loading' ? h('p', { className: 'd05-notice', role: 'status' }, accessMessage) : null, notice ? h('p', { className: 'd05-notice', role: 'status' }, confirmedIdentity ? h(D05VectorIcon, { iconKey: confirmedIdentity.iconKey,
             hue: confirmedIdentity.hue, size: 17 }) : null, confirmedIdentity ? confirmedIdentity.label + ' · ' : null, notice) : null, state.mode === 'real' && (bridge === null || bridge === void 0 ? void 0 : bridge.bankAutoStatus) ? h('section', {
             className: 'd05-auto-box mf-cat-shell', 'aria-label': 'Central de categorização automática'
         }, h('header', { className: 'mf-cat-hero' }, h('div', { className: 'mf-cat-identity' }, h('span', { className: 'mf-cat-eyebrow' }, 'INTELIGÊNCIA FINANCEIRA  ·  CAT-UX'), h('h2', {}, 'Categorização inteligente'), h('p', {}, 'Evidências locais verificáveis, sempre sob o seu controle.')), h('div', { className: 'mf-cat-header-actions' }, h('span', { className: 'mf-cat-state', 'data-state': !(autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.available) ? 'unavailable' :
-                ((_d = autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.jobs) === null || _d === void 0 ? void 0 : _d.paused) ? 'paused' : (autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.enabled) ? 'active' : 'inactive' }, !(autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.available) ? 'Aguardando homologação' : ((_e = autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.jobs) === null || _e === void 0 ? void 0 : _e.paused) ? 'Pausada' :
+                ((_f = autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.jobs) === null || _f === void 0 ? void 0 : _f.paused) ? 'paused' : (autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.enabled) ? 'active' : 'inactive' }, !(autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.available) ? 'Aguardando homologação' : ((_g = autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.jobs) === null || _g === void 0 ? void 0 : _g.paused) ? 'Pausada' :
             (autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.enabled) ? 'Contas autorizadas' : 'Não ativada'), h('button', { type: 'button', className: 'd05-ghost', 'aria-expanded': autoPanel,
-            onClick: () => setAutoPanel(!autoPanel) }, autoPanel ? 'Recolher' : 'Abrir central'))), h('div', { className: 'mf-cat-glance', role: 'status', 'aria-label': 'Resumo da automação' }, h('div', {}, h('small', {}, 'Aplicadas no momento'), h('strong', {}, String((_g = (_f = autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.counts) === null || _f === void 0 ? void 0 : _f.classified) !== null && _g !== void 0 ? _g : 0))), h('div', {}, h('small', {}, 'Precisam de revisão'), h('strong', {}, String((_j = (_h = autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.counts) === null || _h === void 0 ? void 0 : _h.awaitingReview) !== null && _j !== void 0 ? _j : 0))), h('div', {}, h('small', {}, 'Contas autorizadas'), h('strong', {}, String(((autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.permissions) || []).filter((p) => p.enabled && p.expiresAt > new Date().toISOString()).length)))), autoPanel ? h('div', { className: 'mf-cat-content' }, h('nav', { className: 'mf-cat-nav', role: 'tablist', 'aria-label': 'Etapas e recursos da categorização' }, [{ id: 'activation', name: 'Ativação', number: '01' },
+            onClick: () => setAutoPanel(!autoPanel) }, autoPanel ? 'Recolher' : 'Abrir central'))), h('div', { className: 'mf-cat-glance', role: 'status', 'aria-label': 'Resumo da automação' }, h('div', {}, h('small', {}, 'Aplicadas no momento'), h('strong', {}, String((_j = (_h = autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.counts) === null || _h === void 0 ? void 0 : _h.classified) !== null && _j !== void 0 ? _j : 0))), h('div', {}, h('small', {}, 'Precisam de revisão'), h('strong', {}, String((_l = (_k = autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.counts) === null || _k === void 0 ? void 0 : _k.awaitingReview) !== null && _l !== void 0 ? _l : 0))), h('div', {}, h('small', {}, 'Contas autorizadas'), h('strong', {}, String(((autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.permissions) || []).filter((p) => p.enabled && p.expiresAt > new Date().toISOString()).length)))), autoPanel ? h('div', { className: 'mf-cat-content' }, h('nav', { className: 'mf-cat-nav', role: 'tablist', 'aria-label': 'Etapas e recursos da categorização' }, [{ id: 'activation', name: 'Ativação', number: '01' },
             { id: 'preview', name: 'Análise', number: '02' },
             { id: 'center', name: 'Central', number: '03' },
             { id: 'rules', name: 'Regras', number: '04' },
@@ -4024,10 +4150,10 @@ class D05Movements extends React.Component {
             onClick: () => void resumeAutoScan() }, 'Retomar') : null, ['scanning', 'paused'].includes(autoProgress === null || autoProgress === void 0 ? void 0 : autoProgress.state) ? h('button', { type: 'button',
             onClick: () => void cancelAutoScan() }, 'Cancelar leitura') : null), autoProgress ? h('div', { className: 'mf-cat-progress', role: 'status', 'aria-live': 'polite' }, h('div', { className: 'mf-cat-progress-label' }, h('strong', {}, autoProgress.state === 'ready' ? 'Leitura concluída' :
             autoProgress.state === 'paused' ? 'Leitura pausada' : 'Lendo movimentações'), h('span', {}, String(autoProgress.processed || 0) + ' / ' + String(autoProgress.total || 0))), h('progress', { value: autoProgress.processed || 0, max: Math.max(1, autoProgress.total || 0),
-            'aria-label': 'Movimentações efetivamente lidas' })) : null, ((_k = autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.applyJob) === null || _k === void 0 ? void 0 : _k.state) === 'stale' ? h('p', { className: 'd05-notice', role: 'alert' }, 'O lote anterior ficou desatualizado. Uma nova leitura e confirmação são obrigatórias; os recibos já gravados serão preservados.') : null, autoPreview ? h('div', {}, h('div', { className: 'mf-cat-metric-grid' }, [{ title: 'Aplicáveis', value: autoPreview.candidateCount || 0 },
+            'aria-label': 'Movimentações efetivamente lidas' })) : null, ((_m = autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.applyJob) === null || _m === void 0 ? void 0 : _m.state) === 'stale' ? h('p', { className: 'd05-notice', role: 'alert' }, 'O lote anterior ficou desatualizado. Uma nova leitura e confirmação são obrigatórias; os recibos já gravados serão preservados.') : null, autoPreview ? h('div', {}, h('div', { className: 'mf-cat-metric-grid' }, [{ title: 'Aplicáveis', value: autoPreview.candidateCount || 0 },
             { title: 'A revisar', value: autoPreview.reviewCount || 0 },
             { title: 'Protegidas', value: autoPreview.protectedCount || 0 },
-            { title: 'Indisponíveis', value: autoPreview.unavailableCount || 0 }].map((m) => h('div', { key: m.title, className: 'mf-cat-mini-stat' }, h('small', {}, m.title), h('strong', {}, String(m.value))))), h('p', { className: 'mf-cat-caption' }, 'Total analisado no escopo: ' + String((_l = autoPreview.analyzedCount) !== null && _l !== void 0 ? _l : '—') +
+            { title: 'Indisponíveis', value: autoPreview.unavailableCount || 0 }].map((m) => h('div', { key: m.title, className: 'mf-cat-mini-stat' }, h('small', {}, m.title), h('strong', {}, String(m.value))))), h('p', { className: 'mf-cat-caption' }, 'Total analisado no escopo: ' + String((_o = autoPreview.analyzedCount) !== null && _o !== void 0 ? _o : '—') +
             '. As contagens acima não incluem registros fora do consentimento.'), h('div', { className: 'mf-cat-section-top' }, h('h3', {}, 'Amostras de propostas D05'), h('p', {}, 'Mostrando ' + Math.min(12, (autoPreview.candidates || []).length) + ' de ' +
             String(autoPreview.candidateCount || 0) + ' aplicáveis. Nenhuma categoria foi aplicada.')), h('div', { className: 'mf-cat-proposal-list' }, (autoPreview.candidates || []).slice(0, 12).map((item) => {
             var _a, _b;
@@ -4037,14 +4163,14 @@ class D05Movements extends React.Component {
                 (child ? ' · ' + child.name : '')));
         })), h('div', { className: 'mf-cat-confirm-strip' }, h('div', {}, h('strong', {}, 'Pronto para confirmar?'), h('p', {}, 'A confirmação nativa revalidará o manifesto e criará backups e recibos antes de gravar.')), h('button', { type: 'button', className: 'd05-confirm',
             disabled: autoBusy || !(autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.available) || (autoProgress === null || autoProgress === void 0 ? void 0 : autoProgress.state) !== 'ready' ||
-                !autoPreview.previewVersion || ((autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.initialConfirmed) && !!(autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.applyJob) && ((_m = autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.applyJob) === null || _m === void 0 ? void 0 : _m.state) !== 'stale'),
-            onClick: () => void runAutoAction('confirm') }, 'Conferi; aplicar propostas elegíveis')), autoPreview.candidateCount > 20000 ? h('p', { className: 'mf-cat-caption' }, 'Volume elevado: o motor fará commits atômicos de até 250 propostas, com progresso e recuperação persistentes.') : null) : h('p', { className: 'mf-cat-empty' }, 'Nenhuma prévia confirmável nesta sessão. Autorize suas contas e execute a análise somente leitura.'), !(autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.available) ? h('p', { className: 'd05-notice' }, 'A RC experimental não possui permissão para escrita pessoal.') : null) : null, autoView === 'center' ? h('div', { className: 'mf-cat-grid-layout' }, h('section', { className: 'mf-cat-surface' }, h('span', { className: 'mf-cat-step' }, '03 / RASTRO VIVO'), h('h3', {}, 'Central da automação'), h('p', { className: 'mf-cat-caption' }, 'Eventos reais de sincronização, verificações locais e classificações confirmadas.'), h('div', { className: 'mf-cat-metric-grid' }, [{ title: 'Aplicadas atualmente', value: ((_o = autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.counts) === null || _o === void 0 ? void 0 : _o.classified) || 0 },
-            { title: 'Encaminhadas à revisão', value: ((_p = autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.counts) === null || _p === void 0 ? void 0 : _p.awaitingReview) || 0 },
-            { title: 'Protegidas', value: ((_q = autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.counts) === null || _q === void 0 ? void 0 : _q.protected) || 0 }].map((m) => h('div', { key: m.title, className: 'mf-cat-mini-stat' }, h('small', {}, m.title), h('strong', {}, String(m.value))))), h('h4', {}, 'Atividade recente'), (((_r = autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.jobs) === null || _r === void 0 ? void 0 : _r.jobs) || []).length ?
+                !autoPreview.previewVersion || ((autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.initialConfirmed) && !!(autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.applyJob) && ((_p = autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.applyJob) === null || _p === void 0 ? void 0 : _p.state) !== 'stale'),
+            onClick: () => void runAutoAction('confirm') }, 'Conferi; aplicar propostas elegíveis')), autoPreview.candidateCount > 20000 ? h('p', { className: 'mf-cat-caption' }, 'Volume elevado: o motor fará commits atômicos de até 250 propostas, com progresso e recuperação persistentes.') : null) : h('p', { className: 'mf-cat-empty' }, 'Nenhuma prévia confirmável nesta sessão. Autorize suas contas e execute a análise somente leitura.'), !(autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.available) ? h('p', { className: 'd05-notice' }, 'A RC experimental não possui permissão para escrita pessoal.') : null) : null, autoView === 'center' ? h('div', { className: 'mf-cat-grid-layout' }, h('section', { className: 'mf-cat-surface' }, h('span', { className: 'mf-cat-step' }, '03 / RASTRO VIVO'), h('h3', {}, 'Central da automação'), h('p', { className: 'mf-cat-caption' }, 'Eventos reais de sincronização, verificações locais e classificações confirmadas.'), h('div', { className: 'mf-cat-metric-grid' }, [{ title: 'Aplicadas atualmente', value: ((_q = autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.counts) === null || _q === void 0 ? void 0 : _q.classified) || 0 },
+            { title: 'Encaminhadas à revisão', value: ((_r = autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.counts) === null || _r === void 0 ? void 0 : _r.awaitingReview) || 0 },
+            { title: 'Protegidas', value: ((_s = autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.counts) === null || _s === void 0 ? void 0 : _s.protected) || 0 }].map((m) => h('div', { key: m.title, className: 'mf-cat-mini-stat' }, h('small', {}, m.title), h('strong', {}, String(m.value))))), h('h4', {}, 'Atividade recente'), (((_t = autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.jobs) === null || _t === void 0 ? void 0 : _t.jobs) || []).length ?
             h('div', { className: 'mf-cat-timeline' }, (autoInfo.jobs.jobs || []).slice(0, 8).map((j) => h('div', { key: j.jobKey, className: 'mf-cat-timeline-row' }, h('span', { className: 'mf-cat-timeline-dot', 'data-state': j.state, 'aria-hidden': 'true' }), h('div', {}, h('strong', {}, j.trigger === 'sync' ? 'Após sincronização' :
                 j.trigger === 'daily' ? 'Verificação diária' : 'Ação manual'), h('small', {}, j.startedAt ? new Date(j.startedAt).toLocaleString('pt-BR') : 'Horário indisponível')), h('span', {}, j.state === 'completed' ? String(j.applied || 0) + ' aplicadas' :
                 j.state === 'running' ? 'Interrompida / em andamento' : 'Falha protegida')))) :
-            h('p', { className: 'mf-cat-empty' }, 'Ainda não há execução registrada.'), h('div', { className: 'mf-cat-toolbar' }, h('button', { type: 'button', disabled: autoBusy || !(autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.enabled) || !(autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.available) || ((_s = autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.jobs) === null || _s === void 0 ? void 0 : _s.paused),
+            h('p', { className: 'mf-cat-empty' }, 'Ainda não há execução registrada.'), h('div', { className: 'mf-cat-toolbar' }, h('button', { type: 'button', disabled: autoBusy || !(autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.enabled) || !(autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.available) || ((_u = autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.jobs) === null || _u === void 0 ? void 0 : _u.paused),
             onClick: () => void runAutoAction('run') }, 'Verificar movimentações'), h('button', { type: 'button', onClick: () => openAutoView('receipts') }, 'Ver recibos'), h('button', { type: 'button', onClick: () => { setTab('pending'); setSource('bank'); setAutoPanel(false); } }, 'Abrir A conferir (D05)'), h('button', { type: 'button', onClick: () => void categoryReviewOpen(host) }, 'Central de Revisão D04')), h('p', { className: 'mf-cat-footnote' }, 'O histórico financeiro completo permanece em Movimentações; a Central não duplica seus lançamentos.')), h('aside', { className: 'mf-cat-surface' }, h('span', { className: 'mf-cat-step' }, 'CONTROLE POR CONTA'), h('h3', {}, 'Permissões e execução'), ((autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.permissions) || []).length ? h('div', { className: 'mf-cat-permissions' }, (autoInfo.permissions || []).map((p) => {
             var _a;
             const expired = p.expiresAt <= new Date().toISOString();
@@ -4052,7 +4178,7 @@ class D05Movements extends React.Component {
                 p.enabled ? ((_a = autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.jobs) === null || _a === void 0 ? void 0 : _a.paused) ? 'Ativa · automação pausada' : 'Ativa' : 'Revogada')), p.enabled ? h('button', { type: 'button', disabled: autoBusy || !(autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.available),
                 onClick: () => void runAutoAction('revoke', p.accountId) }, 'Revogar') : null);
         })) : h('p', { className: 'mf-cat-empty' }, 'Nenhuma conta autorizada.'), h('div', { className: 'mf-cat-toolbar' }, (autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.enabled) ? h('button', { type: 'button', disabled: autoBusy || !(autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.available),
-            onClick: () => { var _a; return void runAutoAction(((_a = autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.jobs) === null || _a === void 0 ? void 0 : _a.paused) ? 'resume' : 'pause'); } }, ((_t = autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.jobs) === null || _t === void 0 ? void 0 : _t.paused) ? 'Reativar automação' : 'Pausar automação') : null, h('button', { type: 'button', onClick: () => openAutoView('activation') }, 'Gerenciar contas')), h('p', { className: 'mf-cat-footnote' }, 'Pausar mantém o consentimento; revogar impede novas classificações automáticas.'))) : null, autoView === 'rules' ? h('section', { className: 'mf-cat-surface' }, h('span', { className: 'mf-cat-step' }, '04 / REGRAS E EVIDÊNCIAS'), h('h3', {}, 'Laboratório de padrões'), h('p', {}, 'Sugestões são somente leitura. Aprovar ou editar regras exige o fluxo protegido do catálogo D05.'), h('div', { className: 'mf-cat-toolbar' }, h('button', { type: 'button', className: 'd05-confirm', disabled: autoBusy || !(autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.available) || !(autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.enabled),
+            onClick: () => { var _a; return void runAutoAction(((_a = autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.jobs) === null || _a === void 0 ? void 0 : _a.paused) ? 'resume' : 'pause'); } }, ((_v = autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.jobs) === null || _v === void 0 ? void 0 : _v.paused) ? 'Reativar automação' : 'Pausar automação') : null, h('button', { type: 'button', onClick: () => openAutoView('activation') }, 'Gerenciar contas')), h('p', { className: 'mf-cat-footnote' }, 'Pausar mantém o consentimento; revogar impede novas classificações automáticas.'))) : null, autoView === 'rules' ? h('section', { className: 'mf-cat-surface' }, h('span', { className: 'mf-cat-step' }, '04 / REGRAS E EVIDÊNCIAS'), h('h3', {}, 'Laboratório de padrões'), h('p', {}, 'Sugestões são somente leitura. Aprovar ou editar regras exige o fluxo protegido do catálogo D05.'), h('div', { className: 'mf-cat-toolbar' }, h('button', { type: 'button', className: 'd05-confirm', disabled: autoBusy || !(autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.available) || !(autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.enabled),
             onClick: () => void runAutoAction('suggest') }, 'Buscar padrões verificáveis'), h('button', { type: 'button', onClick: () => host.setState({ txOrganize: true }) }, 'Abrir editor D05')), autoRules.length ? h('div', { className: 'mf-cat-rule-grid' }, autoRules.map((r) => {
             var _a;
             return h('article', { key: r.accountId + '|' + r.pattern, className: 'mf-cat-rule' }, h('small', { className: 'mf-cat-step' }, 'SUGESTÃO · NÃO APLICADA'), h('h4', {}, r.pattern), h('p', {}, 'Conta: ' + String(((_a = (state.bank.data.accounts || []).find((x) => x.id === r.accountId)) === null || _a === void 0 ? void 0 : _a.name) || 'Conta autorizada')), h('div', { className: 'mf-cat-rule-facts' }, h('span', {}, String(r.suggestedFor || 0) + ' ocorrências verificadas'), h('span', {}, String(r.possibleMatches || 0) + ' possíveis correspondências'), h('span', {}, String(r.possiblePrecedenceConflicts || 0) + ' conflitos de precedência')), h('p', { className: 'mf-cat-caption' }, r.possiblePrecedenceConflicts ?
@@ -4087,8 +4213,8 @@ class D05Movements extends React.Component {
             onClick: () => void loadAutoReceipts(autoReceiptFilter, autoReceiptCursor) }, autoReceiptBusy ? 'Carregando…' : 'Carregar mais recibos') : null) : null, autoView === 'security' ? h('div', { className: 'mf-cat-grid-layout' }, h('section', { className: 'mf-cat-surface' }, h('span', { className: 'mf-cat-step' }, '06 / RESILIÊNCIA'), h('h3', {}, 'Segurança e recuperação'), h('p', {}, 'Esta área informa estados existentes. Não faz reparos destrutivos ou sincronizações adicionais.'), h('div', { className: 'mf-cat-security-list' }, [{ title: 'Disponibilidade', value: (autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.available) ? 'Distribuição estável habilitada' : 'Somente após homologação' },
             { title: 'Autorização', value: (autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.enabled) ? 'Contas no período de validade' : 'Sem contas válidas autorizadas' },
             { title: 'Primeiro lote', value: (autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.initialConfirmed) ? 'Confirmado no MAIN' : 'Aguardando prévia e confirmação' },
-            { title: 'Verificações', value: ((_u = autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.jobs) === null || _u === void 0 ? void 0 : _u.paused) ? 'Pausadas explicitamente' : 'Automação local não pausada' },
-            { title: 'Último job', value: ((_w = (((_v = autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.jobs) === null || _v === void 0 ? void 0 : _v.jobs) || [])[0]) === null || _w === void 0 ? void 0 : _w.state) || 'Nenhuma execução' }].map((v) => h('div', { key: v.title, className: 'mf-cat-security-row' }, h('strong', {}, v.title), h('span', {}, v.value)))), (((_x = autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.jobs) === null || _x === void 0 ? void 0 : _x.jobs) || []).some((x) => x.state === 'failed' || x.state === 'running') ?
+            { title: 'Verificações', value: ((_w = autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.jobs) === null || _w === void 0 ? void 0 : _w.paused) ? 'Pausadas explicitamente' : 'Automação local não pausada' },
+            { title: 'Último job', value: ((_y = (((_x = autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.jobs) === null || _x === void 0 ? void 0 : _x.jobs) || [])[0]) === null || _y === void 0 ? void 0 : _y.state) || 'Nenhuma execução' }].map((v) => h('div', { key: v.title, className: 'mf-cat-security-row' }, h('strong', {}, v.title), h('span', {}, v.value)))), (((_z = autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.jobs) === null || _z === void 0 ? void 0 : _z.jobs) || []).some((x) => x.state === 'failed' || x.state === 'running') ?
             h('p', { className: 'd05-notice', role: 'alert' }, 'Há job falho ou interrompido. Consulte os recibos; uma nova tentativa só deve ocorrer com consentimento válido e estado íntegro.') : null, autoMessage ? h('p', { className: 'd05-notice', role: 'alert' }, autoMessage) : null), h('aside', { className: 'mf-cat-surface' }, h('span', { className: 'mf-cat-step' }, 'GARANTIAS'), h('h3', {}, 'O que nunca muda sem sua decisão'), h('p', {}, 'A categorização utiliza overlay separado. O extrato bancário e os valores originais não são substituídos.'), h('p', {}, 'Um backup verificado é necessário antes da escrita. Falhas de aplicação bloqueiam novas tentativas automáticas.'), h('div', { className: 'mf-cat-toolbar' }, h('button', { type: 'button', onClick: () => openAutoView('receipts') }, 'Consultar recibos'), h('button', { type: 'button', onClick: () => openAutoView('activation') }, 'Revisar autorizações')), !(autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.available) ? h('p', { className: 'mf-cat-empty' }, 'Disponível após homologação Windows. Nenhuma escrita pessoal será habilitada na RC experimental.') : null)) : null), autoView !== 'security' && autoMessage ? h('p', { className: 'd05-notice', role: 'status', 'aria-live': 'polite' }, autoMessage) : null) : null) : null, h('div', { className: 'd05-metrics' }, [{ name: 'Entradas confirmadas', value: format(income), tone: 'positive', note: 'No escopo selecionado' },
             { name: 'Saídas confirmadas', value: format(expense), tone: 'negative', note: 'Sem pendentes' },
             { name: 'Resultado dos registros', value: format(income - expense), tone: income - expense >= 0 ? 'positive' : 'negative', note: 'Não é saldo disponível' },
@@ -4099,8 +4225,16 @@ class D05Movements extends React.Component {
             onClick: () => setFilter(() => setTab(x.id)) }, x.label))), h('div', { className: 'd05-toolbar' }, h('label', { className: 'd05-search-wrap' }, h('span', { className: 'd05-sr-only' }, 'Buscar movimentações'), h('input', {
             value: search, placeholder: 'Buscar estabelecimento, descrição ou categoria',
             onChange: (e) => setFilter(() => setSearch(e.target.value))
-        })), h('label', { className: 'd05-filter' }, 'Origem', h('select', { value: source, onChange: (e) => setFilter(() => setSource(e.target.value)) }, h('option', { value: 'all' }, 'Todas'), h('option', { value: 'bank' }, 'Banco'), h('option', { value: 'manual' }, 'Manuais'))), h('label', { className: 'd05-filter' }, 'Mês', h('input', { type: 'month', value: period, onChange: (e) => setFilter(() => setPeriod(e.target.value)) })), h('button', { type: 'button', className: 'd05-more', onClick: () => setAdvanced(!advanced), 'aria-expanded': advanced }, 'Filtros ' + (advanced ? '−' : '+'))), advanced ? h('div', { className: 'd05-advanced' }, h('label', { className: 'd05-filter' }, 'Conta', h('select', { value: account, onChange: (e) => setFilter(() => setAccount(e.target.value)) }, h('option', { value: '' }, 'Todas as contas'), (state.bank.data.accounts || []).map((a) => h('option', { key: a.id, value: a.id }, a.name)))), h('label', { className: 'd05-filter' }, 'Natureza', h('select', { value: kind, onChange: (e) => setFilter(() => setKind(e.target.value)) }, [['all', 'Todas'], ['income', 'Entradas'], ['expense', 'Saídas'], ['transfer', 'Transferências'], ['ignore', 'Ignoradas']].map((x) => h('option', { value: x[0], key: x[0] }, x[1])))), h('label', { className: 'd05-filter' }, 'Ordenação', h('select', { value: sort, onChange: (e) => setFilter(() => setSort(e.target.value)) }, [['newest', 'Mais recentes'], ['oldest', 'Mais antigas'], ['largest', 'Maior valor'], ['smallest', 'Menor valor']].map((x) => h('option', { value: x[0], key: x[0] }, x[1])))), h('label', { className: 'd05-filter' }, 'Resumo financeiro', h('select', { value: metricSource, onChange: (e) => setMetricSource(e.target.value) }, h('option', { value: 'bank' }, 'Bancário'), h('option', { value: 'manual' }, 'Manual'))), h('div', { className: 'd05-parent-filters' }, h('span', {}, 'Categorias'), h('button', { type: 'button', className: !categoryId ? 'active' : '', onClick: () => setFilter(() => { setCategoryId(''); setSubcategoryId(''); }) }, 'Todas'), parents.map((p) => h('button', { type: 'button', key: p.id, className: categoryId === p.id ? 'active' : '', onClick: () => setFilter(() => { setCategoryId(p.id); setSubcategoryId(''); }) }, h(D05VectorIcon, { iconKey: p.iconKey, hue: p.hue, size: 15 }), p.name))), categoryId ? h('div', { className: 'd05-parent-filters' }, h('span', {}, 'Subcategoria'), h('button', { type: 'button', className: !subcategoryId ? 'active' : '', onClick: () => setFilter(() => setSubcategoryId('')) }, 'Todas'), (((_y = byId(categoryId)) === null || _y === void 0 ? void 0 : _y.subcategories) || []).map((c) => h('button', { type: 'button', key: c.id, className: subcategoryId === c.id ? 'active' : '', onClick: () => setFilter(() => setSubcategoryId(c.id)) }, c.name))) : null) : null, h('div', { className: 'd05-history-controls' }, h('button', { type: 'button', role: 'switch', 'aria-checked': group, 'aria-label': 'Agrupar por dia', className: 'd05-group-toggle', onClick: () => setGroup(!group) }, h('span', { className: 'd05-switch-track' }, h('span', { className: 'd05-switch-thumb' })), 'Agrupar por dia'), h('span', {}, filtered.length + ' movimentações no escopo' + (filtered.length > 500 ? ' · exibindo 500' : ''), pending ? ' · ' + pending + ' em processamento' : '', ignored ? ' · ' + ignored + ' transferência(s)/ignorada(s) fora dos totais' : '')), partial ? h('p', { className: 'd05-notice', role: 'status' }, 'Histórico parcial: ' + bankData.length + ' de ' + String(state.bank.data.totalTransactions || '?') + ' movimentações bancárias carregadas. Métricas apenas desta amostra.') : null, selected.size ? h('div', { className: 'd05-bulk-bar', role: 'region', 'aria-label': 'Ações em lote' }, h('b', {}, selected.size + ' selecionada(s)'), h('button', { type: 'button', onClick: (e) => openPicker(e, null, 'batch') }, 'Categorizar seleção'), h('button', { type: 'button', onClick: () => setSelected(new Set()) }, 'Limpar seleção')) : null, filtered.length ? h('div', { className: 'd05-list' }, onScreen.map((r, i) => {
-            var _a;
+        })), h('label', { className: 'd05-filter' }, 'Origem', h('select', { value: source, onChange: (e) => setFilter(() => setSource(e.target.value)) }, h('option', { value: 'all' }, 'Todas'), h('option', { value: 'bank' }, 'Banco'), h('option', { value: 'manual' }, 'Manuais'))), h('label', { className: 'd05-filter' }, 'Mês', h('input', { type: 'month', value: period, onChange: (e) => setFilter(() => setPeriod(e.target.value)) })), h('button', { type: 'button', className: 'd05-more', onClick: () => setAdvanced(!advanced), 'aria-expanded': advanced }, 'Filtros ' + (advanced ? '−' : '+'))), advanced ? h('div', { className: 'd05-advanced' }, h('label', { className: 'd05-filter' }, 'Conta', h('select', { value: account, onChange: (e) => setFilter(() => setAccount(e.target.value)) }, h('option', { value: '' }, 'Todas as contas'), (state.bank.data.accounts || []).map((a) => h('option', { key: a.id, value: a.id }, a.name)))), h('label', { className: 'd05-filter' }, 'Natureza', h('select', { value: kind, onChange: (e) => setFilter(() => setKind(e.target.value)) }, [['all', 'Todas'], ['income', 'Entradas'], ['expense', 'Saídas'], ['transfer', 'Transferências'], ['ignore', 'Ignoradas']].map((x) => h('option', { value: x[0], key: x[0] }, x[1])))), h('label', { className: 'd05-filter' }, 'Ordenação', h('select', { value: sort, onChange: (e) => setFilter(() => setSort(e.target.value)) }, [['newest', 'Mais recentes'], ['oldest', 'Mais antigas'], ['largest', 'Maior valor'], ['smallest', 'Menor valor']].map((x) => h('option', { value: x[0], key: x[0] }, x[1])))), h('label', { className: 'd05-filter' }, 'Resumo financeiro', h('select', { value: metricSource, onChange: (e) => setMetricSource(e.target.value) }, h('option', { value: 'bank' }, 'Bancário'), h('option', { value: 'manual' }, 'Manual'))), h('div', { className: 'd05-parent-filters' }, h('span', {}, 'Categorias'), h('button', { type: 'button', className: !categoryId ? 'active' : '', onClick: () => setFilter(() => { setCategoryId(''); setSubcategoryId(''); }) }, 'Todas'), parents.map((p) => h('button', { type: 'button', key: p.id, className: categoryId === p.id ? 'active' : '', onClick: () => setFilter(() => { setCategoryId(p.id); setSubcategoryId(''); }) }, h(D05VectorIcon, { iconKey: p.iconKey, hue: p.hue, size: 15 }), p.name))), categoryId ? h('div', { className: 'd05-parent-filters' }, h('span', {}, 'Subcategoria'), h('button', { type: 'button', className: !subcategoryId ? 'active' : '', onClick: () => setFilter(() => setSubcategoryId('')) }, 'Todas'), (((_0 = byId(categoryId)) === null || _0 === void 0 ? void 0 : _0.subcategories) || []).map((c) => h('button', { type: 'button', key: c.id, className: subcategoryId === c.id ? 'active' : '', onClick: () => setFilter(() => setSubcategoryId(c.id)) }, c.name))) : null) : null, h('div', { className: 'd05-history-controls' }, h('button', { type: 'button', role: 'switch', 'aria-checked': group, 'aria-label': 'Agrupar por dia', className: 'd05-group-toggle', onClick: () => setGroup(!group) }, h('span', { className: 'd05-switch-track' }, h('span', { className: 'd05-switch-thumb' })), 'Agrupar por dia'), h('span', {}, filtered.length + ' movimentações no escopo' + (filtered.length > 500 ? ' · exibindo 500' : ''), pending ? ' · ' + pending + ' em processamento' : '', ignored ? ' · ' + ignored + ' transferência(s)/ignorada(s) fora dos totais' : '')), partial ? h('p', { className: 'd05-notice', role: 'status' }, 'Histórico parcial: ' + bankData.length + ' de ' + String(state.bank.data.totalTransactions || '?') + ' movimentações bancárias carregadas. Métricas apenas desta amostra.') : null, state.mode === 'real' && Array.isArray(state.bank.data.suspectedDuplicates) && state.bank.data.suspectedDuplicates.length ?
+            h('div', { className: 'd05-notice mf-duplicates-alert', role: 'region', 'aria-label': 'Possíveis movimentações duplicadas' }, h('strong', {}, 'Possíveis duplicidades detectadas (' + state.bank.data.suspectedDuplicates.length + ')'), ...state.bank.data.suspectedDuplicates.slice(0, 5).map((d) => h('div', { key: d.pairKey, className: 'mf-duplicate-row' }, h('span', {}, d.date.split('-').reverse().join('/') + ' · ' + d.description + ' · ' + format(Math.abs(d.amount))), h('button', { type: 'button', className: 'd05-ghost', onClick: () => void host.dismissBankDuplicate(d.pairKey) }, 'Ignorar aviso')))) : null, selected.size ? (() => {
+            const selectedReviewItems = Array.from(selected).map((key) => rows.find((r) => r.key === key))
+                .filter((r) => r && r.source === 'bank' && r.status === 'POSTED' && !r.reviewed);
+            return h('div', { className: 'd05-bulk-bar', role: 'region', 'aria-label': 'Ações em lote' }, h('b', {}, selected.size + ' selecionada(s)'), selectedReviewItems.length ? h('button', { type: 'button', disabled: state.detailBusy, onClick: async () => {
+                    await host.runBankOperation('bankBatch', { items: selectedReviewItems.map((r) => ({ accountId: r.accountId, externalId: r.id })), reviewed: true }, selectedReviewItems.length + ' movimentações marcadas como revisadas.');
+                    setSelected(new Set());
+                } }, 'Marcar revisadas (' + selectedReviewItems.length + ')') : null, h('button', { type: 'button', onClick: (e) => openPicker(e, null, 'batch') }, 'Categorizar seleção'), h('button', { type: 'button', onClick: () => setSelected(new Set()) }, 'Limpar seleção'));
+        })() : null, filtered.length ? h('div', { className: 'd05-list' }, onScreen.map((r, i) => {
+            var _a, _b, _c;
             const p = byId(r.categoryId) || byName(r.category), child = (_a = p === null || p === void 0 ? void 0 : p.subcategories) === null || _a === void 0 ? void 0 : _a.find((c) => c.id === r.subcategoryId);
             const icon = resolveCategoryVisualIdentity({ categoryId: r.categoryId || null,
                 subcategoryId: r.subcategoryId || null, categoryName: r.category, catalog: parents });
@@ -4116,7 +4250,7 @@ class D05Movements extends React.Component {
                 else
                     next.add(r.key); setSelected(next); setPicker(null); setPreview(null); } }, h('span', { 'aria-hidden': 'true' }, isSelected ? '✓' : '')), h('button', { type: 'button', className: 'd05-row-icon', 'aria-label': 'Alterar categoria de ' + r.merchant,
                 onClick: (e) => openPicker(e, r) }, h(CategoryVisualGlyph, { identity: icon, size: 23 })), h('div', { className: 'd05-row-info' }, h('div', { className: 'd05-merchant-line' }, h('button', { type: 'button', className: 'd05-merchant', onClick: (e) => { e.stopPropagation(); openDetail(r); } }, r.merchant), isReview ? h('button', { type: 'button', className: 'd05-review-dot', 'aria-label': 'Conferir movimentação ' + r.merchant,
-                title: 'A conferir', onClick: (e) => { e.stopPropagation(); activeTrigger.current = e.currentTarget; setError(''); setReview(r); } }, h('span', { 'aria-hidden': 'true' })) : null, r.source === 'bank' && r.status === 'PENDING' ? h('span', { className: 'd05-pending', title: 'Em processamento', 'aria-label': 'Em processamento' }, h(D05VectorIcon, { iconKey: 'clock-3', hue: 37, size: 16 })) : null), h('small', {}, r.account + ' · ' + ((p === null || p === void 0 ? void 0 : p.name) || r.category) + (child ? ' › ' + child.name : ''), r.source === 'manual' ? ' · Manual' : r.raw.categorySource === 'automatic' ? ' · Automática (evidência verificada)' : ''), r.merchant !== r.description ? h('small', { className: 'd05-desc' }, r.description) : null), h('div', { className: 'd05-row-end' }, h('strong', { className: 'd05-amount ' + signed }, (r.amount >= 0 ? '+' : '−') + format(Math.abs(r.amount))), r.source === 'bank' && r.raw.categorySource === 'automatic' ?
+                title: 'A conferir', onClick: (e) => { e.stopPropagation(); activeTrigger.current = e.currentTarget; setError(''); setReview(r); } }, h('span', { 'aria-hidden': 'true' })) : null, r.source === 'bank' && r.status === 'PENDING' ? h('span', { className: 'd05-pending', title: 'Em processamento', 'aria-label': 'Em processamento' }, h(D05VectorIcon, { iconKey: 'clock-3', hue: 37, size: 16 })) : null), h('small', {}, r.account + ' · ' + ((p === null || p === void 0 ? void 0 : p.name) || r.category) + (child ? ' › ' + child.name : ''), r.source === 'manual' ? ' · Manual' : r.raw.categorySource === 'automatic' ? ' · Automática (evidência verificada)' : ''), ((_c = (_b = r.raw) === null || _b === void 0 ? void 0 : _b.splits) === null || _c === void 0 ? void 0 : _c.length) ? h('small', { className: 'd05-split-badge' }, 'Dividida em ' + r.raw.splits.length + ' partes') : null, r.merchant !== r.description ? h('small', { className: 'd05-desc' }, r.description) : null), h('div', { className: 'd05-row-end' }, h('strong', { className: 'd05-amount ' + signed }, (r.amount >= 0 ? '+' : '−') + format(Math.abs(r.amount))), r.source === 'bank' && r.raw.categorySource === 'automatic' ?
                 h('small', { title: r.raw.automaticEvidence || 'Evidência de histórico local' }, 'Categorização local verificada') : null, r.source === 'bank' && r.raw.categorySource === 'automatic' && (autoInfo === null || autoInfo === void 0 ? void 0 : autoInfo.available) && (bridge === null || bridge === void 0 ? void 0 : bridge.bankAutoUndo) ?
                 h('button', { type: 'button', className: 'd05-ghost', disabled: autoBusy,
                     onClick: async (e) => {
@@ -4133,13 +4267,13 @@ class D05Movements extends React.Component {
                             }
                         }
                         catch (error) {
-                            setAutoMessage(String((error === null || error === void 0 ? void 0 : error.message) || error));
+                            setAutoMessage(sanitizeUiError(error));
                         }
                         finally {
                             setAutoBusy(false);
                         }
                     } }, 'Desfazer') : null, r.kind === 'transfer' || r.kind === 'ignore' ? h('small', {}, r.kind === 'transfer' ? 'Transferência' : 'Desconsiderada') : null)));
-        })) : h('div', { className: 'd05-empty' }, h('strong', {}, 'Nenhuma movimentação encontrada'), h('p', {}, 'Altere a pesquisa ou os filtros para continuar.'), h('button', { type: 'button', onClick: () => { setSearch(''); setPeriod(''); setAccount(''); setCategoryId(''); setSubcategoryId(''); setKind('all'); setTab('all'); setSource('all'); } }, 'Limpar filtros'))), chooser, reviewPanel, manualPanel);
+        })) : h('div', { className: 'd05-empty' }, h('strong', {}, 'Nenhuma movimentação encontrada'), h('p', {}, 'Altere a pesquisa ou os filtros para continuar.'), h('button', { type: 'button', onClick: () => { setSearch(''); setPeriod(''); setAccount(''); setCategoryId(''); setSubcategoryId(''); setKind('all'); setTab('all'); setSource('all'); host.setState({ txCategoryFilter: '', txKindFilter: 'all', txReviewFilter: 'all', bankFilter: '', txReviewOnly: false, qa84TransactionsSpan: null, qa84TransactionsCategory: '', query: '' }); } }, 'Limpar filtros'))), chooser, reviewPanel, manualPanel);
     }
 }
 function pDate(v) { return v.split('-').reverse().join('/'); }
@@ -4356,7 +4490,7 @@ function renderPlanDrawer(app) {
     const bank = !planned ? s.bank.data.transactions.find((b) => 'bank:' + b.accountId + '|' + b.id === sel) : undefined;
     if (!item && !bank)
         return null;
-    const candidates = item ? s.bank.data.transactions.filter((b) => b.status === 'POSTED' && (b.amount > 0 ? 'income' : 'expense') === item.kind && Math.abs(b.amount) <= item.remaining && (item.accountId ? b.accountId === item.accountId : true) && !s.planning.items.some((i) => i.links.some(l => l.accountId === b.accountId && l.externalId === b.id)) && Math.abs((Date.parse(b.date + 'T00:00:00Z') - Date.parse(item.dueDate + 'T00:00:00Z')) / 86400000) <= 40 && [b.description, b.customTitle || ''].join(' ').toLowerCase().includes(s.planMatchQuery.toLowerCase())).slice(0, 20) : [];
+    const candidates = item ? s.bank.data.transactions.filter((b) => b.status === 'POSTED' && !['transfer', 'ignore'].includes(effectiveNature(b)) && (b.amount > 0 ? 'income' : 'expense') === item.kind && Math.abs(b.amount) <= item.remaining && (item.accountId ? b.accountId === item.accountId : true) && !s.planning.items.some((i) => i.links.some(l => l.accountId === b.accountId && l.externalId === b.id)) && Math.abs((Date.parse(b.date + 'T00:00:00Z') - Date.parse(item.dueDate + 'T00:00:00Z')) / 86400000) <= 40 && [b.description, b.customTitle || ''].join(' ').toLowerCase().includes(s.planMatchQuery.toLowerCase())).slice(0, 20) : [];
     return h('div', { className: 'mf-drawer-backdrop', onMouseDown: (e) => { if (e.target === e.currentTarget)
             app.setState({ planSelected: null }); } }, h('aside', { className: 'mf-detail-drawer p-plan-drawer', role: 'dialog', 'aria-modal': 'true', 'aria-label': planned ? 'Detalhes do planejamento' : 'Detalhes da movimentação' }, h('div', { className: 'mf-drawer-head' }, h('div', {}, h('span', { className: 'micro-label' }, planned ? 'COMPROMISSO PLANEJADO' : 'MOVIMENTAÇÃO REAL'), h('h2', {}, planned ? 'Detalhes do planejamento' : 'Detalhes da movimentação')), h('button', { className: 'close-button', type: 'button', 'aria-label': 'Fechar painel', onClick: () => app.setState({ planSelected: null }) }, h(Icon, { name: 'close', size: 18 }))), h('div', { className: 'mf-detail-scroll' }, h('div', { className: 'mf-detail-hero' }, h('span', { className: 'mf-hero-emoji' }, planned ? (((_a = app.getCategories().find((c) => c.name === item.category)) === null || _a === void 0 ? void 0 : _a.emoji) || '🧾') : '🏦'), h('h3', {}, planned ? item.title : bank.customTitle || bank.merchant || bank.description), h('strong', { className: (planned ? item.kind : bank.amount >= 0 ? 'income' : 'expense') === 'income' ? 'good-text' : 'bad-text' }, (planned ? item.kind === 'income' : bank.amount >= 0 ? true : false) ? '+' : '−', fmt(planned ? item.amount : Math.abs(bank.amount))), h('small', {}, planned ? 'Previsto para ' + pDate(item.dueDate) + ' · ' + pStatus(item.effectiveStatus) : pDate(bank.date) + ' · ' + bank.accountName)), planned ? [
         h('div', { className: 'mf-detail-section', key: 'about' }, h('b', {}, 'Sobre este compromisso'), h('p', {}, 'Categoria: ' + item.category), h('p', {}, 'Falta quitar: ' + fmt(item.remaining)), item.overpaid ? h('p', { className: 'p-warning' }, 'Pagamento importado superior ao planejado: revise a diferença de ' + fmt(item.overpaid)) : null, h('p', {}, 'Origem: ' + (item.groupType === 'installments' ? 'Parcela ' + item.occurrence + '/' + item.totalOccurrences : item.groupType === 'single' ? 'Lançamento único' : 'Recorrência ' + item.occurrence + '/' + item.totalOccurrences)), item.notes ? h('p', {}, item.notes) : null, h('div', { className: 'p-drawer-actions' }, h('button', { className: 'ghost-button', onClick: () => app.openPlan(item) }, 'Editar'), item.status === 'planned' ? h('button', { className: 'ghost-button', onClick: () => app.changePlanStatus(item.id, 'cancelled') }, 'Cancelar previsão') : h('button', { className: 'ghost-button', onClick: () => app.changePlanStatus(item.id, 'planned') }, 'Reativar')), item.status === 'planned' && !item.links.length ? h('button', { className: 'ghost-button', onClick: () => app.changePlanStatus(item.id, 'settled_manual') }, item.kind === 'expense' ? 'Marcar como pago (já refletido no saldo)' : 'Marcar como recebido (já refletido no saldo)') : null),
@@ -4366,7 +4500,7 @@ function renderPlanDrawer(app) {
     ] : [
         h('div', { className: 'mf-detail-section', key: 'title' }, h('b', {}, 'Nome personalizado'), h('p', { className: 'muted-desc' }, 'Esse nome aparece em destaque. A descrição original do banco é preservada.'), h('input', { className: 'form-control', value: s.planBankTitle, maxLength: 140, placeholder: 'Ex.: Aluguel, mercado, viagem', onChange: (e) => app.setState({ planBankTitle: e.target.value }) }), h('button', { className: 'primary-button', disabled: s.planBusy, onClick: () => app.renameBankInPlanning(bank) }, 'Salvar nome')),
         h('div', { className: 'mf-detail-section', key: 'original' }, h('b', {}, 'Descrição original'), h('p', {}, bank.description), h('small', { className: 'muted-desc' }, 'Situação: ' + (bank.status === 'POSTED' ? 'Confirmada' : 'Pendente') + ' · ' + bank.category)),
-        h('div', { className: 'mf-detail-section', key: 'link' }, h('b', {}, 'Vincular a um planejamento'), bank.status === 'POSTED' ? s.planning.items.filter((i) => i.status === 'planned' && i.remaining >= Math.abs(bank.amount) && (bank.amount >= 0 ? 'income' : 'expense') === i.kind && (!i.accountId || i.accountId === bank.accountId) && !s.planning.items.some((x) => x.links.some(l => l.accountId === bank.accountId && l.externalId === bank.id))).slice(0, 8).map((i) => h('div', { className: 'p-suggestion-compact', key: i.id }, h('span', {}, i.title + ' · ' + fmt(i.remaining)), h('button', { className: 'ghost-button', onClick: () => app.linkPlan(i.id, bank) }, 'Vincular'))) : h('p', { className: 'muted-desc' }, 'Aguarde a confirmação do banco para conciliar.')),
+        h('div', { className: 'mf-detail-section', key: 'link' }, h('b', {}, 'Vincular a um planejamento'), bank.status === 'POSTED' && !['transfer', 'ignore'].includes(effectiveNature(bank)) ? s.planning.items.filter((i) => i.status === 'planned' && i.remaining >= Math.abs(bank.amount) && (bank.amount >= 0 ? 'income' : 'expense') === i.kind && (!i.accountId || i.accountId === bank.accountId) && !s.planning.items.some((x) => x.links.some(l => l.accountId === bank.accountId && l.externalId === bank.id))).slice(0, 8).map((i) => h('div', { className: 'p-suggestion-compact', key: i.id }, h('span', {}, i.title + ' · ' + fmt(i.remaining)), h('button', { className: 'ghost-button', onClick: () => app.linkPlan(i.id, bank) }, 'Vincular'))) : h('p', { className: 'muted-desc' }, ['transfer', 'ignore'].includes(effectiveNature(bank)) ? 'Movimentações marcadas como transferência ou ignoradas não entram no planejamento.' : 'Aguarde a confirmação do banco para conciliar.')),
         h('button', { className: 'ghost-button', onClick: () => { app.setState({ planSelected: null }); app.openBankDetail(bank); } }, 'Mais detalhes e categorias')
     ])));
 }
@@ -4443,6 +4577,77 @@ function intelligencePrepare(app, question) {
         intelligenceEnsureHydrated(app);
     app.setState({ page: 'intelligence', intelligenceTab: 'chat', intelligenceMainMode: 'chat', intelligenceDraft: question, intelligenceDraftScope: app.state.intelligencePanelOpen && app.state.intelligenceContextSnapshot ? app.state.intelligenceContextSnapshot : intelligencePageScope(app), intelligencePanelOpen: false, detail: null, planSelected: null });
 }
+async function intelligenceRunPermissionAction(app, action) {
+    var _a, _b, _c, _d;
+    if (!(action === null || action === void 0 ? void 0 : action.id))
+        return;
+    const api = desktop;
+    if (action.id === 'authorize_local_read') {
+        if (typeof localFinancialEnable === 'function') {
+            const ok = await localFinancialEnable(app);
+            if (ok && action.retryQuestion && typeof intelligenceSubmitQuestion === 'function') {
+                void intelligenceSubmitQuestion(app, action.retryQuestion);
+            }
+        }
+        return;
+    }
+    if (action.id === 'enable_ai_copilot') {
+        if (typeof (api === null || api === void 0 ? void 0 : api.aiCopilotCapabilityEnable) === 'function') {
+            try {
+                const res = await api.aiCopilotCapabilityEnable();
+                if (res && !res.cancelled && res.enabled) {
+                    await new Promise((resolve) => app.setState({ aiCopilotCap: { available: true, ...(app.state.aiCopilotCap || {}), enabled: true } }, () => resolve()));
+                }
+                if (typeof intelligenceRefresh === 'function')
+                    await intelligenceRefresh(app);
+                if (res && !res.cancelled && res.enabled && action.retryQuestion && typeof intelligenceSubmitQuestion === 'function') {
+                    void intelligenceSubmitQuestion(app, action.retryQuestion);
+                }
+            }
+            catch (err) {
+                app.setState({ aiError: String((err === null || err === void 0 ? void 0 : err.message) || 'Não foi possível ativar o GPT-6.2 Sol.').slice(0, 220) });
+            }
+        }
+        else {
+            app.setState({ settingsSection: 'intelligence', intelligencePanelOpen: false });
+            (_a = app.navigate) === null || _a === void 0 ? void 0 : _a.call(app, 'settings');
+        }
+        return;
+    }
+    if (action.id === 'connect_chatgpt') {
+        if (typeof (api === null || api === void 0 ? void 0 : api.aiConnect) === 'function' && typeof intelligenceConnect === 'function') {
+            await intelligenceConnect(app);
+            if (typeof intelligenceRefresh === 'function')
+                await intelligenceRefresh(app);
+        }
+        else {
+            app.setState({ settingsSection: 'intelligence', intelligencePanelOpen: false });
+            (_b = app.navigate) === null || _b === void 0 ? void 0 : _b.call(app, 'settings');
+        }
+        return;
+    }
+    if (action.id === 'enable_m3_actions') {
+        if (typeof (api === null || api === void 0 ? void 0 : api.copilotActionCapabilityEnable) === 'function') {
+            try {
+                await api.copilotActionCapabilityEnable();
+                if (typeof intelligenceRefresh === 'function')
+                    await intelligenceRefresh(app);
+            }
+            catch (err) {
+                app.setState({ aiError: String((err === null || err === void 0 ? void 0 : err.message) || 'Não foi possível ativar as ações M3.').slice(0, 220) });
+            }
+        }
+        else {
+            app.setState({ settingsSection: 'intelligence', intelligencePanelOpen: false });
+            (_c = app.navigate) === null || _c === void 0 ? void 0 : _c.call(app, 'settings');
+        }
+        return;
+    }
+    if (action.id === 'open_ai_settings') {
+        app.setState({ settingsSection: 'intelligence', intelligencePanelOpen: false });
+        (_d = app.navigate) === null || _d === void 0 ? void 0 : _d.call(app, 'settings');
+    }
+}
 function renderIntelligenceStructuredCard(card) {
     return h('div', { className: 'mf-ai-structured-card', role: 'region', 'aria-label': card.title }, h('div', { className: 'mf-ai-structured-head' }, h('strong', {}, card.title), card.subtitle ? h('small', {}, card.subtitle) : null), Array.isArray(card.metrics) && card.metrics.length ? h('div', { className: 'mf-ai-structured-metrics' }, ...card.metrics.map((m, idx) => h('div', { key: idx, className: 'mf-ai-structured-metric is-' + (m.tone || 'neutral') }, h('small', {}, m.label), h('strong', {}, m.value)))) : null, Array.isArray(card.rows) && card.rows.length ? h('div', { className: 'mf-ai-table-wrap' }, h('table', {}, card.headers ? h('thead', {}, h('tr', {}, h('th', {}, card.headers[0]), h('th', {}, card.headers[1]), card.headers[2] ? h('th', {}, card.headers[2]) : null)) : null, h('tbody', {}, ...card.rows.map((r, idx) => h('tr', { key: idx }, h('td', {}, r.col1), h('td', {}, r.col2), r.col3 !== undefined ? h('td', {}, r.col3) : null))))) : null, card.footnote ? h('small', { className: 'mf-ai-structured-foot' }, card.footnote) : null);
 }
@@ -4467,14 +4672,16 @@ function renderIntelligenceMessageItem(app, msg) {
         return h('article', { className: 'mf-ai-msg is-assistant is-unavailable' }, h('p', { role: 'status' }, 'Resposta anterior indisponível: a autorização ou o período mudou. Faça uma nova consulta.'));
     if (msg.id.startsWith('ic2-a-') && !mfIC2MessageLive(app, msg))
         return h('article', { className: 'mf-ai-msg is-assistant is-unavailable' }, h('p', { role: 'status' }, 'Consulta anterior bloqueada: a autorização mudou ou expirou. Autorize e consulte novamente.'));
+    if (msg.id.startsWith('m3a-') && typeof copilotActionMessageLive === 'function' && !copilotActionMessageLive(app, msg))
+        return h('article', { className: 'mf-ai-msg is-assistant is-unavailable' }, h('p', { role: 'status' }, 'Prévia de ação anterior bloqueada: a autorização ou o período mudou. Solicite novamente.'));
     const isUser = msg.role === 'user';
-    const badge = msg.status === 'unavailable' ? h('span', { className: 'mf-ai-msg-badge is-warn' }, 'Consulta não autorizada') :
-        msg.status === 'unsupported' ? h('span', { className: 'mf-ai-msg-badge is-info' }, 'Consulta não reconhecida') :
-            msg.status === 'unimplemented' ? h('span', { className: 'mf-ai-msg-badge is-info' }, 'Aguarda I2-A') :
-                msg.status === 'error' ? h('span', { className: 'mf-ai-msg-badge is-error' }, 'Serviço indisponível') : null;
+    const badge = msg.status === 'permission_needed' ? h('span', { className: 'mf-ai-msg-badge is-warn' }, 'Permissão necessária') :
+        msg.status === 'unavailable' ? h('span', { className: 'mf-ai-msg-badge is-warn' }, 'Acesso necessário') :
+            msg.status === 'unsupported' ? h('span', { className: 'mf-ai-msg-badge is-info' }, 'Fora do escopo local') :
+                msg.status === 'error' ? h('span', { className: 'mf-ai-msg-badge is-error' }, 'Erro no serviço') : null;
     return h('article', { key: msg.id, className: 'mf-ai-msg ' + (isUser ? 'is-user' : 'is-assistant') + ' is-' + msg.status }, h('header', { className: 'mf-ai-msg-meta' }, h('strong', {}, isUser ? 'Você' : 'Assistente MF'), h('span', {}, msg.scopeLabel + ' · ' + msg.periodLabel + ' · ' + msg.createdAt), badge), h('div', { className: 'mf-ai-msg-body mf-ai-markdown' }, ...aiMarkdownNodes(msg.text)), msg.id.startsWith('ic2-a-') && msg.ic2Reply && typeof renderMfIC2Adaptive === 'function'
         ? (renderMfIC2Adaptive(app, msg) || (msg.structuredCard && !msg.visual && !msg.visualV3 ? renderIntelligenceStructuredCard(msg.structuredCard) : null))
-        : (msg.structuredCard && !msg.visual && !msg.visualV3 ? renderIntelligenceStructuredCard(msg.structuredCard) : null), msg.visualV3 ? mfV3Render(app, msg) : msg.visual ? renderMfVisual(app, msg) : null, msg.operationalEvidence ? h('small', { className: 'mf-premium-evidence' }, msg.operationalEvidence) : null, Array.isArray(msg.operationalActions) && msg.operationalActions.length ? h('div', { className: 'mf-premium-tile-actions' }, ...msg.operationalActions.map((action) => intelligencePremiumButton(app, null, action))) : null, msg.proposal ? renderIntelligenceActionProposalCard(app, msg.proposal) : null, msg.id.startsWith('review-answer-') ? h('button', { type: 'button', className: 'primary-button', onClick: () => void categoryReviewOpen(app) }, 'Abrir Central de Revisão') : null, msg.details ? h('details', { className: 'mf-ai-msg-details' }, h('summary', {}, 'Ver contexto e diagnóstico'), h('p', {}, msg.details)) : null);
+        : (msg.structuredCard && !msg.visual && !msg.visualV3 ? renderIntelligenceStructuredCard(msg.structuredCard) : null), msg.visualV3 ? mfV3Render(app, msg) : msg.visual ? renderMfVisual(app, msg) : null, msg.operationalEvidence ? h('small', { className: 'mf-premium-evidence' }, msg.operationalEvidence) : null, Array.isArray(msg.operationalActions) && msg.operationalActions.length ? h('div', { className: 'mf-premium-tile-actions' }, ...msg.operationalActions.map((action) => intelligencePremiumButton(app, null, action))) : null, Array.isArray(msg.permissionActions) && msg.permissionActions.length ? h('div', { className: 'mf-premium-tile-actions mf-ai-perm-actions' }, ...msg.permissionActions.map((act, idx) => h('button', { type: 'button', key: act.id + '-' + idx, className: act.primary ? 'primary-button' : 'ghost-button', onClick: () => void intelligenceRunPermissionAction(app, act) }, act.label))) : null, msg.proposal ? renderIntelligenceActionProposalCard(app, msg.proposal) : null, msg.m3ActionDraft && typeof renderCopilotActionCard === 'function' ? renderCopilotActionCard(app, msg) : null, msg.id.startsWith('review-answer-') ? h('button', { type: 'button', className: 'primary-button', onClick: () => void categoryReviewOpen(app) }, 'Abrir Central de Revisão') : null, msg.details ? h('details', { className: 'mf-ai-msg-details' }, h('summary', {}, 'Ver contexto e diagnóstico'), h('p', {}, msg.details)) : null);
 }
 function intelligenceExampleCard(app, id, title, description, icon, question) {
     return h('div', { className: 'mf-ai-example-card', key: id }, h('span', { className: 'mf-ai-example-icon' }, h(Icon, { name: icon, size: 20 })), h('div', { className: 'mf-ai-example-copy' }, h('strong', {}, title), h('p', {}, description), h('button', { type: 'button', className: 'mf-ai-link', onClick: () => intelligencePrepare(app, question) }, 'Preparar análise', h(Icon, { name: 'arrow', size: 15 }))));
@@ -4643,16 +4850,21 @@ function renderIntelligenceAccess(app) {
 }
 function intelligenceChatSession(app) {
     const s = app.state, g = s.localFinancialAccess || s.categoryReviewGrant;
-    return { temporary: !!g, expired: !!g && g.expiresAt <= Date.now(), busy: !!(s.aiBusy || s.localFinancialBusy || s.intelligenceDrawerBusy) };
+    return { temporary: !!g, expired: !!g && g.expiresAt <= Date.now(), busy: !!(s.aiBusy || s.localFinancialBusy || s.intelligenceDrawerBusy || s.aiCopilotBusy) };
 }
 function renderIntelligenceComposer(app, drawer = false) {
+    var _a, _b;
     const s = app.state, session = intelligenceChatSession(app), draft = String(s.intelligenceDraft || ''), id = drawer ? 'mf-ai-drawer-input' : 'mf-ai-draft';
     const submit = () => { if (draft.trim() && !session.busy && !session.expired)
         void intelligenceSubmitQuestion(app, draft); };
-    return h('form', { className: 'mf-chat-composer ' + (drawer ? 'mf-ai-drawer-composer' : 'mf-ai-composer'), onSubmit: (e) => { e.preventDefault(); submit(); } }, session.expired ? h('div', { className: 'mf-chat-expired', role: 'alert' }, h('strong', {}, 'Autorização expirada'), h('p', {}, 'Renove a permissão acima para consultar novamente. Seu rascunho foi preservado.')) : null, h('label', { className: 'mf-ai-composer-label', htmlFor: id }, 'Converse sobre seus registros'), h('textarea', { id, value: draft, rows: 2, maxLength: 750, disabled: session.busy, placeholder: 'Pergunte sobre despesas, categorias ou compromissos…', onChange: (e) => app.setState({ intelligenceDraft: e.target.value }), onKeyDown: (e) => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
+    const solReady = Boolean(((_a = s.aiStatus) === null || _a === void 0 ? void 0 : _a.connected) && ((_b = s.aiCopilotCap) === null || _b === void 0 ? void 0 : _b.enabled));
+    const footerNote = session.temporary
+        ? (solReady ? 'Leitura local autorizada · GPT-6.2 Sol ativo' : 'Somente nesta sessão · motor local ativo')
+        : (solReady ? 'GPT-6.2 Sol · modo geral sem acesso aos seus registros' : 'Histórico local · não inclua credenciais');
+    return h('form', { className: 'mf-chat-composer ' + (drawer ? 'mf-ai-drawer-composer' : 'mf-ai-composer'), onSubmit: (e) => { e.preventDefault(); submit(); } }, session.expired ? h('div', { className: 'mf-chat-expired', role: 'alert' }, h('strong', {}, 'Autorização expirada'), h('p', {}, 'Renove a permissão acima para consultar novamente. Seu rascunho foi preservado.')) : null, h('label', { className: 'mf-ai-composer-label', htmlFor: id }, 'Converse sobre finanças ou consulte seus registros'), h('textarea', { id, value: draft, rows: 2, maxLength: 750, disabled: session.busy, placeholder: 'Ex.: Dúvida geral, gasto do mês, orçamento pelo salário ou categorização…', onChange: (e) => app.setState({ intelligenceDraft: e.target.value }), onKeyDown: (e) => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
             e.preventDefault();
             submit();
-        } } }), h('div', { className: 'mf-chat-compose-footer' }, h('small', {}, session.temporary ? 'Somente nesta sessão · sem IA externa' : 'Histórico local · não inclua credenciais'), h('small', {}, draft.length + '/750 · Shift + Enter para nova linha'), h('button', { type: 'submit', className: 'primary-button', disabled: !draft.trim() || session.busy || session.expired }, session.busy ? 'Consultando…' : 'Enviar', h(Icon, { name: 'arrow', size: 16 }))));
+        } } }), h('div', { className: 'mf-chat-compose-footer' }, h('small', {}, footerNote), h('small', {}, draft.length + '/750 · Shift + Enter para nova linha'), h('button', { type: 'submit', className: 'primary-button', disabled: !draft.trim() || session.busy || session.expired }, s.aiCopilotBusy ? 'GPT-6.2 Sol…' : session.busy ? 'Consultando…' : 'Enviar', h(Icon, { name: 'arrow', size: 16 }))));
 }
 function renderIntelligenceFollowups(app) {
     var _a;
@@ -4719,9 +4931,9 @@ function renderIntelligenceViewLegacy(app) {
     if (tab === 'chat')
         section = h('div', { className: 'mf-ai-workbench' + (s.intelligenceHistoryOpen ? '' : ' is-history-closed') }, s.intelligenceHistoryOpen ? renderIntelligenceHistorySidebar(app) : null, h('div', { className: 'mf-ai-chat-main mf-ai-workbench-main' }, h('div', { className: 'mf-ai-workbench-header' }, h('button', { type: 'button', className: 'ghost-button mf-ai-v3-history-toggle',
             'aria-expanded': !!s.intelligenceHistoryOpen, onClick: () => app.setState({ intelligenceHistoryOpen: !s.intelligenceHistoryOpen }) }, s.intelligenceHistoryOpen ? 'Recolher histórico' : 'Histórico de conversas'), h('div', { className: 'mf-ai-chat-hero' }, h('span', { className: 'mf-ai-orb' }, h(Icon, { name: 'spark', size: 25 })), h('h2', {}, 'Uma conversa, mais clareza.'), h('p', {}, (s.categoryReviewGrant || ((_b = s.localFinancialAccess) === null || _b === void 0 ? void 0 : _b.token)) ? 'Conversa temporária compartilhada com o chat lateral. Prévia e confirmação continuam disponíveis na Central.' : 'Histórico compartilhado com o chat lateral, salvo localmente quando disponível. Não cole credenciais.')), h('div', { className: 'mf-ai-workbench-badges' }, h('span', { className: 'mf-ai-conn-pill ' + convState.css }, ((_c = s.localFinancialAccess) === null || _c === void 0 ? void 0 : _c.token) ? 'Leitura local autorizada' : convState.pill), h('span', { className: 'mf-ai-scope-badge' }, 'Contexto: ' + activeScope.label + ' · ' + activeScope.period))), s.intelligenceDraftScope ? h('div', { className: 'mf-ai-context-meta' }, h('span', {}, 'Rascunho de ' + s.intelligenceDraftScope.label), h('span', {}, s.intelligenceDraftScope.period)) : null, s.intelligencePreparedQuestion ? h('div', { className: 'mf-ai-prepared', role: 'status' }, h('span', { className: 'micro-label' }, 'PERGUNTA PREPARADA · NÃO ENVIADA'), h('p', {}, s.intelligencePreparedQuestion), h('small', {}, 'Este rascunho não é enviado ao Sol. Use os casos fictícios autorizados abaixo; nenhuma chamada ocorreu aqui.')) : null, messages.length === 0 ? h('div', { className: 'mf-ai-empty-thread' }, h('h3', {}, 'Comece uma análise ou prepare uma categorização supervisionada'), h('p', {}, 'Escolha um ponto de partida. A mesma conversa acompanha você no chat lateral; consultas financeiras autorizadas ficam apenas nesta sessão.'), h('div', { className: 'mf-ai-starter-grid' }, ['Quais foram meus maiores gastos deste mês?', 'Compare minhas despesas com o mês anterior.', 'Quais orçamentos merecem atenção?', 'Quais compromissos tenho para o próximo mês?'].map((q, i) => h('button', { type: 'button', className: 'mf-ai-context-prompt', key: i, onClick: () => intelligenceSubmitQuestion(app, q) }, h('span', {}, q), h(Icon, { name: 'arrow', size: 14 }))))) :
-            h('div', { className: 'mf-ai-thread', role: 'log', 'aria-live': 'polite' }, ...messages.map(m => renderIntelligenceMessageItem(app, m)), (s.aiBusy || s.localFinancialBusy) ? h('div', { className: 'mf-ai-msg is-assistant is-streaming', role: 'status' }, h('strong', {}, 'Assistente MF'), h('p', {}, 'Processando solicitação…')) : null), s.aiError ? h('p', { className: 'mf-ai-error', role: 'alert' }, s.aiError) : null, renderIntelligenceFollowups(app), renderIntelligenceComposer(app)));
+            h('div', { className: 'mf-ai-thread', role: 'log', 'aria-live': 'polite' }, ...messages.map(m => renderIntelligenceMessageItem(app, m)), (s.aiBusy || s.localFinancialBusy || s.aiCopilotBusy) ? h('div', { className: 'mf-ai-msg is-assistant is-streaming', role: 'status' }, h('strong', {}, s.aiCopilotBusy ? 'Copiloto GPT-6.2 Sol' : 'Assistente MF'), h('p', {}, s.aiCopilotBusy && s.aiCopilotStreaming ? s.aiCopilotStreaming : 'Processando solicitação…'), s.aiCopilotBusy && typeof (desktop === null || desktop === void 0 ? void 0 : desktop.aiCopilotCancel) === 'function' ? h('button', { type: 'button', className: 'ghost-button mf-ai-stream-cancel', onClick: () => void desktop.aiCopilotCancel() }, 'Cancelar solicitação') : null) : null), s.aiError ? h('p', { className: 'mf-ai-error', role: 'alert' }, s.aiError) : null, renderIntelligenceFollowups(app), renderIntelligenceComposer(app)));
     else if (tab === 'actions')
-        section = h('div', { className: 'mf-ai-actions' }, h('div', { className: 'mf-ai-welcome' }, h('span', { className: 'micro-label' }, 'AÇÕES SUPERVISIONADAS E EXEMPLOS · SEM GRAVAÇÃO AUTOMÁTICA'), h('h2', {}, 'Sugestões e prévias para revisar, nunca automáticas.'), h('p', {}, 'As propostas preparadas nas suas conversas aparecem abaixo mantendo a prévia sem gravação até a entrega I2-B.')), allProposals.length ? h('div', { className: 'mf-ai-proposals-list', 'aria-label': 'Propostas supervisionadas da sessão' }, ...allProposals.map(p => renderIntelligenceActionProposalCard(app, p))) :
+        section = h('div', { className: 'mf-ai-actions' }, h('div', { className: 'mf-ai-welcome' }, h('span', { className: 'micro-label' }, 'AÇÕES SUPERVISIONADAS E EXEMPLOS · SEM GRAVAÇÃO AUTOMÁTICA'), h('h2', {}, 'Sugestões e prévias para revisar, nunca automáticas.'), h('p', {}, 'As propostas preparadas nas suas conversas aparecem abaixo mantendo prévia, confirmação nativa no Windows e recibo reversível em 1 clique.')), allProposals.length ? h('div', { className: 'mf-ai-proposals-list', 'aria-label': 'Propostas supervisionadas da sessão' }, ...allProposals.map(p => renderIntelligenceActionProposalCard(app, p))) :
             h('div', { className: 'mf-ai-empty-actions' }, h('p', {}, 'Nenhuma proposta supervisionada pendente nesta conversa. Peça no chat, por exemplo: “Categorize minha compra do mercado como Alimentação”.')), [{ id: 'limits', title: 'Revisar limites de categorias', description: 'Compare médias, compromissos e uma margem de segurança.', question: 'Prepare uma proposta de limites por categoria para o próximo mês.' },
             { id: 'reserve', title: 'Planejar reserva de emergência', description: 'Estime um objetivo compatível com despesas essenciais e liquidez.', question: 'Como construir uma reserva de emergência considerando meus compromissos?' },
             { id: 'review', title: 'Revisar despesas recorrentes', description: 'Identifique cobranças repetidas antes de propor mudanças.', question: 'Como posso avaliar se meus gastos recorrentes precisam de revisão?' }].map((item) => h('div', { className: 'mf-ai-action-card', key: item.id }, h('div', { className: 'mf-ai-action-text' }, h('span', { className: 'mf-ai-status' }, 'Exemplo ilustrativo'), h('h3', {}, item.title), h('p', {}, item.description), s.intelligenceExpandedAction === item.id ? h('div', { className: 'mf-ai-action-detail' }, 'Na versão conectada, esta proposta mostrará dados utilizados, impacto esperado, validade da análise e ações de aceitar, editar ou rejeitar. Nada será aplicado automaticamente.') : null), h('div', { className: 'mf-ai-action-buttons' }, h('button', { type: 'button', className: 'ghost-button', onClick: () => app.setState({ intelligenceExpandedAction: s.intelligenceExpandedAction === item.id ? null : item.id }) }, s.intelligenceExpandedAction === item.id ? 'Recolher' : 'Ver detalhes'), h('button', { type: 'button', className: 'mf-ai-link', onClick: () => intelligencePrepare(app, item.question) }, 'Preparar análise', h(Icon, { name: 'arrow', size: 15 }))))));
@@ -4731,7 +4943,7 @@ function renderIntelligenceViewLegacy(app) {
         onClick: () => app.setState({ intelligenceMainMode: 'chat' }) }, 'Voltar à conversa') : null)), h('div', { className: 'mf-ai-v3-content', role: 'region', 'aria-label': tab === 'chat' ? 'Conversa financeira' : tab === 'today' ? 'Panorama financeiro' : 'Propostas supervisionadas' }, section), h('details', { className: 'mf-ai-lab-disclosure' }, h('summary', {}, h(Icon, { name: 'settings', size: 17 }), h('span', {}, 'Laboratório de Inteligência'), h('small', {}, 'Configurações técnicas, conexão OAuth, memória e contexto sintético')), renderIntelligenceConnection(app), renderIntelligencePrivacy(app), renderIntelligenceFinancialContext(app)));
 }
 function renderIntelligencePanel(app) {
-    var _a, _b;
+    var _a, _b, _c;
     if (!app.state.intelligencePanelOpen)
         return null;
     if (((_a = app.state.workIntelligenceDemo) === null || _a === void 0 ? void 0 : _a.enabled) && typeof renderWorkIntelligencePanel === 'function')
@@ -4744,14 +4956,24 @@ function renderIntelligencePanel(app) {
     const threads = Array.isArray(app.state.intelligenceThreads) ? app.state.intelligenceThreads : [];
     const activeThreadId = app.state.intelligenceActiveThreadId || '';
     const convState = typeof intelligenceConversationState === 'function' ? intelligenceConversationState(app) : { kind: 'oauth_disconnected', pill: 'IA externa desconectada · leitura local requer autorização', badge: 'Conta desconectada', css: 'is-offline' };
-    const busy = Boolean(app.state.aiBusy || app.state.localFinancialBusy || app.state.intelligenceDrawerBusy);
+    const busy = Boolean(app.state.aiBusy || app.state.localFinancialBusy || app.state.intelligenceDrawerBusy || app.state.aiCopilotBusy);
     const draft = String(app.state.intelligenceDraft || '');
+    const closeDrawer = () => {
+        var _a;
+        const expired = Boolean(((_a = app.state.localFinancialAccess) === null || _a === void 0 ? void 0 : _a.expiresAt) && app.state.localFinancialAccess.expiresAt <= Date.now());
+        app.setState({ intelligencePanelOpen: false, ...(expired ? { intelligencePreparedQuestion: '', intelligenceDraftScope: null } : {}) });
+    };
     return h('div', { className: 'mf-ai-backdrop', role: 'presentation', onMouseDown: (e) => { if (e.target === e.currentTarget)
-            app.setState({ intelligencePanelOpen: false }); } }, h('aside', { className: 'mf-ai-drawer mf-ai-drawer-compact mf-d01', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Assistente contextual de ' + info.label }, h('div', { className: 'mf-ai-drawer-head' }, h('div', { className: 'mf-ai-drawer-title-wrap' }, h('div', { className: 'mf-ai-drawer-kicker-row' }, h('span', { className: 'mf-d01-spark', 'aria-hidden': 'true' }, '✦'), h('span', { className: 'micro-label' }, 'SEU ASSISTENTE')), h('h2', {}, 'Assistente Financeiro'), h('small', { className: 'mf-d01-context-subtitle' }, 'Ajudando em ' + info.label)), h('div', { className: 'mf-ai-drawer-head-actions' }, h('button', { type: 'button', className: 'ghost-button mf-ai-expand-btn', 'aria-label': 'Nova conversa', title: 'Iniciar nova conversa', onClick: () => intelligenceCreateThread(app) }, 'Nova'), h('button', { type: 'button', className: 'ghost-button mf-ai-expand-btn', 'aria-label': 'Expandir na aba Inteligência', title: 'Abrir na aba Inteligência mantendo a conversa ativa', onClick: () => intelligenceOpenFullChat(app) }, 'Expandir'), h('button', { type: 'button', className: 'close-button', 'aria-label': 'Fechar assistente', onClick: () => app.setState({ intelligencePanelOpen: false }) }, '×'))), h('details', { className: 'mf-d01-context-disclosure' }, h('summary', {}, 'Contexto da conversa', h(Icon, { name: 'chevron-down', size: 14 })), h('div', { className: 'mf-ai-context-meta mf-ai-drawer-scope' }, h('span', {}, scope.label), h('span', {}, scope.period), h('span', {}, scope.mode), ...scope.filters.map((filter) => h('span', { key: filter }, filter)), h('span', {}, ((_b = app.state.localFinancialAccess) === null || _b === void 0 ? void 0 : _b.token) ? 'Leitura local autorizada' : convState.pill)), threads.length > 1 ? h('select', { className: 'mf-ai-drawer-thread-select', 'aria-label': 'Alternar conversa ativa', value: activeThreadId, onChange: (e) => intelligenceSelectThread(app, e.target.value) }, ...threads.map((t) => h('option', { key: t.id, value: t.id }, t.title + ' (' + t.messages.length + ')'))) : null), h('details', { className: 'mf-d01-access' }, h('summary', {}, 'Permissões de consulta'), renderIntelligenceAccess(app)), app.state.categoryReviewPreview ? h('div', { className: 'mf-review-drawer-pending' }, h('p', {}, 'Uma prévia de categorização aguarda sua decisão.'), h('button', { type: 'button', className: 'primary-button', onClick: () => void categoryReviewOpen(app) }, 'Revisar prévia na Central')) : null, h('div', { className: 'mf-ai-drawer-body' }, messages.length === 0 ? h('div', { className: 'mf-ai-drawer-empty' }, h('p', { className: 'muted-desc' }, info.description), h('div', { className: 'mf-ai-drawer-suggestions', 'aria-label': 'Sugestões rápidas para ' + info.label }, ...info.questions.filter(q => !intelligenceHistoryList(app).some(m => m.role === 'user' && m.text === q)).slice(0, 2).map((q, i) => h('button', { type: 'button', className: 'mf-ai-context-prompt', key: i, onClick: () => intelligenceSubmitQuestion(app, q) }, h('span', {}, q), h(Icon, { name: 'arrow', size: 15 }))))) :
-        h('div', { className: 'mf-ai-drawer-messages', role: 'log', 'aria-live': 'polite' }, ...messages.map(m => renderIntelligenceMessageItem(app, m)), busy ? h('div', { className: 'mf-ai-msg is-assistant is-streaming', role: 'status' }, h('strong', {}, 'Assistente MF'), h('p', {}, 'Processando solicitação no contexto de ' + scope.label + '…')) : null), app.state.intelligenceStorageError ? h('p', { className: 'mf-ai-error', role: 'alert' }, app.state.intelligenceStorageError) : null, app.state.aiError ? h('p', { className: 'mf-ai-error', role: 'alert' }, app.state.aiError) : null), renderIntelligenceFollowups(app), renderIntelligenceComposer(app, true)));
+            closeDrawer(); } }, h('aside', { className: 'mf-ai-drawer mf-ai-drawer-compact mf-d01', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Assistente contextual de ' + info.label }, h('div', { className: 'mf-ai-drawer-head' }, h('div', { className: 'mf-ai-drawer-title-wrap' }, h('div', { className: 'mf-ai-drawer-kicker-row' }, h('span', { className: 'mf-d01-spark', 'aria-hidden': 'true' }, '✦'), h('span', { className: 'micro-label' }, 'SEU ASSISTENTE')), h('h2', {}, 'Assistente Financeiro'), h('small', { className: 'mf-d01-context-subtitle' }, 'Ajudando em ' + info.label)), h('div', { className: 'mf-ai-drawer-head-actions' }, ((_b = app.state.localFinancialAccess) === null || _b === void 0 ? void 0 : _b.token) && typeof localFinancialDisable === 'function' ? h('button', { type: 'button', className: 'ghost-button mf-ai-expand-btn', 'aria-label': 'Revogar leitura local', title: 'Encerrar acesso local desta sessão', onClick: () => localFinancialDisable(app) }, 'Revogar leitura') : null, h('button', { type: 'button', className: 'ghost-button mf-ai-expand-btn', 'aria-label': 'Nova conversa', title: 'Iniciar nova conversa', onClick: () => intelligenceCreateThread(app) }, 'Nova'), h('button', { type: 'button', className: 'ghost-button mf-ai-expand-btn', 'aria-label': 'Expandir na aba Inteligência', title: 'Abrir na aba Inteligência mantendo a conversa ativa', onClick: () => intelligenceOpenFullChat(app) }, 'Expandir'), h('button', { type: 'button', className: 'close-button', 'aria-label': 'Fechar assistente', onClick: closeDrawer }, '×'))), h('details', { className: 'mf-d01-context-disclosure' }, h('summary', {}, 'Contexto da conversa', h(Icon, { name: 'chevron-down', size: 14 })), h('div', { className: 'mf-ai-context-meta mf-ai-drawer-scope' }, h('span', {}, scope.label), h('span', {}, scope.period), h('span', {}, scope.mode), ...scope.filters.map((filter) => h('span', { key: filter }, filter)), h('span', {}, ((_c = app.state.localFinancialAccess) === null || _c === void 0 ? void 0 : _c.token) ? 'Leitura local autorizada' : convState.pill)), threads.length > 1 ? h('select', { className: 'mf-ai-drawer-thread-select', 'aria-label': 'Alternar conversa ativa', value: activeThreadId, onChange: (e) => intelligenceSelectThread(app, e.target.value) }, ...threads.map((t) => h('option', { key: t.id, value: t.id }, t.title + ' (' + t.messages.length + ')'))) : null), h('details', { className: 'mf-d01-access' }, h('summary', {}, 'Permissões de consulta'), renderIntelligenceAccess(app)), app.state.categoryReviewPreview ? h('div', { className: 'mf-review-drawer-pending' }, h('p', {}, 'Uma prévia de categorização aguarda sua decisão.'), h('button', { type: 'button', className: 'primary-button', onClick: () => void categoryReviewOpen(app) }, 'Revisar prévia na Central')) : null, h('div', { className: 'mf-ai-drawer-body' }, messages.length === 0 ? h('div', { className: 'mf-ai-drawer-empty' }, h('p', { className: 'muted-desc' }, info.description), h('div', { className: 'mf-ai-drawer-suggestions', 'aria-label': 'Sugestões rápidas para ' + info.label }, ...info.questions.filter(q => !intelligenceHistoryList(app).some(m => m.role === 'user' && m.text === q)).slice(0, 2).map((q, i) => h('button', { type: 'button', className: 'mf-ai-context-prompt', key: i, onClick: () => intelligenceSubmitQuestion(app, q) }, h('span', {}, q), h(Icon, { name: 'arrow', size: 15 }))))) :
+        h('div', { className: 'mf-ai-drawer-messages', role: 'log', 'aria-live': 'polite' }, ...messages.map(m => renderIntelligenceMessageItem(app, m)), busy ? h('div', { className: 'mf-ai-msg is-assistant is-streaming', role: 'status' }, h('strong', {}, app.state.aiCopilotBusy ? 'Copiloto GPT-6.2 Sol' : 'Assistente MF'), h('p', {}, app.state.aiCopilotBusy && app.state.aiCopilotStreaming ? app.state.aiCopilotStreaming : 'Processando solicitação no contexto de ' + scope.label + '…'), app.state.aiCopilotBusy && typeof (desktop === null || desktop === void 0 ? void 0 : desktop.aiCopilotCancel) === 'function' ? h('button', { type: 'button', className: 'ghost-button mf-ai-stream-cancel', onClick: () => void desktop.aiCopilotCancel() }, 'Cancelar') : null) : null), app.state.intelligenceStorageError ? h('p', { className: 'mf-ai-error', role: 'alert' }, app.state.intelligenceStorageError) : null, app.state.aiError ? h('p', { className: 'mf-ai-error', role: 'alert' }, app.state.aiError) : null), renderIntelligenceFollowups(app), renderIntelligenceComposer(app, true)));
 }
 function renderIntelligenceSettings(app) {
-    return h(Card, { className: 'settings-card mf-ai-settings' }, h('div', { className: 'card-heading' }, h('div', {}, h('h2', {}, 'Inteligência artificial'), h('p', {}, 'Autenticação local e testes fictícios · Entrega 2'))), h('div', { className: 'mf-ai-setting-line' }, h('span', {}, 'Estado'), h('strong', {}, app.state.aiStatus.connected ? 'Conectada' : 'Não conectada')), h('div', { className: 'mf-ai-setting-line' }, h('span', {}, 'Modelo previsto'), h('strong', {}, 'GPT-6.1 Sol')), h('div', { className: 'mf-ai-setting-line' }, h('span', {}, 'Raciocínio'), h('strong', {}, 'Low / Medium automático')), h('div', { className: 'mf-ai-setting-line' }, h('span', {}, 'Economia de tokens'), h('strong', {}, 'Contexto mínimo + aprovação por teste')), h('p', { className: 'muted-desc' }, 'OAuth e memórias aprovadas são protegidos localmente no Windows. Nenhuma memória é enviada sem consentimento por teste. Dados bancários e sincronização de memórias no PWA continuam indisponíveis para a IA.'), h('details', { className: 'mf-ai-advanced-settings' }, h('summary', {}, 'Inteligência · configurações avançadas'), renderIntelligenceConnection(app), renderIntelligencePrivacy(app), renderIntelligenceFinancialContext(app)), h('button', { type: 'button', className: 'outlined-action full', onClick: () => app.navigate('intelligence') }, h(Icon, { name: 'spark', size: 17 }), 'Abrir Inteligência'));
+    const s = app.state;
+    const aiCap = s.aiCopilotCap || null;
+    const m3Cap = s.m3ActionCap || null;
+    const rawInferenceStatus = (aiCap === null || aiCap === void 0 ? void 0 : aiCap.inferenceStatus) || 'CONFIGURADO';
+    const inferenceLabel = rawInferenceStatus === 'CONFIGURADO' ? 'Configurado (aguarda 1ª consulta)' : rawInferenceStatus;
+    return h(Card, { className: 'settings-card mf-ai-settings' }, h('div', { className: 'card-heading' }, h('div', {}, h('h2', {}, 'Inteligência artificial'), h('p', {}, 'Autenticação OAuth, Copiloto e GPT-6.2 Sol'))), h('div', { className: 'mf-ai-setting-line' }, h('span', {}, 'Conexão OAuth ChatGPT'), h('strong', {}, s.aiStatus.connected ? 'Conectada' : 'Não conectada')), h('div', { className: 'mf-ai-setting-line' }, h('span', {}, 'Modelo'), h('strong', {}, 'GPT-6.2 Sol (' + inferenceLabel + ')')), h('div', { className: 'mf-ai-setting-line' }, h('span', {}, 'Raciocínio'), h('strong', {}, 'Automático (baixo, médio ou alto conforme a pergunta)')), h('div', { className: 'mf-ai-setting-line' }, h('span', {}, 'Economia e privacidade'), h('strong', {}, 'Somente agregados autorizados · zero fallback pago')), (desktop === null || desktop === void 0 ? void 0 : desktop.copilotActionCapabilityStatus) ? h('div', { className: 'mf-ai-setting-line mf-ai-settings-toggle' }, h('span', {}, 'Ações supervisionadas no Copiloto (M3)'), h('div', { className: 'mf-ai-settings-toggle-actions' }, h('strong', {}, (m3Cap === null || m3Cap === void 0 ? void 0 : m3Cap.enabled) ? 'Ativadas' : 'Desativadas'), (m3Cap === null || m3Cap === void 0 ? void 0 : m3Cap.available) ? h('button', { type: 'button', className: 'ghost-button', onClick: () => { var _a, _b, _c, _d; return void (m3Cap.enabled ? (_b = (_a = desktop).copilotActionCapabilityRevoke) === null || _b === void 0 ? void 0 : _b.call(_a) : (_d = (_c = desktop).copilotActionCapabilityEnable) === null || _d === void 0 ? void 0 : _d.call(_c)).then(() => intelligenceRefresh(app)); } }, m3Cap.enabled ? 'Revogar' : 'Ativar') : null)) : null, (desktop === null || desktop === void 0 ? void 0 : desktop.aiCopilotCapabilityStatus) ? h('div', { className: 'mf-ai-setting-line mf-ai-settings-toggle' }, h('span', {}, 'Inferência GPT-6.2 Sol com contexto mínimo'), h('div', { className: 'mf-ai-settings-toggle-actions' }, h('strong', {}, (aiCap === null || aiCap === void 0 ? void 0 : aiCap.enabled) ? 'Ativada' : 'Desativada'), (aiCap === null || aiCap === void 0 ? void 0 : aiCap.available) ? h('button', { type: 'button', className: 'ghost-button', onClick: () => { var _a, _b, _c, _d; return void (aiCap.enabled ? (_b = (_a = desktop).aiCopilotCapabilityRevoke) === null || _b === void 0 ? void 0 : _b.call(_a) : (_d = (_c = desktop).aiCopilotCapabilityEnable) === null || _d === void 0 ? void 0 : _d.call(_c)).then(() => intelligenceRefresh(app)); } }, aiCap.enabled ? 'Revogar' : 'Ativar') : null)) : null, h('p', { className: 'muted-desc' }, 'OAuth e memórias aprovadas são protegidos localmente no Windows. Ações financeiras exigem prévia, confirmação nativa, backup SQLite e geram recibo reversível em 1 clique.'), h('details', { className: 'mf-ai-advanced-settings' }, h('summary', {}, 'Inteligência · configurações avançadas'), renderIntelligenceConnection(app), renderIntelligencePrivacy(app), renderIntelligenceFinancialContext(app)), h('button', { type: 'button', className: 'outlined-action full', onClick: () => app.navigate('intelligence') }, h(Icon, { name: 'spark', size: 17 }), 'Abrir Inteligência'));
 }
 function mfB05Money(cents) {
     return Number.isSafeInteger(cents) ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(cents / 100) : '—';
@@ -4935,7 +5157,7 @@ function mfB05ReducedMotion() {
         window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 function renderMfB05Main(app) {
-    var _a, _b, _c;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t;
     if (((_a = app.state.workIntelligenceDemo) === null || _a === void 0 ? void 0 : _a.enabled) && typeof renderWorkIntelligenceDemo === 'function')
         return renderWorkIntelligenceDemo(app);
     if (typeof intelligenceEnsureHydrated === 'function')
@@ -4951,11 +5173,14 @@ function renderMfB05Main(app) {
         { kind: 'oauth_disconnected', pill: 'Conta desconectada · modo local', css: 'is-offline' };
     const scope = s.intelligenceDraftScope || intelligencePageScope(app, s.intelligenceContext || s.page);
     const active = ((_b = s.localFinancialAccess) === null || _b === void 0 ? void 0 : _b.token) && ((_c = s.localFinancialAccess) === null || _c === void 0 ? void 0 : _c.expiresAt) > Date.now();
+    const api = typeof desktop !== 'undefined' ? desktop : null;
+    const runAct = (act) => { if (typeof intelligenceRunPermissionAction === 'function')
+        void intelligenceRunPermissionAction(app, act); };
     const section = tab === 'today' ? renderMfB05Today(app) :
         tab === 'chat' ? renderMfB05Chat(app, messages, convState, scope) :
             renderMfB05Actions(app, proposals);
     return h('section', { className: 'section mf-intelligence-page mf-b05-page',
-        'aria-label': 'Inteligência Financeira' }, h('div', { className: 'mf-b05-top' }, h('strong', { className: 'mf-b05-brand' }, 'Inteligência'), h('span', { className: 'mf-b05-status' }, h('i', { className: 'mf-b05-status-dot', 'aria-hidden': 'true' }), s.mode === 'demo' ? 'Ambiente de demonstração' : active ? 'Leitura local autorizada' : 'Sem leitura pessoal autorizada')), mfB05Tabs(app, tab), h('details', { className: 'mf-b05-permissions' }, h('summary', {}, active ? 'Gerenciar permissão de consulta' : 'Autorizar consulta financeira'), renderIntelligenceAccess(app)), s.categoryReviewPreview ? h('div', { className: 'mf-b05-review-pending', role: 'status' }, h('span', {}, 'Existe uma prévia supervisionada aguardando revisão. '), h('button', { type: 'button', className: 'mf-b05-link', onClick: () => void categoryReviewOpen(app) }, 'Abrir Central de Revisão')) : null, h('div', { id: 'mf-b05-panel', className: 'mf-b05-content', role: 'tabpanel',
+        'aria-label': 'Inteligência Financeira' }, h('div', { className: 'mf-b05-top' }, h('strong', { className: 'mf-b05-brand' }, 'Inteligência'), h('span', { className: 'mf-b05-status' }, h('i', { className: 'mf-b05-status-dot ' + (active ? 'is-active' : 'is-idle'), 'aria-hidden': 'true' }), s.mode === 'demo' ? 'Ambiente de demonstração' : active ? 'Leitura local autorizada' : (convState === null || convState === void 0 ? void 0 : convState.pill) || 'Sem leitura pessoal autorizada')), mfB05Tabs(app, tab), h('div', { className: 'mf-b05-cap-bar' }, h('details', { className: 'mf-b05-permissions' }, h('summary', {}, active ? 'Gerenciar permissão de consulta' : 'Autorizar consulta financeira'), typeof renderLocalFinancialAccess === 'function' ? renderLocalFinancialAccess(app) : renderIntelligenceAccess(app)), (api === null || api === void 0 ? void 0 : api.aiStatus) ? h('span', { className: 'mf-b05-cap-chip ' + (((_d = s.aiStatus) === null || _d === void 0 ? void 0 : _d.connected) ? 'is-ok' : '') }, ((_e = s.aiStatus) === null || _e === void 0 ? void 0 : _e.connected) ? 'OAuth ChatGPT: Conectado' : 'OAuth ChatGPT: Não conectado', !((_f = s.aiStatus) === null || _f === void 0 ? void 0 : _f.connected) ? h('button', { type: 'button', className: 'mf-b05-cap-btn', onClick: () => runAct({ id: 'connect_chatgpt', label: 'Conectar ChatGPT' }) }, 'Conectar') : null) : null, (api === null || api === void 0 ? void 0 : api.aiCopilotCapabilityStatus) ? h('span', { className: 'mf-b05-cap-chip ' + (((_g = s.aiCopilotCap) === null || _g === void 0 ? void 0 : _g.enabled) ? 'is-ok' : '') }, ((_h = s.aiCopilotCap) === null || _h === void 0 ? void 0 : _h.enabled) ? 'GPT-6.2 Sol: Ativo' : ((_j = s.aiCopilotCap) === null || _j === void 0 ? void 0 : _j.available) ? 'GPT-6.2 Sol: Inativo' : 'GPT-6.2 Sol: ' + String(((_k = s.aiCopilotCap) === null || _k === void 0 ? void 0 : _k.inferenceStatus) === 'CONFIGURADO' ? 'Configurado (aguarda 1ª consulta)' : (((_l = s.aiCopilotCap) === null || _l === void 0 ? void 0 : _l.inferenceStatus) || 'Bloqueado nesta build')), !((_m = s.aiCopilotCap) === null || _m === void 0 ? void 0 : _m.enabled) && ((_o = s.aiCopilotCap) === null || _o === void 0 ? void 0 : _o.available) ? h('button', { type: 'button', className: 'mf-b05-cap-btn', onClick: () => runAct({ id: 'enable_ai_copilot', label: 'Ativar' }) }, 'Ativar') : null) : null, (api === null || api === void 0 ? void 0 : api.copilotActionCapabilityStatus) ? h('span', { className: 'mf-b05-cap-chip ' + (((_p = s.m3ActionCap) === null || _p === void 0 ? void 0 : _p.enabled) ? 'is-ok' : '') }, ((_q = s.m3ActionCap) === null || _q === void 0 ? void 0 : _q.enabled) ? 'Ações M3: Ativas' : ((_r = s.m3ActionCap) === null || _r === void 0 ? void 0 : _r.available) ? 'Ações M3: Desativadas' : 'Ações M3: Indisponível', !((_s = s.m3ActionCap) === null || _s === void 0 ? void 0 : _s.enabled) && ((_t = s.m3ActionCap) === null || _t === void 0 ? void 0 : _t.available) ? h('button', { type: 'button', className: 'mf-b05-cap-btn', onClick: () => runAct({ id: 'enable_m3_actions', label: 'Ativar' }) }, 'Ativar') : null) : null), s.categoryReviewPreview ? h('div', { className: 'mf-b05-review-pending', role: 'status' }, h('span', {}, 'Existe uma prévia supervisionada aguardando revisão. '), h('button', { type: 'button', className: 'mf-b05-link', onClick: () => void categoryReviewOpen(app) }, 'Abrir Central de Revisão')) : null, h('div', { id: 'mf-b05-panel', className: 'mf-b05-content', role: 'tabpanel',
         'aria-labelledby': 'mf-b05-tab-' + tab }, section));
 }
 function mfB05DateLabel(date) {
@@ -5182,19 +5407,25 @@ function mfB05HistoryDrawer(app) {
         'aria-label': 'Histórico de conversas', onKeyDown: (event) => mfB05DrawerKeyboard(event, close) }, h('div', { className: 'mf-b05-drawer-heading' }, h('strong', {}, 'Seu histórico'), h('button', { type: 'button', className: 'ghost-button', onClick: close }, 'Fechar')), renderIntelligenceHistorySidebar(app)));
 }
 function renderMfB05Chat(app, messages, convState, activeScope) {
-    var _a, _b, _c, _d;
+    var _a, _b, _c, _d, _e, _f, _g;
     const s = app.state, session = intelligenceChatSession(app);
     const items = Array.isArray(messages) ? messages : [];
     const authorized = !!((_a = s.localFinancialAccess) === null || _a === void 0 ? void 0 : _a.token) && ((_b = s.localFinancialAccess) === null || _b === void 0 ? void 0 : _b.expiresAt) > Date.now();
     const hasReview = !!((_c = s.categoryReviewGrant) === null || _c === void 0 ? void 0 : _c.token) && ((_d = s.categoryReviewGrant) === null || _d === void 0 ? void 0 : _d.expiresAt) > Date.now();
-    return h('section', { className: 'mf-b05-chat', role: 'region', 'aria-label': 'Conversar com a Inteligência' }, h('header', { className: 'mf-b05-chat-head' }, h('div', {}, h('span', { className: 'mf-b05-kicker' }, 'INTELLIGENCE ALIVE · CONVERSAR'), h('h2', {}, 'Uma boa conversa muda a perspectiva.'), h('p', {}, 'Pergunte, compare e decida com contexto e evidências quando disponíveis.')), h('div', { className: 'mf-b05-chat-controls' }, h('button', { id: 'mf-b05-history-trigger', type: 'button', className: 'ghost-button',
+    return h('section', { className: 'mf-b05-chat', role: 'region', 'aria-label': 'Conversar com a Inteligência' }, h('header', { className: 'mf-b05-chat-head' }, h('div', {}, h('span', { className: 'mf-b05-kicker' }, 'INTELIGÊNCIA FINANCEIRA · CONVERSAR'), h('h2', {}, 'Uma boa conversa muda a perspectiva.'), h('p', {}, 'Pergunte, compare e decida com contexto e evidências quando disponíveis.')), h('div', { className: 'mf-b05-chat-controls' }, h('button', { id: 'mf-b05-history-trigger', type: 'button', className: 'ghost-button',
         'aria-expanded': !!s.intelligenceHistoryOpen,
         onClick: () => app.setState({ intelligenceHistoryOpen: true }) }, h(Icon, { name: 'clock', size: 16 }), 'Histórico'), h('button', { type: 'button', className: 'primary-button',
-        onClick: () => { intelligenceCreateThread(app); app.setState({ intelligenceHistoryOpen: false }); } }, h(Icon, { name: 'plus', size: 15 }), 'Nova conversa'))), h('div', { className: 'mf-b05-chat-scope' }, h('span', { className: (convState === null || convState === void 0 ? void 0 : convState.css) || 'is-offline' }, authorized ? 'Leitura autorizada' : hasReview ? 'Revisão sintética' : (convState === null || convState === void 0 ? void 0 : convState.pill) || 'Sem conexão autorizada'), h('span', {}, 'Contexto: ' + ((activeScope === null || activeScope === void 0 ? void 0 : activeScope.label) || 'Inteligência') + ' · ' + ((activeScope === null || activeScope === void 0 ? void 0 : activeScope.period) || 'Sem período')), session.expired ? h('strong', { className: 'mf-b05-warning' }, 'Permissão expirada — renove em Permissões de consulta') : null), s.intelligenceDraftScope ? h('p', { className: 'mf-b05-chat-context' }, 'Rascunho preparado a partir de ' + s.intelligenceDraftScope.label) : null, s.intelligencePreparedQuestion ? h('div', { className: 'mf-ai-prepared', role: 'status' }, h('p', {}, s.intelligencePreparedQuestion), h('small', {}, 'Pergunta preparada, ainda não enviada.')) : null, h('div', { className: 'mf-b05-chat-thread', role: 'log', 'aria-label': 'Mensagens da conversa', 'aria-live': 'polite' }, items.length ? items.map(msg => renderIntelligenceMessageItem(app, msg)) :
-        h('div', { className: 'mf-b05-chat-welcome' }, h('span', { className: 'mf-b05-chat-orb' }, h(Icon, { name: 'spark', size: 30 })), h('h3', {}, 'O que você gostaria de entender hoje?'), h('p', {}, authorized ? 'Explore seus registros autorizados e identifique oportunidades reais.' :
-            'Você pode começar com uma pergunta geral. Informações pessoais exigem autorização.'), h('div', { className: 'mf-b05-starters' }, ...(authorized ? ['Quais foram minhas maiores despesas?', 'Quais categorias ultrapassaram o orçamento?'] :
-            ['Como organizar minhas despesas mensais?', 'Como planejar uma reserva com segurança?'])
-            .map(q => h('button', { type: 'button', key: q, onClick: () => intelligencePrepare(app, q) }, q, h(Icon, { name: 'arrow', size: 14 }))))), s.aiBusy || s.localFinancialBusy ? h('p', { className: 'mf-b05-chat-thinking', role: 'status' }, 'Consultando a fonte disponível…') : null, s.aiError ? h('p', { role: 'alert', className: 'mf-ai-error' }, s.aiError) : null, s.intelligenceStorageError ? h('p', { role: 'alert', className: 'mf-ai-error' }, s.intelligenceStorageError) : null), renderIntelligenceFollowups(app), h('div', { className: 'mf-b05-chat-composer' }, renderIntelligenceComposer(app)), mfB05HistoryDrawer(app));
+        onClick: () => { intelligenceCreateThread(app); app.setState({ intelligenceHistoryOpen: false }); } }, h(Icon, { name: 'plus', size: 15 }), 'Nova conversa'))), h('div', { className: 'mf-b05-chat-scope' }, h('span', { className: (convState === null || convState === void 0 ? void 0 : convState.css) || 'is-offline' }, authorized ? 'Leitura autorizada' : hasReview ? 'Revisão sintética' : (convState === null || convState === void 0 ? void 0 : convState.pill) || 'Sem conexão autorizada'), h('span', {}, 'Contexto: ' + ((activeScope === null || activeScope === void 0 ? void 0 : activeScope.label) || 'Inteligência') + ' · ' + ((activeScope === null || activeScope === void 0 ? void 0 : activeScope.period) || 'Sem período')), session.expired ? h('strong', { className: 'mf-b05-warning' }, 'Permissão expirada — renove em Permissões de consulta') : null), s.intelligenceDraftScope && items.length === 0 ? h('p', { className: 'mf-b05-chat-context' }, 'Rascunho preparado a partir de ' + s.intelligenceDraftScope.label) : null, s.intelligencePreparedQuestion && s.intelligenceDraft && s.intelligencePreparedQuestion === s.intelligenceDraft ? h('div', { className: 'mf-ai-prepared', role: 'status' }, h('p', {}, s.intelligencePreparedQuestion), h('small', {}, 'Pergunta preparada, ainda não enviada.')) : null, h('div', { className: 'mf-b05-chat-thread', role: 'log', 'aria-label': 'Mensagens da conversa', 'aria-live': 'polite' }, items.length ? items.map(msg => renderIntelligenceMessageItem(app, msg)) :
+        h('div', { className: 'mf-b05-chat-welcome' }, h('span', { className: 'mf-b05-chat-orb' }, h(Icon, { name: 'spark', size: 30 })), h('h3', {}, 'O que você gostaria de entender hoje?'), h('p', {}, authorized ? 'Explore seus registros autorizados ou converse com o Copiloto.' :
+            ((_e = s.aiStatus) === null || _e === void 0 ? void 0 : _e.connected) && ((_f = s.aiCopilotCap) === null || _f === void 0 ? void 0 : _f.enabled) ? 'Pergunte sobre finanças em geral ou autorize a leitura local para consultar seus registros.' :
+                'Comece com uma dúvida geral ou autorize seus registros para análises e ações supervisionadas.'), h('div', { className: 'mf-b05-starters' }, ...(authorized ? ['Quais foram minhas maiores despesas?', 'Quais categorias ultrapassaram o orçamento?'] :
+            ['Como organizar minhas despesas mensais?', 'Como construir uma reserva de emergência?'])
+            .map(q => h('button', { type: 'button', key: q, onClick: () => {
+                if (typeof intelligenceSubmitQuestion === 'function')
+                    void intelligenceSubmitQuestion(app, q);
+                else
+                    intelligencePrepare(app, q);
+            } }, q, h(Icon, { name: 'arrow', size: 14 }))))), s.aiCopilotBusy ? h('div', { className: 'mf-ai-msg is-assistant is-streaming', role: 'status' }, h('strong', {}, 'Copiloto GPT-6.2 Sol'), h('p', {}, s.aiCopilotStreaming || 'Consultando GPT-6.2 Sol…'), typeof ((_g = (typeof desktop !== 'undefined' ? desktop : null)) === null || _g === void 0 ? void 0 : _g.aiCopilotCancel) === 'function' ? h('button', { type: 'button', className: 'ghost-button mf-ai-stream-cancel', onClick: () => void desktop.aiCopilotCancel() }, 'Cancelar solicitação') : null) : null, !s.aiCopilotBusy && (s.aiBusy || s.localFinancialBusy) ? h('p', { className: 'mf-b05-chat-thinking', role: 'status' }, 'Consultando a fonte disponível…') : null, s.aiError ? h('p', { role: 'alert', className: 'mf-ai-error' }, s.aiError) : null, s.intelligenceStorageError ? h('p', { role: 'alert', className: 'mf-ai-error' }, s.intelligenceStorageError) : null), items.length ? renderIntelligenceFollowups(app) : null, h('div', { className: 'mf-b05-chat-composer' }, renderIntelligenceComposer(app)), mfB05HistoryDrawer(app));
 }
 function mfB05ActionSignals(app) {
     const report = app.state.intelligencePremiumReport;
@@ -5253,12 +5484,12 @@ function renderMfB05Actions(app, proposals) {
     var _a, _b, _c;
     const s = app.state, signals = mfB05ActionSignals(app), items = Array.isArray(proposals) ? proposals : [], selected = signals.find(x => x.id === s.mfB05ActionId) || signals[0] || null, budget = mfB05ActionBudget(selected), signature = mfB05ActionSnapshotKey(app, selected, budget), scenarioStale = !!s.mfB05ActionSourceSig && s.mfB05ActionSourceSig !== signature, stage = scenarioStale ? 'understand' :
         ['understand', 'simulate', 'review'].includes(s.mfB05ActionStage) ? s.mfB05ActionStage : 'understand';
-    return h('section', { className: 'mf-b05-plan', role: 'region', 'aria-label': 'Plano de Ação' }, h('header', { className: 'mf-b05-plan-head' }, h('span', { className: 'mf-b05-kicker' }, 'INTELLIGENCE ALIVE · PLANO DE AÇÃO'), h('h2', {}, 'Decisões melhores começam com clareza.'), h('p', {}, 'Entenda o fato, teste possibilidades e revise antes de qualquer decisão.')), s.mode === 'real' && s.autoCategoryStatus ? h('section', { className: 'mf-b05-plan-proposals',
+    return h('section', { className: 'mf-b05-plan', role: 'region', 'aria-label': 'Plano de Ação' }, h('header', { className: 'mf-b05-plan-head' }, h('span', { className: 'mf-b05-kicker' }, 'INTELIGÊNCIA FINANCEIRA · PLANO DE AÇÃO'), h('h2', {}, 'Decisões melhores começam com clareza.'), h('p', {}, 'Entenda o fato, teste possibilidades e revise antes de qualquer decisão.')), s.mode === 'real' && s.autoCategoryStatus ? h('section', { className: 'mf-b05-plan-proposals',
         'aria-label': 'Automação bancária autorizada' }, h('h3', {}, 'Categorização automática · contas bancárias'), h('p', {}, s.autoCategoryStatus.enabled ?
         'Ativa em ' + String((s.autoCategoryStatus.permissions || []).filter((x) => x.enabled).length) +
             ' conta(s). Rótulos aplicados: ' + String(((_a = s.autoCategoryStatus.counts) === null || _a === void 0 ? void 0 : _a.classified) || 0) +
             ' · revisão: ' + String(((_b = s.autoCategoryStatus.counts) === null || _b === void 0 ? void 0 : _b.awaitingReview) || 0) + '.' :
-        'Desativada. Habilite explicitamente as contas no módulo Movimentações quando o canal estável estiver homologado.'), h('p', {}, 'Motor local de evidências históricas, não inferência de um modelo. Regras e correções humanas prevalecem.'), h('button', { type: 'button', className: 'ghost-button', onClick: () => {
+        'Desativada. Habilite explicitamente por conta no módulo Movimentações em Categorias e regras.'), h('p', {}, 'Motor local de evidências históricas, não inferência de um modelo. Regras e correções humanas prevalecem.'), h('button', { type: 'button', className: 'ghost-button', onClick: () => {
             app.setState({ txSource: 'bank', txReviewOnly: true });
             app.navigate('transactions');
         } }, 'Abrir Movimentações e A conferir')) : null, !selected && !items.length ? h('div', { className: 'mf-b05-plan-empty', role: 'status' }, h(Icon, { name: 'shield', size: 28 }), h('h3', {}, 'Nenhuma oportunidade verificável disponível.'), h('p', {}, 'Autorize a leitura, atualize o período ou converse sobre organização financeira. Não criamos recomendações pessoais sem fatos.'), h('div', { className: 'mf-b05-hero-actions' }, h('button', { type: 'button', className: 'primary-button', onClick: () => mfB05ChangeMode(app, 'chat') }, 'Abrir Conversar'), h('button', { type: 'button', className: 'ghost-button', onClick: () => {
@@ -6750,12 +6981,17 @@ function aiMarkdownNodes(input) {
     return out;
 }
 async function intelligenceRefresh(app) {
-    var _a;
+    var _a, _b, _c;
     if (!(desktop === null || desktop === void 0 ? void 0 : desktop.aiStatus))
         return;
     try {
-        const [status, capabilities] = await Promise.all([desktop.aiStatus(), ((_a = desktop.aiCapabilities) === null || _a === void 0 ? void 0 : _a.call(desktop)) || Promise.resolve(null)]);
-        app.setState({ aiStatus: status, aiCapabilities: capabilities, aiError: '' });
+        const [status, capabilities, aiCopilotCap, m3ActionCap] = await Promise.all([
+            desktop.aiStatus(),
+            ((_a = desktop.aiCapabilities) === null || _a === void 0 ? void 0 : _a.call(desktop)) || Promise.resolve(null),
+            ((_b = desktop.aiCopilotCapabilityStatus) === null || _b === void 0 ? void 0 : _b.call(desktop).catch(() => null)) || Promise.resolve(null),
+            ((_c = desktop.copilotActionCapabilityStatus) === null || _c === void 0 ? void 0 : _c.call(desktop).catch(() => null)) || Promise.resolve(null)
+        ]);
+        app.setState({ aiStatus: status, aiCapabilities: capabilities, aiCopilotCap, m3ActionCap, aiError: '' });
         if (status.connected)
             void intelligenceLoadPersonal(app);
         else
@@ -6931,9 +7167,9 @@ function renderIntelligenceConnection(app) {
     const s = app.state, connected = Boolean((_a = s.aiStatus) === null || _a === void 0 ? void 0 : _a.connected), available = Boolean(desktop === null || desktop === void 0 ? void 0 : desktop.aiStatus);
     const cases = Array.isArray((_b = s.aiCapabilities) === null || _b === void 0 ? void 0 : _b.demoCases) ? s.aiCapabilities.demoCases : [];
     return h('div', { className: 'mf-ai-live-panel' }, h('div', { className: 'mf-ai-live-head' }, h('div', {}, h('span', { className: 'micro-label' }, 'ENTREGA 2 · TESTE DE AUTORIZAÇÃO'), h('h2', {}, 'Conectar ao ChatGPT'), h('p', {}, 'Os testes abaixo utilizam apenas perguntas fictícias predefinidas. Nenhuma movimentação real é compartilhada.')), h('span', { className: 'mf-ai-live-state ' + (connected ? 'ready' : '') }, connected ? 'Conectado' : 'Não conectado')), h('div', { className: 'mf-ai-live-actions' }, !connected ? h('button', { type: 'button', className: 'primary-button', disabled: !available || s.aiBusy || ((_c = s.aiStatus) === null || _c === void 0 ? void 0 : _c.secure) === false && ((_d = s.aiStatus) === null || _d === void 0 ? void 0 : _d.secure) !== undefined,
-        onClick: () => intelligenceConnect(app) }, 'Continuar com ChatGPT') : h('button', { type: 'button', className: 'ghost-button', disabled: s.aiBusy, onClick: () => intelligenceDisconnect(app) }, 'Sair deste computador'), h('button', { type: 'button', className: 'ghost-button', disabled: !available || s.aiBusy, onClick: () => intelligenceRefresh(app) }, 'Atualizar estado')), !available ? h('p', { className: 'mf-ai-notice' }, 'A conexão exige a versão Electron atualizada. Esta prévia web não suporta autenticação de assinatura.') : null, connected ? h('div', { className: 'mf-ai-live-settings' }, h('p', {}, 'Conta autorizada: ' + (s.aiStatus.email || 'conta ChatGPT validada') + ' · Modelo exclusivo: GPT-6.1 Sol'), h('label', {}, 'Teste fictício', h('select', { value: s.aiDemoCase, onChange: (e) => app.setState({ aiDemoCase: e.target.value }) }, cases.map(c => h('option', { key: c.id, value: c.id }, c.label)))), h('label', {}, 'Raciocínio', h('select', { value: s.aiEffort, onChange: (e) => app.setState({ aiEffort: e.target.value }) }, ['auto', 'low', 'medium'].map(e => h('option', { key: e, value: e }, e === 'auto' ? 'Automático' : e === 'low' ? 'Baixo' : 'Médio')))), h('label', { className: 'mf-ai-check' }, h('input', { type: 'checkbox', checked: s.aiCreditsConfirmed,
+        onClick: () => intelligenceConnect(app) }, 'Continuar com ChatGPT') : h('button', { type: 'button', className: 'ghost-button', disabled: s.aiBusy, onClick: () => intelligenceDisconnect(app) }, 'Sair deste computador'), h('button', { type: 'button', className: 'ghost-button', disabled: !available || s.aiBusy, onClick: () => intelligenceRefresh(app) }, 'Atualizar estado')), !available ? h('p', { className: 'mf-ai-notice' }, 'A conexão exige a versão Electron atualizada. Esta prévia web não suporta autenticação de assinatura.') : null, connected ? h('div', { className: 'mf-ai-live-settings' }, h('p', {}, 'Conta autorizada: ' + (s.aiStatus.email || 'conta ChatGPT validada') + ' · Modelo exclusivo: GPT-6.2 Sol'), h('label', {}, 'Teste fictício', h('select', { value: s.aiDemoCase, onChange: (e) => app.setState({ aiDemoCase: e.target.value }) }, cases.map(c => h('option', { key: c.id, value: c.id }, c.label)))), h('label', {}, 'Raciocínio', h('select', { value: s.aiEffort, onChange: (e) => app.setState({ aiEffort: e.target.value }) }, ['auto', 'low', 'medium', 'high'].map(e => h('option', { key: e, value: e }, e === 'auto' ? 'Automático' : e === 'low' ? 'Baixo' : e === 'medium' ? 'Médio' : 'Alto')))), h('label', { className: 'mf-ai-check' }, h('input', { type: 'checkbox', checked: s.aiCreditsConfirmed,
         onChange: (e) => app.setState({ aiCreditsConfirmed: Boolean(e.target.checked) }) }), h('span', {}, 'Conferi em Configurações → Uso: créditos adicionais desativados e limite semanal do aplicativo abaixo de 100%.')), h('button', { type: 'button', className: 'primary-button', disabled: s.aiBusy || !s.aiCreditsConfirmed,
-        onClick: () => intelligenceTest(app) }, s.aiBusy ? 'Executando teste...' : 'Testar GPT-6.1 Sol com dados fictícios'), h('p', { className: 'mf-ai-usage-warning' }, 'As configurações de créditos e o teto semanal são controlados pelo ChatGPT. Limite deste aplicativo abaixo de 100% impede uso de créditos adicionais nessa modalidade. O app não consegue verificar esses ajustes automaticamente. O teste conta com limite preventivo de três solicitações por sessão.')) : null, s.aiBusy ? h('p', { className: 'mf-ai-progress', role: 'status' }, 'Aguardando autenticação ou conclusão do teste...') : null, s.aiStreaming && !s.aiResult ? h('div', { className: 'mf-ai-stream', role: 'status' }, h('strong', {}, 'Resposta em andamento'), h('p', {}, s.aiStreaming.slice(0, 12000))) : null, s.aiResult ? h('div', { className: 'mf-ai-test-result' }, h('span', { className: 'micro-label' }, 'TESTE CONCLUÍDO · APENAS DADOS FICTÍCIOS'), h('div', { className: 'mf-ai-markdown' }, ...aiMarkdownNodes(s.aiResult.text || 'Nenhum texto retornado.')), s.aiResult.usageStored === false ? h('small', {}, 'As métricas desta resposta não puderam ser salvas no histórico local.') : null, h('small', {}, 'Modelo ' + s.aiResult.model + ' · esforço ' + s.aiResult.effort +
+        onClick: () => intelligenceTest(app) }, s.aiBusy ? 'Executando teste...' : 'Testar GPT-6.2 Sol com dados fictícios'), h('p', { className: 'mf-ai-usage-warning' }, 'As configurações de créditos e o teto semanal são controlados pelo ChatGPT. Limite deste aplicativo abaixo de 100% impede uso de créditos adicionais nessa modalidade. O app não consegue verificar esses ajustes automaticamente. O teste conta com limite preventivo de três solicitações por sessão.')) : null, s.aiBusy ? h('p', { className: 'mf-ai-progress', role: 'status' }, 'Aguardando autenticação ou conclusão do teste...') : null, s.aiStreaming && !s.aiResult ? h('div', { className: 'mf-ai-stream', role: 'status' }, h('strong', {}, 'Resposta em andamento'), h('p', {}, s.aiStreaming.slice(0, 12000))) : null, s.aiResult ? h('div', { className: 'mf-ai-test-result' }, h('span', { className: 'micro-label' }, 'TESTE CONCLUÍDO · APENAS DADOS FICTÍCIOS'), h('div', { className: 'mf-ai-markdown' }, ...aiMarkdownNodes(s.aiResult.text || 'Nenhum texto retornado.')), s.aiResult.usageStored === false ? h('small', {}, 'As métricas desta resposta não puderam ser salvas no histórico local.') : null, h('small', {}, 'Modelo ' + s.aiResult.model + ' · esforço ' + s.aiResult.effort +
         (s.aiResult.usage ? ' · entrada ' + s.aiResult.usage.inputTokens + ' tokens · saída ' + s.aiResult.usage.outputTokens + ' tokens' : ''))) : null, s.aiError ? h('p', { className: 'mf-ai-error', role: 'alert' }, s.aiError) : null);
 }
 function intelligenceNowTime() {
@@ -6944,31 +7180,36 @@ function intelligenceFoldText(value) {
     return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('pt-BR').replace(/\s+/g, ' ').trim();
 }
 function intelligenceConversationState(app) {
-    var _a, _b, _c, _d, _f, _g, _h, _j, _k, _l, _m;
+    var _a, _b, _c, _d, _f, _g, _h, _j, _k, _l;
     if (app.state.categoryReviewGrant)
         return { kind: 'chat_available', pill: app.state.categoryReviewGrant.expiresAt > Date.now() ? 'Revisão sintética · sem IA externa' : 'Revisão sintética expirada', badge: 'Revisão sintética', css: 'is-local' };
-    if ((_a = app.state.localFinancialAccess) === null || _a === void 0 ? void 0 : _a.token)
-        return { kind: 'chat_available', pill: app.state.localFinancialAccess.expiresAt > Date.now() ? 'Leitura local · sem IA externa' : 'Leitura local expirada', badge: 'Leitura local', css: 'is-local' };
     const s = (app === null || app === void 0 ? void 0 : app.state) || {};
-    const activeError = String(s.aiError || ((_b = s.aiStatus) === null || _b === void 0 ? void 0 : _b.error) || '').trim();
+    const solEnabled = Boolean((_a = s.aiCopilotCap) === null || _a === void 0 ? void 0 : _a.enabled);
+    if ((_b = app.state.localFinancialAccess) === null || _b === void 0 ? void 0 : _b.token) {
+        const active = app.state.localFinancialAccess.expiresAt > Date.now();
+        return {
+            kind: 'chat_available',
+            pill: active ? (((_c = s.aiStatus) === null || _c === void 0 ? void 0 : _c.connected) && solEnabled ? 'Leitura local + GPT-6.2 Sol ativos' : 'Leitura local autorizada · sem IA externa') : 'Leitura local expirada',
+            badge: 'Leitura local',
+            css: 'is-local'
+        };
+    }
+    const activeError = String(s.aiError || ((_d = s.aiStatus) === null || _d === void 0 ? void 0 : _d.error) || '').trim();
     const explicitUnavailable = Boolean(activeError ||
-        ((_c = s.aiStatus) === null || _c === void 0 ? void 0 : _c.unavailable) === true ||
-        ((_d = s.aiStatus) === null || _d === void 0 ? void 0 : _d.serviceAvailable) === false ||
-        ((_f = s.aiCapabilities) === null || _f === void 0 ? void 0 : _f.serviceAvailable) === false ||
-        (((_g = s.aiStatus) === null || _g === void 0 ? void 0 : _g.connected) === true && ((_h = s.aiStatus) === null || _h === void 0 ? void 0 : _h.secure) === false));
+        ((_f = s.aiStatus) === null || _f === void 0 ? void 0 : _f.unavailable) === true ||
+        ((_g = s.aiStatus) === null || _g === void 0 ? void 0 : _g.serviceAvailable) === false ||
+        ((_h = s.aiCapabilities) === null || _h === void 0 ? void 0 : _h.serviceAvailable) === false ||
+        (((_j = s.aiStatus) === null || _j === void 0 ? void 0 : _j.connected) === true && ((_k = s.aiStatus) === null || _k === void 0 ? void 0 : _k.secure) === false));
     if (explicitUnavailable) {
         return { kind: 'service_unavailable', pill: 'Serviço temporariamente indisponível', badge: 'Indisponível', css: 'is-error' };
     }
-    if (((_j = s.aiStatus) === null || _j === void 0 ? void 0 : _j.connected) === true) {
-        const chatDeclared = Boolean(((_k = s.aiCapabilities) === null || _k === void 0 ? void 0 : _k.conversationalInferenceEnabled) === true ||
-            ((_l = s.aiCapabilities) === null || _l === void 0 ? void 0 : _l.chatAvailable) === true ||
-            ((_m = s.aiStatus) === null || _m === void 0 ? void 0 : _m.chatAvailable) === true);
-        if (chatDeclared) {
-            return { kind: 'chat_available', pill: 'Serviço de conversação disponível · motor I2-A pendente', badge: 'Chat disponível', css: 'is-ready' };
+    if (((_l = s.aiStatus) === null || _l === void 0 ? void 0 : _l.connected) === true) {
+        if (solEnabled) {
+            return { kind: 'chat_available', pill: 'ChatGPT conectado · GPT-6.2 Sol ativo (modo geral)', badge: 'GPT-6.2 Sol ativo', css: 'is-ready' };
         }
-        return { kind: 'oauth_connected_unimplemented', pill: 'Conta autenticada · chat aberto na I2-A', badge: 'Aguarda I2-A', css: 'is-auth-only' };
+        return { kind: 'oauth_connected_needs_optin', pill: 'ChatGPT conectado · ative o GPT-6.2 Sol para conversar', badge: 'Ativação pendente', css: 'is-auth-only' };
     }
-    return { kind: 'oauth_disconnected', pill: 'IA externa desconectada · leitura local requer autorização', badge: 'Sem OAuth', css: 'is-offline' };
+    return { kind: 'oauth_disconnected', pill: 'ChatGPT não conectado · leitura local sob autorização', badge: 'Sem OAuth', css: 'is-offline' };
 }
 function intelligenceReferenceToday(app) {
     var _a;
@@ -7421,22 +7662,86 @@ function intelligenceResolveActionProposal(app, proposalId, decision) {
             proposal: {
                 ...p,
                 status: 'preview_confirmed',
-                resultMessage: 'Prévia validada sem gravação: identidade (' + (p.origin === 'bank' ? 'Banco · ' + (p.accountName || p.accountId) : 'Manual') + '), data (' + p.date + '), valor e categoria (' + p.currentCategory + ' → ' + p.proposedCategory + ') conferidos. Nenhuma escrita foi executada no banco de dados (persistência real prevista para a I2-B).'
+                resultMessage: 'Prévia validada sem gravação: identidade (' + (p.origin === 'bank' ? 'Banco · ' + (p.accountName || p.accountId) : 'Manual') + '), data (' + p.date + '), valor e categoria (' + p.currentCategory + ' → ' + p.proposedCategory + ') conferidos. Nenhuma alteração é gravada sem sua confirmação supervisionada.'
             }
         };
     });
     intelligenceSyncThreadMessages(app, updated);
 }
+function intelligenceIsM3ActionIntent(foldedQuestion) {
+    const q = String(foldedQuestion || '');
+    return /\b(coloque|coloquem|categoriz|recategoriz|classifiqu|reclassifiqu|mova|mover|alter[ea]r?\s+(?:a\s+)?categoria|mud[ea]r?\s+(?:a\s+)?categoria)\b/.test(q) ||
+        /(salario|salarios|renda|remuneracao|holerite|recebi|ganho).*(orcament|limite|reorganiz|organiz|distribu|redistribu|ajust|guardar|poupar|reservar)|(?:reorganiz|redistribu|recalcul|equilibr)\w*\s+(?:os?\s+|meus?\s+)?orcament/.test(q) ||
+        /^(?:por favor,?\s*)?(?:sempre que|toda vez que)\b/.test(q) ||
+        /\b(?:regra(?:\s+futura|\s+automatica)?\s+(?:para|quando)|(?:desativ|paus|desabilit|ativ|reabilit|habilit)\w*\s+(?:a\s+)?regra)\b/.test(q) ||
+        /\b(?:crie|criar|adicione|adicionar|inclua|incluir|nova|renomei\w*|mud\w*\s+o\s+nome|alter\w*\s+o\s+nome)\s+(?:a\s+)?(?:subcategoria|categoria)\b/.test(q) ||
+        /^(?:por favor,?\s*)?(?:deixe|defin\w*|ajust\w*|mud\w*|alter\w*|coloque|fique com)\s+(?:o\s+|meu\s+)?(?:limite|orcamento|teto)\b/.test(q) ||
+        /\b(?:despesa prevista|receita prevista|conta prevista|compromisso|parcela prevista|planejamento)\b.*\b(?:registr|adicion|crie|criar|agend|cancel|reativ|acabamos de simular|simul)\b|\b(?:registr|adicion|crie|criar|agend|cancel|reativ)\w*.*\b(?:despesa prevista|receita prevista|conta prevista|compromisso|parcela prevista|planejamento)\b/.test(q) ||
+        /^(?:por favor,?\s*)?(?:alter|mud|atualiz|ajust|remarqu)\w*\s+(?:o\s+|a\s+)?(?:vencimento|data|valor)\b/.test(q) ||
+        /\b(?:gostei.*mais|guardar.*a mais|poupar.*a mais|aument\w*.*reserva|trave |fixe |destrave|desbloque|reduza mais|use o valor que voce sugeriu|economia sugerida|reducao sugerida)\b/.test(q);
+}
+function intelligenceClassifyQuestion(question) {
+    const f = intelligenceFoldText(question);
+    if (intelligenceIsM3ActionIntent(f))
+        return 'm3_action';
+    const educationalHowTo = /\bcomo\s+(?:organizar|controlar|montar|construir|administrar|planejar|estruturar|equilibrar|dividir|criar)\b/.test(f) &&
+        !/\b(extrato|saldo|fatura|neste\s+mes|este\s+mes|mes\s+passado|ultim[oa]s?\s+\d*\s*(?:mes|dias)|gastei|recebi|paguei|lancament|movimentac|minhas\s+contas|projecao|orcamento\s+de)\b/.test(f);
+    if (educationalHowTo)
+        return 'general';
+    if (/\b(meu\s+(?:extrato|saldo|orcamento|fluxo)|minha\s+(?:conta|fatura|projecao|renda)|minhas\s+(?:contas|despesas|receitas|financas|movimentacoes|compras|parcelas)|meus\s+(?:gastos|orcamentos|compromissos|lancamentos|limites)|orcamento\s+de\b|quanto\s+sobrou|gastei(?:\s+mais)?|onde\s+(?:mais\s+gastei|gastei\s+mais|posso\s+economizar)|quais\s+(?:os\s+|meus\s+)?gastos|faturas?|parcelas?|a\s+pagar|assinaturas?|recorrentes?|economizei|recebi\s+(?:este|no)\s+mes|paguei|ultrapass|estourou|compar[ea]\s+minhas|movimentacoes\s+a\s+revisar|proximo\s+(?:mes|trimestre))\b/.test(f))
+        return 'personal_financial';
+    if (/\b(quanto\s+(?:gastei|paguei|recebi|tenho\s+comprometido)|quais\s+foram\s+(?:os?\s+)?(?:maiores|meus|minhas)|estabelecimentos\s+onde\s+mais|por\s+que\s+(?:gastei|minhas?\s+despesas)|analise\s+(?:meu\s+fluxo|meus\s+gastos))\b/.test(f))
+        return 'personal_financial';
+    if (/\bse\s+eu\s+comprar\b|\bposso\s+comprar\b/.test(f))
+        return 'personal_financial';
+    return 'general';
+}
+function intelligenceRecentPlainHistory(messages, limit = 6, opts) {
+    const out = [];
+    const list = Array.isArray(messages) ? messages : [];
+    const excludeFinancial = (opts === null || opts === void 0 ? void 0 : opts.excludeFinancial) !== false;
+    for (const m of list.slice(-14)) {
+        if (!m || !m.text)
+            continue;
+        if (m.role !== 'user' && m.role !== 'assistant')
+            continue;
+        if (m.role === 'assistant' && m.status !== 'done')
+            continue;
+        if (excludeFinancial) {
+            if (/^(?:local-|ic2-|m3a-|review-)/.test(String(m.id || '')))
+                continue;
+            if (m.structuredCard || m.ic2Reply || m.visual || m.visualV3 || m.m3ActionDraft || m.proposal)
+                continue;
+            if (/R\$\s*-?\d|Consulta local ·|Prévia supervisionada|O que aconteceu:|Total de entradas|Saldo nas contas/i.test(String(m.text)))
+                continue;
+        }
+        const text = String(m.text).replace(/\s+/g, ' ').trim().slice(0, 450);
+        if (text)
+            out.push({ role: m.role, text });
+    }
+    return out.slice(-limit);
+}
+function intelligenceCleanIpcError(err, fallback) {
+    const raw = String((err === null || err === void 0 ? void 0 : err.message) || fallback || '');
+    const cleaned = raw.replace(/^Error invoking remote method '[^']+':\s*(?:Error:\s*)?/i, '').trim();
+    return (cleaned || String(fallback || '')).slice(0, 260);
+}
+function intelligenceIsUserCancelledError(err) {
+    const msg = String((err === null || err === void 0 ? void 0 : err.message) || '') + ' ' + String((err === null || err === void 0 ? void 0 : err.cause) || '');
+    return /\bUSER_CANCELLED\b|cancelad[ao]\s+(?:pelo\s+usu[áa]rio|por\s+solicita[çc][ãa]o)/i.test(msg);
+}
 async function intelligenceSubmitQuestion(app, rawQuestion) {
-    var _a, _b, _c, _d;
+    var _a, _b, _c, _d, _f, _g, _h, _j;
     if (typeof categoryReviewHandleQuestion === 'function' && categoryReviewHandleQuestion(app, rawQuestion))
         return;
-    if (((_a = app.state.localFinancialAccess) === null || _a === void 0 ? void 0 : _a.token) && typeof localFinancialSubmit === 'function')
+    const grant = app.state.localFinancialAccess;
+    const grantValid = !!(grant === null || grant === void 0 ? void 0 : grant.token) && (!Number.isFinite(grant.expiresAt) || grant.expiresAt > Date.now());
+    if (grantValid && typeof localFinancialSubmit === 'function')
         return localFinancialSubmit(app, rawQuestion);
     const q = String(rawQuestion || '').trim().slice(0, 750);
-    if (!q || app.state.aiBusy || app.state.intelligenceDrawerBusy)
+    if (!q || app.state.aiBusy || app.state.intelligenceDrawerBusy || app.state.aiCopilotBusy)
         return;
-    const priorError = String(app.state.aiError || ((_b = app.state.aiStatus) === null || _b === void 0 ? void 0 : _b.error) || '').trim();
+    const priorError = String(app.state.aiError || ((_a = app.state.aiStatus) === null || _a === void 0 ? void 0 : _a.error) || '').trim();
     const convState = intelligenceConversationState(app);
     const scope = app.state.intelligencePanelOpen && app.state.intelligenceContextSnapshot
         ? app.state.intelligenceContextSnapshot
@@ -7458,9 +7763,10 @@ async function intelligenceSubmitQuestion(app, rawQuestion) {
     app.setState({
         intelligenceMessages: [...currentMessages, userMsg],
         intelligenceDraft: '',
-        intelligencePreparedQuestion: q,
+        intelligencePreparedQuestion: '',
         intelligenceDraftScope: scope
-    });
+    }, () => intelligenceScrollChatToBottom());
+    const desktopConsentRequired = typeof (desktop === null || desktop === void 0 ? void 0 : desktop.localFinancialAuthorize) === 'function' && app.state.mode !== 'demo' && !grantValid;
     const catIntent = intelligenceParseCategorizeIntent(q, app.state.categories, todayIso);
     if (catIntent) {
         const built = intelligenceBuildCategorizeProposal(app, catIntent);
@@ -7480,39 +7786,135 @@ async function intelligenceSubmitQuestion(app, rawQuestion) {
         return;
     }
     const wantsLocalSummary = /\b(?:resumo\s+estruturado|tabela\s+de\s+categorias|resumo\s+das\s+minhas\s+movimenta[çc][õo]es)\b/i.test(q);
-    const structuredCard = wantsLocalSummary ? intelligenceBuildStructuredSummaryCard(app) : null;
-    let replyText = '';
-    let replyStatus = 'unavailable';
-    if (convState.kind === 'service_unavailable') {
-        replyStatus = 'error';
-        const errReason = priorError || (((_c = app.state.aiStatus) === null || _c === void 0 ? void 0 : _c.connected) && ((_d = app.state.aiStatus) === null || _d === void 0 ? void 0 : _d.secure) === false ? 'cofre de criptografia local indisponível' : 'falha temporária de comunicação com o serviço de IA');
-        replyText = '**Serviço temporariamente indisponível:** Não foi possível acessar o serviço de IA neste momento (' + errReason + '). Nenhuma resposta foi simulada.';
-    }
-    else if (convState.kind === 'chat_available') {
-        replyStatus = 'unimplemented';
-        replyText = '**Conta autenticada e serviço de conversação disponível, mas motor de conversação aberta ainda não implementado (aguarda I2-A):** Sua conexão OAuth com o ChatGPT está ativa e a capacidade de conversação está habilitada, porém o envio de perguntas abertas sobre dados financeiros reais ainda não foi implementado nesta etapa por segurança. Nenhuma resposta de IA foi simulada e nenhum provedor externo foi acionado.';
-    }
-    else if (convState.kind === 'oauth_connected_unimplemented') {
-        replyStatus = 'unimplemented';
-        replyText = '**Funcionalidade ainda não implementada (aguarda I2-A):** Sua conta ChatGPT está autenticada via OAuth, mas o serviço de conversação aberta sobre dados financeiros reais ainda não foi habilitado nesta etapa. Você já pode preparar prévias locais de categorização (ex.: *"Categorize minha compra do mercado de ontem como Alimentação"*) ou executar os casos homologados no Laboratório.';
-    }
-    else {
-        replyStatus = 'unavailable';
-        replyText = '**Conta desconectada (não autenticada) e conversação aberta pendente (I2-A):** O ChatGPT não está conectado neste computador e a conversação financeira livre será entregue na etapa I2-A. Nenhuma resposta de IA foi simulada. Prévias determinísticas de categorização continuam disponíveis localmente.';
-    }
-    const reply = {
-        id: 'ast-' + (Date.now() + 1),
-        role: 'assistant',
-        text: replyText,
-        createdAt: intelligenceNowTime(),
-        createdAtIso: todayIso,
-        scopeLabel: scope.label,
-        periodLabel: scope.period,
-        status: replyStatus,
-        details: 'Estado: ' + convState.pill + ' · Escopo: ' + scope.label + ' (' + scope.period + ') · Conversa salva com segurança no histórico local do perfil.',
-        structuredCard
+    const structuredCard = wantsLocalSummary && !desktopConsentRequired ? intelligenceBuildStructuredSummaryCard(app) : null;
+    const intent = intelligenceClassifyQuestion(q);
+    const appendAssistant = (partial) => {
+        const reply = {
+            id: 'ast-' + (Date.now() + 1),
+            role: 'assistant',
+            text: '',
+            createdAt: intelligenceNowTime(),
+            createdAtIso: todayIso,
+            scopeLabel: scope.label,
+            periodLabel: scope.period,
+            status: 'done',
+            structuredCard,
+            ...partial
+        };
+        intelligenceSyncThreadMessages(app, [...currentMessages, userMsg, reply], scope);
     };
-    intelligenceSyncThreadMessages(app, [...currentMessages, userMsg, reply], scope);
+    if ((wantsLocalSummary && desktopConsentRequired) || (!wantsLocalSummary && (intent === 'm3_action' || intent === 'personal_financial'))) {
+        appendAssistant({
+            status: 'permission_needed',
+            structuredCard: null,
+            text: intent === 'm3_action'
+                ? '**Autorização financeira necessária para preparar esta ação:** para examinar seus lançamentos, categorias ou orçamento antes de gerar uma prévia confirmável, autorize a leitura financeira desta sessão. Nenhuma escrita ocorre sem prévia, confirmação nativa e recibo reversível.'
+                : '**Autorização de leitura financeira necessária:** por segurança, seus gastos, orçamento, faturas e compromissos locais só são consultados após você autorizar a leitura financeira desta sessão. Nenhuma resposta pessoal foi estimada ou simulada.',
+            permissionActions: [
+                { id: 'authorize_local_read', label: 'Autorizar leitura financeira agora', primary: true, retryQuestion: q }
+            ],
+            details: 'Escopo: ' + scope.label + ' (' + scope.period + ') · Aguardando permissão de leitura financeira nesta sessão.'
+        });
+        return;
+    }
+    const api = desktop;
+    if (convState.kind === 'service_unavailable') {
+        const errReason = priorError || (((_b = app.state.aiStatus) === null || _b === void 0 ? void 0 : _b.connected) && ((_c = app.state.aiStatus) === null || _c === void 0 ? void 0 : _c.secure) === false ? 'cofre de criptografia local indisponível' : 'falha temporária de comunicação com o serviço de IA');
+        appendAssistant({
+            status: 'error',
+            text: '**Serviço temporariamente indisponível:** Não foi possível acessar o serviço de IA neste momento (' + errReason + '). Nenhuma resposta foi simulada.',
+            permissionActions: [{ id: 'open_ai_settings', label: 'Verificar em Configurações de IA' }],
+            details: 'Estado: ' + convState.pill + ' · ' + errReason
+        });
+        return;
+    }
+    if (!wantsLocalSummary && ((_d = app.state.aiStatus) === null || _d === void 0 ? void 0 : _d.connected) && ((_f = app.state.aiCopilotCap) === null || _f === void 0 ? void 0 : _f.enabled) && typeof (api === null || api === void 0 ? void 0 : api.aiCopilotAsk) === 'function') {
+        const startMode = app.state.mode === 'demo' ? 'demo' : 'real';
+        const startThreadId = app.state.intelligenceActiveThreadId || null;
+        const startLocalToken = ((_g = app.state.localFinancialAccess) === null || _g === void 0 ? void 0 : _g.token) || null;
+        const startReviewToken = ((_h = app.state.categoryReviewGrant) === null || _h === void 0 ? void 0 : _h.token) || null;
+        const requestId = 'sol-gen-' + Date.now() + '-' + Math.floor(Math.random() * 10000);
+        const isStillCurrent = () => {
+            var _a, _b;
+            return (app.state.mode === 'demo' ? 'demo' : 'real') === startMode &&
+                (app.state.intelligenceActiveThreadId || null) === startThreadId &&
+                (((_a = app.state.localFinancialAccess) === null || _a === void 0 ? void 0 : _a.token) || null) === startLocalToken &&
+                (((_b = app.state.categoryReviewGrant) === null || _b === void 0 ? void 0 : _b.token) || null) === startReviewToken &&
+                app.state.aiCopilotRequestId === requestId;
+        };
+        app.setState({ aiCopilotBusy: true, aiCopilotStreaming: '', aiCopilotRequestId: requestId, aiError: '' }, () => intelligenceScrollChatToBottom());
+        try {
+            const history = intelligenceRecentPlainHistory(currentMessages);
+            const sol = await api.aiCopilotAsk({ token: null, question: q, history, effortOverride: 'auto', requestId });
+            if (!isStillCurrent())
+                return;
+            if ((sol === null || sol === void 0 ? void 0 : sol.inferenceStatus) && app.state.aiCopilotCap) {
+                app.setState({ aiCopilotCap: { ...app.state.aiCopilotCap, inferenceStatus: sol.inferenceStatus } });
+            }
+            const effortLabel = (sol === null || sol === void 0 ? void 0 : sol.effort) === 'high' ? 'Alto' : (sol === null || sol === void 0 ? void 0 : sol.effort) === 'medium' ? 'Médio' : 'Baixo';
+            appendAssistant({
+                status: 'done',
+                text: String((sol === null || sol === void 0 ? void 0 : sol.text) || '').trim() || 'O GPT-6.2 Sol concluiu a solicitação sem conteúdo de resposta.',
+                operationalEvidence: 'GPT-6.2 Sol · Modo geral (sem dados financeiros) · Esforço ' + effortLabel,
+                details: 'Conversa geral via OAuth com GPT-6.2 Sol · zero acesso ao SQLite ou extratos pessoais · zero fallback pago.'
+            });
+        }
+        catch (solErr) {
+            if (!isStillCurrent())
+                return;
+            if (intelligenceIsUserCancelledError(solErr)) {
+                appendAssistant({
+                    status: 'done',
+                    text: 'Solicitação cancelada. Nenhuma resposta ou alteração financeira foi registrada.',
+                    details: 'Cancelamento manual pelo usuário antes da conclusão.'
+                });
+            }
+            else {
+                const errMsg = intelligenceCleanIpcError(solErr, 'Não foi possível consultar o GPT-6.2 Sol neste momento.');
+                appendAssistant({
+                    status: 'error',
+                    text: '**Não foi possível obter resposta do GPT-6.2 Sol:** ' + errMsg + ' Nenhuma resposta foi simulada.',
+                    permissionActions: [{ id: 'open_ai_settings', label: 'Abrir Configurações de IA' }],
+                    details: 'Erro real retornado pelo serviço GPT-6.2 Sol (OAuth): ' + errMsg
+                });
+            }
+        }
+        finally {
+            if (app.state.aiCopilotRequestId === requestId) {
+                app.setState({ aiCopilotBusy: false, aiCopilotStreaming: '', aiCopilotRequestId: null });
+            }
+        }
+        return;
+    }
+    if (wantsLocalSummary) {
+        appendAssistant({
+            status: 'done',
+            text: '**Resumo estruturado local pronto (somente registros carregados na sessão):** consulte os totais reconciliados abaixo sem acionar IA externa.',
+            details: 'Escopo: ' + scope.label + ' (' + scope.period + ') · Resumo local determinístico sem escrita financeira.'
+        });
+        return;
+    }
+    if (((_j = app.state.aiStatus) === null || _j === void 0 ? void 0 : _j.connected) === true) {
+        appendAssistant({
+            status: 'permission_needed',
+            text: 'Sua conta **ChatGPT está conectada via OAuth**, mas a inferência do modelo **GPT-6.2 Sol** ainda precisa ser ativada neste dispositivo. Ative abaixo para responder a saudações e perguntas gerais sem compartilhar seus registros financeiros pessoais.',
+            permissionActions: [
+                { id: 'enable_ai_copilot', label: 'Ativar GPT-6.2 Sol e responder', primary: true, retryQuestion: q },
+                { id: 'open_ai_settings', label: 'Configurações de IA' }
+            ],
+            details: 'Estado: OAuth conectado · opt-in GPT-6.2 Sol desativado · nenhum registro financeiro acessado.'
+        });
+        return;
+    }
+    appendAssistant({
+        status: 'unavailable',
+        text: '**ChatGPT desconectado neste computador:** conecte sua conta ChatGPT para conversar com o **GPT-6.2 Sol** sobre dúvidas gerais, ou autorize a leitura financeira local para consultar gastos, orçamentos e ações supervisionadas sem IA externa. Nenhuma resposta foi simulada.',
+        permissionActions: [
+            { id: 'connect_chatgpt', label: 'Conectar ChatGPT', primary: true },
+            { id: 'authorize_local_read', label: 'Autorizar leitura local' }
+        ],
+        details: 'Estado: ' + convState.pill + ' · Escopo: ' + scope.label + ' (' + scope.period + ').'
+    });
 }
 const INTELLIGENCE_STORAGE_PREFIX = 'mf_ai_threads_v1_';
 const INTELLIGENCE_MAX_THREADS = 24;
@@ -7724,9 +8126,29 @@ function intelligenceSyncThreadMessages(app, messages, scopeOverride) {
         intelligenceActiveThreadId: activeId,
         intelligenceMessages: trimmedMsgs,
         intelligenceStorageError: storageErr
-    });
+    }, () => intelligenceScrollChatToBottom());
+}
+function intelligenceScrollChatToBottom() {
+    if (typeof document === 'undefined' || typeof document.querySelectorAll !== 'function')
+        return;
+    const scroll = () => {
+        for (const el of Array.from(document.querySelectorAll('.mf-b05-chat-thread, .mf-ai-drawer-body')))
+            el.scrollTop = el.scrollHeight;
+    };
+    if (typeof requestAnimationFrame === 'function')
+        requestAnimationFrame(scroll);
+    else
+        scroll();
+}
+function intelligenceResetStreamingState(app) {
+    var _a;
+    if (((_a = app === null || app === void 0 ? void 0 : app.state) === null || _a === void 0 ? void 0 : _a.aiCopilotBusy) && typeof (desktop === null || desktop === void 0 ? void 0 : desktop.aiCopilotCancel) === 'function') {
+        void desktop.aiCopilotCancel().catch(() => { });
+    }
+    return { aiCopilotBusy: false, aiCopilotStreaming: '', aiCopilotRequestId: null };
 }
 function intelligenceCreateThread(app, initialTitle = 'Nova conversa') {
+    const streamingReset = intelligenceResetStreamingState(app);
     intelligenceEnsureHydrated(app);
     const mode = app.state.mode === 'demo' ? 'demo' : 'real';
     const todayIso = intelligenceReferenceToday(app) || '2026-11-11';
@@ -7753,6 +8175,9 @@ function intelligenceCreateThread(app, initialTitle = 'Nova conversa') {
         intelligenceActiveThreadId: newThread.id,
         intelligenceMessages: [],
         intelligenceDraft: '',
+        intelligencePreparedQuestion: '',
+        intelligenceDraftScope: null,
+        ...streamingReset,
         intelligenceStorageError: storageErr
     });
     return newThread.id;
@@ -7763,10 +8188,14 @@ function intelligenceSelectThread(app, threadId) {
     const found = threads.find(t => t.id === threadId);
     if (!found)
         return;
+    const switching = found.id !== app.state.intelligenceActiveThreadId;
+    const streamingReset = switching ? intelligenceResetStreamingState(app) : {};
     app.setState({
         intelligenceActiveThreadId: found.id,
         intelligenceMessages: found.messages,
-        intelligenceDraftScope: { label: found.scopeLabel, period: found.periodLabel, mode: found.mode === 'demo' ? 'Demonstração' : 'Pessoal' }
+        intelligenceDraftScope: { label: found.scopeLabel, period: found.periodLabel, mode: found.mode === 'demo' ? 'Demonstração' : 'Pessoal' },
+        ...(switching ? { intelligencePreparedQuestion: '' } : {}),
+        ...streamingReset
     });
 }
 function intelligenceDeleteThread(app, threadId, confirmFn) {
@@ -7778,9 +8207,11 @@ function intelligenceDeleteThread(app, threadId, confirmFn) {
     const ask = confirmFn || (typeof confirm === 'function' ? confirm : () => false);
     if (!ask('Excluir permanentemente a conversa “' + target.title + '” deste perfil?'))
         return false;
+    const deletingActive = app.state.intelligenceActiveThreadId === threadId;
+    const streamingReset = deletingActive ? intelligenceResetStreamingState(app) : {};
     const mode = app.state.mode === 'demo' ? 'demo' : 'real';
     const remaining = threads.filter(t => t.id !== threadId);
-    const nextActive = app.state.intelligenceActiveThreadId === threadId ? (remaining[0] || null) : (remaining.find(t => t.id === app.state.intelligenceActiveThreadId) || remaining[0] || null);
+    const nextActive = deletingActive ? (remaining[0] || null) : (remaining.find(t => t.id === app.state.intelligenceActiveThreadId) || remaining[0] || null);
     const storageErr = intelligencePersistThreads(app, remaining, mode);
     if (storageErr) {
         app.setState({ intelligenceStorageError: storageErr });
@@ -7790,6 +8221,7 @@ function intelligenceDeleteThread(app, threadId, confirmFn) {
         intelligenceThreads: remaining,
         intelligenceActiveThreadId: nextActive ? nextActive.id : null,
         intelligenceMessages: nextActive ? nextActive.messages : [],
+        ...streamingReset,
         intelligenceStorageError: storageErr
     });
     return true;
@@ -7797,7 +8229,8 @@ function intelligenceDeleteThread(app, threadId, confirmFn) {
 function intelligenceClearHistory(app, confirmFn) {
     var _a, _b;
     if (((_a = app.state.localFinancialAccess) === null || _a === void 0 ? void 0 : _a.token) || ((_b = app.state.categoryReviewGrant) === null || _b === void 0 ? void 0 : _b.token)) {
-        app.setState({ intelligenceThreads: [], intelligenceMessages: [], intelligenceActiveThreadId: null });
+        const streamingReset = intelligenceResetStreamingState(app);
+        app.setState({ intelligenceThreads: [], intelligenceMessages: [], intelligenceActiveThreadId: null, intelligencePreparedQuestion: '', ...streamingReset });
         return;
     }
     intelligenceEnsureHydrated(app);
@@ -7807,6 +8240,7 @@ function intelligenceClearHistory(app, confirmFn) {
     const ask = confirmFn || (typeof confirm === 'function' ? confirm : () => false);
     if (!ask('Excluir todas as ' + threads.length + ' conversa(s) salvas neste perfil?'))
         return false;
+    const streamingReset = intelligenceResetStreamingState(app);
     const mode = app.state.mode === 'demo' ? 'demo' : 'real';
     const storageErr = intelligencePersistThreads(app, [], mode);
     if (storageErr) {
@@ -7817,12 +8251,15 @@ function intelligenceClearHistory(app, confirmFn) {
         intelligenceThreads: [],
         intelligenceActiveThreadId: null,
         intelligenceMessages: [],
+        intelligencePreparedQuestion: '',
+        ...streamingReset,
         intelligenceStorageError: storageErr
     });
     return true;
 }
 function intelligenceSwitchProfileMode(app, newMode) {
     var _a;
+    const streamingReset = intelligenceResetStreamingState(app);
     if (app.state.categoryReviewGrant && typeof categoryReviewDisable === 'function')
         categoryReviewDisable(app);
     if (((_a = app.state.localFinancialAccess) === null || _a === void 0 ? void 0 : _a.token) && typeof localFinancialDisable === 'function')
@@ -7835,6 +8272,9 @@ function intelligenceSwitchProfileMode(app, newMode) {
         intelligenceThreads: loaded.threads,
         intelligenceActiveThreadId: first ? first.id : null,
         intelligenceMessages: first ? first.messages : [],
+        intelligenceDraftScope: null,
+        intelligencePreparedQuestion: '',
+        ...streamingReset,
         intelligenceStorageError: loaded.error
     });
 }
@@ -8556,10 +8996,10 @@ async function localFinancialEnable(app) {
         categoryReviewDisable(app);
     const api = localFinancialAPI(), s = app.state;
     if (s.localFinancialBusy)
-        return;
+        return false;
     if (!(api === null || api === void 0 ? void 0 : api.localFinancialAuthorize)) {
         app.setState({ localFinancialError: 'Consulta local requer a versão desktop desta candidata.' });
-        return;
+        return false;
     }
     const source = s.mode === 'demo' ? 'manual' : s.localFinancialSource || 'bank', profile = s.mode === 'demo' ? 'demo' : 'real';
     const scope = { source, profile, planning: profile === 'real' && s.localFinancialPlanning === true, consent: 'LOCAL_FINANCIAL_READ_V1' };
@@ -8570,27 +9010,33 @@ async function localFinancialEnable(app) {
         const grant = await api.localFinancialAuthorize(scope);
         if (app.__localReadGeneration !== generation || app.state.mode !== s.mode) {
             void ((_a = api.localFinancialRevoke) === null || _a === void 0 ? void 0 : _a.call(api, grant.token));
-            return;
+            return false;
         }
         app.__ic2Conversation = null;
         app.__ic2InvestigationActive = false;
+        app.__localChatRequest = (app.__localChatRequest || 0) + 1;
+        const streamingReset = typeof intelligenceResetStreamingState === 'function' ? intelligenceResetStreamingState(app) : { aiCopilotBusy: false, aiCopilotStreaming: '', aiCopilotRequestId: null };
         const backup = ((_b = s.localFinancialAccess) === null || _b === void 0 ? void 0 : _b.backup) || { intelligenceThreads: s.intelligenceThreads, intelligenceMessages: s.intelligenceMessages, intelligenceActiveThreadId: s.intelligenceActiveThreadId, intelligenceHydratedMode: s.intelligenceHydratedMode };
-        app.setState({ localFinancialAccess: { ...grant, backup }, localFinancialBusy: false, localFinancialRadar: null, intelligenceCopilotInsights: null, intelligenceThreads: [], intelligenceMessages: [], intelligenceActiveThreadId: null, intelligenceDraft: '', intelligencePreparedQuestion: '', workIntelligenceDemo: s.workIntelligenceDemo ? { ...s.workIntelligenceDemo, enabled: false } : undefined }, () => { void localFinancialRadar(app); if (typeof intelligencePremiumLoad === 'function')
-            void intelligencePremiumLoad(app); void intelligenceCopilotInsightsLoad(app); });
+        await new Promise((resolve) => app.setState({ ...streamingReset, localFinancialAccess: { ...grant, backup }, localFinancialBusy: false, localFinancialRadar: null, intelligenceCopilotInsights: null, intelligenceThreads: [], intelligenceMessages: [], intelligenceActiveThreadId: null, intelligenceDraft: '', intelligencePreparedQuestion: '', workIntelligenceDemo: s.workIntelligenceDemo ? { ...s.workIntelligenceDemo, enabled: false } : undefined }, () => { void localFinancialRadar(app); if (typeof intelligencePremiumLoad === 'function')
+            void intelligencePremiumLoad(app); void intelligenceCopilotInsightsLoad(app); resolve(); }));
+        return true;
     }
     catch {
         app.setState({ localFinancialBusy: false, localFinancialError: 'Não foi possível autorizar a leitura local. Nenhum dado foi consultado por esta solicitação.' });
+        return false;
     }
 }
 function localFinancialDisable(app) {
     var _a, _b;
     app.__ic2Conversation = null;
     app.__ic2InvestigationActive = false;
+    app.__localChatRequest = (app.__localChatRequest || 0) + 1;
     app.__localRadarRequest = (app.__localRadarRequest || 0) + 1;
     app.__copilotInsightsRequest = (app.__copilotInsightsRequest || 0) + 1;
+    const streamingReset = typeof intelligenceResetStreamingState === 'function' ? intelligenceResetStreamingState(app) : { aiCopilotBusy: false, aiCopilotStreaming: '', aiCopilotRequestId: null };
     const access = app.state.localFinancialAccess;
     app.__localReadGeneration = (app.__localReadGeneration || 0) + 1;
-    app.setState({ ...access === null || access === void 0 ? void 0 : access.backup, localFinancialAccess: null, localFinancialRadar: null, intelligenceCopilotInsights: null, localFinancialBusy: false, localFinancialError: '', intelligenceDraft: '' }, () => { if (typeof intelligencePremiumLoad === 'function')
+    app.setState({ ...access === null || access === void 0 ? void 0 : access.backup, ...streamingReset, localFinancialAccess: null, localFinancialRadar: null, intelligenceCopilotInsights: null, localFinancialBusy: false, localFinancialError: '', intelligenceDraft: '' }, () => { if (typeof intelligencePremiumLoad === 'function')
         void intelligencePremiumLoad(app); });
     if (access === null || access === void 0 ? void 0 : access.token)
         void ((_b = (_a = localFinancialAPI()) === null || _a === void 0 ? void 0 : _a.localFinancialRevoke) === null || _b === void 0 ? void 0 : _b.call(_a, access.token).catch(() => app.setState({ localFinancialError: 'A interface encerrou a leitura. A autorização do processo expira em até 15 minutos.' })));
@@ -8626,7 +9072,7 @@ async function localFinancialRadar(app) {
     }
 }
 async function localFinancialSubmit(app, question) {
-    var _a, _b, _c, _d;
+    var _a, _b, _c, _d, _e, _f, _g, _h;
     if (app.state.localFinancialBusy || !String(question || '').trim())
         return;
     const access = app.state.localFinancialAccess;
@@ -8639,6 +9085,17 @@ async function localFinancialSubmit(app, question) {
     const api = localFinancialAPI();
     const month = app.state.localFinancialMonth || app.state.month, signature = intelligencePremiumSignature(app);
     const foldedQuestion = intelligenceFoldText(q);
+    const m3ActionIntent = typeof intelligenceIsM3ActionIntent === 'function'
+        ? intelligenceIsM3ActionIntent(foldedQuestion)
+        : /\b(coloque|coloquem|categoriz|recategoriz|classifiqu|reclassifiqu|mova|mover|alter[ea]r?\s+(?:a\s+)?categoria|mud[ea]r?\s+(?:a\s+)?categoria)\b/.test(foldedQuestion) ||
+            /(salario|salarios|renda|remuneracao|holerite|recebi|ganho).*(orcament|limite|reorganiz|organiz|distribu|redistribu|ajust|guardar|poupar|reservar)|(?:reorganiz|redistribu|recalcul|equilibr)\w*\s+(?:os?\s+|meus?\s+)?orcament/.test(foldedQuestion) ||
+            /^(?:por favor,?\s*)?(?:sempre que|toda vez que)\b/.test(foldedQuestion) ||
+            /\b(?:regra(?:\s+futura|\s+automatica)?\s+(?:para|quando)|(?:desativ|paus|desabilit|ativ|reabilit|habilit)\w*\s+(?:a\s+)?regra)\b/.test(foldedQuestion) ||
+            /\b(?:crie|criar|adicione|adicionar|inclua|incluir|nova|renomei\w*|mud\w*\s+o\s+nome|alter\w*\s+o\s+nome)\s+(?:a\s+)?(?:subcategoria|categoria)\b/.test(foldedQuestion) ||
+            /^(?:por favor,?\s*)?(?:deixe|defin\w*|ajust\w*|mud\w*|alter\w*|coloque|fique com)\s+(?:o\s+|meu\s+)?(?:limite|orcamento|teto)\b/.test(foldedQuestion) ||
+            /\b(?:despesa prevista|receita prevista|conta prevista|compromisso|parcela prevista|planejamento)\b.*\b(?:registr|adicion|crie|criar|agend|cancel|reativ|acabamos de simular|simul)\b|\b(?:registr|adicion|crie|criar|agend|cancel|reativ)\w*.*\b(?:despesa prevista|receita prevista|conta prevista|compromisso|parcela prevista|planejamento)\b/.test(foldedQuestion) ||
+            /^(?:por favor,?\s*)?(?:alter|mud|atualiz|ajust|remarqu)\w*\s+(?:o\s+|a\s+)?(?:vencimento|data|valor)\b/.test(foldedQuestion) ||
+            /\b(?:gostei.*mais|guardar.*a mais|poupar.*a mais|aument\w*.*reserva|trave |fixe |destrave|desbloque|reduza mais|use o valor que voce sugeriu|economia sugerida|reducao sugerida)\b/.test(foldedQuestion);
     const financialInvestigation = /por que.*(despes|gast)|investig|categorias?.*contribu|estabelec.*(cresc|aument)|mostre.*estabelec|despes.*(aument|subi)|gast.*(aument|mais)|onde.*gastando|o que aumentou|compar.*(janeiro|fevereiro|marco|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro|mes)/.test(foldedQuestion);
     const sameThread = !!((_a = app.__ic2Conversation) === null || _a === void 0 ? void 0 : _a.answerId) && messages.some((m) => m.id === app.__ic2Conversation.answerId);
     const i3Followup = sameThread && !!app.__ic2InvestigationActive &&
@@ -8647,17 +9104,24 @@ async function localFinancialSubmit(app, question) {
     const copilotIntentRequested = i3Requested ||
         /(economiz|poupar|guardar|cortar gastos|reduzir gastos|reduzir despesas|plano de economia|meta de econom|recorrenc|assinatur|cobrancas? repetid|reajuste|habitos?|simular compra|posso comprar|comprar .* em \d+x|\b\d+\s*x\b|parcelar|proximos \d{1,2} meses)/.test(foldedQuestion);
     const v3Requested = mfV3Requested(q);
-    const v3Kind = !copilotIntentRequested && typeof (api === null || api === void 0 ? void 0 : api.intelligenceOperationalAsk) === 'function' &&
+    const v3Kind = !copilotIntentRequested && !m3ActionIntent && typeof (api === null || api === void 0 ? void 0 : api.intelligenceOperationalAsk) === 'function' &&
         v3Requested && v3Requested !== 'proposal' && v3Requested !== 'approval' ? v3Requested : null;
     let previousOperational = null;
     const request = (app.__localChatRequest || 0) + 1;
     app.__localChatRequest = request;
     const user = { id: 'local-u-' + Date.now(), role: 'user', text: q, status: 'sent',
         createdAt: intelligenceNowTime(), scopeLabel: scope.label, periodLabel: month };
-    app.setState({ localFinancialBusy: true, intelligenceDraft: '' });
-    let reply = null, operational = null, ic2 = null, error = '';
+    app.setState({ localFinancialBusy: true, intelligenceDraft: '', intelligencePreparedQuestion: '' });
+    let reply = null, operational = null, ic2 = null, m3Draft = null, solReply = null, solCancelled = false, solStale = false, error = '', permissionActions = undefined;
     try {
-        if (!v3Kind && typeof (api === null || api === void 0 ? void 0 : api.intelligenceIC2ReadQuery) === 'function') {
+        if (m3ActionIntent && typeof (api === null || api === void 0 ? void 0 : api.copilotActionInterpret) === 'function') {
+            const draft = await api.copilotActionInterpret({ token: access.token, source: access.source, profile: access.profile, month, question: q });
+            if ((draft === null || draft === void 0 ? void 0 : draft.matched) === true) {
+                const cap = typeof (api === null || api === void 0 ? void 0 : api.copilotActionCapabilityStatus) === 'function' ? await api.copilotActionCapabilityStatus().catch(() => null) : null;
+                m3Draft = { ...draft, capability: cap ? { available: !!cap.available, enabled: !!cap.enabled } : null };
+            }
+        }
+        if (!m3Draft && !v3Kind && typeof (api === null || api === void 0 ? void 0 : api.intelligenceIC2ReadQuery) === 'function') {
             const previous = app.__ic2Conversation;
             const conversationId = (previous === null || previous === void 0 ? void 0 : previous.access) === access && (previous === null || previous === void 0 ? void 0 : previous.signature) === signature &&
                 (previous === null || previous === void 0 ? void 0 : previous.answerId) && messages.some((m) => m.id === previous.answerId) ? previous.id : null;
@@ -8671,6 +9135,53 @@ async function localFinancialSubmit(app, question) {
                 ...(conversationId ? { conversationId } : {}) });
             if (!mfIC2Valid(ic2, access, month))
                 throw Error('Resposta IC2 não verificada.');
+            if (ic2.status === 'unsupported') {
+                if (((_b = app.state.aiStatus) === null || _b === void 0 ? void 0 : _b.connected) && ((_c = app.state.aiCopilotCap) === null || _c === void 0 ? void 0 : _c.enabled) && typeof (api === null || api === void 0 ? void 0 : api.aiCopilotAsk) === 'function') {
+                    const requestId = 'sol-' + Date.now() + '-' + Math.floor(Math.random() * 10000);
+                    app.setState({ aiCopilotBusy: true, aiCopilotStreaming: '', aiCopilotRequestId: requestId });
+                    try {
+                        const history = typeof intelligenceRecentPlainHistory === 'function' ? intelligenceRecentPlainHistory(messages, 6, { excludeFinancial: true }) : [];
+                        solReply = await api.aiCopilotAsk({ token: access.token, source: access.source, profile: access.profile, month, question: q, history, effortOverride: 'auto', requestId });
+                        if (app.state.aiCopilotRequestId !== requestId || request !== app.__localChatRequest) {
+                            solStale = true;
+                        }
+                        else if ((solReply === null || solReply === void 0 ? void 0 : solReply.inferenceStatus) && app.state.aiCopilotCap) {
+                            app.setState({ aiCopilotCap: { ...app.state.aiCopilotCap, inferenceStatus: solReply.inferenceStatus } });
+                        }
+                    }
+                    catch (solErr) {
+                        if (app.state.aiCopilotRequestId !== requestId || request !== app.__localChatRequest) {
+                            solStale = true;
+                        }
+                        else {
+                            const isCancel = typeof intelligenceIsUserCancelledError === 'function'
+                                ? intelligenceIsUserCancelledError(solErr)
+                                : /\bUSER_CANCELLED\b|cancelad[ao]\s+(?:pelo\s+usu[áa]rio|por\s+solicita[çc][ãa]o)/i.test(String((solErr === null || solErr === void 0 ? void 0 : solErr.message) || '') + ' ' + String((solErr === null || solErr === void 0 ? void 0 : solErr.cause) || ''));
+                            if (isCancel) {
+                                solCancelled = true;
+                            }
+                            else {
+                                const cleanSolErr = typeof intelligenceCleanIpcError === 'function'
+                                    ? intelligenceCleanIpcError(solErr, 'falha inesperada')
+                                    : String((solErr === null || solErr === void 0 ? void 0 : solErr.message) || 'falha inesperada').replace(/^Error invoking remote method '[^']+':\s*(?:Error:\s*)?/i, '').trim().slice(0, 260);
+                                error = '**Não foi possível consultar o GPT-6.2 Sol:** ' + cleanSolErr + ' Nenhuma resposta foi simulada.';
+                                permissionActions = [{ id: 'open_ai_settings', label: 'Verificar Configurações de IA' }];
+                            }
+                        }
+                    }
+                    finally {
+                        if (app.state.aiCopilotRequestId === requestId) {
+                            app.setState({ aiCopilotBusy: false, aiCopilotStreaming: '', aiCopilotRequestId: null });
+                        }
+                    }
+                }
+                else if (((_d = app.state.aiStatus) === null || _d === void 0 ? void 0 : _d.connected) === true) {
+                    permissionActions = [{ id: 'enable_ai_copilot', label: 'Ativar GPT-6.2 Sol e responder', primary: true, retryQuestion: q }, { id: 'open_ai_settings', label: 'Configurações de IA' }];
+                }
+                else {
+                    permissionActions = [{ id: 'connect_chatgpt', label: 'Conectar ChatGPT', primary: true }];
+                }
+            }
         }
         else if (typeof (api === null || api === void 0 ? void 0 : api.intelligenceOperationalAsk) === 'function') {
             operational = await api.intelligenceOperationalAsk({ token: access.token, month,
@@ -8699,75 +9210,86 @@ async function localFinancialSubmit(app, question) {
         }
     }
     catch (e) {
-        error = String((e === null || e === void 0 ? void 0 : e.message) || 'Consulta local indisponível.').slice(0, 220);
+        error = typeof intelligenceCleanIpcError === 'function'
+            ? intelligenceCleanIpcError(e, 'Consulta local indisponível.').slice(0, 220)
+            : String((e === null || e === void 0 ? void 0 : e.message) || 'Consulta local indisponível.').replace(/^Error invoking remote method '[^']+':\s*(?:Error:\s*)?/i, '').trim().slice(0, 220);
     }
-    if (request !== app.__localChatRequest || (app.state.intelligenceActiveThreadId || null) !== threadAtStart ||
+    if (solStale || request !== app.__localChatRequest || (app.state.intelligenceActiveThreadId || null) !== threadAtStart ||
         app.state.localFinancialAccess !== access ||
-        ((_b = app.state.localFinancialAccess) === null || _b === void 0 ? void 0 : _b.token) !== (access === null || access === void 0 ? void 0 : access.token) ||
+        ((_e = app.state.localFinancialAccess) === null || _e === void 0 ? void 0 : _e.token) !== (access === null || access === void 0 ? void 0 : access.token) ||
         signature !== intelligencePremiumSignature(app)) {
         if (request === app.__localChatRequest)
             app.setState({ localFinancialBusy: false });
         return;
     }
     app.__ic2InvestigationActive = !!(ic2 && ['ready', 'partial'].includes(ic2.status) &&
-        ((_c = ic2.facts) === null || _c === void 0 ? void 0 : _c.some((fact) => fact.tool === 'compare_spending_breakdown')));
+        ((_f = ic2.facts) === null || _f === void 0 ? void 0 : _f.some((fact) => fact.tool === 'compare_spending_breakdown')));
     if (ic2 && ['ready', 'partial', 'needs_clarification', 'unsupported'].includes(ic2.status))
         app.__ic2Conversation = { access, signature, id: ic2.conversationId };
     const state = operational === null || operational === void 0 ? void 0 : operational.uiState;
-    let answerText = (ic2 === null || ic2 === void 0 ? void 0 : ic2.answer) || (operational === null || operational === void 0 ? void 0 : operational.answer) || (reply === null || reply === void 0 ? void 0 : reply.text) || error || 'Consulta indisponível.';
-    const finalStatus = ic2 ?
+    let answerText = (m3Draft === null || m3Draft === void 0 ? void 0 : m3Draft.answer) || (solReply === null || solReply === void 0 ? void 0 : solReply.text) || (solCancelled ? 'Solicitação cancelada. Nenhuma resposta ou alteração financeira foi registrada.' : '') || error || (ic2 === null || ic2 === void 0 ? void 0 : ic2.answer) || (operational === null || operational === void 0 ? void 0 : operational.answer) || (reply === null || reply === void 0 ? void 0 : reply.text) || 'Consulta indisponível.';
+    const finalStatus = m3Draft ?
+        (m3Draft.status === 'ready' ? 'done' : 'unsupported') : (solReply === null || solReply === void 0 ? void 0 : solReply.text) || solCancelled ?
+        'done' : error && (ic2 === null || ic2 === void 0 ? void 0 : ic2.status) === 'unsupported' ?
+        'error' : ic2 ?
         (['ready', 'partial'].includes(ic2.status) ? 'done' : ic2.status === 'unsupported' || ic2.status === 'needs_clarification' ? 'unsupported' :
             ic2.status === 'denied' || ic2.status === 'stale' ? 'unavailable' : 'error') : operational ?
         (state === 'ready' || state === 'empty' ? 'done' : state === 'unsupported' ? 'unsupported' : state === 'denied' || state === 'expired' ? 'unavailable' : 'error') :
         reply ? 'done' : 'error';
     const factsValid = operational && (state === 'ready' || state === 'empty');
-    const evidence = ic2 && ['ready', 'partial'].includes(ic2.status) ?
-        'Consulta local · ' + (ic2.source === 'bank' ? 'Fonte bancária' : 'Fonte manual') + ' · ' + month :
-        factsValid ? (operational.profile === 'synthetic' ? 'Ambiente sintético' : 'Fonte ' + (operational.source === 'bank' ? 'bancária' : 'manual')) +
-            ' · ' + intelligencePremiumCoverage(operational.coverage) + ' · ' + month : '';
-    const visualV3 = v3Kind && factsValid ? mfV3BindGrant(mfV3FromOperational(operational, v3Kind, previousOperational), access, signature) : null;
-    if (v3Kind) {
+    const evidence = m3Draft ?
+        'Ação supervisionada · ' + (m3Draft.source === 'bank' ? 'Fonte bancária' : 'Fonte manual') + ' · ' + month :
+        (solReply === null || solReply === void 0 ? void 0 : solReply.text) ?
+            'GPT-6.2 Sol · Esforço ' + (solReply.effort === 'high' ? 'Alto' : solReply.effort === 'medium' ? 'Médio' : 'Baixo') + ' · Apenas agregados autorizados · ' + month :
+            solCancelled ?
+                'Solicitação cancelada pelo usuário' :
+                ic2 && ['ready', 'partial'].includes(ic2.status) ?
+                    'Consulta local · ' + (ic2.source === 'bank' ? 'Fonte bancária' : 'Fonte manual') + ' · ' + month :
+                    factsValid ? (operational.profile === 'synthetic' ? 'Ambiente sintético' : 'Fonte ' + (operational.source === 'bank' ? 'bancária' : 'manual')) +
+                        ' · ' + intelligencePremiumCoverage(operational.coverage) + ' · ' + month : '';
+    const visualV3 = !m3Draft && v3Kind && factsValid ? mfV3BindGrant(mfV3FromOperational(operational, v3Kind, previousOperational), access, signature) : null;
+    if (v3Kind && !m3Draft) {
         answerText = !visualV3 ? 'Não há evidência suficiente para apresentar esta análise com segurança. Nenhum valor foi estimado.' :
             visualV3.quality === 'unavailable' ? 'Esta família visual não tem serviço financeiro operacional compatível neste momento.' :
                 visualV3.quality === 'partial' ? 'Os registros são parciais ou não permitem uma comparação completa. Veja as limitações a seguir.' :
                     'Consulte a visualização calculada a partir dos registros locais autorizados.';
     }
-    const visualKind = !v3Kind && factsValid ? mfVisualRequested(q) : null;
+    const visualKind = !m3Draft && !v3Kind && factsValid ? mfVisualRequested(q) : null;
     const visual = visualKind ? mfVisualFromOperational(operational, visualKind) : null;
     const answer = {
-        id: (ic2 ? 'ic2-a-' : 'local-a-') + Date.now(), role: 'assistant', text: answerText, status: finalStatus,
+        id: (m3Draft ? 'm3a-' : ic2 ? 'ic2-a-' : 'local-a-') + Date.now(), role: 'assistant', text: answerText, status: finalStatus,
         createdAt: intelligenceNowTime(), scopeLabel: scope.label, periodLabel: month,
-        structuredCard: ic2 ? mfIC2Card(ic2) : factsValid && operational.card ? operational.card : (reply === null || reply === void 0 ? void 0 : reply.card) || null,
+        structuredCard: m3Draft ? null : ic2 ? mfIC2Card(ic2) : factsValid && operational.card ? operational.card : (reply === null || reply === void 0 ? void 0 : reply.card) || null,
         visual, visualV3,
         ic2Reply: ic2 || undefined,
         ic2FollowUps: ic2 && Array.isArray(ic2.followUps) ? ic2.followUps.slice(0, 3) : undefined,
+        m3ActionDraft: m3Draft || undefined,
+        permissionActions,
         operationalActions: factsValid && !visualV3 && Array.isArray(operational.actions) ? operational.actions : [],
         operationalEvidence: evidence,
-        details: ic2 ? 'Leitura local verificada · ' + (ic2.status === 'partial' ? 'Cobertura parcial. ' : '') +
-            'Fatos locais verificáveis, sem escrita financeira ou modelo externo.' : v3Kind && !visualV3 ? 'Os fatos autorizados não permitem esta visualização; nenhuma informação foi estimada.' :
-            visualKind && !visual ? 'Não há evidências suficientes para desenhar o gráfico com totais reconciliados. Confira fonte e cobertura.' :
-                factsValid ? 'Consulta local determinística, sem IA externa. Não foi executada qualquer alteração.' :
-                    reply ? JSON.stringify(reply.references) : 'Nenhuma alteração financeira nem envio externo.'
+        details: m3Draft ? 'Prévia supervisionada M3 · confirmação nativa e backup SQLite antes de qualquer escrita.' :
+            (solReply === null || solReply === void 0 ? void 0 : solReply.text) ? 'GPT-6.2 Sol via OAuth · somente totais agregados enviados · zero fallback pago · não grava no SQLite.' :
+                ic2 ? 'Leitura local verificada · ' + (ic2.status === 'partial' ? 'Cobertura parcial. ' : '') +
+                    'Fatos locais verificáveis, sem escrita financeira ou modelo externo.' : v3Kind && !visualV3 ? 'Os fatos autorizados não permitem esta visualização; nenhuma informação foi estimada.' :
+                    visualKind && !visual ? 'Não há evidências suficientes para desenhar o gráfico com totais reconciliados. Confira fonte e cobertura.' :
+                        factsValid ? 'Consulta local determinística, sem IA externa. Não foi executada qualquer alteração.' :
+                            reply ? JSON.stringify(reply.references) : 'Nenhuma alteração financeira nem envio externo.'
     };
-    if (ic2) {
+    if (m3Draft) {
+        if (typeof copilotBindActionMessage === 'function')
+            copilotBindActionMessage(answer, access, signature, month, Number(((_g = app.state) === null || _g === void 0 ? void 0 : _g.financeRevision) || 0));
+    }
+    else if (ic2) {
         mfIC2BindMessage(answer, access, signature, month);
-        if (((_d = app.__ic2Conversation) === null || _d === void 0 ? void 0 : _d.id) === ic2.conversationId)
+        if (((_h = app.__ic2Conversation) === null || _h === void 0 ? void 0 : _h.id) === ic2.conversationId)
             app.__ic2Conversation.answerId = answer.id;
     }
     else
         mfLocalBindMessage(answer, access, signature, month);
     intelligenceSyncThreadMessages(app, [...messages, user, answer], scope);
     app.setState({ localFinancialBusy: false }, () => {
-        if (typeof document !== 'undefined' && typeof document.querySelectorAll === 'function') {
-            const scroll = () => {
-                for (const el of Array.from(document.querySelectorAll('.mf-b05-chat-thread, .mf-ai-drawer-body')))
-                    el.scrollTop = el.scrollHeight;
-            };
-            if (typeof requestAnimationFrame === 'function')
-                requestAnimationFrame(scroll);
-            else
-                scroll();
-        }
+        if (typeof intelligenceScrollChatToBottom === 'function')
+            intelligenceScrollChatToBottom();
     });
 }
 function renderLocalFinancialAccess(app) {
@@ -8822,6 +9344,1253 @@ async function intelligenceCopilotInsightsLoad(app) {
         if (request === app.__copilotInsightsRequest)
             app.setState({ intelligenceCopilotInsights: null });
     }
+}
+const MF_M3_ACTION_GRANTS = new WeakMap();
+const MF_M3_ACTION_UI_STATE = new WeakMap();
+function copilotBindActionMessage(msg, access, signature, month, revision = 0) {
+    if (access === null || access === void 0 ? void 0 : access.token)
+        MF_M3_ACTION_GRANTS.set(msg, { access, signature, month, revision });
+    return msg;
+}
+function copilotActionMessageLive(app, msg) {
+    var _a, _b, _c, _d;
+    const b = MF_M3_ACTION_GRANTS.get(msg);
+    const access = (_a = app === null || app === void 0 ? void 0 : app.state) === null || _a === void 0 ? void 0 : _a.localFinancialAccess;
+    const hasReceipt = !!(((_b = MF_M3_ACTION_UI_STATE.get(msg)) === null || _b === void 0 ? void 0 : _b.receipt) || ((_c = MF_M3_SALARY_UI_STATE.get(msg)) === null || _c === void 0 ? void 0 : _c.receipt));
+    const curRevision = Number(((_d = app === null || app === void 0 ? void 0 : app.state) === null || _d === void 0 ? void 0 : _d.financeRevision) || 0);
+    return !!b &&
+        b.access === access &&
+        !!(access === null || access === void 0 ? void 0 : access.token) &&
+        b.signature === intelligencePremiumSignature(app) &&
+        b.month === (app.state.localFinancialMonth || app.state.month) &&
+        (hasReceipt || b.revision === curRevision) &&
+        (access === null || access === void 0 ? void 0 : access.profile) === (app.state.mode === 'demo' ? 'demo' : 'real') &&
+        (!(access === null || access === void 0 ? void 0 : access.expiresAt) || access.expiresAt > Date.now());
+}
+function copilotForceRender(app) {
+    if (!app || typeof app.setState !== 'function')
+        return;
+    app.setState((prev) => ({ localFinancialError: (prev === null || prev === void 0 ? void 0 : prev.localFinancialError) || '' }));
+}
+async function copilotRefreshAppData(app, profile) {
+    var _a, _b;
+    const api = desktop;
+    if (!api || !app)
+        return;
+    try {
+        if (typeof api.load === 'function') {
+            const latest = await api.load(profile);
+            if (latest)
+                app.setState({ data: safeData(latest) });
+        }
+    }
+    catch { }
+    try {
+        if (typeof app.refreshBank === 'function')
+            await app.refreshBank();
+    }
+    catch { }
+    try {
+        if (typeof app.refreshCategories === 'function')
+            await app.refreshCategories();
+        if (typeof app.loadQA84VisualCatalog === 'function')
+            void app.loadQA84VisualCatalog();
+    }
+    catch { }
+    try {
+        if (typeof app.refreshPlanning === 'function')
+            await app.refreshPlanning();
+    }
+    catch { }
+    try {
+        if (typeof app.setState === 'function') {
+            app.setState((prev) => ({ financeRevision: Number((prev === null || prev === void 0 ? void 0 : prev.financeRevision) || 0) + 1 }));
+        }
+    }
+    catch { }
+    try {
+        if ((_b = (_a = app.state) === null || _a === void 0 ? void 0 : _a.localFinancialAccess) === null || _b === void 0 ? void 0 : _b.token) {
+            if (typeof localFinancialRadar === 'function')
+                void localFinancialRadar(app);
+            if (typeof intelligencePremiumLoad === 'function')
+                void intelligencePremiumLoad(app);
+            if (typeof intelligenceCopilotInsightsLoad === 'function')
+                void intelligenceCopilotInsightsLoad(app);
+        }
+    }
+    catch { }
+}
+function copilotEffortLabel(effort) {
+    if (effort === 'high')
+        return 'Alto';
+    if (effort === 'medium')
+        return 'Médio';
+    return 'Baixo';
+}
+function copilotParseBrlCents(raw) {
+    if (typeof raw === 'number') {
+        return Number.isSafeInteger(raw) && raw >= 0 && raw <= 100000000000 ? raw : null;
+    }
+    const clean = String(raw || '').replace(/r\$/gi, '').replace(/\s+/g, '').trim();
+    if (!clean)
+        return null;
+    if (/^\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?$/.test(clean)) {
+        const [i, f = ''] = clean.split(',');
+        const val = Number(i.replace(/\./g, '')) * 100 + Number(f.padEnd(2, '0').slice(0, 2));
+        return Number.isSafeInteger(val) && val >= 0 && val <= 100000000000 ? val : null;
+    }
+    if (/^\d+(?:,\d{1,2})?$/.test(clean)) {
+        const [i, f = ''] = clean.split(',');
+        const val = Number(i) * 100 + Number(f.padEnd(2, '0').slice(0, 2));
+        return Number.isSafeInteger(val) && val >= 0 && val <= 100000000000 ? val : null;
+    }
+    if (/^\d+\.\d{1,2}$/.test(clean)) {
+        const [i, f = ''] = clean.split('.');
+        const val = Number(i) * 100 + Number(f.padEnd(2, '0').slice(0, 2));
+        return Number.isSafeInteger(val) && val >= 0 && val <= 100000000000 ? val : null;
+    }
+    return null;
+}
+function copilotFormatEditCents(cents) {
+    return ((cents || 0) / 100).toFixed(2).replace('.', ',');
+}
+const MF_M3_SALARY_UI_STATE = new WeakMap();
+function copilotGetSalaryUiState(keyObj, draft) {
+    let st = MF_M3_SALARY_UI_STATE.get(keyObj);
+    if (st)
+        return st;
+    const items = Array.isArray(draft === null || draft === void 0 ? void 0 : draft.items) ? draft.items : [];
+    const selectedCats = new Set();
+    const lockedCats = new Set(Array.isArray(draft === null || draft === void 0 ? void 0 : draft.lockedCategories) ? draft.lockedCategories : []);
+    const editedCents = new Map();
+    const editedText = new Map();
+    for (const it of items) {
+        if (!(it === null || it === void 0 ? void 0 : it.category))
+            continue;
+        selectedCats.add(it.category);
+        if (it.isLocked)
+            lockedCats.add(it.category);
+        const val = Number.isSafeInteger(it.proposedLimitCents) ? it.proposedLimitCents : 0;
+        editedCents.set(it.category, val);
+        editedText.set(it.category, copilotFormatEditCents(val));
+    }
+    st = {
+        selectedCats,
+        lockedCats,
+        editedCents,
+        editedText,
+        updateIncome: !!(draft === null || draft === void 0 ? void 0 : draft.updateIncomeSetting),
+        applyRecurring: !!(draft === null || draft === void 0 ? void 0 : draft.applyRecurring),
+        busy: false,
+        capability: (draft === null || draft === void 0 ? void 0 : draft.capability) || null,
+        receipt: null,
+        undoState: null,
+        error: '',
+        dismissed: false
+    };
+    MF_M3_SALARY_UI_STATE.set(keyObj, st);
+    return st;
+}
+async function copilotEnableSalaryCapability(app, keyObj, draft, onChange) {
+    const api = desktop;
+    const st = copilotGetSalaryUiState(keyObj, draft);
+    if (!(api === null || api === void 0 ? void 0 : api.copilotActionCapabilityEnable) || st.busy)
+        return;
+    st.busy = true;
+    st.error = '';
+    if (onChange)
+        onChange();
+    else
+        copilotForceRender(app);
+    try {
+        const res = await api.copilotActionCapabilityEnable();
+        st.capability = {
+            available: st.capability ? !!st.capability.available : true,
+            enabled: !!(res === null || res === void 0 ? void 0 : res.enabled)
+        };
+        if ((res === null || res === void 0 ? void 0 : res.cancelled) && !(res === null || res === void 0 ? void 0 : res.enabled)) {
+            st.error = 'Ativação cancelada. Nenhuma permissão foi concedida.';
+        }
+    }
+    catch (e) {
+        st.error = String((e === null || e === void 0 ? void 0 : e.message) || 'Não foi possível ativar as ações supervisionadas.');
+    }
+    finally {
+        st.busy = false;
+        if (onChange)
+            onChange();
+        else
+            copilotForceRender(app);
+    }
+}
+function copilotCollectLocksPayload(st) {
+    const lockedCategories = {};
+    for (const cat of st.lockedCats || []) {
+        const cents = st.editedCents.get(cat);
+        if (Number.isSafeInteger(cents) && cents >= 0) {
+            lockedCategories[cat] = cents;
+        }
+    }
+    return lockedCategories;
+}
+async function copilotRecalcSalaryDraft(app, keyObj, draft, mode, onReplaceDraft) {
+    var _a, _b, _c;
+    const api = desktop;
+    const st = copilotGetSalaryUiState(keyObj, draft);
+    if (!(api === null || api === void 0 ? void 0 : api.copilotSalaryBudgetPropose) || st.busy || st.receipt)
+        return;
+    st.busy = true;
+    st.error = '';
+    copilotForceRender(app);
+    try {
+        const accessToken = (_b = (_a = app === null || app === void 0 ? void 0 : app.state) === null || _a === void 0 ? void 0 : _a.localFinancialAccess) === null || _b === void 0 ? void 0 : _b.token;
+        const nextDraft = await api.copilotSalaryBudgetPropose({
+            ...(typeof accessToken === 'string' && accessToken ? { token: accessToken } : {}),
+            profile: draft.profile,
+            source: draft.source,
+            month: draft.month,
+            salaryCents: draft.salaryCents,
+            reserveGoalCents: (_c = draft.requestedReserveCents) !== null && _c !== void 0 ? _c : null,
+            profileMode: mode,
+            lockedCategories: copilotCollectLocksPayload(st),
+            updateIncomeSetting: st.updateIncome,
+            applyRecurring: st.applyRecurring
+        });
+        if ((nextDraft === null || nextDraft === void 0 ? void 0 : nextDraft.contract) === 'MF3/SALARY-BUDGET-PROPOSAL-V1') {
+            nextDraft.capability = st.capability;
+            MF_M3_SALARY_UI_STATE.delete(keyObj);
+            const nextSt = copilotGetSalaryUiState(keyObj, nextDraft);
+            for (const c of st.lockedCats)
+                nextSt.lockedCats.add(c);
+            nextSt.applyRecurring = st.applyRecurring;
+            nextSt.updateIncome = st.updateIncome;
+            onReplaceDraft(nextDraft);
+        }
+    }
+    catch (e) {
+        st.error = String((e === null || e === void 0 ? void 0 : e.message) || 'Não foi possível recalcular os orçamentos.');
+        st.busy = false;
+        copilotForceRender(app);
+    }
+}
+async function copilotSwitchSalaryMode(app, keyObj, draft, mode, onReplaceDraft) {
+    return copilotRecalcSalaryDraft(app, keyObj, draft, mode, onReplaceDraft);
+}
+async function copilotExecuteSalaryBudget(app, keyObj, draft, onChange) {
+    const api = desktop;
+    const st = copilotGetSalaryUiState(keyObj, draft);
+    if (!api || st.busy || st.receipt)
+        return;
+    const items = Array.isArray(draft === null || draft === void 0 ? void 0 : draft.items) ? draft.items : [];
+    const budgets = [];
+    for (const it of items) {
+        if (!st.selectedCats.has(it.category))
+            continue;
+        const rawCents = st.editedCents.get(it.category);
+        if (!Number.isSafeInteger(rawCents) || rawCents < 0) {
+            st.error = `Valor inválido para a categoria "${it.category}". Use formato monetário válido (ex.: 1.250,00).`;
+            if (onChange)
+                onChange();
+            else
+                copilotForceRender(app);
+            return;
+        }
+        budgets.push({ category: it.category, amountCents: rawCents });
+    }
+    if (!budgets.length) {
+        st.error = 'Selecione ao menos uma categoria para aplicar novos limites.';
+        if (onChange)
+            onChange();
+        else
+            copilotForceRender(app);
+        return;
+    }
+    if (!api.d05SessionAuthorize || !api.copilotActionPrepare || !api.copilotActionConfirm) {
+        st.error = 'Bridge desktop de ações supervisionadas indisponível nesta sessão.';
+        if (onChange)
+            onChange();
+        else
+            copilotForceRender(app);
+        return;
+    }
+    st.busy = true;
+    st.error = '';
+    if (onChange)
+        onChange();
+    else
+        copilotForceRender(app);
+    try {
+        await api.d05SessionAuthorize({ profile: draft.profile });
+        const prepared = await api.copilotActionPrepare({
+            action: 'budgets.reorganize',
+            profile: draft.profile,
+            month: draft.month,
+            applyRecurring: !!st.applyRecurring,
+            budgets,
+            updateIncomeSetting: st.updateIncome,
+            ...(st.updateIncome ? { salaryCents: draft.salaryCents } : {})
+        });
+        if (!prepared || prepared.contract !== 'D05/PERSONAL-SUPERVISED-PREVIEW-V1') {
+            throw Error('Prévia oficial D05 não confirmada.');
+        }
+        if (prepared.personalWriteAuthorized === false) {
+            if (typeof api.copilotActionCapabilityStatus === 'function') {
+                const cap = await api.copilotActionCapabilityStatus().catch(() => null);
+                if (cap)
+                    st.capability = { available: !!cap.available, enabled: !!cap.enabled };
+            }
+            st.error = 'Ative primeiro "Ações supervisionadas do Copiloto" para autorizar gravações locais com confirmação nativa.';
+            return;
+        }
+        const confirmed = await api.copilotActionConfirm({
+            proposalId: prepared.proposalId,
+            nonce: prepared.nonce
+        });
+        if ((confirmed === null || confirmed === void 0 ? void 0 : confirmed.status) === 'applied' && confirmed.changesApplied === true) {
+            st.receipt = confirmed.receipt;
+            st.undoState = confirmed.undoState || 'available';
+            await copilotRefreshAppData(app, draft.profile);
+        }
+        else if ((confirmed === null || confirmed === void 0 ? void 0 : confirmed.status) === 'denied') {
+            st.error = confirmed.reason || 'Confirmação cancelada ou negada. Nenhuma alteração foi gravada.';
+        }
+        else {
+            st.error = (confirmed === null || confirmed === void 0 ? void 0 : confirmed.reason) || 'Os orçamentos mudaram antes da confirmação; gere uma nova simulação.';
+        }
+    }
+    catch (e) {
+        st.error = String((e === null || e === void 0 ? void 0 : e.message) || 'Não foi possível aplicar a reorganização de orçamentos.');
+    }
+    finally {
+        st.busy = false;
+        if (onChange)
+            onChange();
+        else
+            copilotForceRender(app);
+    }
+}
+async function copilotUndoSalaryBudget(app, keyObj, draft, onChange) {
+    const api = desktop;
+    const st = copilotGetSalaryUiState(keyObj, draft);
+    if (!(api === null || api === void 0 ? void 0 : api.copilotActionUndo) || !st.receipt || st.busy || st.undoState !== 'available')
+        return;
+    st.busy = true;
+    st.error = '';
+    if (onChange)
+        onChange();
+    else
+        copilotForceRender(app);
+    try {
+        await api.d05SessionAuthorize({ profile: draft.profile });
+        const res = await api.copilotActionUndo({ proposalId: st.receipt.proposalId });
+        if ((res === null || res === void 0 ? void 0 : res.status) === 'undone') {
+            st.undoState = 'undone';
+            st.receipt = res.receipt || st.receipt;
+            await copilotRefreshAppData(app, draft.profile);
+        }
+        else if ((res === null || res === void 0 ? void 0 : res.status) === 'already_undone') {
+            st.undoState = 'undone';
+        }
+        else {
+            st.error = (res === null || res === void 0 ? void 0 : res.reason) || 'Os orçamentos foram alterados posteriormente; reversão automática bloqueada.';
+        }
+    }
+    catch (e) {
+        st.error = String((e === null || e === void 0 ? void 0 : e.message) || 'Não foi possível desfazer a reorganização.');
+    }
+    finally {
+        st.busy = false;
+        if (onChange)
+            onChange();
+        else
+            copilotForceRender(app);
+    }
+}
+function renderSalaryBudgetProposalBox(app, keyObj, draft, opts = {}) {
+    if (!draft || draft.contract !== 'MF3/SALARY-BUDGET-PROPOSAL-V1')
+        return null;
+    if (draft.status === 'needs_clarification') {
+        return h('div', { className: 'mf-m3-action-card is-info', role: 'region', 'aria-label': 'Esclarecimento de salário' }, h('div', { className: 'mf-m3-action-head' }, h('span', { className: 'micro-label' }, 'REORGANIZAÇÃO POR SALÁRIO'), h('span', { className: 'mf-ic2-epistemic-badge is-estimate' }, 'Informe o salário')), h('p', { className: 'mf-m3-action-muted' }, draft.answer));
+    }
+    const st = copilotGetSalaryUiState(keyObj, draft);
+    if (st.dismissed) {
+        return h('div', { className: 'mf-m3-action-card is-dismissed', role: 'status' }, 'Proposta salarial descartada · nenhuma alteração foi gravada nos orçamentos.');
+    }
+    const items = Array.isArray(draft.items) ? draft.items : [];
+    let selectedCount = 0;
+    let selectedTotalCents = 0;
+    let invalidInput = false;
+    for (const it of items) {
+        if (!st.selectedCats.has(it.category))
+            continue;
+        selectedCount++;
+        const c = st.editedCents.get(it.category);
+        if (Number.isSafeInteger(c) && c >= 0) {
+            selectedTotalCents += c;
+        }
+        else {
+            invalidInput = true;
+        }
+    }
+    const marginAfterEdits = draft.salaryCents - selectedTotalCents;
+    const needOptIn = !st.receipt && st.capability && st.capability.available && !st.capability.enabled;
+    const confidenceLabel = draft.confidence === 'high' ? `Base forte (${draft.completeMonthsAnalyzed} meses completos)` :
+        draft.confidence === 'medium' ? `Base média (${draft.completeMonthsAnalyzed} meses completos)` :
+            draft.completeMonthsAnalyzed === 1 ? 'Base inicial (1 mês completo)' : 'Estimativa sem histórico completo';
+    const statusText = st.receipt
+        ? (st.undoState === 'undone' ? 'Revertida com backup' : 'Aplicada · com recibo')
+        : 'Simulação · nada gravado';
+    const statusClass = st.receipt
+        ? (st.undoState === 'undone' ? 'mf-ic2-epistemic-badge is-estimate' : 'mf-ic2-epistemic-badge is-fact')
+        : 'mf-ic2-epistemic-badge is-simulation';
+    const salaryProvenanceLabel = draft.salaryStatus === 'received_in_statement'
+        ? `Salário detectado nas entradas (${fmt(draft.observedSalaryCents || draft.observedIncomeCents || 0)}) · sem duplicação`
+        : `Referência prevista para ${draft.month}` + (draft.plannedIncomeCents > 0 ? ` · Previsto aberto ${fmt(draft.plannedIncomeCents)}` : '');
+    return h('div', { className: 'mf-m3-action-card mf-m3-salary-card', role: 'region', 'aria-label': 'Reorganização de orçamentos por salário' }, h('div', { className: 'mf-m3-action-head' }, h('span', { className: 'micro-label' }, `PLANO POR SALÁRIO · ${draft.source === 'bank' ? 'CONTAS CONECTADAS' : 'MANUAL'} · ${draft.month} · ` +
+        (st.applyRecurring ? 'MÊS + RECORRENTE' : 'VÁLIDO NESTE MÊS')), h('div', { className: 'mf-m3-action-badges' }, draft.revision && draft.revision > 1
+        ? h('span', { className: 'mf-ic2-pill is-strong' }, `Revisão v${draft.revision}`)
+        : null, h('span', { className: 'mf-ic2-pill' }, confidenceLabel), h('span', { className: statusClass }, statusText))), Array.isArray(draft.revisionDiff) && draft.revisionDiff.length > 0
+        ? h('div', { className: 'mf-m3-salary-revision-diff', role: 'note' }, h('strong', {}, `Alterações na revisão v${draft.revision}: `), ...draft.revisionDiff.slice(0, 5).map((d, idx) => h('span', { key: idx, className: 'mf-ic2-pill' }, `${d.category}: ${d.deltaCents > 0 ? '+' : '−'}${fmt(Math.abs(d.deltaCents))}`)))
+        : null, h('p', { className: 'mf-m3-salary-submeta' }, salaryProvenanceLabel + (draft.incomeVsBalanceNote ? ' · ' + draft.incomeVsBalanceNote : '')), h('div', { className: 'mf-m3-salary-kpis' }, h('div', { className: 'mf-m3-salary-kpi' }, h('small', {}, 'Salário informado'), h('strong', {}, fmt(draft.salaryCents))), h('div', { className: 'mf-m3-salary-kpi' }, h('small', {}, `Limites selecionados (${selectedCount})`), h('strong', {}, fmt(selectedTotalCents))), h('div', { className: 'mf-m3-salary-kpi ' + (marginAfterEdits < 0 ? 'is-deficit' : 'is-surplus') }, h('small', {}, marginAfterEdits < 0 ? 'Déficit sobre salário' : 'Margem / Reserva'), h('strong', {}, (marginAfterEdits < 0 ? '−' : '') + fmt(Math.abs(marginAfterEdits))))), Array.isArray(draft.redistributions) && draft.redistributions.length > 0
+        ? h('div', { className: 'mf-m3-salary-redistributions', role: 'region', 'aria-label': 'Redistribuições propostas' }, h('strong', {}, `Redistribuições recomendadas (${draft.redistributions.length})`), h('ul', {}, ...draft.redistributions.slice(0, 6).map((rd, idx) => h('li', { key: idx }, h('b', {}, `${rd.fromCategory} → ${rd.toCategory} (${fmt(rd.amountCents)})`), h('span', {}, ` — ${rd.reason}`)))))
+        : null, !st.receipt && typeof (desktop === null || desktop === void 0 ? void 0 : desktop.copilotSalaryBudgetPropose) === 'function' && opts.onReplaceDraft
+        ? h('div', { className: 'mf-m3-salary-modes', role: 'group', 'aria-label': 'Perfil de distribuição' }, [
+            { id: 'conservative', label: 'Conservador (20%)' },
+            { id: 'balanced', label: 'Equilibrado (15%)' },
+            { id: 'flexible', label: 'Flexível (10%)' }
+        ].map((m) => h('button', {
+            key: m.id,
+            type: 'button',
+            className: 'mf-ic2-followup-chip' + (draft.profileMode === m.id ? ' is-active' : ''),
+            disabled: st.busy,
+            onClick: () => void copilotSwitchSalaryMode(app, keyObj, draft, m.id, opts.onReplaceDraft)
+        }, m.label)))
+        : null, Array.isArray(draft.warnings) && draft.warnings.length > 0
+        ? h('div', { className: 'mf-m3-action-warnings' }, ...draft.warnings.map((w, i) => h('p', { key: i, className: 'mf-m3-action-notice' }, w)))
+        : null, h('div', { className: 'mf-m3-salary-list', role: 'list', 'aria-label': 'Limites propostos por categoria' }, ...items.map((it) => {
+        var _a, _b, _c, _d;
+        const checked = st.selectedCats.has(it.category);
+        const locked = st.lockedCats.has(it.category);
+        const identity = resolveCategoryVisualIdentity({
+            categoryName: it.category,
+            catalog: ((_a = app === null || app === void 0 ? void 0 : app.state) === null || _a === void 0 ? void 0 : _a.qa84VisualCatalog) || [],
+            aggregate: true
+        });
+        const editedVal = st.editedCents.get(it.category);
+        const currentDiff = it.currentLimitCents !== null && Number.isSafeInteger(editedVal)
+            ? editedVal - it.currentLimitCents
+            : null;
+        return h('div', { key: it.category, role: 'listitem', className: 'mf-m3-salary-row' + (checked ? ' is-selected' : '') + (locked ? ' is-locked' : '') }, h('input', {
+            type: 'checkbox',
+            checked,
+            disabled: !!st.receipt || st.busy,
+            'aria-label': 'Incluir ' + it.category,
+            onChange: (e) => {
+                if (e.target.checked)
+                    st.selectedCats.add(it.category);
+                else
+                    st.selectedCats.delete(it.category);
+                st.error = '';
+                copilotForceRender(app);
+            }
+        }), h(CategoryVisualGlyph, { identity, size: 19 }), h('div', { className: 'mf-m3-salary-row-copy' }, h('div', { className: 'mf-m3-salary-row-title' }, h('strong', {}, it.category), h('span', { className: 'mf-ic2-pill' }, it.tierLabel), it.isProtected ? h('span', { className: 'mf-ic2-pill is-strong' }, 'Preservada') : null, it.atypicalDetected ? h('span', { className: 'mf-ic2-pill' }, 'Mês atípico') : null, !st.receipt && checked && opts.onReplaceDraft
+            ? h('button', {
+                type: 'button',
+                className: 'mf-m3-salary-lock-btn' + (locked ? ' is-active' : ''),
+                disabled: st.busy,
+                'aria-pressed': locked,
+                onClick: () => {
+                    if (st.lockedCats.has(it.category))
+                        st.lockedCats.delete(it.category);
+                    else
+                        st.lockedCats.add(it.category);
+                    void copilotRecalcSalaryDraft(app, keyObj, draft, draft.profileMode || 'balanced', opts.onReplaceDraft);
+                }
+            }, locked ? 'Fixado' : 'Fixar')
+            : locked ? h('span', { className: 'mf-ic2-pill is-strong' }, 'Fixado') : null), h('small', {}, `Atual: ${it.currentLimitCents !== null ? fmt(it.currentLimitCents) : 'Sem limite'} · ` +
+            `3m: ${fmt((_b = it.avg3mCents) !== null && _b !== void 0 ? _b : it.historicalAvgCents)} · ` +
+            `6m: ${fmt((_c = it.avg6mCents) !== null && _c !== void 0 ? _c : it.historicalAvgCents)} · ` +
+            `Realizado+Prev.: ${fmt(it.committedFloorCents)}` +
+            (currentDiff !== null && currentDiff !== 0
+                ? ` (${currentDiff > 0 ? '+' : '−'}${fmt(Math.abs(currentDiff))})`
+                : '')), h('small', { className: 'mf-m3-salary-rationale' }, it.rationale)), h('label', { className: 'mf-m3-salary-input-wrap' }, h('span', {}, 'Novo R$'), h('input', {
+            type: 'text',
+            inputMode: 'decimal',
+            disabled: !!st.receipt || st.busy || !checked,
+            value: (_d = st.editedText.get(it.category)) !== null && _d !== void 0 ? _d : copilotFormatEditCents(it.proposedLimitCents),
+            'aria-label': 'Novo limite em reais para ' + it.category,
+            onChange: (e) => {
+                const text = String(e.target.value);
+                st.editedText.set(it.category, text);
+                const parsed = copilotParseBrlCents(text);
+                if (parsed !== null)
+                    st.editedCents.set(it.category, parsed);
+                else
+                    st.editedCents.delete(it.category);
+                st.error = '';
+                copilotForceRender(app);
+            }
+        })));
+    })), !st.receipt
+        ? h('div', { className: 'mf-m3-salary-options' }, h('label', { className: 'mf-m3-salary-income-opt' }, h('input', {
+            type: 'checkbox',
+            checked: st.applyRecurring,
+            disabled: st.busy,
+            onChange: (e) => {
+                st.applyRecurring = !!e.target.checked;
+                copilotForceRender(app);
+            }
+        }), h('span', {}, `Aplicar também como limite recorrente para os próximos meses (padrão: somente ${draft.month})`)), h('label', { className: 'mf-m3-salary-income-opt' }, h('input', {
+            type: 'checkbox',
+            checked: st.updateIncome,
+            disabled: st.busy,
+            onChange: (e) => {
+                st.updateIncome = !!e.target.checked;
+                copilotForceRender(app);
+            }
+        }), h('span', {}, `Atualizar também renda mensal de referência no perfil para ${fmt(draft.salaryCents)} (não cria lançamento no extrato)`)))
+        : null, needOptIn
+        ? h('div', { className: 'mf-m3-action-optin' }, h('p', {}, 'Para gravar esses novos limites no banco SQLite com confirmação nativa e reversão, ative antes as ações supervisionadas.'), h('button', {
+            type: 'button',
+            className: 'secondary-button',
+            disabled: st.busy,
+            onClick: () => void copilotEnableSalaryCapability(app, keyObj, draft)
+        }, st.busy ? 'Ativando…' : 'Ativar ações supervisionadas'))
+        : null, st.receipt
+        ? h('div', { className: 'mf-m3-action-receipt', role: 'status' }, h('div', { className: 'mf-m3-action-receipt-info' }, h('strong', {}, st.undoState === 'undone'
+            ? 'Limites anteriores restaurados com sucesso'
+            : `Orçamentos atualizados em ${st.receipt.affectedCount || selectedCount} categoria(s)`), h('small', {}, `Recibo ${String(st.receipt.proposalId || '').slice(0, 8)} · Backup SQLite verificado`)), st.undoState === 'available'
+            ? h('button', {
+                type: 'button',
+                className: 'ghost-button',
+                disabled: st.busy,
+                onClick: () => void copilotUndoSalaryBudget(app, keyObj, draft)
+            }, st.busy ? 'Revertendo…' : 'Desfazer')
+            : h('span', { className: 'mf-ic2-pill' }, 'Desfeito'))
+        : h('div', { className: 'mf-m3-action-footer' }, h('button', {
+            type: 'button',
+            className: 'primary-button',
+            disabled: st.busy || selectedCount === 0 || invalidInput || !!needOptIn,
+            onClick: () => void copilotExecuteSalaryBudget(app, keyObj, draft)
+        }, st.busy ? 'Aguardando confirmação…' : `Confirmar e aplicar (${selectedCount} categorias)`), h('button', {
+            type: 'button',
+            className: 'ghost-button',
+            disabled: st.busy,
+            onClick: () => {
+                if (opts.onDismiss)
+                    opts.onDismiss();
+                else {
+                    st.dismissed = true;
+                    st.error = '';
+                    copilotForceRender(app);
+                }
+            }
+        }, 'Descartar')), st.error ? h('p', { className: 'mf-m3-action-error', role: 'alert' }, st.error) : null);
+}
+function renderBudgetsSalaryPanel(app, useBank) {
+    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
+    const api = desktop;
+    if (!(api === null || api === void 0 ? void 0 : api.copilotSalaryBudgetPropose))
+        return null;
+    const curMonth = String(((_a = app === null || app === void 0 ? void 0 : app.state) === null || _a === void 0 ? void 0 : _a.month) || '');
+    const curMode = String(((_b = app === null || app === void 0 ? void 0 : app.state) === null || _b === void 0 ? void 0 : _b.mode) || 'real');
+    const curRev = Number(((_c = app === null || app === void 0 ? void 0 : app.state) === null || _c === void 0 ? void 0 : _c.financeRevision) || 0);
+    if (!app.__m3SalaryPanel) {
+        const curInc = (_f = (_e = (_d = app === null || app === void 0 ? void 0 : app.state) === null || _d === void 0 ? void 0 : _d.data) === null || _e === void 0 ? void 0 : _e.settings) === null || _f === void 0 ? void 0 : _f.income;
+        app.__m3SalaryPanel = {
+            open: false,
+            month: curMonth,
+            mode: curMode,
+            useBank,
+            revision: curRev,
+            salaryText: curInc > 0 ? copilotFormatEditCents(curInc) : '',
+            reserveText: '',
+            profileMode: 'balanced',
+            busy: false,
+            error: '',
+            proposal: null
+        };
+    }
+    const panel = app.__m3SalaryPanel;
+    const contextChanged = panel.month !== curMonth ||
+        panel.mode !== curMode ||
+        panel.useBank !== useBank ||
+        panel.revision !== curRev;
+    if (contextChanged) {
+        const hasReceipt = !!(panel.proposal && ((_g = MF_M3_SALARY_UI_STATE.get(panel.proposal)) === null || _g === void 0 ? void 0 : _g.receipt));
+        if (panel.mode !== curMode) {
+            const nextInc = (_k = (_j = (_h = app === null || app === void 0 ? void 0 : app.state) === null || _h === void 0 ? void 0 : _h.data) === null || _j === void 0 ? void 0 : _j.settings) === null || _k === void 0 ? void 0 : _k.income;
+            panel.proposal = null;
+            panel.error = '';
+            panel.open = false;
+            panel.salaryText = nextInc > 0 ? copilotFormatEditCents(nextInc) : '';
+        }
+        else if (!hasReceipt) {
+            panel.proposal = null;
+            panel.error = '';
+        }
+        panel.month = curMonth;
+        panel.mode = curMode;
+        panel.useBank = useBank;
+        panel.revision = curRev;
+    }
+    if (!panel.open)
+        return null;
+    const generate = async () => {
+        const salaryCents = copilotParseBrlCents(panel.salaryText);
+        if (!salaryCents || salaryCents <= 0) {
+            panel.error = 'Informe um salário líquido mensal válido em reais (ex.: 7.500,00).';
+            copilotForceRender(app);
+            return;
+        }
+        const reserveTrim = String(panel.reserveText || '').trim();
+        let reserveGoalCents = null;
+        if (reserveTrim) {
+            reserveGoalCents = copilotParseBrlCents(reserveTrim);
+            if (reserveGoalCents === null || reserveGoalCents > salaryCents) {
+                panel.error = 'Meta de reserva inválida ou maior que o salário informado.';
+                copilotForceRender(app);
+                return;
+            }
+        }
+        panel.busy = true;
+        panel.error = '';
+        copilotForceRender(app);
+        try {
+            const profile = app.state.mode === 'demo' ? 'demo' : 'real';
+            const source = profile === 'demo' ? 'manual' : useBank ? 'bank' : 'manual';
+            const draft = await api.copilotSalaryBudgetPropose({
+                profile,
+                source,
+                month: app.state.month,
+                salaryCents,
+                reserveGoalCents,
+                profileMode: panel.profileMode,
+                updateIncomeSetting: false
+            });
+            const cap = typeof api.copilotActionCapabilityStatus === 'function'
+                ? await api.copilotActionCapabilityStatus().catch(() => null)
+                : null;
+            if (draft)
+                draft.capability = cap ? { available: !!cap.available, enabled: !!cap.enabled } : null;
+            panel.proposal = draft;
+        }
+        catch (e) {
+            panel.error = String((e === null || e === void 0 ? void 0 : e.message) || 'Não foi possível calcular a reorganização.');
+        }
+        finally {
+            panel.busy = false;
+            copilotForceRender(app);
+        }
+    };
+    return h('section', { className: 'mf-m3-salary-panel card', role: 'region', 'aria-label': 'Planejador de orçamento por salário' }, h('div', { className: 'mf-m3-salary-panel-head' }, h('div', {}, h('span', { className: 'micro-label' }, 'PLANEJADOR POR SALÁRIO'), h('h2', {}, 'Reorganizar limites a partir do seu salário mensal'), h('p', {}, 'Calcula médias reais apenas de meses completos anteriores, soma compromissos restantes do Planejamento e exige sua confirmação antes de alterar limites.')), h('button', {
+        type: 'button',
+        className: 'ghost-button',
+        onClick: () => { panel.open = false; copilotForceRender(app); }
+    }, 'Fechar')), h('div', { className: 'mf-m3-salary-form' }, h('label', {}, 'Salário mensal líquido (R$)', h('input', {
+        type: 'text',
+        inputMode: 'decimal',
+        placeholder: 'Ex.: 7.500,00',
+        value: panel.salaryText,
+        disabled: panel.busy,
+        onChange: (e) => { panel.salaryText = String(e.target.value); panel.error = ''; copilotForceRender(app); }
+    })), h('label', {}, 'Meta de reserva (R$, opcional)', h('input', {
+        type: 'text',
+        inputMode: 'decimal',
+        placeholder: 'Padrão pelo perfil',
+        value: panel.reserveText,
+        disabled: panel.busy,
+        onChange: (e) => { panel.reserveText = String(e.target.value); panel.error = ''; copilotForceRender(app); }
+    })), h('label', {}, 'Estratégia', h('select', {
+        value: panel.profileMode,
+        disabled: panel.busy,
+        onChange: (e) => { panel.profileMode = String(e.target.value); copilotForceRender(app); }
+    }, h('option', { value: 'conservative' }, 'Conservador (20% reserva)'), h('option', { value: 'balanced' }, 'Equilibrado (15% reserva)'), h('option', { value: 'flexible' }, 'Flexível (10% reserva)'))), h('button', {
+        type: 'button',
+        className: 'primary-button',
+        disabled: panel.busy,
+        onClick: () => void generate()
+    }, panel.busy ? 'Calculando…' : 'Simular reorganização')), panel.error ? h('p', { className: 'mf-m3-action-error', role: 'alert' }, panel.error) : null, panel.proposal
+        ? renderSalaryBudgetProposalBox(app, panel.proposal, panel.proposal, {
+            onReplaceDraft: (nextDraft) => { panel.proposal = nextDraft; copilotForceRender(app); },
+            onDismiss: () => { panel.proposal = null; copilotForceRender(app); }
+        })
+        : null);
+}
+function copilotGetActionUiState(msg, draft) {
+    let st = MF_M3_ACTION_UI_STATE.get(msg);
+    if (st)
+        return st;
+    const items = Array.isArray(draft === null || draft === void 0 ? void 0 : draft.items) ? draft.items : [];
+    const accounts = Array.isArray(draft === null || draft === void 0 ? void 0 : draft.accountIds) ? draft.accountIds : [];
+    const defaultAccountId = (draft === null || draft === void 0 ? void 0 : draft.source) === 'bank' && accounts.length > 0 ? accounts[0] : null;
+    const initialSelected = new Set();
+    for (const item of items) {
+        if (!(item === null || item === void 0 ? void 0 : item.eligible))
+            continue;
+        if (defaultAccountId && (draft === null || draft === void 0 ? void 0 : draft.ambiguousAccounts) && item.accountId !== defaultAccountId)
+            continue;
+        initialSelected.add(String(item.key));
+    }
+    st = {
+        selectedKeys: initialSelected,
+        accountId: defaultAccountId,
+        busy: false,
+        capability: (draft === null || draft === void 0 ? void 0 : draft.capability) || null,
+        receipt: null,
+        undoState: null,
+        error: '',
+        dismissed: false
+    };
+    MF_M3_ACTION_UI_STATE.set(msg, st);
+    return st;
+}
+async function copilotEnableSupervisedCapability(app, msg, draft) {
+    const api = desktop;
+    const st = copilotGetActionUiState(msg, draft);
+    if (!(api === null || api === void 0 ? void 0 : api.copilotActionCapabilityEnable) || st.busy)
+        return;
+    st.busy = true;
+    st.error = '';
+    copilotForceRender(app);
+    try {
+        const res = await api.copilotActionCapabilityEnable();
+        st.capability = {
+            available: st.capability ? !!st.capability.available : true,
+            enabled: !!(res === null || res === void 0 ? void 0 : res.enabled)
+        };
+        if ((res === null || res === void 0 ? void 0 : res.cancelled) && !(res === null || res === void 0 ? void 0 : res.enabled)) {
+            st.error = 'Ativação cancelada. Nenhuma permissão foi concedida.';
+        }
+    }
+    catch (e) {
+        st.error = String((e === null || e === void 0 ? void 0 : e.message) || 'Não foi possível ativar as ações supervisionadas.');
+    }
+    finally {
+        st.busy = false;
+        copilotForceRender(app);
+    }
+}
+async function copilotExecuteSupervisedAction(app, msg, draft) {
+    var _a, _b, _c;
+    const api = desktop;
+    const st = copilotGetActionUiState(msg, draft);
+    if (!api || st.busy || st.receipt)
+        return;
+    const allItems = Array.isArray(draft === null || draft === void 0 ? void 0 : draft.items) ? draft.items : [];
+    const selected = allItems.filter((it) => (it === null || it === void 0 ? void 0 : it.eligible) && st.selectedKeys.has(String(it.key)));
+    if (selected.length === 0) {
+        st.error = 'Selecione ao menos uma movimentação elegível para continuar.';
+        copilotForceRender(app);
+        return;
+    }
+    let accountId = null;
+    if (draft.source === 'bank') {
+        const pickedAccounts = [...new Set(selected.map((it) => it.accountId).filter(Boolean))];
+        if (pickedAccounts.length !== 1) {
+            st.error = 'Selecione lançamentos de apenas uma conta bancária por confirmação.';
+            copilotForceRender(app);
+            return;
+        }
+        accountId = String(pickedAccounts[0]);
+    }
+    if (!api.d05SessionAuthorize || !api.copilotActionPrepare || !api.copilotActionConfirm) {
+        st.error = 'Bridge desktop de ações supervisionadas indisponível nesta sessão.';
+        copilotForceRender(app);
+        return;
+    }
+    st.busy = true;
+    st.error = '';
+    copilotForceRender(app);
+    try {
+        await api.d05SessionAuthorize({ profile: draft.profile });
+        if (draft.source === 'bank' && accountId) {
+            await api.d05BankAccountAuthorize({ accountId });
+        }
+        let action = '';
+        const preparePayload = {
+            profile: draft.profile,
+            target: {
+                categoryId: (_a = draft.target) === null || _a === void 0 ? void 0 : _a.categoryId,
+                subcategoryId: (_c = (_b = draft.target) === null || _b === void 0 ? void 0 : _b.subcategoryId) !== null && _c !== void 0 ? _c : null
+            }
+        };
+        if (draft.source === 'bank') {
+            preparePayload.accountId = accountId;
+            if (selected.length === 1) {
+                action = 'bank.categorize';
+                preparePayload.externalId = selected[0].externalId || selected[0].id;
+            }
+            else {
+                action = 'bank.batch-categorize';
+                const batchItems = selected.map((it) => ({
+                    accountId: it.accountId,
+                    externalId: it.externalId || it.id
+                }));
+                const previewBatch = await api.d05BankBatchPreview({
+                    items: batchItems,
+                    target: preparePayload.target
+                });
+                preparePayload.items = batchItems;
+                preparePayload.previewVersion = previewBatch.previewVersion;
+            }
+        }
+        else {
+            if (selected.length === 1) {
+                action = 'manual.categorize';
+                preparePayload.id = selected[0].id;
+            }
+            else {
+                action = 'manual.batch-categorize';
+                preparePayload.items = selected.map((it) => ({ id: it.id }));
+            }
+        }
+        preparePayload.action = action;
+        const prepared = await api.copilotActionPrepare(preparePayload);
+        if (!prepared || prepared.contract !== 'D05/PERSONAL-SUPERVISED-PREVIEW-V1') {
+            throw Error('Prévia oficial D05 não confirmada.');
+        }
+        if (prepared.personalWriteAuthorized === false) {
+            if (typeof api.copilotActionCapabilityStatus === 'function') {
+                const cap = await api.copilotActionCapabilityStatus().catch(() => null);
+                if (cap)
+                    st.capability = { available: !!cap.available, enabled: !!cap.enabled };
+            }
+            st.error = 'Ative primeiro "Ações supervisionadas do Copiloto" para autorizar gravações locais com confirmação nativa.';
+            return;
+        }
+        const confirmed = await api.copilotActionConfirm({
+            proposalId: prepared.proposalId,
+            nonce: prepared.nonce,
+            ...(accountId ? { accountId } : {})
+        });
+        if ((confirmed === null || confirmed === void 0 ? void 0 : confirmed.status) === 'applied' && confirmed.changesApplied === true) {
+            st.receipt = confirmed.receipt;
+            st.undoState = confirmed.undoState || 'available';
+            await copilotRefreshAppData(app, draft.profile);
+        }
+        else if ((confirmed === null || confirmed === void 0 ? void 0 : confirmed.status) === 'denied') {
+            st.error = confirmed.reason || 'Confirmação cancelada ou negada. Nenhuma alteração foi gravada.';
+        }
+        else {
+            st.error = (confirmed === null || confirmed === void 0 ? void 0 : confirmed.reason) || 'Os registros mudaram antes da confirmação; solicite uma nova prévia.';
+        }
+    }
+    catch (e) {
+        st.error = String((e === null || e === void 0 ? void 0 : e.message) || 'Não foi possível concluir a ação supervisionada.');
+    }
+    finally {
+        st.busy = false;
+        copilotForceRender(app);
+    }
+}
+async function copilotUndoSupervisedAction(app, msg, draft) {
+    const api = desktop;
+    const st = copilotGetActionUiState(msg, draft);
+    if (!(api === null || api === void 0 ? void 0 : api.copilotActionUndo) || !st.receipt || st.busy || st.undoState !== 'available')
+        return;
+    st.busy = true;
+    st.error = '';
+    copilotForceRender(app);
+    try {
+        await api.d05SessionAuthorize({ profile: draft.profile });
+        if (st.receipt.accountId && typeof api.d05BankAccountAuthorize === 'function') {
+            await api.d05BankAccountAuthorize({ accountId: st.receipt.accountId });
+        }
+        const res = await api.copilotActionUndo({
+            proposalId: st.receipt.proposalId,
+            ...(st.receipt.accountId ? { accountId: st.receipt.accountId } : {})
+        });
+        if ((res === null || res === void 0 ? void 0 : res.status) === 'undone') {
+            st.undoState = 'undone';
+            st.receipt = res.receipt || st.receipt;
+            await copilotRefreshAppData(app, draft.profile);
+        }
+        else if ((res === null || res === void 0 ? void 0 : res.status) === 'already_undone') {
+            st.undoState = 'undone';
+        }
+        else {
+            st.error = (res === null || res === void 0 ? void 0 : res.reason) || 'Não foi possível desfazer automaticamente este recibo.';
+        }
+    }
+    catch (e) {
+        st.error = String((e === null || e === void 0 ? void 0 : e.message) || 'Erro ao tentar desfazer a operação.');
+    }
+    finally {
+        st.busy = false;
+        copilotForceRender(app);
+    }
+}
+function copilotGetGenericDraftUiState(msg, draft) {
+    let st = MF_M3_ACTION_UI_STATE.get(msg);
+    if (st)
+        return st;
+    const accounts = Array.isArray(draft === null || draft === void 0 ? void 0 : draft.accountIds) ? draft.accountIds : [];
+    const defaultAccountId = accounts.length > 0 ? accounts[0] : null;
+    st = {
+        selectedKeys: new Set((draft === null || draft === void 0 ? void 0 : draft.proposedLimitCents) !== undefined ? [String(draft.proposedLimitCents)] : []),
+        accountId: defaultAccountId,
+        busy: false,
+        capability: (draft === null || draft === void 0 ? void 0 : draft.capability) || null,
+        receipt: null,
+        undoState: null,
+        error: '',
+        dismissed: false
+    };
+    st.applyRecurring = !!(draft === null || draft === void 0 ? void 0 : draft.applyRecurring);
+    st.editedLimitText =
+        Number.isSafeInteger(draft === null || draft === void 0 ? void 0 : draft.proposedLimitCents) ? copilotFormatEditCents(draft.proposedLimitCents) : '';
+    MF_M3_ACTION_UI_STATE.set(msg, st);
+    return st;
+}
+async function copilotEnableGenericCapability(app, msg, draft) {
+    return copilotEnableSupervisedCapability(app, msg, draft);
+}
+async function copilotGenericExecute(app, msg, draft, preparePayload, accountId = null) {
+    const api = desktop;
+    const st = copilotGetGenericDraftUiState(msg, draft);
+    if (!api || st.busy || st.receipt)
+        return;
+    if (!api.d05SessionAuthorize || !api.copilotActionPrepare || !api.copilotActionConfirm) {
+        st.error = 'Bridge desktop de ações supervisionadas indisponível nesta sessão.';
+        copilotForceRender(app);
+        return;
+    }
+    st.busy = true;
+    st.error = '';
+    copilotForceRender(app);
+    try {
+        await api.d05SessionAuthorize({ profile: draft.profile });
+        if (accountId && typeof api.d05BankAccountAuthorize === 'function') {
+            await api.d05BankAccountAuthorize({ accountId });
+        }
+        const prepared = await api.copilotActionPrepare(preparePayload);
+        if (!prepared || prepared.contract !== 'D05/PERSONAL-SUPERVISED-PREVIEW-V1') {
+            throw Error('Prévia oficial D05 não confirmada.');
+        }
+        if (prepared.personalWriteAuthorized === false) {
+            if (typeof api.copilotActionCapabilityStatus === 'function') {
+                const cap = await api.copilotActionCapabilityStatus().catch(() => null);
+                if (cap)
+                    st.capability = { available: !!cap.available, enabled: !!cap.enabled };
+            }
+            st.error = 'Ative primeiro "Ações supervisionadas do Copiloto" para autorizar gravações locais com confirmação nativa.';
+            return;
+        }
+        const confirmed = await api.copilotActionConfirm({
+            proposalId: prepared.proposalId,
+            nonce: prepared.nonce,
+            ...(accountId ? { accountId } : {})
+        });
+        if ((confirmed === null || confirmed === void 0 ? void 0 : confirmed.status) === 'applied' && confirmed.changesApplied === true) {
+            st.receipt = confirmed.receipt;
+            st.undoState = confirmed.undoState || 'available';
+            await copilotRefreshAppData(app, draft.profile);
+        }
+        else if ((confirmed === null || confirmed === void 0 ? void 0 : confirmed.status) === 'denied') {
+            st.error = confirmed.reason || 'Confirmação cancelada ou negada. Nenhuma alteração foi gravada.';
+        }
+        else {
+            st.error = (confirmed === null || confirmed === void 0 ? void 0 : confirmed.reason) || 'Os registros mudaram antes da confirmação; solicite uma nova prévia.';
+        }
+    }
+    catch (e) {
+        st.error = String((e === null || e === void 0 ? void 0 : e.message) || 'Não foi possível concluir a ação supervisionada.');
+    }
+    finally {
+        st.busy = false;
+        copilotForceRender(app);
+    }
+}
+async function copilotGenericUndo(app, msg, draft) {
+    return copilotUndoSupervisedAction(app, msg, draft);
+}
+function renderRuleDraftCard(app, msg, draft) {
+    var _a, _b, _c;
+    if (draft.status === 'needs_clarification' || draft.status === 'unavailable') {
+        return h('div', { className: 'mf-m3-action-card is-info', role: 'region', 'aria-label': 'Regra supervisionada' }, h('div', { className: 'mf-m3-action-head' }, h('span', { className: 'micro-label' }, 'REGRA SUPERVISIONADA'), h('span', { className: 'mf-ic2-epistemic-badge is-estimate' }, 'Somente leitura')));
+    }
+    const st = copilotGetGenericDraftUiState(msg, draft);
+    if (st.dismissed) {
+        return h('div', { className: 'mf-m3-action-card is-dismissed', role: 'status' }, 'Proposta de regra descartada · nenhuma regra foi gravada.');
+    }
+    const needOptIn = !st.receipt && st.capability && st.capability.available && !st.capability.enabled;
+    const isToggle = draft.action === 'rule.toggle';
+    const accounts = Array.isArray(draft.accounts) ? draft.accounts : [];
+    const selectedAccountId = st.accountId || ((_a = accounts[0]) === null || _a === void 0 ? void 0 : _a.id) || null;
+    const statusText = st.receipt
+        ? (st.undoState === 'undone' ? 'Revertida com backup' : 'Aplicada · com recibo')
+        : 'Prévia · nada gravado';
+    const statusClass = st.receipt
+        ? (st.undoState === 'undone' ? 'mf-ic2-epistemic-badge is-estimate' : 'mf-ic2-epistemic-badge is-fact')
+        : 'mf-ic2-epistemic-badge is-simulation';
+    return h('div', { className: 'mf-m3-action-card', role: 'region', 'aria-label': 'Prévia de regra supervisionada' }, h('div', { className: 'mf-m3-action-head' }, h('span', { className: 'micro-label' }, isToggle ? 'ALTERNAR REGRA' : 'REGRA AUTOMÁTICA FUTURA'), h('div', { className: 'mf-m3-action-badges' }, !isToggle ? h('span', { className: 'mf-ic2-pill is-strong mf-m3-badge-future' }, `Somente futuras (> #${(_b = draft.afterRowid) !== null && _b !== void 0 ? _b : 0})`) : null, h('span', { className: statusClass }, statusText))), h('div', { className: 'mf-m3-action-target' }, h('div', { className: 'mf-m3-action-target-copy' }, h('small', {}, isToggle ? (draft.enabled ? 'Ativar regra existente' : 'Desativar regra existente') : `Quando descrição contiver “${draft.pattern}”`), h('strong', {}, `${draft.pattern} → ${draft.targetLabel}`)), h('div', { className: 'mf-m3-action-target-total' }, h('small', {}, 'Natureza'), h('strong', {}, draft.nature === 'income' ? 'Entrada' : 'Saída'))), Array.isArray(draft.warnings) && draft.warnings.length > 0
+        ? h('div', { className: 'mf-m3-action-warnings' }, ...draft.warnings.map((w, i) => h('p', { key: i, className: 'mf-m3-action-notice is-rule-note' }, w)))
+        : null, !isToggle && accounts.length > 1 && !st.receipt
+        ? h('div', { className: 'mf-m3-action-account-picker' }, h('label', {}, 'Conta vinculada à regra', h('select', {
+            value: selectedAccountId || '',
+            disabled: st.busy,
+            onChange: (e) => { st.accountId = String(e.target.value); copilotForceRender(app); }
+        }, ...accounts.map((a) => h('option', { key: a.id, value: a.id }, a.name)))))
+        : null, !isToggle && Array.isArray(draft.sampleMatches) && draft.sampleMatches.length > 0
+        ? h('details', { className: 'mf-m3-action-excluded' }, h('summary', {}, `${draft.sampleMatches.length} exemplo(s) recente(s) compatível(is) — apenas visualização, histórico não será alterado`), h('ul', {}, ...draft.sampleMatches.slice(0, 10).map((m) => h('li', { key: m.accountId + '|' + m.externalId }, `${m.date} · ${m.description} (${fmt(m.amountCents)}) · Atual: ${m.currentCategory}`))))
+        : null, needOptIn
+        ? h('div', { className: 'mf-m3-action-optin' }, h('p', {}, 'Ative as ações supervisionadas para salvar regras automáticas com confirmação nativa e reversão em 1 clique.'), h('button', { type: 'button', className: 'secondary-button', disabled: st.busy, onClick: () => void copilotEnableGenericCapability(app, msg, draft) }, st.busy ? 'Ativando…' : 'Ativar ações supervisionadas'))
+        : null, st.receipt
+        ? h('div', { className: 'mf-m3-action-receipt', role: 'status' }, h('div', { className: 'mf-m3-action-receipt-info' }, h('strong', {}, st.undoState === 'undone' ? 'Regra revertida ao estado anterior' : isToggle ? 'Status da regra atualizado' : `Regra futura criada (#${((_c = st.receipt.result) === null || _c === void 0 ? void 0 : _c.ruleId) || ''})`), h('small', {}, `Recibo ${String(st.receipt.proposalId || '').slice(0, 8)} · Backup SQLite verificado`)), st.undoState === 'available'
+            ? h('button', { type: 'button', className: 'ghost-button', disabled: st.busy, onClick: () => void copilotGenericUndo(app, msg, draft) }, st.busy ? 'Revertendo…' : 'Desfazer')
+            : h('span', { className: 'mf-ic2-pill' }, 'Desfeito'))
+        : h('div', { className: 'mf-m3-action-footer' }, h('button', {
+            type: 'button',
+            className: 'primary-button',
+            disabled: st.busy || !!needOptIn || (!isToggle && !selectedAccountId),
+            onClick: () => {
+                var _a;
+                const payload = isToggle
+                    ? { action: 'rule.toggle', profile: draft.profile, id: draft.ruleId, enabled: draft.enabled, ...(selectedAccountId ? { accountId: selectedAccountId } : {}) }
+                    : {
+                        action: 'rule.save',
+                        profile: draft.profile,
+                        accountId: selectedAccountId,
+                        pattern: draft.pattern,
+                        matchMode: draft.matchMode || 'contains',
+                        priority: draft.priority || 100,
+                        target: draft.target,
+                        constraint: { accountId: selectedAccountId, nature: draft.nature || 'expense', afterRowid: (_a = draft.afterRowid) !== null && _a !== void 0 ? _a : 0 }
+                    };
+                void copilotGenericExecute(app, msg, draft, payload, selectedAccountId);
+            }
+        }, st.busy ? 'Aguardando confirmação…' : isToggle ? (draft.enabled ? 'Confirmar ativação' : 'Confirmar desativação') : 'Confirmar e criar regra futura'), h('button', { type: 'button', className: 'ghost-button', disabled: st.busy, onClick: () => { st.dismissed = true; st.error = ''; copilotForceRender(app); } }, 'Descartar')), st.error ? h('p', { className: 'mf-m3-action-error', role: 'alert' }, st.error) : null);
+}
+function renderCategoryDraftCard(app, msg, draft) {
+    if (draft.status === 'needs_clarification' || draft.status === 'unavailable') {
+        return h('div', { className: 'mf-m3-action-card is-info', role: 'region', 'aria-label': 'Estrutura de categorias' }, h('div', { className: 'mf-m3-action-head' }, h('span', { className: 'micro-label' }, 'CATEGORIAS'), h('span', { className: 'mf-ic2-epistemic-badge is-estimate' }, 'Sem gravação')));
+    }
+    const st = copilotGetGenericDraftUiState(msg, draft);
+    if (st.dismissed) {
+        return h('div', { className: 'mf-m3-action-card is-dismissed', role: 'status' }, 'Proposta descartada · catálogo mantido sem alterações.');
+    }
+    const needOptIn = !st.receipt && st.capability && st.capability.available && !st.capability.enabled;
+    const statusText = st.receipt ? (st.undoState === 'undone' ? 'Revertida com backup' : 'Aplicada · com recibo') : 'Prévia · nada gravado';
+    const statusClass = st.receipt ? (st.undoState === 'undone' ? 'mf-ic2-epistemic-badge is-estimate' : 'mf-ic2-epistemic-badge is-fact') : 'mf-ic2-epistemic-badge is-simulation';
+    const headline = draft.action === 'category.create' ? `Nova categoria: ${draft.name}` :
+        draft.action === 'category.rename' ? `${draft.currentName} → ${draft.newName}` :
+            draft.action === 'subcategory.create' ? `${draft.parentName} › ${draft.name}` :
+                `${draft.parentName} › ${draft.currentName} → ${draft.newName}`;
+    return h('div', { className: 'mf-m3-action-card', role: 'region', 'aria-label': 'Prévia de categoria supervisionada' }, h('div', { className: 'mf-m3-action-head' }, h('span', { className: 'micro-label' }, 'ESTRUTURA DE CATEGORIAS'), h('span', { className: statusClass }, statusText)), h('div', { className: 'mf-m3-action-target' }, h('div', { className: 'mf-m3-action-target-copy' }, h('small', {}, draft.action.replace('.', ' · ').toUpperCase()), h('strong', {}, headline))), needOptIn
+        ? h('div', { className: 'mf-m3-action-optin' }, h('p', {}, 'Ative as ações supervisionadas para confirmar alterações no catálogo D05.'), h('button', { type: 'button', className: 'secondary-button', disabled: st.busy, onClick: () => void copilotEnableGenericCapability(app, msg, draft) }, st.busy ? 'Ativando…' : 'Ativar ações supervisionadas'))
+        : null, st.receipt
+        ? h('div', { className: 'mf-m3-action-receipt', role: 'status' }, h('div', { className: 'mf-m3-action-receipt-info' }, h('strong', {}, st.undoState === 'undone' ? 'Catálogo restaurado ao estado anterior' : 'Catálogo atualizado com sucesso'), h('small', {}, `Recibo ${String(st.receipt.proposalId || '').slice(0, 8)} · Backup SQLite verificado`)), st.undoState === 'available'
+            ? h('button', { type: 'button', className: 'ghost-button', disabled: st.busy, onClick: () => void copilotGenericUndo(app, msg, draft) }, st.busy ? 'Revertendo…' : 'Desfazer')
+            : h('span', { className: 'mf-ic2-pill' }, 'Desfeito'))
+        : h('div', { className: 'mf-m3-action-footer' }, h('button', {
+            type: 'button',
+            className: 'primary-button',
+            disabled: st.busy || !!needOptIn,
+            onClick: () => void copilotGenericExecute(app, msg, draft, { action: draft.action, profile: draft.profile, ...(draft.payload || {}) })
+        }, st.busy ? 'Aguardando confirmação…' : 'Confirmar e aplicar'), h('button', { type: 'button', className: 'ghost-button', disabled: st.busy, onClick: () => { st.dismissed = true; st.error = ''; copilotForceRender(app); } }, 'Descartar')), st.error ? h('p', { className: 'mf-m3-action-error', role: 'alert' }, st.error) : null);
+}
+function renderBudgetEditDraftCard(app, msg, draft) {
+    if (draft.status === 'needs_clarification' || draft.status === 'unavailable') {
+        return h('div', { className: 'mf-m3-action-card is-info', role: 'region', 'aria-label': 'Ajuste de orçamento' }, h('div', { className: 'mf-m3-action-head' }, h('span', { className: 'micro-label' }, 'ORÇAMENTO MENSAL'), h('span', { className: 'mf-ic2-epistemic-badge is-estimate' }, 'Sem gravação')));
+    }
+    const st = copilotGetGenericDraftUiState(msg, draft);
+    if (st.dismissed) {
+        return h('div', { className: 'mf-m3-action-card is-dismissed', role: 'status' }, 'Ajuste descartado · orçamento mantido.');
+    }
+    const needOptIn = !st.receipt && st.capability && st.capability.available && !st.capability.enabled;
+    const parsedVal = copilotParseBrlCents(st.editedLimitText);
+    const amountCents = parsedVal !== null ? parsedVal : draft.proposedLimitCents;
+    const statusText = st.receipt ? (st.undoState === 'undone' ? 'Revertida com backup' : 'Aplicada · com recibo') : 'Prévia · nada gravado';
+    const statusClass = st.receipt ? (st.undoState === 'undone' ? 'mf-ic2-epistemic-badge is-estimate' : 'mf-ic2-epistemic-badge is-fact') : 'mf-ic2-epistemic-badge is-simulation';
+    return h('div', { className: 'mf-m3-action-card', role: 'region', 'aria-label': 'Prévia de ajuste de orçamento' }, h('div', { className: 'mf-m3-action-head' }, h('span', { className: 'micro-label' }, `ORÇAMENTO · ${draft.month} · ` + (st.applyRecurring ? 'MÊS + RECORRENTE' : 'SOMENTE NESTE MÊS')), h('span', { className: statusClass }, statusText)), h('div', { className: 'mf-m3-action-target' }, h('div', { className: 'mf-m3-action-target-copy' }, h('small', {}, `Atual: ${draft.currentLimitCents !== null ? fmt(draft.currentLimitCents) : 'Sem limite'} · Gasto no mês: ${fmt(draft.currentSpentCents || 0)}`), h('strong', {}, `${draft.category} → ${fmt(amountCents)}`)), !st.receipt
+        ? h('label', { className: 'mf-m3-salary-input-wrap' }, h('span', {}, 'Limite R$'), h('input', {
+            type: 'text',
+            inputMode: 'decimal',
+            disabled: st.busy,
+            value: st.editedLimitText,
+            onChange: (e) => { st.editedLimitText = String(e.target.value); copilotForceRender(app); }
+        }))
+        : null), !st.receipt
+        ? h('label', { className: 'mf-m3-salary-income-opt' }, h('input', { type: 'checkbox', checked: !!st.applyRecurring, disabled: st.busy, onChange: (e) => { st.applyRecurring = !!e.target.checked; copilotForceRender(app); } }), h('span', {}, `Aplicar também como limite recorrente para os próximos meses (padrão: somente ${draft.month})`))
+        : null, Array.isArray(draft.warnings) && draft.warnings.length > 0
+        ? h('div', { className: 'mf-m3-action-warnings' }, ...draft.warnings.map((w, i) => h('p', { key: i, className: 'mf-m3-action-notice' }, w)))
+        : null, needOptIn
+        ? h('div', { className: 'mf-m3-action-optin' }, h('p', {}, 'Ative as ações supervisionadas para atualizar seu orçamento com backup SQLite.'), h('button', { type: 'button', className: 'secondary-button', disabled: st.busy, onClick: () => void copilotEnableGenericCapability(app, msg, draft) }, st.busy ? 'Ativando…' : 'Ativar ações supervisionadas'))
+        : null, st.receipt
+        ? h('div', { className: 'mf-m3-action-receipt', role: 'status' }, h('div', { className: 'mf-m3-action-receipt-info' }, h('strong', {}, st.undoState === 'undone' ? 'Limite anterior restaurado' : `Limite de ${draft.category} atualizado`), h('small', {}, `Recibo ${String(st.receipt.proposalId || '').slice(0, 8)} · Backup SQLite verificado`)), st.undoState === 'available'
+            ? h('button', { type: 'button', className: 'ghost-button', disabled: st.busy, onClick: () => void copilotGenericUndo(app, msg, draft) }, st.busy ? 'Revertendo…' : 'Desfazer')
+            : h('span', { className: 'mf-ic2-pill' }, 'Desfeito'))
+        : h('div', { className: 'mf-m3-action-footer' }, h('button', {
+            type: 'button',
+            className: 'primary-button',
+            disabled: st.busy || parsedVal === null || !!needOptIn,
+            onClick: () => void copilotGenericExecute(app, msg, draft, {
+                action: 'budgets.reorganize',
+                profile: draft.profile,
+                month: draft.month,
+                applyRecurring: !!st.applyRecurring,
+                budgets: [{ category: draft.category, amountCents }]
+            })
+        }, st.busy ? 'Aguardando confirmação…' : 'Confirmar novo limite'), h('button', { type: 'button', className: 'ghost-button', disabled: st.busy, onClick: () => { st.dismissed = true; st.error = ''; copilotForceRender(app); } }, 'Descartar')), st.error ? h('p', { className: 'mf-m3-action-error', role: 'alert' }, st.error) : null);
+}
+function renderPlanningDraftCard(app, msg, draft) {
+    var _a, _b;
+    if (draft.status === 'needs_clarification' || draft.status === 'unavailable') {
+        return h('div', { className: 'mf-m3-action-card is-info', role: 'region', 'aria-label': 'Planejamento supervisionado' }, h('div', { className: 'mf-m3-action-head' }, h('span', { className: 'micro-label' }, 'PLANEJAMENTO'), h('span', { className: 'mf-ic2-epistemic-badge is-estimate' }, 'Sem gravação')));
+    }
+    const st = copilotGetGenericDraftUiState(msg, draft);
+    if (st.dismissed) {
+        return h('div', { className: 'mf-m3-action-card is-dismissed', role: 'status' }, 'Prévia de planejamento descartada · nenhum item criado ou alterado.');
+    }
+    const needOptIn = !st.receipt && st.capability && st.capability.available && !st.capability.enabled;
+    const statusText = st.receipt ? (st.undoState === 'undone' ? 'Revertida com backup' : 'Aplicada · com recibo') : 'Prévia · nada gravado';
+    const statusClass = st.receipt ? (st.undoState === 'undone' ? 'mf-ic2-epistemic-badge is-estimate' : 'mf-ic2-epistemic-badge is-fact') : 'mf-ic2-epistemic-badge is-simulation';
+    return h('div', { className: 'mf-m3-action-card', role: 'region', 'aria-label': 'Prévia de planejamento supervisionado' }, h('div', { className: 'mf-m3-action-head' }, h('span', { className: 'micro-label' }, draft.fromSimulation ? 'SIMULAÇÃO → PLANEJAMENTO' : 'PLANEJAMENTO LOCAL'), h('div', { className: 'mf-m3-action-badges' }, h('span', { className: 'mf-ic2-pill mf-m3-badge-no-payment' }, 'Não realiza pagamento bancário'), h('span', { className: statusClass }, statusText))), h('div', { className: 'mf-m3-action-target' }, h('div', { className: 'mf-m3-action-target-copy' }, h('small', {}, draft.action === 'planning.create' ? `${draft.kind === 'income' ? 'Receita prevista' : 'Despesa prevista'} · ${draft.targetLabel || 'Outros'} · Vencimento ${draft.dueDate}` : draft.changeLabel || draft.afterSummary || draft.dueDate), h('strong', {}, draft.title)), h('div', { className: 'mf-m3-action-target-total' }, h('small', {}, draft.count > 1 ? `${draft.count}x` : 'Valor'), h('strong', {}, fmt((_b = (_a = draft.totalAmountCents) !== null && _a !== void 0 ? _a : draft.amountCents) !== null && _b !== void 0 ? _b : 0)))), draft.noBankPaymentNotice
+        ? h('p', { className: 'mf-m3-action-notice is-rule-note', role: 'note' }, draft.noBankPaymentNotice)
+        : null, Array.isArray(draft.warnings) && draft.warnings.length > 0
+        ? h('div', { className: 'mf-m3-action-warnings' }, ...draft.warnings.map((w, i) => h('p', { key: i, className: 'mf-m3-action-notice' }, w)))
+        : null, needOptIn
+        ? h('div', { className: 'mf-m3-action-optin' }, h('p', {}, 'Ative as ações supervisionadas para salvar itens no Planejamento local com backup SQLite.'), h('button', { type: 'button', className: 'secondary-button', disabled: st.busy, onClick: () => void copilotEnableGenericCapability(app, msg, draft) }, st.busy ? 'Ativando…' : 'Ativar ações supervisionadas'))
+        : null, st.receipt
+        ? h('div', { className: 'mf-m3-action-receipt', role: 'status' }, h('div', { className: 'mf-m3-action-receipt-info' }, h('strong', {}, st.undoState === 'undone' ? 'Planejamento restaurado ao estado anterior' : 'Planejamento atualizado com sucesso'), h('small', {}, `Recibo ${String(st.receipt.proposalId || '').slice(0, 8)} · Backup SQLite verificado`)), st.undoState === 'available'
+            ? h('button', { type: 'button', className: 'ghost-button', disabled: st.busy, onClick: () => void copilotGenericUndo(app, msg, draft) }, st.busy ? 'Revertendo…' : 'Desfazer')
+            : h('span', { className: 'mf-ic2-pill' }, 'Desfeito'))
+        : h('div', { className: 'mf-m3-action-footer' }, h('button', {
+            type: 'button',
+            className: 'primary-button',
+            disabled: st.busy || !!needOptIn,
+            onClick: () => {
+                var _a;
+                return void copilotGenericExecute(app, msg, draft, { action: draft.action, profile: draft.profile, ...(draft.payload || {}) }, Array.isArray(draft.accountIds) && draft.accountIds.length > 0 ? draft.accountIds[0] : (((_a = draft.payload) === null || _a === void 0 ? void 0 : _a.accountId) || null));
+            }
+        }, st.busy ? 'Aguardando confirmação…' : 'Confirmar no Planejamento'), h('button', { type: 'button', className: 'ghost-button', disabled: st.busy, onClick: () => { st.dismissed = true; st.error = ''; copilotForceRender(app); } }, 'Descartar')), st.error ? h('p', { className: 'mf-m3-action-error', role: 'alert' }, st.error) : null);
+}
+function renderCopilotActionCard(app, msg) {
+    var _a, _b, _c;
+    const draft = msg === null || msg === void 0 ? void 0 : msg.m3ActionDraft;
+    if (!draft)
+        return null;
+    if (draft.contract === 'MF3/SALARY-BUDGET-PROPOSAL-V1') {
+        return renderSalaryBudgetProposalBox(app, msg, draft, {
+            onReplaceDraft: (nextDraft) => {
+                msg.m3ActionDraft = nextDraft;
+                copilotForceRender(app);
+            }
+        });
+    }
+    if (draft.contract === 'MF3/RULE-DRAFT-V1')
+        return renderRuleDraftCard(app, msg, draft);
+    if (draft.contract === 'MF3/CATEGORY-DRAFT-V1')
+        return renderCategoryDraftCard(app, msg, draft);
+    if (draft.contract === 'MF3/BUDGET-EDIT-DRAFT-V1')
+        return renderBudgetEditDraftCard(app, msg, draft);
+    if (draft.contract === 'MF3/PLANNING-DRAFT-V1')
+        return renderPlanningDraftCard(app, msg, draft);
+    if (draft.contract !== 'MF3/ACTION-DRAFT-V1')
+        return null;
+    if (draft.status === 'needs_clarification' || draft.status === 'unavailable') {
+        return h('div', { className: 'mf-m3-action-card is-info', role: 'region', 'aria-label': 'Esclarecimento de ação' }, h('div', { className: 'mf-m3-action-head' }, h('span', { className: 'micro-label' }, 'AÇÃO SUPERVISIONADA · SOMENTE LEITURA'), h('span', { className: 'mf-ic2-epistemic-badge is-estimate' }, 'Sem gravação')), draft.futureRuleNotice ? h('p', { className: 'mf-m3-action-notice' }, draft.futureRuleNotice) : null, draft.excludedBySafetyCount > 0 ? h('small', { className: 'mf-m3-action-muted' }, `${draft.excludedBySafetyCount} registro(s) foram protegidos fora do escopo (pendentes, splits ou transferências).`) : null);
+    }
+    const st = copilotGetActionUiState(msg, draft);
+    if (st.dismissed) {
+        return h('div', { className: 'mf-m3-action-card is-dismissed', role: 'status' }, 'Prévia descartada · nenhuma alteração foi gravada no banco SQLite.');
+    }
+    const items = Array.isArray(draft.items) ? draft.items : [];
+    const visibleItems = draft.ambiguousAccounts && st.accountId
+        ? items.filter((it) => it.accountId === st.accountId)
+        : items;
+    const eligibleItems = visibleItems.filter((it) => it.eligible);
+    const excludedItems = visibleItems.filter((it) => !it.eligible);
+    const selectedItems = eligibleItems.filter((it) => st.selectedKeys.has(String(it.key)));
+    const selectedTotalCents = selectedItems.reduce((n, it) => n + Number(it.amountCents || 0), 0);
+    const identity = resolveCategoryVisualIdentity({
+        categoryId: ((_a = draft.target) === null || _a === void 0 ? void 0 : _a.categoryId) || null,
+        subcategoryId: ((_b = draft.target) === null || _b === void 0 ? void 0 : _b.subcategoryId) || null,
+        categoryName: draft.targetLabel,
+        catalog: (_c = app === null || app === void 0 ? void 0 : app.state) === null || _c === void 0 ? void 0 : _c.qa84VisualCatalog
+    });
+    const accountNamesById = new Map();
+    for (const it of items) {
+        if (it.accountId && !accountNamesById.has(it.accountId)) {
+            accountNamesById.set(it.accountId, String(it.accountName || it.accountId));
+        }
+    }
+    const accountOptions = Array.isArray(draft.accountIds) ? draft.accountIds : [];
+    const needCapabilityOptIn = !st.receipt && st.capability && st.capability.available && !st.capability.enabled;
+    const statusBadgeText = st.receipt
+        ? (st.undoState === 'undone' ? 'Revertida com backup' : 'Aplicada · com recibo')
+        : 'Prévia · nada gravado';
+    const statusBadgeClass = st.receipt
+        ? (st.undoState === 'undone' ? 'mf-ic2-epistemic-badge is-estimate' : 'mf-ic2-epistemic-badge is-fact')
+        : 'mf-ic2-epistemic-badge is-simulation';
+    return h('div', { className: 'mf-m3-action-card', role: 'region', 'aria-label': 'Prévia de ação supervisionada' }, h('div', { className: 'mf-m3-action-head' }, h('span', { className: 'micro-label' }, draft.source === 'bank' ? 'PRÉVIA · MOVIMENTAÇÃO BANCÁRIA' : 'PRÉVIA · LANÇAMENTO MANUAL'), h('div', { className: 'mf-m3-action-badges' }, h('span', { className: 'mf-ic2-pill' }, 'Esforço: ' + copilotEffortLabel(draft.effort)), h('span', { className: statusBadgeClass }, statusBadgeText))), h('div', { className: 'mf-m3-action-target' }, h(CategoryVisualGlyph, { identity, size: 22, variant: 'icon' }), h('div', { className: 'mf-m3-action-target-copy' }, h('small', {}, 'Destino D05 após sua confirmação'), h('strong', {}, draft.targetLabel)), h('div', { className: 'mf-m3-action-target-total' }, h('small', {}, `${selectedItems.length} selecionado(s)`), h('strong', {}, fmt(selectedTotalCents)))), Array.isArray(draft.warnings) && draft.warnings.length > 0
+        ? h('div', { className: 'mf-m3-action-warnings' }, ...draft.warnings.map((w, idx) => h('p', { key: idx, className: 'mf-m3-action-notice' }, w)))
+        : null, draft.futureRuleNotice
+        ? h('div', { className: 'mf-m3-action-notice is-rule-note', role: 'note' }, draft.futureRuleNotice)
+        : null, draft.ambiguousAccounts && accountOptions.length > 1 && !st.receipt
+        ? h('div', { className: 'mf-m3-action-account-picker' }, h('label', {}, 'Conta para esta confirmação nativa', h('select', {
+            value: st.accountId || accountOptions[0],
+            disabled: st.busy,
+            onChange: (e) => {
+                const nextAccount = String(e.target.value);
+                st.accountId = nextAccount;
+                st.selectedKeys = new Set(items.filter((it) => it.eligible && it.accountId === nextAccount).map((it) => String(it.key)));
+                st.error = '';
+                copilotForceRender(app);
+            }
+        }, ...accountOptions.map((id) => h('option', { key: id, value: id }, accountNamesById.get(id) || id)))))
+        : null, h('div', { className: 'mf-m3-action-items', role: 'list', 'aria-label': 'Itens encontrados para revisão' }, ...eligibleItems.map((it) => {
+        const checked = st.selectedKeys.has(String(it.key));
+        return h('label', { key: it.key, className: 'mf-m3-action-row' + (checked ? ' is-selected' : '') }, h('input', {
+            type: 'checkbox',
+            checked,
+            disabled: !!st.receipt || st.busy,
+            onChange: (e) => {
+                if (e.target.checked)
+                    st.selectedKeys.add(String(it.key));
+                else
+                    st.selectedKeys.delete(String(it.key));
+                st.error = '';
+                copilotForceRender(app);
+            }
+        }), h('div', { className: 'mf-m3-action-row-copy' }, h('strong', {}, it.description), h('small', {}, `${it.date} · Atual: ${it.currentCategory || 'Outros'} → ${draft.targetLabel}` +
+            (draft.source === 'bank' && it.accountName ? ` · ${it.accountName}` : ''))), h('span', { className: 'mf-m3-action-row-amount' }, fmt(it.amountCents)));
+    })), excludedItems.length > 0
+        ? h('details', { className: 'mf-m3-action-excluded' }, h('summary', {}, `${excludedItems.length} item(ns) não elegível(is) protegido(s) fora do lote`), h('ul', {}, ...excludedItems.slice(0, 12).map((it) => h('li', { key: it.key }, `${it.date} · ${it.description} (${fmt(it.amountCents)}) — ${it.ineligibleReason}`))))
+        : null, needCapabilityOptIn
+        ? h('div', { className: 'mf-m3-action-optin' }, h('p', {}, 'Para executar alterações locais confirmadas neste perfil, ative antes as ações supervisionadas com registro e reversão em 1 clique.'), h('button', {
+            type: 'button',
+            className: 'secondary-button',
+            disabled: st.busy,
+            onClick: () => void copilotEnableSupervisedCapability(app, msg, draft)
+        }, st.busy ? 'Ativando…' : 'Ativar ações supervisionadas'))
+        : null, st.receipt
+        ? h('div', { className: 'mf-m3-action-receipt', role: 'status' }, h('div', { className: 'mf-m3-action-receipt-info' }, h('strong', {}, st.undoState === 'undone'
+            ? 'Alteração revertida para o estado anterior'
+            : `Alteração aplicada em ${st.receipt.affectedCount || selectedItems.length} lançamento(s)`), h('small', {}, `Recibo ${String(st.receipt.proposalId || '').slice(0, 8)} · Backup SQLite verificado`)), st.undoState === 'available'
+            ? h('button', {
+                type: 'button',
+                className: 'ghost-button',
+                disabled: st.busy,
+                onClick: () => void copilotUndoSupervisedAction(app, msg, draft)
+            }, st.busy ? 'Revertendo…' : 'Desfazer')
+            : h('span', { className: 'mf-ic2-pill' }, 'Desfeito'))
+        : h('div', { className: 'mf-m3-action-footer' }, h('button', {
+            type: 'button',
+            className: 'primary-button',
+            disabled: st.busy || selectedItems.length === 0 || !!needCapabilityOptIn,
+            onClick: () => void copilotExecuteSupervisedAction(app, msg, draft)
+        }, st.busy ? 'Aguardando confirmação…' : `Confirmar e aplicar (${selectedItems.length})`), h('button', {
+            type: 'button',
+            className: 'ghost-button',
+            disabled: st.busy,
+            onClick: () => {
+                st.dismissed = true;
+                st.error = '';
+                copilotForceRender(app);
+            }
+        }, 'Descartar')), st.error ? h('p', { className: 'mf-m3-action-error', role: 'alert' }, st.error) : null);
 }
 function categoryReviewAPI() { return desktop; }
 const categoryReviewKey = (r) => JSON.stringify([r.accountId, r.externalId]);
@@ -8891,12 +10660,13 @@ async function categoryReviewEnable(app) {
             return;
         }
         const backup = { intelligenceThreads: app.state.intelligenceThreads, intelligenceMessages: app.state.intelligenceMessages, intelligenceActiveThreadId: app.state.intelligenceActiveThreadId, intelligenceHydratedMode: app.state.intelligenceHydratedMode };
+        const streamingReset = typeof intelligenceResetStreamingState === 'function' ? intelligenceResetStreamingState(app) : { aiCopilotBusy: false, aiCopilotStreaming: '', aiCopilotRequestId: null };
         app.setState({ categoryReviewGrant: grant, categoryReviewBackup: backup,
             categoryReviewReport: null, categoryReviewQueue: null, categoryReviewPreview: null,
             categoryReviewConfirmed: false, categoryReviewReceipt: null, categoryReviewSelected: [], categoryReviewDetail: null,
             categoryReviewFilters: {}, categoryReviewFilterRevision: (app.state.categoryReviewFilterRevision || 0) + 1,
             mfD04Drafts: {}, mfD04Excluded: {}, mfD04Selected: null, mfD04Error: '', mfD04Stage: 'pending', mfD04Search: '',
-            intelligenceThreads: [], intelligenceMessages: [], intelligenceActiveThreadId: null });
+            intelligenceThreads: [], intelligenceMessages: [], intelligenceActiveThreadId: null, ...streamingReset });
         await categoryReviewRefresh(app);
     });
 }
@@ -8904,7 +10674,8 @@ function categoryReviewDisable(app) {
     var _a;
     const grant = app.state.categoryReviewGrant;
     app.categoryReviewRequest = (app.categoryReviewRequest || 0) + 1;
-    app.setState({ ...app.state.categoryReviewBackup, categoryReviewGrant: null, categoryReviewBackup: null,
+    const streamingReset = typeof intelligenceResetStreamingState === 'function' ? intelligenceResetStreamingState(app) : { aiCopilotBusy: false, aiCopilotStreaming: '', aiCopilotRequestId: null };
+    app.setState({ ...app.state.categoryReviewBackup, ...streamingReset, categoryReviewGrant: null, categoryReviewBackup: null,
         categoryReviewReport: null, categoryReviewQueue: null, categoryReviewPreview: null, categoryReviewSelected: [],
         categoryReviewConfirmed: false, categoryReviewReceipt: null, categoryReviewDetail: null,
         categoryReviewFilters: {}, categoryReviewFilterRevision: (app.state.categoryReviewFilterRevision || 0) + 1,

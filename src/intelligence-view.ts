@@ -41,6 +41,12 @@ type IntelligenceStructuredCard = {
   headers?:[string,string,string?];
   footnote?:string;
 };
+type IntelligencePermissionAction = {
+  id:'authorize_local_read'|'enable_ai_copilot'|'connect_chatgpt'|'enable_m3_actions'|'open_ai_settings';
+  label:string;
+  primary?:boolean;
+  retryQuestion?:string;
+};
 type IntelligenceChatMessage = {
   id:string;
   role:'user'|'assistant'|'system';
@@ -49,16 +55,18 @@ type IntelligenceChatMessage = {
   createdAtIso?:string;
   scopeLabel:string;
   periodLabel:string;
-  status:'sent'|'streaming'|'done'|'unavailable'|'unsupported'|'unimplemented'|'error';
+  status:'sent'|'streaming'|'done'|'unavailable'|'unsupported'|'permission_needed'|'error';
   details?:string;
   operationalActions?:any[];
   operationalEvidence?:string;
+  permissionActions?:IntelligencePermissionAction[];
   proposal?:IntelligenceActionProposal|null;
   structuredCard?:IntelligenceStructuredCard|null;
   visual?:MfVisualSnapshot|null;
   visualV3?:MfV3Card|null;
   ic2Reply?:any;
   ic2FollowUps?:Array<{intent:string;label:string;question?:string}>;
+  m3ActionDraft?:any;
 };
 type IntelligenceThread = {
   id:string;
@@ -119,6 +127,67 @@ function intelligenceOpenFullChat(app:any){
 function intelligencePrepare(app:any,question:string){
   if(typeof intelligenceEnsureHydrated==='function')intelligenceEnsureHydrated(app);
   app.setState({page:'intelligence',intelligenceTab:'chat',intelligenceMainMode:'chat',intelligenceDraft:question,intelligenceDraftScope:app.state.intelligencePanelOpen&&app.state.intelligenceContextSnapshot?app.state.intelligenceContextSnapshot:intelligencePageScope(app),intelligencePanelOpen:false,detail:null,planSelected:null});
+}
+async function intelligenceRunPermissionAction(app:any,action:IntelligencePermissionAction){
+  if(!action?.id)return;
+  const api=desktop as any;
+  if(action.id==='authorize_local_read'){
+    if(typeof localFinancialEnable==='function'){
+      const ok=await localFinancialEnable(app);
+      if(ok&&action.retryQuestion&&typeof intelligenceSubmitQuestion==='function'){
+        void intelligenceSubmitQuestion(app,action.retryQuestion);
+      }
+    }
+    return;
+  }
+  if(action.id==='enable_ai_copilot'){
+    if(typeof api?.aiCopilotCapabilityEnable==='function'){
+      try{
+        const res=await api.aiCopilotCapabilityEnable();
+        if(res&&!res.cancelled&&res.enabled){
+          await new Promise<void>((resolve)=>app.setState({aiCopilotCap:{available:true,...(app.state.aiCopilotCap||{}),enabled:true}},()=>resolve()));
+        }
+        if(typeof intelligenceRefresh==='function')await intelligenceRefresh(app);
+        if(res&&!res.cancelled&&res.enabled&&action.retryQuestion&&typeof intelligenceSubmitQuestion==='function'){
+          void intelligenceSubmitQuestion(app,action.retryQuestion);
+        }
+      }catch(err:any){
+        app.setState({aiError:String(err?.message||'Não foi possível ativar o GPT-6.2 Sol.').slice(0,220)});
+      }
+    }else{
+      app.setState({settingsSection:'intelligence',intelligencePanelOpen:false});
+      app.navigate?.('settings');
+    }
+    return;
+  }
+  if(action.id==='connect_chatgpt'){
+    if(typeof api?.aiConnect==='function'&&typeof intelligenceConnect==='function'){
+      await intelligenceConnect(app);
+      if(typeof intelligenceRefresh==='function')await intelligenceRefresh(app);
+    }else{
+      app.setState({settingsSection:'intelligence',intelligencePanelOpen:false});
+      app.navigate?.('settings');
+    }
+    return;
+  }
+  if(action.id==='enable_m3_actions'){
+    if(typeof api?.copilotActionCapabilityEnable==='function'){
+      try{
+        await api.copilotActionCapabilityEnable();
+        if(typeof intelligenceRefresh==='function')await intelligenceRefresh(app);
+      }catch(err:any){
+        app.setState({aiError:String(err?.message||'Não foi possível ativar as ações M3.').slice(0,220)});
+      }
+    }else{
+      app.setState({settingsSection:'intelligence',intelligencePanelOpen:false});
+      app.navigate?.('settings');
+    }
+    return;
+  }
+  if(action.id==='open_ai_settings'){
+    app.setState({settingsSection:'intelligence',intelligencePanelOpen:false});
+    app.navigate?.('settings');
+  }
 }
 function renderIntelligenceStructuredCard(card:IntelligenceStructuredCard){
   return h('div',{className:'mf-ai-structured-card',role:'region','aria-label':card.title},
@@ -197,11 +266,14 @@ function renderIntelligenceMessageItem(app:any,msg:IntelligenceChatMessage){
   if(msg.id.startsWith('ic2-a-')&&!mfIC2MessageLive(app,msg))
     return h('article',{className:'mf-ai-msg is-assistant is-unavailable'},
       h('p',{role:'status'},'Consulta anterior bloqueada: a autorização mudou ou expirou. Autorize e consulte novamente.'));
+  if(msg.id.startsWith('m3a-')&&typeof copilotActionMessageLive==='function'&&!copilotActionMessageLive(app,msg))
+    return h('article',{className:'mf-ai-msg is-assistant is-unavailable'},
+      h('p',{role:'status'},'Prévia de ação anterior bloqueada: a autorização ou o período mudou. Solicite novamente.'));
   const isUser=msg.role==='user';
-  const badge=msg.status==='unavailable'?h('span',{className:'mf-ai-msg-badge is-warn'},'Consulta não autorizada'):
-    msg.status==='unsupported'?h('span',{className:'mf-ai-msg-badge is-info'},'Consulta não reconhecida'):
-    msg.status==='unimplemented'?h('span',{className:'mf-ai-msg-badge is-info'},'Aguarda I2-A'):
-    msg.status==='error'?h('span',{className:'mf-ai-msg-badge is-error'},'Serviço indisponível'):null;
+  const badge=msg.status==='permission_needed'?h('span',{className:'mf-ai-msg-badge is-warn'},'Permissão necessária'):
+    msg.status==='unavailable'?h('span',{className:'mf-ai-msg-badge is-warn'},'Acesso necessário'):
+    msg.status==='unsupported'?h('span',{className:'mf-ai-msg-badge is-info'},'Fora do escopo local'):
+    msg.status==='error'?h('span',{className:'mf-ai-msg-badge is-error'},'Erro no serviço'):null;
   return h('article',{key:msg.id,className:'mf-ai-msg '+(isUser?'is-user':'is-assistant')+' is-'+msg.status},
     h('header',{className:'mf-ai-msg-meta'},
       h('strong',{},isUser?'Você':'Assistente MF'),
@@ -214,7 +286,9 @@ function renderIntelligenceMessageItem(app:any,msg:IntelligenceChatMessage){
     msg.visualV3?mfV3Render(app,msg):msg.visual?renderMfVisual(app,msg):null,
     msg.operationalEvidence?h('small',{className:'mf-premium-evidence'},msg.operationalEvidence):null,
     Array.isArray(msg.operationalActions)&&msg.operationalActions.length?h('div',{className:'mf-premium-tile-actions'},...msg.operationalActions.map((action:any)=>intelligencePremiumButton(app,null,action))):null,
+    Array.isArray(msg.permissionActions)&&msg.permissionActions.length?h('div',{className:'mf-premium-tile-actions mf-ai-perm-actions'},...msg.permissionActions.map((act:IntelligencePermissionAction,idx:number)=>h('button',{type:'button',key:act.id+'-'+idx,className:act.primary?'primary-button':'ghost-button',onClick:()=>void intelligenceRunPermissionAction(app,act)},act.label))):null,
     msg.proposal?renderIntelligenceActionProposalCard(app,msg.proposal):null,
+    msg.m3ActionDraft&&typeof renderCopilotActionCard==='function'?renderCopilotActionCard(app,msg):null,
     msg.id.startsWith('review-answer-')?h('button',{type:'button',className:'primary-button',onClick:()=>void categoryReviewOpen(app)},'Abrir Central de Revisão'):null,
     msg.details?h('details',{className:'mf-ai-msg-details'},
       h('summary',{},'Ver contexto e diagnóstico'),
@@ -396,17 +470,21 @@ function renderIntelligenceAccess(app:any){
 }
 function intelligenceChatSession(app:any){
  const s=app.state,g=s.localFinancialAccess||s.categoryReviewGrant;
- return {temporary:!!g,expired:!!g&&g.expiresAt<=Date.now(),busy:!!(s.aiBusy||s.localFinancialBusy||s.intelligenceDrawerBusy)};
+ return {temporary:!!g,expired:!!g&&g.expiresAt<=Date.now(),busy:!!(s.aiBusy||s.localFinancialBusy||s.intelligenceDrawerBusy||s.aiCopilotBusy)};
 }
 function renderIntelligenceComposer(app:any,drawer=false){
  const s=app.state,session=intelligenceChatSession(app),draft=String(s.intelligenceDraft||''),id=drawer?'mf-ai-drawer-input':'mf-ai-draft';
  const submit=()=>{if(draft.trim()&&!session.busy&&!session.expired)void intelligenceSubmitQuestion(app,draft);};
+ const solReady=Boolean(s.aiStatus?.connected&&s.aiCopilotCap?.enabled);
+ const footerNote=session.temporary
+  ?(solReady?'Leitura local autorizada · GPT-6.2 Sol ativo':'Somente nesta sessão · motor local ativo')
+  :(solReady?'GPT-6.2 Sol · modo geral sem acesso aos seus registros':'Histórico local · não inclua credenciais');
  return h('form',{className:'mf-chat-composer '+(drawer?'mf-ai-drawer-composer':'mf-ai-composer'),onSubmit:(e:any)=>{e.preventDefault();submit();}},
   session.expired?h('div',{className:'mf-chat-expired',role:'alert'},h('strong',{},'Autorização expirada'),h('p',{},'Renove a permissão acima para consultar novamente. Seu rascunho foi preservado.')):null,
-  h('label',{className:'mf-ai-composer-label',htmlFor:id},'Converse sobre seus registros'),
-  h('textarea',{id,value:draft,rows:2,maxLength:750,disabled:session.busy,placeholder:'Pergunte sobre despesas, categorias ou compromissos…',onChange:(e:any)=>app.setState({intelligenceDraft:e.target.value}),onKeyDown:(e:any)=>{if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();submit();}}}),
-  h('div',{className:'mf-chat-compose-footer'},h('small',{},session.temporary?'Somente nesta sessão · sem IA externa':'Histórico local · não inclua credenciais'),h('small',{},draft.length+'/750 · Shift + Enter para nova linha'),
-   h('button',{type:'submit',className:'primary-button',disabled:!draft.trim()||session.busy||session.expired},session.busy?'Consultando…':'Enviar',h(Icon,{name:'arrow',size:16}))));
+  h('label',{className:'mf-ai-composer-label',htmlFor:id},'Converse sobre finanças ou consulte seus registros'),
+  h('textarea',{id,value:draft,rows:2,maxLength:750,disabled:session.busy,placeholder:'Ex.: Dúvida geral, gasto do mês, orçamento pelo salário ou categorização…',onChange:(e:any)=>app.setState({intelligenceDraft:e.target.value}),onKeyDown:(e:any)=>{if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();submit();}}}),
+  h('div',{className:'mf-chat-compose-footer'},h('small',{},footerNote),h('small',{},draft.length+'/750 · Shift + Enter para nova linha'),
+   h('button',{type:'submit',className:'primary-button',disabled:!draft.trim()||session.busy||session.expired},s.aiCopilotBusy?'GPT-6.2 Sol…':session.busy?'Consultando…':'Enviar',h(Icon,{name:'arrow',size:16}))));
 }
 function renderIntelligenceFollowups(app:any){
  const session=intelligenceChatSession(app),state=app.state,history=intelligenceHistoryList(app);
@@ -489,9 +567,10 @@ function renderIntelligenceViewLegacy(app:any){
               h('span',{},q),h(Icon,{name:'arrow',size:14}))))):
       h('div',{className:'mf-ai-thread',role:'log','aria-live':'polite'},
         ...messages.map(m=>renderIntelligenceMessageItem(app,m)),
-        (s.aiBusy||s.localFinancialBusy)?h('div',{className:'mf-ai-msg is-assistant is-streaming',role:'status'},
-          h('strong',{},'Assistente MF'),
-          h('p',{},'Processando solicitação…')):null),
+        (s.aiBusy||s.localFinancialBusy||s.aiCopilotBusy)?h('div',{className:'mf-ai-msg is-assistant is-streaming',role:'status'},
+          h('strong',{},s.aiCopilotBusy?'Copiloto GPT-6.2 Sol':'Assistente MF'),
+          h('p',{},s.aiCopilotBusy&&s.aiCopilotStreaming?s.aiCopilotStreaming:'Processando solicitação…'),
+          s.aiCopilotBusy&&typeof (desktop as any)?.aiCopilotCancel==='function'?h('button',{type:'button',className:'ghost-button mf-ai-stream-cancel',onClick:()=>void (desktop as any).aiCopilotCancel()},'Cancelar solicitação'):null):null),
       s.aiError?h('p',{className:'mf-ai-error',role:'alert'},s.aiError):null,
       renderIntelligenceFollowups(app),
       renderIntelligenceComposer(app)));
@@ -499,7 +578,7 @@ function renderIntelligenceViewLegacy(app:any){
     h('div',{className:'mf-ai-welcome'},
       h('span',{className:'micro-label'},'AÇÕES SUPERVISIONADAS E EXEMPLOS · SEM GRAVAÇÃO AUTOMÁTICA'),
       h('h2',{},'Sugestões e prévias para revisar, nunca automáticas.'),
-      h('p',{},'As propostas preparadas nas suas conversas aparecem abaixo mantendo a prévia sem gravação até a entrega I2-B.')),
+      h('p',{},'As propostas preparadas nas suas conversas aparecem abaixo mantendo prévia, confirmação nativa no Windows e recibo reversível em 1 clique.')),
     allProposals.length?h('div',{className:'mf-ai-proposals-list','aria-label':'Propostas supervisionadas da sessão'},
       ...allProposals.map(p=>renderIntelligenceActionProposalCard(app,p))):
     h('div',{className:'mf-ai-empty-actions'},
@@ -546,9 +625,13 @@ function renderIntelligencePanel(app:any){
   const threads:IntelligenceThread[]=Array.isArray(app.state.intelligenceThreads)?app.state.intelligenceThreads:[];
   const activeThreadId=app.state.intelligenceActiveThreadId||'';
   const convState=typeof intelligenceConversationState==='function'?intelligenceConversationState(app):{kind:'oauth_disconnected',pill:'IA externa desconectada · leitura local requer autorização',badge:'Conta desconectada',css:'is-offline'};
-  const busy=Boolean(app.state.aiBusy||app.state.localFinancialBusy||app.state.intelligenceDrawerBusy);
+  const busy=Boolean(app.state.aiBusy||app.state.localFinancialBusy||app.state.intelligenceDrawerBusy||app.state.aiCopilotBusy);
   const draft=String(app.state.intelligenceDraft||'');
-  return h('div',{className:'mf-ai-backdrop',role:'presentation',onMouseDown:(e:any)=>{if(e.target===e.currentTarget)app.setState({intelligencePanelOpen:false});}},
+  const closeDrawer=()=>{
+    const expired=Boolean(app.state.localFinancialAccess?.expiresAt&&app.state.localFinancialAccess.expiresAt<=Date.now());
+    app.setState({intelligencePanelOpen:false,...(expired?{intelligencePreparedQuestion:'',intelligenceDraftScope:null}:{})});
+  };
+  return h('div',{className:'mf-ai-backdrop',role:'presentation',onMouseDown:(e:any)=>{if(e.target===e.currentTarget)closeDrawer();}},
     h('aside',{className:'mf-ai-drawer mf-ai-drawer-compact mf-d01',role:'dialog','aria-modal':'true','aria-label':'Assistente contextual de '+info.label},
       h('div',{className:'mf-ai-drawer-head'},
         h('div',{className:'mf-ai-drawer-title-wrap'},
@@ -558,9 +641,10 @@ function renderIntelligencePanel(app:any){
           h('h2',{},'Assistente Financeiro'),
           h('small',{className:'mf-d01-context-subtitle'},'Ajudando em '+info.label)),
         h('div',{className:'mf-ai-drawer-head-actions'},
+          app.state.localFinancialAccess?.token&&typeof localFinancialDisable==='function'?h('button',{type:'button',className:'ghost-button mf-ai-expand-btn','aria-label':'Revogar leitura local',title:'Encerrar acesso local desta sessão',onClick:()=>localFinancialDisable(app)},'Revogar leitura'):null,
           h('button',{type:'button',className:'ghost-button mf-ai-expand-btn','aria-label':'Nova conversa',title:'Iniciar nova conversa',onClick:()=>intelligenceCreateThread(app)},'Nova'),
           h('button',{type:'button',className:'ghost-button mf-ai-expand-btn','aria-label':'Expandir na aba Inteligência',title:'Abrir na aba Inteligência mantendo a conversa ativa',onClick:()=>intelligenceOpenFullChat(app)},'Expandir'),
-          h('button',{type:'button',className:'close-button','aria-label':'Fechar assistente',onClick:()=>app.setState({intelligencePanelOpen:false})},'×'))),
+          h('button',{type:'button',className:'close-button','aria-label':'Fechar assistente',onClick:closeDrawer},'×'))),
       h('details',{className:'mf-d01-context-disclosure'},
         h('summary',{},'Contexto da conversa',h(Icon,{name:'chevron-down',size:14})),
         h('div',{className:'mf-ai-context-meta mf-ai-drawer-scope'},
@@ -581,21 +665,37 @@ function renderIntelligencePanel(app:any){
         h('div',{className:'mf-ai-drawer-messages',role:'log','aria-live':'polite'},
           ...messages.map(m=>renderIntelligenceMessageItem(app,m)),
           busy?h('div',{className:'mf-ai-msg is-assistant is-streaming',role:'status'},
-            h('strong',{},'Assistente MF'),
-            h('p',{},'Processando solicitação no contexto de '+scope.label+'…')):null),
+            h('strong',{},app.state.aiCopilotBusy?'Copiloto GPT-6.2 Sol':'Assistente MF'),
+            h('p',{},app.state.aiCopilotBusy&&app.state.aiCopilotStreaming?app.state.aiCopilotStreaming:'Processando solicitação no contexto de '+scope.label+'…'),
+            app.state.aiCopilotBusy&&typeof (desktop as any)?.aiCopilotCancel==='function'?h('button',{type:'button',className:'ghost-button mf-ai-stream-cancel',onClick:()=>void (desktop as any).aiCopilotCancel()},'Cancelar'):null):null),
         app.state.intelligenceStorageError?h('p',{className:'mf-ai-error',role:'alert'},app.state.intelligenceStorageError):null,
         app.state.aiError?h('p',{className:'mf-ai-error',role:'alert'},app.state.aiError):null),
       renderIntelligenceFollowups(app),renderIntelligenceComposer(app,true)));
 }
 
 function renderIntelligenceSettings(app:any){
+  const s=app.state;
+  const aiCap=s.aiCopilotCap||null;
+  const m3Cap=s.m3ActionCap||null;
+  const rawInferenceStatus=aiCap?.inferenceStatus||'CONFIGURADO';
+  const inferenceLabel=rawInferenceStatus==='CONFIGURADO'?'Configurado (aguarda 1ª consulta)':rawInferenceStatus;
   return h(Card,{className:'settings-card mf-ai-settings'},
-    h('div',{className:'card-heading'},h('div',{},h('h2',{},'Inteligência artificial'),h('p',{},'Autenticação local e testes fictícios · Entrega 2'))),
-    h('div',{className:'mf-ai-setting-line'},h('span',{},'Estado'),h('strong',{},app.state.aiStatus.connected?'Conectada':'Não conectada')),
-    h('div',{className:'mf-ai-setting-line'},h('span',{},'Modelo previsto'),h('strong',{},'GPT-6.1 Sol')),
-    h('div',{className:'mf-ai-setting-line'},h('span',{},'Raciocínio'),h('strong',{},'Low / Medium automático')),
-    h('div',{className:'mf-ai-setting-line'},h('span',{},'Economia de tokens'),h('strong',{},'Contexto mínimo + aprovação por teste')),
-    h('p',{className:'muted-desc'},'OAuth e memórias aprovadas são protegidos localmente no Windows. Nenhuma memória é enviada sem consentimento por teste. Dados bancários e sincronização de memórias no PWA continuam indisponíveis para a IA.'),
+    h('div',{className:'card-heading'},h('div',{},h('h2',{},'Inteligência artificial'),h('p',{},'Autenticação OAuth, Copiloto e GPT-6.2 Sol'))),
+    h('div',{className:'mf-ai-setting-line'},h('span',{},'Conexão OAuth ChatGPT'),h('strong',{},s.aiStatus.connected?'Conectada':'Não conectada')),
+    h('div',{className:'mf-ai-setting-line'},h('span',{},'Modelo'),h('strong',{},'GPT-6.2 Sol ('+inferenceLabel+')')),
+    h('div',{className:'mf-ai-setting-line'},h('span',{},'Raciocínio'),h('strong',{},'Automático (baixo, médio ou alto conforme a pergunta)')),
+    h('div',{className:'mf-ai-setting-line'},h('span',{},'Economia e privacidade'),h('strong',{},'Somente agregados autorizados · zero fallback pago')),
+    desktop?.copilotActionCapabilityStatus?h('div',{className:'mf-ai-setting-line mf-ai-settings-toggle'},
+      h('span',{},'Ações supervisionadas no Copiloto (M3)'),
+      h('div',{className:'mf-ai-settings-toggle-actions'},
+        h('strong',{},m3Cap?.enabled?'Ativadas':'Desativadas'),
+        m3Cap?.available?h('button',{type:'button',className:'ghost-button',onClick:()=>void (m3Cap.enabled?(desktop as any).copilotActionCapabilityRevoke?.():(desktop as any).copilotActionCapabilityEnable?.()).then(()=>intelligenceRefresh(app))},m3Cap.enabled?'Revogar':'Ativar'):null)):null,
+    desktop?.aiCopilotCapabilityStatus?h('div',{className:'mf-ai-setting-line mf-ai-settings-toggle'},
+      h('span',{},'Inferência GPT-6.2 Sol com contexto mínimo'),
+      h('div',{className:'mf-ai-settings-toggle-actions'},
+        h('strong',{},aiCap?.enabled?'Ativada':'Desativada'),
+        aiCap?.available?h('button',{type:'button',className:'ghost-button',onClick:()=>void (aiCap.enabled?(desktop as any).aiCopilotCapabilityRevoke?.():(desktop as any).aiCopilotCapabilityEnable?.()).then(()=>intelligenceRefresh(app))},aiCap.enabled?'Revogar':'Ativar'):null)):null,
+    h('p',{className:'muted-desc'},'OAuth e memórias aprovadas são protegidos localmente no Windows. Ações financeiras exigem prévia, confirmação nativa, backup SQLite e geram recibo reversível em 1 clique.'),
     h('details',{className:'mf-ai-advanced-settings'},
      h('summary',{},'Inteligência · configurações avançadas'),
      renderIntelligenceConnection(app),renderIntelligencePrivacy(app),

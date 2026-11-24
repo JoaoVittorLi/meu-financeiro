@@ -2394,8 +2394,15 @@
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .u3-budgets .mf-budget-b3-fill {
+  .u3-budgets .mf-budget-b3-fill,
+  .u3-budgets .mf-budget-summary > div,
+  .u3-budgets .u3-budget-insight,
+  .u3-budgets .u3-coverage-ring,
+  .u3-budgets .u3-coverage-ring:hover,
+  .u3-simulator .sim-form-card,
+  .u3-simulator .result-card {
     animation: none !important;
     transition: none !important;
+    transform: none !important;
   }
 }

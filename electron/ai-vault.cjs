@@ -2,6 +2,7 @@
 const fs=require('node:fs');
 const path=require('node:path');
 const {randomUUID}=require('node:crypto');
+const {AI_MODEL}=require('../shared/ai-policy.mjs');
 class AIAuthVault {
   constructor(root,safeStorage){
     this.safeStorage=safeStorage;
@@ -43,7 +44,7 @@ class AIAuthVault {
     const secure=await this.supported();
     if(!secure)return {connected:false,secure:false};
     const saved=await this.read();
-    return saved?{connected:true,secure:true,email:saved.email||null,model:'gpt-6.1-sol',scopeGranted:(saved.scopes||[]).includes('chatgpt.tokens.use.direct')}:{connected:false,secure:true};
+    return saved?{connected:true,secure:true,email:saved.email||null,model:AI_MODEL,scopeGranted:(saved.scopes||[]).includes('chatgpt.tokens.use.direct')}:{connected:false,secure:true};
   }
 }
 module.exports={AIAuthVault};

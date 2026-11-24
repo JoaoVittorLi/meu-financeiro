@@ -972,7 +972,12 @@ button:disabled{cursor:not-allowed}.close-button{display:grid;place-items:center
   .mf-settings-content .setting-row,
   .setting-row,
   .setting-edit,
+  .secondary-button,
+  .secondary-button:hover,
   .mf-theme-preview,
+  .mf-theme-preview:hover,
+  .mf-ai-fab,
+  .mf-ai-fab:hover,
   .close-button {
     transition: none !important;
     transform: none !important;

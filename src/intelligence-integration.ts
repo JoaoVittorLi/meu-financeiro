@@ -3,8 +3,13 @@
 async function intelligenceRefresh(app:any){
   if(!desktop?.aiStatus)return;
   try{
-    const [status,capabilities]=await Promise.all([desktop.aiStatus(),desktop.aiCapabilities?.()||Promise.resolve(null)]);
-    app.setState({aiStatus:status,aiCapabilities:capabilities,aiError:''});
+    const [status,capabilities,aiCopilotCap,m3ActionCap]=await Promise.all([
+      desktop.aiStatus(),
+      desktop.aiCapabilities?.()||Promise.resolve(null),
+      desktop.aiCopilotCapabilityStatus?.().catch(()=>null)||Promise.resolve(null),
+      desktop.copilotActionCapabilityStatus?.().catch(()=>null)||Promise.resolve(null)
+    ]);
+    app.setState({aiStatus:status,aiCapabilities:capabilities,aiCopilotCap,m3ActionCap,aiError:''});
     if(status.connected)void intelligenceLoadPersonal(app);
     else app.setState({aiMemories:[],aiUsageStats:null,aiUseMemories:false,aiPreview:null});
   }
@@ -203,16 +208,16 @@ function renderIntelligenceConnection(app:any){
      h('button',{type:'button',className:'ghost-button',disabled:!available||s.aiBusy,onClick:()=>intelligenceRefresh(app)},'Atualizar estado')),
    !available?h('p',{className:'mf-ai-notice'},'A conexão exige a versão Electron atualizada. Esta prévia web não suporta autenticação de assinatura.'):null,
    connected?h('div',{className:'mf-ai-live-settings'},
-     h('p',{},'Conta autorizada: '+(s.aiStatus.email||'conta ChatGPT validada')+' · Modelo exclusivo: GPT-6.1 Sol'),
+     h('p',{},'Conta autorizada: '+(s.aiStatus.email||'conta ChatGPT validada')+' · Modelo exclusivo: GPT-6.2 Sol'),
      h('label',{},'Teste fictício',h('select',{value:s.aiDemoCase,onChange:(e:any)=>app.setState({aiDemoCase:e.target.value})},
        cases.map(c=>h('option',{key:c.id,value:c.id},c.label)))),
      h('label',{},'Raciocínio',h('select',{value:s.aiEffort,onChange:(e:any)=>app.setState({aiEffort:e.target.value})},
-       ['auto','low','medium'].map(e=>h('option',{key:e,value:e},e==='auto'?'Automático':e==='low'?'Baixo':'Médio')))),
+       ['auto','low','medium','high'].map(e=>h('option',{key:e,value:e},e==='auto'?'Automático':e==='low'?'Baixo':e==='medium'?'Médio':'Alto')))),
      h('label',{className:'mf-ai-check'},h('input',{type:'checkbox',checked:s.aiCreditsConfirmed,
        onChange:(e:any)=>app.setState({aiCreditsConfirmed:Boolean(e.target.checked)})}),
        h('span',{},'Conferi em Configurações → Uso: créditos adicionais desativados e limite semanal do aplicativo abaixo de 100%.')),
      h('button',{type:'button',className:'primary-button',disabled:s.aiBusy||!s.aiCreditsConfirmed,
-       onClick:()=>intelligenceTest(app)},s.aiBusy?'Executando teste...':'Testar GPT-6.1 Sol com dados fictícios'),
+       onClick:()=>intelligenceTest(app)},s.aiBusy?'Executando teste...':'Testar GPT-6.2 Sol com dados fictícios'),
      h('p',{className:'mf-ai-usage-warning'},'As configurações de créditos e o teto semanal são controlados pelo ChatGPT. Limite deste aplicativo abaixo de 100% impede uso de créditos adicionais nessa modalidade. O app não consegue verificar esses ajustes automaticamente. O teste conta com limite preventivo de três solicitações por sessão.')):null,
    s.aiBusy?h('p',{className:'mf-ai-progress',role:'status'},'Aguardando autenticação ou conclusão do teste...'):null,
    s.aiStreaming&&!s.aiResult?h('div',{className:'mf-ai-stream',role:'status'},h('strong',{},'Resposta em andamento'),h('p',{},s.aiStreaming.slice(0,12000))):null,
@@ -236,10 +241,19 @@ function intelligenceNowTime():string{
 function intelligenceFoldText(value:string):string{
   return String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('pt-BR').replace(/\s+/g,' ').trim();
 }
-function intelligenceConversationState(app:any):{kind:'service_unavailable'|'chat_available'|'oauth_connected_unimplemented'|'oauth_disconnected';pill:string;badge:string;css:string}{
+function intelligenceConversationState(app:any):{kind:'service_unavailable'|'chat_available'|'oauth_connected_needs_optin'|'oauth_disconnected';pill:string;badge:string;css:string}{
   if(app.state.categoryReviewGrant)return {kind:'chat_available',pill:app.state.categoryReviewGrant.expiresAt>Date.now()?'Revisão sintética · sem IA externa':'Revisão sintética expirada',badge:'Revisão sintética',css:'is-local'};
-  if(app.state.localFinancialAccess?.token)return {kind:'chat_available',pill:app.state.localFinancialAccess.expiresAt>Date.now()?'Leitura local · sem IA externa':'Leitura local expirada',badge:'Leitura local',css:'is-local'};
   const s=app?.state||{};
+  const solEnabled=Boolean(s.aiCopilotCap?.enabled);
+  if(app.state.localFinancialAccess?.token){
+    const active=app.state.localFinancialAccess.expiresAt>Date.now();
+    return {
+      kind:'chat_available',
+      pill:active?(s.aiStatus?.connected&&solEnabled?'Leitura local + GPT-6.2 Sol ativos':'Leitura local autorizada · sem IA externa'):'Leitura local expirada',
+      badge:'Leitura local',
+      css:'is-local'
+    };
+  }
   const activeError=String(s.aiError||s.aiStatus?.error||'').trim();
   const explicitUnavailable=Boolean(
     activeError||
@@ -252,17 +266,12 @@ function intelligenceConversationState(app:any):{kind:'service_unavailable'|'cha
     return {kind:'service_unavailable',pill:'Serviço temporariamente indisponível',badge:'Indisponível',css:'is-error'};
   }
   if(s.aiStatus?.connected===true){
-    const chatDeclared=Boolean(
-      s.aiCapabilities?.conversationalInferenceEnabled===true||
-      s.aiCapabilities?.chatAvailable===true||
-      s.aiStatus?.chatAvailable===true
-    );
-    if(chatDeclared){
-      return {kind:'chat_available',pill:'Serviço de conversação disponível · motor I2-A pendente',badge:'Chat disponível',css:'is-ready'};
+    if(solEnabled){
+      return {kind:'chat_available',pill:'ChatGPT conectado · GPT-6.2 Sol ativo (modo geral)',badge:'GPT-6.2 Sol ativo',css:'is-ready'};
     }
-    return {kind:'oauth_connected_unimplemented',pill:'Conta autenticada · chat aberto na I2-A',badge:'Aguarda I2-A',css:'is-auth-only'};
+    return {kind:'oauth_connected_needs_optin',pill:'ChatGPT conectado · ative o GPT-6.2 Sol para conversar',badge:'Ativação pendente',css:'is-auth-only'};
   }
-  return {kind:'oauth_disconnected',pill:'IA externa desconectada · leitura local requer autorização',badge:'Sem OAuth',css:'is-offline'};
+  return {kind:'oauth_disconnected',pill:'ChatGPT não conectado · leitura local sob autorização',badge:'Sem OAuth',css:'is-offline'};
 }
 function intelligenceReferenceToday(app:any):string|null{
   const custom=app?.state?.today;
@@ -686,17 +695,69 @@ function intelligenceResolveActionProposal(app:any,proposalId:string,decision:'a
       proposal:{
         ...p,
         status:'preview_confirmed' as const,
-        resultMessage:'Prévia validada sem gravação: identidade ('+(p.origin==='bank'?'Banco · '+(p.accountName||p.accountId):'Manual')+'), data ('+p.date+'), valor e categoria ('+p.currentCategory+' → '+p.proposedCategory+') conferidos. Nenhuma escrita foi executada no banco de dados (persistência real prevista para a I2-B).'
+        resultMessage:'Prévia validada sem gravação: identidade ('+(p.origin==='bank'?'Banco · '+(p.accountName||p.accountId):'Manual')+'), data ('+p.date+'), valor e categoria ('+p.currentCategory+' → '+p.proposedCategory+') conferidos. Nenhuma alteração é gravada sem sua confirmação supervisionada.'
       }
     };
   });
   intelligenceSyncThreadMessages(app,updated);
 }
+function intelligenceIsM3ActionIntent(foldedQuestion:string):boolean{
+  const q=String(foldedQuestion||'');
+  return /\b(coloque|coloquem|categoriz|recategoriz|classifiqu|reclassifiqu|mova|mover|alter[ea]r?\s+(?:a\s+)?categoria|mud[ea]r?\s+(?:a\s+)?categoria)\b/.test(q)||
+    /(salario|salarios|renda|remuneracao|holerite|recebi|ganho).*(orcament|limite|reorganiz|organiz|distribu|redistribu|ajust|guardar|poupar|reservar)|(?:reorganiz|redistribu|recalcul|equilibr)\w*\s+(?:os?\s+|meus?\s+)?orcament/.test(q)||
+    /^(?:por favor,?\s*)?(?:sempre que|toda vez que)\b/.test(q)||
+    /\b(?:regra(?:\s+futura|\s+automatica)?\s+(?:para|quando)|(?:desativ|paus|desabilit|ativ|reabilit|habilit)\w*\s+(?:a\s+)?regra)\b/.test(q)||
+    /\b(?:crie|criar|adicione|adicionar|inclua|incluir|nova|renomei\w*|mud\w*\s+o\s+nome|alter\w*\s+o\s+nome)\s+(?:a\s+)?(?:subcategoria|categoria)\b/.test(q)||
+    /^(?:por favor,?\s*)?(?:deixe|defin\w*|ajust\w*|mud\w*|alter\w*|coloque|fique com)\s+(?:o\s+|meu\s+)?(?:limite|orcamento|teto)\b/.test(q)||
+    /\b(?:despesa prevista|receita prevista|conta prevista|compromisso|parcela prevista|planejamento)\b.*\b(?:registr|adicion|crie|criar|agend|cancel|reativ|acabamos de simular|simul)\b|\b(?:registr|adicion|crie|criar|agend|cancel|reativ)\w*.*\b(?:despesa prevista|receita prevista|conta prevista|compromisso|parcela prevista|planejamento)\b/.test(q)||
+    /^(?:por favor,?\s*)?(?:alter|mud|atualiz|ajust|remarqu)\w*\s+(?:o\s+|a\s+)?(?:vencimento|data|valor)\b/.test(q)||
+    /\b(?:gostei.*mais|guardar.*a mais|poupar.*a mais|aument\w*.*reserva|trave |fixe |destrave|desbloque|reduza mais|use o valor que voce sugeriu|economia sugerida|reducao sugerida)\b/.test(q);
+}
+function intelligenceClassifyQuestion(question:string):'m3_action'|'personal_financial'|'general'{
+  const f=intelligenceFoldText(question);
+  if(intelligenceIsM3ActionIntent(f))return 'm3_action';
+  const educationalHowTo=/\bcomo\s+(?:organizar|controlar|montar|construir|administrar|planejar|estruturar|equilibrar|dividir|criar)\b/.test(f)&&
+    !/\b(extrato|saldo|fatura|neste\s+mes|este\s+mes|mes\s+passado|ultim[oa]s?\s+\d*\s*(?:mes|dias)|gastei|recebi|paguei|lancament|movimentac|minhas\s+contas|projecao|orcamento\s+de)\b/.test(f);
+  if(educationalHowTo)return 'general';
+  if(/\b(meu\s+(?:extrato|saldo|orcamento|fluxo)|minha\s+(?:conta|fatura|projecao|renda)|minhas\s+(?:contas|despesas|receitas|financas|movimentacoes|compras|parcelas)|meus\s+(?:gastos|orcamentos|compromissos|lancamentos|limites)|orcamento\s+de\b|quanto\s+sobrou|gastei(?:\s+mais)?|onde\s+(?:mais\s+gastei|gastei\s+mais|posso\s+economizar)|quais\s+(?:os\s+|meus\s+)?gastos|faturas?|parcelas?|a\s+pagar|assinaturas?|recorrentes?|economizei|recebi\s+(?:este|no)\s+mes|paguei|ultrapass|estourou|compar[ea]\s+minhas|movimentacoes\s+a\s+revisar|proximo\s+(?:mes|trimestre))\b/.test(f))return 'personal_financial';
+  if(/\b(quanto\s+(?:gastei|paguei|recebi|tenho\s+comprometido)|quais\s+foram\s+(?:os?\s+)?(?:maiores|meus|minhas)|estabelecimentos\s+onde\s+mais|por\s+que\s+(?:gastei|minhas?\s+despesas)|analise\s+(?:meu\s+fluxo|meus\s+gastos))\b/.test(f))return 'personal_financial';
+  if(/\bse\s+eu\s+comprar\b|\bposso\s+comprar\b/.test(f))return 'personal_financial';
+  return 'general';
+}
+function intelligenceRecentPlainHistory(messages:IntelligenceChatMessage[],limit=6,opts?:{excludeFinancial?:boolean}):Array<{role:'user'|'assistant';text:string}>{
+  const out:Array<{role:'user'|'assistant';text:string}>=[];
+  const list=Array.isArray(messages)?messages:[];
+  const excludeFinancial=opts?.excludeFinancial!==false;
+  for(const m of list.slice(-14)){
+    if(!m||!m.text)continue;
+    if(m.role!=='user'&&m.role!=='assistant')continue;
+    if(m.role==='assistant'&&m.status!=='done')continue;
+    if(excludeFinancial){
+      if(/^(?:local-|ic2-|m3a-|review-)/.test(String(m.id||'')))continue;
+      if((m as any).structuredCard||(m as any).ic2Reply||(m as any).visual||(m as any).visualV3||(m as any).m3ActionDraft||m.proposal)continue;
+      if(/R\$\s*-?\d|Consulta local ·|Prévia supervisionada|O que aconteceu:|Total de entradas|Saldo nas contas/i.test(String(m.text)))continue;
+    }
+    const text=String(m.text).replace(/\s+/g,' ').trim().slice(0,450);
+    if(text)out.push({role:m.role,text});
+  }
+  return out.slice(-limit);
+}
+function intelligenceCleanIpcError(err:any,fallback:string):string{
+  const raw=String(err?.message||fallback||'');
+  const cleaned=raw.replace(/^Error invoking remote method '[^']+':\s*(?:Error:\s*)?/i,'').trim();
+  return (cleaned||String(fallback||'')).slice(0,260);
+}
+function intelligenceIsUserCancelledError(err:any):boolean{
+  const msg=String(err?.message||'')+' '+String(err?.cause||'');
+  return /\bUSER_CANCELLED\b|cancelad[ao]\s+(?:pelo\s+usu[áa]rio|por\s+solicita[çc][ãa]o)/i.test(msg);
+}
 async function intelligenceSubmitQuestion(app:any,rawQuestion:string){
   if(typeof categoryReviewHandleQuestion==='function'&&categoryReviewHandleQuestion(app,rawQuestion))return;
-  if(app.state.localFinancialAccess?.token&&typeof localFinancialSubmit==='function')return localFinancialSubmit(app,rawQuestion);
+  const grant=app.state.localFinancialAccess;
+  const grantValid=!!grant?.token&&(!Number.isFinite(grant.expiresAt)||grant.expiresAt>Date.now());
+  if(grantValid&&typeof localFinancialSubmit==='function')return localFinancialSubmit(app,rawQuestion);
   const q=String(rawQuestion||'').trim().slice(0,750);
-  if(!q||app.state.aiBusy||app.state.intelligenceDrawerBusy)return;
+  if(!q||app.state.aiBusy||app.state.intelligenceDrawerBusy||app.state.aiCopilotBusy)return;
   const priorError=String(app.state.aiError||app.state.aiStatus?.error||'').trim();
   const convState=intelligenceConversationState(app);
   const scope=app.state.intelligencePanelOpen&&app.state.intelligenceContextSnapshot
@@ -719,10 +780,11 @@ async function intelligenceSubmitQuestion(app:any,rawQuestion:string){
   app.setState({
     intelligenceMessages:[...currentMessages,userMsg],
     intelligenceDraft:'',
-    intelligencePreparedQuestion:q,
+    intelligencePreparedQuestion:'',
     intelligenceDraftScope:scope
-  });
+  },()=>intelligenceScrollChatToBottom());
 
+  const desktopConsentRequired=typeof (desktop as any)?.localFinancialAuthorize==='function'&&app.state.mode!=='demo'&&!grantValid;
   const catIntent=intelligenceParseCategorizeIntent(q,app.state.categories,todayIso);
   if(catIntent){
     const built=intelligenceBuildCategorizeProposal(app,catIntent);
@@ -743,37 +805,135 @@ async function intelligenceSubmitQuestion(app:any,rawQuestion:string){
   }
 
   const wantsLocalSummary=/\b(?:resumo\s+estruturado|tabela\s+de\s+categorias|resumo\s+das\s+minhas\s+movimenta[çc][õo]es)\b/i.test(q);
-  const structuredCard=wantsLocalSummary?intelligenceBuildStructuredSummaryCard(app):null;
+  const structuredCard=wantsLocalSummary&&!desktopConsentRequired?intelligenceBuildStructuredSummaryCard(app):null;
+  const intent=intelligenceClassifyQuestion(q);
 
-  let replyText='';
-  let replyStatus:'unavailable'|'unimplemented'|'error'='unavailable';
-  if(convState.kind==='service_unavailable'){
-    replyStatus='error';
-    const errReason=priorError||(app.state.aiStatus?.connected&&app.state.aiStatus?.secure===false?'cofre de criptografia local indisponível':'falha temporária de comunicação com o serviço de IA');
-    replyText='**Serviço temporariamente indisponível:** Não foi possível acessar o serviço de IA neste momento ('+errReason+'). Nenhuma resposta foi simulada.';
-  }else if(convState.kind==='chat_available'){
-    replyStatus='unimplemented';
-    replyText='**Conta autenticada e serviço de conversação disponível, mas motor de conversação aberta ainda não implementado (aguarda I2-A):** Sua conexão OAuth com o ChatGPT está ativa e a capacidade de conversação está habilitada, porém o envio de perguntas abertas sobre dados financeiros reais ainda não foi implementado nesta etapa por segurança. Nenhuma resposta de IA foi simulada e nenhum provedor externo foi acionado.';
-  }else if(convState.kind==='oauth_connected_unimplemented'){
-    replyStatus='unimplemented';
-    replyText='**Funcionalidade ainda não implementada (aguarda I2-A):** Sua conta ChatGPT está autenticada via OAuth, mas o serviço de conversação aberta sobre dados financeiros reais ainda não foi habilitado nesta etapa. Você já pode preparar prévias locais de categorização (ex.: *"Categorize minha compra do mercado de ontem como Alimentação"*) ou executar os casos homologados no Laboratório.';
-  }else{
-    replyStatus='unavailable';
-    replyText='**Conta desconectada (não autenticada) e conversação aberta pendente (I2-A):** O ChatGPT não está conectado neste computador e a conversação financeira livre será entregue na etapa I2-A. Nenhuma resposta de IA foi simulada. Prévias determinísticas de categorização continuam disponíveis localmente.';
-  }
-  const reply:IntelligenceChatMessage={
-    id:'ast-'+(Date.now()+1),
-    role:'assistant',
-    text:replyText,
-    createdAt:intelligenceNowTime(),
-    createdAtIso:todayIso,
-    scopeLabel:scope.label,
-    periodLabel:scope.period,
-    status:replyStatus,
-    details:'Estado: '+convState.pill+' · Escopo: '+scope.label+' ('+scope.period+') · Conversa salva com segurança no histórico local do perfil.',
-    structuredCard
+  const appendAssistant=(partial:Partial<IntelligenceChatMessage>)=>{
+    const reply:IntelligenceChatMessage={
+      id:'ast-'+(Date.now()+1),
+      role:'assistant',
+      text:'',
+      createdAt:intelligenceNowTime(),
+      createdAtIso:todayIso,
+      scopeLabel:scope.label,
+      periodLabel:scope.period,
+      status:'done',
+      structuredCard,
+      ...partial
+    };
+    intelligenceSyncThreadMessages(app,[...currentMessages,userMsg,reply],scope);
   };
-  intelligenceSyncThreadMessages(app,[...currentMessages,userMsg,reply],scope);
+
+  if((wantsLocalSummary&&desktopConsentRequired)||(!wantsLocalSummary&&(intent==='m3_action'||intent==='personal_financial'))){
+    appendAssistant({
+      status:'permission_needed',
+      structuredCard:null,
+      text:intent==='m3_action'
+        ?'**Autorização financeira necessária para preparar esta ação:** para examinar seus lançamentos, categorias ou orçamento antes de gerar uma prévia confirmável, autorize a leitura financeira desta sessão. Nenhuma escrita ocorre sem prévia, confirmação nativa e recibo reversível.'
+        :'**Autorização de leitura financeira necessária:** por segurança, seus gastos, orçamento, faturas e compromissos locais só são consultados após você autorizar a leitura financeira desta sessão. Nenhuma resposta pessoal foi estimada ou simulada.',
+      permissionActions:[
+        {id:'authorize_local_read',label:'Autorizar leitura financeira agora',primary:true,retryQuestion:q}
+      ],
+      details:'Escopo: '+scope.label+' ('+scope.period+') · Aguardando permissão de leitura financeira nesta sessão.'
+    });
+    return;
+  }
+
+  const api=desktop as any;
+  if(convState.kind==='service_unavailable'){
+    const errReason=priorError||(app.state.aiStatus?.connected&&app.state.aiStatus?.secure===false?'cofre de criptografia local indisponível':'falha temporária de comunicação com o serviço de IA');
+    appendAssistant({
+      status:'error',
+      text:'**Serviço temporariamente indisponível:** Não foi possível acessar o serviço de IA neste momento ('+errReason+'). Nenhuma resposta foi simulada.',
+      permissionActions:[{id:'open_ai_settings',label:'Verificar em Configurações de IA'}],
+      details:'Estado: '+convState.pill+' · '+errReason
+    });
+    return;
+  }
+
+  if(!wantsLocalSummary&&app.state.aiStatus?.connected&&app.state.aiCopilotCap?.enabled&&typeof api?.aiCopilotAsk==='function'){
+    const startMode:'real'|'demo'=app.state.mode==='demo'?'demo':'real';
+    const startThreadId=app.state.intelligenceActiveThreadId||null;
+    const startLocalToken=app.state.localFinancialAccess?.token||null;
+    const startReviewToken=app.state.categoryReviewGrant?.token||null;
+    const requestId='sol-gen-'+Date.now()+'-'+Math.floor(Math.random()*10000);
+    const isStillCurrent=()=>
+      (app.state.mode==='demo'?'demo':'real')===startMode&&
+      (app.state.intelligenceActiveThreadId||null)===startThreadId&&
+      (app.state.localFinancialAccess?.token||null)===startLocalToken&&
+      (app.state.categoryReviewGrant?.token||null)===startReviewToken&&
+      app.state.aiCopilotRequestId===requestId;
+    app.setState({aiCopilotBusy:true,aiCopilotStreaming:'',aiCopilotRequestId:requestId,aiError:''},()=>intelligenceScrollChatToBottom());
+    try{
+      const history=intelligenceRecentPlainHistory(currentMessages);
+      const sol=await api.aiCopilotAsk({token:null,question:q,history,effortOverride:'auto',requestId});
+      if(!isStillCurrent())return;
+      if(sol?.inferenceStatus&&app.state.aiCopilotCap){
+        app.setState({aiCopilotCap:{...app.state.aiCopilotCap,inferenceStatus:sol.inferenceStatus}});
+      }
+      const effortLabel=sol?.effort==='high'?'Alto':sol?.effort==='medium'?'Médio':'Baixo';
+      appendAssistant({
+        status:'done',
+        text:String(sol?.text||'').trim()||'O GPT-6.2 Sol concluiu a solicitação sem conteúdo de resposta.',
+        operationalEvidence:'GPT-6.2 Sol · Modo geral (sem dados financeiros) · Esforço '+effortLabel,
+        details:'Conversa geral via OAuth com GPT-6.2 Sol · zero acesso ao SQLite ou extratos pessoais · zero fallback pago.'
+      });
+    }catch(solErr:any){
+      if(!isStillCurrent())return;
+      if(intelligenceIsUserCancelledError(solErr)){
+        appendAssistant({
+          status:'done',
+          text:'Solicitação cancelada. Nenhuma resposta ou alteração financeira foi registrada.',
+          details:'Cancelamento manual pelo usuário antes da conclusão.'
+        });
+      }else{
+        const errMsg=intelligenceCleanIpcError(solErr,'Não foi possível consultar o GPT-6.2 Sol neste momento.');
+        appendAssistant({
+          status:'error',
+          text:'**Não foi possível obter resposta do GPT-6.2 Sol:** '+errMsg+' Nenhuma resposta foi simulada.',
+          permissionActions:[{id:'open_ai_settings',label:'Abrir Configurações de IA'}],
+          details:'Erro real retornado pelo serviço GPT-6.2 Sol (OAuth): '+errMsg
+        });
+      }
+    }finally{
+      if(app.state.aiCopilotRequestId===requestId){
+        app.setState({aiCopilotBusy:false,aiCopilotStreaming:'',aiCopilotRequestId:null});
+      }
+    }
+    return;
+  }
+
+  if(wantsLocalSummary){
+    appendAssistant({
+      status:'done',
+      text:'**Resumo estruturado local pronto (somente registros carregados na sessão):** consulte os totais reconciliados abaixo sem acionar IA externa.',
+      details:'Escopo: '+scope.label+' ('+scope.period+') · Resumo local determinístico sem escrita financeira.'
+    });
+    return;
+  }
+
+  if(app.state.aiStatus?.connected===true){
+    appendAssistant({
+      status:'permission_needed',
+      text:'Sua conta **ChatGPT está conectada via OAuth**, mas a inferência do modelo **GPT-6.2 Sol** ainda precisa ser ativada neste dispositivo. Ative abaixo para responder a saudações e perguntas gerais sem compartilhar seus registros financeiros pessoais.',
+      permissionActions:[
+        {id:'enable_ai_copilot',label:'Ativar GPT-6.2 Sol e responder',primary:true,retryQuestion:q},
+        {id:'open_ai_settings',label:'Configurações de IA'}
+      ],
+      details:'Estado: OAuth conectado · opt-in GPT-6.2 Sol desativado · nenhum registro financeiro acessado.'
+    });
+    return;
+  }
+
+  appendAssistant({
+    status:'unavailable',
+    text:'**ChatGPT desconectado neste computador:** conecte sua conta ChatGPT para conversar com o **GPT-6.2 Sol** sobre dúvidas gerais, ou autorize a leitura financeira local para consultar gastos, orçamentos e ações supervisionadas sem IA externa. Nenhuma resposta foi simulada.',
+    permissionActions:[
+      {id:'connect_chatgpt',label:'Conectar ChatGPT',primary:true},
+      {id:'authorize_local_read',label:'Autorizar leitura local'}
+    ],
+    details:'Estado: '+convState.pill+' · Escopo: '+scope.label+' ('+scope.period+').'
+  });
 }
 
 
@@ -965,9 +1125,24 @@ function intelligenceSyncThreadMessages(app:any,messages:IntelligenceChatMessage
     intelligenceActiveThreadId:activeId,
     intelligenceMessages:trimmedMsgs,
     intelligenceStorageError:storageErr
-  });
+  },()=>intelligenceScrollChatToBottom());
+}
+function intelligenceScrollChatToBottom(){
+  if(typeof document==='undefined'||typeof document.querySelectorAll!=='function')return;
+  const scroll=()=>{
+    for(const el of Array.from(document.querySelectorAll('.mf-b05-chat-thread, .mf-ai-drawer-body')))
+      (el as HTMLElement).scrollTop=(el as HTMLElement).scrollHeight;
+  };
+  if(typeof requestAnimationFrame==='function')requestAnimationFrame(scroll);else scroll();
+}
+function intelligenceResetStreamingState(app:any){
+  if(app?.state?.aiCopilotBusy&&typeof (desktop as any)?.aiCopilotCancel==='function'){
+    void (desktop as any).aiCopilotCancel().catch(()=>{});
+  }
+  return {aiCopilotBusy:false,aiCopilotStreaming:'',aiCopilotRequestId:null as string|null};
 }
 function intelligenceCreateThread(app:any,initialTitle:string='Nova conversa'){
+  const streamingReset=intelligenceResetStreamingState(app);
   intelligenceEnsureHydrated(app);
   const mode:'real'|'demo'=app.state.mode==='demo'?'demo':'real';
   const todayIso=intelligenceReferenceToday(app)||'2026-11-11';
@@ -994,6 +1169,9 @@ function intelligenceCreateThread(app:any,initialTitle:string='Nova conversa'){
     intelligenceActiveThreadId:newThread.id,
     intelligenceMessages:[],
     intelligenceDraft:'',
+    intelligencePreparedQuestion:'',
+    intelligenceDraftScope:null,
+    ...streamingReset,
     intelligenceStorageError:storageErr
   });
   return newThread.id;
@@ -1003,10 +1181,14 @@ function intelligenceSelectThread(app:any,threadId:string){
   const threads:IntelligenceThread[]=Array.isArray(app.state.intelligenceThreads)?app.state.intelligenceThreads:[];
   const found=threads.find(t=>t.id===threadId);
   if(!found)return;
+  const switching=found.id!==app.state.intelligenceActiveThreadId;
+  const streamingReset=switching?intelligenceResetStreamingState(app):{};
   app.setState({
     intelligenceActiveThreadId:found.id,
     intelligenceMessages:found.messages,
-    intelligenceDraftScope:{label:found.scopeLabel,period:found.periodLabel,mode:found.mode==='demo'?'Demonstração':'Pessoal'}
+    intelligenceDraftScope:{label:found.scopeLabel,period:found.periodLabel,mode:found.mode==='demo'?'Demonstração':'Pessoal'},
+    ...(switching?{intelligencePreparedQuestion:''}:{}),
+    ...streamingReset
   });
 }
 function intelligenceDeleteThread(app:any,threadId:string,confirmFn?:(msg:string)=>boolean){
@@ -1016,26 +1198,34 @@ function intelligenceDeleteThread(app:any,threadId:string,confirmFn?:(msg:string
   if(!target)return false;
   const ask=confirmFn||(typeof confirm==='function'?confirm:()=>false);
   if(!ask('Excluir permanentemente a conversa “'+target.title+'” deste perfil?'))return false;
+  const deletingActive=app.state.intelligenceActiveThreadId===threadId;
+  const streamingReset=deletingActive?intelligenceResetStreamingState(app):{};
   const mode:'real'|'demo'=app.state.mode==='demo'?'demo':'real';
   const remaining=threads.filter(t=>t.id!==threadId);
-  const nextActive=app.state.intelligenceActiveThreadId===threadId?(remaining[0]||null):(remaining.find(t=>t.id===app.state.intelligenceActiveThreadId)||remaining[0]||null);
+  const nextActive=deletingActive?(remaining[0]||null):(remaining.find(t=>t.id===app.state.intelligenceActiveThreadId)||remaining[0]||null);
   const storageErr=intelligencePersistThreads(app,remaining,mode);
   if(storageErr){app.setState({intelligenceStorageError:storageErr});return false;}
   app.setState({
     intelligenceThreads:remaining,
     intelligenceActiveThreadId:nextActive?nextActive.id:null,
     intelligenceMessages:nextActive?nextActive.messages:[],
+    ...streamingReset,
     intelligenceStorageError:storageErr
   });
   return true;
 }
 function intelligenceClearHistory(app:any,confirmFn?:(msg:string)=>boolean){
-  if(app.state.localFinancialAccess?.token||app.state.categoryReviewGrant?.token){app.setState({intelligenceThreads:[],intelligenceMessages:[],intelligenceActiveThreadId:null});return;}
+  if(app.state.localFinancialAccess?.token||app.state.categoryReviewGrant?.token){
+    const streamingReset=intelligenceResetStreamingState(app);
+    app.setState({intelligenceThreads:[],intelligenceMessages:[],intelligenceActiveThreadId:null,intelligencePreparedQuestion:'',...streamingReset});
+    return;
+  }
   intelligenceEnsureHydrated(app);
   const threads:IntelligenceThread[]=Array.isArray(app.state.intelligenceThreads)?app.state.intelligenceThreads:[];
   if(!threads.length)return false;
   const ask=confirmFn||(typeof confirm==='function'?confirm:()=>false);
   if(!ask('Excluir todas as '+threads.length+' conversa(s) salvas neste perfil?'))return false;
+  const streamingReset=intelligenceResetStreamingState(app);
   const mode:'real'|'demo'=app.state.mode==='demo'?'demo':'real';
   const storageErr=intelligencePersistThreads(app,[],mode);
   if(storageErr){app.setState({intelligenceStorageError:storageErr});return false;}
@@ -1043,11 +1233,14 @@ function intelligenceClearHistory(app:any,confirmFn?:(msg:string)=>boolean){
     intelligenceThreads:[],
     intelligenceActiveThreadId:null,
     intelligenceMessages:[],
+    intelligencePreparedQuestion:'',
+    ...streamingReset,
     intelligenceStorageError:storageErr
   });
   return true;
 }
 function intelligenceSwitchProfileMode(app:any,newMode:'real'|'demo'){
+  const streamingReset=intelligenceResetStreamingState(app);
   if(app.state.categoryReviewGrant&&typeof categoryReviewDisable==='function')categoryReviewDisable(app);
   if(app.state.localFinancialAccess?.token&&typeof localFinancialDisable==='function')localFinancialDisable(app);
   const loaded=intelligenceLoadStoredThreads(app,newMode);
@@ -1058,6 +1251,9 @@ function intelligenceSwitchProfileMode(app:any,newMode:'real'|'demo'){
     intelligenceThreads:loaded.threads,
     intelligenceActiveThreadId:first?first.id:null,
     intelligenceMessages:first?first.messages:[],
+    intelligenceDraftScope:null,
+    intelligencePreparedQuestion:'',
+    ...streamingReset,
     intelligenceStorageError:loaded.error
   });
 }

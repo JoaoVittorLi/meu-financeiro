@@ -1,7 +1,7 @@
 'use strict';
 // Responses API client for eligible Sign in with ChatGPT sessions.
 // No API key, paid fallback, financial database access or automatic retries.
-const {AI_MODEL,buildDemoRequest,publicCapabilities}=require('../shared/ai-policy.mjs');
+const {AI_MODEL,AI_INFERENCE_STATES,buildDemoRequest,publicCapabilities}=require('../shared/ai-policy.mjs');
 const {assembleDemoContext,AI_CONTEXT_LIMITS}=require('../shared/ai-context.mjs');
 const MAX_DEMO_TESTS=3;
 // Only approved, non-sensitive connection codes can reach the renderer.
@@ -11,6 +11,9 @@ const NETWORK_CODES=new Set([
   'UND_ERR_SOCKET','UND_ERR_BODY_TIMEOUT'
 ]);
 function connectionError(stage,error,mayHaveReachedServer=false){
+  if(error?.cause==='USER_CANCELLED'||error?.message==='USER_CANCELLED'){
+    return new Error('Análise cancelada por solicitação sua. Nenhuma nova tentativa automática foi feita.');
+  }
   const code=String(error?.cause?.code||error?.code||'');
   const safeCode=NETWORK_CODES.has(code)?' ('+code+')':'';
   const timeout=error?.name==='TimeoutError'||error?.name==='AbortError';
@@ -69,6 +72,12 @@ class ChatGPTDemoClient{
   constructor({auth,personalStore=null,fetchFn=globalThis.fetch}){
     if(!auth)throw new Error('Autenticação necessária.');
     this.auth=auth;this.personalStore=personalStore;this.fetchFn=fetchFn;this.tests=0;this.busy=false;
+    this.activeController=null;
+  }
+  cancelActive(){
+    if(!this.busy||!this.activeController)return {cancelled:false};
+    try{this.activeController.abort('USER_CANCELLED');return {cancelled:true};}
+    catch{return {cancelled:false};}
   }
   capabilities(){return {...publicCapabilities(),contextLimits:AI_CONTEXT_LIMITS,memoryLocalOnly:true,
     remainingDemoTests:Math.max(0,MAX_DEMO_TESTS-this.tests)};}
@@ -106,15 +115,16 @@ class ChatGPTDemoClient{
     if(!response.ok)throw new Error(normalizedError(response.status));
     const catalog=await response.json();
     if(!Array.isArray(catalog.models))throw new Error('Catálogo de modelos inválido.');
-    return catalog.models.some(m=>m.slug===AI_MODEL);
+    return catalog.models.some(m=>m.slug===AI_MODEL||m.id===AI_MODEL);
   }
-  async testDemo({caseId,effort='auto',creditsDisabledConfirmed=false,useSavedMemories=false,onDelta=()=>{}}){
+  async testDemo({caseId,effort='auto',creditsDisabledConfirmed=false,useSavedMemories=false,signal=null,onDelta=()=>{}}){
     if(!creditsDisabledConfirmed)throw new Error('Antes do teste, confirme nas configurações do ChatGPT que créditos adicionais estão desativados.');
     if(this.busy)throw new Error('Uma análise já está em andamento.');
     if(this.tests>=MAX_DEMO_TESTS)throw new Error('Limite preventivo de três testes nesta sessão atingido.');
     if(typeof useSavedMemories!=='boolean')throw new Error('Consentimento de memória inválido.');
     const base=buildDemoRequest(caseId,effort);
-    this.busy=true;
+    const controller=new AbortController();
+    this.busy=true;this.activeController=controller;
     try{
       let subject=null;
       let notes=[];
@@ -131,11 +141,14 @@ class ChatGPTDemoClient{
       // POST /responses itself. No alternative model or paid API fallback.
       // Count attempts at the single inference POST; never retry ambiguous POSTs.
       this.tests++;
+      const signals=[AbortSignal.timeout(90000),controller.signal];
+      if(signal)signals.push(signal);
+      const composedSignal=typeof AbortSignal.any==='function'?AbortSignal.any(signals):controller.signal;
       const response=await this.safeFetch('de envio da análise','https://api.openai.com/v1/responses',{
         method:'POST',
         headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},
         body:JSON.stringify(request),
-        signal:AbortSignal.timeout(90000),redirect:'error'
+        signal:composedSignal,redirect:'error'
       },true);
       if(!response.ok)throw new Error(normalizedError(response.status));
       const {text,usage}=await readSSE(response.body,onDelta);
@@ -149,8 +162,9 @@ class ChatGPTDemoClient{
       }
       return {model:AI_MODEL,effort:request.reasoning.effort,caseId,text,usage,
         usageStored,context:inspection,onlyFictitiousData:true,
+        inferenceStatus:AI_INFERENCE_STATES.LIVE_VERIFIED,
         remainingDemoTests:Math.max(0,MAX_DEMO_TESTS-this.tests)};
-    } finally {this.busy=false;}
+    } finally {this.busy=false;this.activeController=null;}
   }
 }
-module.exports={ChatGPTDemoClient,readSSE,normalizedError};
+module.exports={ChatGPTDemoClient,readSSE,normalizedError,connectionError};

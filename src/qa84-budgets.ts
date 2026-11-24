@@ -135,7 +135,7 @@ function qa84BudgetReturn(host:any,toCategory:boolean){
 }
 function renderQA84BudgetCards(host:any,visible:any[],mode:string,total:number,bank:boolean,suggest:(name:string)=>number|null){
  return h('div',{className:'qa84-budgets-grid',role:'list', 'aria-label':'Orçamentos por categoria'},
-  visible.map(({info,total:spent,hasLimit,limit}:any)=>{
+  visible.map(({info,total:spent,hasLimit,limit,isMonthly}:any)=>{
    const identity=resolveCategoryVisualIdentity({categoryName:info.name,catalog:host.state.qa84VisualCatalog||[],aggregate:true});
    const model=qa84BudgetStatus(spent,limit??null,mode==='expense'&&hasLimit);
    const tone=model.status==='exceeded'?'exceeded':model.status==='near'?'near':
@@ -146,7 +146,7 @@ function renderQA84BudgetCards(host:any,visible:any[],mode:string,total:number,b
    const caption=mode==='income'?'Recebido':model.status==='exceeded'||model.status==='zero'&&spent>0?'Excedido':
     model.status==='unlimited'?'Não definido':model.status==='zero'?'Definido':'Restante';
    const pctLabel=model.usedPercent===null?model.status==='zero'?'Limite R$ 0':model.status==='unlimited'?'Sem limite':
-    'Sem orçamento':model.usedPercent.toLocaleString('pt-BR',{maximumFractionDigits:1})+'% utilizado';
+    'Sem orçamento':model.usedPercent.toLocaleString('pt-BR',{maximumFractionDigits:1})+'% utilizado'+(isMonthly?' · mês':'');
    return h('button',{type:'button',role:'listitem',key:info.name,id:'qa84-card-'+encodeURIComponent(info.name),
     className:'qa84-budget-card tone-'+tone,'aria-label':info.name+' · '+pctLabel+
       ' · gasto '+fmt(spent)+(hasLimit?' · limite '+fmt(limit):' · sem limite'),
@@ -173,8 +173,10 @@ function renderQA84BudgetDetail(host:any,context:any){
  const authoritative=drill.bank?bankSnapshot(host.state.bank,drill.month):snapshot(host.state.data,drill.month);
  const total=drill.mode==='income'?authoritative.incomeCategories.find((c:any)=>c.name===drill.categoryName)?.total||0:
   authoritative.categories.find((c:any)=>c.name===drill.categoryName)?.total||0;
- const hasLimit=Object.prototype.hasOwnProperty.call(host.state.data.budgets,drill.categoryName);
- const limit=host.state.data.budgets[drill.categoryName];
+ const monthOverride=host.state.data?.monthlyBudgets?.[drill.month]||{};
+ const hasLimit=Object.prototype.hasOwnProperty.call(monthOverride,drill.categoryName)||Object.prototype.hasOwnProperty.call(host.state.data.budgets,drill.categoryName);
+ const limit=Object.prototype.hasOwnProperty.call(monthOverride,drill.categoryName)?monthOverride[drill.categoryName]:host.state.data.budgets[drill.categoryName];
+ const isMonthlyOverride=Object.prototype.hasOwnProperty.call(monthOverride,drill.categoryName);
  const model=qa84BudgetStatus(total,limit??null,drill.mode==='expense'&&hasLimit);
  const tone=model.status==='exceeded'?'exceeded':model.status==='near'?'near':
   model.status==='within'?'within':'neutral';
@@ -309,4 +311,8 @@ function renderQA84BudgetDetail(host:any,context:any){
     (host.state.bank.data.last?.completedAt?new Date(host.state.bank.data.last.completedAt).toLocaleString('pt-BR'):'não disponível')):null,
   host.state.qa84BudgetPartial?h('p',{className:'qa84-budget-partial'},
    'Alguns registros bancários antigos podem não constar da janela carregada.'):null);
+}
+
+function effectiveMonthBudgets(data:Data|null|undefined,month:string):{[category:string]:number}{
+ return {...(data?.budgets||{}),...(data?.monthlyBudgets?.[month]||{})};
 }

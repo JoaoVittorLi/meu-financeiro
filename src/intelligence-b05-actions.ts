@@ -73,7 +73,7 @@ function renderMfB05Actions(app,proposals) {
    ['understand','simulate','review'].includes(s.mfB05ActionStage)?s.mfB05ActionStage:'understand';
  return h('section',{className:'mf-b05-plan',role:'region','aria-label':'Plano de Ação'},
   h('header',{className:'mf-b05-plan-head'},
-   h('span',{className:'mf-b05-kicker'},'INTELLIGENCE ALIVE · PLANO DE AÇÃO'),
+   h('span',{className:'mf-b05-kicker'},'INTELIGÊNCIA FINANCEIRA · PLANO DE AÇÃO'),
    h('h2',{},'Decisões melhores começam com clareza.'),
    h('p',{},'Entenda o fato, teste possibilidades e revise antes de qualquer decisão.')),
   s.mode==='real'&&s.autoCategoryStatus?h('section',{className:'mf-b05-plan-proposals',
@@ -83,7 +83,7 @@ function renderMfB05Actions(app,proposals) {
     'Ativa em '+String((s.autoCategoryStatus.permissions||[]).filter((x:any)=>x.enabled).length)+
     ' conta(s). Rótulos aplicados: '+String(s.autoCategoryStatus.counts?.classified||0)+
     ' · revisão: '+String(s.autoCategoryStatus.counts?.awaitingReview||0)+'.':
-    'Desativada. Habilite explicitamente as contas no módulo Movimentações quando o canal estável estiver homologado.'),
+    'Desativada. Habilite explicitamente por conta no módulo Movimentações em Categorias e regras.'),
    h('p',{},'Motor local de evidências históricas, não inferência de um modelo. Regras e correções humanas prevalecem.'),
    h('button',{type:'button',className:'ghost-button',onClick:()=>{
     app.setState({txSource:'bank',txReviewOnly:true});

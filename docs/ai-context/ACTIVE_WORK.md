@@ -1,12 +1,28 @@
 # Registro de frentes ativas e prevenção de conflitos
 
-## Frente Atual — Marco 2 Experimental Homologado (`e3c153c`) e Reconciliação Release 1.0.0 (19/11/2026)
+## Checkpoint de coordenação V2 & Incidente P0 1.0.0 — 24/11/2026
 
-- **Coordenação ativa:** Orchestrator **Neon** (`C:\Dev\meu-financeiro`), dando continuidade integral às frentes autorizadas sem reinício.
-- **Workspaces isolados:** `C:\Dev\meu-financeiro` (`PR #105`, `feat/mf1-cat-p0-consolidation-20261117`); `C:\Dev\meu-financeiro-worktrees\v1-stable-rc` (`release/v1.0.0-rc.1-candidate-20261119` @ `1a22181e`); `C:\Dev\meu-financeiro-worktrees\m2-copilot` (`feat/mf2-intelligence-3-0-copilot-20261118`). Workspace OneDrive original (`Carbon Meu Financeiro`) intacto e intocado.
+**Protocolo vigente:** [OPERATING_PROTOCOL](OPERATING_PROTOCOL.md) (PR `#109` `c46c9a5` incorporado em `feat/mf3-supervised-copilot-1-0-0-20261119`).
+
+| Frente | Dono | Estado observado / próximo passo |
+| --- | --- | --- |
+| M3 / release 1.0.0 (`P0` Inteligência) | Antigravity Orchestrator Neon | **Candidata anterior `4a148848` marcada `NO-GO (P0)`** após instalação do proprietário exibir `"Aguarda I2-A"` e regressão visual B05. Correção completa integrada na worktree `m3-supervised-copilot` (`PR #108`); executando suíte de regressão M4/M5 (13 jornadas), Nível A/B e auditoria dupla `pro`, para congelar SHA ao Codex `CD-03/CD-04`. |
+| Creative Design Lab V01 / CD-01 | Codex | Frente visual isolada (Visão Geral apenas); não bloqueia correção M3 P0 nem release `1.0.0 stable`. Stitch suspenso. |
+| CD-02 | Codex | Aguardar aprovação explícita do design; sem interferir em M3. |
+| CD-03 / CD-04 | Codex | Aguardando SHA congelado da candidata corrigida pós-P0 para auditoria de segurança e reprodução independente de jornadas. |
+| Governança / coordenação | ChatGPT + proprietário | PR `#109` incorporado; promoção e empacotamento final suspensos até auditoria e autorização. |
+
+PRs `#105` (M1) e `#107` (M2) são referências da cadeia, não novas frentes concorrentes. Main observada `e0d5131ebeda855a792614d9986f40e5bb94af5e`.
+
+## Frente Atual — Marco 3: Copiloto Supervisionado, GPT-6.2 Sol, M3-SALARY e Consolidação Estável 1.0.0 (24/11/2026)
+
+- **Coordenação ativa:** Orchestrator **Neon** (`C:\Dev\meu-financeiro-worktrees\m3-supervised-copilot`, branch `feat/mf3-supervised-copilot-1-0-0-20261119`), consolidação M1 + M2 + M3 + CAT-P0 na versão **`1.0.0`** (canal **`stable`**).
+- **Workspaces isolados:** `C:\Dev\meu-financeiro` (`PR #105`, `61d9b81`); `C:\Dev\meu-financeiro-worktrees\v1-stable-rc` (`release/v1.0.0-rc.1-candidate-20261119` @ `1a22181e`); `C:\Dev\meu-financeiro-worktrees\m2-copilot` (`PR Draft #107`, `6b9c9ad`); `C:\Dev\meu-financeiro-worktrees\m3-supervised-copilot` (`feat/mf3-supervised-copilot-1-0-0-20261119`, candidata estável `1.0.0`). Workspace OneDrive original (`Carbon Meu Financeiro`) intacto e intocado.
 - **Ownership / Single-Writer:** apenas um executor por vez em arquivos compartilhados (`src/app.ts`, `app/app.js`, `electron/main.cjs`, `electron/preload.cjs`, `electron/db.cjs`, `shared/*`, `docs/ai-context/CURRENT_STATE.md`). Revisão independente obrigatória (Guardião Financeiro/SQLite + Auditor Adversarial `pro`).
-- **Marco 1 / v1.0.0 (`M1_IMPLEMENTATION_COMPLETE` · `M1_TECHNICALLY_HOMOLOGATED` · `V1_STABLE_RELEASE_PENDING`):** `M1.1` (`0.9.5-beta.9`, `b7a3d8a`) homologado em Nível C experimental; candidata estável `1.0.0-rc.1` (`1a22181e`, EXE `115.734.512` bytes, `SHA-256` `7dd641f3...`) verificada (`1006/1006` SQLite, `133/133` `mobile-push`, `verify-asar` + `asar-stable-verification.json`), pendente Nível C `stable` em VM Windows limpa e decisão na issue `#71`. **Marco 2 não bloqueia a v1.0.0.**
-- **Marco 2 (`feat/mf2-intelligence-3-0-copilot-20261118`, `M2_IN_PROGRESS` — experimental homologado em Nível C):** commit funcional auditado `e3c153cb00b3bc9c5bc4f7e8e53f296ba98214a6` com `1013/1013` `test:db`, `133/133` `mobile-push`, `15/15` Nível B, `APPROVE` duplo `pro` (`ec88d31d` Visual + `bd91a757` Forense), NSIS `115.758.882` bytes (`SHA-256`: `f94e1b16d0f52882f0b885d0929019a49d19f88d8f8ca8ad12a1ac3367b37159`), Nível C isolado `15/15` PASS (`HOST_FOLDERS_UNTOUCHED: true`) e `VEREDITO: GO` pós-Nível C (`bd91a757`), com inventário honesto Completo (`M2-GUIDE-V1`, `F1` read-only, `F4` simulação read-only) vs Parcial (`F2`, `F3`, `F5` heurístico local sem escrita/cancelamento/push/LLM), mantendo `approvedForPersonal: () => false` e `financialDataEnabled: false`.
+- **Marco 1 (`M1`):** implementação concluída e integrada (`CAT-P0` + `CAT-UX` + `D05` + Pluggy + SQLite v7).
+- **Marco 2 (`M2`):** Inteligência 3.0 (`F1–F5`, radar proativo, simulador) integrada na candidata `1.0.0`.
+- **Marco 3 (`M3`):** S0–S5 implementados integralmente com consentimento explícito em `app_meta` (`m3_supervised_actions_enabled` e `ai_copilot_inference_enabled`), preservando `approvedForPersonal: () => false`, `financialDataEnabled: false` e `paidApiFallback: false`; entrega NSIS x64 `1.0.0` em `C:\Dev\releases\v1.0.0-stable\`. Ver log `docs/ai-context/logs/2026-11-23-m3-v1-0-0-consolidation.md`.
+- **Multidispositivo / PWA / Cloudflare:** congelado para descontinuação futura (sem remoção sem inventário/autorização). **Pluggy desktop ativo.**
 - **Frentes históricas abaixo (#48, #49, #54, #60, #63, #73, #19..#31):** superadas pela cadeia integrada `#94 → #96 → #100 → #104 → #105`; mantidas abaixo apenas para rastreabilidade histórica.
 
 ---
@@ -143,3 +159,9 @@ Sprint Premium checkpoint #54: R3/R2/R4 entregues, R5 primeira fatia; código e8
 ## RC-ALL-01 — Ownership UI D03/D04 (13/11/2026)
 
 Executor 1: PR Draft #73, branch feat/mf2-rc-all-01-d03-d04-ui-20261113, base PR #68 bf08ec54fbcaf498eff12f1edeea5949cee1a524. Ownership: novos src/intelligence-today-v2.ts e src/intelligence-review-v11.ts, alterações dirigidas src/intelligence-view.ts, src/intelligence-review.ts, app/intelligence.css, app/intelligence-review.css e tsconfig.json, teste e log da missão. Integrador #65 coordena contratos de arquivos compartilhados via #49 e regenera app/app.js, QA Electron e release. I2-A #64 mantém ownership separado de motor/backend; nenhuma alteração IPC, main.cjs, preload ou backend foi realizada. C1/C2 código publicado; 17/17 verificações V8 isoladas passaram; testes oficiais/CI e capturas Electron ainda NÃO executados. PR permanece Draft / NOT_HOMOLOGATED.
+
+## M3 / v1.0.0 — Homologação Integral Pré-Release (24/11/2026)
+
+- **Branch:** `feat/mf3-supervised-copilot-1-0-0-20261119` (**PR Draft #108**), worktree dedicada `m3-supervised-copilot`.
+- **Escopo executado:** Varredura completa backend/SQLite/IPC, fluxo financeiro, UX/visual em 4 resoluções claro/escuro e Inteligência/M3-SALARY, correção de defeitos confirmados, criação de `tests/m3-homologation-regressions.test.cjs` e `scripts/nivel-b-full-homologation.cjs`, compilação/proveniência e bateria completa Nível A + Nível B em ambiente sintético isolado.
+- **Referência:** [logs/2026-11-24-v1-0-0-integral-homologation.md](logs/2026-11-24-v1-0-0-integral-homologation.md). Nível C (build/instalador NSIS Windows), OAuth vivo real e Pluggy real fora desta execução sintética.

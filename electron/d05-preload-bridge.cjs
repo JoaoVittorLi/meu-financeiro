@@ -39,7 +39,11 @@ function createD05PreloadBridge(ipcRenderer){
   d05BankSplits:input=>invoke('d05:bank-splits',input),
   d05RulePreview:input=>invoke('d05:rule-preview',input),
   d05RuleSave:input=>invoke('d05:rule-save',input),
-  d05AssignPlanned:input=>invoke('d05:planned-assign',input)
+  d05AssignPlanned:input=>invoke('d05:planned-assign',input),
+   copilotActionPrepare:input=>invoke('copilot:action-prepare',input),
+   copilotActionConfirm:input=>invoke('copilot:action-confirm',input),
+   copilotActionUndo:input=>invoke('copilot:action-undo',input),
+   copilotActionReceipts:input=>invoke('copilot:action-receipts',input)
  });
 }
 module.exports={createD05PreloadBridge};

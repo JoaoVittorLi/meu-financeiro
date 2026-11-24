@@ -1,6 +1,12 @@
-# Estado comprovado do projeto — atualizado em 19/11/2026
+# Estado comprovado do projeto — atualizado em 24/11/2026 (Incidente P0 Inteligência 1.0.0 & Governança V2)
 
-> **Reconciliação de marcos (19/11/2026):** `M1_IMPLEMENTATION_COMPLETE` · `M1_TECHNICALLY_HOMOLOGATED` (`b7a3d8a`, experimental `0.9.5-beta.9`) · `V1_STABLE_RELEASE_PENDING` (`release/v1.0.0-rc.1-candidate-20261119` @ `1a22181e6adcb52cca214922821b9f265b76c753`, `SHA-256` `7dd641f3680ee38c34859593af31bb9d336d36793c7a0b320deeba18fb0e352e`, aguardando Nível C `stable` em VM Windows limpa e GO na issue `#71`) · `M2_IN_PROGRESS` (experimental homologado em Nível C em `e3c153c`; **Marco 2 não bloqueia a v1.0.0**).
+> **Roadmap Oficial Atualizado (24/11/2026):**
+> - **M1 — Fundação Financeira:** implementação concluída e homologação técnica registrada (`PR #105` `61d9b81`, `M1.1` `b7a3d8a`, candidata `v1.0.0-rc.1` `1a22181e`, `SHA-256` `7dd641f3680ee38c34859593af31bb9d336d36793c7a0b320deeba18fb0e352e`).
+> - **M2 — Inteligência Financeira 3.0:** homologação experimental concluída (`e3c153c` / docs `6b9c9ad`, `PR Draft #107`, Nível C `15/15` + `VEREDITO: GO`); integrado na linha `1.0.0`.
+> - **Incidente P0 na candidata anterior `4a148848ef0a75426de2c71cfb23c649499a7b9f` (`NO-GO`):** instalada pelo proprietário em `C:\Users\joaov\AppData\Local\Programs\Meu Financeiro\Meu Financeiro.exe` (`1.0.0 stable`), exibiu conexão OAuth ativa respondendo `"Funcionalidade ainda não implementada (aguarda I2-A)"` com badge legado `"Aguarda I2-A"` quando `localFinancialAccess.token` não estava autorizado, além de barra de permissões discreta e compositor abaixo da dobra em `1366x768`. Promoção da `4a148848` **suspensa**.
+> - **M3 Correção P0 + Governança V2 (`feat/mf3-supervised-copilot-1-0-0-20261119`, `PR #108`, incorpora `PR #109` `c46c9a5`):** eliminado o fallback legado `I2-A`, habilitado `GPT-6.2 Sol` em modo geral (`token: null`, zero acesso a `FinanceDB`) mediante OAuth + opt-in explícito, roteamento com CTAs acionáveis de permissão, histórico multi-turno, correção de `caseId: 'copilot'` no `AIPersonalStore`, consistência de `monthly_budgets` em F2 (`intelligence-savings.cjs`) e Radar Proativo F5 (`intelligence-proactive.cjs`), e recuperação visual da barra B05 + compositor em `1366x768`.
+> - **Portões pendentes de auditoria independente e ambiente isolado:** execução/auditoria independente **Codex CD-03/CD-04** sobre o SHA congelado corrigido, **Nível C no NSIS `stable`** em ambiente Windows comprovadamente isolado (sem tocar `%APPDATA%\Meu Financeiro` pessoal), e **J7 (`gpt-6.2-sol` ao vivo)** com OAuth do proprietário. Nenhuma nova entrega final de `.exe` gerada sem aprovação.
+> - **M4 — Planejamento Preditivo e Conciliação:** backlog pós-1.0.0 (fora de escopo). **Multidispositivo / PWA / Cloudflare:** congelado; **Pluggy/Open Finance desktop ativo.**
 
 **Natureza:** registro factual vinculado ao repositório e às execuções verificadas em disco no workspace isolado `C:\Dev\meu-financeiro`. Nunca promove `NOT_RUN` ou `BLOCKED` a `PASS`.
 
@@ -22,8 +28,8 @@
   - **Restrições ativas preservadas:** `approvedForPersonal() === false` (`electron/main.cjs`, `electron/d05-personal-gate.cjs`), `financialDataEnabled: false` (`shared/ai-policy.mjs`), dados sintéticos exclusivos (`MF_QA_SYNTHETIC=1`), `main` intacta em `v0.9.4` sem merge/tags.
 
 ## Próximo Passo
-- **Marco 1 / Release 1.0.0 (`V1_STABLE_RELEASE_PENDING`):** validar o instalador estável `C:\Dev\releases\V1-STABLE-RC1\MeuFinanceiro-Instalador-1.0.0-rc.1-x64.exe` (`1a22181e`) em VM Windows limpa (Nível C `stable`) e colher decisão na issue `#71`.
-- **Marco 2 (`feat/mf2-intelligence-3-0-copilot-20261118`):** **HOMOLOGADO TECNICAMENTE NO CANAL EXPERIMENTAL `0.9.5-beta.9` EM NÍVEL A + B + C (`e3c153cb00b3bc9c5bc4f7e8e53f296ba98214a6`)** — `1013/1013` `test:db`, `133/133` `mobile-push`, `15/15` Nível B, `APPROVE` duplo `pro` (Visual `ec88d31d` + Forense `bd91a757`), NSIS `115.758.882` bytes (`SHA-256`: `f94e1b16d0f52882f0b885d0929019a49d19f88d8f8ca8ad12a1ac3367b37159`), Nível C `15/15` PASS (`HOST_FOLDERS_UNTOUCHED: true`) e `VEREDITO: GO` pós-Nível C (`bd91a757`, `pro`). Ver inventário honesto F1–F5 (Completo / Parcial / Pendente) em `docs/ai-context/logs/2026-11-18-mf2-copilot-implementation.md`. Aguarda avaliação do proprietário no PR Draft do M2; mantém `approvedForPersonal: () => false` e `financialDataEnabled: false`.
+- **Marco 3 (`feat/mf3-supervised-copilot-1-0-0-20261119`):** executar fatias **S0 → S1 (categorização supervisionada + recibo/desfazer) → M3 GPT-6.2 Sol → S2 (`M3-SALARY` orçamento inteligente por salário) → S3 (regras por conta) → S4 (planejamento/orçamentos + F4) → S5 (continuidade + consolidação estável `1.0.0`)**, mantendo `main` (`e0d5131ebeda855a792614d9986f40e5bb94af5e`) e perfis pessoais/NSIS estável do host intocados durante QA sintético.
+- **Marco 1 / 2 baselines preservadas:** `M1-BASELINE`, `M1.1-VISUAL`, `M1.1-VISUAL-b7a3d8a`, `V1-STABLE-RC1` (`1a22181e`, `SHA-256` `7dd641f3680ee38c34859593af31bb9d336d36793c7a0b320deeba18fb0e352e`) e `M2-COPILOT-RC` (`e3c153c`). Ver log `docs/ai-context/logs/2026-11-19-mf3-supervised-copilot.md`.
 
 ---
 
@@ -92,4 +98,10 @@ O usuário manifestou a intenção de a U4 evoluir para operações multiárea a
 
 ## Checkpoint de integração — 12/11/2026
 Integrador temporário autorizado: integration/mf2-q1-operational-premium-20261112 une #48/#51/#52 com coord/#50. Código6979ba2,533 testes PASS, gates locais e IPC Electron PASS, QA nativo Premium e evidências novas publicados na candidata. Não integrado à main, não instalado, sem escrita pessoal ou build Windows. Consultar log2026-11-12-INTEGRATION-Q1-I-R.md e HEAD do PR da união. Status global de produção não promovido.
+
+## Checkpoint M3 / v1.0.0 — Homologação Integral Pré-Release (24/11/2026)
+
+- **Branch/PR:** `feat/mf3-supervised-copilot-1-0-0-20261119` (**PR Draft #108**), consolidando M1 + M2 + M3 em ambiente de homologação sintético isolado.
+- **Correções e blindagem:** Endurecidos serviços backend (`ai-copilot-service.cjs`, `copilot-actions.cjs`, `copilot-salary-budget.cjs`, `d05-personal-gate.cjs`, `pluggy.cjs`), renderer/IPC (`app.ts`, `d05-movements.ts`, `intelligence-integration.ts`, `intelligence-local.ts`, `intelligence-view.ts`, `copilot-supervised-actions.ts`, `plan-view.ts`), estilos claro/escuro (`premium-interactions.css`, `intelligence.css`, `intelligence-b05.css`, `decisions.css`, `refinement.css`), além de nova suíte de regressão (`tests/m3-homologation-regressions.test.cjs`) e varredura E2E em 4 resoluções (`scripts/nivel-b-full-homologation.cjs`).
+- **Limites declarados:** Testes E2E e gates ocorrem em perfil sintético isolado (`MF_QA_SYNTHETIC='1'`); Nível C (NSIS Windows EXE), OAuth vivo real e sincronização Pluggy real permanecem `NOT_RUN` até execução presencial pós-freeze. Consultar [logs/2026-11-24-v1-0-0-integral-homologation.md](logs/2026-11-24-v1-0-0-integral-homologation.md).
 

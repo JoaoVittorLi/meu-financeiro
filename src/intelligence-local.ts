@@ -40,29 +40,34 @@ function localFinancialParse(question:string,categories:any[]=[]):{intent:LocalF
  if(/assinatura/.test(q))return {intent:'category',category:'Assinaturas'};
  return null;
 }
-async function localFinancialEnable(app:any){
+async function localFinancialEnable(app:any):Promise<boolean>{
  if(app.state.categoryReviewGrant&&typeof categoryReviewDisable==='function')categoryReviewDisable(app);
- const api=localFinancialAPI(),s=app.state;if(s.localFinancialBusy)return;
- if(!api?.localFinancialAuthorize){app.setState({localFinancialError:'Consulta local requer a versão desktop desta candidata.'});return;}
+ const api=localFinancialAPI(),s=app.state;if(s.localFinancialBusy)return false;
+ if(!api?.localFinancialAuthorize){app.setState({localFinancialError:'Consulta local requer a versão desktop desta candidata.'});return false;}
  const source=s.mode==='demo'?'manual':s.localFinancialSource||'bank',profile=s.mode==='demo'?'demo':'real';
  const scope:LocalFinancialScope={source,profile,planning:profile==='real'&&s.localFinancialPlanning===true,consent:'LOCAL_FINANCIAL_READ_V1'};
  const generation=(app.__localReadGeneration||0)+1;app.__localReadGeneration=generation;
  app.setState({localFinancialBusy:true,localFinancialError:''});
  try{
   const grant=await api.localFinancialAuthorize(scope);
-  if(app.__localReadGeneration!==generation||app.state.mode!==s.mode){void api.localFinancialRevoke?.(grant.token);return;}
+  if(app.__localReadGeneration!==generation||app.state.mode!==s.mode){void api.localFinancialRevoke?.(grant.token);return false;}
   app.__ic2Conversation=null;app.__ic2InvestigationActive=false; // Invalidate I2-A when renewing read grant.
+  app.__localChatRequest=(app.__localChatRequest||0)+1;
+  const streamingReset=typeof intelligenceResetStreamingState==='function'?intelligenceResetStreamingState(app):{aiCopilotBusy:false,aiCopilotStreaming:'',aiCopilotRequestId:null};
   const backup=s.localFinancialAccess?.backup||{intelligenceThreads:s.intelligenceThreads,intelligenceMessages:s.intelligenceMessages,intelligenceActiveThreadId:s.intelligenceActiveThreadId,intelligenceHydratedMode:s.intelligenceHydratedMode};
-  app.setState({localFinancialAccess:{...grant,backup},localFinancialBusy:false,localFinancialRadar:null,intelligenceCopilotInsights:null,intelligenceThreads:[],intelligenceMessages:[],intelligenceActiveThreadId:null,intelligenceDraft:'',intelligencePreparedQuestion:'',workIntelligenceDemo:s.workIntelligenceDemo?{...s.workIntelligenceDemo,enabled:false}:undefined},()=>{void localFinancialRadar(app);if(typeof intelligencePremiumLoad==='function')void intelligencePremiumLoad(app);void intelligenceCopilotInsightsLoad(app);});
- }catch{app.setState({localFinancialBusy:false,localFinancialError:'Não foi possível autorizar a leitura local. Nenhum dado foi consultado por esta solicitação.'});}
+  await new Promise<void>((resolve)=>app.setState({...streamingReset,localFinancialAccess:{...grant,backup},localFinancialBusy:false,localFinancialRadar:null,intelligenceCopilotInsights:null,intelligenceThreads:[],intelligenceMessages:[],intelligenceActiveThreadId:null,intelligenceDraft:'',intelligencePreparedQuestion:'',workIntelligenceDemo:s.workIntelligenceDemo?{...s.workIntelligenceDemo,enabled:false}:undefined},()=>{void localFinancialRadar(app);if(typeof intelligencePremiumLoad==='function')void intelligencePremiumLoad(app);void intelligenceCopilotInsightsLoad(app);resolve();}));
+  return true;
+ }catch{app.setState({localFinancialBusy:false,localFinancialError:'Não foi possível autorizar a leitura local. Nenhum dado foi consultado por esta solicitação.'});return false;}
 }
 function localFinancialDisable(app:any){
  app.__ic2Conversation=null;
  app.__ic2InvestigationActive=false;
+ app.__localChatRequest=(app.__localChatRequest||0)+1;
  app.__localRadarRequest=(app.__localRadarRequest||0)+1;
  app.__copilotInsightsRequest=(app.__copilotInsightsRequest||0)+1;
+ const streamingReset=typeof intelligenceResetStreamingState==='function'?intelligenceResetStreamingState(app):{aiCopilotBusy:false,aiCopilotStreaming:'',aiCopilotRequestId:null};
  const access:LocalFinancialAccess=app.state.localFinancialAccess;app.__localReadGeneration=(app.__localReadGeneration||0)+1;
- app.setState({...access?.backup,localFinancialAccess:null,localFinancialRadar:null,intelligenceCopilotInsights:null,localFinancialBusy:false,localFinancialError:'',intelligenceDraft:''},()=>{if(typeof intelligencePremiumLoad==='function')void intelligencePremiumLoad(app);});
+ app.setState({...access?.backup,...streamingReset,localFinancialAccess:null,localFinancialRadar:null,intelligenceCopilotInsights:null,localFinancialBusy:false,localFinancialError:'',intelligenceDraft:''},()=>{if(typeof intelligencePremiumLoad==='function')void intelligencePremiumLoad(app);});
  if(access?.token)void localFinancialAPI()?.localFinancialRevoke?.(access.token).catch(()=>app.setState({localFinancialError:'A interface encerrou a leitura. A autorização do processo expira em até 15 minutos.'}));
 }
 async function localFinancialQuery(app:any,intent:{intent:LocalFinancialIntent;category?:string}):Promise<LocalFinancialReply>{
@@ -101,6 +106,17 @@ async function localFinancialSubmit(app:any,question:string){
  // I3-01 investigations use the already-authorized IC2 read pipeline, not a
  // V3 decorative card. Follow-ups retain IC2 context without copying money.
  const foldedQuestion=intelligenceFoldText(q);
+ const m3ActionIntent=typeof intelligenceIsM3ActionIntent==='function'
+  ?intelligenceIsM3ActionIntent(foldedQuestion)
+  :/\b(coloque|coloquem|categoriz|recategoriz|classifiqu|reclassifiqu|mova|mover|alter[ea]r?\s+(?:a\s+)?categoria|mud[ea]r?\s+(?:a\s+)?categoria)\b/.test(foldedQuestion)||
+   /(salario|salarios|renda|remuneracao|holerite|recebi|ganho).*(orcament|limite|reorganiz|organiz|distribu|redistribu|ajust|guardar|poupar|reservar)|(?:reorganiz|redistribu|recalcul|equilibr)\w*\s+(?:os?\s+|meus?\s+)?orcament/.test(foldedQuestion)||
+   /^(?:por favor,?\s*)?(?:sempre que|toda vez que)\b/.test(foldedQuestion)||
+   /\b(?:regra(?:\s+futura|\s+automatica)?\s+(?:para|quando)|(?:desativ|paus|desabilit|ativ|reabilit|habilit)\w*\s+(?:a\s+)?regra)\b/.test(foldedQuestion)||
+   /\b(?:crie|criar|adicione|adicionar|inclua|incluir|nova|renomei\w*|mud\w*\s+o\s+nome|alter\w*\s+o\s+nome)\s+(?:a\s+)?(?:subcategoria|categoria)\b/.test(foldedQuestion)||
+   /^(?:por favor,?\s*)?(?:deixe|defin\w*|ajust\w*|mud\w*|alter\w*|coloque|fique com)\s+(?:o\s+|meu\s+)?(?:limite|orcamento|teto)\b/.test(foldedQuestion)||
+   /\b(?:despesa prevista|receita prevista|conta prevista|compromisso|parcela prevista|planejamento)\b.*\b(?:registr|adicion|crie|criar|agend|cancel|reativ|acabamos de simular|simul)\b|\b(?:registr|adicion|crie|criar|agend|cancel|reativ)\w*.*\b(?:despesa prevista|receita prevista|conta prevista|compromisso|parcela prevista|planejamento)\b/.test(foldedQuestion)||
+   /^(?:por favor,?\s*)?(?:alter|mud|atualiz|ajust|remarqu)\w*\s+(?:o\s+|a\s+)?(?:vencimento|data|valor)\b/.test(foldedQuestion)||
+   /\b(?:gostei.*mais|guardar.*a mais|poupar.*a mais|aument\w*.*reserva|trave |fixe |destrave|desbloque|reduza mais|use o valor que voce sugeriu|economia sugerida|reducao sugerida)\b/.test(foldedQuestion);
  const financialInvestigation=/por que.*(despes|gast)|investig|categorias?.*contribu|estabelec.*(cresc|aument)|mostre.*estabelec|despes.*(aument|subi)|gast.*(aument|mais)|onde.*gastando|o que aumentou|compar.*(janeiro|fevereiro|marco|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro|mes)/.test(foldedQuestion);
  const sameThread=!!app.__ic2Conversation?.answerId&&messages.some((m:any)=>m.id===app.__ic2Conversation.answerId);
  const i3Followup=sameThread&&!!app.__ic2InvestigationActive&&
@@ -113,16 +129,23 @@ async function localFinancialSubmit(app:any,question:string){
  // SQLite adapter without that endpoint, do NOT replace a valid R$42,15
  // response with a misleading "no evidence" visual failure.
  // D01 supervised proposals and synthetic receipts cannot be hijacked.
- const v3Kind=!copilotIntentRequested&&typeof api?.intelligenceOperationalAsk==='function'&&
+ const v3Kind=!copilotIntentRequested&&!m3ActionIntent&&typeof api?.intelligenceOperationalAsk==='function'&&
   v3Requested&&v3Requested!=='proposal'&&v3Requested!=='approval'?v3Requested:null;
  let previousOperational:any=null;
  const request=(app.__localChatRequest||0)+1;app.__localChatRequest=request;
  const user:IntelligenceChatMessage={id:'local-u-'+Date.now(),role:'user',text:q,status:'sent',
   createdAt:intelligenceNowTime(),scopeLabel:scope.label,periodLabel:month};
- app.setState({localFinancialBusy:true,intelligenceDraft:''});
- let reply:LocalFinancialReply=null,operational:any=null,ic2:MfIC2Reply|null=null,error='';
+ app.setState({localFinancialBusy:true,intelligenceDraft:'',intelligencePreparedQuestion:''});
+ let reply:LocalFinancialReply=null,operational:any=null,ic2:MfIC2Reply|null=null,m3Draft:any=null,solReply:any=null,solCancelled=false,solStale=false,error='',permissionActions:any[]=undefined;
  try{
-  if(!v3Kind&&typeof api?.intelligenceIC2ReadQuery==='function'){
+  if(m3ActionIntent&&typeof api?.copilotActionInterpret==='function'){
+   const draft=await api.copilotActionInterpret({token:access.token,source:access.source,profile:access.profile,month,question:q});
+   if(draft?.matched===true){
+    const cap=typeof api?.copilotActionCapabilityStatus==='function'?await api.copilotActionCapabilityStatus().catch(()=>null):null;
+    m3Draft={...draft,capability:cap?{available:!!cap.available,enabled:!!cap.enabled}:null};
+   }
+  }
+  if(!m3Draft&&!v3Kind&&typeof api?.intelligenceIC2ReadQuery==='function'){
    // The conversational read path is isolated from explicit V3 visual requests.
    const previous=app.__ic2Conversation;
    const conversationId=previous?.access===access&&previous?.signature===signature&&
@@ -136,6 +159,46 @@ async function localFinancialSubmit(app:any,question:string){
       source:access.source,profile:access.profile,month,question:q,density,pageContext,
       ...(conversationId?{conversationId}:{})});
    if(!mfIC2Valid(ic2,access,month))throw Error('Resposta IC2 não verificada.');
+   if(ic2.status==='unsupported'){
+    if(app.state.aiStatus?.connected&&app.state.aiCopilotCap?.enabled&&typeof api?.aiCopilotAsk==='function'){
+     const requestId='sol-'+Date.now()+'-'+Math.floor(Math.random()*10000);
+     app.setState({aiCopilotBusy:true,aiCopilotStreaming:'',aiCopilotRequestId:requestId});
+     try{
+      const history=typeof intelligenceRecentPlainHistory==='function'?intelligenceRecentPlainHistory(messages,6,{excludeFinancial:true}):[];
+      solReply=await api.aiCopilotAsk({token:access.token,source:access.source,profile:access.profile,month,question:q,history,effortOverride:'auto',requestId});
+      if(app.state.aiCopilotRequestId!==requestId||request!==app.__localChatRequest){
+       solStale=true;
+      }else if(solReply?.inferenceStatus&&app.state.aiCopilotCap){
+       app.setState({aiCopilotCap:{...app.state.aiCopilotCap,inferenceStatus:solReply.inferenceStatus}});
+      }
+     }catch(solErr:any){
+      if(app.state.aiCopilotRequestId!==requestId||request!==app.__localChatRequest){
+       solStale=true;
+      }else{
+       const isCancel=typeof intelligenceIsUserCancelledError==='function'
+        ?intelligenceIsUserCancelledError(solErr)
+        :/\bUSER_CANCELLED\b|cancelad[ao]\s+(?:pelo\s+usu[áa]rio|por\s+solicita[çc][ãa]o)/i.test(String(solErr?.message||'')+' '+String(solErr?.cause||''));
+       if(isCancel){
+        solCancelled=true;
+       }else{
+        const cleanSolErr=typeof intelligenceCleanIpcError==='function'
+         ?intelligenceCleanIpcError(solErr,'falha inesperada')
+         :String(solErr?.message||'falha inesperada').replace(/^Error invoking remote method '[^']+':\s*(?:Error:\s*)?/i,'').trim().slice(0,260);
+        error='**Não foi possível consultar o GPT-6.2 Sol:** '+cleanSolErr+' Nenhuma resposta foi simulada.';
+        permissionActions=[{id:'open_ai_settings',label:'Verificar Configurações de IA'}];
+       }
+      }
+     }finally{
+      if(app.state.aiCopilotRequestId===requestId){
+       app.setState({aiCopilotBusy:false,aiCopilotStreaming:'',aiCopilotRequestId:null});
+      }
+     }
+    }else if(app.state.aiStatus?.connected===true){
+     permissionActions=[{id:'enable_ai_copilot',label:'Ativar GPT-6.2 Sol e responder',primary:true,retryQuestion:q},{id:'open_ai_settings',label:'Configurações de IA'}];
+    }else{
+     permissionActions=[{id:'connect_chatgpt',label:'Conectar ChatGPT',primary:true}];
+    }
+   }
   }else if(typeof api?.intelligenceOperationalAsk==='function'){
    operational=await api.intelligenceOperationalAsk({token:access.token,month,
      question:v3Kind?'Radar financeiro':q});
@@ -155,8 +218,12 @@ async function localFinancialSubmit(app:any,question:string){
    if(parsed)reply=await localFinancialQuery(app,parsed);
    else error='Consulta ainda não reconhecida. Comandos de escrita não são executados por esta consulta local.';
   }
- }catch(e:any){error=String(e?.message||'Consulta local indisponível.').slice(0,220);}
- if(request!==app.__localChatRequest||(app.state.intelligenceActiveThreadId||null)!==threadAtStart||
+ }catch(e:any){
+  error=typeof intelligenceCleanIpcError==='function'
+   ?intelligenceCleanIpcError(e,'Consulta local indisponível.').slice(0,220)
+   :String(e?.message||'Consulta local indisponível.').replace(/^Error invoking remote method '[^']+':\s*(?:Error:\s*)?/i,'').trim().slice(0,220);
+ }
+ if(solStale||request!==app.__localChatRequest||(app.state.intelligenceActiveThreadId||null)!==threadAtStart||
     app.state.localFinancialAccess!==access||
     app.state.localFinancialAccess?.token!==access?.token||
     signature!==intelligencePremiumSignature(app)){
@@ -168,55 +235,64 @@ async function localFinancialSubmit(app:any,question:string){
  if(ic2&&['ready','partial','needs_clarification','unsupported'].includes(ic2.status))
    app.__ic2Conversation={access,signature,id:ic2.conversationId};
  const state=operational?.uiState;
- let answerText=ic2?.answer||operational?.answer||reply?.text||error||'Consulta indisponível.';
- const finalStatus:IntelligenceChatMessage['status']=ic2?
+ let answerText=m3Draft?.answer||solReply?.text||(solCancelled?'Solicitação cancelada. Nenhuma resposta ou alteração financeira foi registrada.':'')||error||ic2?.answer||operational?.answer||reply?.text||'Consulta indisponível.';
+ const finalStatus:IntelligenceChatMessage['status']=m3Draft?
+  (m3Draft.status==='ready'?'done':'unsupported'):solReply?.text||solCancelled?
+  'done':error&&ic2?.status==='unsupported'?
+  'error':ic2?
   (['ready','partial'].includes(ic2.status)?'done':ic2.status==='unsupported'||ic2.status==='needs_clarification'?'unsupported':
    ic2.status==='denied'||ic2.status==='stale'?'unavailable':'error'):operational?
   (state==='ready'||state==='empty'?'done':state==='unsupported'?'unsupported':state==='denied'||state==='expired'?'unavailable':'error'):
   reply?'done':'error';
  const factsValid=operational&&(state==='ready'||state==='empty');
- const evidence=ic2&&['ready','partial'].includes(ic2.status)?
+ const evidence=m3Draft?
+  'Ação supervisionada · '+(m3Draft.source==='bank'?'Fonte bancária':'Fonte manual')+' · '+month:
+  solReply?.text?
+  'GPT-6.2 Sol · Esforço '+(solReply.effort==='high'?'Alto':solReply.effort==='medium'?'Médio':'Baixo')+' · Apenas agregados autorizados · '+month:
+  solCancelled?
+  'Solicitação cancelada pelo usuário':
+  ic2&&['ready','partial'].includes(ic2.status)?
   'Consulta local · '+(ic2.source==='bank'?'Fonte bancária':'Fonte manual')+' · '+month:
   factsValid?(operational.profile==='synthetic'?'Ambiente sintético':'Fonte '+(operational.source==='bank'?'bancária':'manual'))+
   ' · '+intelligencePremiumCoverage(operational.coverage)+' · '+month:'';
- const visualV3=v3Kind&&factsValid?mfV3BindGrant(
+ const visualV3=!m3Draft&&v3Kind&&factsValid?mfV3BindGrant(
    mfV3FromOperational(operational,v3Kind,previousOperational),access,signature):null;
- if(v3Kind){
+ if(v3Kind&&!m3Draft){
   answerText=!visualV3?'Não há evidência suficiente para apresentar esta análise com segurança. Nenhum valor foi estimado.':
     visualV3.quality==='unavailable'?'Esta família visual não tem serviço financeiro operacional compatível neste momento.':
     visualV3.quality==='partial'?'Os registros são parciais ou não permitem uma comparação completa. Veja as limitações a seguir.':
     'Consulte a visualização calculada a partir dos registros locais autorizados.';
  }
- const visualKind=!v3Kind&&factsValid?mfVisualRequested(q):null;
+ const visualKind=!m3Draft&&!v3Kind&&factsValid?mfVisualRequested(q):null;
  const visual=visualKind?mfVisualFromOperational(operational,visualKind):null;
  const answer:IntelligenceChatMessage={
-  id:(ic2?'ic2-a-':'local-a-')+Date.now(),role:'assistant',text:answerText,status:finalStatus,
+  id:(m3Draft?'m3a-':ic2?'ic2-a-':'local-a-')+Date.now(),role:'assistant',text:answerText,status:finalStatus,
   createdAt:intelligenceNowTime(),scopeLabel:scope.label,periodLabel:month,
-  structuredCard:ic2?mfIC2Card(ic2):factsValid&&operational.card?operational.card:reply?.card||null,
+  structuredCard:m3Draft?null:ic2?mfIC2Card(ic2):factsValid&&operational.card?operational.card:reply?.card||null,
   visual,visualV3,
   ic2Reply:ic2||undefined,
   ic2FollowUps:ic2&&Array.isArray(ic2.followUps)?ic2.followUps.slice(0,3):undefined,
+  m3ActionDraft:m3Draft||undefined,
+  permissionActions,
   operationalActions:factsValid&&!visualV3&&Array.isArray(operational.actions)?operational.actions:[],
   operationalEvidence:evidence,
-  details:ic2?'Leitura local verificada · '+(ic2.status==='partial'?'Cobertura parcial. ':'')+
+  details:m3Draft?'Prévia supervisionada M3 · confirmação nativa e backup SQLite antes de qualquer escrita.':
+    solReply?.text?'GPT-6.2 Sol via OAuth · somente totais agregados enviados · zero fallback pago · não grava no SQLite.':
+    ic2?'Leitura local verificada · '+(ic2.status==='partial'?'Cobertura parcial. ':'')+
     'Fatos locais verificáveis, sem escrita financeira ou modelo externo.':v3Kind&&!visualV3?'Os fatos autorizados não permitem esta visualização; nenhuma informação foi estimada.':
     visualKind&&!visual?'Não há evidências suficientes para desenhar o gráfico com totais reconciliados. Confira fonte e cobertura.':
     factsValid?'Consulta local determinística, sem IA externa. Não foi executada qualquer alteração.':
     reply?JSON.stringify(reply.references):'Nenhuma alteração financeira nem envio externo.'
  };
- if(ic2){
+ if(m3Draft){
+  if(typeof copilotBindActionMessage==='function')copilotBindActionMessage(answer,access,signature,month,Number(app.state?.financeRevision||0));
+ }else if(ic2){
   mfIC2BindMessage(answer,access,signature,month);
   if(app.__ic2Conversation?.id===ic2.conversationId)app.__ic2Conversation.answerId=answer.id;
  }else mfLocalBindMessage(answer,access,signature,month);
  intelligenceSyncThreadMessages(app,[...messages,user,answer],scope);
  app.setState({localFinancialBusy:false},()=>{
-  if(typeof document!=='undefined'&&typeof document.querySelectorAll==='function'){
-   const scroll=()=>{
-    for(const el of Array.from(document.querySelectorAll('.mf-b05-chat-thread, .mf-ai-drawer-body')))
-     (el as HTMLElement).scrollTop=(el as HTMLElement).scrollHeight;
-   };
-   if(typeof requestAnimationFrame==='function')requestAnimationFrame(scroll);else scroll();
-  }
+  if(typeof intelligenceScrollChatToBottom==='function')intelligenceScrollChatToBottom();
  });
 }
 function renderLocalFinancialAccess(app:any){

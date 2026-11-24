@@ -34,10 +34,22 @@ class PluggyClient {
    let next='?accountId='+encodeURIComponent(accountId),all=[],pages=0;
    const seen=new Set();
    while(next){
-     if(!/^\?accountId=[a-zA-Z0-9%\-]+(?:&after=[a-zA-Z0-9%+_\/=\-]+)?$/.test(next)||!next.includes(encodeURIComponent(accountId)))throw new PluggyError('Cursor de paginação inválido.');
-     if(seen.has(next)||pages++>99)throw new PluggyError('A consulta ultrapassou o limite de páginas.');
-     seen.add(next);
-     const v=await this.request('/v2/transactions'+next);
+     let parsedNext;
+     try{
+       if(next.startsWith('?'))parsedNext=new URL('/v2/transactions'+next,BASE);
+       else if(next.startsWith('https://'))parsedNext=new URL(next);
+       else parsedNext=null;
+     }catch(_){parsedNext=null;}
+     const allowedParams=new Set(['accountId','after','page','pageSize','from','to']);
+     const paramEntries=parsedNext?[...parsedNext.searchParams.entries()]:[];
+     if(!parsedNext||parsedNext.origin!==BASE||parsedNext.pathname!=='/v2/transactions'||parsedNext.searchParams.get('accountId')!==accountId||
+       paramEntries.some(([k,v])=>!allowedParams.has(k)||!/^[a-zA-Z0-9._:/+\- ]+$/.test(v))){
+       throw new PluggyError('Cursor de paginação inválido.');
+     }
+     const query=parsedNext.search;
+     if(seen.has(query)||pages++>99)throw new PluggyError('A consulta ultrapassou o limite de páginas.');
+     seen.add(query);
+     const v=await this.request('/v2/transactions'+query);
      if(!Array.isArray(v.results))throw new PluggyError('Formato inesperado da lista de transações.');
      all.push(...v.results);
      if(all.length>40000)throw new PluggyError('Histórico excede o limite permitido.');
@@ -54,11 +66,21 @@ class PluggyClient {
    const accounts=await this.accounts(itemId);
    if(!accounts.length)throw new PluggyError('Nenhuma conta recebida. Verifique o status/consentimento no Meu Pluggy. Os dados anteriores serão preservados.','EMPTY_ACCOUNTS');
    const data=[];
+   const skippedAccounts=[];
    for(const account of accounts){
-     if(account.type!=='BANK'||account.currencyCode && account.currencyCode!=='BRL')continue;
+     if(account.type!=='BANK'||(account.currencyCode && account.currencyCode!=='BRL')){
+       skippedAccounts.push({
+         id:account.id||'',
+         name:String(account.name||'Conta'),
+         type:String(account.type||'UNKNOWN'),
+         currencyCode:String(account.currencyCode||'BRL'),
+         reason:account.type!=='BANK'?'account_type_not_bank':'unsupported_currency'
+       });
+       continue;
+     }
      data.push({account,transactions:await this.transactions(account.id)});
    }
-   return {item,data};
+   return {item,data,skippedAccounts};
  }
 }
 module.exports={PluggyClient,PluggyError,isItemId};

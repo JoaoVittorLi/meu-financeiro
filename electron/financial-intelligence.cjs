@@ -33,7 +33,8 @@ class LocalFinancialIntelligence{
  const records=bank?bank.transactions:manual.transactions;
  const rows=records.map(r=>bank?{date:r.date,status:r.status,nature:r.nature,amountCents:r.amount,category:r.splitOutdated?null:r.category,splits:!r.splitOutdated&&Array.isArray(r.splits)?r.splits.map(p=>({category:p.category,amountCents:p.amount})):undefined}:{date:r.date,kind:r.kind,amountCents:r.amount,category:r.category});
  const current=aggregateFinancePeriod(rows,{...p,source:g.source});
- const limits=Object.entries(manual.budgets||{}).map(([category,amountCents])=>({category,amountCents}));
+ const mergedBudgets={...(manual.budgets||{}),...(manual.monthlyBudgets?.[input.month]||{})};
+ const limits=Object.entries(mergedBudgets).map(([category,amountCents])=>({category,amountCents}));
  const budgets=budgetProgress(limits,current.expenses);
  const warnings=['Uma única origem; valores apenas dos registros locais carregados.','Receitas menos despesas não representam saldo disponível.'];
  if(bank?.truncated)warnings.push('Histórico bancário parcial: a lista local tem limite de 2.500 registros; não representa todo o extrato.');

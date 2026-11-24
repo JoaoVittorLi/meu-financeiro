@@ -116,7 +116,7 @@ test('resposta de teste tem uso registrado sem guardar conversas',async()=>{
   assert.equal(history.length,1);
   assert.equal(history[0].url,'https://api.openai.com/v1/responses');
   assert.ok(history[0].body.includes('Explique cálculos'));
-  assert.equal(result.model,'gpt-6.1-sol');
+  assert.equal(result.model,'gpt-6.2-sol');
   const summary=await store.summary(owner);
   assert.equal(summary.completedSamples,1);
   assert.equal(summary.inputTokens,106);assert.equal(summary.outputTokens,39);

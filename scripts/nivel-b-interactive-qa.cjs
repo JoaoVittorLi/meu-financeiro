@@ -1209,7 +1209,10 @@ async function runNivelB(options = {}) {
       await ui.clickElement(`return document.getElementById('mf-b05-tab-chat');`, 'Tab Conversar');
       await ui.fillText(`return document.getElementById('mf-ai-draft');`, 'Quais foram minhas maiores despesas?', 'Unauth query');
       await ui.clickButtonText('Enviar', 'document.querySelector(".mf-b05-chat-composer")');
-      await ui.waitFor(`return document.querySelector('.mf-b05-chat-thread')?.textContent?.includes('Conta desconectada (não autenticada)');`, 'Unauthenticated reply');
+      await ui.waitFor(`
+        const t = document.querySelector('.mf-b05-chat-thread')?.textContent || '';
+        return t.includes('Autorização de leitura financeira necessária') && !t.includes('Aguarda I2-A') && !t.includes('ainda não implementada');
+      `, 'Unauthenticated financial permission prompt');
 
       // 3. Ambiguous D01 prompt ("Categorize Mercado como Alimentação") -> 2+ matches -> Conferir proposta disabled
       await ui.fillText(`return document.getElementById('mf-ai-draft');`, 'Categorize Mercado como Alimentação', 'Ambiguous D01 prompt');
@@ -1309,7 +1312,7 @@ async function runNivelB(options = {}) {
         const root = document.querySelector('.mf-b05-permissions');
         return [...root.querySelectorAll('button')].find(b => !b.disabled && b.textContent.includes('Encerrar leitura'));
       `, 'Encerrar leitura');
-      await ui.waitFor(`return document.querySelector('.mf-b05-status')?.textContent?.includes('Sem leitura pessoal autorizada');`, 'Session cleared');
+      await ui.waitFor(`const st = document.querySelector('.mf-b05-status'); return !!st && !!st.querySelector('.mf-b05-status-dot.is-idle') && !st.textContent.includes('Leitura local autorizada') && st.textContent.includes('leitura local sob autorização');`, 'Session cleared');
       await ui.clickElement(`return document.getElementById('mf-b05-tab-chat');`, 'Back to Conversar');
       const cleared = await ui.eval(`
         const t = document.querySelector('.mf-b05-chat-thread')?.textContent || '';
@@ -1441,7 +1444,7 @@ async function runNivelB(options = {}) {
         const root = document.querySelector('.mf-b05-permissions');
         return [...root.querySelectorAll('button')].find(b => !b.disabled && b.textContent.includes('Encerrar leitura'));
       `, 'PJ-10 revoke read grant');
-      await ui.waitFor(`return document.querySelector('.mf-b05-status')?.textContent?.includes('Sem leitura pessoal autorizada');`, 'PJ-10 revoked');
+      await ui.waitFor(`const st = document.querySelector('.mf-b05-status'); return !!st && !!st.querySelector('.mf-b05-status-dot.is-idle') && !st.textContent.includes('Leitura local autorizada') && st.textContent.includes('leitura local sob autorização');`, 'PJ-10 revoked');
       assert.equal(await ui.eval(`return document.querySelectorAll('.mf-ic2-adaptive').length;`), 0);
       await ui.clickElement(`return document.getElementById('mf-b05-tab-today');`, 'Verify Hoje proactive cleared');
       assert.equal(await ui.eval(`return document.querySelectorAll('.mf-copilot-proactive-card').length;`), 0);

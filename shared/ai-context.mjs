@@ -1,6 +1,7 @@
 // E3 — deterministic context assembly shared by Electron and Cloudflare Workers.
 // Never reads accounts, Pluggy, transaction databases or user files.
 // Only explicit user-approved memory can supplement FIXED fictional demo cases.
+import {AI_MODEL,AI_EFFORTS} from './ai-policy.mjs';
 export const AI_CONTEXT_LIMITS=Object.freeze({
   maxMemories:8,
   maxMemoryCharacters:180,
@@ -33,7 +34,7 @@ export function selectApprovedMemories(notes){
   return out;
 }
 export function assembleDemoContext(baseRequest,notes=[],includeMemories=false){
-  if(!baseRequest||baseRequest.model!=='gpt-6.1-sol'||baseRequest.store!==false||baseRequest.stream!==true||!Array.isArray(baseRequest.input))
+  if(!baseRequest||baseRequest.model!==AI_MODEL||!AI_EFFORTS.includes(baseRequest.reasoning?.effort)||baseRequest.store!==false||baseRequest.stream!==true||!Array.isArray(baseRequest.input))
     throw new Error('Contrato seguro de IA não reconhecido.');
   if(includeMemories!==true&&includeMemories!==false)throw new Error('Consentimento de memórias inválido.');
   const selected=includeMemories?selectApprovedMemories(notes):[];
@@ -52,7 +53,7 @@ export function assembleDemoContext(baseRequest,notes=[],includeMemories=false){
   return {
     request:{...baseRequest,input},
     inspection:{
-      model:'gpt-6.1-sol',onlyFictitiousFinancialData:true,bankDataIncluded:false,
+      model:AI_MODEL,onlyFictitiousFinancialData:true,bankDataIncluded:false,
       memoryCount:selected.length,inputCharacters:inputChars,
       // Rough UI estimate, NOT actual billed, reasoning or cached tokens.
       estimatedInputTokensApprox:Math.ceil(inputChars/4),

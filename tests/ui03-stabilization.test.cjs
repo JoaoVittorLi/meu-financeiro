@@ -146,8 +146,8 @@ test('F07 impede duplo clique e serializa respostas de IPC entre contas',async()
 
 test('F02 versões do Windows, PWA e renderer coincidem dinamicamente',()=>{
  assert.equal(pkg.version,pwa.version);
- assert.match(pkg.version,/^\d+\.\d+\.\d+-beta\.\d+$/);
- const labels=app.match(/\bv\d+\.\d+\.\d+-beta\.\d+\b/g)||[];
+ assert.match(pkg.version,/^\d+\.\d+\.\d+(?:-(?:beta|rc)\.\d+)?$/);
+ const labels=app.match(/\bv\d+\.\d+\.\d+(?:-(?:beta|rc)\.\d+)?\b/g)||[];
  assert.equal(labels.length,3);
  assert.deepEqual([...new Set(labels)],['v'+pkg.version]);
 });
