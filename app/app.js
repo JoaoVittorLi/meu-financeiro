@@ -7760,24 +7760,6 @@ async function intelligenceSubmitQuestion(app, rawQuestion) {
     const desktopConsentRequired = typeof (desktop === null || desktop === void 0 ? void 0 : desktop.localFinancialAuthorize) === 'function' && app.state.mode !== 'demo' && !grantValid;
     const catIntent = intelligenceParseCategorizeIntent(q, app.state.categories, todayIso);
     if (catIntent) {
-        if (desktopConsentRequired) {
-            const reply = {
-                id: 'ast-' + (Date.now() + 1),
-                role: 'assistant',
-                text: '**Autorização financeira necessária para preparar esta ação:** para examinar seus lançamentos, categorias ou orçamento antes de gerar uma prévia confirmável, autorize a leitura financeira desta sessão. Nenhuma escrita ocorre sem prévia, confirmação nativa e recibo reversível.',
-                createdAt: intelligenceNowTime(),
-                createdAtIso: todayIso,
-                scopeLabel: scope.label,
-                periodLabel: scope.period,
-                status: 'done',
-                permissionActions: [
-                    { id: 'authorize_local_read', label: 'Autorizar leitura financeira agora', primary: true, retryQuestion: q }
-                ],
-                details: 'Escopo: ' + scope.label + ' (' + scope.period + ') · Aguardando permissão de leitura financeira nesta sessão.'
-            };
-            intelligenceSyncThreadMessages(app, [...currentMessages, userMsg, reply], scope);
-            return;
-        }
         const built = intelligenceBuildCategorizeProposal(app, catIntent);
         const reply = {
             id: 'ast-' + (Date.now() + 1),

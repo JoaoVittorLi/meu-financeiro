@@ -157,8 +157,17 @@ test('D-02 & A-03 & D-04: desktop local consent blocks ungranted summaries/categ
 
   const app2 = makeApp();
   await runtime.intelligenceSubmitQuestion(app2, 'Categorize Ifood como Alimentação');
-  assert.equal(app2.state.intelligenceMessages.at(-1).proposal || null, null);
-  assert(app2.state.intelligenceMessages.at(-1).permissionActions?.some((a) => a.id === 'authorize_local_read'));
+  const d01Msg = app2.state.intelligenceMessages.at(-1);
+  assert.ok(d01Msg.proposal && d01Msg.proposal.status === 'pending' && d01Msg.proposal.origin === 'bank');
+  assert.deepEqual(
+    runtime.intelligenceRecentPlainHistory(app2.state.intelligenceMessages).filter((m) => m.role === 'assistant'),
+    []
+  );
+
+  const app3 = makeApp();
+  await runtime.intelligenceSubmitQuestion(app3, 'Deixe meu limite de Moradia em R$ 1.500');
+  assert.equal(app3.state.intelligenceMessages.at(-1).status, 'permission_needed');
+  assert(app3.state.intelligenceMessages.at(-1).permissionActions?.some((a) => a.id === 'authorize_local_read'));
 });
 
 test('D-03 & D-08: cancel aborts SSE inference cleanly, post-SSE capability loss rejects without recording usage, and thread/mode switches cancel active request', async () => {
